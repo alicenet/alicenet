@@ -1,0 +1,444 @@
+package objs
+
+import (
+	mdefs "github.com/MadBase/MadNet/application/objs/capn"
+	"github.com/MadBase/MadNet/application/objs/dspreimage"
+	"github.com/MadBase/MadNet/application/objs/uint256"
+	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
+	capnp "zombiezen.com/go/capnproto2"
+)
+
+// DSPreImage is a DataStore preimage
+type DSPreImage struct {
+	ChainID  uint32
+	Index    []byte
+	IssuedAt uint32
+	Deposit  *uint256.Uint256
+	RawData  []byte
+	TXOutIdx uint32
+	Owner    *DataStoreOwner
+}
+
+// UnmarshalBinary takes a byte slice and returns the corresponding
+// DSPreImage object
+func (b *DSPreImage) UnmarshalBinary(data []byte) error {
+	bc, err := dspreimage.Unmarshal(data)
+	if err != nil {
+		return err
+	}
+	return b.UnmarshalCapn(bc)
+}
+
+// MarshalBinary takes the DSPreImage object and returns the canonical
+// byte slice
+func (b *DSPreImage) MarshalBinary() ([]byte, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	bc, err := b.MarshalCapn(nil)
+	if err != nil {
+		return nil, err
+	}
+	return dspreimage.Marshal(bc)
+}
+
+// UnmarshalCapn unmarshals the capnproto definition of the object
+func (b *DSPreImage) UnmarshalCapn(bc mdefs.DSPreImage) error {
+	if err := dspreimage.Validate(bc); err != nil {
+		return err
+	}
+	b.ChainID = bc.ChainID()
+	b.Index = utils.CopySlice(bc.Index())
+	b.IssuedAt = bc.IssuedAt()
+	u32array := [8]uint32{}
+	u32array[0] = bc.Deposit()
+	u32array[1] = bc.Deposit1()
+	u32array[2] = bc.Deposit2()
+	u32array[3] = bc.Deposit3()
+	u32array[4] = bc.Deposit4()
+	u32array[5] = bc.Deposit5()
+	u32array[6] = bc.Deposit6()
+	u32array[7] = bc.Deposit7()
+	dObj := &uint256.Uint256{}
+	err := dObj.FromUint32Array(u32array)
+	if err != nil {
+		return err
+	}
+	b.Deposit = dObj
+	b.RawData = utils.CopySlice(bc.RawData())
+	b.TXOutIdx = bc.TXOutIdx()
+	owner := &DataStoreOwner{}
+	if err := owner.UnmarshalBinary(bc.Owner()); err != nil {
+		return err
+	}
+	b.Owner = owner
+	// protects against zero bytes errors in equations
+	return b.ValidateDeposit()
+}
+
+// MarshalCapn marshals the object into its capnproto definition
+func (b *DSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.DSPreImage, error) {
+	if b == nil {
+		return mdefs.DSPreImage{}, errorz.ErrInvalid{}.New("not initialized")
+	}
+	var bc mdefs.DSPreImage
+	if err := b.ValidateDeposit(); err != nil {
+		return bc, err
+	}
+	if seg == nil {
+		_, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+		if err != nil {
+			return bc, err
+		}
+		tmp, err := mdefs.NewRootDSPreImage(seg)
+		if err != nil {
+			return bc, err
+		}
+		bc = tmp
+	} else {
+		tmp, err := mdefs.NewDSPreImage(seg)
+		if err != nil {
+			return bc, err
+		}
+		bc = tmp
+	}
+	if err := bc.SetIndex(utils.CopySlice(b.Index)); err != nil {
+		return bc, err
+	}
+	if err := bc.SetRawData(utils.CopySlice(b.RawData)); err != nil {
+		return bc, err
+	}
+	owner, err := b.Owner.MarshalBinary()
+	if err != nil {
+		return bc, err
+	}
+	if err := bc.SetOwner(owner); err != nil {
+		return bc, err
+	}
+	bc.SetChainID(b.ChainID)
+	bc.SetIssuedAt(b.IssuedAt)
+	u32array, err := b.Deposit.ToUint32Array()
+	if err != nil {
+		return bc, err
+	}
+	bc.SetDeposit(u32array[0])
+	bc.SetDeposit1(u32array[1])
+	bc.SetDeposit2(u32array[2])
+	bc.SetDeposit3(u32array[3])
+	bc.SetDeposit4(u32array[4])
+	bc.SetDeposit5(u32array[5])
+	bc.SetDeposit6(u32array[6])
+	bc.SetDeposit7(u32array[7])
+	bc.SetTXOutIdx(b.TXOutIdx)
+	return bc, nil
+}
+
+// PreHash returns the PreHash of the object
+func (b *DSPreImage) PreHash() ([]byte, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	msg, err := b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	hsh := crypto.Hasher(msg)
+	return hsh, nil
+}
+
+// RemainingValue returns remaining value at the time of consumption
+func (b *DSPreImage) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
+	if b == nil || b.IssuedAt == 0 || b.Deposit == nil || len(b.RawData) == 0 {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	epochFinal := utils.Epoch(currentHeight)
+	epochInitial := b.IssuedAt
+	if epochFinal < epochInitial {
+		epochFinal = epochInitial
+	}
+	deposit := b.Deposit
+	dataSize := uint32(len(b.RawData))
+	result, err := RewardDepositEquation(deposit, dataSize, epochInitial, epochFinal)
+	if err != nil {
+		return nil, err
+	}
+	return result.Clone(), nil
+}
+
+// Value returns the value stored in the object at the time of creation
+func (b *DSPreImage) Value() (*uint256.Uint256, error) {
+	if b == nil || b.Deposit == nil || b.Deposit.Eq(uint256.Zero()) {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.Deposit.Clone(), nil
+}
+
+// ValidatePreSignature validates the signature of the datastore at the time of
+// creation
+func (b *DSPreImage) ValidatePreSignature(msg []byte, sig *DataStoreSignature) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.Owner.ValidateSignature(msg, sig, false)
+}
+
+// ValidateSignature validates the signature of the datastore at the time of
+// consumption
+func (b *DSPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *DataStoreSignature) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("not initialized")
+	}
+	isExpired, err := b.IsExpired(currentHeight)
+	if err != nil {
+		return err
+	}
+	return b.Owner.ValidateSignature(msg, sig, isExpired)
+}
+
+// IsExpired returns true if the datastore is free for garbage collection
+func (b *DSPreImage) IsExpired(currentHeight uint32) (bool, error) {
+	if b == nil {
+		return true, errorz.ErrInvalid{}.New("not initialized")
+	}
+	eoe, err := b.EpochOfExpiration()
+	if err != nil {
+		return true, err
+	}
+	if utils.Epoch(currentHeight) >= eoe {
+		return true, nil
+	}
+	return false, nil
+}
+
+// EpochOfExpiration returns the epoch in which the datastore may be garbage
+// collected
+func (b *DSPreImage) EpochOfExpiration() (uint32, error) {
+	if b == nil || b.Deposit == nil || b.Deposit.Eq(uint256.Zero()) || len(b.RawData) == 0 {
+		return 0, errorz.ErrInvalid{}.New("not initialized")
+	}
+	dataSize := uint32(len(b.RawData))
+	numEpochs, err := NumEpochsEquation(dataSize, b.Deposit)
+	if err != nil {
+		return 0, err
+	}
+	eoe := b.IssuedAt + numEpochs + 1
+	return eoe, nil
+}
+
+// ValidateDeposit validates the deposit
+func (b *DSPreImage) ValidateDeposit() error {
+	if b == nil || b.Deposit == nil {
+		return errorz.ErrInvalid{}.New("not initialized")
+	}
+	if b.ChainID == 0 {
+		return errorz.ErrInvalid{}.New("invalid ChainID; cannot be zero")
+	}
+	if len(b.Index) != constants.HashLen {
+		return errorz.ErrInvalid{}.New("invalid Index; must have len(Index) == constants.HashLen")
+	}
+	if b.IssuedAt == 0 {
+		return errorz.ErrInvalid{}.New("invalid IssuedAt; cannot be zero")
+	}
+	dataSize := uint32(len(b.RawData))
+	if dataSize == 0 {
+		return errorz.ErrInvalid{}.New("invalid RawData; size is zero")
+	}
+	if dataSize > constants.MaxDataStoreSize {
+		return errorz.ErrInvalid{}.New("invalid RawData; size is too large")
+	}
+	numEpochs, err := NumEpochsEquation(dataSize, b.Deposit)
+	if err != nil {
+		return err
+	}
+	if numEpochs == 0 {
+		return errorz.ErrInvalid{}.New("invalid Deposit; storing for zero epochs")
+	}
+	deposit, err := BaseDepositEquation(dataSize, numEpochs)
+	if err != nil {
+		return err
+	}
+	if !deposit.Eq(b.Deposit) {
+		return errorz.ErrInvalid{}.New("invalid Deposit; incorrect size")
+	}
+	err = b.Owner.Validate()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// RewardDepositEquation allows a reward calculated for cleaning up an expired
+// DataStore.
+func RewardDepositEquation(depositOrig *uint256.Uint256, dataSize32 uint32, epochInitial uint32, epochFinal uint32) (*uint256.Uint256, error) {
+	depositClone := depositOrig.Clone()
+	// These calculations will only be performed after a DataStore is validated,
+	// so deposit and dataSize are correct.
+	if epochFinal < epochInitial {
+		return nil, errorz.ErrInvalid{}.New("Error in RewardDepositEquation: epochFinal < epochInitial:")
+	}
+	// This ensures
+	//					epochDiff == epochFinal - epochInitial >= 0
+	epochDiff := epochFinal - epochInitial
+	dataSize, err := new(uint256.Uint256).FromUint64(uint64(dataSize32))
+	if err != nil {
+		return nil, err
+	}
+	epochCost, err := new(uint256.Uint256).Add(uint256.BaseDatasizeConst(), dataSize)
+	if err != nil {
+		return nil, err
+	}
+	numEpochs, err := NumEpochsEquation(dataSize32, depositClone)
+	if err != nil {
+		return nil, err
+	}
+	if epochDiff > numEpochs {
+		// The DataStore is now expired and the reward is the cost of an epoch
+		return epochCost, nil
+	}
+	currentDeposit, err := BaseDepositEquation(dataSize32, epochDiff)
+	if err != nil {
+		return nil, err
+	}
+	tmp, err := new(uint256.Uint256).Sub(depositClone, currentDeposit)
+	if err != nil {
+		return nil, err
+	}
+	tmp3, err := new(uint256.Uint256).Mul(uint256.Two(), epochCost)
+	if err != nil {
+		return nil, err
+	}
+	remainder, err := new(uint256.Uint256).Add(tmp, tmp3)
+	if err != nil {
+		return nil, err
+	}
+	return remainder, nil
+	// We now proceed to show there are no integer overflows.
+	// In particular, we have
+	//
+	//			tmp >= 0	and		remainder <= deposit.
+	//
+	// In fact, we know more. Set
+	//
+	//				N = numEpochs and n = epochDiff.
+	//
+	// The above checks ensure
+	//
+	//					0 <= n <= N.
+	//
+	// Then
+	//
+	//					tmp == deposit - currentDeposit
+	//						== (N - n)*(dataSize + BaseDatasizeConst)
+	//						== (N - n)*epochCost
+	//						>= 0
+	//
+	// The last line follows because we have N >= n.
+	// This implies
+	//
+	//			remainder == tmp + 2*epochCost
+	//					  == (N - n + 2)*epochCost
+	//					  <= (N + 2)*epochCost
+	//					  == deposit.
+	//
+	// Thus, we are bounded and will not overflow. Furthermore, this shows
+	// that remainder is always an integer multiple of epochCost, as expected.
+}
+
+// BaseDepositEquation specifies a required deposit for a certain amount of
+// data to persist for a specified number of epochs.
+//
+// The simple equation is
+//
+//		deposit = (dataSize + BaseDatasizeConst) * (2 + numEpochs)
+//
+// We have additional checks to ensure there is no integer overflow.
+// This will never happen for valid deposits, but we protect against it.
+func BaseDepositEquation(dataSize32 uint32, numEpochs32 uint32) (*uint256.Uint256, error) {
+	if dataSize32 > constants.MaxDataStoreSize {
+		// dataSize is too large so we do not perform any checks
+		return nil, errorz.ErrInvalid{}.New("Error in BaseDepositEquation: dataSize is too large")
+	}
+	dataSize, err := new(uint256.Uint256).FromUint64(uint64(dataSize32))
+	if err != nil {
+		return nil, err
+	}
+	//					tmp1 < 2^31
+	epochCost, err := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
+	if err != nil {
+		return nil, err
+	}
+	// We have
+	//					tmp2 < 2^33
+	numEpochs, err := new(uint256.Uint256).FromUint64(uint64(numEpochs32))
+	if err != nil {
+		return nil, err
+	}
+	totalEpochs, err := new(uint256.Uint256).Add(uint256.Two(), numEpochs)
+	if err != nil {
+		return nil, err
+	}
+	// The above ensures no overflow occurs in the following multiplication, as
+	//					deposit == tmp1*tmp2 < 2^64
+	depositUint256, err := new(uint256.Uint256).Mul(epochCost, totalEpochs)
+	if err != nil {
+		return nil, err
+	}
+	//if depositUint256.Gt(constants.Uint256MaxUint32()) {
+	//	// deposit cannot be represented by uint32 value
+	//	return nil, errorz.ErrInvalid{}.New("Error in BaseDepositEquation: required deposit is too large to be uint32")
+	//}
+	// The above check ensures this conversion succeeds
+	// deposit := uint32(depositUint64)
+	return depositUint256, nil
+}
+
+// NumEpochsEquation returns the number of epochs until expiration.
+//
+// The simple equation is
+//
+// 		numEpochs = (deposit / (dataSize + BaseDatasizeConst)) - 2
+//
+// We have additional checks to ensure there is no integer overflow.
+func NumEpochsEquation(dataSize32 uint32, depositOrig *uint256.Uint256) (uint32, error) {
+	depositClone := depositOrig.Clone()
+	if dataSize32 > constants.MaxDataStoreSize {
+		return 0, errorz.ErrInvalid{}.New("Error in NumEpochsEquation: dataSize is too large")
+	}
+	// The previous check and other constant restrictions ensure
+	//
+	//			dataSize + BaseDatasizeConst < 2^32;
+	//
+	// that is, it does not overflow.
+	//
+	// Unsigned integer arithmetic ensures
+	//
+	//				tmp >= 0
+	dataSize, err := new(uint256.Uint256).FromUint64(uint64(dataSize32))
+	if err != nil {
+		return 0, err
+	}
+	totalDataSize, err := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
+	if err != nil {
+		return 0, err
+	}
+	tmp, err := new(uint256.Uint256).Div(depositClone, totalDataSize)
+	if err != nil {
+		return 0, err
+	}
+	if tmp.Lt(uint256.Two()) {
+		return 0, errorz.ErrInvalid{}.New("Error in NumEpochsEquation: invalid dataSize and deposit causing integer overflow")
+	}
+	// The above check ensures there is no integer overflow in this subtraction
+	numEpochs, err := new(uint256.Uint256).Sub(tmp, uint256.Two())
+	if err != nil {
+		return 0, err
+	}
+	numEpochs32, err := numEpochs.ToUint32()
+	if err != nil {
+		return 0, err
+	}
+	return numEpochs32, nil
+}
