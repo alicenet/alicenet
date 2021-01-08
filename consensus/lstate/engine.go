@@ -363,7 +363,7 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 
 	// iterate all possibles from nextRound down to proposal
 	// and take that action
-	ISProposer := rs.LocalIsProposer()
+	IsProposer := rs.LocalIsProposer()
 	PCurrent := os.PCurrent(rcert)
 	PVCurrent := os.PVCurrent(rcert)
 	PVNCurrent := os.PVNCurrent(rcert)
@@ -374,95 +374,296 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	PVTOExpired := rs.OwnValidatingState.PVTOExpired()
 	PCTOExpired := rs.OwnValidatingState.PCTOExpired()
 
+	// Args are needed:
+	//		ce, txn, rs, bool
+
+	//
+	//	Order:
+	//		NR, PC, PCN, PV, PVN, ProposalTO, IsProposer
+
+	//	fnNRCond(bool) (?)
+
+	// type
+	// Handler(txn, ce, rs, ...bool) (bool, error)
+
+	// HandlerChain: [NRHandler, PCHandler, PCNHandler, PVHandler, PVNHandler, PTOEHandler, IPHandler]
+
+	// func nrHandler(txn, ce, rs, ...bool) (bool, error)
+	/*
+		if NRCurrent {
+			return ce.nrCurrentFunc(txn, rs)
+		}
+
+		if PCCurrent {
+			return ce.pcCurrentFunc(txn, rs, bool)
+		}
+
+		if PCNCurrent {
+			return ce.pcnCurrentFunc(txn, rs, bool)
+		}
+		...
+	*/
+
 	// dispatch to handlers
 	if NRCurrent {
-		err := ce.doNextRoundStep(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
+		// Converted into
+		// func NRHandler(txn, ce, rs) (bool, error)
+		/*
+			err := ce.doNextRoundStep(txn, rs)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return false, err
+			}
+			return true, nil
+		*/
+		return ce.nrCurrentFunc(txn, rs)
+		// func (ce *Engine) nrCurrentFunc(txn, rs) (bool, error)
+		//
+		// include here:
+		//
+		// return ce.nrCurrentFunc(txn, rs)
 	}
 	if PCCurrent {
-		if PCTOExpired {
-			err := ce.doPendingNext(txn, rs)
+		// Converted into
+		// func PCHandler(txn, ce, rs, boolFlag) (bool, error)
+		/*
+			if PCTOExpired {
+				err := ce.doPendingNext(txn, rs)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
+				}
+				return true, nil
+			}
+			err := ce.doPreCommitStep(txn, rs)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
 			return true, nil
-		}
-		err := ce.doPreCommitStep(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
+		*/
+		// func (ce *Engine) pcCurrentFunc(txn, rs, bool) (bool, error)
+		//
+		// include here:
+		//
+		// return ce.pcCurrentFunc(txn, rs, bool)
+		return ce.pcCurrentFunc(txn, rs, PCTOExpired)
 	}
 	if PCNCurrent {
-		if PCTOExpired {
-			err := ce.doPendingNext(txn, rs)
+		// Converted into
+		// func PCNHandler(txn, ce, rs, boolFlag) (bool, error)
+		/*
+			if PCTOExpired {
+				err := ce.doPendingNext(txn, rs)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
+				}
+				return true, nil
+			}
+			err := ce.doPreCommitNilStep(txn, rs)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
 			return true, nil
-		}
-		err := ce.doPreCommitNilStep(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
+		*/
+		return ce.pcnCurrentFunc(txn, rs, PCTOExpired)
 	}
 
 	if PVCurrent {
-		if PVTOExpired {
-			err := ce.doPendingPreCommit(txn, rs)
+		// Converted into
+		// func PVHandler(txn, ce, rs, boolFlag) (bool, error)
+		/*
+			if PVTOExpired {
+				err := ce.doPendingPreCommit(txn, rs)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
+				}
+				return true, nil
+			}
+			err := ce.doPreVoteStep(txn, rs)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
 			return true, nil
-		}
-		err := ce.doPreVoteStep(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
+		*/
+		return ce.pvCurrentFunc(txn, rs, PVTOExpired)
 	}
 	if PVNCurrent {
-		if PVTOExpired {
-			err := ce.doPendingPreCommit(txn, rs)
+		// Converted into
+		// func PVNHandler(txn, ce, rs, boolFlag) (bool, error)
+		/*
+			if PVTOExpired {
+				err := ce.doPendingPreCommit(txn, rs)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
+				}
+				return true, nil
+			}
+			err := ce.doPreVoteNilStep(txn, rs)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
 			return true, nil
-		}
-		err := ce.doPreVoteNilStep(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
+		*/
+		return ce.pvnCurrentFunc(txn, rs, PVTOExpired)
 	}
 	if PTOExpired {
-		err := ce.doPendingPreVoteStep(txn, rs)
+		// Converted into
+		// func PTOEHandler(txn, ce, rs) (bool, error)
+		/*
+			err := ce.doPendingPreVoteStep(txn, rs)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return false, err
+			}
+			return true, nil
+		*/
+		return ce.ptoExpiredFunc(txn, rs)
+	}
+	if IsProposer && !PCurrent {
+		// Converted into
+		// func VPHandler(txn, ce, rs) (bool, error)
+		/*
+			err := ce.doPendingProposalStep(txn, rs)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return false, err
+			}
+			return true, nil
+		*/
+		return ce.validPropFunc(txn, rs)
+	}
+	return true, nil
+}
+
+/*
+type handlers struct {
+	Condition Condition,
+	Evaluation Evaluation,
+}
+*/
+
+// Loop through
+
+/*
+type Condition inferface {
+
+}
+*/
+
+func nrCurrentCond(NRCurrent bool) bool {
+	return NRCurrent
+}
+
+func nrCurrentEval(ce *Engine, txn *badger.Txn, rs *RoundStates) (bool, error) {
+	return ce.nrCurrentFunc(txn, rs)
+}
+
+func (ce *Engine) nrCurrentFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
+	err := ce.doNextRoundStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func pcCurrentCond(PCCurrent bool) bool {
+	return PCCurrent
+}
+
+func pcCurrentEval(ce *Engine, txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
+	return ce.pcCurrentFunc(txn, rs, PCTOExpired)
+}
+
+func (ce *Engine) pcCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
+	if PCTOExpired {
+		err := ce.doPendingNext(txn, rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
 	}
-	if ISProposer && !PCurrent {
-		err := ce.doPendingProposalStep(txn, rs)
+	err := ce.doPreCommitStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (ce *Engine) pcnCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
+	if PCTOExpired {
+		err := ce.doPendingNext(txn, rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
+	}
+	err := ce.doPreCommitNilStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (ce *Engine) pvCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
+	if PVTOExpired {
+		err := ce.doPendingPreCommit(txn, rs)
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return false, err
+		}
+		return true, nil
+	}
+	err := ce.doPreVoteStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (ce *Engine) pvnCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
+	if PVTOExpired {
+		err := ce.doPendingPreCommit(txn, rs)
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return false, err
+		}
+		return true, nil
+	}
+	err := ce.doPreVoteNilStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (ce *Engine) ptoExpiredFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
+	err := ce.doPendingPreVoteStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (ce *Engine) validPropFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
+	err := ce.doPendingProposalStep(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
 	}
 	return true, nil
 }

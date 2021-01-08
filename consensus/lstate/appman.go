@@ -62,7 +62,7 @@ func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []b
 			utils.DebugTrace(ce.logger, err)
 			return nil, nil, nil, nil, err
 		}
-		headerRoot = make([]byte, 32)
+		headerRoot = make([]byte, constants.HashLen)
 	}
 	return txHashes, txRootHash, stateRoot, headerRoot, nil
 }
