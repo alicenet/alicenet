@@ -78,6 +78,7 @@ func (ce *Engine) Init(database *db.Database, dm *DMan, app appmock.Application,
 	return nil
 }
 
+// Status .
 func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{}, error) {
 	var rs *RoundStates
 	err := ce.database.View(func(txn *badger.Txn) error {
@@ -107,6 +108,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 	return status, nil
 }
 
+// UpdateLocalState .
 func (ce *Engine) UpdateLocalState() (bool, error) {
 	var isSync bool
 	updateLocalState := true
@@ -404,141 +406,22 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		...
 	*/
 
-	// dispatch to handlers
-	if NRCurrent {
-		// Converted into
-		// func NRHandler(txn, ce, rs) (bool, error)
-		/*
-			err := ce.doNextRoundStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.nrCurrentFunc(txn, rs)
-		// func (ce *Engine) nrCurrentFunc(txn, rs) (bool, error)
-		//
-		// include here:
-		//
-		// return ce.nrCurrentFunc(txn, rs)
-	}
-	if PCCurrent {
-		// Converted into
-		// func PCHandler(txn, ce, rs, boolFlag) (bool, error)
-		/*
-			if PCTOExpired {
-				err := ce.doPendingNext(txn, rs)
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return false, err
-				}
-				return true, nil
-			}
-			err := ce.doPreCommitStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		// func (ce *Engine) pcCurrentFunc(txn, rs, bool) (bool, error)
-		//
-		// include here:
-		//
-		// return ce.pcCurrentFunc(txn, rs, bool)
-		return ce.pcCurrentFunc(txn, rs, PCTOExpired)
-	}
-	if PCNCurrent {
-		// Converted into
-		// func PCNHandler(txn, ce, rs, boolFlag) (bool, error)
-		/*
-			if PCTOExpired {
-				err := ce.doPendingNext(txn, rs)
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return false, err
-				}
-				return true, nil
-			}
-			err := ce.doPreCommitNilStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.pcnCurrentFunc(txn, rs, PCTOExpired)
+	ceHandlers := []handler{
+		nrCurrentHandler{ce: ce, txn: txn, rs: rs, NRCurrent: NRCurrent},
+		pcCurrentHandler{ce: ce, txn: txn, rs: rs, PCTOExpired: PCTOExpired, PCCurrent: PCCurrent},
+		pcnCurrentHandler{ce: ce, txn: txn, rs: rs, PCTOExpired: PCTOExpired, PCNCurrent: PCNCurrent},
+		pvCurrentHandler{ce: ce, txn: txn, rs: rs, PVTOExpired: PVTOExpired, PVCurrent: PVCurrent},
+		pvnCurrentHandler{ce: ce, txn: txn, rs: rs, PVTOExpired: PVTOExpired, PVNCurrent: PVNCurrent},
+		ptoExpiredHandler{ce: ce, txn: txn, rs: rs, PTOExpired: PTOExpired},
+		validPropHandler{ce: ce, txn: txn, rs: rs, IsProposer: IsProposer, PCurrent: PCurrent},
 	}
 
-	if PVCurrent {
-		// Converted into
-		// func PVHandler(txn, ce, rs, boolFlag) (bool, error)
-		/*
-			if PVTOExpired {
-				err := ce.doPendingPreCommit(txn, rs)
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return false, err
-				}
-				return true, nil
-			}
-			err := ce.doPreVoteStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.pvCurrentFunc(txn, rs, PVTOExpired)
+	for i := 0; i < len(ceHandlers); i++ {
+		if ceHandlers[i].evalCriteria() == true {
+			return ceHandlers[i].evalLogic()
+		}
 	}
-	if PVNCurrent {
-		// Converted into
-		// func PVNHandler(txn, ce, rs, boolFlag) (bool, error)
-		/*
-			if PVTOExpired {
-				err := ce.doPendingPreCommit(txn, rs)
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return false, err
-				}
-				return true, nil
-			}
-			err := ce.doPreVoteNilStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.pvnCurrentFunc(txn, rs, PVTOExpired)
-	}
-	if PTOExpired {
-		// Converted into
-		// func PTOEHandler(txn, ce, rs) (bool, error)
-		/*
-			err := ce.doPendingPreVoteStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.ptoExpiredFunc(txn, rs)
-	}
-	if IsProposer && !PCurrent {
-		// Converted into
-		// func VPHandler(txn, ce, rs) (bool, error)
-		/*
-			err := ce.doPendingProposalStep(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return false, err
-			}
-			return true, nil
-		*/
-		return ce.validPropFunc(txn, rs)
-	}
+
 	return true, nil
 }
 
@@ -551,18 +434,24 @@ type handlers struct {
 
 // Loop through
 
-/*
-type Condition inferface {
-
-}
-*/
-
-func nrCurrentCond(NRCurrent bool) bool {
-	return NRCurrent
+type handler interface {
+	evalCriteria() bool
+	evalLogic() (bool, error)
 }
 
-func nrCurrentEval(ce *Engine, txn *badger.Txn, rs *RoundStates) (bool, error) {
-	return ce.nrCurrentFunc(txn, rs)
+type nrCurrentHandler struct {
+	ce        *Engine
+	txn       *badger.Txn
+	rs        *RoundStates
+	NRCurrent bool
+}
+
+func (nrch nrCurrentHandler) evalCriteria() bool {
+	return nrch.NRCurrent
+}
+
+func (nrch nrCurrentHandler) evalLogic() (bool, error) {
+	return nrch.ce.nrCurrentFunc(nrch.txn, nrch.rs)
 }
 
 func (ce *Engine) nrCurrentFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
@@ -574,12 +463,20 @@ func (ce *Engine) nrCurrentFunc(txn *badger.Txn, rs *RoundStates) (bool, error) 
 	return true, nil
 }
 
-func pcCurrentCond(PCCurrent bool) bool {
-	return PCCurrent
+type pcCurrentHandler struct {
+	ce          *Engine
+	txn         *badger.Txn
+	rs          *RoundStates
+	PCTOExpired bool
+	PCCurrent   bool
 }
 
-func pcCurrentEval(ce *Engine, txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
-	return ce.pcCurrentFunc(txn, rs, PCTOExpired)
+func (pcch pcCurrentHandler) evalCriteria() bool {
+	return pcch.PCCurrent
+}
+
+func (pcch pcCurrentHandler) evalLogic() (bool, error) {
+	return pcch.ce.pcCurrentFunc(pcch.txn, pcch.rs, pcch.PCTOExpired)
 }
 
 func (ce *Engine) pcCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
@@ -599,6 +496,22 @@ func (ce *Engine) pcCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bo
 	return true, nil
 }
 
+type pcnCurrentHandler struct {
+	ce          *Engine
+	txn         *badger.Txn
+	rs          *RoundStates
+	PCTOExpired bool
+	PCNCurrent  bool
+}
+
+func (pcnch pcnCurrentHandler) evalCriteria() bool {
+	return pcnch.PCNCurrent
+}
+
+func (pcnch pcnCurrentHandler) evalLogic() (bool, error) {
+	return pcnch.ce.pcnCurrentFunc(pcnch.txn, pcnch.rs, pcnch.PCTOExpired)
+}
+
 func (ce *Engine) pcnCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
 	if PCTOExpired {
 		err := ce.doPendingNext(txn, rs)
@@ -614,6 +527,22 @@ func (ce *Engine) pcnCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired b
 		return false, err
 	}
 	return true, nil
+}
+
+type pvCurrentHandler struct {
+	ce          *Engine
+	txn         *badger.Txn
+	rs          *RoundStates
+	PVTOExpired bool
+	PVCurrent   bool
+}
+
+func (pvch pvCurrentHandler) evalCriteria() bool {
+	return pvch.PVCurrent
+}
+
+func (pvch pvCurrentHandler) evalLogic() (bool, error) {
+	return pvch.ce.pvCurrentFunc(pvch.txn, pvch.rs, pvch.PVTOExpired)
 }
 
 func (ce *Engine) pvCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
@@ -633,6 +562,22 @@ func (ce *Engine) pvCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bo
 	return true, nil
 }
 
+type pvnCurrentHandler struct {
+	ce          *Engine
+	txn         *badger.Txn
+	rs          *RoundStates
+	PVTOExpired bool
+	PVNCurrent  bool
+}
+
+func (pvnch pvnCurrentHandler) evalCriteria() bool {
+	return pvnch.PVNCurrent
+}
+
+func (pvnch pvnCurrentHandler) evalLogic() (bool, error) {
+	return pvnch.ce.pvnCurrentFunc(pvnch.txn, pvnch.rs, pvnch.PVTOExpired)
+}
+
 func (ce *Engine) pvnCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
 	if PVTOExpired {
 		err := ce.doPendingPreCommit(txn, rs)
@@ -650,6 +595,21 @@ func (ce *Engine) pvnCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired b
 	return true, nil
 }
 
+type ptoExpiredHandler struct {
+	ce         *Engine
+	txn        *badger.Txn
+	rs         *RoundStates
+	PTOExpired bool
+}
+
+func (ptoeh ptoExpiredHandler) evalCriteria() bool {
+	return ptoeh.PTOExpired
+}
+
+func (ptoeh ptoExpiredHandler) evalLogic() (bool, error) {
+	return ptoeh.ce.ptoExpiredFunc(ptoeh.txn, ptoeh.rs)
+}
+
 func (ce *Engine) ptoExpiredFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
 	err := ce.doPendingPreVoteStep(txn, rs)
 	if err != nil {
@@ -657,6 +617,21 @@ func (ce *Engine) ptoExpiredFunc(txn *badger.Txn, rs *RoundStates) (bool, error)
 		return false, err
 	}
 	return true, nil
+}
+
+type validPropHandler struct {
+	ce                   *Engine
+	txn                  *badger.Txn
+	rs                   *RoundStates
+	IsProposer, PCurrent bool
+}
+
+func (vph validPropHandler) evalCriteria() bool {
+	return vph.IsProposer && !vph.PCurrent
+}
+
+func (vph validPropHandler) evalLogic() (bool, error) {
+	return vph.ce.validPropFunc(vph.txn, vph.rs)
 }
 
 func (ce *Engine) validPropFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
@@ -668,6 +643,7 @@ func (ce *Engine) validPropFunc(txn *badger.Txn, rs *RoundStates) (bool, error) 
 	return true, nil
 }
 
+// Sync .
 func (ce *Engine) Sync() (bool, error) {
 	// see if sync is done
 	// if yes exit
