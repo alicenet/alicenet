@@ -257,22 +257,15 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		}
 	}
 
+	// var currentHandler handler
+
 	// if there are ANY peers in a future height, try to follow
 	// we should try to follow the max height possible
-	if len(FH) > 0 {
-		var maxHR *objs.RoundState
-		maxHeight := uint32(0)
-		for _, vroundState := range FH {
-			if vroundState.RCert.RClaims.Height > maxHeight {
-				maxHR = vroundState
-				maxHeight = vroundState.RCert.RClaims.Height
-			}
-		}
-		currentHandler := fhHandler{ce: ce, txn: txn, rs: rs, maxHR: maxHR}
-		if currentHandler.evalCriteria() {
-			return currentHandler.evalLogic()
-		}
-	}
+	// currentHandler = fhHandler{ce: ce, txn: txn, rs: rs, FH: FH}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
+
 	// at this point no height jump is possible
 	// otherwise we would have followed it
 
@@ -280,30 +273,17 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 
 	// look for a round certificate from the dead block round
 	// if one exists, we should follow it
-	if len(ChFr) > 0 {
-		var maxRCert *objs.RCert
-		for _, vroundState := range ChFr {
-			if vroundState.RCert.RClaims.Round == constants.DEADBLOCKROUND {
-				maxRCert = vroundState.RCert
-				break
-			}
-		}
-		currentHandler := rCertHandler{ce: ce, txn: txn, rs: rs, maxRCert: maxRCert}
-		if currentHandler.evalCriteria() {
-			return currentHandler.evalLogic()
-		}
-	}
+	// currentHandler = rCertHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
 
 	// if we have voted for the next round in round preceding the
 	// dead block round, goto do next round step
-	if rs.OwnRoundState().NextRound != nil {
-		if rs.OwnRoundState().NRCurrent(rcert) {
-			currentHandler := doNrHandler{ce: ce, txn: txn, rs: rs, rcert: rcert}
-			if currentHandler.evalCriteria() {
-				return currentHandler.evalLogic()
-			}
-		}
-	}
+	// currentHandler = doNrHandler{ce: ce, txn: txn, rs: rs, rcert: rcert}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -315,22 +295,37 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		return false, err
 	}
 	NHCurrent := os.NHCurrent(rcert)
-	var currentHandler handler
-	currentHandler = castNhHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
-	if currentHandler.evalCriteria() {
-		return currentHandler.evalLogic()
-	}
 
-	currentHandler = doNextHeightHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
-	if currentHandler.evalCriteria() {
-		return currentHandler.evalLogic()
-	}
+	// currentHandler = castNhHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
+
+	// currentHandler = doNextHeightHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
 
 	// determine if there is a round jump
 	// if so, make sure it is the max round possible.
-	currentHandler = doRoundJumpHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr}
-	if currentHandler.evalCriteria() {
-		return currentHandler.evalLogic()
+	// currentHandler = doRoundJumpHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr}
+	// if currentHandler.evalCriteria() {
+	// 	return currentHandler.evalLogic()
+	// }
+
+	topHandlers := []handler{
+		fhHandler{ce: ce, txn: txn, rs: rs, FH: FH},
+		rCertHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr},
+		doNrHandler{ce: ce, txn: txn, rs: rs, rcert: rcert},
+		castNhHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		doNextHeightHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		doRoundJumpHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr},
+	}
+
+	for i := 0; i < len(topHandlers); i++ {
+		if topHandlers[i].evalCriteria() {
+			return topHandlers[i].evalLogic()
+		}
 	}
 
 	// iterate all possibles from nextRound down to proposal
@@ -375,10 +370,26 @@ type fhHandler struct {
 	txn   *badger.Txn
 	rs    *RoundStates
 	maxHR *objs.RoundState
+	FH    []*objs.RoundState
 }
 
 func (fhh fhHandler) evalCriteria() bool {
-	return fhh.maxHR != nil
+	if len(fhh.FH) > 0 {
+		var maxHR *objs.RoundState
+		maxHeight := uint32(0)
+		for _, vroundState := range fhh.FH {
+			if vroundState.RCert.RClaims.Height > maxHeight {
+				maxHR = vroundState
+				maxHeight = vroundState.RCert.RClaims.Height
+			}
+		}
+		if maxHR != nil {
+			fhh.maxHR = maxHR
+			return true
+		}
+	}
+
+	return false
 }
 
 func (fhh fhHandler) evalLogic() (bool, error) {
@@ -399,10 +410,25 @@ type rCertHandler struct {
 	txn      *badger.Txn
 	rs       *RoundStates
 	maxRCert *objs.RCert
+	ChFr     []*objs.RoundState
 }
 
 func (rch rCertHandler) evalCriteria() bool {
-	return rch.maxRCert != nil
+	if len(rch.ChFr) > 0 {
+		var maxRCert *objs.RCert
+		for _, vroundState := range rch.ChFr {
+			if vroundState.RCert.RClaims.Round == constants.DEADBLOCKROUND {
+				maxRCert = vroundState.RCert
+				break
+			}
+		}
+		if maxRCert != nil {
+			rch.maxRCert = maxRCert
+			return true
+		}
+	}
+
+	return false
 }
 
 func (rch rCertHandler) evalLogic() (bool, error) {
@@ -426,7 +452,12 @@ type doNrHandler struct {
 }
 
 func (dnrh doNrHandler) evalCriteria() bool {
-	return dnrh.rcert.RClaims.Round == constants.DEADBLOCKROUNDNR
+	if dnrh.rs.OwnRoundState().NextRound != nil {
+		if dnrh.rs.OwnRoundState().NRCurrent(dnrh.rcert) {
+			return dnrh.rcert.RClaims.Round == constants.DEADBLOCKROUNDNR
+		}
+	}
+	return false
 }
 
 func (dnrh doNrHandler) evalLogic() (bool, error) {
