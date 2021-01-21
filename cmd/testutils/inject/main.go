@@ -1009,7 +1009,7 @@ func main() {
 	datastoreMode := *dPtr
 	spamMode := *sPtr
 	privk := "6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"
-	nodeList := []string{"127.0.0.1:8887"}
+	nodeList := []string{"127.0.0.1:8887", "127.0.0.1:8888"}
 	if spamMode {
 		base := *bPtr
 		num := 63
