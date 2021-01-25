@@ -933,7 +933,7 @@ func (ce *Engine) loadValidationKey(rs *RoundStates) error {
 					pk, err := ce.AdminBus.GetPrivK(name)
 					if err != nil {
 						utils.DebugTrace(ce.logger, err)
-						return nil
+						return nil // TODO: are we supposed to swallow this error?
 					}
 					signer := &crypto.BNGroupSigner{}
 					signer.SetPrivk(pk)
@@ -948,8 +948,8 @@ func (ce *Engine) loadValidationKey(rs *RoundStates) error {
 						return err
 					}
 					if !bytes.Equal(name, pubk) {
-						utils.DebugTrace(ce.logger, err)
-						return err
+						utils.DebugTrace(ce.logger, nil, "name and public key do not match")
+						return err // TODO: err == nil; should return an errorz.ErrInvalid?;
 					}
 					break
 				}
