@@ -155,6 +155,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
+		roundState.txn = txn
 		if roundState.OwnState.SyncToBH.BClaims.Height%constants.EpochLength == 0 {
 			safe, err := ce.database.GetSafeToProceed(txn, roundState.OwnState.SyncToBH.BClaims.Height)
 			if err != nil {
@@ -171,13 +172,13 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 			updateLocalState = false
 		}
 		if updateLocalState {
-			ok, err := ce.updateLocalStateInternal(txn, roundState)
+			ok, err := ce.updateLocalStateInternal(roundState)
 			if err != nil {
 				return err
 			}
 			isSync = ok
 		}
-		err = ce.sstore.WriteState(txn, roundState)
+		err = ce.sstore.WriteState(roundState)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -224,7 +225,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 //  do a possible pending prevote
 //  do a possible do a proposal if not already proposed and is proposer
 //  do nothing if not any of above is true
-func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bool, error) {
+func (ce *Engine) updateLocalStateInternal(rs *RoundStates) (bool, error) {
 	if err := ce.loadValidationKey(rs); err != nil {
 		return false, nil
 	}
@@ -269,24 +270,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	// at this point no height jump is possible
 	// otherwise we would have followed it
 
-	////////////////////////////////////////////////////////////////////////////////
-
-	// look for a round certificate from the dead block round
-	// if one exists, we should follow it
-	// currentHandler = rCertHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr}
-	// if currentHandler.evalCriteria() {
-	// 	return currentHandler.evalLogic()
-	// }
-
-	// if we have voted for the next round in round preceding the
-	// dead block round, goto do next round step
-	// currentHandler = doNrHandler{ce: ce, txn: txn, rs: rs, rcert: rcert}
-	// if currentHandler.evalCriteria() {
-	// 	return currentHandler.evalLogic()
-	// }
-
-	////////////////////////////////////////////////////////////////////////////////
-
 	// check for next height messages
 	// if one exists, follow it
 	NHs, _, err := rs.GetCurrentNext()
@@ -295,38 +278,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		return false, err
 	}
 	NHCurrent := os.NHCurrent(rcert)
-
-	// currentHandler = castNhHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
-	// if currentHandler.evalCriteria() {
-	// 	return currentHandler.evalLogic()
-	// }
-
-	// currentHandler = doNextHeightHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent}
-	// if currentHandler.evalCriteria() {
-	// 	return currentHandler.evalLogic()
-	// }
-
-	// determine if there is a round jump
-	// if so, make sure it is the max round possible.
-	// currentHandler = doRoundJumpHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr}
-	// if currentHandler.evalCriteria() {
-	// 	return currentHandler.evalLogic()
-	// }
-
-	topHandlers := []handler{
-		fhHandler{ce: ce, txn: txn, rs: rs, FH: FH},
-		rCertHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr},
-		doNrHandler{ce: ce, txn: txn, rs: rs, rcert: rcert},
-		castNhHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
-		doNextHeightHandler{ce: ce, txn: txn, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
-		doRoundJumpHandler{ce: ce, txn: txn, rs: rs, ChFr: ChFr},
-	}
-
-	for i := 0; i < len(topHandlers); i++ {
-		if topHandlers[i].evalCriteria() {
-			return topHandlers[i].evalLogic()
-		}
-	}
 
 	// iterate all possibles from nextRound down to proposal
 	// and take that action
@@ -342,13 +293,20 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	//		NR, PC, PCN, PV, PVN, ProposalTO, IsProposer
 
 	ceHandlers := []handler{
-		nrCurrentHandler{ce: ce, txn: txn, rs: rs, NRCurrent: NRCurrent},
-		pcCurrentHandler{ce: ce, txn: txn, rs: rs, PCCurrent: PCCurrent},
-		pcnCurrentHandler{ce: ce, txn: txn, rs: rs, PCNCurrent: PCNCurrent},
-		pvCurrentHandler{ce: ce, txn: txn, rs: rs, PVCurrent: PVCurrent},
-		pvnCurrentHandler{ce: ce, txn: txn, rs: rs, PVNCurrent: PVNCurrent},
-		ptoExpiredHandler{ce: ce, txn: txn, rs: rs},
-		validPropHandler{ce: ce, txn: txn, rs: rs, PCurrent: PCurrent},
+		fhHandler{ce: ce, rs: rs, FH: FH},
+		rCertHandler{ce: ce, rs: rs, ChFr: ChFr},
+		doNrHandler{ce: ce, rs: rs, rcert: rcert},
+		castNhHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		doNextHeightHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		doRoundJumpHandler{ce: ce, rs: rs, ChFr: ChFr},
+
+		nrCurrentHandler{ce: ce, rs: rs, NRCurrent: NRCurrent},
+		pcCurrentHandler{ce: ce, rs: rs, PCCurrent: PCCurrent},
+		pcnCurrentHandler{ce: ce, rs: rs, PCNCurrent: PCNCurrent},
+		pvCurrentHandler{ce: ce, rs: rs, PVCurrent: PVCurrent},
+		pvnCurrentHandler{ce: ce, rs: rs, PVNCurrent: PVNCurrent},
+		ptoExpiredHandler{ce: ce, rs: rs},
+		validPropHandler{ce: ce, rs: rs, PCurrent: PCurrent},
 	}
 
 	for i := 0; i < len(ceHandlers); i++ {
@@ -394,15 +352,15 @@ func (fhh fhHandler) evalCriteria() bool {
 }
 
 func (fhh fhHandler) evalLogic() (bool, error) {
-	return fhh.ce.fhFunc(fhh.txn, fhh.rs, fhh.maxHR)
+	return fhh.ce.fhFunc(fhh.rs, fhh.maxHR)
 }
 
 func (fhh fhHandler) setTxn(txn *badger.Txn) {
 	fhh.txn = txn
 }
 
-func (ce *Engine) fhFunc(txn *badger.Txn, rs *RoundStates, maxHR *objs.RoundState) (bool, error) {
-	err := ce.doHeightJumpStep(txn, rs, maxHR.RCert)
+func (ce *Engine) fhFunc(rs *RoundStates, maxHR *objs.RoundState) (bool, error) {
+	err := ce.doHeightJumpStep(rs, maxHR.RCert)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -437,15 +395,15 @@ func (rch rCertHandler) evalCriteria() bool {
 }
 
 func (rch rCertHandler) evalLogic() (bool, error) {
-	return rch.ce.rCertFunc(rch.txn, rch.rs, rch.maxRCert)
+	return rch.ce.rCertFunc(rch.rs, rch.maxRCert)
 }
 
 func (rch rCertHandler) setTxn(txn *badger.Txn) {
 	rch.txn = txn
 }
 
-func (ce *Engine) rCertFunc(txn *badger.Txn, rs *RoundStates, maxRCert *objs.RCert) (bool, error) {
-	err := ce.doRoundJump(txn, rs, maxRCert)
+func (ce *Engine) rCertFunc(rs *RoundStates, maxRCert *objs.RCert) (bool, error) {
+	err := ce.doRoundJump(rs, maxRCert)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -470,15 +428,15 @@ func (dnrh doNrHandler) evalCriteria() bool {
 }
 
 func (dnrh doNrHandler) evalLogic() (bool, error) {
-	return dnrh.ce.doNrFunc(dnrh.txn, dnrh.rs, dnrh.rcert)
+	return dnrh.ce.doNrFunc(dnrh.rs, dnrh.rcert)
 }
 
 func (dnrh doNrHandler) setTxn(txn *badger.Txn) {
 	dnrh.txn = txn
 }
 
-func (ce *Engine) doNrFunc(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) (bool, error) {
-	err := ce.doNextRoundStep(txn, rs)
+func (ce *Engine) doNrFunc(rs *RoundStates, rcert *objs.RCert) (bool, error) {
+	err := ce.doNextRoundStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -499,15 +457,15 @@ func (cnhh castNhHandler) evalCriteria() bool {
 }
 
 func (cnhh castNhHandler) evalLogic() (bool, error) {
-	return cnhh.ce.castNhFunc(cnhh.txn, cnhh.rs, cnhh.NHs)
+	return cnhh.ce.castNhFunc(cnhh.rs, cnhh.NHs)
 }
 
 func (cnhh castNhHandler) setTxn(txn *badger.Txn) {
 	cnhh.txn = txn
 }
 
-func (ce *Engine) castNhFunc(txn *badger.Txn, rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
-	err := ce.castNextHeightFromNextHeight(txn, rs, NHs[0])
+func (ce *Engine) castNhFunc(rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
+	err := ce.castNextHeightFromNextHeight(rs, NHs[0])
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -528,15 +486,15 @@ func (dnhh doNextHeightHandler) evalCriteria() bool {
 }
 
 func (dnhh doNextHeightHandler) evalLogic() (bool, error) {
-	return dnhh.ce.doNextHeightFunc(dnhh.txn, dnhh.rs, dnhh.NHs)
+	return dnhh.ce.doNextHeightFunc(dnhh.rs, dnhh.NHs)
 }
 
 func (dnhh doNextHeightHandler) setTxn(txn *badger.Txn) {
 	dnhh.txn = txn
 }
 
-func (ce *Engine) doNextHeightFunc(txn *badger.Txn, rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
-	err := ce.doNextHeightStep(txn, rs)
+func (ce *Engine) doNextHeightFunc(rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
+	err := ce.doNextHeightStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -556,14 +514,14 @@ func (drjh doRoundJumpHandler) evalCriteria() bool {
 }
 
 func (drjh doRoundJumpHandler) evalLogic() (bool, error) {
-	return drjh.ce.doRoundJumpFunc(drjh.txn, drjh.rs, drjh.ChFr)
+	return drjh.ce.doRoundJumpFunc(drjh.rs, drjh.ChFr)
 }
 
 func (drjh doRoundJumpHandler) setTxn(txn *badger.Txn) {
 	drjh.txn = txn
 }
 
-func (ce *Engine) doRoundJumpFunc(txn *badger.Txn, rs *RoundStates, ChFr []*objs.RoundState) (bool, error) {
+func (ce *Engine) doRoundJumpFunc(rs *RoundStates, ChFr []*objs.RoundState) (bool, error) {
 	var maxRCert *objs.RCert
 	for _, vroundState := range ChFr {
 		if maxRCert == nil {
@@ -573,7 +531,7 @@ func (ce *Engine) doRoundJumpFunc(txn *badger.Txn, rs *RoundStates, ChFr []*objs
 			maxRCert = vroundState.RCert
 		}
 	}
-	err := ce.doRoundJump(txn, rs, maxRCert)
+	err := ce.doRoundJump(rs, maxRCert)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -593,15 +551,15 @@ func (nrch nrCurrentHandler) evalCriteria() bool {
 }
 
 func (nrch nrCurrentHandler) evalLogic() (bool, error) {
-	return nrch.ce.nrCurrentFunc(nrch.txn, nrch.rs)
+	return nrch.ce.nrCurrentFunc(nrch.rs)
 }
 
 func (nrch nrCurrentHandler) setTxn(txn *badger.Txn) {
 	nrch.txn = txn
 }
 
-func (ce *Engine) nrCurrentFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
-	err := ce.doNextRoundStep(txn, rs)
+func (ce *Engine) nrCurrentFunc(rs *RoundStates) (bool, error) {
+	err := ce.doNextRoundStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -622,23 +580,23 @@ func (pcch pcCurrentHandler) evalCriteria() bool {
 
 func (pcch pcCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcch.rs.OwnValidatingState.PCTOExpired()
-	return pcch.ce.pcCurrentFunc(pcch.txn, pcch.rs, PCTOExpired)
+	return pcch.ce.pcCurrentFunc(pcch.rs, PCTOExpired)
 }
 
 func (pcch pcCurrentHandler) setTxn(txn *badger.Txn) {
 	pcch.txn = txn
 }
 
-func (ce *Engine) pcCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
+func (ce *Engine) pcCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error) {
 	if PCTOExpired {
-		err := ce.doPendingNext(txn, rs)
+		err := ce.doPendingNext(rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
 	}
-	err := ce.doPreCommitStep(txn, rs)
+	err := ce.doPreCommitStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -659,23 +617,23 @@ func (pcnch pcnCurrentHandler) evalCriteria() bool {
 
 func (pcnch pcnCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcnch.rs.OwnValidatingState.PCTOExpired()
-	return pcnch.ce.pcnCurrentFunc(pcnch.txn, pcnch.rs, PCTOExpired)
+	return pcnch.ce.pcnCurrentFunc(pcnch.rs, PCTOExpired)
 }
 
 func (pcnch pcnCurrentHandler) setTxn(txn *badger.Txn) {
 	pcnch.txn = txn
 }
 
-func (ce *Engine) pcnCurrentFunc(txn *badger.Txn, rs *RoundStates, PCTOExpired bool) (bool, error) {
+func (ce *Engine) pcnCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error) {
 	if PCTOExpired {
-		err := ce.doPendingNext(txn, rs)
+		err := ce.doPendingNext(rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
 	}
-	err := ce.doPreCommitNilStep(txn, rs)
+	err := ce.doPreCommitNilStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -696,23 +654,23 @@ func (pvch pvCurrentHandler) evalCriteria() bool {
 
 func (pvch pvCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvch.rs.OwnValidatingState.PVTOExpired()
-	return pvch.ce.pvCurrentFunc(pvch.txn, pvch.rs, PVTOExpired)
+	return pvch.ce.pvCurrentFunc(pvch.rs, PVTOExpired)
 }
 
 func (pvch pvCurrentHandler) setTxn(txn *badger.Txn) {
 	pvch.txn = txn
 }
 
-func (ce *Engine) pvCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
+func (ce *Engine) pvCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error) {
 	if PVTOExpired {
-		err := ce.doPendingPreCommit(txn, rs)
+		err := ce.doPendingPreCommit(rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
 	}
-	err := ce.doPreVoteStep(txn, rs)
+	err := ce.doPreVoteStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -733,23 +691,23 @@ func (pvnch pvnCurrentHandler) evalCriteria() bool {
 
 func (pvnch pvnCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvnch.rs.OwnValidatingState.PVTOExpired()
-	return pvnch.ce.pvnCurrentFunc(pvnch.txn, pvnch.rs, PVTOExpired)
+	return pvnch.ce.pvnCurrentFunc(pvnch.rs, PVTOExpired)
 }
 
 func (pvnch pvnCurrentHandler) setTxn(txn *badger.Txn) {
 	pvnch.txn = txn
 }
 
-func (ce *Engine) pvnCurrentFunc(txn *badger.Txn, rs *RoundStates, PVTOExpired bool) (bool, error) {
+func (ce *Engine) pvnCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error) {
 	if PVTOExpired {
-		err := ce.doPendingPreCommit(txn, rs)
+		err := ce.doPendingPreCommit(rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return false, err
 		}
 		return true, nil
 	}
-	err := ce.doPreVoteNilStep(txn, rs)
+	err := ce.doPreVoteNilStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -769,15 +727,15 @@ func (ptoeh ptoExpiredHandler) evalCriteria() bool {
 }
 
 func (ptoeh ptoExpiredHandler) evalLogic() (bool, error) {
-	return ptoeh.ce.ptoExpiredFunc(ptoeh.txn, ptoeh.rs)
+	return ptoeh.ce.ptoExpiredFunc(ptoeh.rs)
 }
 
 func (ptoeh ptoExpiredHandler) setTxn(txn *badger.Txn) {
 	ptoeh.txn = txn
 }
 
-func (ce *Engine) ptoExpiredFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
-	err := ce.doPendingPreVoteStep(txn, rs)
+func (ce *Engine) ptoExpiredFunc(rs *RoundStates) (bool, error) {
+	err := ce.doPendingPreVoteStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -798,15 +756,15 @@ func (vph validPropHandler) evalCriteria() bool {
 }
 
 func (vph validPropHandler) evalLogic() (bool, error) {
-	return vph.ce.validPropFunc(vph.txn, vph.rs)
+	return vph.ce.validPropFunc(vph.rs)
 }
 
 func (vph validPropHandler) setTxn(txn *badger.Txn) {
 	vph.txn = txn
 }
 
-func (ce *Engine) validPropFunc(txn *badger.Txn, rs *RoundStates) (bool, error) {
-	err := ce.doPendingProposalStep(txn, rs)
+func (ce *Engine) validPropFunc(rs *RoundStates) (bool, error) {
+	err := ce.doPendingProposalStep(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -827,6 +785,7 @@ func (ce *Engine) Sync() (bool, error) {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
+		rs.txn = txn
 		// begin handling logic
 		if rs.OwnState.MaxBHSeen.BClaims.Height == rs.OwnState.SyncToBH.BClaims.Height {
 			syncDone = true
@@ -863,11 +822,11 @@ func (ce *Engine) Sync() (bool, error) {
 					return err
 				}
 				if fastSyncDone {
-					if err := ce.setMostRecentBlockHeaderFastSync(txn, rs, csbh); err != nil {
+					if err := ce.setMostRecentBlockHeaderFastSync(rs, csbh); err != nil {
 						utils.DebugTrace(ce.logger, err)
 						return err
 					}
-					err = ce.sstore.WriteState(txn, rs)
+					err = ce.sstore.WriteState(rs)
 					if err != nil {
 						utils.DebugTrace(ce.logger, err)
 						return err
@@ -883,7 +842,7 @@ func (ce *Engine) Sync() (bool, error) {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
-		ok, err := ce.isValid(txn, rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, txs)
+		ok, err := ce.isValid(rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, txs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -891,12 +850,12 @@ func (ce *Engine) Sync() (bool, error) {
 		if !ok {
 			return nil
 		}
-		err = ce.setMostRecentBlockHeader(txn, rs, bh)
+		err = ce.setMostRecentBlockHeader(rs, bh)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
-		err = ce.sstore.WriteState(txn, rs)
+		err = ce.sstore.WriteState(rs)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err

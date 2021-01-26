@@ -15,7 +15,7 @@ import (
 // These are the step handlers. They figure out how to take an action based on
 // what action is determined as necessary in updateLocalStateInternal
 
-func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPendingProposalStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -27,17 +27,17 @@ func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error 
 	}
 	var chngHandler changeHandler
 	// if not locked or valid form new proposal
-	chngHandler = &dPPSProposeNewHandler{ce: ce, txn: txn, rs: rs}
+	chngHandler = &dPPSProposeNewHandler{ce: ce, rs: rs}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if not locked but valid known, propose valid value
-	chngHandler = &dPPSProposeValidHandler{ce: ce, txn: txn, rs: rs}
+	chngHandler = &dPPSProposeValidHandler{ce: ce, rs: rs}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if locked, propose locked
-	chngHandler = &dPPSProposeLockedHandler{ce: ce, txn: txn, rs: rs}
+	chngHandler = &dPPSProposeLockedHandler{ce: ce, rs: rs}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -60,11 +60,11 @@ func (pn *dPPSProposeNewHandler) evalCriteria() bool {
 }
 
 func (pn *dPPSProposeNewHandler) evalLogic() error {
-	return pn.ce.dPPSProposeNewFunc(pn.txn, pn.rs)
+	return pn.ce.dPPSProposeNewFunc(pn.rs)
 }
 
-func (ce *Engine) dPPSProposeNewFunc(txn *badger.Txn, rs *RoundStates) error {
-	if err := ce.castNewProposalValue(txn, rs); err != nil {
+func (ce *Engine) dPPSProposeNewFunc(rs *RoundStates) error {
+	if err := ce.castNewProposalValue(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -82,7 +82,7 @@ func (pv *dPPSProposeValidHandler) evalCriteria() bool {
 }
 
 func (pv *dPPSProposeValidHandler) evalLogic() error {
-	if err := pv.ce.castProposalFromValue(pv.txn, pv.rs, pv.rs.ValidValue()); err != nil {
+	if err := pv.ce.castProposalFromValue(pv.rs, pv.rs.ValidValue()); err != nil {
 		utils.DebugTrace(pv.ce.logger, err)
 		return err
 	}
@@ -100,7 +100,7 @@ func (pl *dPPSProposeLockedHandler) evalCriteria() bool {
 }
 
 func (pl *dPPSProposeLockedHandler) evalLogic() error {
-	if err := pl.ce.castProposalFromValue(pl.txn, pl.rs, pl.rs.LockedValue()); err != nil {
+	if err := pl.ce.castProposalFromValue(pl.rs, pl.rs.LockedValue()); err != nil {
 		utils.DebugTrace(pl.ce.logger, err)
 		return err
 	}
@@ -111,13 +111,13 @@ func (pl *dPPSProposeLockedHandler) evalLogic() error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPendingPreVoteStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
 	ce.logger.Debugf("doPendingPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	var chngHandler changeHandler
-	chngHandler = &dPPVSDeadBlockRoundHandler{ce: ce, txn: txn, rs: rs}
+	chngHandler = &dPPVSDeadBlockRoundHandler{ce: ce, rs: rs}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -131,14 +131,14 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	// check if the proposed value is valid, and if so
 	// prevote this value
 	//00 case
-	chngHandler = &dPPVSPreVoteNewHandler{ce: ce, txn: txn, rs: rs, p: p}
+	chngHandler = &dPPVSPreVoteNewHandler{ce: ce, rs: rs, p: p}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if we are locked on a valid value, only prevote the value if it is equal
 	// to the lock
 	//01 case
-	chngHandler = &dPPVSPreVoteValidHandler{ce: ce, txn: txn, rs: rs, p: p}
+	chngHandler = &dPPVSPreVoteValidHandler{ce: ce, rs: rs, p: p}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -146,14 +146,14 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	// to the lock
 	//10 case
 	//11 case
-	chngHandler = &dPPVSPreVoteLockedHandler{ce: ce, txn: txn, rs: rs, p: p}
+	chngHandler = &dPPVSPreVoteLockedHandler{ce: ce, rs: rs, p: p}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 
 	// no current proposal known
 	// so prevote nil
-	chngHandler = &dPPVSPreVoteNilHandler{ce: ce, txn: txn, rs: rs, p: p}
+	chngHandler = &dPPVSPreVoteNilHandler{ce: ce, rs: rs, p: p}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -173,10 +173,10 @@ func (dbrh *dPPVSDeadBlockRoundHandler) evalCriteria() bool {
 }
 
 func (dbrh *dPPVSDeadBlockRoundHandler) evalLogic() error {
-	return dbrh.ce.dPPSProposeNewFunc(dbrh.txn, dbrh.rs)
+	return dbrh.ce.dPPSProposeNewFunc(dbrh.rs)
 }
 
-func (ce *Engine) dPPVSDeadBlockRoundFunc(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) dPPVSDeadBlockRoundFunc(rs *RoundStates) error {
 	// Safely form EmptyBlock PreVote
 	os := rs.OwnRoundState()
 	rcert := os.RCert
@@ -189,7 +189,7 @@ func (ce *Engine) dPPVSDeadBlockRoundFunc(txn *badger.Txn, rs *RoundStates) erro
 	}
 	bclaims := rs.OwnState.SyncToBH.BClaims
 	PrevBlock := utils.CopySlice(rcert.RClaims.PrevBlock)
-	headerRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
+	headerRoot, err := ce.database.GetHeaderTrieRoot(rs.txn, rs.OwnState.SyncToBH.BClaims.Height)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
@@ -212,7 +212,7 @@ func (ce *Engine) dPPVSDeadBlockRoundFunc(txn *badger.Txn, rs *RoundStates) erro
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.castPreVote(txn, rs, p); err != nil {
+	if err := ce.castPreVote(rs, p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -233,13 +233,13 @@ func (pvnewh *dPPVSPreVoteNewHandler) evalCriteria() bool {
 }
 
 func (pvnewh *dPPVSPreVoteNewHandler) evalLogic() error {
-	return pvnewh.ce.dPPVSPreVoteNewFunc(pvnewh.txn, pvnewh.rs, pvnewh.p)
+	return pvnewh.ce.dPPVSPreVoteNewFunc(pvnewh.rs, pvnewh.p)
 }
 
-func (ce *Engine) dPPVSPreVoteNewFunc(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
-	txs, _, err := ce.dm.GetTxs(txn, p.PClaims.BClaims.Height, p.TxHshLst)
+func (ce *Engine) dPPVSPreVoteNewFunc(rs *RoundStates, p *objs.Proposal) error {
+	txs, _, err := ce.dm.GetTxs(rs.txn, p.PClaims.BClaims.Height, p.TxHshLst)
 	if err == nil {
-		ok, err := ce.isValid(txn, rs, p.PClaims.BClaims.ChainID, p.PClaims.BClaims.StateRoot, p.PClaims.BClaims.HeaderRoot, txs)
+		ok, err := ce.isValid(rs, p.PClaims.BClaims.ChainID, p.PClaims.BClaims.StateRoot, p.PClaims.BClaims.HeaderRoot, txs)
 		if err != nil {
 			var e *errorz.ErrInvalid
 			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
@@ -248,14 +248,14 @@ func (ce *Engine) dPPVSPreVoteNewFunc(txn *badger.Txn, rs *RoundStates, p *objs.
 			}
 		}
 		if ok { // proposal is valid
-			if err := ce.castPreVote(txn, rs, p); err != nil {
+			if err := ce.castPreVote(rs, p); err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return err
 			}
 			return nil
 		}
 	} // proposal is not valid
-	if err := ce.castPreVoteNil(txn, rs); err != nil {
+	if err := ce.castPreVoteNil(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -276,11 +276,11 @@ func (pvvh *dPPVSPreVoteValidHandler) evalCriteria() bool {
 }
 
 func (pvvh *dPPVSPreVoteValidHandler) evalLogic() error {
-	return pvvh.ce.dPPVSPreVoteValidFunc(pvvh.txn, pvvh.rs, pvvh.p)
+	return pvvh.ce.dPPVSPreVoteValidFunc(pvvh.rs, pvvh.p)
 }
 
-func (ce *Engine) dPPVSPreVoteValidFunc(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
-	if err := ce.castPreVoteWithLock(txn, rs, rs.ValidValue(), p); err != nil {
+func (ce *Engine) dPPVSPreVoteValidFunc(rs *RoundStates, p *objs.Proposal) error {
+	if err := ce.castPreVoteWithLock(rs, rs.ValidValue(), p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -301,11 +301,11 @@ func (pvlh *dPPVSPreVoteLockedHandler) evalCriteria() bool {
 }
 
 func (pvlh *dPPVSPreVoteLockedHandler) evalLogic() error {
-	return pvlh.ce.dPPVSPreVoteLockedFunc(pvlh.txn, pvlh.rs, pvlh.p)
+	return pvlh.ce.dPPVSPreVoteLockedFunc(pvlh.rs, pvlh.p)
 }
 
-func (ce *Engine) dPPVSPreVoteLockedFunc(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
-	if err := ce.castPreVoteWithLock(txn, rs, rs.LockedValue(), p); err != nil {
+func (ce *Engine) dPPVSPreVoteLockedFunc(rs *RoundStates, p *objs.Proposal) error {
+	if err := ce.castPreVoteWithLock(rs, rs.LockedValue(), p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -324,11 +324,11 @@ func (pvnh *dPPVSPreVoteNilHandler) evalCriteria() bool {
 }
 
 func (pvnh *dPPVSPreVoteNilHandler) evalLogic() error {
-	return pvnh.ce.dPPVSPreVoteNilFunc(pvnh.txn, pvnh.rs)
+	return pvnh.ce.dPPVSPreVoteNilFunc(pvnh.rs)
 }
 
-func (ce *Engine) dPPVSPreVoteNilFunc(txn *badger.Txn, rs *RoundStates) error {
-	if err := ce.castPreVoteNil(txn, rs); err != nil {
+func (ce *Engine) dPPVSPreVoteNilFunc(rs *RoundStates) error {
+	if err := ce.castPreVoteNil(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -339,7 +339,7 @@ func (ce *Engine) dPPVSPreVoteNilFunc(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPreVoteStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -354,7 +354,7 @@ func (ce *Engine) doPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	// if we have enough prevotes, cast a precommit
 	// this will update the locked value
 	var chngHandler changeHandler
-	chngHandler = &dPVSCastPCHandler{ce: ce, txn: txn, rs: rs, pvl: pvl}
+	chngHandler = &dPVSCastPCHandler{ce: ce, rs: rs, pvl: pvl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -374,11 +374,11 @@ func (pvcpc *dPVSCastPCHandler) evalCriteria() bool {
 }
 
 func (pvcpc *dPVSCastPCHandler) evalLogic() error {
-	return pvcpc.ce.dPVSCastPCFunc(pvcpc.txn, pvcpc.rs, pvcpc.pvl)
+	return pvcpc.ce.dPVSCastPCFunc(pvcpc.rs, pvcpc.pvl)
 }
 
-func (ce *Engine) dPVSCastPCFunc(txn *badger.Txn, rs *RoundStates, pvl []*objs.PreVote) error {
-	if err := ce.castPreCommit(txn, rs, pvl); err != nil {
+func (ce *Engine) dPVSCastPCFunc(rs *RoundStates, pvl []*objs.PreVote) error {
+	if err := ce.castPreCommit(rs, pvl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -389,7 +389,7 @@ func (ce *Engine) dPVSCastPCFunc(txn *badger.Txn, rs *RoundStates, pvl []*objs.P
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPreVoteNilStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -402,12 +402,12 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 		return err
 	}
 	var chngHandler changeHandler
-	chngHandler = &dPVNSUpdateVVHandler{ce: ce, txn: txn, rs: rs, pvl: pvl, pvnl: pvnl}
+	chngHandler = &dPVNSUpdateVVHandler{ce: ce, rs: rs, pvl: pvl, pvnl: pvnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if greater than threshold prevote nils, cast the prevote nil
-	chngHandler = &dPVNSCastPCNHandler{ce: ce, txn: txn, rs: rs, pvnl: pvnl}
+	chngHandler = &dPVNSCastPCNHandler{ce: ce, rs: rs, pvnl: pvnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -427,16 +427,16 @@ func (pvnu *dPVNSUpdateVVHandler) evalCriteria() bool {
 }
 
 func (pvnu *dPVNSUpdateVVHandler) evalLogic() error {
-	return pvnu.ce.dPVNSUpdateVVFunc(pvnu.txn, pvnu.rs, pvnu.pvl)
+	return pvnu.ce.dPVNSUpdateVVFunc(pvnu.rs, pvnu.pvl)
 }
 
-func (ce *Engine) dPVNSUpdateVVFunc(txn *badger.Txn, rs *RoundStates, pvl objs.PreVoteList) error {
+func (ce *Engine) dPVNSUpdateVVFunc(rs *RoundStates, pvl objs.PreVoteList) error {
 	p, err := pvl.GetProposal()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	err = ce.updateValidValue(txn, rs, p)
+	err = ce.updateValidValue(rs, p)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
@@ -456,11 +456,11 @@ func (cpcn *dPVNSCastPCNHandler) evalCriteria() bool {
 }
 
 func (cpcn *dPVNSCastPCNHandler) evalLogic() error {
-	return cpcn.ce.dPVNSCastPCNFunc(cpcn.txn, cpcn.rs)
+	return cpcn.ce.dPVNSCastPCNFunc(cpcn.rs)
 }
 
-func (ce *Engine) dPVNSCastPCNFunc(txn *badger.Txn, rs *RoundStates) error {
-	if err := ce.castPreCommitNil(txn, rs); err != nil {
+func (ce *Engine) dPVNSCastPCNFunc(rs *RoundStates) error {
+	if err := ce.castPreCommitNil(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -471,7 +471,7 @@ func (ce *Engine) dPVNSCastPCNFunc(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPendingPreCommit(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -488,11 +488,11 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	}
 	// if we have prevote consensus now
 	var chngHandler changeHandler
-	chngHandler = &dPPCCastPCHandler{ce: ce, txn: txn, rs: rs, pvl: pvl}
+	chngHandler = &dPPCCastPCHandler{ce: ce, rs: rs, pvl: pvl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
-	chngHandler = &dPPCUpdateVVHandler{ce: ce, txn: txn, rs: rs, pvl: pvl, pvnl: pvnl}
+	chngHandler = &dPPCUpdateVVHandler{ce: ce, rs: rs, pvl: pvl, pvnl: pvnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -501,7 +501,7 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	// free to cast preCommitNil without
 	// clear consensus if the total votes is
 	// greater than threshold
-	chngHandler = &dPPCNotDBRHandler{ce: ce, txn: txn, rs: rs, pvl: pvl, pvnl: pvnl}
+	chngHandler = &dPPCNotDBRHandler{ce: ce, rs: rs, pvl: pvl, pvnl: pvnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -523,11 +523,11 @@ func (cpc *dPPCCastPCHandler) evalCriteria() bool {
 }
 
 func (cpc *dPPCCastPCHandler) evalLogic() error {
-	return cpc.ce.dPPCCastPCFunc(cpc.txn, cpc.rs, cpc.pvl)
+	return cpc.ce.dPPCCastPCFunc(cpc.rs, cpc.pvl)
 }
 
-func (ce *Engine) dPPCCastPCFunc(txn *badger.Txn, rs *RoundStates, pvl objs.PreVoteList) error {
-	if err := ce.castPreCommit(txn, rs, pvl); err != nil {
+func (ce *Engine) dPPCCastPCFunc(rs *RoundStates, pvl objs.PreVoteList) error {
+	if err := ce.castPreCommit(rs, pvl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -549,16 +549,16 @@ func (uvv *dPPCUpdateVVHandler) evalCriteria() bool {
 }
 
 func (uvv *dPPCUpdateVVHandler) evalLogic() error {
-	return uvv.ce.dPPCUpdateVVFunc(uvv.txn, uvv.rs, uvv.pvl, uvv.pvnl)
+	return uvv.ce.dPPCUpdateVVFunc(uvv.rs, uvv.pvl, uvv.pvnl)
 }
 
-func (ce *Engine) dPPCUpdateVVFunc(txn *badger.Txn, rs *RoundStates, pvl objs.PreVoteList, pvnl objs.PreVoteNilList) error {
+func (ce *Engine) dPPCUpdateVVFunc(rs *RoundStates, pvl objs.PreVoteList, pvnl objs.PreVoteNilList) error {
 	p, err := pvl.GetProposal()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		var e *errorz.ErrInvalid
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 			utils.DebugTrace(ce.logger, err)
@@ -571,7 +571,7 @@ func (ce *Engine) dPPCUpdateVVFunc(txn *badger.Txn, rs *RoundStates, pvl objs.Pr
 	rcert := os.RCert
 	if rcert.RClaims.Round != constants.DEADBLOCKROUND {
 		if len(pvl)+len(pvnl) >= rs.GetCurrentThreshold() {
-			if err := ce.castPreCommitNil(txn, rs); err != nil {
+			if err := ce.castPreCommitNil(rs); err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return err
 			}
@@ -599,11 +599,11 @@ func (ndbr *dPPCNotDBRHandler) evalCriteria() bool {
 }
 
 func (ndbr *dPPCNotDBRHandler) evalLogic() error {
-	return ndbr.ce.dPPCNotDBRFunc(ndbr.txn, ndbr.rs)
+	return ndbr.ce.dPPCNotDBRFunc(ndbr.rs)
 }
 
-func (ce *Engine) dPPCNotDBRFunc(txn *badger.Txn, rs *RoundStates) error {
-	if err := ce.castPreCommitNil(txn, rs); err != nil {
+func (ce *Engine) dPPCNotDBRFunc(rs *RoundStates) error {
+	if err := ce.castPreCommitNil(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -614,7 +614,7 @@ func (ce *Engine) dPPCNotDBRFunc(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPreCommitStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPreCommitStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -629,7 +629,7 @@ func (ce *Engine) doPreCommitStep(txn *badger.Txn, rs *RoundStates) error {
 	// if we have consensus and can verify
 	// cast the nextHeight
 	var chngHandler changeHandler
-	chngHandler = &dPCSCastNHHandler{ce: ce, txn: txn, rs: rs, pcl: pcl}
+	chngHandler = &dPCSCastNHHandler{ce: ce, rs: rs, pcl: pcl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -649,19 +649,19 @@ func (cnh *dPCSCastNHHandler) evalCriteria() bool {
 }
 
 func (cnh *dPCSCastNHHandler) evalLogic() error {
-	return cnh.ce.dPCSCastNHFunc(cnh.txn, cnh.rs, cnh.pcl)
+	return cnh.ce.dPCSCastNHFunc(cnh.rs, cnh.pcl)
 }
 
-func (ce *Engine) dPCSCastNHFunc(txn *badger.Txn, rs *RoundStates, pcl objs.PreCommitList) error {
+func (ce *Engine) dPCSCastNHFunc(rs *RoundStates, pcl objs.PreCommitList) error {
 	p, err := pcl.GetProposal()
 	if err != nil {
 		return err
 	}
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.castNextHeightFromPreCommits(txn, rs, pcl); err != nil {
+	if err := ce.castNextHeightFromPreCommits(rs, pcl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -672,7 +672,7 @@ func (ce *Engine) dPCSCastNHFunc(txn *badger.Txn, rs *RoundStates, pcl objs.PreC
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPreCommitNilStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -687,13 +687,13 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 	// if we have a preCommit consensus,
 	// move directly to next height
 	var chngHandler changeHandler
-	chngHandler = &dPCNSCastNHHandler{ce: ce, txn: txn, rs: rs, pcl: pcl}
+	chngHandler = &dPCNSCastNHHandler{ce: ce, rs: rs, pcl: pcl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if we have a consensus for a precommit nil,
 	// cast a next round
-	chngHandler = &dPCNSCastNRHandler{ce: ce, txn: txn, rs: rs, pcnl: pcnl}
+	chngHandler = &dPCNSCastNRHandler{ce: ce, rs: rs, pcnl: pcnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -712,19 +712,19 @@ func (cnh *dPCNSCastNHHandler) evalCriteria() bool {
 }
 
 func (cnh *dPCNSCastNHHandler) evalLogic() error {
-	return cnh.ce.dPCNSCastNHFunc(cnh.txn, cnh.rs, cnh.pcl)
+	return cnh.ce.dPCNSCastNHFunc(cnh.rs, cnh.pcl)
 }
 
-func (ce *Engine) dPCNSCastNHFunc(txn *badger.Txn, rs *RoundStates, pcl objs.PreCommitList) error {
+func (ce *Engine) dPCNSCastNHFunc(rs *RoundStates, pcl objs.PreCommitList) error {
 	p, err := pcl.GetProposal()
 	if err != nil {
 		return err
 	}
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.castNextHeightFromPreCommits(txn, rs, pcl); err != nil {
+	if err := ce.castNextHeightFromPreCommits(rs, pcl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -745,11 +745,11 @@ func (cnr *dPCNSCastNRHandler) evalCriteria() bool {
 }
 
 func (cnr *dPCNSCastNRHandler) evalLogic() error {
-	return cnr.ce.dPCNSCastNRFunc(cnr.txn, cnr.rs)
+	return cnr.ce.dPCNSCastNRFunc(cnr.rs)
 }
 
-func (ce *Engine) dPCNSCastNRFunc(txn *badger.Txn, rs *RoundStates) error {
-	if err := ce.castNextRound(txn, rs); err != nil {
+func (ce *Engine) dPCNSCastNRFunc(rs *RoundStates) error {
+	if err := ce.castNextRound(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -760,7 +760,7 @@ func (ce *Engine) dPCNSCastNRFunc(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doPendingNext(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -777,14 +777,14 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 	// if not use a random precommit. This is safe due to
 	// locking of vote additions.
 	var chngHandler changeHandler
-	chngHandler = &dPNCastNextHeightHandler{ce: ce, txn: txn, rs: rs, pcl: pcl}
+	chngHandler = &dPNCastNextHeightHandler{ce: ce, rs: rs, pcl: pcl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
 	// if the combination of votes is greater than the
 	// threshold without the precommits being enough
 	// cast a next round
-	chngHandler = &dPNCastNextRoundHandler{ce: ce, txn: txn, rs: rs, pcl: pcl, pcnl: pcnl}
+	chngHandler = &dPNCastNextRoundHandler{ce: ce, rs: rs, pcl: pcl, pcnl: pcnl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -805,10 +805,10 @@ func (cnh *dPNCastNextHeightHandler) evalCriteria() bool {
 }
 
 func (cnh *dPNCastNextHeightHandler) evalLogic() error {
-	return cnh.ce.dPNCastNextHeightFunc(cnh.txn, cnh.rs, cnh.pcl)
+	return cnh.ce.dPNCastNextHeightFunc(cnh.rs, cnh.pcl)
 }
 
-func (ce *Engine) dPNCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl objs.PreCommitList) error {
+func (ce *Engine) dPNCastNextHeightFunc(rs *RoundStates, pcl objs.PreCommitList) error {
 	errorFree := true
 	os := rs.OwnRoundState()
 	rcert := os.RCert
@@ -818,7 +818,7 @@ func (ce *Engine) dPNCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl ob
 		return err
 	}
 
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		var e *errorz.ErrInvalid
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 			utils.DebugTrace(ce.logger, err)
@@ -828,7 +828,7 @@ func (ce *Engine) dPNCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl ob
 	}
 
 	if errorFree {
-		if err := ce.castNextHeightFromPreCommits(txn, rs, pcl); err != nil {
+		if err := ce.castNextHeightFromPreCommits(rs, pcl); err != nil {
 			var e *errorz.ErrInvalid
 			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 				utils.DebugTrace(ce.logger, err)
@@ -850,7 +850,7 @@ func (ce *Engine) dPNCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl ob
 			// Wait a long time before moving into Dead Block Round
 			return nil
 		}
-		if err := ce.castNextRound(txn, rs); err != nil {
+		if err := ce.castNextRound(rs); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
@@ -877,10 +877,10 @@ func (cnr *dPNCastNextRoundHandler) evalCriteria() bool {
 }
 
 func (cnr *dPNCastNextRoundHandler) evalLogic() error {
-	return cnr.ce.dPNCastNextRoundFunc(cnr.txn, cnr.rs)
+	return cnr.ce.dPNCastNextRoundFunc(cnr.rs)
 }
 
-func (ce *Engine) dPNCastNextRoundFunc(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) dPNCastNextRoundFunc(rs *RoundStates) error {
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	// if the combination of votes is greater than the
@@ -890,7 +890,7 @@ func (ce *Engine) dPNCastNextRoundFunc(txn *badger.Txn, rs *RoundStates) error {
 		// Wait a long time before moving into Dead Block Round
 		return nil
 	}
-	if err := ce.castNextRound(txn, rs); err != nil {
+	if err := ce.castNextRound(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -901,7 +901,7 @@ func (ce *Engine) dPNCastNextRoundFunc(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doNextRoundStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -914,7 +914,7 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 	}
 	// check for enough preCommits in current round to cast nextHeight
 	var chngHandler changeHandler
-	chngHandler = &dNRSCastNextHeightHandler{ce: ce, txn: txn, rs: rs, pcl: pcl}
+	chngHandler = &dNRSCastNextHeightHandler{ce: ce, rs: rs, pcl: pcl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -926,7 +926,7 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 	}
 
 	// form a new round cert if we have enough
-	chngHandler = &dNRSCastNextRoundHandler{ce: ce, txn: txn, rs: rs, pcl: pcl, nrl: nrl}
+	chngHandler = &dNRSCastNextRoundHandler{ce: ce, rs: rs, pcl: pcl, nrl: nrl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -947,16 +947,16 @@ func (cnh *dNRSCastNextHeightHandler) evalCriteria() bool {
 }
 
 func (cnh *dNRSCastNextHeightHandler) evalLogic() error {
-	return cnh.ce.dNRSCastNextHeightFunc(cnh.txn, cnh.rs, cnh.pcl)
+	return cnh.ce.dNRSCastNextHeightFunc(cnh.rs, cnh.pcl)
 }
 
-func (ce *Engine) dNRSCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl objs.PreCommitList) error {
+func (ce *Engine) dNRSCastNextHeightFunc(rs *RoundStates, pcl objs.PreCommitList) error {
 	p, err := pcl.GetProposal()
 	if err != nil {
 		return err
 	}
 	errorFree := true
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		var e *errorz.ErrInvalid
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 			utils.DebugTrace(ce.logger, err)
@@ -965,7 +965,7 @@ func (ce *Engine) dNRSCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl o
 		errorFree = false
 	}
 	if errorFree {
-		if err := ce.castNextHeightFromPreCommits(txn, rs, pcl); err != nil {
+		if err := ce.castNextHeightFromPreCommits(rs, pcl); err != nil {
 			var e *errorz.ErrInvalid
 			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 				utils.DebugTrace(ce.logger, err)
@@ -987,7 +987,7 @@ func (ce *Engine) dNRSCastNextHeightFunc(txn *badger.Txn, rs *RoundStates, pcl o
 
 	// form a new round cert if we have enough
 	if len(nrl) >= rs.GetCurrentThreshold() {
-		if err := ce.castNextRoundRCert(txn, rs, nrl); err != nil {
+		if err := ce.castNextRoundRCert(rs, nrl); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
@@ -1012,11 +1012,11 @@ func (cnr *dNRSCastNextRoundHandler) evalCriteria() bool {
 }
 
 func (cnr *dNRSCastNextRoundHandler) evalLogic() error {
-	return cnr.ce.dNRSCastNextRoundFunc(cnr.txn, cnr.rs, cnr.nrl)
+	return cnr.ce.dNRSCastNextRoundFunc(cnr.rs, cnr.nrl)
 }
 
-func (ce *Engine) dNRSCastNextRoundFunc(txn *badger.Txn, rs *RoundStates, nrl objs.NextRoundList) error {
-	if err := ce.castNextRoundRCert(txn, rs, nrl); err != nil {
+func (ce *Engine) dNRSCastNextRoundFunc(rs *RoundStates, nrl objs.NextRoundList) error {
+	if err := ce.castNextRoundRCert(rs, nrl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -1028,7 +1028,7 @@ func (ce *Engine) dNRSCastNextRoundFunc(txn *badger.Txn, rs *RoundStates, nrl ob
 ////////////////////////////////////////////////////////////////////////////////
 
 // TODO: look at the criteria to ensure it is correct!
-func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) error {
+func (ce *Engine) doRoundJump(rs *RoundStates, rc *objs.RCert) error {
 	ce.logger.Debugf("doRoundJump:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node cast a precommit nil this round
 	// count the precommits
@@ -1040,7 +1040,7 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 	// if local node knows of even a single
 	// precommit, update the valid value
 	var chngHandler changeHandler
-	chngHandler = &dRJUpdateVVHandler{ce: ce, txn: txn, rs: rs, rc: rc, pcl: pcl}
+	chngHandler = &dRJUpdateVVHandler{ce: ce, rs: rs, rc: rc, pcl: pcl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -1064,15 +1064,15 @@ func (uvv *dRJUpdateVVHandler) evalCriteria() bool {
 }
 
 func (uvv *dRJUpdateVVHandler) evalLogic() error {
-	return uvv.ce.dRJUpdateVVFunc(uvv.txn, uvv.rs, uvv.rc, uvv.pcl)
+	return uvv.ce.dRJUpdateVVFunc(uvv.rs, uvv.rc, uvv.pcl)
 }
 
-func (ce *Engine) dRJUpdateVVFunc(txn *badger.Txn, rs *RoundStates, rc *objs.RCert, pcl objs.PreCommitList) error {
+func (ce *Engine) dRJUpdateVVFunc(rs *RoundStates, rc *objs.RCert, pcl objs.PreCommitList) error {
 	p, err := pcl.GetProposal()
 	if err != nil {
 		return err
 	}
-	if err := ce.updateValidValue(txn, rs, p); err != nil {
+	if err := ce.updateValidValue(rs, p); err != nil {
 		var e *errorz.ErrInvalid
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 			utils.DebugTrace(ce.logger, err)
@@ -1114,7 +1114,7 @@ func (ce *Engine) dRJSetRCertFunc(rs *RoundStates, rc *objs.RCert) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) doNextHeightStep(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -1132,7 +1132,7 @@ func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
 	// make a new round cert and form the new block header
 	// proceed to next height
 	var chngHandler changeHandler
-	chngHandler = &dNHSCastBHHandler{ce: ce, txn: txn, rs: rs, nhl: nhl}
+	chngHandler = &dNHSCastBHHandler{ce: ce, rs: rs, nhl: nhl}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -1153,11 +1153,11 @@ func (cbh *dNHSCastBHHandler) evalCriteria() bool {
 }
 
 func (cbh *dNHSCastBHHandler) evalLogic() error {
-	return cbh.ce.dNHSCastBHFunc(cbh.txn, cbh.rs, cbh.nhl)
+	return cbh.ce.dNHSCastBHFunc(cbh.rs, cbh.nhl)
 }
 
-func (ce *Engine) dNHSCastBHFunc(txn *badger.Txn, rs *RoundStates, nhl objs.NextHeightList) error {
-	if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
+func (ce *Engine) dNHSCastBHFunc(rs *RoundStates, nhl objs.NextHeightList) error {
+	if err := ce.castNewCommittedBlockHeader(rs, nhl); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		var e *errorz.ErrInvalid
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
@@ -1172,7 +1172,7 @@ func (ce *Engine) dNHSCastBHFunc(txn *badger.Txn, rs *RoundStates, nhl objs.Next
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) error {
+func (ce *Engine) doHeightJumpStep(rs *RoundStates, rcert *objs.RCert) error {
 	ce.logger.Debugf("doHeightJumpStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// get the last element of the sorted future height
 	// if we can just jump up to this height, do so.
@@ -1185,7 +1185,7 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 	// this is safe because we call isValid on all values
 	// before storing in a lock
 	var chngHandler changeHandler
-	chngHandler = &dHJSJumpHandler{ce: ce, txn: txn, rs: rs, rcert: rcert}
+	chngHandler = &dHJSJumpHandler{ce: ce, rs: rs, rcert: rcert}
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
@@ -1209,10 +1209,10 @@ func (jh *dHJSJumpHandler) evalCriteria() bool {
 }
 
 func (jh *dHJSJumpHandler) evalLogic() error {
-	return jh.ce.dHJSJumpFunc(jh.txn, jh.rs, jh.rcert)
+	return jh.ce.dHJSJumpFunc(jh.rs, jh.rcert)
 }
 
-func (ce *Engine) dHJSJumpFunc(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) error {
+func (ce *Engine) dHJSJumpFunc(rs *RoundStates, rcert *objs.RCert) error {
 	bhsh, err := rs.ValidValue().PClaims.BClaims.BlockHash()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
@@ -1220,7 +1220,7 @@ func (ce *Engine) dHJSJumpFunc(txn *badger.Txn, rs *RoundStates, rcert *objs.RCe
 	}
 	if bytes.Equal(bhsh, rcert.RClaims.PrevBlock) && rcert.RClaims.Round == 1 {
 		vv := rs.ValidValue()
-		err := ce.castNewCommittedBlockFromProposalAndRCert(txn, rs, vv, rcert)
+		err := ce.castNewCommittedBlockFromProposalAndRCert(rs, vv, rcert)
 		if err != nil {
 			var e *errorz.ErrInvalid
 			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
@@ -1239,9 +1239,9 @@ func (ce *Engine) dHJSJumpFunc(txn *badger.Txn, rs *RoundStates, rcert *objs.RCe
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) updateValidValue(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
+func (ce *Engine) updateValidValue(rs *RoundStates, p *objs.Proposal) error {
 	ce.logger.Debugf("updateValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
-	txs, _, err := ce.dm.GetTxs(txn, p.PClaims.BClaims.Height, p.TxHshLst)
+	txs, _, err := ce.dm.GetTxs(rs.txn, p.PClaims.BClaims.Height, p.TxHshLst)
 	if err != nil {
 		if err != errorz.ErrMissingTransactions {
 			utils.DebugTrace(ce.logger, err)
@@ -1249,7 +1249,7 @@ func (ce *Engine) updateValidValue(txn *badger.Txn, rs *RoundStates, p *objs.Pro
 		}
 	}
 	// check if the proposal is valid
-	ok, err := ce.isValid(txn, rs, p.PClaims.BClaims.ChainID, p.PClaims.BClaims.StateRoot, p.PClaims.BClaims.HeaderRoot, txs)
+	ok, err := ce.isValid(rs, p.PClaims.BClaims.ChainID, p.PClaims.BClaims.StateRoot, p.PClaims.BClaims.HeaderRoot, txs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err

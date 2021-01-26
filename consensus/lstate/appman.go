@@ -31,15 +31,15 @@ func (ce *Engine) AddPendingTx(txn *badger.Txn, d []interfaces.Transaction) erro
 	return nil
 }
 
-func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []byte, []byte, []byte, error) {
+func (ce *Engine) getValidValue(rs *RoundStates) ([][]byte, []byte, []byte, []byte, error) {
 	chainID := rs.OwnState.SyncToBH.BClaims.ChainID
 	height := rs.OwnState.SyncToBH.BClaims.Height
-	txs, stateRoot, err := ce.appHandler.GetValidProposal(txn, chainID, height+1, constants.MaxProposalSize)
+	txs, stateRoot, err := ce.appHandler.GetValidProposal(rs.txn, chainID, height+1, constants.MaxProposalSize)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return nil, nil, nil, nil, err
 	}
-	if err := ce.dm.AddTxs(txn, height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(rs.txn, height+1, txs, false); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return nil, nil, nil, nil, err
 	}
@@ -57,7 +57,7 @@ func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []b
 		utils.DebugTrace(ce.logger, err)
 		return nil, nil, nil, nil, err
 	}
-	headerRoot, err := ce.database.GetHeaderTrieRoot(txn, height)
+	headerRoot, err := ce.database.GetHeaderTrieRoot(rs.txn, height)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			utils.DebugTrace(ce.logger, err)
@@ -68,9 +68,9 @@ func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []b
 	return txHashes, txRootHash, stateRoot, headerRoot, nil
 }
 
-func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stateHash []byte, headerRoot []byte, txs []interfaces.Transaction) (bool, error) {
+func (ce *Engine) isValid(rs *RoundStates, chainID uint32, stateHash []byte, headerRoot []byte, txs []interfaces.Transaction) (bool, error) {
 	height := rs.OwnState.SyncToBH.BClaims.Height
-	goodHeaderRoot, err := ce.database.GetHeaderTrieRoot(txn, height)
+	goodHeaderRoot, err := ce.database.GetHeaderTrieRoot(rs.txn, height)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -79,11 +79,11 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 		utils.DebugTrace(ce.logger, nil, "headerRoots do not match")
 		return false, nil // TODO: do we want to return an error here?
 	}
-	if err := ce.dm.AddTxs(txn, height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(rs.txn, height+1, txs, false); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
 	}
-	ok, err := ce.appHandler.IsValid(txn, chainID, height+1, stateHash, txs)
+	ok, err := ce.appHandler.IsValid(rs.txn, chainID, height+1, stateHash, txs)
 	if err != nil {
 		e := errorz.ErrInvalid{}.New("")
 		if errors.As(err, &e) {
@@ -95,27 +95,27 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 	if !ok {
 		return false, errorz.ErrInvalid{}.New("is valid returned not ok")
 	}
-	if err := ce.dm.AddTxs(txn, height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(rs.txn, height+1, txs, false); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
 	}
 	return true, nil
 }
 
-func (ce *Engine) applyState(txn *badger.Txn, rs *RoundStates, chainID uint32, txHashes [][]byte) error {
+func (ce *Engine) applyState(rs *RoundStates, chainID uint32, txHashes [][]byte) error {
 	height := rs.OwnState.SyncToBH.BClaims.Height
-	txs, missing, err := ce.dm.GetTxs(txn, height+1, txHashes)
+	txs, missing, err := ce.dm.GetTxs(rs.txn, height+1, txHashes)
 	if err != nil {
 		return err
 	}
 	if len(missing) > 0 {
 		return errorz.ErrMissingTransactions
 	}
-	if err := ce.dm.AddTxs(txn, height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(rs.txn, height+1, txs, false); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	_, err = ce.appHandler.ApplyState(txn, chainID, height+1, txs)
+	_, err = ce.appHandler.ApplyState(rs.txn, chainID, height+1, txs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err

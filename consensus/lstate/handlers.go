@@ -89,6 +89,7 @@ func (mb *Handlers) Store(v interface{}) error {
 		if err != nil {
 			return err
 		}
+		roundState.txn = txn
 		switch obj := v.(type) {
 		case *objs.Proposal:
 			txHshLst := obj.TxHshLst
@@ -177,7 +178,7 @@ func (mb *Handlers) Store(v interface{}) error {
 			}
 			ownState.MaxBHSeen = obj
 		}
-		return mb.sstore.WriteState(txn, roundState)
+		return mb.sstore.WriteState(roundState)
 	})
 }
 
