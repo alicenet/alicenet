@@ -53,7 +53,7 @@ func TestCriteria(t *testing.T) {
 	stateHandler := getStateHandler(t)
 
 	roundStates := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-		ValidatorSet:       &objs.ValidatorSet{Validators: []*objs.Validator{&objs.Validator{}}},
+		ValidatorSet:       &objs.ValidatorSet{Validators: []*objs.Validator{}},
 		OwnValidatingState: &objs.OwnValidatingState{}}
 
 	type testStruct struct {
@@ -114,23 +114,15 @@ func TestCriteria(t *testing.T) {
 	for i := 0; i < len(tests); i++ {
 		caseSelected := 0
 		fn := func(txn *badger.Txn) error {
-
-			for j := 0; j < len(tests[i].h); j++ {
-				tests[i].h[j].setTxn(txn)
-			}
-
 			for j := 0; j < len(tests[i].h); j++ {
 				if tests[i].h[j].evalCriteria() {
 					caseSelected = j
 					break
 				}
 			}
-
 			return nil
 		}
-
 		testDb(t, fn)
-
 		if caseSelected != tests[i].expectedCaseSelected {
 			t.Fatal("incorrect handler was selected")
 		}
@@ -147,7 +139,7 @@ func TestFhFunc(t *testing.T) {
 
 		rs := &objs.RoundState{}
 
-		booleanValue, err := stateHandler.fhFunc(txn, roundStates, rs)
+		booleanValue, err := stateHandler.fhFunc(roundStates, rs)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -171,7 +163,7 @@ func TestRCertFunc(t *testing.T) {
 		maxrCert := &objs.RCert{RClaims: &objs.RClaims{ChainID: 0, Height: 0, Round: 0, PrevBlock: []byte{0}},
 			SigGroup: []byte{0}, GroupKey: []byte{0}}
 
-		booleanValue, err := stateHandler.rCertFunc(txn, roundStates, maxrCert)
+		booleanValue, err := stateHandler.rCertFunc(roundStates, maxrCert)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -190,7 +182,7 @@ func TestNrCurrent(t *testing.T) {
 		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
 			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
 
-		booleanValue, err := stateHandler.nrCurrentFunc(txn, roundState)
+		booleanValue, err := stateHandler.nrCurrentFunc(roundState)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -216,7 +208,7 @@ func TestPcCurrent(t *testing.T) {
 
 		// not really sure what the value for this should be
 		PCTOExpired := false
-		booleanValue, err := stateHandler.pcCurrentFunc(txn, roundState, PCTOExpired)
+		booleanValue, err := stateHandler.pcCurrentFunc(roundState, PCTOExpired)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -237,7 +229,7 @@ func TestPcnCurrent(t *testing.T) {
 
 		// not really sure what the value for this should be
 		PCTOExpired := true
-		booleanValue, err := stateHandler.pcnCurrentFunc(txn, roundState, PCTOExpired)
+		booleanValue, err := stateHandler.pcnCurrentFunc(roundState, PCTOExpired)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -257,7 +249,7 @@ func TestPvCurrent(t *testing.T) {
 			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
 
 		PVTOExpired := true
-		booleanValue, err := stateHandler.pvCurrentFunc(txn, roundState, PVTOExpired)
+		booleanValue, err := stateHandler.pvCurrentFunc(roundState, PVTOExpired)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -277,7 +269,7 @@ func TestPvnCurrent(t *testing.T) {
 			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
 
 		PVTOExpired := true
-		booleanValue, err := stateHandler.pvnCurrentFunc(txn, roundState, PVTOExpired)
+		booleanValue, err := stateHandler.pvnCurrentFunc(roundState, PVTOExpired)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -296,7 +288,7 @@ func TestPtoExpired(t *testing.T) {
 		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
 			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
 
-		booleanValue, err := stateHandler.ptoExpiredFunc(txn, roundState)
+		booleanValue, err := stateHandler.ptoExpiredFunc(roundState)
 		if err != nil {
 			fmt.Println("err is", err)
 		}
@@ -315,7 +307,7 @@ func TestValidProp(t *testing.T) {
 		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
 			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
 
-		booleanValue, err := stateHandler.validPropFunc(txn, roundState)
+		booleanValue, err := stateHandler.validPropFunc(roundState)
 		if err != nil {
 			fmt.Println("err is", err)
 		}

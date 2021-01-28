@@ -321,12 +321,10 @@ func (ce *Engine) updateLocalStateInternal(rs *RoundStates) (bool, error) {
 type handler interface {
 	evalCriteria() bool
 	evalLogic() (bool, error)
-	setTxn(*badger.Txn)
 }
 
 type fhHandler struct {
 	ce    *Engine
-	txn   *badger.Txn
 	rs    *RoundStates
 	maxHR *objs.RoundState
 	FH    []*objs.RoundState
@@ -355,10 +353,6 @@ func (fhh fhHandler) evalLogic() (bool, error) {
 	return fhh.ce.fhFunc(fhh.rs, fhh.maxHR)
 }
 
-func (fhh fhHandler) setTxn(txn *badger.Txn) {
-	fhh.txn = txn
-}
-
 func (ce *Engine) fhFunc(rs *RoundStates, maxHR *objs.RoundState) (bool, error) {
 	err := ce.doHeightJumpStep(rs, maxHR.RCert)
 	if err != nil {
@@ -370,7 +364,6 @@ func (ce *Engine) fhFunc(rs *RoundStates, maxHR *objs.RoundState) (bool, error) 
 
 type rCertHandler struct {
 	ce       *Engine
-	txn      *badger.Txn
 	rs       *RoundStates
 	maxRCert *objs.RCert
 	ChFr     []*objs.RoundState
@@ -398,10 +391,6 @@ func (rch rCertHandler) evalLogic() (bool, error) {
 	return rch.ce.rCertFunc(rch.rs, rch.maxRCert)
 }
 
-func (rch rCertHandler) setTxn(txn *badger.Txn) {
-	rch.txn = txn
-}
-
 func (ce *Engine) rCertFunc(rs *RoundStates, maxRCert *objs.RCert) (bool, error) {
 	err := ce.doRoundJump(rs, maxRCert)
 	if err != nil {
@@ -413,7 +402,6 @@ func (ce *Engine) rCertFunc(rs *RoundStates, maxRCert *objs.RCert) (bool, error)
 
 type doNrHandler struct {
 	ce    *Engine
-	txn   *badger.Txn
 	rs    *RoundStates
 	rcert *objs.RCert
 }
@@ -431,10 +419,6 @@ func (dnrh doNrHandler) evalLogic() (bool, error) {
 	return dnrh.ce.doNrFunc(dnrh.rs, dnrh.rcert)
 }
 
-func (dnrh doNrHandler) setTxn(txn *badger.Txn) {
-	dnrh.txn = txn
-}
-
 func (ce *Engine) doNrFunc(rs *RoundStates, rcert *objs.RCert) (bool, error) {
 	err := ce.doNextRoundStep(rs)
 	if err != nil {
@@ -446,7 +430,6 @@ func (ce *Engine) doNrFunc(rs *RoundStates, rcert *objs.RCert) (bool, error) {
 
 type castNhHandler struct {
 	ce        *Engine
-	txn       *badger.Txn
 	rs        *RoundStates
 	NHs       objs.NextHeightList
 	NHCurrent bool
@@ -460,10 +443,6 @@ func (cnhh castNhHandler) evalLogic() (bool, error) {
 	return cnhh.ce.castNhFunc(cnhh.rs, cnhh.NHs)
 }
 
-func (cnhh castNhHandler) setTxn(txn *badger.Txn) {
-	cnhh.txn = txn
-}
-
 func (ce *Engine) castNhFunc(rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
 	err := ce.castNextHeightFromNextHeight(rs, NHs[0])
 	if err != nil {
@@ -475,7 +454,6 @@ func (ce *Engine) castNhFunc(rs *RoundStates, NHs objs.NextHeightList) (bool, er
 
 type doNextHeightHandler struct {
 	ce        *Engine
-	txn       *badger.Txn
 	rs        *RoundStates
 	NHs       objs.NextHeightList
 	NHCurrent bool
@@ -489,10 +467,6 @@ func (dnhh doNextHeightHandler) evalLogic() (bool, error) {
 	return dnhh.ce.doNextHeightFunc(dnhh.rs, dnhh.NHs)
 }
 
-func (dnhh doNextHeightHandler) setTxn(txn *badger.Txn) {
-	dnhh.txn = txn
-}
-
 func (ce *Engine) doNextHeightFunc(rs *RoundStates, NHs objs.NextHeightList) (bool, error) {
 	err := ce.doNextHeightStep(rs)
 	if err != nil {
@@ -504,7 +478,6 @@ func (ce *Engine) doNextHeightFunc(rs *RoundStates, NHs objs.NextHeightList) (bo
 
 type doRoundJumpHandler struct {
 	ce   *Engine
-	txn  *badger.Txn
 	rs   *RoundStates
 	ChFr []*objs.RoundState
 }
@@ -515,10 +488,6 @@ func (drjh doRoundJumpHandler) evalCriteria() bool {
 
 func (drjh doRoundJumpHandler) evalLogic() (bool, error) {
 	return drjh.ce.doRoundJumpFunc(drjh.rs, drjh.ChFr)
-}
-
-func (drjh doRoundJumpHandler) setTxn(txn *badger.Txn) {
-	drjh.txn = txn
 }
 
 func (ce *Engine) doRoundJumpFunc(rs *RoundStates, ChFr []*objs.RoundState) (bool, error) {
@@ -541,7 +510,6 @@ func (ce *Engine) doRoundJumpFunc(rs *RoundStates, ChFr []*objs.RoundState) (boo
 
 type nrCurrentHandler struct {
 	ce        *Engine
-	txn       *badger.Txn
 	rs        *RoundStates
 	NRCurrent bool
 }
@@ -552,10 +520,6 @@ func (nrch nrCurrentHandler) evalCriteria() bool {
 
 func (nrch nrCurrentHandler) evalLogic() (bool, error) {
 	return nrch.ce.nrCurrentFunc(nrch.rs)
-}
-
-func (nrch nrCurrentHandler) setTxn(txn *badger.Txn) {
-	nrch.txn = txn
 }
 
 func (ce *Engine) nrCurrentFunc(rs *RoundStates) (bool, error) {
@@ -569,7 +533,6 @@ func (ce *Engine) nrCurrentFunc(rs *RoundStates) (bool, error) {
 
 type pcCurrentHandler struct {
 	ce        *Engine
-	txn       *badger.Txn
 	rs        *RoundStates
 	PCCurrent bool
 }
@@ -581,10 +544,6 @@ func (pcch pcCurrentHandler) evalCriteria() bool {
 func (pcch pcCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcch.rs.OwnValidatingState.PCTOExpired()
 	return pcch.ce.pcCurrentFunc(pcch.rs, PCTOExpired)
-}
-
-func (pcch pcCurrentHandler) setTxn(txn *badger.Txn) {
-	pcch.txn = txn
 }
 
 func (ce *Engine) pcCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error) {
@@ -606,7 +565,6 @@ func (ce *Engine) pcCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error)
 
 type pcnCurrentHandler struct {
 	ce         *Engine
-	txn        *badger.Txn
 	rs         *RoundStates
 	PCNCurrent bool
 }
@@ -618,10 +576,6 @@ func (pcnch pcnCurrentHandler) evalCriteria() bool {
 func (pcnch pcnCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcnch.rs.OwnValidatingState.PCTOExpired()
 	return pcnch.ce.pcnCurrentFunc(pcnch.rs, PCTOExpired)
-}
-
-func (pcnch pcnCurrentHandler) setTxn(txn *badger.Txn) {
-	pcnch.txn = txn
 }
 
 func (ce *Engine) pcnCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error) {
@@ -643,7 +597,6 @@ func (ce *Engine) pcnCurrentFunc(rs *RoundStates, PCTOExpired bool) (bool, error
 
 type pvCurrentHandler struct {
 	ce        *Engine
-	txn       *badger.Txn
 	rs        *RoundStates
 	PVCurrent bool
 }
@@ -655,10 +608,6 @@ func (pvch pvCurrentHandler) evalCriteria() bool {
 func (pvch pvCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvch.rs.OwnValidatingState.PVTOExpired()
 	return pvch.ce.pvCurrentFunc(pvch.rs, PVTOExpired)
-}
-
-func (pvch pvCurrentHandler) setTxn(txn *badger.Txn) {
-	pvch.txn = txn
 }
 
 func (ce *Engine) pvCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error) {
@@ -680,7 +629,6 @@ func (ce *Engine) pvCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error)
 
 type pvnCurrentHandler struct {
 	ce         *Engine
-	txn        *badger.Txn
 	rs         *RoundStates
 	PVNCurrent bool
 }
@@ -692,10 +640,6 @@ func (pvnch pvnCurrentHandler) evalCriteria() bool {
 func (pvnch pvnCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvnch.rs.OwnValidatingState.PVTOExpired()
 	return pvnch.ce.pvnCurrentFunc(pvnch.rs, PVTOExpired)
-}
-
-func (pvnch pvnCurrentHandler) setTxn(txn *badger.Txn) {
-	pvnch.txn = txn
 }
 
 func (ce *Engine) pvnCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error) {
@@ -716,9 +660,8 @@ func (ce *Engine) pvnCurrentFunc(rs *RoundStates, PVTOExpired bool) (bool, error
 }
 
 type ptoExpiredHandler struct {
-	ce  *Engine
-	txn *badger.Txn
-	rs  *RoundStates
+	ce *Engine
+	rs *RoundStates
 }
 
 func (ptoeh ptoExpiredHandler) evalCriteria() bool {
@@ -728,10 +671,6 @@ func (ptoeh ptoExpiredHandler) evalCriteria() bool {
 
 func (ptoeh ptoExpiredHandler) evalLogic() (bool, error) {
 	return ptoeh.ce.ptoExpiredFunc(ptoeh.rs)
-}
-
-func (ptoeh ptoExpiredHandler) setTxn(txn *badger.Txn) {
-	ptoeh.txn = txn
 }
 
 func (ce *Engine) ptoExpiredFunc(rs *RoundStates) (bool, error) {
@@ -745,7 +684,6 @@ func (ce *Engine) ptoExpiredFunc(rs *RoundStates) (bool, error) {
 
 type validPropHandler struct {
 	ce       *Engine
-	txn      *badger.Txn
 	rs       *RoundStates
 	PCurrent bool
 }
@@ -757,10 +695,6 @@ func (vph validPropHandler) evalCriteria() bool {
 
 func (vph validPropHandler) evalLogic() (bool, error) {
 	return vph.ce.validPropFunc(vph.rs)
-}
-
-func (vph validPropHandler) setTxn(txn *badger.Txn) {
-	vph.txn = txn
 }
 
 func (ce *Engine) validPropFunc(rs *RoundStates) (bool, error) {
