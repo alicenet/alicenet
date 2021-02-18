@@ -36,6 +36,7 @@ func (ce *Engine) doPendingProposalStep(rs *RoundStates) error {
 	if chngHandler.evalCriteria() {
 		return chngHandler.evalLogic()
 	}
+
 	// if locked, propose locked
 	chngHandler = &dPPSProposeLockedHandler{ce: ce, rs: rs}
 	if chngHandler.evalCriteria() {
@@ -228,7 +229,9 @@ type dPPVSPreVoteNewHandler struct {
 
 func (pvnewh *dPPVSPreVoteNewHandler) evalCriteria() bool {
 	cond1 := pvnewh.p != nil
-	cond2 := !pvnewh.rs.LockedValueCurrent() && !pvnewh.rs.ValidValueCurrent()
+	c2a := !pvnewh.rs.LockedValueCurrent()
+	c2b := !pvnewh.rs.ValidValueCurrent()
+	cond2 := c2a && c2b
 	return cond1 && cond2
 }
 
@@ -1070,6 +1073,7 @@ func (uvv *dRJUpdateVVHandler) evalLogic() error {
 func (ce *Engine) dRJUpdateVVFunc(rs *RoundStates, rc *objs.RCert, pcl objs.PreCommitList) error {
 	p, err := pcl.GetProposal()
 	if err != nil {
+		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	if err := ce.updateValidValue(rs, p); err != nil {

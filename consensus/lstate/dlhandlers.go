@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -97,7 +99,7 @@ func (t *txResult) addRaw(txb []byte) error {
 
 type DMan struct {
 	sync.RWMutex
-	database       *db.Database
+	database       db.DatabaseIface
 	ctx            context.Context
 	cf             func()
 	appHandler     appmock.Application
@@ -108,6 +110,25 @@ type DMan struct {
 	height         uint32
 	logger         *logrus.Logger
 	targetBlockHDR *objs.BlockHeader
+}
+
+// NewDMan .
+func NewDMan(db db.DatabaseIface) *DMan {
+	size := 1000
+	newLruCache, err := lru.New(size)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ah := appmock.New()
+	dlLruCache, err := lru.New(size)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+	am := appmock.New()
+	dman := &DMan{txc: &txCache{cache: newLruCache, app: am}, database: db, appHandler: ah, dlc: &dLCache{cache: dlLruCache}, ctx: ctx}
+
+	return dman
 }
 
 func (dm *DMan) Init(database *db.Database, app appmock.Application, reqBus *request.Client) error {
@@ -229,6 +250,7 @@ func (dm *DMan) getTxsInternal(txn *badger.Txn, height uint32, txLst [][]byte) (
 	}
 
 	missing = result.missing()
+
 	// get from the pending store
 	found, _, err := dm.appHandler.PendingTxGet(txn, height, missing)
 	if err != nil {

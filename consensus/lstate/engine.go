@@ -26,7 +26,7 @@ type Engine struct {
 	ctx       context.Context
 	cancelCtx func()
 
-	database *db.Database
+	database db.DatabaseIface
 	sstore   *Store
 
 	RequestBus *request.Client
@@ -47,7 +47,7 @@ type Engine struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
+func (ce *Engine) Init(database db.DatabaseIface, dm *DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf

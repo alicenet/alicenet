@@ -7,10 +7,10 @@ import (
 )
 
 type Store struct {
-	database *db.Database
+	database db.DatabaseIface
 }
 
-func (ss *Store) Init(database *db.Database) error {
+func (ss *Store) Init(database db.DatabaseIface) error {
 	ss.database = database
 	return nil
 }

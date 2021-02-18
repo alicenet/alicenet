@@ -3,13 +3,13 @@ package lstate
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/MadBase/MadNet/application"
+	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/consensus/admin"
+	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/consensus/request"
@@ -18,12 +18,36 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func getStateHandler(t *testing.T) *Engine {
+func getStateHandler(t *testing.T, mdb db.DatabaseIface) *Engine {
+
+	dir, err := ioutil.TempDir("", "badger-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	opts := badger.DefaultOptions(dir)
+	bdb, err := badger.Open(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bdb.Close()
+
+	dHandler := &deposit.Handler{}
+	dHandler.Init()
+
 	stateHandler := &Engine{}
-	conDB := &db.Database{}
-	dman := &DMan{}
-	app := &application.Application{}
-	cesigner := &hashlib.Secp256k1Signer{}
+	// conDB := &db.Database{}
+	// conDB.Init(bdb)
+	dman := NewDMan(mdb)
+	// app := &application.Application{}
+	// app.Init(conDB, bdb, dHandler)
+
+	app := appmock.New()
+
 	ah := &admin.Handlers{}
 
 	c := crypto.S256()
@@ -39,18 +63,27 @@ func getStateHandler(t *testing.T) *Engine {
 
 	publicKey := crypto.FromECDSAPub(&priv.PublicKey)
 
+	cesigner := &hashlib.Secp256k1Signer{}
+	err = cesigner.SetPrivk(priv.X.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	rbusClient := &request.Client{}
 
-	if err := stateHandler.Init(conDB, dman, app, cesigner, ah, publicKey, rbusClient); err != nil {
+	if err := stateHandler.Init(mdb, dman, app, cesigner, ah, publicKey, rbusClient); err != nil {
 		panic(err)
 	}
+
+	stateHandler.bnSigner = &hashlib.BNGroupSigner{}
+	stateHandler.bnSigner.SetPrivk([]byte{173, 233, 94, 109, 13, 42, 99, 22})
 
 	return stateHandler
 }
 
 func TestCriteria(t *testing.T) {
 
-	stateHandler := getStateHandler(t)
+	stateHandler := getStateHandler(t, nil)
 
 	roundStates := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
 		ValidatorSet:       &objs.ValidatorSet{Validators: []*objs.Validator{}},
@@ -128,195 +161,6 @@ func TestCriteria(t *testing.T) {
 		}
 	}
 
-}
-
-func TestFhFunc(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundStates := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		rs := &objs.RoundState{}
-
-		booleanValue, err := stateHandler.fhFunc(roundStates, rs)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestRCertFunc(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundStates := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		roundStates.PeerStateMap = make(map[string]*objs.RoundState)
-
-		maxrCert := &objs.RCert{RClaims: &objs.RClaims{ChainID: 0, Height: 0, Round: 0, PrevBlock: []byte{0}},
-			SigGroup: []byte{0}, GroupKey: []byte{0}}
-
-		booleanValue, err := stateHandler.rCertFunc(roundStates, maxrCert)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from rCertFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestNrCurrent(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		booleanValue, err := stateHandler.nrCurrentFunc(roundState)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from nrCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestPcCurrent(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		// this is how the round state was being generated in the real system
-		// roundState, err := stateHandler.sstore.LoadLocalState(txn)
-		// if err != nil {
-		// 	return err
-		// }
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		// not really sure what the value for this should be
-		PCTOExpired := false
-		booleanValue, err := stateHandler.pcCurrentFunc(roundState, PCTOExpired)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pcCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestPcnCurrent(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		// not really sure what the value for this should be
-		PCTOExpired := true
-		booleanValue, err := stateHandler.pcnCurrentFunc(roundState, PCTOExpired)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pcnCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestPvCurrent(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		PVTOExpired := true
-		booleanValue, err := stateHandler.pvCurrentFunc(roundState, PVTOExpired)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pvCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestPvnCurrent(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		PVTOExpired := true
-		booleanValue, err := stateHandler.pvnCurrentFunc(roundState, PVTOExpired)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pvCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestPtoExpired(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		booleanValue, err := stateHandler.ptoExpiredFunc(roundState)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pvCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
-}
-
-func TestValidProp(t *testing.T) {
-	stateHandler := getStateHandler(t)
-
-	fn := func(txn *badger.Txn) error {
-		roundState := &RoundStates{height: 0, round: 0, OwnState: &objs.OwnState{},
-			ValidatorSet: &objs.ValidatorSet{}, OwnValidatingState: &objs.OwnValidatingState{}}
-
-		booleanValue, err := stateHandler.validPropFunc(roundState)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-
-		fmt.Println("boolean value from pvCurrentFunc is", booleanValue)
-
-		return nil
-	}
-	testDb(t, fn)
 }
 
 func testDb(t *testing.T, fn func(txn *badger.Txn) error) {
