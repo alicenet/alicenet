@@ -47,7 +47,7 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 
 	contractAddresses := []common.Address{
 		c.DepositAddress, c.EthdkgAddress, c.RegistryAddress,
-		c.StakingAddress, c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
+		c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
 
 	serviceLogger := logging.GetLogger("services")
 	taskLogger := logging.GetLogger("tasks")

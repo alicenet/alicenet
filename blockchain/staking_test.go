@@ -39,14 +39,14 @@ func (s *StakingTestSuite) SetupTest() {
 	s.txnOpts, err = eth.GetTransactionOpts(ctx, acct)
 	assert.Nil(t, err, "Can't build txnOpts")
 
-	_, err = c.StakingToken.Approve(s.txnOpts, c.StakingAddress, InitialAllowance)
-	assert.Nilf(t, err, "Initial approval of %v to %v failed: %v", InitialAllowance, c.StakingAddress.Hex(), err)
+	_, err = c.StakingToken.Approve(s.txnOpts, c.ValidatorsAddress, InitialAllowance)
+	assert.Nilf(t, err, "Initial approval of %v to %v failed: %v", InitialAllowance, c.ValidatorsAddress.Hex(), err)
 	s.commit()
 
 	s.callOpts = eth.GetCallOpts(ctx, acct)
 
 	// Tell staking we're in the 1st epoch
-	_, err = c.Staking.SetCurrentEpoch(txnOpts, big.NewInt(1)) // Must be deploy account
+	_, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(1)) // Must be deploy account
 	assert.Nil(t, err)
 	s.commit()
 }
@@ -63,7 +63,7 @@ func (s *StakingTestSuite) TestStakeEvent() {
 
 	stakeAmount := big.NewInt(1000000)
 	txn, err := c.Staking.LockStake(s.txnOpts, stakeAmount)
-	assert.True(t, err == nil, "Failed to post stake:%v", err)
+	assert.Nil(t, err, "Failed to post stake")
 	assert.NotNil(t, txn, "Staking transaction is nil")
 	s.commit()
 
@@ -126,7 +126,7 @@ func (s *StakingTestSuite) TestUnlocked() {
 
 	// Set clock ahead - requires privileged account (contract owner/operator)
 	ownerAuth, _ := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
-	_, err = c.Staking.SetCurrentEpoch(ownerAuth, big.NewInt(5))
+	_, err = c.Snapshots.SetEpoch(ownerAuth, big.NewInt(5))
 	assert.Truef(t, err == nil, "Failed to set clock forward: %v", err)
 	s.commit()
 
@@ -151,9 +151,8 @@ func (s *StakingTestSuite) TestBalanceUnlockedFor() {
 	eth := s.eth
 	c := eth.Contracts()
 
-	balance, err := c.Staking.BalanceUnlockedFor(s.callOpts, c.StakingAddress)
-
-	assert.Truef(t, err == nil, "Failed to get available availableFor: %v", err)
+	balance, err := c.Staking.BalanceUnlockedFor(s.callOpts, c.ValidatorsAddress)
+	assert.Nilf(t, err, "Failed: balanceUnlockedFor()")
 	assert.Truef(t, big.NewInt(0).Cmp(balance) == 0, "Allowance initially should be %v but is %v", InitialAllowance, balance)
 }
 
