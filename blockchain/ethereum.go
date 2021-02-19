@@ -144,15 +144,13 @@ type Contracts struct {
 	DepositAddress      common.Address
 	Ethdkg              *bindings.ETHDKG
 	EthdkgAddress       common.Address
-	Participants        *bindings.ParticipantsFacet
+	Participants        *bindings.Participants
 	Registry            *bindings.Registry
 	RegistryAddress     common.Address
-	Snapshots           *bindings.SnapshotsFacet
+	Snapshots           *bindings.Snapshots
 	Staking             *bindings.Staking
-	StakingAddress      common.Address
 	StakingToken        *bindings.Token
 	StakingTokenAddress common.Address
-	StakingValues       *bindings.StakingValuesFacet
 	UtilityToken        *bindings.Token
 	UtilityTokenAddress common.Address
 	Validators          *bindings.Validators
@@ -223,7 +221,7 @@ func NewEthereumSimulator(
 	return eth, eth.commit, nil
 }
 
-//NewEthereum creates a new Ethereum
+// NewEthereumEndpoint creates a new Ethereum abstraction
 func NewEthereumEndpoint(
 	endpoint string,
 	pathKeystore string,
@@ -660,6 +658,7 @@ func (eth *ethereum) Clone(defaultAccount accounts.Account) Ethereum {
 	return &nEth
 }
 
+// LookupContracts uses the registry to lookup and create bindings for all required contracts
 func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 
 	eth := c.eth
@@ -711,12 +710,6 @@ func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 	_, err = lookup("ethdkgSubmitMPK/v1")
 	logAndEat(logger, err)
 
-	c.StakingAddress, err = lookup("staking/v1")
-	logAndEat(logger, err)
-
-	c.Staking, err = bindings.NewStaking(c.StakingAddress, eth.client)
-	logAndEat(logger, err)
-
 	c.StakingTokenAddress, err = lookup("stakingToken/v1")
 	logAndEat(logger, err)
 
@@ -732,22 +725,23 @@ func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 	c.ValidatorsAddress, err = lookup("validators/v1")
 	logAndEat(logger, err)
 
-	// These all call the ValidatorsDiamond contract but we need facet specific bindings for bindings
+	// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
 	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.StakingValues, err = bindings.NewStakingValuesFacet(c.ValidatorsAddress, eth.client)
+	c.Staking, err = bindings.NewStaking(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.Participants, err = bindings.NewParticipantsFacet(c.ValidatorsAddress, eth.client)
+	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.Snapshots, err = bindings.NewSnapshotsFacet(c.ValidatorsAddress, eth.client)
+	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
 	return nil
 }
 
+// DeployContracts deploys and does basic setup for all contracts. It returns a binding to the registry, it's address or an error.
 func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Account) (*bindings.Registry, common.Address, error) {
 	eth := c.eth
 	logger := eth.logger
@@ -820,14 +814,6 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(txn)
 	logger.Infof("  depositAddress = \"0x%0.40x\"", c.DepositAddress)
 
-	c.StakingAddress, txn, c.Staking, err = bindings.DeployStaking(txnOpts, eth.client, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to deploy staking...")
-		return nil, common.Address{}, err
-	}
-	q(txn)
-	logger.Infof("  stakingAddress = \"0x%0.40x\"", c.StakingAddress)
-
 	// Deploy ValidatorsDiamond
 	c.ValidatorsAddress, txn, _, err = bindings.DeployValidatorsDiamond(txnOpts, eth.client) // Deploy the core diamond
 	if err != nil {
@@ -851,9 +837,9 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	}
 	q(txn)
 
-	stakingValuesFacet, txn, _, err := bindings.DeployStakingValuesFacet(txnOpts, eth.client)
+	stakingFacet, txn, _, err := bindings.DeployStakingFacet(txnOpts, eth.client)
 	if err != nil {
-		logger.Error("Failed to deploy staking values facet...")
+		logger.Error("Failed to deploy staking facet...")
 		return nil, common.Address{}, err
 	}
 	q(txn)
@@ -869,13 +855,13 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.StakingValues, err = bindings.NewStakingValuesFacet(c.ValidatorsAddress, eth.client)
+	c.Staking, err = bindings.NewStaking(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.Participants, err = bindings.NewParticipantsFacet(c.ValidatorsAddress, eth.client)
+	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.Snapshots, err = bindings.NewSnapshotsFacet(c.ValidatorsAddress, eth.client)
+	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
 	logAndEat(logger, err)
 
 	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client) // Validators is just an interface
@@ -896,26 +882,32 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	flushQ(txnQueue)
 
 	// Register all the facets
-	vu := &updater{vu: validatorsUpdate, txnOpts: txnOpts}
+	vu := &updater{vu: validatorsUpdate, txnOpts: txnOpts, logger: logger}
 
-	// Value maintenance
-	q(vu.add("majorStakeFine()", stakingValuesFacet))
-	q(vu.add("minimumStake()", stakingValuesFacet))
-	q(vu.add("minorStakeFine()", stakingValuesFacet))
-	q(vu.add("rewardAmount()", stakingValuesFacet))
-	q(vu.add("rewardBonus()", stakingValuesFacet))
-	q(vu.add("setMajorStakeFine(uint256)", stakingValuesFacet))
-	q(vu.add("setMinimumStake(uint256)", stakingValuesFacet))
-	q(vu.add("setMinorStakeFine(uint256)", stakingValuesFacet))
-	q(vu.add("setRewardAmount(uint256)", stakingValuesFacet))
-	q(vu.add("setRewardBonus(uint256)", stakingValuesFacet))
+	// Staking maintenance
+	q(vu.add("initializeStaking(address)", stakingFacet))
+	q(vu.add("balanceStake()", stakingFacet))
+	q(vu.add("balanceUnlocked()", stakingFacet))
+	q(vu.add("balanceUnlockedFor(address)", stakingFacet))
+	q(vu.add("lockStake(uint256)", stakingFacet))
+	q(vu.add("majorStakeFine()", stakingFacet))
+	q(vu.add("minimumStake()", stakingFacet))
+	q(vu.add("minorStakeFine()", stakingFacet))
+	q(vu.add("requestUnlockStake()", stakingFacet))
+	q(vu.add("rewardAmount()", stakingFacet))
+	q(vu.add("rewardBonus()", stakingFacet))
+	q(vu.add("setMajorStakeFine(uint256)", stakingFacet))
+	q(vu.add("setMinimumStake(uint256)", stakingFacet))
+	q(vu.add("setMinorStakeFine(uint256)", stakingFacet))
+	q(vu.add("setRewardAmount(uint256)", stakingFacet))
+	q(vu.add("setRewardBonus(uint256)", stakingFacet))
+	q(vu.add("unlockStake(uint256)", stakingFacet))
 
 	// Snapshot maintenance
 	q(vu.add("initializeSnapshots(address)", snapshotsFacet))
 	q(vu.add("snapshot(bytes,bytes)", snapshotsFacet))
-	q(vu.add("setNextSnapshot(uint256)", snapshotsFacet))
-	q(vu.add("nextSnapshot()", snapshotsFacet))
-
+	q(vu.add("setEpoch(uint256)", snapshotsFacet))
+	q(vu.add("epoch()", snapshotsFacet))
 	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
 	q(vu.add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
 	q(vu.add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
@@ -996,10 +988,6 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	logAndEat(logger, err)
 	q(txn)
 
-	txn, err = c.Registry.Register(txnOpts, "staking/v1", c.StakingAddress)
-	logAndEat(logger, err)
-	q(txn)
-
 	txn, err = c.Registry.Register(txnOpts, "stakingToken/v1", c.StakingTokenAddress)
 	logAndEat(logger, err)
 	q(txn)
@@ -1035,7 +1023,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Snapshots update receipt is nil")
 	}
 
-	tx, err = c.Snapshots.SetNextSnapshot(txnOpts, big.NewInt(1))
+	tx, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(1))
 	if err != nil {
 		logger.Errorf("Failed to initialize Snapshots facet next snapshot: %v", err)
 		return nil, common.Address{}, err
@@ -1043,23 +1031,23 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(tx)
 
 	// Default staking values
-	tx, err = c.StakingValues.SetMinimumStake(txnOpts, big.NewInt(1000000))
+	tx, err = c.Staking.SetMinimumStake(txnOpts, big.NewInt(1000000))
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.StakingValues.SetMajorStakeFine(txnOpts, big.NewInt(200000))
+	tx, err = c.Staking.SetMajorStakeFine(txnOpts, big.NewInt(200000))
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.StakingValues.SetMinorStakeFine(txnOpts, big.NewInt(50000))
+	tx, err = c.Staking.SetMinorStakeFine(txnOpts, big.NewInt(50000))
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.StakingValues.SetRewardAmount(txnOpts, big.NewInt(1000))
+	tx, err = c.Staking.SetRewardAmount(txnOpts, big.NewInt(1000))
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.StakingValues.SetRewardBonus(txnOpts, big.NewInt(1000))
+	tx, err = c.Staking.SetRewardBonus(txnOpts, big.NewInt(1000))
 	logAndEat(logger, err)
 	q(tx)
 
@@ -1081,9 +1069,9 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		return nil, common.Address{}, err
 	}
 	if rcpt != nil {
-		logger.Infof("Snapshots update status: %v", rcpt.Status)
+		logger.Infof("Participants update status: %v", rcpt.Status)
 	} else {
-		logger.Errorf("Snapshots update receipt is nil")
+		logger.Errorf("Participants update receipt is nil")
 	}
 
 	tx, err = c.Participants.SetValidatorMaxCount(txnOpts, 10)
@@ -1096,7 +1084,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	flushQ(txnQueue)
 
 	// Staking updates
-	tx, err = c.Staking.ReloadRegistry(txnOpts)
+	tx, err = c.Staking.InitializeStaking(txnOpts, c.RegistryAddress)
 	if err != nil {
 		logger.Errorf("Failed to update staking contract references: %v", err)
 		return nil, common.Address{}, err
@@ -1189,6 +1177,7 @@ func logAndEat(logger *logrus.Logger, err error) {
 
 type updater struct {
 	err     error
+	logger  *logrus.Logger
 	vu      *bindings.ValidatorsUpdateFacet
 	txnOpts *bind.TransactOpts
 }
@@ -1200,6 +1189,10 @@ func (u *updater) add(signature string, facet common.Address) *types.Transaction
 	}
 
 	selector := CalculateSelector(signature)
+	if u.logger != nil {
+		u.logger.Infof("Registering %v as %x with %v", signature, selector, facet.Hex())
+	}
+
 	txn, err := u.vu.AddFacet(u.txnOpts, selector, facet)
 	u.err = err
 	return txn

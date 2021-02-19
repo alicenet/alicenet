@@ -79,12 +79,12 @@ func TestValues(t *testing.T) {
 	amount := big.NewInt(987654321)
 	t.Logf("amount:%v", amount.Text(10))
 
-	txn, err := c.StakingValues.SetMinimumStake(txnOpts, amount)
+	txn, err := c.Staking.SetMinimumStake(txnOpts, amount)
 	assert.Nil(t, err)
 
 	eth.WaitForReceipt(context.Background(), txn)
 
-	ms, err := c.StakingValues.MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
+	ms, err := c.Staking.MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
 	assert.Nil(t, err)
 	t.Logf("minimum stake:%v", ms.Text(10))
 

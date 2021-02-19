@@ -83,7 +83,7 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	assert.Equal(t, rcpt.Status, uint64(1))
 
 	// Approve tokens for staking contract to withdraw
-	txn, err = c.StakingToken.Approve(txnOpts, c.StakingAddress, big.NewInt(1000000))
+	txn, err = c.StakingToken.Approve(txnOpts, c.ValidatorsAddress, big.NewInt(1000000))
 	assert.Nil(t, err)
 
 	rcpt, err = eth.WaitForReceipt(ctx, txn)

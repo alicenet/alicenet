@@ -163,7 +163,6 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 	logger.Infof("     Deposit contract: %v", c.DepositAddress.Hex())
 	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress.Hex())
 	logger.Infof("*   Registry contract: %v", c.RegistryAddress.Hex())
-	logger.Infof("     Staking contract: %v", c.StakingAddress.Hex())
 	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress.Hex())
 	logger.Infof("  Validators contract: %v", c.ValidatorsAddress.Hex())
 	logger.Info(strings.Repeat("-", 80))
@@ -246,7 +245,7 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 
 	// Contract orchestration
 	// Approve tokens for staking
-	txn, err := c.StakingToken.Approve(txnOpts, c.StakingAddress, big.NewInt(1_000_000))
+	txn, err := c.StakingToken.Approve(txnOpts, c.ValidatorsAddress, big.NewInt(1_000_000))
 	if err != nil {
 		logger.Errorf("StakingToken.Approve() failed: %v", err)
 		return 1
