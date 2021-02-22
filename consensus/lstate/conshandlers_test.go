@@ -1,8 +1,6 @@
 package lstate
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,14 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MadBase/MadNet/application"
-	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
 	objs "github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/consensus/request"
-	hashlib "github.com/MadBase/MadNet/crypto"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/mock/gomock"
 
 	mcrypto "github.com/MadBase/MadNet/crypto"
@@ -35,10 +28,7 @@ func TestMockeddb(t *testing.T) {
 	}
 }
 
-// calls dHJSJumpHandler
-
-func TestFhFunc(t *testing.T) {
-
+func getBdb(t *testing.T) *badger.DB {
 	// Open the DB.
 	dir, err := ioutil.TempDir("", "badger-test")
 	if err != nil {
@@ -54,6 +44,15 @@ func TestFhFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	return bdb
+}
+
+// calls dHJSJumpHandler
+
+func TestFhFunc(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -204,28 +203,14 @@ func TestFhFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 // seems to call the same handlers as DoRoundJumpFunc
 // rCertFunc seems to be calling the doRoundJump function
 
 func TestRCertFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -252,7 +237,6 @@ func TestRCertFunc(t *testing.T) {
 		22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147},
 		HeaderRoot: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21,
 			229, 112, 18, 48, 147}}
-	// bhtoUpdateTR := &objs.BlockHeader{BClaims: otherbClaims}
 	pClaims := &objs.PClaims{RCert: rCert, BClaims: otherbClaims}
 	validValue := &objs.Proposal{Signature: []byte{3, 3, 3}, PClaims: pClaims, GroupKey: []byte{3, 5, 4}}
 	otherValidValue := &objs.Proposal{Signature: []byte{3, 3, 8}, PClaims: pClaims, GroupKey: []byte{3, 5, 4}}
@@ -308,8 +292,6 @@ func TestRCertFunc(t *testing.T) {
 		roundStates.PeerStateMap[string([]byte{1})].PreCommit = &objs.PreCommit{Proposal: validValue, Voter: []byte{1, 2}}
 		roundStates.PeerStateMap[string([]byte{2})].PreCommit = &objs.PreCommit{Proposal: validValue, Voter: []byte{1, 3}}
 		roundStates.PeerStateMap[string([]byte{3})].PreCommit = &objs.PreCommit{Proposal: validValue, Voter: []byte{1, 4}}
-		// roundStates.PeerStateMap[string([]byte{4})].PreCommit = &objs.PreCommit{Proposal: validValue, Voter: []byte{1, 5}}
-		// roundStates.PeerStateMap[string([]byte{5})].PreCommit = &objs.PreCommit{Proposal: validValue, Voter: []byte{1, 6}}
 
 		msg, err := pClaims.BClaims.BlockHash()
 		if err != nil {
@@ -349,24 +331,11 @@ func TestRCertFunc(t *testing.T) {
 	}
 }
 
-// seems to call the same handlers as do nr current
+// seems to call the same handlers as nr current func
 
 func TestDoNrFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -423,8 +392,6 @@ func TestDoNrFunc(t *testing.T) {
 
 	updateFunc = func(txn *badger.Txn) error {
 
-		// mdb.EXPECT().GetCurrentRoundState(txn, []byte{5, 5, 5}).Return(roundState, nil)
-
 		mdb.EXPECT().GetOwnState(txn).Return(ownState, nil)
 		mdb.EXPECT().GetCurrentRoundState(txn, ownState.VAddr).Return(roundState, nil)
 
@@ -432,7 +399,6 @@ func TestDoNrFunc(t *testing.T) {
 		mdb.EXPECT().GetCurrentRoundState(txn, []byte{2}).Return(roundState, nil)
 		mdb.EXPECT().GetCurrentRoundState(txn, []byte{3}).Return(roundState, nil)
 		mdb.EXPECT().GetCurrentRoundState(txn, []byte{1}).Return(roundState, nil)
-		// mdb.EXPECT().GetCurrentRoundState(txn, []byte{2}).Return(roundState, nil)
 
 		mdb.EXPECT().GetValidatorSet(txn, roundState.RCert.RClaims.Height).Return(valSet, nil)
 		mdb.EXPECT().GetOwnState(txn).Return(ownState, nil)
@@ -465,8 +431,10 @@ func TestDoNrFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("updated round is", roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert.RClaims.Round)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from do nr func seems to not be correct")
+		}
 
 		if roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert.RClaims.Round != 1 {
 			t.Fatal("value for the round is probably not correct")
@@ -481,123 +449,11 @@ func TestDoNrFunc(t *testing.T) {
 	}
 }
 
-// did not use this one yet since it also seems to be calling handlers for next height - similar to fh func - or is it
-// similar to the test below this one ?
-
-// seems to call dNHSCastBHHandler - which is the same as the test below
-
-func TestCastNhFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer bdb.Close()
-
-	ctr := gomock.NewController(t)
-	defer ctr.Finish()
-	mdb := db.NewMockDatabaseIface(ctr)
-
-	var updateFunc db.TxnFunc
-
-	stateHandler := getStateHandler(t, mdb)
-
-	msstore := NewMockStore(mdb)
-
-	txRoot, err := objs.MakeTxRoot([][]byte{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	otherrClaims := &objs.RClaims{Height: 1, Round: 1}
-	rCert := &objs.RCert{RClaims: otherrClaims}
-
-	otherbClaims := &objs.BClaims{ChainID: 42, Height: 1, TxCount: 53, PrevBlock: []byte{2, 3}, TxRoot: txRoot, StateRoot: []byte{2},
-		HeaderRoot: []byte{3}}
-	pClaims := &objs.PClaims{RCert: rCert, BClaims: otherbClaims}
-	validValue := &objs.Proposal{Signature: []byte{3, 3, 3}, PClaims: pClaims}
-	ownValState := &objs.OwnValidatingState{VAddr: []byte{5, 5, 5}, ValidValue: validValue}
-
-	bhsh, err := pClaims.BClaims.BlockHash()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	bClaims := &objs.BClaims{ChainID: 42, Height: 1}
-	maxBlockHeightSeen := &objs.BlockHeader{BClaims: bClaims}
-	nextbClaims := &objs.BClaims{ChainID: 42, Height: 1}
-	syncToBH := &objs.BlockHeader{BClaims: nextbClaims}
-
-	ownState := &objs.OwnState{VAddr: []byte{5, 5, 5}, GroupKey: []byte{4, 4, 4}, MaxBHSeen: maxBlockHeightSeen, SyncToBH: syncToBH}
-
-	rClaims := &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}
-
-	roundState := &objs.RoundState{VAddr: []byte{5, 5, 5}, GroupKey: []byte{4, 4, 4}, RCert: &objs.RCert{GroupKey: []byte{1, 1, 1},
-		RClaims: rClaims}}
-	valSet := &objs.ValidatorSet{GroupKey: []byte{5, 4, 3}, ValidatorVAddrSet: map[string]bool{string(ownState.VAddr): true}}
-
-	updateFunc = func(txn *badger.Txn) error {
-
-		mdb.EXPECT().GetOwnState(txn).Return(ownState, nil)
-		mdb.EXPECT().GetCurrentRoundState(txn, ownState.VAddr).Return(roundState, nil)
-		mdb.EXPECT().GetValidatorSet(txn, roundState.RCert.RClaims.Height).Return(valSet, nil)
-		mdb.EXPECT().GetOwnState(txn).Return(ownState, nil)
-		mdb.EXPECT().GetCurrentRoundState(txn, ownState.VAddr).Return(roundState, nil)
-		mdb.EXPECT().GetOwnValidatingState(txn).Return(ownValState, nil)
-
-		roundStates, err := msstore.LoadLocalState(txn)
-		if err != nil {
-			return err
-		}
-		roundStates.txn = txn
-
-		nhs := objs.NextHeightList{&objs.NextHeight{NHClaims: &objs.NHClaims{Proposal: &objs.Proposal{PClaims: &objs.PClaims{
-			BClaims: &objs.BClaims{ChainID: 42, Height: 1}, RCert: &objs.RCert{RClaims: &objs.RClaims{}}}}}}}
-
-		booleanValue, err := stateHandler.castNhFunc(roundStates, nhs)
-		if err != nil {
-			fmt.Println("err is", err)
-		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
-
-		return nil
-	}
-
-	err = bdb.Update(updateFunc)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 // seems to call dNHSCastBHHandler
 
 func TestDoNextHeightFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -668,8 +524,6 @@ func TestDoNextHeightFunc(t *testing.T) {
 			t.Fatal("output value for do next height func is not correct")
 		}
 
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
-
 		return nil
 	}
 
@@ -682,21 +536,8 @@ func TestDoNextHeightFunc(t *testing.T) {
 // could call one of the following handlers - dRJUpdateVVHandler, dRJSetRCertHandler
 
 func TestDoRoundJumpFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -769,8 +610,6 @@ func TestDoRoundJumpFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		// fmt.Println("boolean value from fhFunc is", booleanValue)
-		// fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
 
 		if booleanValue != true {
 			t.Fatal("output value for do round jump func is not correct")
@@ -795,21 +634,8 @@ func TestDoRoundJumpFunc(t *testing.T) {
 // both of these handlers call the same function, except cnhh calls other things as well
 
 func TestNrCurrentFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -873,8 +699,10 @@ func TestNrCurrentFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from nr current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -888,21 +716,8 @@ func TestNrCurrentFunc(t *testing.T) {
 // same as test below this one for the boolean argument
 
 func TestPcCurrentFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -999,7 +814,6 @@ func TestPcCurrentFunc(t *testing.T) {
 			RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}}}, Signature: bs}
 		roundStates.PeerStateMap[string([]byte{3})].PreCommit = &objs.PreCommit{Proposal: &objs.Proposal{Signature: bs, PClaims: &objs.PClaims{BClaims: &objs.BClaims{ChainID: 42, Height: 1, PrevBlock: msg, StateRoot: msg, TxRoot: txr, HeaderRoot: msg},
 			RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}}}, Signature: bs}
-		// roundStates.PeerStateMap[string([]byte{4})].PreCommit = &objs.PreCommit{Proposal: &objs.Proposal{PClaims: &objs.PClaims{}}}
 
 		roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert = &objs.RCert{RClaims: &objs.RClaims{Height: 1, Round: 1, PrevBlock: bhsh}}
 
@@ -1009,8 +823,10 @@ func TestPcCurrentFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pc current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1021,24 +837,11 @@ func TestPcCurrentFunc(t *testing.T) {
 	}
 }
 
-// does do pending next if boolean argument is true
+// calls pcnCurrentFunc with a true boolean flag
 
-func TestPcnCurrentFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestDoPendingNext(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1113,12 +916,9 @@ func TestPcnCurrentFunc(t *testing.T) {
 			return err
 		}
 
-		// txr := []byte{197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112}
-		// bs := []byte{197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112, 197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112, 55}
 		roundStates.PeerStateMap[string([]byte{1})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
 		roundStates.PeerStateMap[string([]byte{2})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
 		roundStates.PeerStateMap[string([]byte{3})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
-		// roundStates.PeerStateMap[string([]byte{4})].PreCommit = &objs.PreCommit{Proposal: &objs.Proposal{PClaims: &objs.PClaims{}}}
 
 		roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert = &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}
 
@@ -1128,8 +928,10 @@ func TestPcnCurrentFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pcn current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1140,22 +942,11 @@ func TestPcnCurrentFunc(t *testing.T) {
 	}
 }
 
-func TestPcnCurrentFuncFalse(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+// calls pcnCurrentFunc with a not true boolean flag
+
+func TestPcnCurrentFunc(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1230,12 +1021,9 @@ func TestPcnCurrentFuncFalse(t *testing.T) {
 			return err
 		}
 
-		// txr := []byte{197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112}
-		// bs := []byte{197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112, 197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182, 83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112, 55}
 		roundStates.PeerStateMap[string([]byte{1})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
 		roundStates.PeerStateMap[string([]byte{2})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
 		roundStates.PeerStateMap[string([]byte{3})].PreCommitNil = &objs.PreCommitNil{RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}, Signature: msg}
-		// roundStates.PeerStateMap[string([]byte{4})].PreCommit = &objs.PreCommit{Proposal: &objs.Proposal{PClaims: &objs.PClaims{}}}
 
 		roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert = &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}
 
@@ -1245,8 +1033,10 @@ func TestPcnCurrentFuncFalse(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pcn current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1257,24 +1047,11 @@ func TestPcnCurrentFuncFalse(t *testing.T) {
 	}
 }
 
-// same as below for the boolean argument
+// calls pvCurrentFunc with a not true boolean flag
 
 func TestPvCurrentFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1323,10 +1100,6 @@ func TestPvCurrentFunc(t *testing.T) {
 
 	updateFunc = func(txn *badger.Txn) error {
 
-		// h := uint32(1)
-		// stateHandler.database.(*db.MockDatabaseIface).EXPECT().GetHeaderTrieRoot(txn, h).Return([]byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120,
-		// 	194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147}, nil)
-
 		mdb.EXPECT().GetOwnState(txn).Return(ownState, nil)
 		mdb.EXPECT().GetCurrentRoundState(txn, ownState.VAddr).Return(roundState, nil)
 
@@ -1362,7 +1135,6 @@ func TestPvCurrentFunc(t *testing.T) {
 			RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}}}, Signature: bs}
 		roundStates.PeerStateMap[string([]byte{3})].PreVote = &objs.PreVote{Proposal: &objs.Proposal{Signature: bs, PClaims: &objs.PClaims{BClaims: &objs.BClaims{ChainID: 42, Height: 1, PrevBlock: bhsh, StateRoot: msg, TxRoot: txr, HeaderRoot: msg},
 			RCert: &objs.RCert{RClaims: &objs.RClaims{ChainID: 42, Height: 1, Round: 1, PrevBlock: bhsh}}}}, Signature: bs}
-		// roundStates.PeerStateMap[string([]byte{4})].PreCommit = &objs.PreCommit{Proposal: &objs.Proposal{PClaims: &objs.PClaims{}}}
 
 		roundStates.PeerStateMap[string(roundStates.OwnState.VAddr)].RCert = &objs.RCert{RClaims: &objs.RClaims{Height: 1, Round: 1, PrevBlock: bhsh}}
 
@@ -1372,8 +1144,10 @@ func TestPvCurrentFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pv current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1384,22 +1158,11 @@ func TestPvCurrentFunc(t *testing.T) {
 	}
 }
 
-func TestPvCurrentFuncTrue(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+// calls pvCurrentFunc with a true boolean flag
+
+func TestDoPendingPreCommit(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1497,8 +1260,10 @@ func TestPvCurrentFuncTrue(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pv current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1509,24 +1274,11 @@ func TestPvCurrentFuncTrue(t *testing.T) {
 	}
 }
 
-// if pvtoExpired is true, seems to call do pending precommit
+// calls pvCurrentFunc with a not true boolean flag
 
 func TestPvnCurrentFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1621,8 +1373,10 @@ func TestPvnCurrentFunc(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pvn current func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1633,25 +1387,11 @@ func TestPvnCurrentFunc(t *testing.T) {
 	}
 }
 
-// could call one of the following dPPVSPreVoteNewHandler, dPPVSPreVoteValidHandler, dPPVSPreVoteLockedHandler, dPPVSPreVoteNilHandler
-// seems to call dPPVSPreVoteNilHandler for now
+// the next four tests call ptoExpiredFunc with different states to test the four different possible further handlers
 
-func TestDPPVSPreVoteNilHandler(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestDPPVSPreVoteNil(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1727,8 +1467,10 @@ func TestDPPVSPreVoteNilHandler(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pto expired func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1739,22 +1481,9 @@ func TestDPPVSPreVoteNilHandler(t *testing.T) {
 	}
 }
 
-func TestDPPVSPreVoteValidHandler(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestDPPVSPreVoteValid(t *testing.T) {
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1842,8 +1571,10 @@ func TestDPPVSPreVoteValidHandler(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pto expired func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1855,21 +1586,8 @@ func TestDPPVSPreVoteValidHandler(t *testing.T) {
 }
 
 func TestDPPVSPreVoteLocked(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -1957,8 +1675,10 @@ func TestDPPVSPreVoteLocked(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-		fmt.Println("boolean value from fhFunc is", booleanValue)
-		fmt.Println("max bh seen height is", roundStates.OwnState.MaxBHSeen.BClaims.Height)
+
+		if booleanValue != true {
+			t.Fatal("value of the output from pto expired func seems to not be correct")
+		}
 
 		return nil
 	}
@@ -1970,21 +1690,8 @@ func TestDPPVSPreVoteLocked(t *testing.T) {
 }
 
 func TestDPPVSPreVoteNewHandler(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -2009,11 +1716,17 @@ func TestDPPVSPreVoteNewHandler(t *testing.T) {
 		98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147}, ChainID: 42}
 	rCert2 := &objs.RCert{RClaims: otherrClaims2}
 
-	otherbClaims := &objs.BClaims{ChainID: 42, Height: 1, TxCount: 53, PrevBlock: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137,
+	otherbClaims := &objs.BClaims{ChainID: 42, Height: 2, TxCount: 53, PrevBlock: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137,
 		98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147}, TxRoot: txRoot, StateRoot: []byte{173, 233, 94, 109, 13, 42, 99,
 		22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147},
 		HeaderRoot: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21,
 			229, 112, 18, 48, 147}}
+
+	// otherbClaims2 := &objs.BClaims{ChainID: 42, Height: 2, TxCount: 53, PrevBlock: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137,
+	// 	98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147}, TxRoot: txRoot, StateRoot: []byte{173, 233, 94, 109, 13, 42, 99,
+	// 	22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21, 229, 112, 18, 48, 147},
+	// 	HeaderRoot: []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114, 27, 21,
+	// 		229, 112, 18, 48, 147}}
 
 	bs := []byte{137, 158, 164, 26, 219, 131, 151, 198, 183, 30, 184, 92, 126, 36, 84, 26, 33, 2, 95, 173, 235, 114, 104, 193, 225, 73, 193, 104, 229, 123, 61, 37, 111, 25, 109, 229, 148, 232, 96, 32, 23, 29, 116, 208, 88, 123, 82, 228, 215, 71, 195, 127, 104, 209, 148, 7, 41, 209, 77, 220, 127, 177, 247, 214, 0}
 
@@ -2061,9 +1774,11 @@ func TestDPPVSPreVoteNewHandler(t *testing.T) {
 		mdb.EXPECT().GetCurrentRoundState(txn, ownState.VAddr).Return(roundState, nil)
 		mdb.EXPECT().GetOwnValidatingState(txn).Return(ownValState, nil)
 
-		mdb.EXPECT().SetBroadcastPreVoteNil(txn, gomock.Any()).Return(nil)
+		mdb.EXPECT().SetBroadcastPreVote(txn, gomock.Any()).Return(nil)
 
-		mdb.EXPECT().GetHeaderTrieRoot(txn, gomock.Any()).Return(txRoot, nil)
+		hr := []byte{173, 233, 94, 109, 13, 42, 99, 22, 95, 251, 120, 194, 241, 137, 98, 59, 27, 223, 219, 43, 28, 200, 41, 191, 114,
+			27, 21, 229, 112, 18, 48, 147}
+		mdb.EXPECT().GetHeaderTrieRoot(txn, gomock.Any()).Return(hr, nil)
 
 		roundStates, err := msstore.LoadLocalState(txn)
 		if err != nil {
@@ -2100,21 +1815,8 @@ func TestDPPVSPreVoteNewHandler(t *testing.T) {
 // seems to call dPPSProposeValidHandler, there is also dPPSProposeNewHandler, dPPSProposeLockedHandler
 
 func TestValidPropFunc(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -2186,8 +1888,6 @@ func TestValidPropFunc(t *testing.T) {
 			fmt.Println("err is", err)
 		}
 
-		// fmt.Println(booleanValue, roundStates.OwnState.MaxBHSeen.BClaims.Height)
-
 		if booleanValue != true || roundStates.OwnState.MaxBHSeen.BClaims.Height != 1 {
 			t.Fatal("incorrect value for one of the output values")
 		}
@@ -2202,21 +1902,8 @@ func TestValidPropFunc(t *testing.T) {
 }
 
 func TestDPPSProposeLocked(t *testing.T) {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	bdb := getBdb(t)
 	defer bdb.Close()
 
 	ctr := gomock.NewController(t)
@@ -2287,8 +1974,6 @@ func TestDPPSProposeLocked(t *testing.T) {
 		if err != nil {
 			fmt.Println("err is", err)
 		}
-
-		// fmt.Println(booleanValue, roundStates.OwnState.MaxBHSeen.BClaims.Height)
 
 		if booleanValue != true || roundStates.OwnState.MaxBHSeen.BClaims.Height != 1 {
 			t.Fatal("incorrect value for one of the output values")
@@ -2434,34 +2119,4 @@ func getGroupSig(msg []byte) ([]byte, [][]byte, []byte, [][]byte) {
 	}
 
 	return grpsig, groupShares, mpk.Marshal(), sigs
-}
-
-func getStateHandler2(t *testing.T) *Engine {
-	stateHandler := &Engine{}
-	conDB := &db.Database{}
-	dman := &DMan{}
-	app := &application.Application{}
-	cesigner := &hashlib.Secp256k1Signer{}
-	ah := &admin.Handlers{}
-
-	c := crypto.S256()
-
-	priv, err := ecdsa.GenerateKey(c, rand.Reader)
-	if err != nil {
-		t.Errorf("error: %s", err)
-		return nil
-	}
-	if !c.IsOnCurve(priv.PublicKey.X, priv.PublicKey.Y) {
-		t.Errorf("public key invalid: %s", err)
-	}
-
-	publicKey := crypto.FromECDSAPub(&priv.PublicKey)
-
-	rbusClient := &request.Client{}
-
-	if err := stateHandler.Init(conDB, dman, app, cesigner, ah, publicKey, rbusClient); err != nil {
-		panic(err)
-	}
-
-	return stateHandler
 }
