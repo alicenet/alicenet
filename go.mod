@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.1.1
 	github.com/minio/highwayhash v1.0.1
+	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
