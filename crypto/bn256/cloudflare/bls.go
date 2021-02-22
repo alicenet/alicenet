@@ -29,11 +29,10 @@ func Sign(msg []byte, privK *big.Int, hashG1Func func(msg []byte) (*G1, error)) 
 // is the standard generator for G2.
 //
 // If we return a dangerous hash point (Infinity (the identity element)
-// or the G1 generator or its negation), we swallow the error. We only do this
-// because this *same error* occurred in Sign and was seen. Thus, there is
-// no reason why this error will be seen in Verify, because we will not have a
-// valid signature produced by Sign that will allow anyone to sign a
-// dangerous point.
+// or the G1 generator or its negation), we cause verification
+// to fail because signatures on these points can easily be forged.
+// Hashing to these points break the security assumptions because
+// the discrete logarithm is known.
 func Verify(msg []byte, sig *G1, pubK *G2, hashG1Func func(msg []byte) (*G1, error)) (bool, error) {
 	hash, err := hashG1Func(msg)
 	if err != nil {
