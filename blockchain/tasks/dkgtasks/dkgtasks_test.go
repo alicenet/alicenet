@@ -25,7 +25,7 @@ var accountAddresses []string = []string{
 	"0x7024AA45615dF90c7b8942D3419d479e07e0e5bC"}
 
 func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
-	eth, commit, err := blockchain.NewEthereumSimulator(
+	eth, err := blockchain.NewEthereumSimulator(
 		"../../../assets/test/keys-ropsten",
 		"../../../assets/test/passcodes-ropsten.txt",
 		6,
@@ -38,7 +38,7 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	go func() {
 		for true {
 			time.Sleep(1 * time.Second)
-			commit()
+			eth.Commit()
 		}
 	}()
 

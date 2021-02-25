@@ -9,7 +9,7 @@ import (
 
 func TestRegister(t *testing.T) {
 
-	eth, commit, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 
 	c := eth.Contracts()
@@ -20,7 +20,7 @@ func TestRegister(t *testing.T) {
 
 	_, err = c.Registry.Register(txnOpts, "myself", c.RegistryAddress)
 	assert.Nil(t, err, "Failed to create registry entry")
-	commit()
+	eth.Commit()
 
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	addr, err := c.Registry.Lookup(callOpts, "myself")

@@ -13,14 +13,13 @@ import (
 
 type ServicesSuite struct {
 	suite.Suite
-	commit func()
-	eth    blockchain.Ethereum
+	eth blockchain.Ethereum
 }
 
 func (s *ServicesSuite) SetupTest() {
 	t := s.T()
 
-	eth, commit, err := blockchain.NewEthereumSimulator(
+	eth, err := blockchain.NewEthereumSimulator(
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		3,
@@ -33,7 +32,6 @@ func (s *ServicesSuite) SetupTest() {
 	assert.Nil(t, err, "Error creating Ethereum simulator")
 
 	s.eth = eth
-	s.commit = commit
 }
 
 func (s *ServicesSuite) TestRegistrationOpenEvent() {
@@ -46,7 +44,7 @@ func (s *ServicesSuite) TestRegistrationOpenEvent() {
 	assert.Nil(t, err, "could not get height")
 	assert.Equal(t, uint64(0), height, "Height should be 0")
 
-	s.commit()
+	s.eth.Commit()
 
 	height, err = s.eth.GetCurrentHeight(context.TODO())
 	assert.Nil(t, err, "could not get height")

@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T) (blockchain.Ethereum, func(), error) {
+func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
 
-	eth, commit, err := blockchain.NewEthereumSimulator(
+	eth, err := blockchain.NewEthereumSimulator(
 		"../assets/test/keys",
 		"../assets/test/passcodes.txt",
 		1,
@@ -37,15 +37,15 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, func(), error) {
 		for {
 			t.Log(".")
 			time.Sleep(2 * time.Second)
-			commit()
+			eth.Commit()
 		}
 	}()
 
-	return eth, commit, err
+	return eth, err
 }
 
 func TestAccountsFound(t *testing.T) {
-	eth, _, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 
 	addressStrings := []string{
@@ -68,7 +68,7 @@ func TestAccountsFound(t *testing.T) {
 }
 
 func TestValues(t *testing.T) {
-	eth, _, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 
 	c := eth.Contracts()
