@@ -30,6 +30,11 @@ import (
 
 //Ethereum contains state information about a connection to Ethereum
 type Ethereum interface {
+
+	// Extensions for use with simulator
+	Close() error
+	Commit()
+
 	IsEthereumAccessible() bool
 
 	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
@@ -129,6 +134,7 @@ type ethereum struct {
 	retryDelay     time.Duration
 	contracts      *Contracts
 	client         GethClient
+	close          func() error
 	commit         func()
 	chainID        *big.Int
 	syncing        func(ctx context.Context) (*geth.SyncProgress, error)
@@ -165,11 +171,11 @@ func NewEthereumSimulator(
 	retryDelay time.Duration,
 	finalityDelay int,
 	wei *big.Int,
-	addresses ...string) (Ethereum, func(), error) {
+	addresses ...string) (Ethereum, error) {
 	logger := logging.GetLogger("ethsim")
 
 	if len(addresses) < 1 {
-		return nil, nil, errors.New("at least 1 account address required")
+		return nil, errors.New("at least 1 account address required")
 	}
 
 	defaultAccount := addresses[0]
@@ -194,13 +200,13 @@ func NewEthereumSimulator(
 	err := eth.LoadPasscodes(pathPasscodes)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumSimulator at eth.LoadPasscodes: %v", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	eth.defaultAccount, err = eth.GetAccount(common.HexToAddress(defaultAccount))
 	if err != nil {
 		logger.Errorf("Can't find user to set as default %v: %v", defaultAccount, err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	gasLimit := uint64(10000000000000000)
@@ -214,11 +220,15 @@ func NewEthereumSimulator(
 		return nil, nil
 	}
 
+	eth.close = func() error {
+		return sim.Close()
+	}
+
 	eth.commit = func() {
 		sim.Commit()
 	}
 
-	return eth, eth.commit, nil
+	return eth, nil
 }
 
 // NewEthereumEndpoint creates a new Ethereum abstraction
@@ -293,9 +303,18 @@ func NewEthereumEndpoint(
 	}
 
 	logger.Debug("Completed initialization")
+	eth.close = func() error { return nil }
 	eth.commit = func() {}
 
 	return eth, nil
+}
+
+func (eth *ethereum) Close() error {
+	return eth.close()
+}
+
+func (eth *ethereum) Commit() {
+	eth.commit()
 }
 
 func (eth *ethereum) Contracts() *Contracts {
@@ -403,13 +422,13 @@ func (eth *ethereum) UnlockAccount(acct accounts.Account) error {
 	}
 
 	// Open the account key file
-	keyJson, err := ioutil.ReadFile(acct.URL.Path)
+	keyJSON, err := ioutil.ReadFile(acct.URL.Path)
 	if err != nil {
 		return err
 	}
 
 	// Get the private key
-	key, err := keystore.DecryptKey(keyJson, passcode)
+	key, err := keystore.DecryptKey(keyJSON, passcode)
 	if err != nil {
 		return err
 	}
@@ -437,9 +456,8 @@ func (eth *ethereum) GetAccount(addr common.Address) (accounts.Account, error) {
 func (eth *ethereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
 	if key, ok := eth.keys[addr]; ok {
 		return key, nil
-	} else {
-		return nil, ErrKeysNotFound
 	}
+	return nil, ErrKeysNotFound
 }
 
 // SetDefaultAccount designates the account to be used by default
@@ -886,7 +904,10 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 
 	// Staking maintenance
 	q(vu.add("initializeStaking(address)", stakingFacet))
+	q(vu.add("balanceReward()", stakingFacet))
+	q(vu.add("balanceRewardFor(address)", stakingFacet))
 	q(vu.add("balanceStake()", stakingFacet))
+	q(vu.add("balanceStakeFor(address)", stakingFacet))
 	q(vu.add("balanceUnlocked()", stakingFacet))
 	q(vu.add("balanceUnlockedFor(address)", stakingFacet))
 	q(vu.add("currentEpoch()", stakingFacet))
@@ -908,6 +929,10 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	// Snapshot maintenance
 	q(vu.add("initializeSnapshots(address)", snapshotsFacet))
 	q(vu.add("snapshot(bytes,bytes)", snapshotsFacet))
+	q(vu.add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minEthSnapshotSize()", snapshotsFacet))
+	q(vu.add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minMadSnapshotSize(uint256)", snapshotsFacet))
 	q(vu.add("setEpoch(uint256)", snapshotsFacet))
 	q(vu.add("epoch()", snapshotsFacet))
 	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
@@ -1050,6 +1075,10 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(tx)
 
 	tx, err = c.Staking.SetRewardBonus(txnOpts, big.NewInt(1000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(1024))
 	logAndEat(logger, err)
 	q(tx)
 

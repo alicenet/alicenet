@@ -82,7 +82,7 @@ func TestSnapshot(t *testing.T) {
 	assert.True(t, ok)
 
 	// Check validity with Crypto
-	eth, commit, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 
 	c := eth.Contracts()
@@ -99,7 +99,7 @@ func TestSnapshot(t *testing.T) {
 	txn, err := c.Validators.Snapshot(txnOpts, rawSigGroup, rawBclaims)
 	assert.Nil(t, err)
 	assert.NotNil(t, txn)
-	commit()
+	eth.Commit()
 
 	rcpt, err := eth.WaitForReceipt(context.Background(), txn)
 	assert.Nil(t, err)
@@ -246,7 +246,7 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	// Check validity with Crypto
 	assert.Nil(t, err)
 
-	eth, commit, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 	c := eth.Contracts()
 	ctx := context.TODO()
@@ -268,7 +268,7 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	txn, err := c.Validators.Snapshot(txnOpts, rawSigGroup, rawBclaims)
 	assert.Nil(t, err)
 	assert.NotNil(t, txn)
-	commit()
+	eth.Commit()
 
 	rcpt, err := eth.WaitForReceipt(context.Background(), txn)
 	assert.Nil(t, err)
