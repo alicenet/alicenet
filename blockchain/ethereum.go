@@ -932,7 +932,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(vu.add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
 	q(vu.add("minEthSnapshotSize()", snapshotsFacet))
 	q(vu.add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.add("minMadSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minMadSnapshotSize()", snapshotsFacet))
 	q(vu.add("setEpoch(uint256)", snapshotsFacet))
 	q(vu.add("epoch()", snapshotsFacet))
 	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
