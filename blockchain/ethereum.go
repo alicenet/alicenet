@@ -932,7 +932,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(vu.add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
 	q(vu.add("minEthSnapshotSize()", snapshotsFacet))
 	q(vu.add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.add("minMadSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minMadSnapshotSize()", snapshotsFacet))
 	q(vu.add("setEpoch(uint256)", snapshotsFacet))
 	q(vu.add("epoch()", snapshotsFacet))
 	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
@@ -1078,7 +1078,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(1024))
+	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(1024))
 	logAndEat(logger, err)
 	q(tx)
 
