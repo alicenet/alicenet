@@ -12,6 +12,7 @@ import (
 	pb "github.com/MadBase/MadNet/proto"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -73,8 +74,12 @@ func NewStateServerHandler(logger *logrus.Logger, addr string, service interface
 
 	// make a new grpc runtime mux
 	gwmux := runtime.NewServeMux()
-	// assign the grpc mux as a handler for the default route of sever mux
-	mux.Handle("/", gwmux)
+
+	// make grpc handle cors request
+	cmux := cors.Default().Handler(gwmux)
+
+	// assign the cors enabled grpc mux as a handler for the default route of sever mux
+	mux.Handle("/", cmux)
 
 	//create a context for grpc
 	ctx := context.Background()
