@@ -1078,7 +1078,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(1024))
+	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(1024))
 	logAndEat(logger, err)
 	q(tx)
 
