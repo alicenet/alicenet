@@ -2,6 +2,7 @@ package blockchain_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -11,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T) (blockchain.Ethereum, func(), error) {
+func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
 
-	eth, commit, err := blockchain.NewEthereumSimulator(
+	eth, err := blockchain.NewEthereumSimulator(
 		"../assets/test/keys",
 		"../assets/test/passcodes.txt",
 		1,
@@ -32,13 +33,19 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, func(), error) {
 	_, _, err = c.DeployContracts(context.TODO(), acct)
 	assert.Nil(t, err)
 
-	commit()
+	go func() {
+		for {
+			t.Log(".")
+			time.Sleep(2 * time.Second)
+			eth.Commit()
+		}
+	}()
 
-	return eth, commit, err
+	return eth, err
 }
 
 func TestAccountsFound(t *testing.T) {
-	eth, _, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 
 	addressStrings := []string{
@@ -58,4 +65,36 @@ func TestAccountsFound(t *testing.T) {
 		assert.Nilf(t, err, "Not able to get keys for account: %v", address)
 	}
 
+}
+
+func TestValues(t *testing.T) {
+	eth, err := setupEthereum(t)
+	assert.Nil(t, err)
+
+	c := eth.Contracts()
+
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), eth.GetDefaultAccount())
+	assert.Nil(t, err)
+
+	amount := big.NewInt(987654321)
+	t.Logf("amount:%v", amount.Text(10))
+
+	txn, err := c.Staking.SetMinimumStake(txnOpts, amount)
+	assert.Nil(t, err)
+
+	eth.WaitForReceipt(context.Background(), txn)
+
+	ms, err := c.Staking.MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
+	assert.Nil(t, err)
+	t.Logf("minimum stake:%v", ms.Text(10))
+
+	assert.Equal(t, 0, amount.Cmp(ms))
+}
+
+func TestCreateSelector(t *testing.T) {
+	signature := "removeFacet(bytes4)"
+
+	selector := blockchain.CalculateSelector(signature)
+
+	assert.Equal(t, "ca5a0fae", fmt.Sprintf("%x", selector))
 }

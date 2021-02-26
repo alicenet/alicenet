@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T) (blockchain.Ethereum, func()) {
+func setupEthereum(t *testing.T) blockchain.Ethereum {
 
 	// eth, err := blockchain.NewEthereumEndpoint(
 	// 	"http://localhost:8545",
@@ -23,7 +23,7 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, func()) {
 	// 	3,
 	// 	5*time.Second,
 	// 	12)
-	eth, commit, err := blockchain.NewEthereumSimulator(
+	eth, err := blockchain.NewEthereumSimulator(
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		3,
@@ -68,11 +68,11 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, func()) {
 	_, _, err = c.DeployContracts(context.TODO(), acct)
 	assert.Nil(t, err, "Failed to deploy contracts...")
 
-	return eth, commit
+	return eth
 }
 
 func TestMonitor(t *testing.T) {
-	eth, commit := setupEthereum(t)
+	eth := setupEthereum(t)
 	c := eth.Contracts()
 
 	txnOpts, err := eth.GetTransactionOpts(context.TODO(), eth.GetDefaultAccount())
@@ -81,5 +81,5 @@ func TestMonitor(t *testing.T) {
 	_, err = c.Ethdkg.InitializeState(txnOpts)
 	assert.Nil(t, err, "Failed to Initialize state... %v", err)
 
-	commit()
+	eth.Commit()
 }

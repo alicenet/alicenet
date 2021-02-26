@@ -9,6 +9,7 @@ require (
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.9.15
+	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
@@ -16,6 +17,7 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.1.1
 	github.com/minio/highwayhash v1.0.1
+	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5

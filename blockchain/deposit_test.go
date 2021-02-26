@@ -14,18 +14,16 @@ import (
 type DepositTestSuite struct {
 	suite.Suite
 	eth      blockchain.Ethereum
-	commit   func()
 	callOpts *bind.CallOpts
 	txnOpts  *bind.TransactOpts
 }
 
 func (s *DepositTestSuite) SetupTest() {
 	t := s.T()
-	eth, commit, err := setupEthereum(t)
+	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
 	c := eth.Contracts()
 
-	s.commit = commit
 	s.eth = eth
 	ctx := context.TODO()
 
@@ -43,7 +41,7 @@ func (s *DepositTestSuite) SetupTest() {
 	txnOpts, _ := eth.GetTransactionOpts(ctx, testAcct)
 	_, err = c.UtilityToken.Transfer(txnOpts, testAcct.Address, InitialAllowance)
 	assert.Nil(t, err)
-	commit()
+	eth.Commit()
 
 	assert.Nilf(t, err, "Initial transfer of %v to %v failed: %v", InitialAllowance, testAcct.Address.Hex(), err)
 	if err == nil {
@@ -70,13 +68,13 @@ func (s *DepositTestSuite) TestDepositEvent() {
 	txn, err := c.UtilityToken.Approve(s.txnOpts, c.DepositAddress, big.NewInt(10000))
 	assert.Nilf(t, err, "Approve failed by %v to %v", eth.GetDefaultAccount().Address.Hex(), c.DepositAddress.Hex())
 	assert.NotNil(t, txn, "Approve failed: transaction is nil")
-	s.commit()
+	s.eth.Commit()
 
 	// Tell deposit contract to withdraw
 	txn, err = c.Deposit.Deposit(s.txnOpts, big.NewInt(1000))
 	assert.Nil(t, err, "Deposit failed")
 	assert.NotNilf(t, txn, "Deposit failed: transaction is nil")
-	s.commit()
+	s.eth.Commit()
 }
 
 func TestDepositTestSuite(t *testing.T) {

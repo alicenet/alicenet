@@ -21,13 +21,20 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/golang-collections/go-datastructures/queue"
 	"github.com/sirupsen/logrus"
 )
 
 //Ethereum contains state information about a connection to Ethereum
 type Ethereum interface {
+
+	// Extensions for use with simulator
+	Close() error
+	Commit()
+
 	IsEthereumAccessible() bool
 
 	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
@@ -127,12 +134,14 @@ type ethereum struct {
 	retryDelay     time.Duration
 	contracts      *Contracts
 	client         GethClient
+	close          func() error
 	commit         func()
 	chainID        *big.Int
 	syncing        func(ctx context.Context) (*geth.SyncProgress, error)
 	peerCount      func(ctx context.Context) (uint64, error)
 }
 
+// Contracts contains bindings to smart contract system
 type Contracts struct {
 	eth                 *ethereum
 	Crypto              *bindings.Crypto
@@ -141,10 +150,11 @@ type Contracts struct {
 	DepositAddress      common.Address
 	Ethdkg              *bindings.ETHDKG
 	EthdkgAddress       common.Address
+	Participants        *bindings.Participants
 	Registry            *bindings.Registry
 	RegistryAddress     common.Address
+	Snapshots           *bindings.Snapshots
 	Staking             *bindings.Staking
-	StakingAddress      common.Address
 	StakingToken        *bindings.Token
 	StakingTokenAddress common.Address
 	UtilityToken        *bindings.Token
@@ -161,11 +171,11 @@ func NewEthereumSimulator(
 	retryDelay time.Duration,
 	finalityDelay int,
 	wei *big.Int,
-	addresses ...string) (Ethereum, func(), error) {
+	addresses ...string) (Ethereum, error) {
 	logger := logging.GetLogger("ethsim")
 
 	if len(addresses) < 1 {
-		return nil, nil, errors.New("at least 1 account address required")
+		return nil, errors.New("at least 1 account address required")
 	}
 
 	defaultAccount := addresses[0]
@@ -190,13 +200,13 @@ func NewEthereumSimulator(
 	err := eth.LoadPasscodes(pathPasscodes)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumSimulator at eth.LoadPasscodes: %v", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	eth.defaultAccount, err = eth.GetAccount(common.HexToAddress(defaultAccount))
 	if err != nil {
 		logger.Errorf("Can't find user to set as default %v: %v", defaultAccount, err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	gasLimit := uint64(10000000000000000)
@@ -210,14 +220,18 @@ func NewEthereumSimulator(
 		return nil, nil
 	}
 
+	eth.close = func() error {
+		return sim.Close()
+	}
+
 	eth.commit = func() {
 		sim.Commit()
 	}
 
-	return eth, eth.commit, nil
+	return eth, nil
 }
 
-//NewEthereum creates a new Ethereum
+// NewEthereumEndpoint creates a new Ethereum abstraction
 func NewEthereumEndpoint(
 	endpoint string,
 	pathKeystore string,
@@ -289,9 +303,18 @@ func NewEthereumEndpoint(
 	}
 
 	logger.Debug("Completed initialization")
+	eth.close = func() error { return nil }
 	eth.commit = func() {}
 
 	return eth, nil
+}
+
+func (eth *ethereum) Close() error {
+	return eth.close()
+}
+
+func (eth *ethereum) Commit() {
+	eth.commit()
 }
 
 func (eth *ethereum) Contracts() *Contracts {
@@ -399,13 +422,13 @@ func (eth *ethereum) UnlockAccount(acct accounts.Account) error {
 	}
 
 	// Open the account key file
-	keyJson, err := ioutil.ReadFile(acct.URL.Path)
+	keyJSON, err := ioutil.ReadFile(acct.URL.Path)
 	if err != nil {
 		return err
 	}
 
 	// Get the private key
-	key, err := keystore.DecryptKey(keyJson, passcode)
+	key, err := keystore.DecryptKey(keyJSON, passcode)
 	if err != nil {
 		return err
 	}
@@ -433,9 +456,8 @@ func (eth *ethereum) GetAccount(addr common.Address) (accounts.Account, error) {
 func (eth *ethereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
 	if key, ok := eth.keys[addr]; ok {
 		return key, nil
-	} else {
-		return nil, ErrKeysNotFound
 	}
+	return nil, ErrKeysNotFound
 }
 
 // SetDefaultAccount designates the account to be used by default
@@ -654,6 +676,7 @@ func (eth *ethereum) Clone(defaultAccount accounts.Account) Ethereum {
 	return &nEth
 }
 
+// LookupContracts uses the registry to lookup and create bindings for all required contracts
 func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 
 	eth := c.eth
@@ -679,84 +702,64 @@ func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 	}
 
 	c.CryptoAddress, err = lookup("crypto/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
 	c.Crypto, err = bindings.NewCrypto(c.CryptoAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
 	c.DepositAddress, err = lookup("deposit/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
 	c.Deposit, err = bindings.NewDeposit(c.DepositAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
 	c.EthdkgAddress, err = lookup("ethdkg/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
 	c.Ethdkg, err = bindings.NewETHDKG(c.EthdkgAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
 	_, err = lookup("ethdkgCompletion/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
-	_, err = lookup("ethdkgGroupAccusation/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
-	_, err = lookup("ethdkgSubmitMPK/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
-	c.StakingAddress, err = lookup("staking/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
-	c.Staking, err = bindings.NewStaking(c.StakingAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	_, err = lookup("ethdkgGroupAccusation/v1")
+	logAndEat(logger, err)
+
+	_, err = lookup("ethdkgSubmitMPK/v1")
+	logAndEat(logger, err)
 
 	c.StakingTokenAddress, err = lookup("stakingToken/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
 	c.StakingToken, err = bindings.NewToken(c.StakingTokenAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
 	c.UtilityTokenAddress, err = lookup("utilityToken/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
 	c.UtilityToken, err = bindings.NewToken(c.UtilityTokenAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
 
 	c.ValidatorsAddress, err = lookup("validators/v1")
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
+	// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
 	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
-	if err != nil {
-		eth.logger.Error(err)
-	}
+	logAndEat(logger, err)
+
+	c.Staking, err = bindings.NewStaking(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
 
 	return nil
 }
 
+// DeployContracts deploys and does basic setup for all contracts. It returns a binding to the registry, it's address or an error.
 func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Account) (*bindings.Registry, common.Address, error) {
 	eth := c.eth
 	logger := eth.logger
@@ -766,175 +769,359 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		return nil, common.Address{}, err
 	}
 
-	var txn [12]*types.Transaction
-	c.RegistryAddress, txn[0], c.Registry, err = bindings.DeployRegistry(txnOpts, eth.client)
+	txnQueue := queue.New(10)
+	q := func(tx *types.Transaction) {
+		if tx != nil {
+			logger.Infof("Queueing transaction %v", tx.Hash().String())
+			txnQueue.Put(tx)
+		} else {
+			logger.Warn("Ignoring nil transaction")
+		}
+	}
+
+	flushQ := func(queue *queue.Queue) {
+		logger.Infof("waiting for txns...")
+		for txns, err := queue.Get(1); !queue.Empty(); txns, err = queue.Get(1) {
+			if err != nil {
+				logger.Infof("failure: %v", err)
+			}
+			tx := txns[0].(*types.Transaction)
+			logger.Infof("waiting for txn: %v", tx.Hash().String())
+			eth.WaitForReceipt(ctx, tx)
+		}
+	}
+
+	var txn *types.Transaction
+	c.RegistryAddress, txn, c.Registry, err = bindings.DeployRegistry(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy registry...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("* registryAddress = \"0x%0.40x\"", c.RegistryAddress)
 
-	c.CryptoAddress, txn[1], c.Crypto, err = bindings.DeployCrypto(txnOpts, eth.client)
+	c.CryptoAddress, txn, c.Crypto, err = bindings.DeployCrypto(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy crypto...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  cryptoContract = \"0x%0.40x\"", c.CryptoAddress)
 
-	c.StakingTokenAddress, txn[2], c.StakingToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("STK"), StringToBytes32("MadNet Staking"))
+	c.StakingTokenAddress, txn, c.StakingToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("STK"), StringToBytes32("MadNet Staking"))
 	if err != nil {
 		logger.Errorf("Failed to deploy stakingToken...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  stakingTokenAddress = \"0x%0.40x\"", c.StakingTokenAddress)
 
-	c.UtilityTokenAddress, txn[3], c.UtilityToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("UTL"), StringToBytes32("MadNet Utility"))
+	c.UtilityTokenAddress, txn, c.UtilityToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("UTL"), StringToBytes32("MadNet Utility"))
 	if err != nil {
 		logger.Errorf("Failed to deploy utilityToken...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  utilityTokenAddress = \"0x%0.40x\"", c.UtilityTokenAddress)
 
-	c.DepositAddress, txn[4], c.Deposit, err = bindings.DeployDeposit(txnOpts, eth.client, c.RegistryAddress)
+	c.DepositAddress, txn, c.Deposit, err = bindings.DeployDeposit(txnOpts, eth.client, c.RegistryAddress)
 	if err != nil {
 		logger.Errorf("Failed to deploy deposit...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  depositAddress = \"0x%0.40x\"", c.DepositAddress)
 
-	c.StakingAddress, txn[5], c.Staking, err = bindings.DeployStaking(txnOpts, eth.client, c.RegistryAddress)
+	// Deploy ValidatorsDiamond
+	c.ValidatorsAddress, txn, _, err = bindings.DeployValidatorsDiamond(txnOpts, eth.client) // Deploy the core diamond
 	if err != nil {
-		logger.Errorf("Failed to deploy staking...")
+		logger.Errorf("Failed to deploy validators diamond...")
 		return nil, common.Address{}, err
 	}
-	logger.Infof("  stakingAddress = \"0x%0.40x\"", c.StakingAddress)
+	q(txn)
 
-	c.ValidatorsAddress, txn[6], c.Validators, err = bindings.DeployValidators(txnOpts, eth.client, 20, c.RegistryAddress)
+	// Deploy validators facets
+	participantsFacet, txn, _, err := bindings.DeployParticipantsFacet(txnOpts, eth.client)
+	if err != nil {
+		logger.Error("Failed to deploy participants facet...")
+		return nil, common.Address{}, err
+	}
+	q(txn)
+
+	snapshotsFacet, txn, _, err := bindings.DeploySnapshotsFacet(txnOpts, eth.client)
+	if err != nil {
+		logger.Error("Failed to deploy snapshots facet...")
+		return nil, common.Address{}, err
+	}
+	q(txn)
+
+	stakingFacet, txn, _, err := bindings.DeployStakingFacet(txnOpts, eth.client)
+	if err != nil {
+		logger.Error("Failed to deploy staking facet...")
+		return nil, common.Address{}, err
+	}
+	q(txn)
+
+	// validatorsUpdateFacet, txn, _, err := bindings.DeployValidatorsUpdateFacet(txnOpts, eth.client)
+	// if err != nil {
+	// 	logger.Error("Failed to deploy validators update facet...")
+	// 	return nil, common.Address{}, err
+	// }
+	// q(txn)
+
+	// Bind diamond to interfaces
+	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Staking, err = bindings.NewStaking(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client) // Validators is just an interface
 	if err != nil {
 		logger.Errorf("Failed to deploy validators...")
 		return nil, common.Address{}, err
 	}
 	logger.Infof("  validatorsAddress = \"0x%0.40x\"", c.ValidatorsAddress)
 
-	var validatorsSnapshotAddress common.Address
-	validatorsSnapshotAddress, txn[7], _, err = bindings.DeployValidatorsSnapshot(txnOpts, eth.client)
+	validatorsUpdate, err := bindings.NewValidatorsUpdateFacet(c.ValidatorsAddress, eth.client)
 	if err != nil {
-		logger.Errorf("failed to deploy validatorsSnapshot...")
+		logger.Errorf("Failed to deploy validators update  ..")
 		return nil, common.Address{}, err
 	}
-	logger.Infof("  validatorsSnapshotAddress = \"0x%0.40x\"", validatorsSnapshotAddress)
 
-	c.EthdkgAddress, txn[8], c.Ethdkg, err = bindings.DeployETHDKG(txnOpts, eth.client, c.RegistryAddress)
+	// Wait for all the deploys to finish
+	eth.commit()
+	flushQ(txnQueue)
+
+	// Register all the facets
+	vu := &updater{vu: validatorsUpdate, txnOpts: txnOpts, logger: logger}
+
+	// Staking maintenance
+	q(vu.add("initializeStaking(address)", stakingFacet))
+	q(vu.add("balanceReward()", stakingFacet))
+	q(vu.add("balanceRewardFor(address)", stakingFacet))
+	q(vu.add("balanceStake()", stakingFacet))
+	q(vu.add("balanceStakeFor(address)", stakingFacet))
+	q(vu.add("balanceUnlocked()", stakingFacet))
+	q(vu.add("balanceUnlockedFor(address)", stakingFacet))
+	q(vu.add("currentEpoch()", stakingFacet))
+	q(vu.add("lockStake(uint256)", stakingFacet))
+	q(vu.add("majorStakeFine()", stakingFacet))
+	q(vu.add("minimumStake()", stakingFacet))
+	q(vu.add("minorStakeFine()", stakingFacet))
+	q(vu.add("requestUnlockStake()", stakingFacet))
+	q(vu.add("rewardAmount()", stakingFacet))
+	q(vu.add("rewardBonus()", stakingFacet))
+	q(vu.add("setCurrentEpoch(uint256)", stakingFacet))
+	q(vu.add("setMajorStakeFine(uint256)", stakingFacet))
+	q(vu.add("setMinimumStake(uint256)", stakingFacet))
+	q(vu.add("setMinorStakeFine(uint256)", stakingFacet))
+	q(vu.add("setRewardAmount(uint256)", stakingFacet))
+	q(vu.add("setRewardBonus(uint256)", stakingFacet))
+	q(vu.add("unlockStake(uint256)", stakingFacet))
+
+	// Snapshot maintenance
+	q(vu.add("initializeSnapshots(address)", snapshotsFacet))
+	q(vu.add("snapshot(bytes,bytes)", snapshotsFacet))
+	q(vu.add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minEthSnapshotSize()", snapshotsFacet))
+	q(vu.add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.add("minMadSnapshotSize()", snapshotsFacet))
+	q(vu.add("setEpoch(uint256)", snapshotsFacet))
+	q(vu.add("epoch()", snapshotsFacet))
+	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
+	q(vu.add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
+	q(vu.add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
+	q(vu.add("getHeightFromSnapshot(uint256)", snapshotsFacet))
+	q(vu.add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
+
+	// Validator maintenance
+	q(vu.add("initializeParticipants(address)", participantsFacet))
+	q(vu.add("addValidator(address,uint256[2])", participantsFacet))
+	q(vu.add("removeValidator(address,uint256[2])", participantsFacet))
+	q(vu.add("queueValidator(address,uint256[2])", participantsFacet))
+	q(vu.add("isValidator(address)", participantsFacet))
+	q(vu.add("getValidatorPublicKey(address)", participantsFacet))
+	q(vu.add("confirmValidators()", participantsFacet))
+	q(vu.add("validatorMaxCount()", participantsFacet))
+	q(vu.add("validatorCount()", participantsFacet))
+	q(vu.add("setValidatorMaxCount(uint8)", participantsFacet))
+
+	c.EthdkgAddress, txn, c.Ethdkg, err = bindings.DeployETHDKG(txnOpts, eth.client, c.RegistryAddress)
 	if err != nil {
 		logger.Errorf("Failed to deploy ethdkg...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  ethdkgAddress = \"0x%0.40x\"", c.EthdkgAddress)
 
 	var ethdkgCompletionAddress common.Address
-	ethdkgCompletionAddress, txn[9], _, err = bindings.DeployETHDKGCompletion(txnOpts, eth.client)
+	ethdkgCompletionAddress, txn, _, err = bindings.DeployETHDKGCompletion(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy ethdkgCompletion...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  ethdkgCompletion = \"0x%0.40x\"", ethdkgCompletionAddress)
 
 	var ethdkgGroupAccusationAddress common.Address
-	ethdkgGroupAccusationAddress, txn[10], _, err = bindings.DeployETHDKGGroupAccusation(txnOpts, eth.client)
+	ethdkgGroupAccusationAddress, txn, _, err = bindings.DeployETHDKGGroupAccusation(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy ethdkgGroupAccusation...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof("  ethdkgGroupAccusation = \"0x%0.40x\"", ethdkgGroupAccusationAddress)
 
 	var ethdkgSubmitMPKAddress common.Address
-	ethdkgSubmitMPKAddress, txn[11], _, err = bindings.DeployETHDKGSubmitMPK(txnOpts, eth.client)
+	ethdkgSubmitMPKAddress, txn, _, err = bindings.DeployETHDKGSubmitMPK(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy ethdkgSubmitMPKAddress...")
 		return nil, common.Address{}, err
 	}
+	q(txn)
 	logger.Infof(" ethdkgSubmitMPKAddress = \"0x%0.40x\"", ethdkgSubmitMPKAddress)
 
 	eth.contracts = c
 	eth.commit()
 
-	for _, tx := range txn {
-		rcpt, err := eth.WaitForReceipt(ctx, tx)
-		if err != nil {
-			logger.Errorf("Failed to retrieve receipt: %v", err)
-		} else if rcpt != nil {
-			logger.Infof("Deploy status %v with contract address of %v", rcpt.Status, rcpt.ContractAddress.Hex())
-		} else {
-			logger.Info("No error but no receipt either")
-		}
-	}
+	txn, err = c.Registry.Register(txnOpts, "crypto/v1", c.CryptoAddress)
+	logAndEat(logger, err)
+	q(txn)
 
-	txn[0], err = c.Registry.Register(txnOpts, "crypto/v1", c.CryptoAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[1], err = c.Registry.Register(txnOpts, "deposit/v1", c.DepositAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[2], err = c.Registry.Register(txnOpts, "ethdkg/v1", c.EthdkgAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[3], err = c.Registry.Register(txnOpts, "ethdkgCompletion/v1", ethdkgCompletionAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[4], err = c.Registry.Register(txnOpts, "ethdkgGroupAccusation/v1", ethdkgGroupAccusationAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[5], err = c.Registry.Register(txnOpts, "ethdkgSubmitMPK/v1", ethdkgSubmitMPKAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[6], err = c.Registry.Register(txnOpts, "staking/v1", c.StakingAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[7], err = c.Registry.Register(txnOpts, "stakingToken/v1", c.StakingTokenAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[8], err = c.Registry.Register(txnOpts, "utilityToken/v1", c.UtilityTokenAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[9], err = c.Registry.Register(txnOpts, "validators/v1", c.ValidatorsAddress)
-	if err != nil {
-		logger.Error(err)
-	}
-	txn[10], err = c.Registry.Register(txnOpts, "validatorsSnapshot/v1", validatorsSnapshotAddress)
-	if err != nil {
-		logger.Error(err)
-	}
+	txn, err = c.Registry.Register(txnOpts, "deposit/v1", c.DepositAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "ethdkg/v1", c.EthdkgAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "ethdkgCompletion/v1", ethdkgCompletionAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "ethdkgGroupAccusation/v1", ethdkgGroupAccusationAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "ethdkgSubmitMPK/v1", ethdkgSubmitMPKAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "stakingToken/v1", c.StakingTokenAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "utilityToken/v1", c.UtilityTokenAddress)
+	logAndEat(logger, err)
+	q(txn)
+
+	txn, err = c.Registry.Register(txnOpts, "validators/v1", c.ValidatorsAddress)
+	logAndEat(logger, err)
+	q(txn)
 
 	eth.commit()
 
-	for idx := 0; idx < 11; idx++ {
-		rcpt, err := eth.WaitForReceipt(ctx, txn[idx])
-		if err != nil {
-			logger.Errorf("Failed to retrieve receipt: %v", err)
-		} else if rcpt != nil {
-			logger.Infof("Register status %v for txn[%v]", rcpt.Status, idx)
-		} else {
-			logger.Info("No error but no receipt either")
-		}
+	// Wait for all the deploys to finish
+	flushQ(txnQueue)
+
+	// Initialize Snapshots facet
+	tx, err := c.Snapshots.InitializeSnapshots(txnOpts, c.RegistryAddress)
+	if err != nil {
+		logger.Errorf("Failed to initialize SnapshotsFacet: %v", err)
+		return nil, common.Address{}, err
+	}
+	eth.commit()
+	rcpt, err := eth.WaitForReceipt(ctx, tx)
+	if err != nil {
+		logger.Errorf("Failed to get receipt for initializing Snapshots facet: %v", err)
+		return nil, common.Address{}, err
+	}
+	if rcpt != nil {
+		logger.Infof("Snapshots update status: %v", rcpt.Status)
+	} else {
+		logger.Errorf("Snapshots update receipt is nil")
 	}
 
+	tx, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(1))
+	if err != nil {
+		logger.Errorf("Failed to initialize Snapshots facet next snapshot: %v", err)
+		return nil, common.Address{}, err
+	}
+	q(tx)
+
+	// Default staking values
+	tx, err = c.Staking.SetMinimumStake(txnOpts, big.NewInt(1000000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Staking.SetMajorStakeFine(txnOpts, big.NewInt(200000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Staking.SetMinorStakeFine(txnOpts, big.NewInt(50000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Staking.SetRewardAmount(txnOpts, big.NewInt(1000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Staking.SetRewardBonus(txnOpts, big.NewInt(1000))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(1024))
+	logAndEat(logger, err)
+	q(tx)
+
+	eth.commit()
+
+	flushQ(txnQueue)
+
+	// Initialize Participants facet
+	tx, err = c.Participants.InitializeParticipants(txnOpts, c.RegistryAddress)
+	if err != nil {
+		logger.Errorf("Failed to initialize Participants facet: %v", err)
+		return nil, common.Address{}, err
+	}
+	eth.commit()
+
+	rcpt, err = eth.WaitForReceipt(ctx, tx)
+	if err != nil {
+		logger.Errorf("Failed to get receipt for initializing Participants facet: %v", err)
+		return nil, common.Address{}, err
+	}
+	if rcpt != nil {
+		logger.Infof("Participants update status: %v", rcpt.Status)
+	} else {
+		logger.Errorf("Participants update receipt is nil")
+	}
+
+	tx, err = c.Participants.SetValidatorMaxCount(txnOpts, 10)
+	if err != nil {
+		logger.Errorf("Failed to initialize Participants facet: %v", err)
+		return nil, common.Address{}, err
+	}
+	q(tx)
+	eth.commit()
+	flushQ(txnQueue)
+
 	// Staking updates
-	tx, err := c.Staking.ReloadRegistry(txnOpts)
+	tx, err = c.Staking.InitializeStaking(txnOpts, c.RegistryAddress)
 	if err != nil {
 		logger.Errorf("Failed to update staking contract references: %v", err)
 		return nil, common.Address{}, err
 	}
 	eth.commit()
-	rcpt, err := eth.WaitForReceipt(ctx, tx)
+	rcpt, err = eth.WaitForReceipt(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for staking update: %v", err)
 		return nil, common.Address{}, err
@@ -962,11 +1149,11 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	}
 
 	// Validator updates
-	tx, err = c.Validators.ReloadRegistry(txnOpts)
-	if err != nil {
-		logger.Errorf("Failed to update validators contract references: %v", err)
-		return nil, common.Address{}, err
-	}
+	// tx, err = c.Validators.ReloadRegistry(txnOpts)
+	// if err != nil {
+	// 	logger.Errorf("Failed to update validators contract references: %v", err)
+	// 	return nil, common.Address{}, err
+	// }
 	eth.commit()
 	rcpt, err = eth.WaitForReceipt(ctx, tx)
 	if err != nil {
@@ -994,7 +1181,50 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	return c.Registry, c.RegistryAddress, nil
 }
 
+// StringToBytes32 is useful for convert a Go string into a bytes32 useful calling Solidity
 func StringToBytes32(str string) (b [32]byte) {
 	copy(b[:], []byte(str)[0:32])
 	return
+}
+
+// CalculateSelector calculates the hash of the supplied function signature
+func CalculateSelector(functionSignature string) [4]byte {
+	var selector [4]byte
+
+	selectorSlice := crypto.Keccak256([]byte(functionSignature))[:4]
+	selector[0] = selectorSlice[0]
+	selector[1] = selectorSlice[1]
+	selector[2] = selectorSlice[2]
+	selector[3] = selectorSlice[3]
+
+	return selector
+}
+
+func logAndEat(logger *logrus.Logger, err error) {
+	if err != nil {
+		logger.Error(err)
+	}
+}
+
+type updater struct {
+	err     error
+	logger  *logrus.Logger
+	vu      *bindings.ValidatorsUpdateFacet
+	txnOpts *bind.TransactOpts
+}
+
+//
+func (u *updater) add(signature string, facet common.Address) *types.Transaction {
+	if u.err != nil {
+		return nil
+	}
+
+	selector := CalculateSelector(signature)
+	if u.logger != nil {
+		u.logger.Infof("Registering %v as %x with %v", signature, selector, facet.Hex())
+	}
+
+	txn, err := u.vu.AddFacet(u.txnOpts, selector, facet)
+	u.err = err
+	return txn
 }

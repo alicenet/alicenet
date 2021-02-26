@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
@@ -47,7 +48,7 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 
 	contractAddresses := []common.Address{
 		c.DepositAddress, c.EthdkgAddress, c.RegistryAddress,
-		c.StakingAddress, c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
+		c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
 
 	serviceLogger := logging.GetLogger("services")
 	taskLogger := logging.GetLogger("tasks")
@@ -328,7 +329,7 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 	rawSigGroup := blockHeader.SigGroup
 
 	// Do the mechanics
-	txnOpts, err := svcs.eth.GetTransactionOpts(context.TODO(), svcs.eth.GetDefaultAccount())
+	txnOpts, err := svcs.eth.GetTransactionOpts(context.Background(), svcs.eth.GetDefaultAccount())
 	if err != nil {
 		logger.Errorf("Could not create transaction for snapshot: %v", err)
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!
@@ -340,7 +341,10 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!
 	}
 
-	rcpt, err := eth.WaitForReceipt(context.TODO(), txn)
+	toCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	rcpt, err := eth.WaitForReceipt(toCtx, txn)
 	if err != nil {
 		logger.Errorf("Failed to retrieve snapshot receipt: %v", err)
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!
