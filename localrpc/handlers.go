@@ -54,7 +54,8 @@ type Handlers struct {
 	ethAcct []byte
 	EthPubk []byte
 
-	safe func() bool
+	safeHandler func() bool
+	safecount   uint32
 }
 
 // Init will initialize the Consensus Engine and all sub modules
@@ -77,8 +78,45 @@ func (srpc *Handlers) Init(database *db.Database, app *application.Application, 
 	if len(srpc.EthPubk) > 0 {
 		srpc.ethAcct = crypto.GetAccount(srpc.EthPubk)
 	}
-	srpc.safe = safe
+	srpc.safeHandler = safe
 	return nil
+}
+
+func (srpc *Handlers) Start() {
+	srpc.SafeMonitor()
+}
+
+func (srpc *Handlers) Stop() {
+	srpc.cancelCtx()
+}
+
+func (srpc *Handlers) safe() bool {
+	if srpc.safecount == 0 {
+		return false
+	}
+	return true
+}
+
+func (srpc *Handlers) SafeMonitor() {
+	for {
+		select {
+		case <-srpc.ctx.Done():
+			return
+		case <-time.After(3 * time.Second):
+		}
+		if !srpc.safeHandler() {
+			if srpc.safecount > 0 {
+				srpc.safecount--
+			}
+		} else {
+			if srpc.safecount <= 6 {
+				srpc.safecount++
+			}
+		}
+		if srpc.safecount > 7 { //todo:HUNTER MOVE INTO SYNCHRONIZER FOR ERROR PROPOGATION
+			panic("localRPC handler impossible state")
+		}
+	}
 }
 
 // HandleLocalStateGetPendingTransaction handles the get pending tx request
