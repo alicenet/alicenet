@@ -22,9 +22,10 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/tinylib/msgp v1.1.5 // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10
-	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
 	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0

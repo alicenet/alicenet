@@ -29,7 +29,7 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Error("Error in getting RegistrationEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := curBlock.Cmp(registrationEnd) <= 0
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in Registration Phase")
@@ -115,7 +115,7 @@ func TestRegisterFailRegisterLate(t *testing.T) {
 	// no additional registration allowed
 
 	// Check block number here; we are not in the correct block
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := curBlock.Cmp(registrationEnd) <= 0
 	if validBlockNumber {
 		t.Fatal("Unexpected error; not in Registration Phase")
@@ -191,7 +191,7 @@ func TestRegisterFailRegisterTwice(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error in getting RegistrationEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := curBlock.Cmp(registrationEnd) <= 0
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in Registration Phase")
@@ -280,7 +280,7 @@ func TestRegisterFailInvalidG1PubKey(t *testing.T) {
 	if err != nil {
 		t.Error("Error in getting RegistrationEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := curBlock.Cmp(registrationEnd) <= 0
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in Registration Phase")

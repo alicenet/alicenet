@@ -912,8 +912,10 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(vu.add("balanceUnlockedFor(address)", stakingFacet))
 	q(vu.add("currentEpoch()", stakingFacet))
 	q(vu.add("lockStake(uint256)", stakingFacet))
+	q(vu.add("majorFine(address)", stakingFacet))
 	q(vu.add("majorStakeFine()", stakingFacet))
 	q(vu.add("minimumStake()", stakingFacet))
+	q(vu.add("minorFine(address)", stakingFacet))
 	q(vu.add("minorStakeFine()", stakingFacet))
 	q(vu.add("requestUnlockStake()", stakingFacet))
 	q(vu.add("rewardAmount()", stakingFacet))
@@ -1146,21 +1148,6 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		return nil, common.Address{}, err
 	} else if rcpt != nil {
 		logger.Infof("deposit update status: %v", rcpt.Status)
-	}
-
-	// Validator updates
-	// tx, err = c.Validators.ReloadRegistry(txnOpts)
-	// if err != nil {
-	// 	logger.Errorf("Failed to update validators contract references: %v", err)
-	// 	return nil, common.Address{}, err
-	// }
-	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for validators update: %v", err)
-		return nil, common.Address{}, err
-	} else if rcpt != nil {
-		logger.Infof("validators update status: %v", rcpt.Status)
 	}
 
 	// ETHDKG updates

@@ -6,14 +6,16 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 func TestHashSignVerifyEthdkg(t *testing.T) {
 	n := 1
-	_, cc, _, sim, _, _ := EthdkgContractSetup(t, n)
-	defer sim.Close()
+	_, cc, _, commit, _, _ := EthdkgContractSetup(t, n)
+	assert.NotNil(t, commit)
+	// defer sim.Close()
 
 	msg := []byte{0x00, 0x01, 0x02, 0x03}
 	trueHashG1, err := cloudflare.HashToG1(msg)
@@ -69,8 +71,9 @@ func TestHashSignVerifyEthdkg(t *testing.T) {
 // Figure out how Infinity (the group identity element) is stored
 func TestSafeSigningPointEthdkg(t *testing.T) {
 	n := 1
-	_, cc, _, sim, _, _ := EthdkgContractSetup(t, n)
-	defer sim.Close()
+	_, cc, _, commit, _, _ := EthdkgContractSetup(t, n)
+	assert.NotNil(t, commit)
+	// defer sim.Close()
 
 	// G1 point setup
 	g1 := new(cloudflare.G1).ScalarBaseMult(big.NewInt(1))
@@ -119,8 +122,9 @@ func TestSafeSigningPointEthdkg(t *testing.T) {
 
 func TestAggregateSignaturesEthdkg(t *testing.T) {
 	n := 1
-	_, cc, _, sim, _, _ := EthdkgContractSetup(t, n)
-	defer sim.Close()
+	_, cc, _, commit, _, _ := EthdkgContractSetup(t, n)
+	assert.NotNil(t, commit)
+	// defer sim.Close()
 
 	threshold := 2
 	thresholdBig := big.NewInt(int64(threshold))

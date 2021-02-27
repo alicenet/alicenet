@@ -137,7 +137,7 @@ func TestSubmitKeyShareSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -172,7 +172,7 @@ func TestSubmitKeyShareSuccess(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -416,7 +416,7 @@ func TestSubmitKeyShareFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -452,7 +452,7 @@ func TestSubmitKeyShareFailBlockNumber(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here; will fail
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -706,7 +706,7 @@ func TestSubmitKeyShareFailInvalidHash(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -734,7 +734,7 @@ func TestSubmitKeyShareFailInvalidHash(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 
@@ -937,7 +937,7 @@ func TestSubmitKeyShareFailInvalidHash(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here; will fail
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -1162,7 +1162,7 @@ func TestSubmitKeyShareFailInvalidDLEQProof(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1198,7 +1198,7 @@ func TestSubmitKeyShareFailInvalidDLEQProof(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here; will fail
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -1419,7 +1419,7 @@ func TestSubmitKeyShareFailInvalidPairingCheck(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1459,7 +1459,7 @@ func TestSubmitKeyShareFailInvalidPairingCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := (disputeEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(keyShareSubmissionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in Dispute Phase")
