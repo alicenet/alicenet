@@ -70,6 +70,7 @@ type utilsConfig struct {
 }
 
 type validatorConfig struct {
+	Repl            bool
 	RewardAccount   string
 	RewardCurveSpec int
 	SymmetricKey    string
