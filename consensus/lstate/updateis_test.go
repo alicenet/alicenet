@@ -14,6 +14,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/consensus/request"
 	hashlib "github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/peering"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -40,13 +41,14 @@ func getStateHandler(t *testing.T, mdb db.DatabaseIface) *Engine {
 	dHandler.Init()
 
 	stateHandler := &Engine{}
-	// conDB := &db.Database{}
-	// conDB.Init(bdb)
-	dman := NewDMan(mdb)
-	// app := &application.Application{}
-	// app.Init(conDB, bdb, dHandler)
 
 	app := appmock.New()
+
+	dman := &DMan{}
+	rb := &request.Client{}
+
+	rb.Init(&peering.PeerSubscription{})
+	dman.Init(mdb, app, rb)
 
 	ah := &admin.Handlers{}
 
