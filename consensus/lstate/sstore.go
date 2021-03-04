@@ -7,10 +7,10 @@ import (
 )
 
 type Store struct {
-	database *db.Database
+	database db.DatabaseIface
 }
 
-func (ss *Store) Init(database *db.Database) error {
+func (ss *Store) Init(database db.DatabaseIface) error {
 	ss.database = database
 	return nil
 }
@@ -96,21 +96,21 @@ func (ss *Store) LoadState(txn *badger.Txn, rcert *objs.RCert) (*RoundStates, er
 	return rs, nil
 }
 
-func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
-	err := ss.database.SetOwnState(txn, rs.OwnState)
+func (ss *Store) WriteState(rs *RoundStates) error {
+	err := ss.database.SetOwnState(rs.txn, rs.OwnState)
 	if err != nil {
 		return err
 	}
 	for _, valObj := range rs.ValidatorSet.Validators {
 		r := rs.PeerStateMap[string(valObj.VAddr)]
-		if err := ss.database.SetCurrentRoundState(txn, r); err != nil {
+		if err := ss.database.SetCurrentRoundState(rs.txn, r); err != nil {
 			return err
 		}
 	}
-	if err := ss.database.SetCurrentRoundState(txn, rs.OwnRoundState()); err != nil {
+	if err := ss.database.SetCurrentRoundState(rs.txn, rs.OwnRoundState()); err != nil {
 		return err
 	}
-	err = ss.database.SetOwnValidatingState(txn, rs.OwnValidatingState)
+	err = ss.database.SetOwnValidatingState(rs.txn, rs.OwnValidatingState)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
 		if conflictCheckerValue != nil {
 			s.TrackExternalConflicts(conflictCheckerValue)
 		}
-		if err := ss.database.SetCurrentRoundState(txn, s); err != nil {
+		if err := ss.database.SetCurrentRoundState(rs.txn, s); err != nil {
 			return err
 		}
 	}

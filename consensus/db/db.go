@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/MadBase/MadNet/constants/dbprefix"
@@ -310,9 +311,22 @@ func (db *Database) GetHeaderTrieRoot(txn *badger.Txn, height uint32) ([]byte, e
 	}
 	rt, err := db.rawDB.getValue(txn, key)
 	if err != nil {
+		utils.DebugTrace(db.logger, err, fmt.Sprintf("key that is not being found is %v", key))
 		return nil, err
 	}
 	return rt, nil
+}
+
+func (db *Database) SetHeaderTrieRoot(txn *badger.Txn, height uint32, root []byte) error {
+	key, err := db.makeHistoricHeaderRootKey(height)
+	if err != nil {
+		return err
+	}
+	err = db.rawDB.SetValue(txn, key, root)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *Database) UpdateHeaderTrieRootFastSync(txn *badger.Txn, v *objs.BlockHeader) error {
