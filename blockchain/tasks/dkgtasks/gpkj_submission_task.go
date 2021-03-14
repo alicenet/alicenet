@@ -66,7 +66,7 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context) bool {
 	// Register
 	txn, err := c.Ethdkg.SubmitGPKj(txnOpts, t.groupPublicKey, t.signature)
 	if err != nil {
-		t.logger.Errorf("registering failed: %v", err)
+		t.logger.Errorf("submitting gpkj failed: %v", err)
 		return false
 	}
 

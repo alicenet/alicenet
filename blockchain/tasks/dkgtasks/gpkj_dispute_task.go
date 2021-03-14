@@ -73,7 +73,7 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context) {
 	// Register
 	txn, err := c.Ethdkg.GroupAccusationGPKj(txnOpts, t.inverse, t.honestIndicies, t.dishonestIndicies)
 	if err != nil {
-		t.logger.Errorf("registering failed: %v", err)
+		t.logger.Errorf("group accusation failed: %v", err)
 		return
 	}
 

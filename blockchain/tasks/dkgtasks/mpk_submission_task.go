@@ -65,7 +65,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context) bool {
 	// Register
 	txn, err := c.Ethdkg.SubmitMasterPublicKey(txnOpts, t.masterPublicKey)
 	if err != nil {
-		t.logger.Errorf("registering failed: %v", err)
+		t.logger.Errorf("submitting master public key failed: %v", err)
 		return false
 	}
 

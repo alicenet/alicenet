@@ -70,7 +70,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context) bool {
 	// Submit Keyshares
 	txn, err := c.Ethdkg.SubmitKeyShare(txnOpts, t.acct.Address, t.keyshareG1, t.keyshareG1Proof, t.keyshareG2)
 	if err != nil {
-		t.logger.Errorf("registering failed: %v", err)
+		t.logger.Errorf("submitting keyshare failed: %v", err)
 		return false
 	}
 
