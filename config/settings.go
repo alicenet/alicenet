@@ -65,6 +65,10 @@ type transportConfig struct {
 	LocalStateListeningAddress string
 }
 
+type deployConfig struct {
+	Migrations bool
+}
+
 type utilsConfig struct {
 	Status bool
 }
@@ -79,6 +83,7 @@ type validatorConfig struct {
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string
+	Deploy                deployConfig
 	Ethereum              ethereumConfig
 	Monitor               monitorConfig
 	Transport             transportConfig

@@ -882,60 +882,60 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	flushQ(txnQueue)
 
 	// Register all the validators facets
-	vu := &updater{vu: validatorsUpdate, txnOpts: txnOpts, logger: logger}
+	vu := &Updater{Updater: validatorsUpdate, TxnOpts: txnOpts, Logger: logger}
 
 	// Staking maintenance
-	q(vu.add("initializeStaking(address)", stakingFacet))
-	q(vu.add("balanceReward()", stakingFacet))
-	q(vu.add("balanceRewardFor(address)", stakingFacet))
-	q(vu.add("balanceStake()", stakingFacet))
-	q(vu.add("balanceStakeFor(address)", stakingFacet))
-	q(vu.add("balanceUnlocked()", stakingFacet))
-	q(vu.add("balanceUnlockedFor(address)", stakingFacet))
-	q(vu.add("currentEpoch()", stakingFacet))
-	q(vu.add("lockStake(uint256)", stakingFacet))
-	q(vu.add("majorFine(address)", stakingFacet))
-	q(vu.add("majorStakeFine()", stakingFacet))
-	q(vu.add("minimumStake()", stakingFacet))
-	q(vu.add("minorFine(address)", stakingFacet))
-	q(vu.add("minorStakeFine()", stakingFacet))
-	q(vu.add("requestUnlockStake()", stakingFacet))
-	q(vu.add("rewardAmount()", stakingFacet))
-	q(vu.add("rewardBonus()", stakingFacet))
-	q(vu.add("setCurrentEpoch(uint256)", stakingFacet))
-	q(vu.add("setMajorStakeFine(uint256)", stakingFacet))
-	q(vu.add("setMinimumStake(uint256)", stakingFacet))
-	q(vu.add("setMinorStakeFine(uint256)", stakingFacet))
-	q(vu.add("setRewardAmount(uint256)", stakingFacet))
-	q(vu.add("setRewardBonus(uint256)", stakingFacet))
-	q(vu.add("unlockStake(uint256)", stakingFacet))
+	q(vu.Add("initializeStaking(address)", stakingFacet))
+	q(vu.Add("balanceReward()", stakingFacet))
+	q(vu.Add("balanceRewardFor(address)", stakingFacet))
+	q(vu.Add("balanceStake()", stakingFacet))
+	q(vu.Add("balanceStakeFor(address)", stakingFacet))
+	q(vu.Add("balanceUnlocked()", stakingFacet))
+	q(vu.Add("balanceUnlockedFor(address)", stakingFacet))
+	q(vu.Add("currentEpoch()", stakingFacet))
+	q(vu.Add("lockStake(uint256)", stakingFacet))
+	q(vu.Add("majorFine(address)", stakingFacet))
+	q(vu.Add("majorStakeFine()", stakingFacet))
+	q(vu.Add("minimumStake()", stakingFacet))
+	q(vu.Add("minorFine(address)", stakingFacet))
+	q(vu.Add("minorStakeFine()", stakingFacet))
+	q(vu.Add("requestUnlockStake()", stakingFacet))
+	q(vu.Add("rewardAmount()", stakingFacet))
+	q(vu.Add("rewardBonus()", stakingFacet))
+	q(vu.Add("setCurrentEpoch(uint256)", stakingFacet))
+	q(vu.Add("setMajorStakeFine(uint256)", stakingFacet))
+	q(vu.Add("setMinimumStake(uint256)", stakingFacet))
+	q(vu.Add("setMinorStakeFine(uint256)", stakingFacet))
+	q(vu.Add("setRewardAmount(uint256)", stakingFacet))
+	q(vu.Add("setRewardBonus(uint256)", stakingFacet))
+	q(vu.Add("unlockStake(uint256)", stakingFacet))
 
 	// Snapshot maintenance
-	q(vu.add("initializeSnapshots(address)", snapshotsFacet))
-	q(vu.add("snapshot(bytes,bytes)", snapshotsFacet))
-	q(vu.add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.add("minEthSnapshotSize()", snapshotsFacet))
-	q(vu.add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.add("minMadSnapshotSize()", snapshotsFacet))
-	q(vu.add("setEpoch(uint256)", snapshotsFacet))
-	q(vu.add("epoch()", snapshotsFacet))
-	q(vu.add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
-	q(vu.add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
-	q(vu.add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
-	q(vu.add("getHeightFromSnapshot(uint256)", snapshotsFacet))
-	q(vu.add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
+	q(vu.Add("initializeSnapshots(address)", snapshotsFacet))
+	q(vu.Add("snapshot(bytes,bytes)", snapshotsFacet))
+	q(vu.Add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.Add("minEthSnapshotSize()", snapshotsFacet))
+	q(vu.Add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
+	q(vu.Add("minMadSnapshotSize()", snapshotsFacet))
+	q(vu.Add("setEpoch(uint256)", snapshotsFacet))
+	q(vu.Add("epoch()", snapshotsFacet))
+	q(vu.Add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
+	q(vu.Add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
+	q(vu.Add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
+	q(vu.Add("getHeightFromSnapshot(uint256)", snapshotsFacet))
+	q(vu.Add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
 
 	// Validator maintenance
-	q(vu.add("initializeParticipants(address)", participantsFacet))
-	q(vu.add("addValidator(address,uint256[2])", participantsFacet))
-	q(vu.add("removeValidator(address,uint256[2])", participantsFacet))
-	q(vu.add("queueValidator(address,uint256[2])", participantsFacet))
-	q(vu.add("isValidator(address)", participantsFacet))
-	q(vu.add("getValidatorPublicKey(address)", participantsFacet))
-	q(vu.add("confirmValidators()", participantsFacet))
-	q(vu.add("validatorMaxCount()", participantsFacet))
-	q(vu.add("validatorCount()", participantsFacet))
-	q(vu.add("setValidatorMaxCount(uint8)", participantsFacet))
+	q(vu.Add("initializeParticipants(address)", participantsFacet))
+	q(vu.Add("addValidator(address,uint256[2])", participantsFacet))
+	q(vu.Add("removeValidator(address,uint256[2])", participantsFacet))
+	q(vu.Add("queueValidator(address,uint256[2])", participantsFacet))
+	q(vu.Add("isValidator(address)", participantsFacet))
+	q(vu.Add("getValidatorPublicKey(address)", participantsFacet))
+	q(vu.Add("confirmValidators()", participantsFacet))
+	q(vu.Add("validatorMaxCount()", participantsFacet))
+	q(vu.Add("validatorCount()", participantsFacet))
+	q(vu.Add("setValidatorMaxCount(uint8)", participantsFacet))
 
 	c.EthdkgAddress, txn, _, err = bindings.DeployEthDKGDiamond(txnOpts, eth.client)
 	if err != nil {
@@ -1022,41 +1022,41 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	flushQ(txnQueue)
 
 	// Register all the ethdkg facets
-	vu = &updater{vu: ethdkgUpdate, txnOpts: txnOpts, logger: logger}
+	vu = &Updater{Updater: ethdkgUpdate, TxnOpts: txnOpts, Logger: logger}
 
 	//
-	q(vu.add("initializeEthDKG(address)", ethdkgInitializeAddress))
-	q(vu.add("initializeState()", ethdkgInitializeAddress))
+	q(vu.Add("initializeEthDKG(address)", ethdkgInitializeAddress))
+	q(vu.Add("initializeState()", ethdkgInitializeAddress))
 
-	q(vu.add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
+	q(vu.Add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
 
-	q(vu.add("getPhaseLength()", ethdkgInfoFacetAddress))
-	q(vu.add("initialMessage()", ethdkgInfoFacetAddress))
-	q(vu.add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
-	q(vu.add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
-	q(vu.add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("isMalicious(address)", ethdkgInfoFacetAddress))
-	q(vu.add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
-	q(vu.add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("master_public_key(uint256)", ethdkgInfoFacetAddress))
-	q(vu.add("numberOfRegistrations()", ethdkgInfoFacetAddress))
-	q(vu.add("addresses(uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("getPhaseLength()", ethdkgInfoFacetAddress))
+	q(vu.Add("initialMessage()", ethdkgInfoFacetAddress))
+	q(vu.Add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
+	q(vu.Add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
+	q(vu.Add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("isMalicious(address)", ethdkgInfoFacetAddress))
+	q(vu.Add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
+	q(vu.Add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("master_public_key(uint256)", ethdkgInfoFacetAddress))
+	q(vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
+	q(vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
 
-	q(vu.add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
-	q(vu.add("register(uint256[2])", ethdkgMiscAddress))
-	q(vu.add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
-	q(vu.add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
+	q(vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
+	q(vu.Add("register(uint256[2])", ethdkgMiscAddress))
+	q(vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
+	q(vu.Add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
 
-	q(vu.add("Successful_Completion()", ethdkgCompletionAddress))
+	q(vu.Add("Successful_Completion()", ethdkgCompletionAddress))
 
 	// Flush everything
 	// eth.contracts = c
@@ -1254,25 +1254,25 @@ func logAndEat(logger *logrus.Logger, err error) {
 	}
 }
 
-type updater struct {
+type Updater struct {
 	err     error
-	logger  *logrus.Logger
-	vu      *bindings.DiamondUpdateFacet
-	txnOpts *bind.TransactOpts
+	Logger  *logrus.Logger
+	Updater *bindings.DiamondUpdateFacet
+	TxnOpts *bind.TransactOpts
 }
 
 //
-func (u *updater) add(signature string, facet common.Address) *types.Transaction {
+func (u *Updater) Add(signature string, facet common.Address) *types.Transaction {
 	if u.err != nil {
 		return nil
 	}
 
 	selector := CalculateSelector(signature)
-	if u.logger != nil {
-		u.logger.Infof("Registering %v as %x with %v", signature, selector, facet.Hex())
+	if u.Logger != nil {
+		u.Logger.Infof("Registering %v as %x with %v", signature, selector, facet.Hex())
 	}
 
-	txn, err := u.vu.AddFacet(u.txnOpts, selector, facet)
+	txn, err := u.Updater.AddFacet(u.TxnOpts, selector, facet)
 	u.err = err
 	return txn
 }
