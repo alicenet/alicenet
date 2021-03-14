@@ -135,7 +135,8 @@ func main() {
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
 
 		&deploy.Command: {
-			{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations}},
+			{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
+			{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
 	}
 
 	// Establish command hierarchy

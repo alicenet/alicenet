@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"math/big"
 	"time"
@@ -61,12 +62,81 @@ func deployNode(cmd *cobra.Command, args []string) {
 		logger.Errorf("Could not deploy contracts: %v", err)
 	}
 
+	// If flagged we'll deploy and configure the facets used in migrations
 	if config.Configuration.Deploy.Migrations {
 		err = deployMigrations(eth)
 		if err != nil {
 			logger.Error(err)
 		}
+
+		// If flagged we issue a migration transaction
+		if config.Configuration.Deploy.TestMigrations {
+			err = testMigrations(eth)
+			if err != nil {
+				logger.Error(err)
+			}
+		}
 	}
+
+}
+
+func testMigrations(eth blockchain.Ethereum) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	account := eth.GetDefaultAccount()
+	logger := logging.GetLogger("test")
+	client := eth.GetGethClient()
+	c := eth.Contracts()
+
+	txnOpts, err := eth.GetTransactionOpts(ctx, account)
+	if err != nil {
+		return err
+	}
+
+	// Try staking first
+	migrateStaking, err := bindings.NewMigrateStakingFacet(c.ValidatorsAddress, client)
+	if err != nil {
+		logger.Errorf("binding migrateStaking failed: %v", err)
+		return err
+	}
+
+	txn, err := migrateStaking.SetBalancesFor(txnOpts, account.Address, big.NewInt(111111), big.NewInt(222222), big.NewInt(333333))
+	if err != nil {
+		logger.Errorf("setting stake balances failed: %v", err)
+		return err
+	}
+	eth.WaitForReceipt(ctx, txn)
+	logger.Infof("setting balances for %v. Gas = %v", account.Address.Hex(), txn.Gas())
+
+	// Try snapshoting
+	migrateSnapshots, err := bindings.NewMigrateSnapshotsFacet(c.ValidatorsAddress, client)
+	if err != nil {
+		logger.Errorf("binding migrateSnapshots failed: %v", err)
+		return err
+	}
+
+	sig := bytes.Repeat([]byte{1}, 192)
+	bc := bytes.Repeat([]byte{1}, 176)
+
+	txn, err = migrateSnapshots.Snapshot(txnOpts, big.NewInt(1), sig, bc)
+	if err != nil {
+		logger.Errorf("creating snapshot failed: %v", err)
+		return err
+	}
+	eth.WaitForReceipt(ctx, txn)
+	logger.Infof("creating snapshot Gas = %v", txn.Gas())
+
+	txn, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(2))
+	if err != nil {
+		logger.Errorf("setting epoch failed: %v", err)
+		return err
+	}
+	eth.WaitForReceipt(ctx, txn)
+
+	// Try Participants
+
+	return nil
 }
 
 func deployMigrations(eth blockchain.Ethereum) error {

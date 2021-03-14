@@ -892,6 +892,8 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(vu.Add("balanceStakeFor(address)", stakingFacet))
 	q(vu.Add("balanceUnlocked()", stakingFacet))
 	q(vu.Add("balanceUnlockedFor(address)", stakingFacet))
+	q(vu.Add("balanceUnlockedReward()", stakingFacet))
+	q(vu.Add("balanceUnlockedRewardFor(address)", stakingFacet))
 	q(vu.Add("currentEpoch()", stakingFacet))
 	q(vu.Add("lockStake(uint256)", stakingFacet))
 	q(vu.Add("majorFine(address)", stakingFacet))
