@@ -481,7 +481,7 @@ func (srpc *Handlers) HandleLocalStateIterateNameSpace(ctx context.Context, req 
 	}
 	if len(req.StartIndex) > 0 {
 		if len(req.StartIndex) != 64 {
-			return nil, fmt.Errorf("StartIndex must be empty or valid; invalid length (%v) for StartIndex:%s", len(req.Account), req.Account)
+			return nil, fmt.Errorf("StartIndex must be empty or valid; invalid length (%v) for StartIndex:%s", len(req.StartIndex), req.StartIndex)
 		}
 	}
 	err := srpc.database.View(func(txn *badger.Txn) error {

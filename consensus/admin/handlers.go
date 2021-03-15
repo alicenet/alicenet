@@ -415,6 +415,8 @@ func (ah *Handlers) GetPrivK(name []byte) ([]byte, error) {
 			return err
 		}
 		privk = utils.CopySlice(ec.ClearText)
+		// TODO: Do we now want to delete ClearText? Is there any concern
+		// 		 about this being leaked?
 		return nil
 	})
 	if err != nil {

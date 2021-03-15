@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/dgraph-io/badger/v2"
 
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/crypto"
@@ -14,6 +15,7 @@ import (
 type RoundStates struct {
 	height             uint32
 	round              uint32
+	txn                *badger.Txn
 	OwnState           *objs.OwnState
 	ValidatorSet       *objs.ValidatorSet
 	OwnValidatingState *objs.OwnValidatingState

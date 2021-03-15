@@ -97,7 +97,7 @@ func (t *txResult) addRaw(txb []byte) error {
 
 type DMan struct {
 	sync.RWMutex
-	database       *db.Database
+	database       db.DatabaseIface
 	ctx            context.Context
 	cf             func()
 	appHandler     appmock.Application
@@ -110,7 +110,7 @@ type DMan struct {
 	targetBlockHDR *objs.BlockHeader
 }
 
-func (dm *DMan) Init(database *db.Database, app appmock.Application, reqBus *request.Client) error {
+func (dm *DMan) Init(database db.DatabaseIface, app appmock.Application, reqBus *request.Client) error {
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
 	dm.ctx = subCtx
@@ -229,6 +229,7 @@ func (dm *DMan) getTxsInternal(txn *badger.Txn, height uint32, txLst [][]byte) (
 	}
 
 	missing = result.missing()
+
 	// get from the pending store
 	found, _, err := dm.appHandler.PendingTxGet(txn, height, missing)
 	if err != nil {

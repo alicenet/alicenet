@@ -2,26 +2,26 @@ package lstate
 
 import (
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 // These are intermediate handlers. Once the step handlers have decided on how
 // to perform an action one of these is called to perform the action. Every
 // method in this file will call a setter at termination.
 
-func (ce *Engine) castNewProposalValue(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) castNewProposalValue(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	txList, txRoot, stateRoot, headerRoot, err := ce.getValidValue(txn, rs)
+	txList, txRoot, stateRoot, headerRoot, err := ce.getValidValue(rs)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	if stateRoot == nil {
-		stateRoot = make([]byte, 32)
+		stateRoot = make([]byte, constants.HashLen)
 	}
 	p := &objs.Proposal{
 		PClaims: &objs.PClaims{
@@ -79,7 +79,7 @@ func (ce *Engine) castNewProposalValue(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	err = ce.updateValidValue(txn, rs, p)
+	err = ce.updateValidValue(rs, p)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
@@ -88,14 +88,14 @@ func (ce *Engine) castNewProposalValue(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastProposal(txn, p); err != nil {
+	if err := ce.database.SetBroadcastProposal(rs.txn, p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ce *Engine) castProposalFromValue(txn *badger.Txn, rs *RoundStates, prop *objs.Proposal) error {
+func (ce *Engine) castProposalFromValue(rs *RoundStates, prop *objs.Proposal) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -114,7 +114,7 @@ func (ce *Engine) castProposalFromValue(txn *badger.Txn, rs *RoundStates, prop *
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastProposal(txn, p); err != nil {
+	if err := ce.database.SetBroadcastProposal(rs.txn, p); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -125,7 +125,7 @@ func (ce *Engine) castProposalFromValue(txn *badger.Txn, rs *RoundStates, prop *
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castPreVoteWithLock(txn *badger.Txn, rs *RoundStates, lock *objs.Proposal, p *objs.Proposal) error {
+func (ce *Engine) castPreVoteWithLock(rs *RoundStates, lock *objs.Proposal, p *objs.Proposal) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -135,20 +135,20 @@ func (ce *Engine) castPreVoteWithLock(txn *badger.Txn, rs *RoundStates, lock *ob
 		return err
 	}
 	if ok {
-		if err := ce.castPreVote(txn, rs, p); err != nil {
+		if err := ce.castPreVote(rs, p); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		return nil
 	}
-	if err := ce.castPreVoteNil(txn, rs); err != nil {
+	if err := ce.castPreVoteNil(rs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ce *Engine) castPreVote(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
+func (ce *Engine) castPreVote(rs *RoundStates, p *objs.Proposal) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -169,7 +169,7 @@ func (ce *Engine) castPreVote(txn *badger.Txn, rs *RoundStates, p *objs.Proposal
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastPreVote(txn, pv); err != nil {
+	if err := ce.database.SetBroadcastPreVote(rs.txn, pv); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -180,7 +180,7 @@ func (ce *Engine) castPreVote(txn *badger.Txn, rs *RoundStates, p *objs.Proposal
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castPreVoteNil(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) castPreVoteNil(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -194,7 +194,7 @@ func (ce *Engine) castPreVoteNil(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastPreVoteNil(txn, pvn); err != nil {
+	if err := ce.database.SetBroadcastPreVoteNil(rs.txn, pvn); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -209,7 +209,7 @@ func (ce *Engine) castPreVoteNil(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castPreCommit(txn *badger.Txn, rs *RoundStates, preVotes []*objs.PreVote) error {
+func (ce *Engine) castPreCommit(rs *RoundStates, preVotes []*objs.PreVote) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -223,7 +223,7 @@ func (ce *Engine) castPreCommit(txn *badger.Txn, rs *RoundStates, preVotes []*ob
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastPreCommit(txn, pc); err != nil {
+	if err := ce.database.SetBroadcastPreCommit(rs.txn, pc); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -238,7 +238,7 @@ func (ce *Engine) castPreCommit(txn *badger.Txn, rs *RoundStates, preVotes []*ob
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castPreCommitNil(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) castPreCommitNil(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -252,7 +252,7 @@ func (ce *Engine) castPreCommitNil(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastPreCommitNil(txn, pcn); err != nil {
+	if err := ce.database.SetBroadcastPreCommitNil(rs.txn, pcn); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -267,7 +267,7 @@ func (ce *Engine) castPreCommitNil(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castNextRound(txn *badger.Txn, rs *RoundStates) error {
+func (ce *Engine) castNextRound(rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -292,7 +292,7 @@ func (ce *Engine) castNextRound(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastNextRound(txn, nr); err != nil {
+	if err := ce.database.SetBroadcastNextRound(rs.txn, nr); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -307,7 +307,7 @@ func (ce *Engine) castNextRound(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castNextRoundRCert(txn *badger.Txn, rs *RoundStates, NextRounds []*objs.NextRound) error {
+func (ce *Engine) castNextRoundRCert(rs *RoundStates, NextRounds []*objs.NextRound) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -325,7 +325,7 @@ func (ce *Engine) castNextRoundRCert(txn *badger.Txn, rs *RoundStates, NextRound
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastRCert(txn, rc); err != nil {
+	if err := ce.database.SetBroadcastRCert(rs.txn, rc); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -340,7 +340,7 @@ func (ce *Engine) castNextRoundRCert(txn *badger.Txn, rs *RoundStates, NextRound
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castNextHeightFromNextHeight(txn *badger.Txn, rs *RoundStates, nh *objs.NextHeight) error {
+func (ce *Engine) castNextHeightFromNextHeight(rs *RoundStates, nh *objs.NextHeight) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -353,7 +353,7 @@ func (ce *Engine) castNextHeightFromNextHeight(txn *badger.Txn, rs *RoundStates,
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastNextHeight(txn, newNh); err != nil {
+	if err := ce.database.SetBroadcastNextHeight(rs.txn, newNh); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -364,7 +364,7 @@ func (ce *Engine) castNextHeightFromNextHeight(txn *badger.Txn, rs *RoundStates,
 	return nil
 }
 
-func (ce *Engine) castNextHeightFromPreCommits(txn *badger.Txn, rs *RoundStates, preCommits []*objs.PreCommit) error {
+func (ce *Engine) castNextHeightFromPreCommits(rs *RoundStates, preCommits []*objs.PreCommit) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -378,7 +378,7 @@ func (ce *Engine) castNextHeightFromPreCommits(txn *badger.Txn, rs *RoundStates,
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.database.SetBroadcastNextHeight(txn, nh); err != nil {
+	if err := ce.database.SetBroadcastNextHeight(rs.txn, nh); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
@@ -393,7 +393,7 @@ func (ce *Engine) castNextHeightFromPreCommits(txn *badger.Txn, rs *RoundStates,
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castNewCommittedBlockHeader(txn *badger.Txn, rs *RoundStates, nextHeights []*objs.NextHeight) error {
+func (ce *Engine) castNewCommittedBlockHeader(rs *RoundStates, nextHeights []*objs.NextHeight) error {
 	nhl := objs.NextHeightList(nextHeights)
 	shares := make([][]byte, len(rs.ValidatorSet.Validators))
 	for i := 0; i < len(rs.ValidatorSet.Validators); i++ {
@@ -413,14 +413,14 @@ func (ce *Engine) castNewCommittedBlockHeader(txn *badger.Txn, rs *RoundStates, 
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.setMostRecentBlockHeader(txn, rs, bh); err != nil {
+	if err := ce.setMostRecentBlockHeader(rs, bh); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ce *Engine) castNewCommittedBlockFromProposalAndRCert(txn *badger.Txn, rs *RoundStates, p *objs.Proposal, rc *objs.RCert) error {
+func (ce *Engine) castNewCommittedBlockFromProposalAndRCert(rs *RoundStates, p *objs.Proposal, rc *objs.RCert) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
@@ -433,7 +433,7 @@ func (ce *Engine) castNewCommittedBlockFromProposalAndRCert(txn *badger.Txn, rs 
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	if err := ce.setMostRecentBlockHeader(txn, rs, bh); err != nil {
+	if err := ce.setMostRecentBlockHeader(rs, bh); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
