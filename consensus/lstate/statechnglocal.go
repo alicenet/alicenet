@@ -22,7 +22,7 @@ func (ce *Engine) doPendingProposalStep(rs *RoundStates) error {
 	ce.logger.Debugf("doPendingProposalStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	os := rs.OwnRoundState()
 	rcert := os.RCert
-	if rcert.RClaims.Round == constants.DEADBLOCKROUND {
+	if rcert.RClaims.Round >= constants.DEADBLOCKROUND {
 		return nil
 	}
 	var chngHandler changeHandler
@@ -174,7 +174,7 @@ func (dbrh *dPPVSDeadBlockRoundHandler) evalCriteria() bool {
 }
 
 func (dbrh *dPPVSDeadBlockRoundHandler) evalLogic() error {
-	return dbrh.ce.dPPSProposeNewFunc(dbrh.rs)
+	return dbrh.ce.dPPVSDeadBlockRoundFunc(dbrh.rs)
 }
 
 func (ce *Engine) dPPVSDeadBlockRoundFunc(rs *RoundStates) error {
