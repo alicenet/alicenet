@@ -24,10 +24,6 @@ var accountAddresses []string = []string{
 	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 	"0x63a6627b79813A7A43829490C4cE409254f64177"}
 
-	// "0x33a3479e7d9efa9c5fc036947a91de196a04feb9", "0x89E920996b02cDfd37fed54c8E34A66F46677250",
-	// "0x5B3e35f9E22591eaF0a9E8B4E65Ee54fd01356e8", "0xE85FbcbE534d65e07D7B6d027e6639dee01922C5",
-	// "0x7024AA45615dF90c7b8942D3419d479e07e0e5bC"}
-
 func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
 		"../../../assets/test/keys",
