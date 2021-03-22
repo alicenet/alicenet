@@ -1053,6 +1053,8 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	q(vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
 	q(vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
 
+	q(vu.Add("Group_Accusation_GPKj(uint256[],uint256[],uint256[])", ethdkgGroupAccusationAddress))
+
 	q(vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
 	q(vu.Add("register(uint256[2])", ethdkgMiscAddress))
 	q(vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
