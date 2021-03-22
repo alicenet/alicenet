@@ -130,7 +130,6 @@ func main() {
 			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
 
 		&validator.Command: {
-			{"validator.repl", "", "", &config.Configuration.Validator.Repl},
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
 
