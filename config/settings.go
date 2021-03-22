@@ -65,11 +65,17 @@ type transportConfig struct {
 	LocalStateListeningAddress string
 }
 
+type deployConfig struct {
+	Migrations     bool
+	TestMigrations bool
+}
+
 type utilsConfig struct {
 	Status bool
 }
 
 type validatorConfig struct {
+	Repl            bool
 	RewardAccount   string
 	RewardCurveSpec int
 	SymmetricKey    string
@@ -78,6 +84,7 @@ type validatorConfig struct {
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string
+	Deploy                deployConfig
 	Ethereum              ethereumConfig
 	Monitor               monitorConfig
 	Transport             transportConfig

@@ -31,7 +31,7 @@ func TestDistributeShares(t *testing.T) {
 		t.Fatal("Unexpected error in getting ShareDistributionEnd")
 	}
 	AdvanceBlocksUntil(sim, registrationEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 22 > 21 == T_REGISTRATION_END;
 	// in Share Distribution phase
 
@@ -152,7 +152,7 @@ func TestDistributeSharesFailBlockNumber(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting ShareDistributionEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := (registrationEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(shareDistributionEnd) <= 0)
 	if validBlockNumber {
 		t.Fatal("Should fail; in Registration Phase")
@@ -220,7 +220,7 @@ func TestDistributeSharesFailNotRegistered(t *testing.T) {
 	// no additional registration allowed, so cannot submit shares
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := (registrationEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(shareDistributionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Should succeed; in Distribution Phase")
@@ -291,7 +291,7 @@ func TestDistributeSharesFailIncorrectNumberShares(t *testing.T) {
 	// in Share Distribution phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	validBlockNumber := (registrationEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(shareDistributionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Should succeed; in Distribution Phase")

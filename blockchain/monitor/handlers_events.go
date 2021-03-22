@@ -93,19 +93,6 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 		state.ethdkg.Schedule = schedule
 		state.ethdkg.TransportPrivateKey = private
 		state.ethdkg.TransportPublicKey = public
-		// Addresses:                   make(map[uint8]common.Address),
-		// Commitments:                 make(map[common.Address][][2]*big.Int),
-		// EncryptedShares:             make(map[common.Address][]*big.Int),
-		// Indices:                     make(map[common.Address]uint8),
-		// InProgress:                  true,
-		// KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
-		// KeyShareG1s:                 make(map[common.Address][2]*big.Int),
-		// KeyShareG2s:                 make(map[common.Address][4]*big.Int),
-		// NumberOfValidators:          0,
-		// PublicKeyG1s:                make(map[common.Address]*cloudflare.G1),
-		// PublishedGroupPublicKeys:    make(map[common.Address]*cloudflare.G2),
-		// PublishedSignatures:         make(map[common.Address]*cloudflare.G1),
-		// TransportPublicKeyG1:        publicKeyG1}
 
 		taskLogger := logging.GetLogger("rt")
 
@@ -151,31 +138,6 @@ func (svcs *Services) ProcessShareDistribution(state *State, log types.Log) erro
 	ethdkg.Commitments[event.Issuer] = event.Commitments
 	ethdkg.EncryptedShares[event.Issuer] = event.EncryptedShares
 
-	// ethdkg.
-	// event.Issuer
-
-	// updatedState := state
-	// idx := uint8(event.Index.Uint64()) - 1 // Index in ETHDKG contract is base 1
-
-	// n := updatedState.ethdkg.NumberOfValidators
-	// if n == 0 {
-	// 	// Need to know how many validators
-	// 	bigN, err := c.Ethdkg.NumberOfRegistrations(eth.GetCallOpts(context.TODO(), eth.GetDefaultAccount()))
-	// 	if err != nil {
-	// 		return state, err
-	// 	}
-
-	// 	// calculate threshold
-	// 	n = uint8(bigN.Uint64())
-	// 	updatedState.ethdkg.NumberOfValidators = n
-	// }
-	// svcs.logger.Infof("Validator: %x, Index: %v", event.Issuer, idx)
-	// // Build the addresses
-	// updatedState.ethdkg.Addresses[idx] = event.Issuer
-	// updatedState.ethdkg.Commitments[event.Issuer] = event.Commitments
-	// updatedState.ethdkg.EncryptedShares[event.Issuer] = event.EncryptedShares
-	// updatedState.ethdkg.Indices[event.Issuer] = idx
-
 	return nil
 }
 
@@ -210,17 +172,6 @@ func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) err
 	state.ethdkg.KeyShareG1s[addr] = keyshareG1
 	state.ethdkg.KeyShareG1CorrectnessProofs[addr] = keyshareG1Proof
 	state.ethdkg.KeyShareG2s[addr] = keyshareG2
-
-	// updatedState := state
-
-	// updatedState.ethdkg.KeyShareG1s[event.Issuer] = event.KeyShareG1
-	// updatedState.ethdkg.KeyShareG1CorrectnessProofs[event.Issuer] = event.KeyShareG1CorrectnessProof
-	// updatedState.ethdkg.KeyShareG2s[event.Issuer] = event.KeyShareG2
-
-	// logger.Infof("                    Issuer: %v", event.Issuer.Hex())
-	// logger.Infof("                KeyShareG1: %v", event.KeyShareG1)
-	// logger.Infof("KeyShareG1CorrectnessProof: %v", event.KeyShareG1CorrectnessProof)
-	// logger.Infof("                KeyShareG2: %v", event.KeyShareG2)
 
 	return nil
 }

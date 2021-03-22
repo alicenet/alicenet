@@ -137,7 +137,7 @@ func TestSubmitMasterPublicKeySuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
@@ -172,7 +172,7 @@ func TestSubmitMasterPublicKeySuccess(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting KeyShareSubmissionEnd")
@@ -292,7 +292,7 @@ func TestSubmitMasterPublicKeySuccess(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting MPKSubmissionEnd")
@@ -488,7 +488,7 @@ func TestSubmitMasterPublicKeyFailWrongBlock(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
@@ -523,7 +523,7 @@ func TestSubmitMasterPublicKeyFailWrongBlock(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting KeyShareSubmissionEnd")
@@ -642,7 +642,7 @@ func TestSubmitMasterPublicKeyFailWrongBlock(t *testing.T) {
 	}
 
 	// Check block number here; will fail
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting MPKSubmissionEnd")
@@ -839,7 +839,7 @@ func TestSubmitMasterPublicKeyFailInvalidMPK(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
@@ -874,7 +874,7 @@ func TestSubmitMasterPublicKeyFailInvalidMPK(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting KeyShareSubmissionEnd")
@@ -994,7 +994,7 @@ func TestSubmitMasterPublicKeyFailInvalidMPK(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Error("Unexpected error in getting MPKSubmissionEnd")

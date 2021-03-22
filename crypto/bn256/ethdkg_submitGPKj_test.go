@@ -137,7 +137,7 @@ func TestSubmitGPKjSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -207,7 +207,7 @@ func TestSubmitGPKjSuccess(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -327,7 +327,7 @@ func TestSubmitGPKjSuccess(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting MPKSubmissionEnd")
@@ -402,7 +402,7 @@ func TestSubmitGPKjSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting GPKJSubmissionEnd")
 	}
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	validBlockNumber = (mpkSubmissionEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(gpkjSubmissionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in GPKj Submission Phase")
@@ -690,7 +690,7 @@ func TestSubmitGPKjFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -760,7 +760,7 @@ func TestSubmitGPKjFailBlockNumber(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -880,7 +880,7 @@ func TestSubmitGPKjFailBlockNumber(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting MPKSubmissionEnd")
@@ -956,7 +956,7 @@ func TestSubmitGPKjFailBlockNumber(t *testing.T) {
 		t.Fatal("Unexpected error in getting GPKJSubmissionEnd")
 	}
 	AdvanceBlocksUntil(sim, gpkjSubmissionEnd)
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	validBlockNumber = (mpkSubmissionEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(gpkjSubmissionEnd) <= 0)
 	if validBlockNumber {
 		t.Fatal("Unexpected error; not in GPKj Submission Phase")
@@ -1176,7 +1176,7 @@ func TestSubmitGPKjFailResubmit(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1246,7 +1246,7 @@ func TestSubmitGPKjFailResubmit(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -1366,7 +1366,7 @@ func TestSubmitGPKjFailResubmit(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting MPKSubmissionEnd")
@@ -1441,7 +1441,7 @@ func TestSubmitGPKjFailResubmit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting GPKJSubmissionEnd")
 	}
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	validBlockNumber = (mpkSubmissionEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(gpkjSubmissionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in GPKj Submission Phase")
@@ -1698,7 +1698,7 @@ func TestSubmitGPKjFailOffCurveSignature(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1768,7 +1768,7 @@ func TestSubmitGPKjFailOffCurveSignature(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -1888,7 +1888,7 @@ func TestSubmitGPKjFailOffCurveSignature(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting MPKSubmissionEnd")
@@ -1963,7 +1963,7 @@ func TestSubmitGPKjFailOffCurveSignature(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting GPKJSubmissionEnd")
 	}
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	validBlockNumber = (mpkSubmissionEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(gpkjSubmissionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in GPKj Submission Phase")
@@ -2166,7 +2166,7 @@ func TestSubmitGPKjFailInvalidSignature(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2236,7 +2236,7 @@ func TestSubmitGPKjFailInvalidSignature(t *testing.T) {
 	// in Key Derivation phase
 
 	// Check block number here
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	keyShareSubmissionEnd, err := c.TKEYSHARESUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting KeyShareSubmissionEnd")
@@ -2356,7 +2356,7 @@ func TestSubmitGPKjFailInvalidSignature(t *testing.T) {
 
 	AdvanceBlocksUntil(sim, keyShareSubmissionEnd)
 	// Check block number here
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	mpkSubmissionEnd, err := c.TMPKSUBMISSIONEND(&bind.CallOpts{})
 	if err != nil {
 		t.Fatal("Unexpected error in getting MPKSubmissionEnd")
@@ -2431,7 +2431,7 @@ func TestSubmitGPKjFailInvalidSignature(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error in getting GPKJSubmissionEnd")
 	}
-	curBlock = sim.Blockchain().CurrentBlock().Number()
+	curBlock = CurrentBlock(sim)
 	validBlockNumber = (mpkSubmissionEnd.Cmp(curBlock) < 0) && (curBlock.Cmp(gpkjSubmissionEnd) <= 0)
 	if !validBlockNumber {
 		t.Fatal("Unexpected error; in GPKj Submission Phase")

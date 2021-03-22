@@ -143,6 +143,11 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 		logger.Warnf("Failed to check balance: %v", err)
 	}
 
+	unlockedRewardBalance, err := c.Staking.BalanceUnlockedReward(callOpts)
+	if err != nil {
+		logger.Warnf("Failed to check balance: %v", err)
+	}
+
 	stakeBalance, err := c.Staking.BalanceStake(callOpts)
 	if err != nil {
 		logger.Warnf("Failed to check balance: %v", err)
@@ -172,9 +177,10 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 	logger.Infof("   Staking token balance: %v", stakingTokenBalance)
 	logger.Infof("   Utility token balance: %v", utilityTokenBalance)
 	logger.Infof("            Is Validator: %v", isValidator)
-	logger.Infof("          Reward balance: %v", rewardBalance)
 	logger.Infof("           Stake balance: %v", stakeBalance)
-	logger.Infof("        Unlocked balance: %v", unlockedBalance)
+	logger.Infof("  Unlocked Stake balance: %v", unlockedBalance)
+	logger.Infof("   Locked Reward balance: %v", rewardBalance)
+	logger.Infof(" Unlocked Reward balance: %v", unlockedRewardBalance)
 	logger.Infof("                   Epoch: %v", epoch)
 	logger.Info(strings.Repeat("-", 80))
 }

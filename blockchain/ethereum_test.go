@@ -8,13 +8,17 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
+
+	logging.GetLogger("ethsim").SetLevel(logrus.InfoLevel)
 
 	eth, err := blockchain.NewEthereumSimulator(
 		"../assets/test/keys",

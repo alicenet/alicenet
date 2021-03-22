@@ -139,7 +139,7 @@ func TestProceedToKeySubmissionPhase(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -354,7 +354,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -405,7 +405,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 
@@ -804,7 +804,7 @@ func TestSubmitDisputeFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -855,7 +855,7 @@ func TestSubmitDisputeFailBlockNumber(t *testing.T) {
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
 	AdvanceBlocksUntil(sim, disputeEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 72 > 71 == T_DISPUTE_END;
 	// in Key-Derivation phase
 
@@ -1232,7 +1232,7 @@ func TestSubmitDisputeFailAddresses(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1282,7 +1282,7 @@ func TestSubmitDisputeFailAddresses(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 
@@ -1661,7 +1661,7 @@ func TestSubmitDisputeFailHashValue(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1711,7 +1711,7 @@ func TestSubmitDisputeFailHashValue(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 
@@ -2090,7 +2090,7 @@ func TestSubmitDisputeFailDLEQProof(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2140,7 +2140,7 @@ func TestSubmitDisputeFailDLEQProof(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 
@@ -2497,7 +2497,7 @@ func TestSubmitDisputeFailValidShare(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.TransactionReceipt(context.Background(), txn.Hash())
+		receipt, err := sim.WaitForReceipt(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2547,7 +2547,7 @@ func TestSubmitDisputeFailValidShare(t *testing.T) {
 		t.Fatal("Unexpected error in getting DisputeEnd")
 	}
 	AdvanceBlocksUntil(sim, shareDistributionEnd)
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	// Current block number is now 47 > 46 == T_SHARE_DISTRIBUTION_END;
 	// in Dispute phase
 

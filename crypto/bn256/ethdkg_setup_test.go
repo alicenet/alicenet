@@ -1,10 +1,11 @@
 package bn256
 
 import (
+	"context"
 	"crypto/ecdsa"
-	"log"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -12,9 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Use whenever submitting transaction to ensure transaction will go through;
@@ -23,147 +22,84 @@ const gasLim uint64 = 10000000
 
 // Perform the initial setup of the Ethdkg contract for n users and return the
 // necessary objects.
-func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, *bindings.Validators, *backends.SimulatedBackend, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
-	if n < 1 {
-		t.Fatal("Must have at least 1 user for contract setup")
+func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, *bindings.Validators, blockchain.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
+	if n < 1 || n > 6 {
+		t.Fatal("Must have at between 1 and 6 user(s) for contract setup")
 	}
+
+	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
+	assert.True(t, ok)
+
 	// Generate a new random account and a funded simulator
-	gasLimit := uint64(10000000000000000)
-	genAlloc := make(core.GenesisAlloc)
+	// keyArray := make([]*ecdsa.PrivateKey, n)
+	// authArray := make([]*bind.TransactOpts, n)
+	// addresses := make([]string, n)
+	// addresses[0] = "546f99f244b7b58b855330ae0e2bc1b30b41302f"
+	// addresses[1] = "9ac1c9afbaec85278679ff75ef109217f26b1417"
+	// for k := 0; k < n; k++ {
+	// 	key, _ := crypto.GenerateKey()
+	// 	auth := bind.NewKeyedTransactor(key)
+	// 	keyArray[k] = key
+	// 	authArray[k] = auth
+	// 	// addresses[k] = auth.From.Hex()
+	// }
+
+	addressPool := []string{
+		"546f99f244b7b58b855330ae0e2bc1b30b41302f",
+		"9ac1c9afbaec85278679ff75ef109217f26b1417",
+		"26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
+		"615695C4a4D6a60830e5fca4901FbA099DF26271",
+		"63a6627b79813A7A43829490C4cE409254f64177",
+		"16564cF3e880d9F5d09909F51b922941EbBbC24d"}
+
+	// Build
+	eth, err := blockchain.NewEthereumSimulator(
+		"../../assets/test/keys",
+		"../../assets/test/passcodes.txt",
+		1,
+		time.Second*2,
+		0,
+		wei,
+		addressPool...)
+	assert.Nil(t, err)
+
 	keyArray := make([]*ecdsa.PrivateKey, n)
 	authArray := make([]*bind.TransactOpts, n)
+	addresses := make([]string, n)
 	for k := 0; k < n; k++ {
-		key, _ := crypto.GenerateKey()
-		auth := bind.NewKeyedTransactor(key)
-		genAlloc[auth.From] = core.GenesisAccount{Balance: big.NewInt(9223372036854775807)}
-		keyArray[k] = key
-		authArray[k] = auth
+		addr := common.HexToAddress(addressPool[k])
+		assert.Nil(t, err)
+
+		acct, err := eth.GetAccount(addr)
+		assert.Nil(t, err)
+
+		assert.Nil(t, eth.UnlockAccount(acct))
+
+		key, err := eth.GetAccountKeys(addr)
+		assert.Nil(t, err)
+
+		// 	auth := bind.NewKeyedTransactor(key)
+		keyArray[k] = key.PrivateKey
+		authArray[k], err = eth.GetTransactionOpts(context.TODO(), acct)
+		assert.Nil(t, err)
+
+		addresses[k] = addressPool[k]
 	}
 
-	sim := backends.NewSimulatedBackend(genAlloc, gasLimit) // Deploy a token contract on the simulated blockchain
+	acct := eth.GetDefaultAccount()
+	assert.Nil(t, eth.UnlockAccount(acct))
 
-	registryAddress, _, registry, err := bindings.DeployRegistry(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 1: %v", err)
-	}
+	c := eth.Contracts()
+	_, _, err = c.DeployContracts(context.TODO(), acct)
+	assert.Nil(t, err)
 
-	stakingTokenAddr, _, stakingToken, err := bindings.DeployToken(authArray[0], sim,
-		blockchain.StringToBytes32("STK"), blockchain.StringToBytes32("MadNet Staking"))
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 2: %v", err)
-	}
+	stakingToken := c.StakingToken
+	stakingAddr := c.ValidatorsAddress
+	staking := c.Staking
 
-	utilityTokenAddr, _, _, err := bindings.DeployToken(authArray[0], sim,
-		blockchain.StringToBytes32("UTL"), blockchain.StringToBytes32("MadNet Utility"))
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 2: %v", err)
-	}
-
-	cryptoAddr, _, cryptoContract, err := bindings.DeployCrypto(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 3: %v", err)
-	}
-
-	depositAddr, _, _, err := bindings.DeployDeposit(authArray[0], sim, registryAddress)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 4: %v", err)
-	}
-
-	stakingAddr, _, staking, err := bindings.DeployStaking(authArray[0], sim, registryAddress)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 5: %v", err)
-	}
-
-	validatorsAddr, _, validators, err := bindings.DeployValidators(authArray[0], sim, 10, registryAddress)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 6: %v", err)
-	}
-
-	validatorsSnapshotAddr, _, _, err := bindings.DeployValidatorsSnapshot(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 6: %v", err)
-	}
-
-	ethdkgAddr, _, ethdkg, err := bindings.DeployETHDKG(authArray[0], sim, registryAddress) // Contract transaction submitted to chain
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 7: %v", err)
-	}
-
-	ethdkgCompletionAddress, _, _, err := bindings.DeployETHDKGCompletion(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 8: %v", err)
-	}
-
-	ethdkgGroupAccusationAddress, _, _, err := bindings.DeployETHDKGGroupAccusation(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 9: %v", err)
-	}
-
-	ethdkgSubmitMPKAddress, _, _, err := bindings.DeployETHDKGSubmitMPK(authArray[0], sim)
-	if err != nil {
-		log.Fatalf("Failed to deploy new contract 9: %v", err)
-	}
-
-	sim.Commit() // Simulated blockchain moves forward and advances block number by 1
-
-	_, err = registry.Register(authArray[0], "crypto/v1", cryptoAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "deposit/v1", depositAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "ethdkg/v1", ethdkgAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "ethdkgCompletion/v1", ethdkgCompletionAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "ethdkgGroupAccusation/v1", ethdkgGroupAccusationAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "ethdkgSubmitMPK/v1", ethdkgSubmitMPKAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "staking/v1", stakingAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "stakingToken/v1", stakingTokenAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "utilityToken/v1", utilityTokenAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "validators/v1", validatorsAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = registry.Register(authArray[0], "validatorsSnapshot/v1", validatorsSnapshotAddr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sim.Commit()
-
-	_, err = ethdkg.ReloadRegistry(authArray[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = staking.ReloadRegistry(authArray[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = validators.ReloadRegistry(authArray[0])
-	if err != nil {
-		t.Fatal(err)
-	}
+	ethdkg := c.Ethdkg
+	cryptoContract := c.Crypto
+	validators := c.Validators
 
 	//
 	initialTokenBalance := big.NewInt(9000000000000000000)
@@ -190,13 +126,13 @@ func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypt
 		_, err = staking.LockStake(authArray[idx], initialTokenStake)
 		assert.Nil(t, err, "Locking stake failed")
 	}
-	sim.Commit()
+	eth.Commit()
 
-	return ethdkg, cryptoContract, validators, sim, keyArray, authArray
+	return ethdkg, cryptoContract, validators, eth, keyArray, authArray
 }
 
 // Allow for the res
-func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, *backends.SimulatedBackend, []*ecdsa.PrivateKey, []*bind.TransactOpts, []*big.Int, []*cloudflare.G1) {
+func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, blockchain.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts, []*big.Int, []*cloudflare.G1) {
 	c, cc, v, sim, keyArray, authArray := EthdkgContractSetup(t, n)
 
 	big0 := big.NewInt(0)
@@ -212,12 +148,8 @@ func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, 
 	if err != nil {
 		t.Error("Error in getting RegistrationEnd")
 	}
-	curBlock := sim.Blockchain().CurrentBlock().Number()
+	curBlock := CurrentBlock(sim)
 	assert.Truef(t, curBlock.Cmp(registrationEnd) <= 0, "Registration ended. Current:%v End:%v", curBlock, registrationEnd)
-	// validBlockNumber := (curBlock.Cmp(registrationEnd) <= 0)
-	// if !validBlockNumber {
-	// 	t.Fatal("Unexpected error; in Registration Phase")
-	// }
 
 	privKArray := make([]*big.Int, n)
 	pubKArray := make([]*cloudflare.G1, n)
@@ -280,10 +212,23 @@ func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, 
 	return c, cc, sim, keyArray, authArray, privKArray, pubKArray
 }
 
-func AdvanceBlocksUntil(sim *backends.SimulatedBackend, m *big.Int) {
-	for sim.Blockchain().CurrentBlock().Number().Cmp(m) <= 0 {
-		sim.Commit()
+func AdvanceBlocksUntil(eth blockchain.Ethereum, m *big.Int) {
+	ctx := context.TODO()
+
+	height, _ := eth.GetCurrentHeight(ctx)
+	current := new(big.Int).SetUint64(height)
+
+	for current.Cmp(m) <= 0 {
+		eth.Commit()
+
+		height, _ = eth.GetCurrentHeight(ctx)
+		current = new(big.Int).SetUint64(height)
 	}
+}
+
+func CurrentBlock(eth blockchain.Ethereum) *big.Int {
+	height, _ := eth.GetCurrentHeight(context.TODO())
+	return new(big.Int).SetUint64(height)
 }
 
 func thresholdFromUsers(n int) (int, int) {
