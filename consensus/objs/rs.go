@@ -503,16 +503,11 @@ func (b *RoundState) SetPreVote(v *PreVote) (bool, error) {
 
 func (b *RoundState) SetPreVoteNil(v *PreVoteNil) (bool, error) {
 	if IsDeadBlockRound(v) {
-		return false, errorz.ErrInvalid{}.New("dbr tx hash in set pvn")
+		return false, errorz.ErrInvalid{}.New("pvn in dbr")
 	}
 	ok, err := b.genericSet(v)
 	if err != nil {
 		return false, err
-	}
-	if !ok {
-		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pvn in dbr")
-		}
 	}
 	return ok, nil
 }
@@ -537,16 +532,11 @@ func (b *RoundState) SetPreCommit(v *PreCommit) (bool, error) {
 
 func (b *RoundState) SetPreCommitNil(v *PreCommitNil) (bool, error) {
 	if IsDeadBlockRound(v) {
-		return false, errorz.ErrInvalid{}.New("dbr tx hash in pcn")
+		return false, errorz.ErrInvalid{}.New("pcn in dbr")
 	}
 	ok, err := b.genericSet(v)
 	if err != nil {
 		return false, err
-	}
-	if !ok {
-		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pcn in dbr")
-		}
 	}
 	return ok, nil
 }
@@ -558,11 +548,6 @@ func (b *RoundState) SetNextRound(v *NextRound) (bool, error) {
 	ok, err := b.genericSet(v)
 	if err != nil {
 		return false, err
-	}
-	if !ok {
-		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt nr in dbr")
-		}
 	}
 	return ok, nil
 }

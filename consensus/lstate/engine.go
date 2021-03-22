@@ -293,25 +293,29 @@ func (ce *Engine) updateLocalStateInternal(rs *RoundStates) (bool, error) {
 	//		NR, PC, PCN, PV, PVN, ProposalTO, IsProposer
 
 	ceHandlers := []handler{
-		fhHandler{ce: ce, rs: rs, FH: FH},
-		rCertHandler{ce: ce, rs: rs, ChFr: ChFr},
-		doNrHandler{ce: ce, rs: rs, rcert: rcert},
-		castNhHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
-		doNextHeightHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
-		doRoundJumpHandler{ce: ce, rs: rs, ChFr: ChFr},
+		&fhHandler{ce: ce, rs: rs, FH: FH},
+		&rCertHandler{ce: ce, rs: rs, ChFr: ChFr},
+		&doNrHandler{ce: ce, rs: rs, rcert: rcert},
+		&castNhHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		&doNextHeightHandler{ce: ce, rs: rs, NHs: NHs, NHCurrent: NHCurrent},
+		&doRoundJumpHandler{ce: ce, rs: rs, ChFr: ChFr},
 
-		nrCurrentHandler{ce: ce, rs: rs, NRCurrent: NRCurrent},
-		pcCurrentHandler{ce: ce, rs: rs, PCCurrent: PCCurrent},
-		pcnCurrentHandler{ce: ce, rs: rs, PCNCurrent: PCNCurrent},
-		pvCurrentHandler{ce: ce, rs: rs, PVCurrent: PVCurrent},
-		pvnCurrentHandler{ce: ce, rs: rs, PVNCurrent: PVNCurrent},
-		ptoExpiredHandler{ce: ce, rs: rs},
-		validPropHandler{ce: ce, rs: rs, PCurrent: PCurrent},
+		&nrCurrentHandler{ce: ce, rs: rs, NRCurrent: NRCurrent},
+		&pcCurrentHandler{ce: ce, rs: rs, PCCurrent: PCCurrent},
+		&pcnCurrentHandler{ce: ce, rs: rs, PCNCurrent: PCNCurrent},
+		&pvCurrentHandler{ce: ce, rs: rs, PVCurrent: PVCurrent},
+		&pvnCurrentHandler{ce: ce, rs: rs, PVNCurrent: PVNCurrent},
+		&ptoExpiredHandler{ce: ce, rs: rs},
+		&validPropHandler{ce: ce, rs: rs, PCurrent: PCurrent},
 	}
 
 	for i := 0; i < len(ceHandlers); i++ {
 		if ceHandlers[i].evalCriteria() {
-			return ceHandlers[i].evalLogic()
+			ok, err := ceHandlers[i].evalLogic()
+			if err != nil {
+				return false, err
+			}
+			return ok, nil
 		}
 	}
 
@@ -330,11 +334,13 @@ type fhHandler struct {
 	FH    []*objs.RoundState
 }
 
-func (fhh fhHandler) evalCriteria() bool {
+func (fhh *fhHandler) evalCriteria() bool {
 	if len(fhh.FH) > 0 {
 		var maxHR *objs.RoundState
-		maxHeight := uint32(0)
-		for _, vroundState := range fhh.FH {
+		var maxHeight uint32
+		var vroundState *objs.RoundState
+		for i := 0; i < len(fhh.FH); i++ {
+			vroundState = fhh.FH[i]
 			if vroundState.RCert.RClaims.Height > maxHeight {
 				maxHR = vroundState
 				maxHeight = vroundState.RCert.RClaims.Height
@@ -349,12 +355,13 @@ func (fhh fhHandler) evalCriteria() bool {
 	return false
 }
 
-func (fhh fhHandler) evalLogic() (bool, error) {
+func (fhh *fhHandler) evalLogic() (bool, error) {
 	return fhh.ce.fhFunc(fhh.rs, fhh.maxHR)
 }
 
 func (ce *Engine) fhFunc(rs *RoundStates, maxHR *objs.RoundState) (bool, error) {
-	err := ce.doHeightJumpStep(rs, maxHR.RCert)
+	rcert := maxHR.RCert
+	err := ce.doHeightJumpStep(rs, rcert)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
@@ -369,25 +376,21 @@ type rCertHandler struct {
 	ChFr     []*objs.RoundState
 }
 
-func (rch rCertHandler) evalCriteria() bool {
+func (rch *rCertHandler) evalCriteria() bool {
 	if len(rch.ChFr) > 0 {
-		var maxRCert *objs.RCert
-		for _, vroundState := range rch.ChFr {
+		var vroundState *objs.RoundState
+		for i := 0; i < len(rch.ChFr); i++ {
+			vroundState = rch.ChFr[i]
 			if vroundState.RCert.RClaims.Round == constants.DEADBLOCKROUND {
-				maxRCert = vroundState.RCert
-				break
+				rch.maxRCert = vroundState.RCert
+				return true
 			}
 		}
-		if maxRCert != nil {
-			rch.maxRCert = maxRCert
-			return true
-		}
 	}
-
 	return false
 }
 
-func (rch rCertHandler) evalLogic() (bool, error) {
+func (rch *rCertHandler) evalLogic() (bool, error) {
 	return rch.ce.rCertFunc(rch.rs, rch.maxRCert)
 }
 
@@ -406,7 +409,7 @@ type doNrHandler struct {
 	rcert *objs.RCert
 }
 
-func (dnrh doNrHandler) evalCriteria() bool {
+func (dnrh *doNrHandler) evalCriteria() bool {
 	if dnrh.rs.OwnRoundState().NextRound != nil {
 		if dnrh.rs.OwnRoundState().NRCurrent(dnrh.rcert) {
 			return dnrh.rcert.RClaims.Round == constants.DEADBLOCKROUNDNR
@@ -415,7 +418,7 @@ func (dnrh doNrHandler) evalCriteria() bool {
 	return false
 }
 
-func (dnrh doNrHandler) evalLogic() (bool, error) {
+func (dnrh *doNrHandler) evalLogic() (bool, error) {
 	return dnrh.ce.doNrFunc(dnrh.rs, dnrh.rcert)
 }
 
@@ -435,11 +438,11 @@ type castNhHandler struct {
 	NHCurrent bool
 }
 
-func (cnhh castNhHandler) evalCriteria() bool {
+func (cnhh *castNhHandler) evalCriteria() bool {
 	return len(cnhh.NHs) > 0 && !cnhh.NHCurrent
 }
 
-func (cnhh castNhHandler) evalLogic() (bool, error) {
+func (cnhh *castNhHandler) evalLogic() (bool, error) {
 	return cnhh.ce.castNhFunc(cnhh.rs, cnhh.NHs)
 }
 
@@ -459,11 +462,11 @@ type doNextHeightHandler struct {
 	NHCurrent bool
 }
 
-func (dnhh doNextHeightHandler) evalCriteria() bool {
+func (dnhh *doNextHeightHandler) evalCriteria() bool {
 	return len(dnhh.NHs) > 0 && dnhh.NHCurrent
 }
 
-func (dnhh doNextHeightHandler) evalLogic() (bool, error) {
+func (dnhh *doNextHeightHandler) evalLogic() (bool, error) {
 	return dnhh.ce.doNextHeightFunc(dnhh.rs, dnhh.NHs)
 }
 
@@ -482,19 +485,22 @@ type doRoundJumpHandler struct {
 	ChFr []*objs.RoundState
 }
 
-func (drjh doRoundJumpHandler) evalCriteria() bool {
+func (drjh *doRoundJumpHandler) evalCriteria() bool {
 	return len(drjh.ChFr) > 0
 }
 
-func (drjh doRoundJumpHandler) evalLogic() (bool, error) {
+func (drjh *doRoundJumpHandler) evalLogic() (bool, error) {
 	return drjh.ce.doRoundJumpFunc(drjh.rs, drjh.ChFr)
 }
 
 func (ce *Engine) doRoundJumpFunc(rs *RoundStates, ChFr []*objs.RoundState) (bool, error) {
 	var maxRCert *objs.RCert
-	for _, vroundState := range ChFr {
+	var vroundState *objs.RoundState
+	for i := 0; i < len(ChFr); i++ {
+		vroundState = ChFr[i]
 		if maxRCert == nil {
 			maxRCert = vroundState.RCert
+			continue
 		}
 		if vroundState.RCert.RClaims.Round > maxRCert.RClaims.Round {
 			maxRCert = vroundState.RCert
@@ -514,11 +520,11 @@ type nrCurrentHandler struct {
 	NRCurrent bool
 }
 
-func (nrch nrCurrentHandler) evalCriteria() bool {
+func (nrch *nrCurrentHandler) evalCriteria() bool {
 	return nrch.NRCurrent
 }
 
-func (nrch nrCurrentHandler) evalLogic() (bool, error) {
+func (nrch *nrCurrentHandler) evalLogic() (bool, error) {
 	return nrch.ce.nrCurrentFunc(nrch.rs)
 }
 
@@ -537,11 +543,11 @@ type pcCurrentHandler struct {
 	PCCurrent bool
 }
 
-func (pcch pcCurrentHandler) evalCriteria() bool {
+func (pcch *pcCurrentHandler) evalCriteria() bool {
 	return pcch.PCCurrent
 }
 
-func (pcch pcCurrentHandler) evalLogic() (bool, error) {
+func (pcch *pcCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcch.rs.OwnValidatingState.PCTOExpired()
 	return pcch.ce.pcCurrentFunc(pcch.rs, PCTOExpired)
 }
@@ -569,11 +575,11 @@ type pcnCurrentHandler struct {
 	PCNCurrent bool
 }
 
-func (pcnch pcnCurrentHandler) evalCriteria() bool {
+func (pcnch *pcnCurrentHandler) evalCriteria() bool {
 	return pcnch.PCNCurrent
 }
 
-func (pcnch pcnCurrentHandler) evalLogic() (bool, error) {
+func (pcnch *pcnCurrentHandler) evalLogic() (bool, error) {
 	PCTOExpired := pcnch.rs.OwnValidatingState.PCTOExpired()
 	return pcnch.ce.pcnCurrentFunc(pcnch.rs, PCTOExpired)
 }
@@ -601,11 +607,11 @@ type pvCurrentHandler struct {
 	PVCurrent bool
 }
 
-func (pvch pvCurrentHandler) evalCriteria() bool {
+func (pvch *pvCurrentHandler) evalCriteria() bool {
 	return pvch.PVCurrent
 }
 
-func (pvch pvCurrentHandler) evalLogic() (bool, error) {
+func (pvch *pvCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvch.rs.OwnValidatingState.PVTOExpired()
 	return pvch.ce.pvCurrentFunc(pvch.rs, PVTOExpired)
 }
@@ -633,11 +639,11 @@ type pvnCurrentHandler struct {
 	PVNCurrent bool
 }
 
-func (pvnch pvnCurrentHandler) evalCriteria() bool {
+func (pvnch *pvnCurrentHandler) evalCriteria() bool {
 	return pvnch.PVNCurrent
 }
 
-func (pvnch pvnCurrentHandler) evalLogic() (bool, error) {
+func (pvnch *pvnCurrentHandler) evalLogic() (bool, error) {
 	PVTOExpired := pvnch.rs.OwnValidatingState.PVTOExpired()
 	return pvnch.ce.pvnCurrentFunc(pvnch.rs, PVTOExpired)
 }
@@ -664,12 +670,12 @@ type ptoExpiredHandler struct {
 	rs *RoundStates
 }
 
-func (ptoeh ptoExpiredHandler) evalCriteria() bool {
+func (ptoeh *ptoExpiredHandler) evalCriteria() bool {
 	PTOExpired := ptoeh.rs.OwnValidatingState.PTOExpired()
 	return PTOExpired
 }
 
-func (ptoeh ptoExpiredHandler) evalLogic() (bool, error) {
+func (ptoeh *ptoExpiredHandler) evalLogic() (bool, error) {
 	return ptoeh.ce.ptoExpiredFunc(ptoeh.rs)
 }
 
@@ -688,12 +694,12 @@ type validPropHandler struct {
 	PCurrent bool
 }
 
-func (vph validPropHandler) evalCriteria() bool {
+func (vph *validPropHandler) evalCriteria() bool {
 	IsProposer := vph.rs.LocalIsProposer()
-	return IsProposer && !vph.PCurrent
+	return (IsProposer && !vph.PCurrent && vph.rs.OwnRoundState().RCert.RClaims.Round < constants.DEADBLOCKROUND)
 }
 
-func (vph validPropHandler) evalLogic() (bool, error) {
+func (vph *validPropHandler) evalLogic() (bool, error) {
 	return vph.ce.validPropFunc(vph.rs)
 }
 
@@ -819,7 +825,8 @@ func (ce *Engine) Sync() (bool, error) {
 func (ce *Engine) loadValidationKey(rs *RoundStates) error {
 	if rs.IsCurrentValidator() {
 		if !bytes.Equal(rs.ValidatorSet.GroupKey, rs.OwnValidatingState.GroupKey) || ce.bnSigner == nil {
-			for _, v := range rs.ValidatorSet.Validators {
+			for i := 0; i < len(rs.ValidatorSet.Validators); i++ {
+				v := rs.ValidatorSet.Validators[i]
 				if bytes.Equal(v.VAddr, rs.OwnState.VAddr) {
 					name := make([]byte, len(v.GroupShare))
 					copy(name[:], v.GroupShare)
