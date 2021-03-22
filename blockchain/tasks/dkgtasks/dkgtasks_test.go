@@ -20,14 +20,18 @@ import (
 )
 
 var accountAddresses []string = []string{
-	"0x33a3479e7d9efa9c5fc036947a91de196a04feb9", "0x89E920996b02cDfd37fed54c8E34A66F46677250",
-	"0x5B3e35f9E22591eaF0a9E8B4E65Ee54fd01356e8", "0xE85FbcbE534d65e07D7B6d027e6639dee01922C5",
-	"0x7024AA45615dF90c7b8942D3419d479e07e0e5bC"}
+	"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
+	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
+	"0x63a6627b79813A7A43829490C4cE409254f64177"}
+
+	// "0x33a3479e7d9efa9c5fc036947a91de196a04feb9", "0x89E920996b02cDfd37fed54c8E34A66F46677250",
+	// "0x5B3e35f9E22591eaF0a9E8B4E65Ee54fd01356e8", "0xE85FbcbE534d65e07D7B6d027e6639dee01922C5",
+	// "0x7024AA45615dF90c7b8942D3419d479e07e0e5bC"}
 
 func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
-		"../../../assets/test/keys-ropsten",
-		"../../../assets/test/passcodes-ropsten.txt",
+		"../../../assets/test/keys",
+		"../../../assets/test/passcodes.txt",
 		6,
 		1*time.Second,
 		0,
