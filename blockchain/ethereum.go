@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
 	geth "github.com/ethereum/go-ethereum"
@@ -1145,7 +1146,11 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	logAndEat(logger, err)
 	q(tx)
 
-	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(1024))
+	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength)))
+	logAndEat(logger, err)
+	q(tx)
+
+	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength/8)))
 	logAndEat(logger, err)
 	q(tx)
 
