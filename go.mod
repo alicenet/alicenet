@@ -3,9 +3,9 @@ module github.com/MadBase/MadNet
 go 1.15
 
 require (
-	github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
-	github.com/dgraph-io/badger v1.6.2
+	github.com/MadBase/bridge v0.5.0
 	github.com/dgraph-io/badger/v2 v2.0.3
+	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.9.15
@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.1.1
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/highwayhash v1.0.1
 	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/sirupsen/logrus v1.6.0
@@ -33,4 +34,4 @@ require (
 	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )
 
-replace github.com/MadBase/bridge => ../bridge
+// replace github.com/MadBase/bridge => ../bridge
