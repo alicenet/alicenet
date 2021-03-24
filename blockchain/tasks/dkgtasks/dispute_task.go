@@ -16,9 +16,9 @@ type DisputeTask struct {
 	eth             blockchain.Ethereum
 	acct            accounts.Account
 	logger          *logrus.Logger
-	registrationEnd uint64
-	lastBlock       uint64
-	publicKey       [2]*big.Int
+	RegistrationEnd uint64
+	LastBlock       uint64
+	PublicKey       [2]*big.Int
 }
 
 // NewDisputeTask creates a new task
@@ -27,9 +27,9 @@ func NewDisputeTask(logger *logrus.Logger, eth blockchain.Ethereum, acct account
 		logger:          logger,
 		eth:             eth,
 		acct:            acct,
-		registrationEnd: registrationEnd,
-		lastBlock:       lastBlock,
-		publicKey:       blockchain.CloneBigInt2(publicKey),
+		RegistrationEnd: registrationEnd,
+		LastBlock:       lastBlock,
+		PublicKey:       blockchain.CloneBigInt2(publicKey),
 	}
 }
 
@@ -54,8 +54,8 @@ func (t *DisputeTask) ShouldRetry(ctx context.Context) bool {
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.logger,
-		t.eth, t.acct, t.publicKey,
-		t.registrationEnd, t.lastBlock)
+		t.eth, t.acct, t.PublicKey,
+		t.RegistrationEnd, t.LastBlock)
 }
 
 // DoDone creates a log entry saying task is complete
