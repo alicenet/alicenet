@@ -193,7 +193,7 @@ type SnapShotManager struct {
 	currentCtx               context.Context
 	currentCtxCancel         func()
 	currentWg                *sync.WaitGroup
-	database                 db.DatabaseIface
+	database                 *db.Database
 	hcache                   *nodeCache
 	ncache                   *nodeCache
 	nscache                  *stateCache
@@ -205,7 +205,7 @@ type SnapShotManager struct {
 }
 
 // Init initializes the SnapShotManager
-func (ndm *SnapShotManager) Init(database db.DatabaseIface) error {
+func (ndm *SnapShotManager) Init(database *db.Database) error {
 	ndm.logger = logging.GetLogger(constants.LoggerConsensus)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
