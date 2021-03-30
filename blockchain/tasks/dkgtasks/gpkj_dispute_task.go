@@ -5,15 +5,11 @@ import (
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // GPKJDisputeTask contains required state for safely performing a registration
 type GPKJDisputeTask struct {
-	eth               blockchain.Ethereum
-	acct              accounts.Account
-	logger            *logrus.Logger
 	registrationEnd   uint64
 	lastBlock         uint64
 	publicKey         [2]*big.Int
@@ -25,16 +21,13 @@ type GPKJDisputeTask struct {
 }
 
 // NewGPKJDisputeTask creates a background task that attempts to register with ETHDKG
-func NewGPKJDisputeTask(logger *logrus.Logger, eth blockchain.Ethereum, acct accounts.Account,
+func NewGPKJDisputeTask(
 	publicKey [2]*big.Int,
 	inverse []*big.Int,
 	honestIndicies []*big.Int,
 	dishonestIndicies []*big.Int,
 	registrationEnd uint64, lastBlock uint64) *GPKJDisputeTask {
 	return &GPKJDisputeTask{
-		logger:            logger,
-		eth:               eth,
-		acct:              acct,
 		publicKey:         blockchain.CloneBigInt2(publicKey),
 		inverse:           blockchain.CloneBigIntSlice(inverse),
 		honestIndicies:    blockchain.CloneBigIntSlice(honestIndicies),
@@ -45,52 +38,52 @@ func NewGPKJDisputeTask(logger *logrus.Logger, eth blockchain.Ethereum, acct acc
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKJDisputeTask) DoWork(ctx context.Context) {
-	t.logger.Info("DoWork() ...")
+func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
+	logger.Info("DoWork() ...")
 	t.count = 1
 
-	t.doTask(ctx)
+	t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKJDisputeTask) DoRetry(ctx context.Context) {
-	t.logger.Info("DoRetry() ...")
+func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
+	logger.Info("DoRetry() ...")
 	t.count++
 
-	t.doTask(ctx)
+	t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKJDisputeTask) doTask(ctx context.Context) {
+func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
 
 	// Setup
-	c := t.eth.Contracts()
-	txnOpts, err := t.eth.GetTransactionOpts(ctx, t.acct)
+	c := eth.Contracts()
+	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
-		t.logger.Errorf("getting txn opts failed: %v", err)
+		logger.Errorf("getting txn opts failed: %v", err)
 		return
 	}
 
 	// Register
 	txn, err := c.Ethdkg.GroupAccusationGPKj(txnOpts, t.inverse, t.honestIndicies, t.dishonestIndicies)
 	if err != nil {
-		t.logger.Errorf("group accusation failed: %v", err)
+		logger.Errorf("group accusation failed: %v", err)
 		return
 	}
 
 	// Waiting for receipt
-	receipt, err := t.eth.WaitForReceipt(ctx, txn)
+	receipt, err := eth.WaitForReceipt(ctx, txn)
 	if err != nil {
-		t.logger.Errorf("waiting for receipt failed: %v", err)
+		logger.Errorf("waiting for receipt failed: %v", err)
 		return
 	}
 	if receipt == nil {
-		t.logger.Error("missing registration receipt")
+		logger.Error("missing registration receipt")
 		return
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		t.logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 		return
 	}
 
@@ -101,7 +94,7 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context) {
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context) bool {
+func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 
 	// If we were successful we should not try again
 	if t.success {
@@ -109,12 +102,12 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context) bool {
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.logger,
-		t.eth, t.acct, t.publicKey,
+	return GeneralTaskShouldRetry(ctx, logger,
+		eth, t.publicKey,
 		t.registrationEnd, t.lastBlock)
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *GPKJDisputeTask) DoDone() {
-	t.logger.Infof("DoDone() ... tries:%v", t.count)
+func (t *GPKJDisputeTask) DoDone(logger *logrus.Logger) {
+	logger.Infof("DoDone() ... tries:%v", t.count)
 }

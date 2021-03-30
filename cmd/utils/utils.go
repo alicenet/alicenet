@@ -90,7 +90,10 @@ func setupEthereum(logger *logrus.Logger) (blockchain.Ethereum, error) {
 
 	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
 
-	err = eth.Contracts().LookupContracts(registryAddress)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = eth.Contracts().LookupContracts(ctx, registryAddress)
 
 	return eth, err
 }

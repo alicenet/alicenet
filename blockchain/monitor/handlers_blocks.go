@@ -84,11 +84,11 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 
 	taskLogger := logging.GetLogger("sdt")
 
-	task := dkgtasks.NewShareDistributionTask(taskLogger, eth, acct,
+	task := dkgtasks.NewShareDistributionTask(
 		ethdkg.TransportPublicKey, encryptedShares, commitments,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.ShareDistributionEnd)
 
-	ethdkg.ShareDistributionTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	ethdkg.ShareDistributionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 	ethdkg.ShareDistributionTH.Start()
 
 	return nil
@@ -111,14 +111,13 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 	// Setup and start task
 	taskLogger := logging.GetLogger("dispute")
 	eth := svcs.eth
-	acct := eth.GetDefaultAccount()
 	ethdkg := state.ethdkg
 
-	task := dkgtasks.NewDisputeTask(taskLogger, eth, acct,
+	task := dkgtasks.NewDisputeTask(
 		ethdkg.TransportPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.DisputeEnd)
 
-	ethdkg.DisputeTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	ethdkg.DisputeTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 	ethdkg.DisputeTH.Start()
 
 	return nil
@@ -146,16 +145,15 @@ func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
 	}
 
 	eth := svcs.eth
-	acct := eth.GetDefaultAccount()
 	ethdkg := state.ethdkg
 
 	taskLogger := logging.GetLogger("kst")
 
-	task := dkgtasks.NewKeyshareSubmissionTask(taskLogger, eth, acct,
+	task := dkgtasks.NewKeyshareSubmissionTask(
 		ethdkg.TransportPublicKey, g1KeyShare, g1Proof, g2KeyShare,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.KeyShareSubmissionEnd)
 
-	ethdkg.KeyShareSubmissionTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	ethdkg.KeyShareSubmissionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 	ethdkg.KeyShareSubmissionTH.Start()
 
 	return nil
@@ -205,13 +203,12 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 
 	// Task setup
 	eth := svcs.eth
-	acct := eth.GetDefaultAccount()
 
-	task := dkgtasks.NewMPKSubmissionTask(logger, eth, acct,
+	task := dkgtasks.NewMPKSubmissionTask(
 		ethdkg.TransportPublicKey, ethdkg.MasterPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.MPKSubmissionEnd)
 
-	state.ethdkg.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	state.ethdkg.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
 	state.ethdkg.MPKSubmissionTH.Start()
 
 	return nil
@@ -270,10 +267,10 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 		return ErrCanNotContinue
 	}
 
-	task := dkgtasks.NewGPKSubmissionTask(logger, eth, acct, ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
+	task := dkgtasks.NewGPKSubmissionTask(ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.GPKJSubmissionEnd)
 
-	state.ethdkg.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	state.ethdkg.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
 	state.ethdkg.GPKJSubmissionTH.Start()
 
 	return nil
@@ -300,12 +297,11 @@ func (svcs *Services) DoSuccessfulCompletion(state *State, block uint64) error {
 
 	eth := svcs.eth
 	ethdkg := state.ethdkg
-	acct := eth.GetDefaultAccount()
 
-	task := dkgtasks.NewCompletionTask(logger, eth, acct, ethdkg.TransportPublicKey,
+	task := dkgtasks.NewCompletionTask(ethdkg.TransportPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.CompleteEnd)
 
-	state.ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+	state.ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
 	state.ethdkg.CompleteTH.Start()
 
 	return nil

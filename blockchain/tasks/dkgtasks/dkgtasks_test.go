@@ -226,7 +226,7 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 					registrationEnds := event.RegistrationEnds.Uint64()
 					distributionEnds := event.ShareDistributionEnds.Uint64()
 
-					registrationTask := dkgtasks.NewRegisterTask(logger, eth, validatorAcct, pub, registrationEnds)
+					registrationTask := dkgtasks.NewRegisterTask(pub, registrationEnds)
 					th := taskManager.NewTaskHandler(10*time.Minute, time.Second, registrationTask)
 
 					th.Start()
@@ -268,7 +268,7 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 						shares, coeff, commitments, err := dkg.GenerateShares(priv, pub, participants, threshold)
 						t.Logf("coeff:%v", coeff)
 
-						distroTask := dkgtasks.NewShareDistributionTask(logger, eth, validatorAcct, pub, shares, commitments, registrationEnds, distributionEnds)
+						distroTask := dkgtasks.NewShareDistributionTask(pub, shares, commitments, registrationEnds, distributionEnds)
 						dth := taskManager.NewTaskHandler(time.Second, time.Second, distroTask)
 
 						dth.Start()

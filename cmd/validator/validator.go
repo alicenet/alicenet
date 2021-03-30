@@ -132,7 +132,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 	logger.Infof("Looking up smart contracts on Ethereum...")
 	// Find all the contracts
-	if err := eth.Contracts().LookupContracts(registryAddress); err != nil {
+	if err := eth.Contracts().LookupContracts(ctx, registryAddress); err != nil {
 		logger.Fatalf("Can't find contract registry: %v", err)
 		panic(err)
 	}

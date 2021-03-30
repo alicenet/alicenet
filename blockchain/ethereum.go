@@ -62,7 +62,7 @@ type Ethereum interface {
 	GetSnapshot() ([]byte, error)
 	GetSyncProgress() (bool, *geth.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
-	GetValidators() ([]common.Address, error)
+	GetValidators(context.Context) ([]common.Address, error)
 
 	WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
 
@@ -658,9 +658,9 @@ func (eth *ethereum) GetSnapshot() ([]byte, error) {
 	return nil, nil
 }
 
-func (eth *ethereum) GetValidators() ([]common.Address, error) {
+func (eth *ethereum) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
-	validatorAddresses, err := c.Validators.GetValidators(eth.GetCallOpts(context.TODO(), eth.defaultAccount))
+	validatorAddresses, err := c.Validators.GetValidators(eth.GetCallOpts(ctx, eth.defaultAccount))
 	if err != nil {
 		eth.logger.Warnf("Could not call contract:%v", err)
 		return nil, err
@@ -678,7 +678,7 @@ func (eth *ethereum) Clone(defaultAccount accounts.Account) Ethereum {
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
-func (c *Contracts) LookupContracts(registryAddress common.Address) error {
+func (c *Contracts) LookupContracts(ctx context.Context, registryAddress common.Address) error {
 
 	eth := c.eth
 	logger := eth.logger
@@ -693,7 +693,7 @@ func (c *Contracts) LookupContracts(registryAddress common.Address) error {
 
 	// Just a help for looking up other contracts
 	lookup := func(name string) (common.Address, error) {
-		addr, err := registry.Lookup(eth.GetCallOpts(context.TODO(), eth.defaultAccount), name)
+		addr, err := registry.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), name)
 		if err != nil {
 			logger.Errorf("Failed lookup of \"%v\": %v", name, err)
 		} else {

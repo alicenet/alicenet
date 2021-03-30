@@ -6,27 +6,20 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeTask stores the data required to dispute shares
 type DisputeTask struct {
 	sync.Mutex
-	eth             blockchain.Ethereum
-	acct            accounts.Account
-	logger          *logrus.Logger
 	RegistrationEnd uint64
 	LastBlock       uint64
 	PublicKey       [2]*big.Int
 }
 
 // NewDisputeTask creates a new task
-func NewDisputeTask(logger *logrus.Logger, eth blockchain.Ethereum, acct accounts.Account, publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *DisputeTask {
+func NewDisputeTask(publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *DisputeTask {
 	return &DisputeTask{
-		logger:          logger,
-		eth:             eth,
-		acct:            acct,
 		RegistrationEnd: registrationEnd,
 		LastBlock:       lastBlock,
 		PublicKey:       blockchain.CloneBigInt2(publicKey),
@@ -34,14 +27,14 @@ func NewDisputeTask(logger *logrus.Logger, eth blockchain.Ethereum, acct account
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *DisputeTask) DoWork(ctx context.Context) bool {
-	t.logger.Info("DoWork() ...")
+func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+	logger.Info("DoWork() ...")
 	return t.doTask(ctx)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *DisputeTask) DoRetry(ctx context.Context) bool {
-	t.logger.Info("DoRetry() ...")
+func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+	logger.Info("DoRetry() ...")
 	return t.doTask(ctx)
 }
 
@@ -50,15 +43,14 @@ func (t *DisputeTask) doTask(ctx context.Context) bool {
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *DisputeTask) ShouldRetry(ctx context.Context) bool {
+func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.logger,
-		t.eth, t.acct, t.PublicKey,
-		t.RegistrationEnd, t.LastBlock)
+	return GeneralTaskShouldRetry(ctx, logger, eth,
+		t.PublicKey, t.RegistrationEnd, t.LastBlock)
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *DisputeTask) DoDone() {
-	t.logger.Infof("done")
+func (t *DisputeTask) DoDone(logger *logrus.Logger) {
+	logger.Infof("done")
 }

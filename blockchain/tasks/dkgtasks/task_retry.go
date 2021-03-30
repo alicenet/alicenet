@@ -14,8 +14,10 @@ import (
 // GeneralTaskShouldRetry is the general logic used to determine if a task should try again
 // -- Process is
 func GeneralTaskShouldRetry(ctx context.Context, logger *logrus.Logger,
-	eth blockchain.Ethereum, acct accounts.Account, publicKey [2]*big.Int,
+	eth blockchain.Ethereum, publicKey [2]*big.Int,
 	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
+
+	acct := eth.GetDefaultAccount()
 
 	result := internalGeneralTaskShouldRetry(ctx, logger, eth, acct, publicKey, expectedRegistrationEnd, expectedLastBlock)
 

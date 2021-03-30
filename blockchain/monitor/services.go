@@ -51,7 +51,6 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 		c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
 
 	serviceLogger := logging.GetLogger("services")
-	taskLogger := logging.GetLogger("tasks")
 
 	svcs := &Services{
 		ah:                ah,
@@ -63,7 +62,7 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 		events:            make(map[string]*eventProcessor),
 		chainID:           chainID,
 		logger:            serviceLogger,
-		taskMan:           tasks.NewManager(taskLogger)}
+		taskMan:           tasks.NewManager()}
 
 	// Below are the RegisterEvent()'s with nil fn's to improve logging by correlating a name with the topic
 	if err := svcs.RegisterEvent("0x3529eeacda732ca25cee203cc6382b6d0688ee079ec8e53fd2dcbf259bdd3fa1", "DepositReceived-Obsolete", nil); err != nil {

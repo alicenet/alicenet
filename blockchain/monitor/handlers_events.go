@@ -96,11 +96,11 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 
 		taskLogger := logging.GetLogger("rt")
 
-		task := dkgtasks.NewRegisterTask(taskLogger, eth, acct,
+		task := dkgtasks.NewRegisterTask(
 			state.ethdkg.TransportPublicKey,
 			state.ethdkg.Schedule.RegistrationEnd)
 
-		state.ethdkg.RegistrationTH = svcs.taskMan.NewTaskHandler(eth.Timeout(), eth.RetryDelay(), task)
+		state.ethdkg.RegistrationTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 
 		state.ethdkg.RegistrationTH.Start()
 

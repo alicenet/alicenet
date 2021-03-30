@@ -2,16 +2,19 @@ package dkgtasks_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeTask(t *testing.T) {
+
+	tasks.RegisterTask(&dkgtasks.DisputeTask{})
+
 	logger := logging.GetLogger("dispute_task")
 	eth := connectSimulatorEndpoint(t)
 	_, pub, err := dkg.GenerateKeys()
@@ -20,19 +23,20 @@ func TestDisputeTask(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	task := dkgtasks.NewDisputeTask(logger, eth, eth.GetDefaultAccount(), pub, 40, 50)
+	task := dkgtasks.NewDisputeTask(pub, 40, 50)
 
-	assert.True(t, task.DoWork(ctx))
+	assert.True(t, task.DoWork(ctx, logger, eth))
 
-	raw, err := json.Marshal(task)
+	raw, err := tasks.MarshalTask(task)
 	assert.Nil(t, err)
-
 	assert.True(t, len(raw) > 0)
 
-	newTask := &dkgtasks.DisputeTask{}
+	t.Logf("raw:%v", string(raw))
 
-	err = json.Unmarshal(raw, newTask)
+	newTask, err := tasks.UnmarshalTask(raw)
 	assert.Nil(t, err)
 
-	assert.True(t, newTask.DoWork(ctx))
+	t.Logf("newTask:%v", newTask)
+
+	assert.True(t, newTask.DoWork(ctx, logger, eth))
 }
