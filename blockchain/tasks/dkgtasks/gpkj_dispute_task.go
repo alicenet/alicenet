@@ -3,13 +3,17 @@ package dkgtasks
 import (
 	"context"
 	"math/big"
+	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // GPKJDisputeTask contains required state for safely performing a registration
 type GPKJDisputeTask struct {
+	sync.Mutex
+	acct              accounts.Account
 	registrationEnd   uint64
 	lastBlock         uint64
 	publicKey         [2]*big.Int
@@ -22,6 +26,7 @@ type GPKJDisputeTask struct {
 
 // NewGPKJDisputeTask creates a background task that attempts to register with ETHDKG
 func NewGPKJDisputeTask(
+	acct accounts.Account,
 	publicKey [2]*big.Int,
 	inverse []*big.Int,
 	honestIndicies []*big.Int,
@@ -57,7 +62,7 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return

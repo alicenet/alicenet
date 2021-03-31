@@ -30,6 +30,7 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 		"../../../assets/test/passcodes.txt",
 		6,
 		1*time.Second,
+		5*time.Second,
 		0,
 		big.NewInt(9223372036854775807),
 		accountAddresses...)
@@ -108,11 +109,24 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 	assert.Equal(t, rcpt.Status, uint64(1))
+
+	callOpts := eth.GetCallOpts(ctx, validatorAcct)
+
+	// Collect validator status info
+	balance, err := c.StakingToken.BalanceOf(callOpts, validatorAcct.Address)
+	assert.Nil(t, err)
+
+	isValidator, err := c.Participants.IsValidator(callOpts, validatorAcct.Address)
+	assert.Nil(t, err)
+
+	t.Logf("Address %v: isValidator=%v Balance=%v",
+		validatorAcct.Address.Hex(),
+		isValidator,
+		balance.Uint64())
 }
 
 func TestRegisterSuccess(t *testing.T) {
 	eth := connectSimulatorEndpoint(t)
-	// eth := connectRemoteEndpoint(t)
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
 	var ownerAccount accounts.Account
@@ -134,7 +148,6 @@ func TestRegisterSuccess(t *testing.T) {
 	c := eth.Contracts()
 
 	_, _, err := c.DeployContracts(ctx, ownerAccount)
-	// err := c.LookupContracts(common.HexToAddress("0xe83043E6fCafda1664254C393D6c151EadE85Cc0"))
 	assert.Nil(t, err)
 
 	t.Logf("  ethdkg address: %v", c.EthdkgAddress.Hex())
@@ -198,7 +211,7 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 	currentBlock := uint64(startBlock)
 	lastBlock := uint64(startBlock)
 	addresses := []common.Address{c.EthdkgAddress}
-	taskManager := tasks.NewManager(logger)
+	taskManager := tasks.NewManager()
 
 	handlers := make(map[uint64]func())
 
@@ -226,8 +239,8 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 					registrationEnds := event.RegistrationEnds.Uint64()
 					distributionEnds := event.ShareDistributionEnds.Uint64()
 
-					registrationTask := dkgtasks.NewRegisterTask(pub, registrationEnds)
-					th := taskManager.NewTaskHandler(10*time.Minute, time.Second, registrationTask)
+					registrationTask := dkgtasks.NewRegisterTask(validatorAcct, pub, registrationEnds)
+					th := taskManager.NewTaskHandler(logger, eth, registrationTask)
 
 					th.Start()
 
@@ -269,7 +282,7 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 						t.Logf("coeff:%v", coeff)
 
 						distroTask := dkgtasks.NewShareDistributionTask(pub, shares, commitments, registrationEnds, distributionEnds)
-						dth := taskManager.NewTaskHandler(time.Second, time.Second, distroTask)
+						dth := taskManager.NewTaskHandler(logger, eth, distroTask)
 
 						dth.Start()
 					}

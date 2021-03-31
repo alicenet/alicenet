@@ -51,10 +51,6 @@ type TaskDoneFunc func()
 
 // TaskHandlerDetails contains all the data required to implment a task
 type TaskHandlerDetails struct {
-	// doDone      TaskDoneFunc
-	// doRetry     TaskDoFunc
-	// doWork      TaskDoFunc
-	// shouldRetry TaskShouldFunc
 	complete   bool
 	count      int
 	eth        blockchain.Ethereum
@@ -67,90 +63,6 @@ type TaskHandlerDetails struct {
 	taskCancel context.CancelFunc
 	timeout    time.Duration
 	wg         *sync.WaitGroup
-}
-
-// ========================================================
-// Custom Marshal/Unmarshal for tasks
-// ========================================================
-var taskRegistry struct {
-	sync.RWMutex
-	a map[reflect.Type]string
-	b map[string]reflect.Type
-}
-
-func RegisterTask(t Task) {
-	taskRegistry.Lock()
-	defer taskRegistry.Unlock()
-
-	if taskRegistry.a == nil {
-		taskRegistry.a = make(map[reflect.Type]string)
-	}
-
-	if taskRegistry.b == nil {
-		taskRegistry.b = make(map[string]reflect.Type)
-	}
-
-	tipe := reflect.TypeOf(t)
-	if tipe.Kind() == reflect.Ptr {
-		tipe = tipe.Elem()
-	}
-
-	taskRegistry.a[tipe] = tipe.String()
-	taskRegistry.b[tipe.String()] = tipe
-}
-
-func lookupName(tipe reflect.Type) string {
-	taskRegistry.RLock()
-	defer taskRegistry.RUnlock()
-
-	return taskRegistry.a[tipe]
-}
-
-func lookupType(name string) reflect.Type {
-	taskRegistry.Lock()
-	defer taskRegistry.Unlock()
-
-	return taskRegistry.b[name]
-}
-
-func MarshalTask(t Task) ([]byte, error) {
-
-	tipe := reflect.TypeOf(t)
-	if tipe.Kind() == reflect.Ptr {
-		tipe = tipe.Elem()
-	}
-
-	name := lookupName(tipe)
-	fmt.Printf("Marshaling %v...\n", name)
-
-	rawTask, err := json.Marshal(t)
-	if err != nil {
-		return nil, err
-	}
-
-	wrapper := TaskWrapper{TaskName: name, TaskRaw: rawTask}
-
-	return json.Marshal(wrapper)
-}
-
-func UnmarshalTask(b []byte) (Task, error) {
-	wrapper := &TaskWrapper{}
-	err := json.Unmarshal(b, wrapper)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("Unmarshaling %v from %v\n", wrapper.TaskName, string(wrapper.TaskRaw))
-
-	tipe := lookupType(wrapper.TaskName)
-	val := reflect.New(tipe)
-
-	err = json.Unmarshal(wrapper.TaskRaw, val.Interface())
-	if err != nil {
-		return nil, err
-	}
-
-	return val.Interface().(Task), nil
 }
 
 // ========================================================
@@ -283,6 +195,11 @@ type ManagerDetails struct {
 // Manager implementation
 // ========================================================
 
+// NewManager creates a new Manager
+func NewManager() Manager {
+	return &ManagerDetails{wg: sync.WaitGroup{}}
+}
+
 // NewTaskHandler creates a new task handler, where each phase can take upto 'timeout'
 // duration and there is a delay of 'retryDelay' before a retry.
 func (md *ManagerDetails) NewTaskHandler(logger *logrus.Logger, eth blockchain.Ethereum, task Task) TaskHandler {
@@ -294,6 +211,7 @@ func (md *ManagerDetails) NewTaskHandler(logger *logrus.Logger, eth blockchain.E
 
 	return &TaskHandlerDetails{
 		ID:         taskID,
+		eth:        eth,
 		task:       task,
 		label:      taskLabel,
 		logger:     logger,
@@ -308,10 +226,85 @@ func (md *ManagerDetails) WaitForTasks() {
 }
 
 // ========================================================
-// Support functionality
+// Custom Marshal/Unmarshal for tasks
 // ========================================================
+var taskRegistry struct {
+	sync.RWMutex
+	a map[reflect.Type]string
+	b map[string]reflect.Type
+}
 
-// NewManager creates a new Manager
-func NewManager() Manager {
-	return &ManagerDetails{wg: sync.WaitGroup{}}
+func RegisterTask(t Task) {
+	taskRegistry.Lock()
+	defer taskRegistry.Unlock()
+
+	if taskRegistry.a == nil {
+		taskRegistry.a = make(map[reflect.Type]string)
+	}
+
+	if taskRegistry.b == nil {
+		taskRegistry.b = make(map[string]reflect.Type)
+	}
+
+	tipe := reflect.TypeOf(t)
+	if tipe.Kind() == reflect.Ptr {
+		tipe = tipe.Elem()
+	}
+
+	taskRegistry.a[tipe] = tipe.String()
+	taskRegistry.b[tipe.String()] = tipe
+}
+
+func lookupName(tipe reflect.Type) string {
+	taskRegistry.RLock()
+	defer taskRegistry.RUnlock()
+
+	return taskRegistry.a[tipe]
+}
+
+func lookupType(name string) reflect.Type {
+	taskRegistry.Lock()
+	defer taskRegistry.Unlock()
+
+	return taskRegistry.b[name]
+}
+
+func MarshalTask(t Task) ([]byte, error) {
+
+	tipe := reflect.TypeOf(t)
+	if tipe.Kind() == reflect.Ptr {
+		tipe = tipe.Elem()
+	}
+
+	name := lookupName(tipe)
+	fmt.Printf("Marshaling %v...\n", name)
+
+	rawTask, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+
+	wrapper := TaskWrapper{TaskName: name, TaskRaw: rawTask}
+
+	return json.Marshal(wrapper)
+}
+
+func UnmarshalTask(b []byte) (Task, error) {
+	wrapper := &TaskWrapper{}
+	err := json.Unmarshal(b, wrapper)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Unmarshaling %v from %v\n", wrapper.TaskName, string(wrapper.TaskRaw))
+
+	tipe := lookupType(wrapper.TaskName)
+	val := reflect.New(tipe)
+
+	err = json.Unmarshal(wrapper.TaskRaw, val.Interface())
+	if err != nil {
+		return nil, err
+	}
+
+	return val.Interface().(Task), nil
 }

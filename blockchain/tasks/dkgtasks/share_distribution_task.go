@@ -6,12 +6,14 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
 	sync.Mutex
+	acct            accounts.Account
 	registrationEnd uint64
 	lastBlock       uint64
 	publicKey       [2]*big.Int
@@ -20,8 +22,9 @@ type ShareDistributionTask struct {
 }
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(publicKey [2]*big.Int, encryptedShares []*big.Int, commitments [][2]*big.Int, registrationEnd uint64, lastBlock uint64) *ShareDistributionTask {
+func NewShareDistributionTask(acct accounts.Account, publicKey [2]*big.Int, encryptedShares []*big.Int, commitments [][2]*big.Int, registrationEnd uint64, lastBlock uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
+		acct:            acct,
 		registrationEnd: registrationEnd,
 		lastBlock:       lastBlock,
 		commitments:     commitments,
@@ -47,9 +50,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 
 	// Setup
 	c := eth.Contracts()
-	me := eth.GetDefaultAccount()
-	logger.Infof("me:%v", me.Address.Hex())
-	txnOpts, err := eth.GetTransactionOpts(ctx, me)
+	logger.Infof("me:%v", t.acct.Address.Hex())
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
@@ -95,14 +97,13 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
-		me := eth.GetDefaultAccount()
-		callOpts := eth.GetCallOpts(ctx, me)
+		callOpts := eth.GetCallOpts(ctx, t.acct)
 		distributionHash, err := eth.Contracts().Ethdkg.ShareDistributionHashes(callOpts, me.Address)
 		if err != nil {
 			return true
 		}
 
-		// TODO an I prove this is the correct share distribution hash?
+		// TODO can I prove this is the correct share distribution hash?
 		logger.Infof("DistributionHash: %x", distributionHash)
 	}
 

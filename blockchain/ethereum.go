@@ -170,6 +170,7 @@ func NewEthereumSimulator(
 	pathPasscodes string,
 	retryCount int,
 	retryDelay time.Duration,
+	timeout time.Duration,
 	finalityDelay int,
 	wei *big.Int,
 	addresses ...string) (Ethereum, error) {
@@ -194,6 +195,7 @@ func NewEthereumSimulator(
 		passcodes:     make(map[common.Address]string),
 		retryCount:    retryCount,
 		retryDelay:    retryDelay,
+		timeout:       timeout,
 		finalityDelay: uint64(finalityDelay)}
 	eth.contracts = &Contracts{eth: eth}
 

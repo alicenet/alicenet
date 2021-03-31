@@ -6,19 +6,21 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
 	sync.Mutex
+	acct            accounts.Account
 	publicKey       [2]*big.Int
 	registrationEnd uint64
 	lastBlock       uint64
 }
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *CompletionTask {
+func NewCompletionTask(acct accounts.Account, publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *CompletionTask {
 	return &CompletionTask{
 		publicKey: blockchain.CloneBigInt2(publicKey),
 		lastBlock: lastBlock,
@@ -42,7 +44,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false

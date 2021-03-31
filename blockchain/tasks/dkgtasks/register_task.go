@@ -6,19 +6,22 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
 	sync.Mutex
+	acct      accounts.Account
 	lastBlock uint64
 	publicKey [2]*big.Int
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(publicKey [2]*big.Int, lastBlock uint64) *RegisterTask {
+func NewRegisterTask(acct accounts.Account, publicKey [2]*big.Int, lastBlock uint64) *RegisterTask {
 	return &RegisterTask{
+		acct:      acct,
 		publicKey: blockchain.CloneBigInt2(publicKey),
 		lastBlock: lastBlock,
 	}
@@ -42,7 +45,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth bl
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
@@ -86,7 +89,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	defer t.Unlock()
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts := eth.GetCallOpts(ctx, t.acct)
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -111,7 +114,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 
 	// Check to see if we are already registered
 	ethdkg := eth.Contracts().Ethdkg
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, eth.GetDefaultAccount().Address, t.publicKey)
+	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.acct.Address, t.publicKey)
 	if err != nil {
 		logger.Warnf("could not check if we're registered: %v", err)
 		return true

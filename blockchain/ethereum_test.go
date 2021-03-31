@@ -25,6 +25,7 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
 		"../assets/test/passcodes.txt",
 		1,
 		time.Second*2,
+		time.Second*5,
 		0,
 		wei,
 		"546f99f244b7b58b855330ae0e2bc1b30b41302f", "9ac1c9afbaec85278679ff75ef109217f26b1417")

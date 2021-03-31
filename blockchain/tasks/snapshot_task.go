@@ -22,7 +22,7 @@ type SnapshotTask struct {
 }
 
 // NewSnapshotTask creates a new task
-func NewSnapshotTask(logger *logrus.Logger, eth blockchain.Ethereum, acct accounts.Account, epoch *big.Int, rawBclaims []byte, rawSigGroup []byte) *SnapshotTask {
+func NewSnapshotTask(acct accounts.Account, logger *logrus.Logger, eth blockchain.Ethereum, epoch *big.Int, rawBclaims []byte, rawSigGroup []byte) *SnapshotTask {
 	return &SnapshotTask{
 		acct:        acct,
 		epoch:       epoch,
@@ -53,7 +53,7 @@ func (t *SnapshotTask) doTask(ctx context.Context) bool {
 	c := t.eth.Contracts()
 
 	// Do the mechanics
-	txnOpts, err := t.eth.GetTransactionOpts(ctx, t.eth.GetDefaultAccount())
+	txnOpts, err := t.eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
 		t.logger.Errorf("Could not create transaction for snapshot: %v", err)
 		return false
