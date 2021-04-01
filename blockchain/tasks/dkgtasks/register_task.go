@@ -53,6 +53,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth bl
 
 	// Register
 	logger.Infof("registering public key: %v", FormatPublicKey(t.PublicKey))
+	logger.Infof("txnOpts:%v", txnOpts.From)
 	txn, err := c.Ethdkg.Register(txnOpts, t.PublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)

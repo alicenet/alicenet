@@ -15,13 +15,14 @@ func TestDisputeTask(t *testing.T) {
 
 	tasks.RegisterTask(&dkgtasks.DisputeTask{})
 
-	logger := logging.GetLogger("dispute_task")
-	eth := connectSimulatorEndpoint(t)
-	_, pub, err := dkg.GenerateKeys()
-	assert.Nil(t, err)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	logger := logging.GetLogger("dispute_task")
+	eth := connectSimulatorEndpoint(t)
+
+	_, pub, err := dkg.GenerateKeys()
+	assert.Nil(t, err)
 
 	task := dkgtasks.NewDisputeTask(eth.GetDefaultAccount(), pub, 40, 50)
 

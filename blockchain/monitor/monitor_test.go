@@ -14,19 +14,11 @@ import (
 
 func setupEthereum(t *testing.T) blockchain.Ethereum {
 
-	// eth, err := blockchain.NewEthereumEndpoint(
-	// 	"http://localhost:8545",
-	// 	"../../assets/test/keys",
-	// 	"../../assets/test/passcodes.txt",
-	// 	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-	// 	3*time.Second,
-	// 	3,
-	// 	5*time.Second,
-	// 	12)
 	eth, err := blockchain.NewEthereumSimulator(
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		3,
+		2*time.Second,
 		5*time.Second,
 		0,
 		big.NewInt(9223372036854775807),

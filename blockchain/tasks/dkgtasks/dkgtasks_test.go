@@ -15,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,14 +35,88 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 		0,
 		big.NewInt(9223372036854775807),
 		accountAddresses...)
-	assert.Nil(t, err)
 
+	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
+	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
+
+	// Mine a block once a second
 	go func() {
 		for true {
 			time.Sleep(1 * time.Second)
 			eth.Commit()
 		}
 	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Unlock the default account and use it to deploy contracts
+	deployAccount := eth.GetDefaultAccount()
+	err = eth.UnlockAccount(deployAccount)
+	assert.Nil(t, err, "Failed to unlock default account")
+
+	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
+	assert.Nil(t, err, "Failed to create txn opts")
+
+	c := eth.Contracts()
+	_, _, err = c.DeployContracts(ctx, deployAccount)
+	assert.Nil(t, err, "Failed to deploy contracts...")
+
+	txnCount := 0
+	txns := make([]*types.Transaction, 100)
+	for idx := 1; idx < len(accountAddresses); idx++ {
+		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+		assert.Nil(t, err)
+		eth.UnlockAccount(acct)
+
+		txns[txnCount], err = c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on transfer %v", txnCount)
+		txnCount++
+
+		o, err := eth.GetTransactionOpts(ctx, acct)
+		assert.Nil(t, err)
+
+		txns[txnCount], err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on approval %v", txnCount)
+		txnCount++
+
+		var validatorId [2]*big.Int
+
+		validatorId[0] = big.NewInt(int64(idx))
+		validatorId[1] = big.NewInt(int64(idx * 2))
+
+		txns[txnCount], err = c.Validators.AddValidator(o, acct.Address, validatorId)
+		assert.Nilf(t, err, "Failed on register %v", txnCount)
+		txnCount++
+	}
+
+	for idx := 0; idx < txnCount; idx++ {
+		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])
+		assert.Nil(t, err)
+
+		t.Logf("rcpt for txn %v ... status %v", txns[idx].Hash().Hex(), rcpt.Status)
+	}
+
+	txnCount = 0
+	for idx := 1; idx < len(accountAddresses); idx++ {
+
+		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+		assert.Nil(t, err)
+
+		o, err := eth.GetTransactionOpts(ctx, acct)
+		assert.Nil(t, err)
+
+		txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		assert.Nilf(t, err, "Failed on locking stake")
+		txnCount++
+	}
+
+	for idx := 0; idx < txnCount; idx++ {
+		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])
+		assert.Nil(t, err)
+
+		t.Logf("rcpt for txn %v ... status %v", txns[idx].Hash().Hex(), rcpt.Status)
+	}
 
 	return eth
 }
