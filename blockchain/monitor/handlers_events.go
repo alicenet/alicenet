@@ -97,6 +97,7 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 		taskLogger := logging.GetLogger("rt")
 
 		task := dkgtasks.NewRegisterTask(
+			eth.GetDefaultAccount(),
 			state.ethdkg.TransportPublicKey,
 			state.ethdkg.Schedule.RegistrationEnd)
 

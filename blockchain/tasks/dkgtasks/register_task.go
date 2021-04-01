@@ -13,17 +13,17 @@ import (
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
 	sync.Mutex
-	acct      accounts.Account
-	lastBlock uint64
-	publicKey [2]*big.Int
+	Account   accounts.Account
+	LastBlock uint64
+	PublicKey [2]*big.Int
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(acct accounts.Account, publicKey [2]*big.Int, lastBlock uint64) *RegisterTask {
 	return &RegisterTask{
-		acct:      acct,
-		publicKey: blockchain.CloneBigInt2(publicKey),
-		lastBlock: lastBlock,
+		Account:   acct,
+		PublicKey: blockchain.CloneBigInt2(publicKey),
+		LastBlock: lastBlock,
 	}
 }
 
@@ -38,22 +38,22 @@ func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth b
 }
 
 func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.publicKey))
+	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.PublicKey))
 
 	t.Lock()
 	defer t.Unlock()
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
 	}
 
 	// Register
-	logger.Infof("registering public key: %v", FormatPublicKey(t.publicKey))
-	txn, err := c.Ethdkg.Register(txnOpts, t.publicKey)
+	logger.Infof("registering public key: %v", FormatPublicKey(t.PublicKey))
+	txn, err := c.Ethdkg.Register(txnOpts, t.PublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return false
@@ -89,7 +89,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	defer t.Unlock()
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(ctx, t.acct)
+	callOpts := eth.GetCallOpts(ctx, t.Account)
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -97,7 +97,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	}
 
 	// Definitely past quitting time
-	if currentBlock > t.lastBlock {
+	if currentBlock > t.LastBlock {
 		return false
 	}
 
@@ -107,14 +107,14 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 		return true
 	}
 
-	if lastBlock.Uint64() != t.lastBlock {
+	if lastBlock.Uint64() != t.LastBlock {
 		logger.Infof("aborting registration due to restart")
 		return false
 	}
 
 	// Check to see if we are already registered
 	ethdkg := eth.Contracts().Ethdkg
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.acct.Address, t.publicKey)
+	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.Account.Address, t.PublicKey)
 	if err != nil {
 		logger.Warnf("could not check if we're registered: %v", err)
 		return true

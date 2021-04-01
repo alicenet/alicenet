@@ -23,7 +23,7 @@ func TestDisputeTask(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	task := dkgtasks.NewDisputeTask(pub, 40, 50)
+	task := dkgtasks.NewDisputeTask(eth.GetDefaultAccount(), pub, 40, 50)
 
 	assert.True(t, task.DoWork(ctx, logger, eth))
 

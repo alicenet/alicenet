@@ -6,20 +6,23 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeTask stores the data required to dispute shares
 type DisputeTask struct {
 	sync.Mutex
+	Account         accounts.Account
 	RegistrationEnd uint64
 	LastBlock       uint64
 	PublicKey       [2]*big.Int
 }
 
 // NewDisputeTask creates a new task
-func NewDisputeTask(publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *DisputeTask {
+func NewDisputeTask(acct accounts.Account, publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *DisputeTask {
 	return &DisputeTask{
+		Account:         acct,
 		RegistrationEnd: registrationEnd,
 		LastBlock:       lastBlock,
 		PublicKey:       blockchain.CloneBigInt2(publicKey),
@@ -46,7 +49,7 @@ func (t *DisputeTask) doTask(ctx context.Context) bool {
 func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, logger, eth,
+	return GeneralTaskShouldRetry(ctx, t.Account, logger, eth,
 		t.PublicKey, t.RegistrationEnd, t.LastBlock)
 }
 

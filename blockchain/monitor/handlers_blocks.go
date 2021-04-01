@@ -84,7 +84,7 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 
 	taskLogger := logging.GetLogger("sdt")
 
-	task := dkgtasks.NewShareDistributionTask(
+	task := dkgtasks.NewShareDistributionTask(eth.GetDefaultAccount(),
 		ethdkg.TransportPublicKey, encryptedShares, commitments,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.ShareDistributionEnd)
 
@@ -114,6 +114,7 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 	ethdkg := state.ethdkg
 
 	task := dkgtasks.NewDisputeTask(
+		eth.GetDefaultAccount(),
 		ethdkg.TransportPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.DisputeEnd)
 
@@ -150,6 +151,7 @@ func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
 	taskLogger := logging.GetLogger("kst")
 
 	task := dkgtasks.NewKeyshareSubmissionTask(
+		eth.GetDefaultAccount(),
 		ethdkg.TransportPublicKey, g1KeyShare, g1Proof, g2KeyShare,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.KeyShareSubmissionEnd)
 
@@ -205,6 +207,7 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 	eth := svcs.eth
 
 	task := dkgtasks.NewMPKSubmissionTask(
+		eth.GetDefaultAccount(),
 		ethdkg.TransportPublicKey, ethdkg.MasterPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.MPKSubmissionEnd)
 
@@ -267,7 +270,7 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 		return ErrCanNotContinue
 	}
 
-	task := dkgtasks.NewGPKSubmissionTask(ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
+	task := dkgtasks.NewGPKSubmissionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.GPKJSubmissionEnd)
 
 	state.ethdkg.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
@@ -298,7 +301,7 @@ func (svcs *Services) DoSuccessfulCompletion(state *State, block uint64) error {
 	eth := svcs.eth
 	ethdkg := state.ethdkg
 
-	task := dkgtasks.NewCompletionTask(ethdkg.TransportPublicKey,
+	task := dkgtasks.NewCompletionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.CompleteEnd)
 
 	state.ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)

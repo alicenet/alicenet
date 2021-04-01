@@ -13,23 +13,23 @@ import (
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
 	sync.Mutex
-	acct            accounts.Account
-	registrationEnd uint64
-	lastBlock       uint64
-	publicKey       [2]*big.Int
-	encryptedShares []*big.Int
-	commitments     [][2]*big.Int
+	Account         accounts.Account
+	RegistrationEnd uint64
+	LastBlock       uint64
+	PublicKey       [2]*big.Int
+	EncryptedShares []*big.Int
+	Commitments     [][2]*big.Int
 }
 
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(acct accounts.Account, publicKey [2]*big.Int, encryptedShares []*big.Int, commitments [][2]*big.Int, registrationEnd uint64, lastBlock uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		acct:            acct,
-		registrationEnd: registrationEnd,
-		lastBlock:       lastBlock,
-		commitments:     commitments,
-		encryptedShares: blockchain.CloneBigIntSlice(encryptedShares),
-		publicKey:       blockchain.CloneBigInt2(publicKey),
+		Account:         acct,
+		RegistrationEnd: registrationEnd,
+		LastBlock:       lastBlock,
+		Commitments:     commitments,
+		EncryptedShares: blockchain.CloneBigIntSlice(encryptedShares),
+		PublicKey:       blockchain.CloneBigInt2(publicKey),
 	}
 }
 
@@ -50,16 +50,16 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 
 	// Setup
 	c := eth.Contracts()
-	logger.Infof("me:%v", t.acct.Address.Hex())
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
+	logger.Infof("me:%v", t.Account.Address.Hex())
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
 	}
 
 	// Distribute shares
-	logger.Infof("# shares:%d # commitments:%d", len(t.encryptedShares), len(t.commitments))
-	txn, err := c.Ethdkg.DistributeShares(txnOpts, t.encryptedShares, t.commitments)
+	logger.Infof("# shares:%d # commitments:%d", len(t.EncryptedShares), len(t.Commitments))
+	txn, err := c.Ethdkg.DistributeShares(txnOpts, t.EncryptedShares, t.Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return false
@@ -92,13 +92,13 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	defer t.Unlock()
 
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.publicKey,
-		t.registrationEnd, t.lastBlock)
+	generalRetry := GeneralTaskShouldRetry(ctx, t.Account, logger, eth, t.PublicKey,
+		t.RegistrationEnd, t.LastBlock)
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
-		callOpts := eth.GetCallOpts(ctx, t.acct)
-		distributionHash, err := eth.Contracts().Ethdkg.ShareDistributionHashes(callOpts, me.Address)
+		callOpts := eth.GetCallOpts(ctx, t.Account)
+		distributionHash, err := eth.Contracts().Ethdkg.ShareDistributionHashes(callOpts, t.Account.Address)
 		if err != nil {
 			return true
 		}

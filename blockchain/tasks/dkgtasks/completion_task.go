@@ -13,17 +13,19 @@ import (
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
 	sync.Mutex
-	acct            accounts.Account
-	publicKey       [2]*big.Int
-	registrationEnd uint64
-	lastBlock       uint64
+	Account         accounts.Account
+	PublicKey       [2]*big.Int
+	RegistrationEnd uint64
+	LastBlock       uint64
 }
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(acct accounts.Account, publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *CompletionTask {
 	return &CompletionTask{
-		publicKey: blockchain.CloneBigInt2(publicKey),
-		lastBlock: lastBlock,
+		Account:         acct,
+		PublicKey:       blockchain.CloneBigInt2(publicKey),
+		RegistrationEnd: registrationEnd,
+		LastBlock:       lastBlock,
 	}
 }
 
@@ -44,7 +46,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
@@ -87,9 +89,9 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger,
 	defer t.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, logger,
-		eth, t.publicKey,
-		t.registrationEnd, t.lastBlock)
+	return GeneralTaskShouldRetry(ctx, t.Account, logger,
+		eth, t.PublicKey,
+		t.RegistrationEnd, t.LastBlock)
 }
 
 // DoDone creates a log entry saying task is complete
