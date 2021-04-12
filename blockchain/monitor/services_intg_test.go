@@ -23,6 +23,7 @@ func (s *ServicesSuite) SetupTest() {
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		3,
+		2*time.Second,
 		5*time.Second,
 		0,
 		big.NewInt(9223372036854775807),

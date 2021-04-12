@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/sirupsen/logrus"
@@ -25,11 +24,6 @@ type Task interface {
 	ShouldRetry(context.Context, *logrus.Logger, blockchain.Ethereum) bool
 }
 
-type TaskWrapper struct {
-	TaskName string
-	TaskRaw  []byte
-}
-
 // TaskHandler required functionality of a task
 type TaskHandler interface {
 	Cancel()
@@ -38,18 +32,13 @@ type TaskHandler interface {
 	Successful() bool
 }
 
-// TaskDoFunc is shorthand for func(context.Context) bool, which is what the Do*() task functions are
-// -- Return value indicates if task work has completed succesfully
-type TaskDoFunc func(context.Context) bool
+// TaskWrapper is used when marshalling and unmarshalling tasks
+type TaskWrapper struct {
+	TaskName string
+	TaskRaw  []byte
+}
 
-// TaskShouldFunc is shorthand for func(context.Context) bool, which is the ShouldRetry() type
-type TaskShouldFunc func(context.Context) bool
-
-// TaskDoneFunc is shorthand for func() bool, which is the DoDone() type
-// -- This is executed as a cleanup, so can't be canceled
-type TaskDoneFunc func()
-
-// TaskHandlerDetails contains all the data required to implment a task
+// TaskHandlerDetails contains all the data required to execute a task
 type TaskHandlerDetails struct {
 	complete   bool
 	count      int
@@ -57,11 +46,9 @@ type TaskHandlerDetails struct {
 	ID         int
 	label      string
 	logger     *logrus.Logger
-	retryDelay time.Duration
 	successful bool
 	task       Task
 	taskCancel context.CancelFunc
-	timeout    time.Duration
 	wg         *sync.WaitGroup
 }
 
@@ -78,6 +65,8 @@ func (td *TaskHandlerDetails) Start() {
 	var taskContext context.Context
 	taskContext, td.taskCancel = context.WithCancel(context.Background())
 
+	retryDelay := td.eth.RetryDelay()
+
 	go func(ctx context.Context) {
 		if td.wg != nil {
 			defer td.wg.Done()
@@ -89,7 +78,7 @@ func (td *TaskHandlerDetails) Start() {
 
 		for !td.successful && td.wrappedShouldRetry(ctx) {
 
-			err := blockchain.SleepWithContext(ctx, td.retryDelay)
+			err := blockchain.SleepWithContext(ctx, retryDelay)
 			if err != nil {
 				td.Logger().Warnf("Task interupted: %v", ctx.Err())
 				return
@@ -133,7 +122,9 @@ func (td *TaskHandlerDetails) wrappedDoWork(ctx context.Context) bool {
 
 	var resp bool
 
-	ctx, cancelFunc := context.WithTimeout(ctx, td.timeout)
+	timeout := td.eth.Timeout()
+
+	ctx, cancelFunc := context.WithTimeout(ctx, timeout)
 	defer cancelFunc()
 	resp = td.task.DoWork(ctx, td.logger, td.eth)
 
@@ -148,7 +139,9 @@ func (td *TaskHandlerDetails) wrappedDoRetry(ctx context.Context) bool {
 
 	var resp bool
 
-	ctx, cancelFunc := context.WithTimeout(ctx, td.timeout)
+	timeout := td.eth.Timeout()
+
+	ctx, cancelFunc := context.WithTimeout(ctx, timeout)
 	defer cancelFunc()
 	resp = td.task.DoRetry(ctx, td.logger, td.eth)
 
@@ -161,7 +154,9 @@ func (td *TaskHandlerDetails) wrappedShouldRetry(ctx context.Context) bool {
 
 	var resp bool
 
-	ctx, cancelFunc := context.WithTimeout(ctx, td.timeout)
+	timeout := td.eth.Timeout()
+
+	ctx, cancelFunc := context.WithTimeout(ctx, timeout)
 	defer cancelFunc()
 	resp = td.task.ShouldRetry(ctx, td.logger, td.eth)
 
@@ -210,14 +205,12 @@ func (md *ManagerDetails) NewTaskHandler(logger *logrus.Logger, eth blockchain.E
 	logger.Infof("Creating task %v with timeout of %v and retryDelay of %v", taskID, eth.Timeout(), eth.RetryDelay())
 
 	return &TaskHandlerDetails{
-		ID:         taskID,
-		eth:        eth,
-		task:       task,
-		label:      taskLabel,
-		logger:     logger,
-		wg:         &md.wg,
-		timeout:    eth.Timeout(),
-		retryDelay: eth.RetryDelay()}
+		ID:     taskID,
+		eth:    eth,
+		task:   task,
+		label:  taskLabel,
+		logger: logger,
+		wg:     &md.wg}
 }
 
 // WaitForTasks blocks until all tasks associated withis Manager have completed

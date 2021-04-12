@@ -18,6 +18,7 @@ require (
 	github.com/holiman/uint256 v1.1.1
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/highwayhash v1.0.1
+	github.com/pborman/uuid v0.0.0-20170112150404-1b00554d8222
 	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0

@@ -152,7 +152,7 @@ func (svcs *Services) WatchEthereum(state *State) error {
 		return nil
 	}
 
-	err = svcs.UpdateProgress(state)
+	err = svcs.UpdateProgress(ctx, state)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (svcs *Services) WatchEthereum(state *State) error {
 	lastBlock := state.HighestBlockProcessed + uint64(svcs.batchSize) // Be optimistic
 
 	// Make sure we weren't too optimistic...
-	finalizedHeight, err := eth.GetFinalizedHeight(context.TODO())
+	finalizedHeight, err := eth.GetFinalizedHeight(ctx)
 	if err != nil {
 		return err
 	}
@@ -297,8 +297,8 @@ func (svcs *Services) EndpointInSync(ctx context.Context, state *State) error {
 }
 
 // UpdateProgress updates what we know of Ethereum chain height
-func (svcs *Services) UpdateProgress(state *State) error {
-	height, err := svcs.eth.GetFinalizedHeight(context.TODO())
+func (svcs *Services) UpdateProgress(ctx context.Context, state *State) error {
+	height, err := svcs.eth.GetFinalizedHeight(ctx)
 	if err != nil {
 		return err
 	}

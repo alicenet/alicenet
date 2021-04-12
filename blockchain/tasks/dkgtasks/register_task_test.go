@@ -37,13 +37,11 @@ func TestRegisterTask(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
 
-	eth.Contracts().Ethdkg.InitializeState(txnOpts)
+	_, err = eth.Contracts().Ethdkg.InitializeState(txnOpts)
+	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
 	task := dkgtasks.NewRegisterTask(acct, pub, 50)
-
-	success := task.DoWork(ctx, logger, eth)
-	assert.True(t, success)
 
 	raw, err := tasks.MarshalTask(task)
 	assert.Nil(t, err)
@@ -56,8 +54,6 @@ func TestRegisterTask(t *testing.T) {
 
 	t.Logf("newTask:%v", newTask)
 
-	eth.Contracts().Ethdkg.InitializeState(txnOpts)
-
-	success = newTask.DoWork(ctx, logger, eth)
+	success := newTask.DoWork(ctx, logger, eth)
 	assert.True(t, success)
 }

@@ -350,7 +350,6 @@ func (svcs *Services) ProcessSnapshotTaken(state *State, log types.Log) error {
 	eth := svcs.eth
 	c := eth.Contracts()
 	logger := svcs.logger
-	callOpts := eth.GetCallOpts(context.TODO(), eth.GetDefaultAccount())
 
 	event, err := c.Validators.ParseSnapshotTaken(log)
 	if err != nil {
@@ -362,14 +361,20 @@ func (svcs *Services) ProcessSnapshotTaken(state *State, log types.Log) error {
 
 	logger.Infof("SnapshotTaken -> ChainID:%v Epoch:%v Height:%v Validator:%v StartingETHDKG:%v", event.ChainId, epoch, event.Height, event.Validator.Hex(), event.StartingETHDKG)
 
+	// Retrieve snapshot information from contract
+	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
+	defer cancel()
+
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+
 	rawBClaims, err := c.Validators.GetRawBlockClaimsSnapshot(callOpts, epoch)
 	if err != nil {
-		return err // TODO consensus on side will stop
+		return err
 	}
 
 	rawSignature, err := c.Validators.GetRawSignatureSnapshot(callOpts, epoch)
 	if err != nil {
-		return err // TODO consensus on side will stop
+		return err
 	}
 
 	// put it back together

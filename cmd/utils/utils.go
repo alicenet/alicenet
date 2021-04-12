@@ -121,7 +121,7 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 	}
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.TODO(), acct)
+	callOpts := eth.GetCallOpts(context.Background(), acct)
 	stakingTokenBalance, err := c.StakingToken.BalanceOf(callOpts, acct.Address)
 	if err != nil {
 		logger.Warnf("Failed to check staking token (%v) balance account %v: %v", c.StakingTokenAddress.Hex(), acct.Address.Hex(), err)
@@ -344,7 +344,7 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
 
-	txnOpts, err := eth.GetTransactionOpts(context.TODO(), acct)
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
 		logger.Errorf("Can not build transaction options: %v", err)
 		return 1
@@ -444,7 +444,7 @@ func transfertokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.C
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
 
-	txnOpts, err := eth.GetTransactionOpts(context.TODO(), acct)
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
 		logger.Errorf("Can not build transaction options: %v", err)
 	}

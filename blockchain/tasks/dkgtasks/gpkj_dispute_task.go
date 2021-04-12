@@ -58,6 +58,9 @@ func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, et
 
 func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
 
+	t.Lock()
+	defer t.Unlock()
+
 	// Setup
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
@@ -96,6 +99,9 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+
+	t.Lock()
+	defer t.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.Account, logger,

@@ -44,9 +44,10 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 	}
 
 	// Basic setup
-	acct := eth.GetDefaultAccount()
-	ctx := context.TODO() // TODO This should be replaced with the context for timeout/cancellation
-	callOpts := eth.GetCallOpts(ctx, acct)
+	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
+	defer cancel()
+
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 
 	// Retrieve validators
 	participants, myIndex, err := RetrieveParticipants(eth, callOpts)
@@ -81,7 +82,6 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 	ethdkg.SecretValue = privateCoefficients[0]
 
 	// Do the mechanics of calling
-
 	taskLogger := logging.GetLogger("sdt")
 
 	task := dkgtasks.NewShareDistributionTask(eth.GetDefaultAccount(),
