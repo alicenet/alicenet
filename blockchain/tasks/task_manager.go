@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -10,6 +11,11 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	ErrUnknownTaskName = errors.New("Unknown task name")
+	ErrUnknownTaskType = errors.New("Unkonwn task type")
 )
 
 // ========================================================
@@ -248,53 +254,54 @@ func RegisterTask(t Task) {
 	taskRegistry.b[tipe.String()] = tipe
 }
 
-func lookupName(tipe reflect.Type) string {
+func lookupName(tipe reflect.Type) (string, bool) {
 	taskRegistry.RLock()
 	defer taskRegistry.RUnlock()
 
-	return taskRegistry.a[tipe]
+	present, name := taskRegistry.a[tipe]
+
+	return present, name
 }
 
-func lookupType(name string) reflect.Type {
+func lookupType(name string) (reflect.Type, bool) {
 	taskRegistry.Lock()
 	defer taskRegistry.Unlock()
 
-	return taskRegistry.b[name]
+	present, tipe := taskRegistry.b[name]
+
+	return present, tipe
 }
 
-func MarshalTask(t Task) ([]byte, error) {
+func WrapTask(t Task) (TaskWrapper, error) {
 
 	tipe := reflect.TypeOf(t)
 	if tipe.Kind() == reflect.Ptr {
 		tipe = tipe.Elem()
 	}
 
-	name := lookupName(tipe)
+	name, present := lookupName(tipe)
+	if !present {
+		return TaskWrapper{}, ErrUnknownTaskType
+	}
 	fmt.Printf("Marshaling %v...\n", name)
 
 	rawTask, err := json.Marshal(t)
 	if err != nil {
-		return nil, err
+		return TaskWrapper{}, err
 	}
 
-	wrapper := TaskWrapper{TaskName: name, TaskRaw: rawTask}
-
-	return json.Marshal(wrapper)
+	return TaskWrapper{TaskName: name, TaskRaw: rawTask}, nil
 }
 
-func UnmarshalTask(b []byte) (Task, error) {
-	wrapper := &TaskWrapper{}
-	err := json.Unmarshal(b, wrapper)
-	if err != nil {
-		return nil, err
+func UnwrapTask(wrapper TaskWrapper) (Task, error) {
+
+	tipe, present := lookupType(wrapper.TaskName)
+	if !present {
+		return nil, ErrUnknownTaskName
 	}
-
-	fmt.Printf("Unmarshaling %v from %v\n", wrapper.TaskName, string(wrapper.TaskRaw))
-
-	tipe := lookupType(wrapper.TaskName)
 	val := reflect.New(tipe)
 
-	err = json.Unmarshal(wrapper.TaskRaw, val.Interface())
+	err := json.Unmarshal(wrapper.TaskRaw, val.Interface())
 	if err != nil {
 		return nil, err
 	}

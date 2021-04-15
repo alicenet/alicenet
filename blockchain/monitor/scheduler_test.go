@@ -149,24 +149,63 @@ func TestFailRemove(t *testing.T) {
 	assert.Equal(t, 1, s.Length())
 }
 
-func TestMarshal(t *testing.T) {
+func TestRetreive(t *testing.T) {
 	s := monitor.NewSequentialSchedule()
 
 	var task tasks.Task = &dumbTask{Val: 4}
 
-	// Schedule something but don't bother saving the id
+	tasks.RegisterTask(task)
+
+	// Schedule something
+	taskID, err := s.Schedule(5, 15, task)
+	assert.Nil(t, err)
+
+	_, err = s.Retrieve(taskID)
+	assert.Nil(t, err)
+}
+
+func TestFailRetrieve(t *testing.T) {
+
+	s := monitor.NewSequentialSchedule()
+
+	var task tasks.Task = &dumbTask{Val: 4}
+
+	tasks.RegisterTask(task)
+
+	// Schedule something
+	_, err := s.Schedule(5, 15, task)
+	assert.Nil(t, err)
+
+	_, err = s.Retrieve(uuid.NewRandom())
+	assert.Equal(t, monitor.ErrNotScheduled, err)
+}
+
+func TestMarshal(t *testing.T) {
+
+	s := monitor.NewSequentialSchedule()
+
+	var task tasks.Task = &dumbTask{Val: 4}
+
+	tasks.RegisterTask(task)
+
+	// Schedule something
 	taskID, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
 	assert.NotNil(t, taskID)
 	assert.Equal(t, 1, s.Length())
 
-	//
+	// Marshal the schedule
 	raw, err := json.Marshal(s)
 	assert.Nil(t, err)
-	t.Logf("raw:%v", string(raw))
 
-	newS := &monitor.SequentialSchedule{}
+	// Unmarshal the schedule
+	ns := &monitor.SequentialSchedule{}
+	err = json.Unmarshal(raw, &ns)
+	assert.Nil(t, err)
+	assert.NotNil(t, taskID)
+	assert.Equal(t, 1, s.Length())
 
-	err = json.Unmarshal(raw, newS)
+	// Confirm task survived marshalling
+	_, err = s.Retrieve(taskID)
 	assert.Nil(t, err)
 }
