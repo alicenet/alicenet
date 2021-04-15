@@ -84,13 +84,12 @@ func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing tasks.Task
 	return id, nil
 }
 
-func (s *SequentialSchedule) PurgePrior(now uint64) error {
+func (s *SequentialSchedule) PurgePrior(now uint64) {
 	for taskID, block := range s.Ranges {
 		if block.Start <= now && block.End <= now {
 			delete(s.Ranges, taskID)
 		}
 	}
-	return nil
 }
 
 func (s *SequentialSchedule) Find(now uint64) (uuid.UUID, error) {
