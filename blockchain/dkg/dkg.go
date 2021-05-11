@@ -14,6 +14,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Distributed Key Generation related errors
+var (
+	ErrInsufficientGoodSigners = errors.New("Insufficient non-malicious signers to identify malicious signers")
+	ErrTooFew                  = errors.New("Building array of size n with less than n required + optional")
+	ErrTooMany                 = errors.New("Building array of size n with more than n required")
+)
+
 // Evil
 var logger *logrus.Logger = logging.GetLogger("dkg")
 
@@ -126,7 +133,7 @@ func GenerateShares(transportPrivateKey *big.Int, transportPublicKey [2]*big.Int
 	publicKeyG1s := []*cloudflare.G1{}
 	for idx := 0; idx < len(participants); idx++ {
 		participant := participants[idx]
-		logger.Infof("participants[%v]: %v", idx, participant)
+		logger.Debugf("participants[%v]: %v", idx, participant)
 		if participant != nil && participant.PublicKey[0] != nil && participant.PublicKey[1] != nil {
 			publicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)
 			if err != nil {
@@ -338,6 +345,7 @@ func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publ
 	for idx := 0; idx < n; idx++ {
 		participant := participants[idx]
 
+		indices[idx] = participant.Index + 1
 		publicKeys[idx], err = bn256.BigIntArrayToG2(publishedPublicKeys[idx])
 		if err != nil {
 			return false, fmt.Errorf("failed to convert group public key for %v: %v", idx, err)
@@ -356,14 +364,15 @@ func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publ
 		if !signatureValid {
 			logger.Warnf("Signature not valid for %v", participant.Index)
 		} else {
-			logger.Infof("Signature good for %v", participant.Index)
+			logger.Debugf("Signature good for %v", participant.Index)
 		}
 
-		indices[idx] = participant.Index + 1
-
-		logger.Infof("Participant: 0x%x Idx: %v Index: %v", participant.Address, idx, participant.Index)
+		logger.Debugf("Participant: 0x%x Idx: %v Index: %v", participant.Address, idx, participant.Index)
 	}
 
+	logger.Debugf("Aggregating Signatures: %v", signatures)
+	logger.Debugf("Aggregating Indices: %v", indices)
+	logger.Debugf("Aggregating Threshold: %v", threshold)
 	groupSignature, err := cloudflare.AggregateSignatures(signatures, indices, threshold)
 	if err != nil {
 		return false, err
@@ -372,6 +381,7 @@ func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publ
 	masterPublicKeyG2, err := bn256.BigIntArrayToG2(masterPublicKey)
 
 	validGrpSig, err := cloudflare.Verify(initialMessage, groupSignature, masterPublicKeyG2, cloudflare.HashToG1)
+	logger.Debugf("GroupSignature Verify:%v", validGrpSig)
 	if err != nil {
 		return false, fmt.Errorf("Could not verify group signature: %v", err)
 	}
@@ -379,16 +389,69 @@ func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publ
 	return validGrpSig, nil
 }
 
+func Reverse(a []int) []int {
+	n := len(a)
+	b := make([]int, n)
+	j := n / 2
+	for idx := 0; idx <= j; idx++ {
+		b[idx], b[n-idx-1] = a[n-idx-1], a[idx]
+	}
+	return b
+}
+
+func NChooseK(n int, k int, visitor func([]int) (bool, error)) (bool, []int, error) {
+
+	c := make([]int, k+3) // We're just going to ignore index 0
+
+	// L1
+	for j := 1; j <= k; j++ {
+		c[j] = j - 1
+	}
+	c[k+1] = n
+	c[k+2] = 0
+
+	// Loop
+	var err error
+	success := false
+	done := false
+	for done == false && success == false {
+
+		// L2
+		success, err = visitor(c[1 : k+1])
+		if err != nil {
+			return false, nil, err
+		}
+		if !success {
+
+			// L3
+			j := 1
+			for c[j]+1 == c[j+1] {
+				c[j] = j - 1
+				j++
+			}
+
+			// L4
+			if j > k {
+				done = true
+			} else {
+				// L5
+				c[j] = c[j] + 1
+			}
+		}
+
+	}
+
+	return success, c[1 : k+1], nil
+}
+
 // CategorizeGroupSigners returns 0 based indicies of honest participants, 0 based indicies of dishonest participants or an error
 func CategorizeGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants ParticipantList, threshold int) ([]int, []int, error) {
 
-	// useful bit of info
+	// Setup + sanity checks before starting
 	n := len(participants)
-	chunkSize := threshold + 1
-
-	// if we can't meet threshold we can't do much
-	if n < chunkSize {
-		return []int{}, []int{}, fmt.Errorf("not enough signers (%v) to meet threshold + 1 (%v)", n, chunkSize)
+	k := threshold + 1
+	if n < k {
+		return []int{}, []int{}, fmt.Errorf("not enough signers (%v) to meet threshold + 1 (%v)", n, k)
 	}
 
 	// len(publishedPublicKeys) must equal len(publishedSignatures) must equal len(participants)
@@ -397,49 +460,153 @@ func CategorizeGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, 
 			"mismatched public keys (%v), signatures (%v) and participants (%v)", len(publishedPublicKeys), len(publishedSignatures), n)
 	}
 
-	// Now we we chunk arrays and verify chunks seperately
-	knownGood := make([]bool, n)
-	for begin := 0; begin < n; begin += chunkSize {
-		end := begin + chunkSize
-		if end > n {
-			begin -= (end - n)
-			end = n
+	// This function is used  when visiting a combination to determine if signer group is valid
+	visitor := func(indices []int) (bool, error) {
+
+		// Build the public keys, signatures and participants
+		groupPublicKeys := make([][4]*big.Int, k)
+		groupSignatures := make([][2]*big.Int, k)
+		groupParticipants := make([]*Participant, k)
+
+		for idx := 0; idx < k; idx++ {
+			groupPublicKeys[idx] = publishedPublicKeys[indices[idx]]
+			groupSignatures[idx] = publishedSignatures[indices[idx]]
+			groupParticipants[idx] = participants[indices[idx]]
 		}
-
-		logger.Infof("Verifying %v >= index > %v", begin, end)
-
-		groupPublicKeys := publishedPublicKeys[begin:end]
-		groupSignatures := publishedSignatures[begin:end]
-		groupParticipants := participants[begin:end]
 
 		good, err := VerifyGroupSigners(initialMessage, masterPublicKey, groupPublicKeys, groupSignatures, groupParticipants, threshold)
 		if err != nil {
-			return []int{}, []int{}, fmt.Errorf("failed verifying group signers between %v and %v: %v", begin, end, err)
+			return false, err
 		}
 
-		// if the chunk verified then we mark each element as good
-		if good {
-			for idx := begin; idx < end; idx++ {
-				knownGood[idx] = true // TODO this should be the participant index not idx
-			}
+		return good, err
+	}
+
+	// Not visiting all the combinations, just looking for the first with good signers
+	success, good, err := NChooseK(n, k, visitor)
+	if err != nil {
+		return []int{}, []int{}, err
+	}
+	if !success {
+		return []int{}, []int{}, ErrInsufficientGoodSigners
+	}
+
+	// We have a good set which we know is > half so we check the rest and hope they are also good
+	logger.Debugf("CAT good indices:%v", good)
+
+	unknown := make([]int, n-k)
+	oic := 0
+	for idx := 0; idx < n; idx++ {
+		if !contains(good, idx) {
+			unknown[oic] = idx
+			oic++
 		}
-		logger.Infof("VerifyGroupSigners([%v:%v]): %v -> %v", begin, end, knownGood, good)
 	}
 
-	// Hopefully everything is good
-	allGood := all(knownGood)
-	logger.Infof("VerifyGroupSigners(...): %v", allGood)
-
-	indices := make([]int, n)
-	for idx, participant := range participants {
-		indices[idx] = participant.Index
+	logger.Debugf("CAT unknown indices:%v", unknown)
+	ts, err := PadCollection(k, unknown, good)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if allGood {
-		return indices, []int{}, nil
+	logger.Debugf("CAT testing indices:%v", ts)
+
+	mb, err := visitor(ts)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return []int{}, indices, nil
+	if mb {
+		good = CombineCollections(good, unknown)
+		logger.Debugf("CAT good indices:%v", good)
+		return good, []int{}, nil
+	}
+
+	// Ok, here we have a good batch and at least 1 bad; so we loop over the unknowns
+	bad := make([]int, 0)
+
+	for idx := 0; idx < len(unknown); idx++ {
+		scratch := make([]int, len(good))
+		copy(scratch, good)
+		scratch[0] = unknown[idx]
+
+		stillGood, err := visitor(scratch)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if stillGood {
+			good = append(good, unknown[idx])
+		} else {
+			bad = append(bad, unknown[idx])
+		}
+	}
+
+	return good, bad, nil
+}
+
+func contains(collection []int, number int) bool {
+	for idx := range collection {
+		if collection[idx] == number {
+			return true
+		}
+	}
+
+	return false
+}
+
+func PadCollection(sz int, definite []int, possible []int) ([]int, error) {
+
+	// Sanity checks
+	dn := len(definite)
+	if dn > sz {
+		return nil, ErrTooMany
+	}
+
+	pn := len(possible)
+	if sz > dn+pn {
+		return nil, ErrTooFew
+	}
+
+	// Setup
+	n := make([]int, sz)
+
+	//
+	didx := 0
+	pidx := 0
+	for idx := 0; idx < sz; idx++ {
+		if idx < dn {
+			n[idx] = definite[didx]
+			didx++
+		} else if idx < pn {
+			n[idx] = possible[pidx]
+			pidx++
+		}
+	}
+
+	return n, nil
+}
+
+func CombineCollections(a []int, b []int) []int {
+	la := len(a)
+	lb := len(b)
+	c := make([]int, la)
+
+	copy(c, a)
+
+	// cidx := la
+
+	logger.Debugf("a:%v", a)
+	logger.Debugf("b:%v", b)
+	logger.Debugf("c:%v", c)
+
+	for idx := 0; idx < lb; idx++ {
+		if !contains(c, b[idx]) {
+			c = append(c, b[idx])
+		}
+	}
+
+	return c
 }
 
 // ------------------------------------

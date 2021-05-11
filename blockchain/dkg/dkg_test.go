@@ -24,6 +24,48 @@ func TestCalculateThreshold(t *testing.T) {
 	assert.Equal(t, 2, threshold)
 }
 
+// func TestNChooseK(t *testing.T) {
+// 	n := 10
+// 	k, _ := dkg.ThresholdForUserCount(n)
+// 	// n := 6
+// 	// k := 3
+
+// 	c := make([]int, k+3) // We're just going to ignore index 0
+
+// 	// L1
+// 	for j := 1; j <= k; j++ {
+// 		c[j] = j - 1
+// 	}
+// 	c[k+1] = n
+// 	c[k+2] = 0
+
+// 	// Loop
+// 	done := false
+// 	for done == false {
+
+// 		// L2
+// 		t.Logf("C...%v", Reverse(c[1:k+1]))
+
+// 		// L3
+// 		j := 1
+// 		for c[j]+1 == c[j+1] {
+// 			c[j] = j - 1
+// 			j++
+// 		}
+
+// 		// L4
+// 		if j > k {
+// 			t.Logf("done")
+// 			done = true
+// 		} else {
+// 			// L5
+// 			c[j] = c[j] + 1
+// 		}
+
+// 	}
+
+// }
+
 func TestGenerateKeys(t *testing.T) {
 	private, public, err := dkg.GenerateKeys()
 	assert.Nil(t, err, "error generating keys")
@@ -270,7 +312,7 @@ func TestVerifyGroupSignersNegative(t *testing.T) {
 
 func TestCategorizeGroupSigners(t *testing.T) {
 
-	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, 4)
+	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, 10)
 
 	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
@@ -278,40 +320,55 @@ func TestCategorizeGroupSigners(t *testing.T) {
 	assert.Equal(t, 0, len(dishonest), "no participants are dishonest")
 }
 
-func TestCategorizeGroupSignersFail(t *testing.T) {
+func TestCategorizeGroupSigners1Negative(t *testing.T) {
 
-	n := 4
+	n := 30
+
+	logger := logging.GetLogger("dkg")
+	logger.SetLevel(logrus.DebugLevel)
 
 	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, n)
 
-	// Corrupt last signature
-	lastSignature := publishedSignatures[n-1]
-	lastSignature[0].Add(lastSignature[0], common.Big1) // Not a valid point on the curve so we will fail
+	// participants[n-1].Index = n + 1
+	participants[0].Index = n + 1
 
-	// Now categroize
 	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
-	assert.NotNil(t, err, "failed to categorize group signers")
-	assert.Equal(t, 0, len(honest), "we failed to categorize so we don't know who is honest")
-	assert.Equal(t, 0, len(dishonest), "we failed to categorize so we don't know who is dishonest")
+	assert.Nil(t, err, "failed to categorize group signers")
+	assert.Equal(t, len(participants)-1, len(honest), "all but 1 participant are honest")
+	assert.Equal(t, 1, len(dishonest), "1 participant is dishonest")
+}
+
+func TestCategorizeGroupSigners2Negative(t *testing.T) {
+
+	n := 10
+
+	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, n)
+
+	participants[n-1].Index = n + 1
+	participants[n-2].Index = n + 2
+
+	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	assert.Nil(t, err, "failed to categorize group signers")
+	assert.Equal(t, len(participants)-2, len(honest), "all but 2 participant are honest")
+	assert.Equal(t, 2, len(dishonest), "2 participant are dishonest")
 }
 
 func TestCategorizeGroupSignersNegative(t *testing.T) {
 
-	n := 4
+	n := 15
 
+	// logger := logging.GetLogger("dkg")
+	// logger.SetLevel(logrus.WarnLevel)
 	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, n)
 
-	// Replace last signature with a random G1
-	_, randomG1, err := cloudflare.RandomG1(rand.Reader)
-	badSignature := bn256.G1ToBigIntArray(randomG1) // This will be a valid point but not a valid signature
-	publishedSignatures[n-1][0] = badSignature[0]
-	publishedSignatures[n-1][1] = badSignature[1]
+	for idx := 0; idx < n-threshold-1; idx++ {
+		participants[idx].Index = idx + 1 + n
+	}
 
-	// Now categroize
 	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
-	assert.Equal(t, 0, len(honest), "no participants are honest")
-	assert.Equal(t, len(participants), len(dishonest), "all participants are dishonest")
+	assert.Equalf(t, threshold+1, len(honest), "%v participant are honest", threshold+1)
+	assert.Equalf(t, n-threshold-1, len(dishonest), "%v participant are dishonest", n-threshold-1)
 }
 
 // ---------------------------------------------------------------------------
@@ -330,9 +387,6 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 
 // ---------------------------------------------------------------------------
 func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*big.Int, []*dkg.Participant, int) {
-
-	logger := logging.GetLogger("dkg")
-	logger.SetLevel(logrus.DebugLevel)
 
 	// Number participants in key generation
 	threshold, _ := dkg.ThresholdForUserCount(n)
