@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GPKJDisputeTask contains required state for safely performing a registration
+// GPKJDisputeTask contains required state for performing a group accusation
 type GPKJDisputeTask struct {
 	sync.Mutex
 	Account           accounts.Account
@@ -23,7 +23,7 @@ type GPKJDisputeTask struct {
 	RegistrationEnd   uint64
 }
 
-// NewGPKJDisputeTask creates a background task that attempts to register with ETHDKG
+// NewGPKJDisputeTask creates a background task that attempts perform a group accusation if necessary
 func NewGPKJDisputeTask(
 	acct accounts.Account,
 	publicKey [2]*big.Int,
@@ -43,20 +43,20 @@ func NewGPKJDisputeTask(
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
+func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 	logger.Info("DoWork() ...")
 
-	t.doTask(ctx, logger, eth)
+	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
+func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 	logger.Info("DoRetry() ...")
 
-	t.doTask(ctx, logger, eth)
+	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) {
+func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -66,32 +66,34 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
-		return
+		return false
 	}
 
-	// Register
+	// Perform group accusation
 	txn, err := c.Ethdkg.GroupAccusationGPKj(txnOpts, t.Inverse, t.HonestIndicies, t.DishonestIndicies)
 	if err != nil {
 		logger.Errorf("group accusation failed: %v", err)
-		return
+		return false
 	}
 
 	// Waiting for receipt
 	receipt, err := eth.WaitForReceipt(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
-		return
+		return false
 	}
 	if receipt == nil {
 		logger.Error("missing registration receipt")
-		return
+		return false
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
 		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return
+		return false
 	}
+
+	return true
 }
 
 // ShouldRetry checks if it makes sense to try again

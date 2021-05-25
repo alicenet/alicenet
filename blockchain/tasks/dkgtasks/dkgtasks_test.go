@@ -80,6 +80,10 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 		assert.Nilf(t, err, "Failed on approval %v", txnCount)
 		txnCount++
 
+		txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		assert.Nilf(t, err, "Failed on lock %v", txnCount)
+		txnCount++
+
 		var validatorId [2]*big.Int
 
 		validatorId[0] = big.NewInt(int64(idx))
@@ -98,18 +102,18 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	}
 
 	txnCount = 0
-	for idx := 1; idx < len(accountAddresses); idx++ {
+	// for idx := 1; idx < len(accountAddresses); idx++ {
 
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-		assert.Nil(t, err)
+	// 	acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+	// 	assert.Nil(t, err)
 
-		o, err := eth.GetTransactionOpts(ctx, acct)
-		assert.Nil(t, err)
+	// 	o, err := eth.GetTransactionOpts(ctx, acct)
+	// 	assert.Nil(t, err)
 
-		txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
-		assert.Nilf(t, err, "Failed on locking stake")
-		txnCount++
-	}
+	// 	txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+	// 	assert.Nilf(t, err, "Failed on locking stake")
+	// 	txnCount++
+	// }
 
 	for idx := 0; idx < txnCount; idx++ {
 		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])

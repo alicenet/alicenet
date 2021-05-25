@@ -13,6 +13,8 @@ import (
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/monitor"
+	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus"
@@ -309,6 +311,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	// Make sure we can persist the task schedule
+	registerTasks()
+
 	// Setup Request Bus Services
 	svcs := monitor.NewServices(eth, conDB, dph, ah, batchSize, chainID)
 
@@ -445,4 +450,15 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 		<-c
 	}
 	os.Exit(1)
+}
+
+func registerTasks() {
+	tasks.RegisterTask(&dkgtasks.CompletionTask{})
+	tasks.RegisterTask(&dkgtasks.DisputeTask{})
+	tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
+	tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.RegisterTask{})
+	tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
 }

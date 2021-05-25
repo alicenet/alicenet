@@ -84,6 +84,12 @@ func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing tasks.Task
 	return id, nil
 }
 
+func (s *SequentialSchedule) Purge() {
+	for taskID := range s.Ranges {
+		delete(s.Ranges, taskID)
+	}
+}
+
 func (s *SequentialSchedule) PurgePrior(now uint64) {
 	for taskID, block := range s.Ranges {
 		if block.Start <= now && block.End <= now {

@@ -29,8 +29,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/zstd v1.4.1 h1:3oxKN3wbHibqx897utPC2LTQU4J+IHWWJO+glkAkpFM=
 github.com/DataDog/zstd v1.4.1/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
-github.com/MadBase/bridge v0.5.0 h1:XFV70OmvM0RpVY8azG76NqeskP6xDbGfFL5EhRqvWqk=
-github.com/MadBase/bridge v0.5.0/go.mod h1:Y1rzqX41VKWXB8wlXBHT4f6sEEy0pK4CRf5NYVe9Bp8=
+github.com/MadBase/bridge v0.6.0 h1:XHxwOMYntj4h7UiMJZ1aZkJr0hpoyjkx1KtnUyDekuk=
+github.com/MadBase/bridge v0.6.0/go.mod h1:Y1rzqX41VKWXB8wlXBHT4f6sEEy0pK4CRf5NYVe9Bp8=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 h1:fLjPD/aNc3UIOA6tDi6QXUemppXK3P9BI7mr2hd6gx8=

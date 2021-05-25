@@ -24,48 +24,6 @@ func TestCalculateThreshold(t *testing.T) {
 	assert.Equal(t, 2, threshold)
 }
 
-// func TestNChooseK(t *testing.T) {
-// 	n := 10
-// 	k, _ := dkg.ThresholdForUserCount(n)
-// 	// n := 6
-// 	// k := 3
-
-// 	c := make([]int, k+3) // We're just going to ignore index 0
-
-// 	// L1
-// 	for j := 1; j <= k; j++ {
-// 		c[j] = j - 1
-// 	}
-// 	c[k+1] = n
-// 	c[k+2] = 0
-
-// 	// Loop
-// 	done := false
-// 	for done == false {
-
-// 		// L2
-// 		t.Logf("C...%v", Reverse(c[1:k+1]))
-
-// 		// L3
-// 		j := 1
-// 		for c[j]+1 == c[j+1] {
-// 			c[j] = j - 1
-// 			j++
-// 		}
-
-// 		// L4
-// 		if j > k {
-// 			t.Logf("done")
-// 			done = true
-// 		} else {
-// 			// L5
-// 			c[j] = c[j] + 1
-// 		}
-
-// 	}
-
-// }
-
 func TestGenerateKeys(t *testing.T) {
 	private, public, err := dkg.GenerateKeys()
 	assert.Nil(t, err, "error generating keys")
@@ -357,9 +315,11 @@ func TestCategorizeGroupSignersNegative(t *testing.T) {
 
 	n := 15
 
-	// logger := logging.GetLogger("dkg")
-	// logger.SetLevel(logrus.WarnLevel)
+	logger := logging.GetLogger("dkg")
+	logger.SetLevel(logrus.WarnLevel)
 	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, n)
+
+	t.Logf("n:%v threshold:%v", n, threshold)
 
 	for idx := 0; idx < n-threshold-1; idx++ {
 		participants[idx].Index = idx + 1 + n

@@ -30,20 +30,6 @@ func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypt
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
 
-	// Generate a new random account and a funded simulator
-	// keyArray := make([]*ecdsa.PrivateKey, n)
-	// authArray := make([]*bind.TransactOpts, n)
-	// addresses := make([]string, n)
-	// addresses[0] = "546f99f244b7b58b855330ae0e2bc1b30b41302f"
-	// addresses[1] = "9ac1c9afbaec85278679ff75ef109217f26b1417"
-	// for k := 0; k < n; k++ {
-	// 	key, _ := crypto.GenerateKey()
-	// 	auth := bind.NewKeyedTransactor(key)
-	// 	keyArray[k] = key
-	// 	authArray[k] = auth
-	// 	// addresses[k] = auth.From.Hex()
-	// }
-
 	addressPool := []string{
 		"546f99f244b7b58b855330ae0e2bc1b30b41302f",
 		"9ac1c9afbaec85278679ff75ef109217f26b1417",
@@ -57,7 +43,8 @@ func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypt
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		1,
-		time.Second*2,
+		time.Second*1,
+		time.Second*5,
 		0,
 		wei,
 		addressPool...)

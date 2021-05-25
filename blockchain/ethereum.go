@@ -25,7 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/golang-collections/go-datastructures/queue"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,7 +45,7 @@ type Ethereum interface {
 
 	UnlockAccount(accounts.Account) error
 
-	TransferEther(common.Address, common.Address, *big.Int) error
+	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
 
 	GetAccount(common.Address) (accounts.Account, error)
 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
@@ -63,6 +62,8 @@ type Ethereum interface {
 	GetSyncProgress() (bool, *geth.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
 	GetValidators(context.Context) ([]common.Address, error)
+
+	Queue() *TxnQueue
 
 	WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
 
@@ -140,6 +141,7 @@ type ethereum struct {
 	chainID        *big.Int
 	syncing        func(ctx context.Context) (*geth.SyncProgress, error)
 	peerCount      func(ctx context.Context) (uint64, error)
+	queue          *TxnQueue
 }
 
 // Contracts contains bindings to smart contract system
@@ -215,6 +217,9 @@ func NewEthereumSimulator(
 	gasLimit := uint64(10000000000000000)
 	sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
 	eth.client = sim
+	eth.queue = NewTxnQueue(sim)
+	eth.queue.StartLoop()
+
 	eth.chainID = big.NewInt(1337)
 	eth.peerCount = func(context.Context) (uint64, error) {
 		return 0, nil
@@ -287,6 +292,7 @@ func NewEthereumEndpoint(
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
+	eth.queue = NewTxnQueue(ethClient)
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)
@@ -313,6 +319,7 @@ func NewEthereumEndpoint(
 }
 
 func (eth *ethereum) Close() error {
+	eth.queue.Close()
 	return eth.close()
 }
 
@@ -326,6 +333,10 @@ func (eth *ethereum) Contracts() *Contracts {
 
 func (eth *ethereum) GetPeerCount(ctx context.Context) (uint64, error) {
 	return eth.peerCount(ctx)
+}
+
+func (eth *ethereum) Queue() *TxnQueue {
+	return eth.queue
 }
 
 func (eth *ethereum) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
@@ -597,16 +608,16 @@ func (eth *ethereum) GetCallOpts(ctx context.Context, account accounts.Account) 
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked
-func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *big.Int) error {
+func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
 
 	nonce, err := eth.client.PendingNonceAt(context.Background(), from)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gasPrice, err := eth.client.SuggestGasPrice(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var data []byte
@@ -621,15 +632,16 @@ func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *
 	signedTx, err := types.SignTx(tx, signer, eth.keys[from].PrivateKey)
 	if err != nil {
 		eth.logger.Error(err)
+		return nil, err
 	}
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 	err = eth.client.SendTransaction(ctx, signedTx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return signedTx, nil
 }
 
 // GetCurrentHeight gets the height of the endpoints chain
@@ -761,27 +773,32 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		return nil, common.Address{}, err
 	}
 
-	txnQueue := queue.New(10)
-	q := func(tx *types.Transaction) {
-		if tx != nil {
-			logger.Debugf("Queueing transaction %v", tx.Hash().String())
-			txnQueue.Put(tx)
-		} else {
-			logger.Warn("Ignoring nil transaction")
-		}
-	}
+	// txnQueue := queue.New(10)
+	// q := func(tx *types.Transaction) {
+	// 	if tx != nil {
+	// 		logger.Debugf("Queueing transaction %v", tx.Hash().String())
+	// 		txnQueue.Put(tx)
+	// 	} else {
+	// 		logger.Warn("Ignoring nil transaction")
+	// 	}
+	// }
 
-	flushQ := func(queue *queue.Queue) {
-		logger.Debugf("waiting for txns...")
-		for txns, err := queue.Get(1); !queue.Empty(); txns, err = queue.Get(1) {
-			if err != nil {
-				logger.Errorf("failure: %v", err)
-			}
-			tx := txns[0].(*types.Transaction)
-			logger.Debugf("waiting for txn: %v", tx.Hash().String())
-			eth.WaitForReceipt(ctx, tx)
-		}
-	}
+	// flushQ := func(queue *queue.Queue) {
+	// 	logger.Debugf("waiting for txns...")
+	// 	for txns, err := queue.Get(1); !queue.Empty(); txns, err = queue.Get(1) {
+	// 		if err != nil {
+	// 			logger.Errorf("failure: %v", err)
+	// 		}
+	// 		tx := txns[0].(*types.Transaction)
+	// 		logger.Debugf("waiting for txn: %v", tx.Hash().String())
+	// 		eth.WaitForReceipt(ctx, tx)
+	// 	}
+	// }
+
+	q := eth.Queue()
+
+	deployGroup := 111
+	facetConfigGroup := 222
 
 	var txn *types.Transaction
 	c.RegistryAddress, txn, c.Registry, err = bindings.DeployRegistry(txnOpts, eth.client)
@@ -789,7 +806,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy registry...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("* registryAddress = \"0x%0.40x\"", c.RegistryAddress)
 
 	c.StakingTokenAddress, txn, c.StakingToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("STK"), StringToBytes32("MadNet Staking"))
@@ -797,7 +814,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy stakingToken...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("  stakingTokenAddress = \"0x%0.40x\"", c.StakingTokenAddress)
 
 	c.CryptoAddress, txn, c.Crypto, err = bindings.DeployCrypto(txnOpts, eth.client)
@@ -805,7 +822,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy crypto...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("        cryptoAddress = \"0x%0.40x\"", c.CryptoAddress)
 
 	c.UtilityTokenAddress, txn, c.UtilityToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("UTL"), StringToBytes32("MadNet Utility"))
@@ -813,7 +830,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy utilityToken...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("  utilityTokenAddress = \"0x%0.40x\"", c.UtilityTokenAddress)
 
 	c.DepositAddress, txn, c.Deposit, err = bindings.DeployDeposit(txnOpts, eth.client, c.RegistryAddress)
@@ -821,7 +838,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy deposit...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("  depositAddress = \"0x%0.40x\"", c.DepositAddress)
 
 	// Deploy ValidatorsDiamond
@@ -830,7 +847,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy validators diamond...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
 	// Deploy validators facets
 	participantsFacet, txn, _, err := bindings.DeployParticipantsFacet(txnOpts, eth.client)
@@ -838,21 +855,21 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Error("Failed to deploy participants facet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
 	snapshotsFacet, txn, _, err := bindings.DeploySnapshotsFacet(txnOpts, eth.client)
 	if err != nil {
 		logger.Error("Failed to deploy snapshots facet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
 	stakingFacet, txn, _, err := bindings.DeployStakingFacet(txnOpts, eth.client)
 	if err != nil {
 		logger.Error("Failed to deploy staking facet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
 	// Bind diamond to interfaces
 	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
@@ -882,72 +899,73 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 
 	// Wait for all the deploys to finish
 	eth.commit()
-	flushQ(txnQueue)
+
+	q.WaitGroupTransactions(ctx, deployGroup)
 
 	// Register all the validators facets
 	vu := &Updater{Updater: validatorsUpdate, TxnOpts: txnOpts, Logger: logger}
 
 	// Staking maintenance
-	q(vu.Add("initializeStaking(address)", stakingFacet))
-	q(vu.Add("balanceReward()", stakingFacet))
-	q(vu.Add("balanceRewardFor(address)", stakingFacet))
-	q(vu.Add("balanceStake()", stakingFacet))
-	q(vu.Add("balanceStakeFor(address)", stakingFacet))
-	q(vu.Add("balanceUnlocked()", stakingFacet))
-	q(vu.Add("balanceUnlockedFor(address)", stakingFacet))
-	q(vu.Add("balanceUnlockedReward()", stakingFacet))
-	q(vu.Add("balanceUnlockedRewardFor(address)", stakingFacet))
-	q(vu.Add("currentEpoch()", stakingFacet))
-	q(vu.Add("lockStake(uint256)", stakingFacet))
-	q(vu.Add("majorFine(address)", stakingFacet))
-	q(vu.Add("majorStakeFine()", stakingFacet))
-	q(vu.Add("minimumStake()", stakingFacet))
-	q(vu.Add("minorFine(address)", stakingFacet))
-	q(vu.Add("minorStakeFine()", stakingFacet))
-	q(vu.Add("requestUnlockStake()", stakingFacet))
-	q(vu.Add("rewardAmount()", stakingFacet))
-	q(vu.Add("rewardBonus()", stakingFacet))
-	q(vu.Add("setCurrentEpoch(uint256)", stakingFacet))
-	q(vu.Add("setMajorStakeFine(uint256)", stakingFacet))
-	q(vu.Add("setMinimumStake(uint256)", stakingFacet))
-	q(vu.Add("setMinorStakeFine(uint256)", stakingFacet))
-	q(vu.Add("setRewardAmount(uint256)", stakingFacet))
-	q(vu.Add("setRewardBonus(uint256)", stakingFacet))
-	q(vu.Add("unlockStake(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeStaking(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceReward()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceRewardFor(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceStake()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceStakeFor(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlocked()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedFor(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedReward()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedRewardFor(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("currentEpoch()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("lockStake(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorFine(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorStakeFine()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minimumStake()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minorFine(address)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minorStakeFine()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("requestUnlockStake()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardAmount()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardBonus()", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setCurrentEpoch(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMajorStakeFine(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinimumStake(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinorStakeFine(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setRewardAmount(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setRewardBonus(uint256)", stakingFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("unlockStake(uint256)", stakingFacet))
 
 	// Snapshot maintenance
-	q(vu.Add("initializeSnapshots(address)", snapshotsFacet))
-	q(vu.Add("snapshot(bytes,bytes)", snapshotsFacet))
-	q(vu.Add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.Add("minEthSnapshotSize()", snapshotsFacet))
-	q(vu.Add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
-	q(vu.Add("minMadSnapshotSize()", snapshotsFacet))
-	q(vu.Add("setEpoch(uint256)", snapshotsFacet))
-	q(vu.Add("epoch()", snapshotsFacet))
-	q(vu.Add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
-	q(vu.Add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
-	q(vu.Add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
-	q(vu.Add("getHeightFromSnapshot(uint256)", snapshotsFacet))
-	q(vu.Add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeSnapshots(address)", snapshotsFacet))
+
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("snapshot(bytes,bytes)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minEthSnapshotSize()", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minMadSnapshotSize()", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setEpoch(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("epoch()", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getHeightFromSnapshot(uint256)", snapshotsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
 
 	// Validator maintenance
-	q(vu.Add("initializeParticipants(address)", participantsFacet))
-	q(vu.Add("addValidator(address,uint256[2])", participantsFacet))
-	q(vu.Add("removeValidator(address,uint256[2])", participantsFacet))
-	q(vu.Add("queueValidator(address,uint256[2])", participantsFacet))
-	q(vu.Add("isValidator(address)", participantsFacet))
-	q(vu.Add("getValidatorPublicKey(address)", participantsFacet))
-	q(vu.Add("confirmValidators()", participantsFacet))
-	q(vu.Add("validatorMaxCount()", participantsFacet))
-	q(vu.Add("validatorCount()", participantsFacet))
-	q(vu.Add("setValidatorMaxCount(uint8)", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeParticipants(address)", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("addValidator(address,uint256[2])", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("removeValidator(address,uint256[2])", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("isValidator(address)", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getValidatorPublicKey(address)", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("confirmValidators()", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("validatorMaxCount()", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("validatorCount()", participantsFacet))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setValidatorMaxCount(uint8)", participantsFacet))
 
 	c.EthdkgAddress, txn, _, err = bindings.DeployEthDKGDiamond(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy EthDKGDiamond...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress)
 
 	c.Ethdkg, err = bindings.NewETHDKG(c.EthdkgAddress, eth.client)
@@ -959,7 +977,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGCompletionFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGCompletionFacet = \"0x%0.40x\"", txn.Gas(), ethdkgCompletionAddress)
 
 	var ethdkgGroupAccusationAddress common.Address
@@ -968,7 +986,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGGroupAccusationFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGGroupAccusationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgGroupAccusationAddress)
 
 	var ethdkgInitializeAddress common.Address
@@ -977,7 +995,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGInitializeFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGInitializeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInitializeAddress)
 
 	var ethdkgSubmitMPKAddress common.Address
@@ -986,7 +1004,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGSubmitMPKFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGSubmitMPKFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitMPKAddress)
 
 	var ethdkgSubmitDisputeAddress common.Address
@@ -995,7 +1013,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGSubmitDisputeFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGSubmitDisputeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitDisputeAddress)
 
 	var ethdkgMiscAddress common.Address
@@ -1004,7 +1022,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGMiscFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGMiscFacet = \"0x%0.40x\"", txn.Gas(), ethdkgMiscAddress)
 
 	var ethdkgInfoFacetAddress common.Address
@@ -1013,7 +1031,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to deploy EthDKGInformationFacet...")
 		return nil, common.Address{}, err
 	}
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 	logger.Infof(" Gas = %0.10v EthDKGInformationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInfoFacetAddress)
 
 	ethdkgUpdate, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress, eth.client)
@@ -1024,46 +1042,52 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 
 	// Wait for all the deploys to finish
 	eth.commit()
-	flushQ(txnQueue)
+
+	q.WaitGroupTransactions(ctx, facetConfigGroup)
+	// flushQ(txnQueue)
 
 	// Register all the ethdkg facets
 	vu = &Updater{Updater: ethdkgUpdate, TxnOpts: txnOpts, Logger: logger}
 
 	//
-	q(vu.Add("initializeEthDKG(address)", ethdkgInitializeAddress))
-	q(vu.Add("initializeState()", ethdkgInitializeAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeEthDKG(address)", ethdkgInitializeAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeState()", ethdkgInitializeAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("updatePhaseLength(uint256)", ethdkgInitializeAddress))
 
-	q(vu.Add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
 
-	q(vu.Add("getPhaseLength()", ethdkgInfoFacetAddress))
-	q(vu.Add("initialMessage()", ethdkgInfoFacetAddress))
-	q(vu.Add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
-	q(vu.Add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
-	q(vu.Add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("isMalicious(address)", ethdkgInfoFacetAddress))
-	q(vu.Add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
-	q(vu.Add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("master_public_key(uint256)", ethdkgInfoFacetAddress))
-	q(vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
-	q(vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getPhaseLength()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialMessage()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("isMalicious(address)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("master_public_key(uint256)", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
 
-	q(vu.Add("Group_Accusation_GPKj(uint256[],uint256[],uint256[])", ethdkgGroupAccusationAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj(uint256[],uint256[],uint256[])", ethdkgGroupAccusationAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj_Comp(uint256[][],uint256[2][][],uint256,address)", ethdkgGroupAccusationAddress))
 
-	q(vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
-	q(vu.Add("register(uint256[2])", ethdkgMiscAddress))
-	q(vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
-	q(vu.Add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_dispute(address,uint256,uint256,uint256[],uint256[2][],uint256[2],uint256[2])", ethdkgSubmitDisputeAddress))
 
-	q(vu.Add("Successful_Completion()", ethdkgCompletionAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("register(uint256[2])", ethdkgMiscAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
+
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Successful_Completion()", ethdkgCompletionAddress))
 
 	// Flush everything
 	// eth.contracts = c
@@ -1071,36 +1095,36 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 
 	txn, err = c.Registry.Register(txnOpts, "deposit/v1", c.DepositAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "ethdkg/v1", c.EthdkgAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "crypto/v1", c.CryptoAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "staking/v1", c.ValidatorsAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "stakingToken/v1", c.StakingTokenAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "utilityToken/v1", c.UtilityTokenAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.Registry.Register(txnOpts, "validators/v1", c.ValidatorsAddress)
 	logAndEat(logger, err)
-	q(txn)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	eth.commit()
 
 	// Wait for all the deploys to finish
-	flushQ(txnQueue)
+	q.WaitGroupTransactions(ctx, facetConfigGroup)
 
 	// Initialize Snapshots facet
 	tx, err := c.Snapshots.InitializeSnapshots(txnOpts, c.RegistryAddress)
@@ -1125,40 +1149,40 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to initialize Snapshots facet next snapshot: %v", err)
 		return nil, common.Address{}, err
 	}
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	// Default staking values
 	tx, err = c.Staking.SetMinimumStake(txnOpts, big.NewInt(1000000))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Staking.SetMajorStakeFine(txnOpts, big.NewInt(200000))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Staking.SetMinorStakeFine(txnOpts, big.NewInt(50000))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Staking.SetRewardAmount(txnOpts, big.NewInt(1000))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Staking.SetRewardBonus(txnOpts, big.NewInt(1000))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength)))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength/8)))
 	logAndEat(logger, err)
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 
 	eth.commit()
 
-	flushQ(txnQueue)
+	q.WaitGroupTransactions(ctx, facetConfigGroup)
 
 	// Initialize Participants facet
 	tx, err = c.Participants.InitializeParticipants(txnOpts, c.RegistryAddress)
@@ -1184,9 +1208,9 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 		logger.Errorf("Failed to initialize Participants facet: %v", err)
 		return nil, common.Address{}, err
 	}
-	q(tx)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
 	eth.commit()
-	flushQ(txnQueue)
+	q.WaitGroupTransactions(ctx, facetConfigGroup)
 
 	// Staking updates
 	tx, err = c.Staking.InitializeStaking(txnOpts, c.RegistryAddress)

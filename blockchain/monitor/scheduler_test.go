@@ -84,6 +84,32 @@ func TestPurge(t *testing.T) {
 
 	assert.Equal(t, 4, s.Length())
 
+	s.Purge()
+
+	assert.Equal(t, 0, s.Length())
+}
+
+func TestPurgePrior(t *testing.T) {
+	s := monitor.NewSequentialSchedule()
+	assert.NotNil(t, s, "Scheduler should not be nil")
+
+	var err error
+	var task tasks.Task
+
+	_, err = s.Schedule(1, 2, task)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(3, 4, task)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(5, 6, task)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(7, 8, task)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 4, s.Length())
+
 	s.PurgePrior(7)
 
 	assert.Equal(t, 1, s.Length())

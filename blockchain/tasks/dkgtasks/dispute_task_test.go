@@ -28,16 +28,16 @@ func TestDisputeTask(t *testing.T) {
 
 	assert.True(t, task.DoWork(ctx, logger, eth))
 
-	raw, err := tasks.MarshalTask(task)
-	assert.Nil(t, err)
-	assert.True(t, len(raw) > 0)
+	// raw, err := tasks.MarshalTask(task)
+	// assert.Nil(t, err)
+	// assert.True(t, len(raw) > 0)
 
-	t.Logf("raw:%v", string(raw))
+	// t.Logf("raw:%v", string(raw))
 
-	newTask, err := tasks.UnmarshalTask(raw)
-	assert.Nil(t, err)
+	// newTask, err := tasks.UnmarshalTask(raw)
+	// assert.Nil(t, err)
 
-	t.Logf("newTask:%v", newTask)
+	// t.Logf("newTask:%v", newTask)
 
-	assert.True(t, newTask.DoWork(ctx, logger, eth))
+	// assert.True(t, newTask.DoWork(ctx, logger, eth))
 }

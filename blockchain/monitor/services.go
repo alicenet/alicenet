@@ -121,7 +121,7 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 	return svcs
 }
 
-// WatchEthereum checks for state of Ethereum and processes interesting conditions
+// WatchEthereum checks state of Ethereum and processes interesting conditions
 func (svcs *Services) WatchEthereum(state *State) error {
 	logger := svcs.logger
 	eth := svcs.eth
@@ -230,7 +230,7 @@ func (svcs *Services) WatchEthereum(state *State) error {
 					if err != nil {
 						logger.Warnf("Block handler for %v failed: %v", block, err)
 						if err == ErrCanNotContinue {
-							state.ethdkg = NewEthDKGState()
+							state.EthDKG = NewEthDKGState()
 							state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
 						}
 					}

@@ -38,8 +38,8 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// If registration wasn't successful then quit now
-	if state.ethdkg.RegistrationTH == nil || !state.ethdkg.RegistrationTH.Successful() {
-		AbortETHDKG(state.ethdkg)
+	if state.EthDKG.RegistrationTH == nil || !state.EthDKG.RegistrationTH.Successful() {
+		AbortETHDKG(state.EthDKG)
 		return fmt.Errorf("Registration didn't complete succesful, exiting ETHDKG")
 	}
 
@@ -52,22 +52,21 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 	// Retrieve validators
 	participants, myIndex, err := RetrieveParticipants(eth, callOpts)
 	if err != nil {
-		return ErrCanNotContinue // TODO this state transition mechanism will need to be updated
+		return ErrCanNotContinue
 	}
 
 	if myIndex == math.MaxInt32 {
-		logger.Errorf("Can't determine my (%v) index ", state.ethdkg.Address)
+		logger.Errorf("Can't determine my (%v) index ", state.EthDKG.Address)
 		return ErrCanNotContinue
 	}
 
 	// Save state
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
-	ethdkg.Index = myIndex
 	ethdkg.Index = myIndex
 	ethdkg.NumberOfValidators = len(participants)
 	ethdkg.Participants = participants
-	ethdkg.ValidatorThreshold, _ = thresholdFromUsers(state.ethdkg.NumberOfValidators)
+	ethdkg.ValidatorThreshold, _ = thresholdFromUsers(state.EthDKG.NumberOfValidators)
 
 	// Do the math
 	encryptedShares, privateCoefficients, commitments, err := dkg.GenerateShares(
@@ -101,8 +100,8 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 	svcs.logger.Infof(strings.Repeat("-", 60))
 
 	// First confirm we distributed shares
-	if state.ethdkg.ShareDistributionTH == nil || !state.ethdkg.ShareDistributionTH.Successful() {
-		AbortETHDKG(state.ethdkg)
+	if state.EthDKG.ShareDistributionTH == nil || !state.EthDKG.ShareDistributionTH.Successful() {
+		AbortETHDKG(state.EthDKG)
 		return fmt.Errorf("Share distribution didn't complete succesful, exiting ETHDKG")
 	}
 
@@ -111,7 +110,7 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 	// Setup and start task
 	taskLogger := logging.GetLogger("dispute")
 	eth := svcs.eth
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
 	task := dkgtasks.NewDisputeTask(
 		eth.GetDefaultAccount(),
@@ -134,19 +133,19 @@ func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// If dispute wasn't successful then quit now
-	if state.ethdkg.DisputeTH == nil || !state.ethdkg.DisputeTH.Successful() {
-		AbortETHDKG(state.ethdkg)
+	if state.EthDKG.DisputeTH == nil || !state.EthDKG.DisputeTH.Successful() {
+		AbortETHDKG(state.EthDKG)
 		return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
 	}
 
 	// Generate the key shares
-	g1KeyShare, g1Proof, g2KeyShare, err := dkg.GenerateKeyShare(state.ethdkg.SecretValue)
+	g1KeyShare, g1Proof, g2KeyShare, err := dkg.GenerateKeyShare(state.EthDKG.SecretValue)
 	if err != nil {
 		return fmt.Errorf("Can't GenerateKeyShare: %v", err)
 	}
 
 	eth := svcs.eth
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
 	taskLogger := logging.GetLogger("kst")
 
@@ -171,11 +170,11 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 	logger.Infof(strings.Repeat("-", 60))
 
 	// First confirm we submitted key shares
-	if state.ethdkg.KeyShareSubmissionTH == nil || !state.ethdkg.KeyShareSubmissionTH.Successful() {
-		AbortETHDKG(state.ethdkg)
+	if state.EthDKG.KeyShareSubmissionTH == nil || !state.EthDKG.KeyShareSubmissionTH.Successful() {
+		AbortETHDKG(state.EthDKG)
 		return fmt.Errorf("Key share submission didn't complete succesful, exiting ETHDKG")
 	}
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
 	keyShareG1s := make([][2]*big.Int, ethdkg.NumberOfValidators)
 	keyShareG2s := make([][4]*big.Int, ethdkg.NumberOfValidators)
@@ -199,7 +198,7 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 		return fmt.Errorf("Can't GenerateMasterPublicKey: %v", err)
 	}
 
-	state.ethdkg.MasterPublicKey = mpk
+	state.EthDKG.MasterPublicKey = mpk
 
 	logger.Infof("MasterPublicKey: %v", dkgtasks.FormatBigIntSlice(mpk[:]))
 
@@ -211,8 +210,8 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 		ethdkg.TransportPublicKey, ethdkg.MasterPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.MPKSubmissionEnd)
 
-	state.ethdkg.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	state.ethdkg.MPKSubmissionTH.Start()
+	state.EthDKG.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	state.EthDKG.MPKSubmissionTH.Start()
 
 	return nil
 }
@@ -227,8 +226,8 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// If dispute wasn't successful then quit now
-	if state.ethdkg.MPKSubmissionTH == nil || !state.ethdkg.MPKSubmissionTH.Successful() {
-		AbortETHDKG(state.ethdkg)
+	if state.EthDKG.MPKSubmissionTH == nil || !state.EthDKG.MPKSubmissionTH.Successful() {
+		AbortETHDKG(state.EthDKG)
 		return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
 	}
 
@@ -245,7 +244,7 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 	}
 	logger.Infof("InitialMessage: [%v]", string(initialMessage))
 
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 	encryptedShares := make([][]*big.Int, ethdkg.NumberOfValidators)
 	for _, participant := range ethdkg.Participants {
 		pes, present := ethdkg.EncryptedShares[participant.Address]
@@ -273,8 +272,8 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 	task := dkgtasks.NewGPKSubmissionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.GPKJSubmissionEnd)
 
-	state.ethdkg.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	state.ethdkg.GPKJSubmissionTH.Start()
+	state.EthDKG.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	state.EthDKG.GPKJSubmissionTH.Start()
 
 	return nil
 }
@@ -286,6 +285,27 @@ func (svcs *Services) DoGroupAccusationGPKj(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 	logger.Infof("DoGroupAccusationGPKj()")
 	logger.Infof(strings.Repeat("-", 60))
+
+	// Setup
+	eth := svcs.eth
+	acct := eth.GetDefaultAccount()
+	c := eth.Contracts()
+	callOpts := eth.GetCallOpts(context.Background(), acct)
+
+	//
+	initialMessage, err := c.Ethdkg.InitialMessage(callOpts)
+	if err != nil {
+		logger.Errorf("Can't get initial message: %v", err)
+		return ErrCanNotContinue
+	}
+	logger.Infof("InitialMessage: [%v]", string(initialMessage))
+
+	//
+	for idx := 0; idx < state.EthDKG.Participants.Len(); idx++ {
+
+	}
+
+	// dkg.CategorizeGroupSigners(initialMessage, state.EthDKG.MasterPublicKey, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants dkg.ParticipantList, threshold int)
 
 	return nil
 }
@@ -299,13 +319,13 @@ func (svcs *Services) DoSuccessfulCompletion(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	eth := svcs.eth
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
 	task := dkgtasks.NewCompletionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey,
 		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.CompleteEnd)
 
-	state.ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	state.ethdkg.CompleteTH.Start()
+	ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	ethdkg.CompleteTH.Start()
 
 	return nil
 }

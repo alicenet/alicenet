@@ -27,7 +27,7 @@ type State struct {
 	PeerCount              uint32
 	ValidatorSets          map[uint32]ValidatorSet
 	Validators             map[uint32][]Validator
-	ethdkg                 *EthDKGState
+	EthDKG                 *EthDKGState
 	interestingBlocks      map[uint64]func(*State, uint64) error
 }
 
@@ -79,6 +79,7 @@ type EthDKGState struct {
 	Schedule            *EthDKGSchedule
 	SecretValue         *big.Int
 	ValidatorThreshold  int
+	Tasks               *SequentialSchedule
 	TransportPrivateKey *big.Int
 	TransportPublicKey  [2]*big.Int
 
@@ -99,22 +100,6 @@ type EthDKGState struct {
 	GPKJSubmissionTH      tasks.TaskHandler
 	GPKJGroupAccusationTH tasks.TaskHandler
 	CompleteTH            tasks.TaskHandler
-	// Addresses                   map[uint8]common.Address
-	// GroupPublicKey              [4]*big.Int
-	// GroupSecretKey              *big.Int
-	// Commitments                 map[common.Address][][2]*big.Int
-	// EncryptedShares             map[common.Address][]*big.Int
-	// Indices                     map[common.Address]uint8
-	// InitialMessage              []byte
-	// InProgress                  bool
-	// KeyShareG1s                 map[common.Address][2]*big.Int
-	// KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int
-	// KeyShareG2s                 map[common.Address][4]*big.Int
-	// MasterPublicKey             *cloudflare.G2
-	// PublicKeyG1s                map[common.Address]*cloudflare.G1
-	// PublishedGroupPublicKeys    map[common.Address]*cloudflare.G2
-	// PublishedSignatures         map[common.Address]*cloudflare.G1
-	// TransportPublicKeyG1        *cloudflare.G1
 }
 
 // NewEthDKGState creates a new EthDKGState with maps initialized

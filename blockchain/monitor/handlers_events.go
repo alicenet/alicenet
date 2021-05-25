@@ -29,9 +29,9 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 		return err
 	}
 
-	if ETHDKGInProgress(state.ethdkg, log.BlockNumber) {
+	if ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
 		logger.Warnf("Received RegistrationOpen event while ETHDKG in progress. Aborting old round.")
-		AbortETHDKG(state.ethdkg)
+		AbortETHDKG(state.EthDKG)
 	}
 
 	if event.RegistrationEnds.Uint64() > state.HighestBlockFinalized {
@@ -88,22 +88,22 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 
 		acct := eth.GetDefaultAccount()
 
-		state.ethdkg = NewEthDKGState()
-		state.ethdkg.Address = acct.Address
-		state.ethdkg.Schedule = schedule
-		state.ethdkg.TransportPrivateKey = private
-		state.ethdkg.TransportPublicKey = public
+		state.EthDKG = NewEthDKGState()
+		state.EthDKG.Address = acct.Address
+		state.EthDKG.Schedule = schedule
+		state.EthDKG.TransportPrivateKey = private
+		state.EthDKG.TransportPublicKey = public
 
 		taskLogger := logging.GetLogger("rt")
 
 		task := dkgtasks.NewRegisterTask(
 			eth.GetDefaultAccount(),
-			state.ethdkg.TransportPublicKey,
-			state.ethdkg.Schedule.RegistrationEnd)
+			state.EthDKG.TransportPublicKey,
+			state.EthDKG.Schedule.RegistrationEnd)
 
-		state.ethdkg.RegistrationTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
+		state.EthDKG.RegistrationTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 
-		state.ethdkg.RegistrationTH.Start()
+		state.EthDKG.RegistrationTH.Start()
 
 	} else {
 		logger.Infof("Not participating in DKG... registration ends at height %v but height %v is finalized.",
@@ -122,14 +122,14 @@ func (svcs *Services) ProcessShareDistribution(state *State, log types.Log) erro
 	logger.Info("ProcessShareDistribution()")
 	logger.Info(strings.Repeat("-", 60))
 
-	if !ETHDKGInProgress(state.ethdkg, log.BlockNumber) {
+	if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
 		logger.Warn("Ignoring share distribution since we are not participating this round...")
 		return ErrCanNotContinue
 	}
 
 	eth := svcs.eth
 	c := eth.Contracts()
-	ethdkg := state.ethdkg
+	ethdkg := state.EthDKG
 
 	event, err := c.Ethdkg.ParseShareDistribution(log)
 	if err != nil {
@@ -151,7 +151,7 @@ func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) err
 	logger.Info("ProcessKeyShareSubmission()")
 	logger.Info(strings.Repeat("-", 60))
 
-	if !ETHDKGInProgress(state.ethdkg, log.BlockNumber) {
+	if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
 		logger.Warn("Ignoring key share submission since we are not participating this round...")
 		return ErrCanNotContinue
 	}
@@ -170,9 +170,9 @@ func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) err
 
 	logger.Infof("keyshareG1:%v keyshareG2:%v", dkgtasks.FormatBigIntSlice(keyshareG1[:]), dkgtasks.FormatBigIntSlice(keyshareG2[:]))
 
-	state.ethdkg.KeyShareG1s[addr] = keyshareG1
-	state.ethdkg.KeyShareG1CorrectnessProofs[addr] = keyshareG1Proof
-	state.ethdkg.KeyShareG2s[addr] = keyshareG2
+	state.EthDKG.KeyShareG1s[addr] = keyshareG1
+	state.EthDKG.KeyShareG1CorrectnessProofs[addr] = keyshareG1Proof
+	state.EthDKG.KeyShareG2s[addr] = keyshareG2
 
 	return nil
 }

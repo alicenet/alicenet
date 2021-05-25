@@ -3,26 +3,17 @@ package monitor_test
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"testing"
 
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBidirectionalMarshal(t *testing.T) {
+func TestBidirectionalGob(t *testing.T) {
 
 	// Build up a pseudo-realistic State instance
-	ms := &monitor.State{}
-	ms.Version = 0
-	ms.HighestBlockProcessed = 614
-	ms.HighestBlockFinalized = 911
-	ms.HighestEpochProcessed = 5
-	ms.HighestEpochSeen = 10
-	ms.LatestDepositProcessed = 1
-	ms.LatestDepositSeen = 5
-	ms.ValidatorSets = make(map[uint32]monitor.ValidatorSet)
-	ms.Validators = make(map[uint32][]monitor.Validator)
-	ms.Validators[614] = []monitor.Validator{{Index: 7}}
+	ms := createState()
 
 	// Encode the test instance
 	buf := &bytes.Buffer{}
@@ -36,13 +27,61 @@ func TestBidirectionalMarshal(t *testing.T) {
 	err = dec.Decode(ms2)
 	assert.Nilf(t, err, "Should be no errors unmarshalling data")
 
+	// Good?
+	assertStateMatch(t, ms2)
+}
+
+func TestBidirectionalJson(t *testing.T) {
+
+	// Build up a pseudo-realistic State instance
+	ms := createState()
+
+	// Encode the test instance
+	raw, err := json.Marshal(ms)
+	assert.Nilf(t, err, "Should be no errors marshalling data")
+
+	t.Logf("raw:%v", string(raw))
+
+	// Decode the bytes
+	ms2 := &monitor.State{}
+	err = json.Unmarshal(raw, ms2)
+	assert.Nilf(t, err, "Should be no errors unmarshalling data")
+
+	// Good?
+	assertStateMatch(t, ms2)
+}
+
+func createState() *monitor.State {
+
+	// task := &dumbTask{}
+
+	// s := monitor.NewSequentialSchedule()
+
+	// s.Schedule(2, 5, task)
+
+	ms := &monitor.State{
+		Version:                0,
+		HighestBlockProcessed:  614,
+		HighestBlockFinalized:  911,
+		HighestEpochProcessed:  5,
+		HighestEpochSeen:       10,
+		LatestDepositProcessed: 1,
+		LatestDepositSeen:      5,
+		ValidatorSets:          map[uint32]monitor.ValidatorSet{},
+		Validators:             map[uint32][]monitor.Validator{614: {{Index: 7}}},
+	}
+
+	return ms
+}
+
+func assertStateMatch(t *testing.T, ms *monitor.State) {
 	// Make sure the new struct looks like the old struct
-	assert.Equal(t, uint64(614), ms2.HighestBlockProcessed)
-	assert.Equal(t, uint64(911), ms2.HighestBlockFinalized)
-	assert.Equal(t, uint32(5), ms2.HighestEpochProcessed)
-	assert.Equal(t, uint32(10), ms2.HighestEpochSeen)
-	assert.Equal(t, uint32(5), ms2.HighestEpochProcessed)
-	assert.Equal(t, uint32(1), ms2.LatestDepositProcessed)
-	assert.Equal(t, uint32(5), ms2.LatestDepositSeen)
-	assert.Equal(t, uint8(7), ms2.Validators[614][0].Index)
+	assert.Equal(t, uint64(614), ms.HighestBlockProcessed)
+	assert.Equal(t, uint64(911), ms.HighestBlockFinalized)
+	assert.Equal(t, uint32(5), ms.HighestEpochProcessed)
+	assert.Equal(t, uint32(10), ms.HighestEpochSeen)
+	assert.Equal(t, uint32(5), ms.HighestEpochProcessed)
+	assert.Equal(t, uint32(1), ms.LatestDepositProcessed)
+	assert.Equal(t, uint32(5), ms.LatestDepositSeen)
+	assert.Equal(t, uint8(7), ms.Validators[614][0].Index)
 }
