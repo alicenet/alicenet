@@ -66,9 +66,10 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 		logger.Errorf("submitting gpkj failed: %v", err)
 		return false
 	}
+	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.WaitForReceipt(ctx, txn)
+	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false

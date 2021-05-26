@@ -42,6 +42,7 @@ func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth bl
 }
 
 func (t *DisputeTask) doTask(ctx context.Context) bool {
+	// TODO Implement
 	return true
 }
 

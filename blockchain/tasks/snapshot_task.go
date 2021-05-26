@@ -64,8 +64,9 @@ func (t *SnapshotTask) doTask(ctx context.Context) bool {
 		t.logger.Errorf("Failed to take snapshot: %v", err)
 		return false
 	}
+	t.eth.Queue().QueueTransaction(ctx, txn)
 
-	receipt, err := t.eth.WaitForReceipt(ctx, txn)
+	receipt, err := t.eth.Queue().WaitTransaction(ctx, txn)
 	if err != nil {
 		t.logger.Errorf("Failed to retrieve snapshot receipt: %v", err)
 		return false

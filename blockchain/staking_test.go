@@ -66,7 +66,7 @@ func (s *StakingTestSuite) TestStakeEvent() {
 	assert.NotNil(t, txn, "Staking transaction is nil")
 	s.eth.Commit()
 
-	rcpt, err := eth.WaitForReceipt(context.Background(), txn)
+	rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
 	assert.True(t, err == nil, "Couldn't parse event log:%v", err)
 
 	events := rcpt.Logs
@@ -135,7 +135,7 @@ func (s *StakingTestSuite) TestUnlocked() {
 	s.eth.Commit()
 
 	// Just making sure the unlock completes
-	_, err = eth.WaitForReceipt(context.Background(), txn)
+	_, err = eth.Queue().QueueAndWait(context.Background(), txn)
 	if err != nil {
 		t.Fatal(err)
 	}

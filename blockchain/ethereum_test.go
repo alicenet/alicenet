@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const SETUP_GROUP int = 13
+
 var accountAddresses []string = []string{
 	"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
 	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
@@ -57,43 +59,42 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	_, _, err = c.DeployContracts(ctx, deployAccount)
 	assert.Nil(t, err, "Failed to deploy contracts...")
 
-	txnCount := 0
-	txns := make([]*types.Transaction, 100)
+	var txn *types.Transaction
 	for idx := 1; idx < len(accountAddresses); idx++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
 		assert.Nil(t, err)
 		eth.UnlockAccount(acct)
 
-		txns[txnCount], err = c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on transfer %v", txnCount)
-		txnCount++
+		txn, err = c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on transfer %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		o, err := eth.GetTransactionOpts(ctx, acct)
 		assert.Nil(t, err)
 
-		txns[txnCount], err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on approval %v", txnCount)
-		txnCount++
+		txn, err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on approval %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
-		txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
-		assert.Nilf(t, err, "Failed on lock %v", txnCount)
-		txnCount++
+		txn, err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		assert.Nilf(t, err, "Failed on lock %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		var validatorId [2]*big.Int
 
 		validatorId[0] = big.NewInt(int64(idx))
 		validatorId[1] = big.NewInt(int64(idx * 2))
 
-		txns[txnCount], err = c.Validators.AddValidator(o, acct.Address, validatorId)
-		assert.Nilf(t, err, "Failed on register %v", txnCount)
-		txnCount++
+		txn, err = c.Validators.AddValidator(o, acct.Address, validatorId)
+		assert.Nilf(t, err, "Failed on register %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 	}
 
-	for idx := 0; idx < txnCount; idx++ {
-		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])
-		assert.Nil(t, err)
+	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
+	assert.Nil(t, err)
 
-		t.Logf("rcpt for txn %v ... status %v", txns[idx].Hash().Hex(), rcpt.Status)
+	for _, rcpt := range rcpts {
+		assert.Equal(t, uint64(1), rcpt.Status)
 	}
 
 	return eth
@@ -160,6 +161,7 @@ func TestAccountsFound(t *testing.T) {
 func TestValues(t *testing.T) {
 	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
+	defer eth.Close()
 
 	c := eth.Contracts()
 
@@ -172,7 +174,7 @@ func TestValues(t *testing.T) {
 	txn, err := c.Staking.SetMinimumStake(txnOpts, amount)
 	assert.Nil(t, err)
 
-	eth.WaitForReceipt(context.Background(), txn)
+	eth.Queue().QueueAndWait(context.Background(), txn)
 
 	ms, err := c.Staking.MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
 	assert.Nil(t, err)

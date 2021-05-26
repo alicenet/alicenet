@@ -101,7 +101,7 @@ func TestSnapshot(t *testing.T) {
 	assert.NotNil(t, txn)
 	eth.Commit()
 
-	rcpt, err := eth.WaitForReceipt(context.Background(), txn)
+	rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(1), rcpt.Status)
 
@@ -270,7 +270,7 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	assert.NotNil(t, txn)
 	eth.Commit()
 
-	rcpt, err := eth.WaitForReceipt(context.Background(), txn)
+	rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(1), rcpt.Status)
 

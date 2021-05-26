@@ -54,9 +54,11 @@ func TestRegisterTask(t *testing.T) {
 
 	// Shorten ethdkg phase for testing purposes
 	txn, err = c.Ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(4))
+	eth.Queue().QueueTransaction(ctx, txn)
 	assert.Nil(t, err)
 
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	// rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 
@@ -65,8 +67,9 @@ func TestRegisterTask(t *testing.T) {
 	// Kick off ethdkg
 	txn, err = c.Ethdkg.InitializeState(txnOpts)
 	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt.Logs)
 

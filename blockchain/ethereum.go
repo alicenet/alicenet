@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
@@ -65,7 +64,7 @@ type Ethereum interface {
 
 	Queue() *TxnQueue
 
-	WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
+	// WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
 
 	RetryCount() int
 	RetryDelay() time.Duration
@@ -1268,19 +1267,6 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 func StringToBytes32(str string) (b [32]byte) {
 	copy(b[:], []byte(str)[0:32])
 	return
-}
-
-// CalculateSelector calculates the hash of the supplied function signature
-func CalculateSelector(functionSignature string) [4]byte {
-	var selector [4]byte
-
-	selectorSlice := crypto.Keccak256([]byte(functionSignature))[:4]
-	selector[0] = selectorSlice[0]
-	selector[1] = selectorSlice[1]
-	selector[2] = selectorSlice[2]
-	selector[3] = selectorSlice[3]
-
-	return selector
 }
 
 func logAndEat(logger *logrus.Logger, err error) {

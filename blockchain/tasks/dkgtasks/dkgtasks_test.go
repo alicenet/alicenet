@@ -15,7 +15,6 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,6 +23,8 @@ var accountAddresses []string = []string{
 	"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
 	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 	"0x63a6627b79813A7A43829490C4cE409254f64177"}
+
+const SETUP_GROUP int = 13
 
 func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
@@ -62,64 +63,42 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	_, _, err = c.DeployContracts(ctx, deployAccount)
 	assert.Nil(t, err, "Failed to deploy contracts...")
 
-	txnCount := 0
-	txns := make([]*types.Transaction, 100)
 	for idx := 1; idx < len(accountAddresses); idx++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
 		assert.Nil(t, err)
 		eth.UnlockAccount(acct)
 
-		txns[txnCount], err = c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on transfer %v", txnCount)
-		txnCount++
+		txn, err := c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on transfer %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		o, err := eth.GetTransactionOpts(ctx, acct)
 		assert.Nil(t, err)
 
-		txns[txnCount], err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on approval %v", txnCount)
-		txnCount++
+		txn, err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on approval %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
-		txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
-		assert.Nilf(t, err, "Failed on lock %v", txnCount)
-		txnCount++
+		txn, err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		assert.Nilf(t, err, "Failed on lock %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		var validatorId [2]*big.Int
 
 		validatorId[0] = big.NewInt(int64(idx))
 		validatorId[1] = big.NewInt(int64(idx * 2))
 
-		txns[txnCount], err = c.Validators.AddValidator(o, acct.Address, validatorId)
-		assert.Nilf(t, err, "Failed on register %v", txnCount)
-		txnCount++
+		txn, err = c.Validators.AddValidator(o, acct.Address, validatorId)
+		assert.Nilf(t, err, "Failed on register %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 	}
 
-	for idx := 0; idx < txnCount; idx++ {
-		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])
-		assert.Nil(t, err)
+	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
+	assert.Nil(t, err)
 
-		t.Logf("rcpt for txn %v ... status %v", txns[idx].Hash().Hex(), rcpt.Status)
-	}
-
-	txnCount = 0
-	// for idx := 1; idx < len(accountAddresses); idx++ {
-
-	// 	acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-	// 	assert.Nil(t, err)
-
-	// 	o, err := eth.GetTransactionOpts(ctx, acct)
-	// 	assert.Nil(t, err)
-
-	// 	txns[txnCount], err = c.Staking.LockStake(o, big.NewInt(1_000_000))
-	// 	assert.Nilf(t, err, "Failed on locking stake")
-	// 	txnCount++
-	// }
-
-	for idx := 0; idx < txnCount; idx++ {
-		rcpt, err := eth.WaitForReceipt(ctx, txns[idx])
-		assert.Nil(t, err)
-
-		t.Logf("rcpt for txn %v ... status %v", txns[idx].Hash().Hex(), rcpt.Status)
+	t.Logf("# rcpts: %v", len(rcpts))
+	for _, rcpt := range rcpts {
+		assert.Equal(t, uint64(1), rcpt.Status)
 	}
 
 	return eth
@@ -156,8 +135,9 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	// Transfer tokens from owner to validator
 	txn, err := c.StakingToken.Transfer(ownerTxnOpts, validatorAcct.Address, big.NewInt(10000000))
 	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 	assert.Equal(t, rcpt.Status, uint64(1))
@@ -165,8 +145,9 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	// Approve tokens for staking contract to withdraw
 	txn, err = c.StakingToken.Approve(txnOpts, c.ValidatorsAddress, big.NewInt(1000000))
 	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 	assert.Equal(t, rcpt.Status, uint64(1))
@@ -174,8 +155,9 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	// Tell staking contract to lock stake
 	txn, err = c.Staking.LockStake(txnOpts, big.NewInt(1000000))
 	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 	assert.Equal(t, rcpt.Status, uint64(1))
@@ -183,8 +165,9 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 	// Tell validators we want to join
 	txn, err = c.Validators.AddValidator(txnOpts, validatorAcct.Address, [2]*big.Int{big.NewInt(1), big.NewInt(2)})
 	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 	assert.Equal(t, rcpt.Status, uint64(1))
@@ -202,79 +185,6 @@ func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.
 		validatorAcct.Address.Hex(),
 		isValidator,
 		balance.Uint64())
-}
-
-func TestRegisterSuccess(t *testing.T) {
-	eth := connectSimulatorEndpoint(t)
-	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
-
-	var ownerAccount accounts.Account
-
-	for idx := range accountAddresses {
-		a, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-		assert.Nil(t, err)
-		err = eth.UnlockAccount(a)
-		assert.Nil(t, err)
-
-		if idx == 0 {
-			ownerAccount = a
-		}
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	c := eth.Contracts()
-
-	_, _, err := c.DeployContracts(ctx, ownerAccount)
-	assert.Nil(t, err)
-
-	t.Logf("  ethdkg address: %v", c.EthdkgAddress.Hex())
-	t.Logf("registry address: %v", c.RegistryAddress.Hex())
-
-	callOpts := eth.GetCallOpts(ctx, ownerAccount)
-	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
-	assert.Nil(t, err)
-
-	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg.InitializeState(txnOpts)
-	assert.Nil(t, err)
-
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1), "receipt status shows transaction failure")
-
-	// Now we know ethdkg is running, let's find out when registration has to happen
-	// TODO this should be based on an OpenRegistration event
-	currentHeight, err := eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
-	t.Logf("currentHeight:%v", currentHeight)
-
-	endingHeight, err := c.Ethdkg.TREGISTRATIONEND(callOpts)
-	assert.Nil(t, err)
-	t.Logf("endingHeight:%v", endingHeight)
-
-	logging.GetLogger("ethsim").SetLevel(logrus.WarnLevel)
-
-	// This will be slow
-	for i := 0; i < 4; i++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
-		assert.Nil(t, err)
-
-		joinValidatorSet(t, eth, ownerAccount, acct)
-	}
-
-	wg := sync.WaitGroup{}
-	for i := 0; i < 4; i++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
-		assert.Nil(t, err)
-
-		wg.Add(1)
-		go validator(t, i, eth, acct, &wg)
-	}
-	wg.Wait()
-
 }
 
 func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup) {
@@ -381,4 +291,79 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 	}
 
 	wg.Done()
+}
+
+func TestRegisterSuccess(t *testing.T) {
+	eth := connectSimulatorEndpoint(t)
+	defer eth.Close()
+	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
+
+	var ownerAccount accounts.Account
+
+	for idx := range accountAddresses {
+		a, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+		assert.Nil(t, err)
+		err = eth.UnlockAccount(a)
+		assert.Nil(t, err)
+
+		if idx == 0 {
+			ownerAccount = a
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := eth.Contracts()
+
+	_, _, err := c.DeployContracts(ctx, ownerAccount)
+	assert.Nil(t, err)
+
+	t.Logf("  ethdkg address: %v", c.EthdkgAddress.Hex())
+	t.Logf("registry address: %v", c.RegistryAddress.Hex())
+
+	callOpts := eth.GetCallOpts(ctx, ownerAccount)
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
+	assert.Nil(t, err)
+
+	// Kick off a round of ethdkg
+	txn, err := c.Ethdkg.InitializeState(txnOpts)
+	assert.Nil(t, err)
+	eth.Queue().QueueTransaction(ctx, txn)
+
+	rcpt, err := eth.Queue().WaitTransaction(ctx, txn)
+	assert.Nil(t, err)
+	assert.NotNil(t, rcpt)
+	assert.Equal(t, rcpt.Status, uint64(1), "receipt status shows transaction failure")
+
+	// Now we know ethdkg is running, let's find out when registration has to happen
+	// TODO this should be based on an OpenRegistration event
+	currentHeight, err := eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+	t.Logf("currentHeight:%v", currentHeight)
+
+	endingHeight, err := c.Ethdkg.TREGISTRATIONEND(callOpts)
+	assert.Nil(t, err)
+	t.Logf("endingHeight:%v", endingHeight)
+
+	logging.GetLogger("ethsim").SetLevel(logrus.WarnLevel)
+
+	// This will be slow
+	for i := 0; i < 4; i++ {
+		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
+		assert.Nil(t, err)
+
+		joinValidatorSet(t, eth, ownerAccount, acct)
+	}
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < 4; i++ {
+		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
+		assert.Nil(t, err)
+
+		wg.Add(1)
+		go validator(t, i, eth, acct, &wg)
+	}
+	wg.Wait()
+
 }

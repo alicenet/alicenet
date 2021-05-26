@@ -38,7 +38,8 @@ type Response struct {
 // TransactionProfile // TODO calculate updated values for each receipt receipt
 type TransactionProfile struct {
 	AverageGas   uint64
-	Name         string
+	MinimumGas   uint64
+	MaximumGas   uint64
 	TotalCount   uint64
 	TotalGas     uint64
 	TotalSuccess uint64
@@ -140,6 +141,12 @@ func (b *Behind) collectReceipts() {
 
 			// Update transaction profile
 			profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
+			if profile.MaximumGas < rcpt.GasUsed {
+				profile.MaximumGas = rcpt.GasUsed
+			}
+			if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
+				profile.MinimumGas = rcpt.GasUsed
+			}
 			profile.TotalCount++
 			profile.TotalGas += rcpt.GasUsed
 			if rcpt.Status == uint64(1) {
@@ -208,6 +215,13 @@ func (b *Behind) queue(req *Request) *Response {
 }
 
 func (b *Behind) status(req *Request) *Response {
+	b.Lock()
+	defer b.Unlock()
+
+	for selector, profile := range b.aggregates {
+		b.logger.Infof("selector:%x profile:%+v", selector, profile)
+	}
+
 	return &Response{message: "status check"}
 }
 
@@ -315,6 +329,11 @@ func (f *TxnQueue) QueueGroupTransaction(ctx context.Context, grp int, txn *type
 	req := &Request{name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
 	f.logger.Infof("...done queueing")
+}
+
+func (f *TxnQueue) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+	f.QueueTransaction(ctx, txn)
+	return f.WaitTransaction(ctx, txn)
 }
 
 func (f *TxnQueue) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
