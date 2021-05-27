@@ -18,6 +18,7 @@ import (
 	"github.com/MadBase/MadNet/consensus"
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/consensus/dman"
 	"github.com/MadBase/MadNet/consensus/evidence"
 	"github.com/MadBase/MadNet/consensus/gossip"
 	"github.com/MadBase/MadNet/consensus/lstate"
@@ -204,7 +205,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	rbusHandlers := &request.Handler{}
 	rbusClient := &request.Client{}
 	lstateHandlers := &lstate.Handlers{}
-	dman := &lstate.DMan{}
+	dman := &dman.DMan{}
 	gh := &gossip.Handlers{}
 	gc := &gossip.Client{}
 	stateHandler := &lstate.Engine{}
@@ -409,6 +410,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go gc.Start()
 	defer gc.Close()
 	defer gh.Close()
+
+	go dman.Start()
+	defer dman.Close()
 
 	go stateRPC.Serve()
 	defer stateRPC.Close()
