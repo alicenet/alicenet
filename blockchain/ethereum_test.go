@@ -138,6 +138,7 @@ func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
 func TestAccountsFound(t *testing.T) {
 	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
+	defer eth.Close()
 
 	addressStrings := []string{
 		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F",

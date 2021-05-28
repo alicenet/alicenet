@@ -48,16 +48,16 @@ type TransactionProfile struct {
 // Behind is the struct used while monitoring Ethereum transactions
 type Behind struct {
 	sync.Mutex
-	waitingTxns []common.Hash                  // Just a list of transactions whose receipts we're looking for
-	readyTxns   map[common.Hash]*types.Receipt // All the transaction -> receipt pairs we know of
-	selectors   map[common.Hash][4]byte        // Maps a transaction to it's function selector
-	groups      map[int][]common.Hash          // A group is just an ID and a list of transactions
-	names       map[[4]byte]string             // Map function selector's to their names
-	aggregates  map[[4]byte]TransactionProfile //
-	client      GethClient                     // An interface with the Geth functionality we need
-	logger      *logrus.Logger                 //
-	reqch       <-chan *Request                //
-
+	waitingTxns    []common.Hash                       // Just a list of transactions whose receipts we're looking for
+	readyTxns      map[common.Hash]*types.Receipt      // All the transaction -> receipt pairs we know of
+	selectors      map[common.Hash]FuncSelector        // Maps a transaction to it's function selector
+	groups         map[int][]common.Hash               // A group is just an ID and a list of transactions
+	names          map[FuncSelector]string             // Map function selector's to their names
+	aggregates     map[FuncSelector]TransactionProfile //
+	client         GethClient                          // An interface with the Geth functionality we need
+	knownSelectors *SelectorMap                        //
+	logger         *logrus.Logger                      //
+	reqch          <-chan *Request                     //
 }
 
 func (b *Behind) Loop() {
@@ -68,16 +68,9 @@ func (b *Behind) Loop() {
 		case req, ok := <-b.reqch:
 			// Some sort of request came in
 			if !ok {
-				b.Lock()
-				defer b.Unlock()
-
 				b.logger.Debugf("command channel closed")
+				b.status(nil)
 				done = true
-
-				for selector, profile := range b.aggregates {
-					b.logger.Infof("selector:%x profile:%+v", selector, profile)
-				}
-
 				break
 			}
 
@@ -187,15 +180,9 @@ func (b *Behind) queue(req *Request) *Response {
 
 	txnHash := req.txn.Hash()
 
-	data := req.txn.Data()
+	selector := ExtractSelector(req.txn.Data())
+	b.logger.Infof("queueing selector:%x", selector)
 
-	var selector [4]byte
-
-	if len(data) >= 4 {
-		for idx := 0; idx < 4; idx++ {
-			selector[idx] = data[idx]
-		}
-	}
 	b.selectors[txnHash] = selector
 	b.waitingTxns = append(b.waitingTxns, txnHash)
 
@@ -219,7 +206,7 @@ func (b *Behind) status(req *Request) *Response {
 	defer b.Unlock()
 
 	for selector, profile := range b.aggregates {
-		b.logger.Infof("selector:%x profile:%+v", selector, profile)
+		b.logger.Infof("function selector:%x signature:%v profile:%+v", selector, b.knownSelectors.Signature(selector), profile)
 	}
 
 	return &Response{message: "status check"}
@@ -292,18 +279,19 @@ type TxnQueue struct {
 	reqch   chan<- *Request
 }
 
-func NewTxnQueue(client GethClient) *TxnQueue {
+func NewTxnQueue(client GethClient, sm *SelectorMap) *TxnQueue {
 	reqch := make(chan *Request, 10)
 
 	b := &Behind{
-		reqch:       reqch,
-		client:      client,
-		logger:      logging.GetLogger("behind"),
-		waitingTxns: make([]common.Hash, 0, 20),
-		readyTxns:   make(map[common.Hash]*types.Receipt),
-		selectors:   make(map[common.Hash][4]byte),
-		aggregates:  make(map[[4]byte]TransactionProfile),
-		groups:      make(map[int][]common.Hash)}
+		reqch:          reqch,
+		client:         client,
+		logger:         logging.GetLogger("behind"),
+		waitingTxns:    make([]common.Hash, 0, 20),
+		readyTxns:      make(map[common.Hash]*types.Receipt),
+		selectors:      make(map[common.Hash]FuncSelector),
+		aggregates:     make(map[FuncSelector]TransactionProfile),
+		knownSelectors: sm,
+		groups:         make(map[int][]common.Hash)}
 
 	q := &TxnQueue{
 		reqch:   reqch,
@@ -318,6 +306,7 @@ func (f *TxnQueue) StartLoop() {
 }
 
 func (f *TxnQueue) QueueTransaction(ctx context.Context, txn *types.Transaction) {
+	txn.Data()
 	f.logger.Infof("queue...")
 	req := &Request{name: "queue", txn: txn} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)

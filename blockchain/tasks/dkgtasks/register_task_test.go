@@ -21,6 +21,8 @@ func TestRegisterTask(t *testing.T) {
 
 	logger := logging.GetLogger("register_task")
 	eth := connectSimulatorEndpoint(t)
+	defer eth.Close()
+
 	_, pub, err := dkg.GenerateKeys()
 	assert.Nil(t, err)
 
