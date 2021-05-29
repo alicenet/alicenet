@@ -19,14 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var accountAddresses []string = []string{
-	"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
-	"0x63a6627b79813A7A43829490C4cE409254f64177"}
-
 const SETUP_GROUP int = 13
 
-func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
+func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchain.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
 		"../../../assets/test/keys",
 		"../../../assets/test/passcodes.txt",
@@ -104,7 +99,7 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	return eth
 }
 
-func connectRemoteEndpoint(t *testing.T) blockchain.Ethereum {
+func connectRemoteEndpoint(t *testing.T, accountAddresses []string) blockchain.Ethereum {
 	eth, err := blockchain.NewEthereumEndpoint(
 		"http://192.168.86.29:8545",
 		"keystore_test",
@@ -117,74 +112,6 @@ func connectRemoteEndpoint(t *testing.T) blockchain.Ethereum {
 	assert.Nil(t, err)
 
 	return eth
-}
-
-func joinValidatorSet(t *testing.T, eth blockchain.Ethereum, ownerAcct accounts.Account, validatorAcct accounts.Account) {
-	c := eth.Contracts()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Create txn opts for owner and validator
-	ownerTxnOpts, err := eth.GetTransactionOpts(ctx, ownerAcct)
-	assert.Nil(t, err)
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, validatorAcct)
-	assert.Nil(t, err)
-
-	// Transfer tokens from owner to validator
-	txn, err := c.StakingToken.Transfer(ownerTxnOpts, validatorAcct.Address, big.NewInt(10000000))
-	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
-
-	rcpt, err := eth.Queue().WaitTransaction(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1))
-
-	// Approve tokens for staking contract to withdraw
-	txn, err = c.StakingToken.Approve(txnOpts, c.ValidatorsAddress, big.NewInt(1000000))
-	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
-
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1))
-
-	// Tell staking contract to lock stake
-	txn, err = c.Staking.LockStake(txnOpts, big.NewInt(1000000))
-	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
-
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1))
-
-	// Tell validators we want to join
-	txn, err = c.Validators.AddValidator(txnOpts, validatorAcct.Address, [2]*big.Int{big.NewInt(1), big.NewInt(2)})
-	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
-
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1))
-
-	callOpts := eth.GetCallOpts(ctx, validatorAcct)
-
-	// Collect validator status info
-	balance, err := c.StakingToken.BalanceOf(callOpts, validatorAcct.Address)
-	assert.Nil(t, err)
-
-	isValidator, err := c.Participants.IsValidator(callOpts, validatorAcct.Address)
-	assert.Nil(t, err)
-
-	t.Logf("Address %v: isValidator=%v Balance=%v",
-		validatorAcct.Address.Hex(),
-		isValidator,
-		balance.Uint64())
 }
 
 func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup) {
@@ -294,7 +221,13 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 }
 
 func TestRegisterSuccess(t *testing.T) {
-	eth := connectSimulatorEndpoint(t)
+
+	var accountAddresses []string = []string{
+		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
+		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
+		"0x63a6627b79813A7A43829490C4cE409254f64177"}
+
+	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
@@ -315,9 +248,6 @@ func TestRegisterSuccess(t *testing.T) {
 	defer cancel()
 
 	c := eth.Contracts()
-
-	_, _, err := c.DeployContracts(ctx, ownerAccount)
-	assert.Nil(t, err)
 
 	t.Logf("  ethdkg address: %v", c.EthdkgAddress.Hex())
 	t.Logf("registry address: %v", c.RegistryAddress.Hex())
@@ -349,13 +279,6 @@ func TestRegisterSuccess(t *testing.T) {
 	logging.GetLogger("ethsim").SetLevel(logrus.WarnLevel)
 
 	// This will be slow
-	for i := 0; i < 4; i++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
-		assert.Nil(t, err)
-
-		joinValidatorSet(t, eth, ownerAccount, acct)
-	}
-
 	wg := sync.WaitGroup{}
 	for i := 0; i < 4; i++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))

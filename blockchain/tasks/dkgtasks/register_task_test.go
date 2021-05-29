@@ -17,10 +17,15 @@ import (
 
 func TestRegisterTask(t *testing.T) {
 
+	var accountAddresses []string = []string{
+		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
+		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
+		"0x63a6627b79813A7A43829490C4cE409254f64177"}
+
 	tasks.RegisterTask(&dkgtasks.RegisterTask{})
 
 	logger := logging.GetLogger("register_task")
-	eth := connectSimulatorEndpoint(t)
+	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
 
 	_, pub, err := dkg.GenerateKeys()

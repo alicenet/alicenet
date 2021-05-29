@@ -343,7 +343,7 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 	toCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	rcpt, err := eth.WaitForReceipt(toCtx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(toCtx, txn)
 	if err != nil {
 		logger.Errorf("Failed to retrieve snapshot receipt: %v", err)
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!
