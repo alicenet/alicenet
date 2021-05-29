@@ -51,18 +51,20 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 	err = eth.UnlockAccount(deployAccount)
 	assert.Nil(t, err, "Failed to unlock default account")
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
-	assert.Nil(t, err, "Failed to create txn opts")
-
+	// Deploy all the contracts
 	c := eth.Contracts()
 	_, _, err = c.DeployContracts(ctx, deployAccount)
 	assert.Nil(t, err, "Failed to deploy contracts...")
 
+	// For each address passed set them up as a validator
+	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
+	assert.Nil(t, err, "Failed to create txn opts")
 	for idx := 1; idx < len(accountAddresses); idx++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
 		assert.Nil(t, err)
 		eth.UnlockAccount(acct)
 
+		// 1. Give 'acct' tokens
 		txn, err := c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on transfer %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
@@ -70,16 +72,18 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 		o, err := eth.GetTransactionOpts(ctx, acct)
 		assert.Nil(t, err)
 
+		// 2. Allow system to take tokens from 'acct' for staking
 		txn, err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on approval %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
+		// 3. Tell system to take tokens from 'acct' for staking
 		txn, err = c.Staking.LockStake(o, big.NewInt(1_000_000))
 		assert.Nilf(t, err, "Failed on lock %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
+		// 4. Tell system 'acct' wants to join as validator
 		var validatorId [2]*big.Int
-
 		validatorId[0] = big.NewInt(int64(idx))
 		validatorId[1] = big.NewInt(int64(idx * 2))
 
@@ -88,9 +92,11 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 	}
 
+	// Wait for all transactions for all accounts to complete
 	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
 	assert.Nil(t, err)
 
+	// Make sure all transactions were successful
 	t.Logf("# rcpts: %v", len(rcpts))
 	for _, rcpt := range rcpts {
 		assert.Equal(t, uint64(1), rcpt.Status)
