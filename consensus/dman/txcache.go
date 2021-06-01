@@ -3,19 +3,19 @@ package dman
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/interfaces"
 )
 
 type txCache struct {
 	sync.Mutex
-	app    appmock.Application
-	cache  map[string]string
+	app    txMarshaller
+	cache  map[string][]byte
 	rcache map[string]uint32
 }
 
-func (txc *txCache) Init() error {
-	txc.cache = make(map[string]string)
+func (txc *txCache) Init(app txMarshaller) error {
+	txc.app = app
+	txc.cache = make(map[string][]byte)
 	txc.rcache = make(map[string]uint32)
 	return nil
 }
@@ -32,7 +32,7 @@ func (txc *txCache) Add(height uint32, tx interfaces.Transaction) error {
 		return err
 	}
 	txc.rcache[string(txHash)] = height
-	txc.cache[string(txHash)] = string(txb)
+	txc.cache[string(txHash)] = txb
 	return nil
 }
 
@@ -55,7 +55,7 @@ func (txc *txCache) getInternal(txHsh []byte) (interfaces.Transaction, bool) {
 	txIf, ok := txc.cache[string(txHsh)]
 	if ok {
 		txb := txIf
-		tx, err := txc.app.UnmarshalTx([]byte(txb))
+		tx, err := txc.app.UnmarshalTx(txb)
 		if err != nil {
 			txc.delInternal(txHsh)
 			return nil, false
