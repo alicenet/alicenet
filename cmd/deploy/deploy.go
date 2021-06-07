@@ -106,7 +106,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("setting stake balances failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 	logger.Infof("setting balances for %v. Gas = %v", account.Address.Hex(), txn.Gas())
 
 	// Try snapshoting
@@ -124,7 +124,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("creating snapshot failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 	logger.Infof("creating snapshot Gas = %v", txn.Gas())
 
 	txn, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(2))
@@ -132,7 +132,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("setting epoch failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 
 	// Try Participants
 
@@ -172,7 +172,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 			}
 			tx := txns[0].(*types.Transaction)
 			logger.Debugf("waiting for txn: %v", tx.Hash().String())
-			eth.WaitForReceipt(ctx, tx)
+			eth.Queue().QueueAndWait(ctx, tx)
 		}
 	}
 

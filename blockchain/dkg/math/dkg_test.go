@@ -1,4 +1,4 @@
-package dkg_test
+package math_test
 
 import (
 	"crypto/rand"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/logging"
@@ -20,12 +21,12 @@ import (
 var initialMessage []byte = []byte("Hello")
 
 func TestCalculateThreshold(t *testing.T) {
-	threshold, _ := dkg.ThresholdForUserCount(4)
+	threshold, _ := math.ThresholdForUserCount(4)
 	assert.Equal(t, 2, threshold)
 }
 
 func TestGenerateKeys(t *testing.T) {
-	private, public, err := dkg.GenerateKeys()
+	private, public, err := math.GenerateKeys()
 	assert.Nil(t, err, "error generating keys")
 
 	assert.NotNil(t, private, "private key is nil")
@@ -39,7 +40,7 @@ func TestGenerateShares(t *testing.T) {
 
 	// Number participants in key generation
 	n := 4
-	threshold, _ := dkg.ThresholdForUserCount(n)
+	threshold, _ := math.ThresholdForUserCount(n)
 	assert.Equal(t, 2, threshold)
 
 	// Make n participants
@@ -57,11 +58,11 @@ func TestGenerateShares(t *testing.T) {
 	}
 
 	// Overwrite the first
-	private, public, _ := dkg.GenerateKeys()
+	private, public, _ := math.GenerateKeys()
 	participants[0].PublicKey = public
 
 	// Now actually generate shares and sanity check them
-	encryptedShares, privateCoefficients, commitments, err := dkg.GenerateShares(private, public, participants, threshold)
+	encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(private, public, participants, threshold)
 	assert.Nil(t, err, "error generating shares")
 	assert.Equal(t, threshold+1, len(encryptedShares))
 	assert.Equal(t, threshold+1, len(privateCoefficients))
@@ -74,7 +75,7 @@ func TestGenerateKeyShare(t *testing.T) {
 
 	// Number participants in key generation
 	n := 4
-	threshold, _ := dkg.ThresholdForUserCount(n)
+	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
 	participants := []*dkg.Participant{{Index: 0}}
@@ -91,14 +92,14 @@ func TestGenerateKeyShare(t *testing.T) {
 	}
 
 	// Overwrite the first
-	private, public, _ := dkg.GenerateKeys()
+	private, public, _ := math.GenerateKeys()
 	participants[0].PublicKey = public
 
 	// Generate shares and sanity check them
-	_, privateCoefficients, _, err := dkg.GenerateShares(private, public, participants, threshold)
+	_, privateCoefficients, _, err := math.GenerateShares(private, public, participants, threshold)
 
 	// Generate key share and sanity check it
-	keyShare1, keyShare1Proof, keyShare2, err := dkg.GenerateKeyShare(privateCoefficients[0])
+	keyShare1, keyShare1Proof, keyShare2, err := math.GenerateKeyShare(privateCoefficients[0])
 	assert.Nil(t, err, "error generating key share")
 	assert.NotNil(t, keyShare1[0], "key share 1 missing element")
 	assert.NotNil(t, keyShare1[1], "key share 1 missing element")
@@ -118,7 +119,7 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 
 	// Number participants in key generation
 	n := 4
-	threshold, _ := dkg.ThresholdForUserCount(n)
+	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
@@ -137,7 +138,7 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 	}
 
 	// Overwrite the first
-	private, public, _ := dkg.GenerateKeys()
+	private, public, _ := math.GenerateKeys()
 	participants[0].PublicKey = public
 	privateKeys[participants[0].Address] = private
 
@@ -149,10 +150,10 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 		publicKey := participant.PublicKey
 		privateKey := privateKeys[participant.Address]
 
-		participantEncryptedShares, participantPrivateCoefficients, _, err := dkg.GenerateShares(privateKey, publicKey, participants, threshold)
+		participantEncryptedShares, participantPrivateCoefficients, _, err := math.GenerateShares(privateKey, publicKey, participants, threshold)
 		assert.Nil(t, err)
 
-		keyShare1, _, keyShare2, err := dkg.GenerateKeyShare(participantPrivateCoefficients[0])
+		keyShare1, _, keyShare2, err := math.GenerateKeyShare(participantPrivateCoefficients[0])
 		assert.Nil(t, err)
 
 		encryptedShares = append(encryptedShares, participantEncryptedShares)
@@ -161,7 +162,7 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 	}
 
 	// Generate the master public key and sanity check it
-	masterPublicKey, err := dkg.GenerateMasterPublicKey(keyShare1s, keyShare2s)
+	masterPublicKey, err := math.GenerateMasterPublicKey(keyShare1s, keyShare2s)
 	assert.Nil(t, err)
 
 	assert.NotNil(t, masterPublicKey[0], "missing element of master public key")
@@ -174,7 +175,7 @@ func TestGenerateGroupKeys(t *testing.T) {
 
 	// Number participants in key generation
 	n := 4
-	threshold, _ := dkg.ThresholdForUserCount(n)
+	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
@@ -193,13 +194,13 @@ func TestGenerateGroupKeys(t *testing.T) {
 	}
 
 	// Overwrite the first
-	private, public, _ := dkg.GenerateKeys()
+	private, public, _ := math.GenerateKeys()
 	participants[0].PublicKey = public
 	privateKeys[participants[0].Address] = private
 
 	// Generate shares
-	_, privateCoefficients, _, err := dkg.GenerateShares(private, public, participants, threshold)
-	// keyShare1, keyShare1Proof, keyShare2, err := dkg.GenerateKeyShare(privateCoefficients)
+	_, privateCoefficients, _, err := math.GenerateShares(private, public, participants, threshold)
+	// keyShare1, keyShare1Proof, keyShare2, err := math.GenerateKeyShare(privateCoefficients)
 
 	encryptedShares := [][]*big.Int{}
 	// Generate encrypted shares on behalf of participants
@@ -207,12 +208,12 @@ func TestGenerateGroupKeys(t *testing.T) {
 		publicKey := participant.PublicKey
 		privateKey := privateKeys[participant.Address]
 
-		participantEncryptedShares, _, _, _ := dkg.GenerateShares(privateKey, publicKey, participants, threshold)
+		participantEncryptedShares, _, _, _ := math.GenerateShares(privateKey, publicKey, participants, threshold)
 		encryptedShares = append(encryptedShares, participantEncryptedShares)
 	}
 
 	// Generate the Group Keys and sanity check them
-	groupPrivate, groupPublic, groupSignature, err := dkg.GenerateGroupKeys(initialMessage, private, public, privateCoefficients, encryptedShares, 0, participants, threshold)
+	groupPrivate, groupPublic, groupSignature, err := math.GenerateGroupKeys(initialMessage, private, public, privateCoefficients, encryptedShares, 0, participants, threshold)
 	assert.Nil(t, err, "error generating key share")
 	assert.NotNil(t, groupPrivate, "group private key is missing")
 	assert.NotNil(t, groupPublic[0], "group public key element is missing")
@@ -231,7 +232,7 @@ func TestVerifyGroupSigners(t *testing.T) {
 	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, _ := setupGroupSigners(t, n)
 	threshold := 3 // Adjusting threshold so verify will look at all signatures
 
-	good, err := dkg.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	good, err := math.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed verifying group signers")
 	assert.True(t, good, "group signers are all good")
 }
@@ -246,7 +247,7 @@ func TestVerifyGroupSignersFail(t *testing.T) {
 	lastSignature := publishedSignatures[n-1]
 	lastSignature[0].Add(lastSignature[0], common.Big1) // Not a valid point on the curve so we will fail
 
-	good, err := dkg.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	good, err := math.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.NotNil(t, err, "should have failed verification")
 	assert.False(t, good, "a signer is bad")
 }
@@ -263,7 +264,7 @@ func TestVerifyGroupSignersNegative(t *testing.T) {
 	publishedSignatures[3][0] = badSignature[0]
 	publishedSignatures[3][1] = badSignature[1]
 
-	good, err := dkg.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	good, err := math.VerifyGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nilf(t, err, "failed verifying group signers: %v", err)
 	assert.False(t, good, "a signer is bad")
 }
@@ -272,7 +273,7 @@ func TestCategorizeGroupSigners(t *testing.T) {
 
 	masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold := setupGroupSigners(t, 10)
 
-	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
 	assert.Equal(t, len(participants), len(honest), "all participants are honest")
 	assert.Equal(t, 0, len(dishonest), "no participants are dishonest")
@@ -290,7 +291,7 @@ func TestCategorizeGroupSigners1Negative(t *testing.T) {
 	// participants[n-1].Index = n + 1
 	participants[0].Index = n + 1
 
-	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
 	assert.Equal(t, len(participants)-1, len(honest), "all but 1 participant are honest")
 	assert.Equal(t, 1, len(dishonest), "1 participant is dishonest")
@@ -305,7 +306,7 @@ func TestCategorizeGroupSigners2Negative(t *testing.T) {
 	participants[n-1].Index = n + 1
 	participants[n-2].Index = n + 2
 
-	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
 	assert.Equal(t, len(participants)-2, len(honest), "all but 2 participant are honest")
 	assert.Equal(t, 2, len(dishonest), "2 participant are dishonest")
@@ -325,7 +326,7 @@ func TestCategorizeGroupSignersNegative(t *testing.T) {
 		participants[idx].Index = idx + 1 + n
 	}
 
-	honest, dishonest, err := dkg.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
+	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
 	assert.Equalf(t, threshold+1, len(honest), "%v participant are honest", threshold+1)
 	assert.Equalf(t, n-threshold-1, len(dishonest), "%v participant are dishonest", n-threshold-1)
@@ -339,7 +340,7 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 	transactor := bind.NewKeyedTransactor(key)
 
 	// Generate a public key
-	privateKey, publicKey, err := dkg.GenerateKeys()
+	privateKey, publicKey, err := math.GenerateKeys()
 	assert.Nilf(t, err, "failed to generate keys")
 
 	return transactor.From, privateKey, publicKey
@@ -349,7 +350,7 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*big.Int, []*dkg.Participant, int) {
 
 	// Number participants in key generation
-	threshold, _ := dkg.ThresholdForUserCount(n)
+	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
@@ -369,7 +370,7 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*b
 	}
 
 	// Overwrite the first
-	private, public, _ := dkg.GenerateKeys()
+	private, public, _ := math.GenerateKeys()
 	participants[0].PublicKey = public
 	privateKeys[participants[0].Address] = private
 
@@ -383,10 +384,10 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*b
 		publicKey := participant.PublicKey
 		privateKey := privateKeys[participant.Address]
 
-		participantEncryptedShares, participantPrivateCoefficients, _, err := dkg.GenerateShares(privateKey, publicKey, participants, threshold)
+		participantEncryptedShares, participantPrivateCoefficients, _, err := math.GenerateShares(privateKey, publicKey, participants, threshold)
 		assert.Nil(t, err)
 
-		keyShare1, _, keyShare2, err := dkg.GenerateKeyShare(participantPrivateCoefficients[0])
+		keyShare1, _, keyShare2, err := math.GenerateKeyShare(participantPrivateCoefficients[0])
 		assert.Nil(t, err)
 
 		encryptedShares = append(encryptedShares, participantEncryptedShares)
@@ -396,7 +397,7 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*b
 	}
 
 	// Generate the master public key and sanity check it
-	masterPublicKey, err := dkg.GenerateMasterPublicKey(keyShare1s, keyShare2s)
+	masterPublicKey, err := math.GenerateMasterPublicKey(keyShare1s, keyShare2s)
 	assert.Nil(t, err, "failed to generate master public key")
 
 	publishedPublicKeys := [][4]*big.Int{}
@@ -406,7 +407,7 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*b
 		publicKey := participant.PublicKey
 		privateKey := privateKeys[participant.Address]
 
-		_, groupPublicKey, groupSignature, err := dkg.GenerateGroupKeys(initialMessage, privateKey, publicKey, privateCoefficients[idx], encryptedShares, participant.Index, participants, threshold)
+		_, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage, privateKey, publicKey, privateCoefficients[idx], encryptedShares, participant.Index, participants, threshold)
 		assert.Nil(t, err, "failed to generate group keys")
 
 		publishedPublicKeys = append(publishedPublicKeys, groupPublicKey)

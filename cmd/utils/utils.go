@@ -259,7 +259,7 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 		logger.Errorf("StakingToken.Approve() failed: %v", err)
 		return 1
 	}
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("StakingToken.Approve() failed: %v", err)
 		return 1
@@ -274,7 +274,7 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 		logger.Errorf("Staking.LockStake() failed: %v", err)
 		return 1
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("Staking.LockStake() failed: %v", err)
 		return 1
@@ -288,7 +288,7 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
@@ -362,7 +362,7 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 			return false
 		}
 
-		rcpt, err := eth.WaitForReceipt(context.Background(), txn)
+		rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			logger.Infof("waiting for receipt failed: %v", err)
 			return true
@@ -401,7 +401,7 @@ func deposittokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 		logger.Errorf("approval failed: %v", err)
 		return 1
 	}
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("approval receipt failed: %v", err)
 		return 1
@@ -413,7 +413,7 @@ func deposittokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 		logger.Errorf("deposit failed: %v", err)
 		return 1
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("deposit receipt failed: %v", err)
 		return 1
@@ -505,7 +505,7 @@ func ethdkg(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, 
 		return 1
 	}
 
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Error("Failed looking for transaction events.")
 		return 1

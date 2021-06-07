@@ -10,8 +10,9 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -133,11 +134,15 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 	currentBlock := uint64(startBlock)
 	lastBlock := uint64(startBlock)
 	addresses := []common.Address{c.EthdkgAddress}
+
 	taskManager := tasks.NewManager()
 
-	handlers := make(map[uint64]func())
+	state := dkg.NewEthDKGState(validatorAcct)
 
-	for currentBlock < startBlock+60 {
+	scheduler := monitor.NewSequentialSchedule()
+	defer scheduler.Status(logging.GetLogger(fmt.Sprintf("scheduler%v", idx)))
+
+	for currentBlock < startBlock+50 {
 		var err error
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
@@ -155,66 +160,35 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 					event, err := c.Ethdkg.ParseRegistrationOpen(log)
 					assert.Nil(t, err)
 
-					priv, pub, err := dkg.GenerateKeys()
-					assert.Nil(t, err)
+					logger.Debugf("open event:%+v", event)
 
-					registrationEnds := event.RegistrationEnds.Uint64()
-					distributionEnds := event.ShareDistributionEnds.Uint64()
+					scheduler.Purge()
 
-					registrationTask := dkgtasks.NewRegisterTask(validatorAcct, pub, registrationEnds)
-					th := taskManager.NewTaskHandler(logger, eth, registrationTask)
+					state.PopulateSchedule(event) // TODO make this better, pure mutation functions are awkward
 
-					th.Start()
+					scheduler.Schedule(state.RegistrationStart, state.RegistrationEnd, dkgtasks.NewRegisterTask(state))                    // Registration
+					scheduler.Schedule(state.ShareDistributionStart, state.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(state)) // ShareDistribution
+					scheduler.Schedule(state.DisputeStart, state.DisputeEnd, dkgtasks.NewDisputeTask(state))                               // DisputeShares
+					scheduler.Schedule(state.KeyShareSubmissionStart, state.KeyShareSubmissionEnd, dkgtasks.NewPlaceHolder(state))         // KeyShareSubmission
+					scheduler.Schedule(state.MPKSubmissionStart, state.MPKSubmissionEnd, dkgtasks.NewPlaceHolder(state))                   // MasterPublicKeySubmission
+					scheduler.Schedule(state.GPKJSubmissionStart, state.GPKJSubmissionEnd, dkgtasks.NewPlaceHolder(state))                 // GroupPublicKeySubmission
+					scheduler.Schedule(state.GPKJGroupAccusationStart, state.GPKJGroupAccusationEnd, dkgtasks.NewPlaceHolder(state))       // DisputeGroupPublicKey
+					scheduler.Schedule(state.CompleteStart, state.CompleteEnd, dkgtasks.NewPlaceHolder(state))                             // Complete
 
-					handlers[registrationEnds+1] = func() {
-
-						callOpts := eth.GetCallOpts(ctx, validatorAcct)
-						assert.Nil(t, err)
-
-						// Number participants in key generation
-						bigN, err := c.Ethdkg.NumberOfRegistrations(callOpts)
-						assert.Nil(t, err)
-
-						n := bigN.Uint64()
-
-						threshold, _ := dkg.ThresholdForUserCount(int(n))
-
-						// Make n participants
-						participants := []*dkg.Participant{}
-						for idx := uint64(0); idx < n; idx++ {
-
-							addr, err := c.Ethdkg.Addresses(callOpts, new(big.Int).SetUint64(idx))
-							assert.Nil(t, err)
-
-							var publicKey [2]*big.Int
-							publicKey[0], err = c.Ethdkg.PublicKeys(callOpts, addr, big.NewInt(0))
-							assert.Nil(t, err)
-
-							publicKey[1], err = c.Ethdkg.PublicKeys(callOpts, addr, big.NewInt(1))
-							assert.Nil(t, err)
-
-							participant := &dkg.Participant{
-								Address:   addr,
-								Index:     int(idx + 1),
-								PublicKey: publicKey}
-
-							participants = append(participants, participant)
-						}
-						shares, coeff, commitments, err := dkg.GenerateShares(priv, pub, participants, threshold)
-						t.Logf("coeff:%v", coeff)
-
-						distroTask := dkgtasks.NewShareDistributionTask(validatorAcct, pub, shares, commitments, registrationEnds, distributionEnds)
-						dth := taskManager.NewTaskHandler(logger, eth, distroTask)
-
-						dth.Start()
-					}
+					logger.Debugf("ethdkg state:%+v", state)
 				}
-
 			}
 
-			if fn, present := handlers[currentBlock]; present {
-				fn()
-				delete(handlers, currentBlock)
+			for block := lastBlock + 1; block <= currentBlock; block++ {
+				uuid, _ := scheduler.Find(block)
+				if uuid != nil {
+					task, _ := scheduler.Retrieve(uuid)
+					handler := taskManager.NewTaskHandler(logger, eth, task)
+
+					handler.Start()
+
+					scheduler.Remove(uuid)
+				}
 			}
 
 			lastBlock = currentBlock
@@ -233,9 +207,10 @@ func TestRegisterSuccess(t *testing.T) {
 		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 		"0x63a6627b79813A7A43829490C4cE409254f64177"}
 
+	logging.GetLogger("ethsim").SetLevel(logrus.InfoLevel)
+
 	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
-	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
 	var ownerAccount accounts.Account
 
@@ -262,15 +237,24 @@ func TestRegisterSuccess(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
 	assert.Nil(t, err)
 
-	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg.InitializeState(txnOpts)
-	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
+	// Start validators running
+	wg := sync.WaitGroup{}
+	for i := 0; i < 4; i++ {
+		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
+		assert.Nil(t, err)
 
-	rcpt, err := eth.Queue().WaitTransaction(ctx, txn)
+		wg.Add(1)
+		go validator(t, i, eth, acct, &wg)
+	}
+
+	// Kick off a round of ethdkg
+	txn, err := c.Ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(5))
 	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
-	assert.Equal(t, rcpt.Status, uint64(1), "receipt status shows transaction failure")
+	eth.Queue().QueueAndWait(ctx, txn)
+
+	txn, err = c.Ethdkg.InitializeState(txnOpts)
+	assert.Nil(t, err)
+	eth.Queue().QueueAndWait(ctx, txn)
 
 	// Now we know ethdkg is running, let's find out when registration has to happen
 	// TODO this should be based on an OpenRegistration event
@@ -282,17 +266,7 @@ func TestRegisterSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("endingHeight:%v", endingHeight)
 
-	logging.GetLogger("ethsim").SetLevel(logrus.WarnLevel)
-
-	// This will be slow
-	wg := sync.WaitGroup{}
-	for i := 0; i < 4; i++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
-		assert.Nil(t, err)
-
-		wg.Add(1)
-		go validator(t, i, eth, acct, &wg)
-	}
+	// Wait for validators to complete
 	wg.Wait()
 
 }

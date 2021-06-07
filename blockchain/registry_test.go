@@ -11,6 +11,7 @@ func TestRegister(t *testing.T) {
 
 	eth, err := setupEthereum(t)
 	assert.Nil(t, err)
+	defer eth.Close()
 
 	c := eth.Contracts()
 	ctx := context.TODO()

@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
@@ -27,9 +26,6 @@ func TestRegisterTask(t *testing.T) {
 	logger := logging.GetLogger("register_task")
 	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
-
-	_, pub, err := dkg.GenerateKeys()
-	assert.Nil(t, err)
 
 	acct, err := eth.GetAccount(common.HexToAddress("0x9AC1c9afBAec85278679fF75Ef109217f26b1417"))
 	assert.Nil(t, err, "Could not find account")
@@ -61,41 +57,42 @@ func TestRegisterTask(t *testing.T) {
 
 	// Shorten ethdkg phase for testing purposes
 	txn, err = c.Ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(4))
-	eth.Queue().QueueTransaction(ctx, txn)
 	assert.Nil(t, err)
 
-	// rcpt, err = eth.WaitForReceipt(ctx, txn)
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
-	assert.Nil(t, err)
-	assert.NotNil(t, rcpt)
+	eth.Queue().QueueAndWait(ctx, txn)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
 	txn, err = c.Ethdkg.InitializeState(txnOpts)
 	assert.Nil(t, err)
-	eth.Queue().QueueTransaction(ctx, txn)
 
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt.Logs)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
-
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	var openEvent *bindings.ETHDKGRegistrationOpen
+	var openLog *types.Log
 	for _, log := range rcpt.Logs {
 		eventSelector := log.Topics[0].String()
 		if eventSelector == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
-			openEvent, err = c.Ethdkg.ParseRegistrationOpen(*log)
-			assert.Nil(t, err)
+			openLog = log
 		}
 	}
-	assert.NotNil(t, openEvent)
+
+	// Make sure we found the open event
+	assert.NotNil(t, openLog)
+	openEvent, err := c.Ethdkg.ParseRegistrationOpen(*openLog)
+	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
-	task := dkgtasks.NewRegisterTask(acct, pub, openEvent.RegistrationEnds.Uint64())
+	state := dkg.NewEthDKGState(acct)
+	state.RegistrationStart = openLog.BlockNumber
+	state.RegistrationEnd = openEvent.RegistrationEnds.Uint64()
+
+	task := dkgtasks.NewRegisterTask(state)
 
 	t.Logf("registration ends:%v", openEvent.RegistrationEnds.Uint64())
 

@@ -2,29 +2,42 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/sirupsen/logrus"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	sync.Mutex
-	Account   accounts.Account
-	LastBlock uint64
-	PublicKey [2]*big.Int
+	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
+	OriginalRegistrationEnd uint64
+	State                   *dkg.EthDKGState
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(acct accounts.Account, publicKey [2]*big.Int, lastBlock uint64) *RegisterTask {
+func NewRegisterTask(state *dkg.EthDKGState) *RegisterTask {
 	return &RegisterTask{
-		Account:   acct,
-		PublicKey: blockchain.CloneBigInt2(publicKey),
-		LastBlock: lastBlock,
+		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
+		State:                   state,
 	}
+}
+
+// This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
+func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+	if t.State.TransportPrivateKey == nil {
+		priv, pub, err := math.GenerateKeys()
+		if err != nil {
+			return false
+		}
+
+		t.State.TransportPrivateKey = priv
+		t.State.TransportPublicKey = pub
+	}
+
+	return true
 }
 
 // DoWork is the first attempt at registering with ethdkg
@@ -38,23 +51,32 @@ func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth b
 }
 
 func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.PublicKey))
 
 	t.Lock()
 	defer t.Unlock()
 
+	// Is there any point in running? Make sure we're both initialized and within block range
+	if !t.init(ctx, logger, eth) {
+		return false
+	}
+
+	block, err := eth.GetCurrentHeight(ctx)
+	if err != nil || block >= t.State.RegistrationEnd {
+		return false
+	}
+
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
 	}
 
 	// Register
-	logger.Infof("registering public key: %v", FormatPublicKey(t.PublicKey))
-	logger.Infof("txnOpts:%v", txnOpts.From)
-	txn, err := c.Ethdkg.Register(txnOpts, t.PublicKey)
+	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
+	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
+	txn, err := c.Ethdkg.Register(txnOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return false
@@ -91,7 +113,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	defer t.Unlock()
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(ctx, t.Account)
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -99,7 +121,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	}
 
 	// Definitely past quitting time
-	if currentBlock > t.LastBlock {
+	if currentBlock >= t.State.RegistrationEnd {
 		return false
 	}
 
@@ -109,14 +131,15 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 		return true
 	}
 
-	if lastBlock.Uint64() != t.LastBlock {
+	// We save registration star
+	if lastBlock.Uint64() != t.OriginalRegistrationEnd {
 		logger.Infof("aborting registration due to restart")
 		return false
 	}
 
 	// Check to see if we are already registered
 	ethdkg := eth.Contracts().Ethdkg
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.Account.Address, t.PublicKey)
+	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Warnf("could not check if we're registered: %v", err)
 		return true

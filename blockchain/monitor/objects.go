@@ -6,8 +6,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -27,8 +25,8 @@ type State struct {
 	PeerCount              uint32
 	ValidatorSets          map[uint32]ValidatorSet
 	Validators             map[uint32][]Validator
-	EthDKG                 *EthDKGState
-	interestingBlocks      map[uint64]func(*State, uint64) error
+	// EthDKG                 *EthDKGState
+	interestingBlocks map[uint64]func(*State, uint64) error
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in
@@ -46,73 +44,73 @@ const (
 )
 
 // EthDKGSchedule RegistrationOpen event publishes phase schedule, so we record that here
-type EthDKGSchedule struct {
-	RegistrationStart        uint64
-	RegistrationEnd          uint64
-	ShareDistributionStart   uint64
-	ShareDistributionEnd     uint64
-	DisputeStart             uint64
-	DisputeEnd               uint64
-	KeyShareSubmissionStart  uint64
-	KeyShareSubmissionEnd    uint64
-	MPKSubmissionStart       uint64
-	MPKSubmissionEnd         uint64
-	GPKJSubmissionStart      uint64
-	GPKJSubmissionEnd        uint64
-	GPKJGroupAccusationStart uint64
-	GPKJGroupAccusationEnd   uint64
-	CompleteStart            uint64
-	CompleteEnd              uint64
-}
+// type EthDKGSchedule struct {
+// 	RegistrationStart        uint64
+// 	RegistrationEnd          uint64
+// 	ShareDistributionStart   uint64
+// 	ShareDistributionEnd     uint64
+// 	DisputeStart             uint64
+// 	DisputeEnd               uint64
+// 	KeyShareSubmissionStart  uint64
+// 	KeyShareSubmissionEnd    uint64
+// 	MPKSubmissionStart       uint64
+// 	MPKSubmissionEnd         uint64
+// 	GPKJSubmissionStart      uint64
+// 	GPKJSubmissionEnd        uint64
+// 	GPKJGroupAccusationStart uint64
+// 	GPKJGroupAccusationEnd   uint64
+// 	CompleteStart            uint64
+// 	CompleteEnd              uint64
+// }
 
 // EthDKGState is used to track the state of the ETHDKG
-type EthDKGState struct {
+// type EthDKGState struct {
 
-	// Local validator info
-	Address             common.Address
-	Index               int
-	GroupPrivateKey     *big.Int
-	GroupPublicKey      [4]*big.Int
-	MasterPublicKey     [4]*big.Int
-	NumberOfValidators  int
-	PrivateCoefficients []*big.Int
-	Schedule            *EthDKGSchedule
-	SecretValue         *big.Int
-	ValidatorThreshold  int
-	Tasks               *SequentialSchedule
-	TransportPrivateKey *big.Int
-	TransportPublicKey  [2]*big.Int
+// 	// Local validator info
+// 	Address             common.Address
+// 	Index               int
+// 	GroupPrivateKey     *big.Int
+// 	GroupPublicKey      [4]*big.Int
+// 	MasterPublicKey     [4]*big.Int
+// 	NumberOfValidators  int
+// 	PrivateCoefficients []*big.Int
+// 	Schedule            *EthDKGSchedule
+// 	SecretValue         *big.Int
+// 	ValidatorThreshold  int
+// 	Tasks               *SequentialSchedule
+// 	TransportPrivateKey *big.Int
+// 	TransportPublicKey  [2]*big.Int
 
-	// Remote validator info
-	Commitments                 map[common.Address][][2]*big.Int // ShareDistribution Event
-	EncryptedShares             map[common.Address][]*big.Int    // "
-	KeyShareG1s                 map[common.Address][2]*big.Int   // KeyShare Event
-	KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int   // "
-	KeyShareG2s                 map[common.Address][4]*big.Int   // "
-	Participants                dkg.ParticipantList              // Index, Address & PublicKey
+// 	// Remote validator info
+// 	Commitments                 map[common.Address][][2]*big.Int // ShareDistribution Event
+// 	EncryptedShares             map[common.Address][]*big.Int    // "
+// 	KeyShareG1s                 map[common.Address][2]*big.Int   // KeyShare Event
+// 	KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int   // "
+// 	KeyShareG2s                 map[common.Address][4]*big.Int   // "
+// 	Participants                dkg.ParticipantList              // Index, Address & PublicKey
 
-	// Handlers
-	RegistrationTH        tasks.TaskHandler
-	ShareDistributionTH   tasks.TaskHandler
-	DisputeTH             tasks.TaskHandler
-	KeyShareSubmissionTH  tasks.TaskHandler
-	MPKSubmissionTH       tasks.TaskHandler
-	GPKJSubmissionTH      tasks.TaskHandler
-	GPKJGroupAccusationTH tasks.TaskHandler
-	CompleteTH            tasks.TaskHandler
-}
+// 	// Handlers
+// 	RegistrationTH        tasks.TaskHandler
+// 	ShareDistributionTH   tasks.TaskHandler
+// 	DisputeTH             tasks.TaskHandler
+// 	KeyShareSubmissionTH  tasks.TaskHandler
+// 	MPKSubmissionTH       tasks.TaskHandler
+// 	GPKJSubmissionTH      tasks.TaskHandler
+// 	GPKJGroupAccusationTH tasks.TaskHandler
+// 	CompleteTH            tasks.TaskHandler
+// }
 
 // NewEthDKGState creates a new EthDKGState with maps initialized
-func NewEthDKGState() *EthDKGState {
-	return &EthDKGState{
-		Commitments:                 make(map[common.Address][][2]*big.Int),
-		EncryptedShares:             make(map[common.Address][]*big.Int),
-		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
-		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
-		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
-		Schedule:                    &EthDKGSchedule{},
-	}
-}
+// func NewEthDKGState() *EthDKGState {
+// 	return &EthDKGState{
+// 		Commitments:                 make(map[common.Address][][2]*big.Int),
+// 		EncryptedShares:             make(map[common.Address][]*big.Int),
+// 		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
+// 		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
+// 		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
+// 		Schedule:                    &EthDKGSchedule{},
+// 	}
+// }
 
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {

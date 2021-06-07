@@ -76,7 +76,8 @@ func (mon *monitor) StartEventLoop() (chan<- bool, error) {
 			HighestBlockFinalized: uint64(startingBlock),
 			Validators:            make(map[uint32][]Validator),
 			ValidatorSets:         make(map[uint32]ValidatorSet),
-			EthDKG:                NewEthDKGState()}
+			// EthDKG:                NewEthDKGState(),
+		}
 		logger.Info("Setting initial state to defaults...")
 	}
 	initialState.InSync = false

@@ -6,12 +6,9 @@ import (
 	"strings"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -29,87 +26,89 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 		return err
 	}
 
-	if ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
-		logger.Warnf("Received RegistrationOpen event while ETHDKG in progress. Aborting old round.")
-		AbortETHDKG(state.EthDKG)
-	}
+	// if ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
+	// 	logger.Warnf("Received RegistrationOpen event while ETHDKG in progress. Aborting old round.")
+	// 	AbortETHDKG(state.EthDKG)
+	// }
 
-	if event.RegistrationEnds.Uint64() > state.HighestBlockFinalized {
+	// if event.RegistrationEnds.Uint64() > state.HighestBlockFinalized {
 
-		private, public, err := dkg.GenerateKeys()
-		if err != nil {
-			return err
-		}
+	// 	private, public, err := dkg.GenerateKeys()
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		logger.Infof(strings.Repeat("-", 80))
-		logger.Infof("Registration Open from block %v to %v", event.DkgStarts, event.RegistrationEnds)
-		logger.Infof(strings.Repeat("-", 80))
-		logger.Infof("          publicKey: %v", dkgtasks.FormatBigIntSlice(public[:]))
-		logger.Infof(strings.Repeat("-", 80))
+	logger.Infof(strings.Repeat("-", 80))
+	logger.Infof("Registration Open from block %v to %v", event.DkgStarts, event.RegistrationEnds)
+	logger.Infof(strings.Repeat("-", 80))
 
-		// Record the schedule
-		schedule := &EthDKGSchedule{}
-		schedule.RegistrationStart = log.BlockNumber
-		schedule.RegistrationEnd = event.RegistrationEnds.Uint64()
+	// 	// Record the schedule
+	// 	schedule := &EthDKGSchedule{}
+	// 	schedule.RegistrationStart = log.BlockNumber
+	// 	schedule.RegistrationEnd = event.RegistrationEnds.Uint64()
 
-		schedule.ShareDistributionStart = schedule.RegistrationEnd + 1
-		schedule.ShareDistributionEnd = event.ShareDistributionEnds.Uint64()
+	// 	schedule.ShareDistributionStart = schedule.RegistrationEnd + 1
+	// 	schedule.ShareDistributionEnd = event.ShareDistributionEnds.Uint64()
 
-		schedule.DisputeStart = schedule.ShareDistributionEnd + 1
-		schedule.DisputeEnd = event.DisputeEnds.Uint64()
+	// 	schedule.DisputeStart = schedule.ShareDistributionEnd + 1
+	// 	schedule.DisputeEnd = event.DisputeEnds.Uint64()
 
-		schedule.KeyShareSubmissionStart = schedule.DisputeEnd + 1
-		schedule.KeyShareSubmissionEnd = event.KeyShareSubmissionEnds.Uint64()
+	// 	schedule.KeyShareSubmissionStart = schedule.DisputeEnd + 1
+	// 	schedule.KeyShareSubmissionEnd = event.KeyShareSubmissionEnds.Uint64()
 
-		schedule.MPKSubmissionStart = schedule.KeyShareSubmissionEnd + 1
-		schedule.MPKSubmissionEnd = event.MpkSubmissionEnds.Uint64()
+	// 	schedule.MPKSubmissionStart = schedule.KeyShareSubmissionEnd + 1
+	// 	schedule.MPKSubmissionEnd = event.MpkSubmissionEnds.Uint64()
 
-		schedule.GPKJSubmissionStart = schedule.MPKSubmissionEnd + 1
-		schedule.GPKJSubmissionEnd = event.GpkjSubmissionEnds.Uint64()
+	// 	schedule.GPKJSubmissionStart = schedule.MPKSubmissionEnd + 1
+	// 	schedule.GPKJSubmissionEnd = event.GpkjSubmissionEnds.Uint64()
 
-		schedule.GPKJGroupAccusationStart = schedule.GPKJSubmissionEnd + 1
-		schedule.GPKJGroupAccusationEnd = event.GpkjDisputeEnds.Uint64()
+	// 	schedule.GPKJGroupAccusationStart = schedule.GPKJSubmissionEnd + 1
+	// 	schedule.GPKJGroupAccusationEnd = event.GpkjDisputeEnds.Uint64()
 
-		schedule.CompleteStart = schedule.GPKJGroupAccusationEnd + 1
-		schedule.CompleteEnd = event.DkgComplete.Uint64()
+	// 	schedule.CompleteStart = schedule.GPKJGroupAccusationEnd + 1
+	// 	schedule.CompleteEnd = event.DkgComplete.Uint64()
 
-		// TODO associate names with these also to help with debugging/logging
-		ib := make(map[uint64]func(*State, uint64) error)
-		ib[schedule.ShareDistributionStart] = svcs.DoDistributeShares      // Do ShareDistribution
-		ib[schedule.DisputeStart] = svcs.DoSubmitDispute                   // Do Disputes
-		ib[schedule.KeyShareSubmissionStart] = svcs.DoSubmitKeyShare       // Do KeyShareSubmission
-		ib[schedule.MPKSubmissionStart] = svcs.DoSubmitMasterPublicKey     // Do MPKSubmission
-		ib[schedule.GPKJSubmissionStart] = svcs.DoSubmitGPKj               // Do GPKJSubmission
-		ib[schedule.GPKJGroupAccusationStart] = svcs.DoGroupAccusationGPKj // Do GPKJDisputes
-		ib[schedule.CompleteStart] = svcs.DoSuccessfulCompletion           // Do SuccessfulCompletion
+	// 	// TODO associate names with these also to help with debugging/logging
+	// 	ib := make(map[uint64]func(*State, uint64) error)
+	// 	ib[schedule.ShareDistributionStart] = svcs.DoDistributeShares      // Do ShareDistribution
+	// 	ib[schedule.DisputeStart] = svcs.DoSubmitDispute                   // Do Disputes
+	// 	ib[schedule.KeyShareSubmissionStart] = svcs.DoSubmitKeyShare       // Do KeyShareSubmission
+	// 	ib[schedule.MPKSubmissionStart] = svcs.DoSubmitMasterPublicKey     // Do MPKSubmission
+	// 	ib[schedule.GPKJSubmissionStart] = svcs.DoSubmitGPKj               // Do GPKJSubmission
+	// 	ib[schedule.GPKJGroupAccusationStart] = svcs.DoGroupAccusationGPKj // Do GPKJDisputes
+	// 	ib[schedule.CompleteStart] = svcs.DoSuccessfulCompletion           // Do SuccessfulCompletion
 
-		logger.Infof("Adding block processors for %v", ib)
-		state.interestingBlocks = ib
+	// 	logger.Infof("Adding block processors for %v", ib)
+	// 	state.interestingBlocks = ib
 
-		acct := eth.GetDefaultAccount()
+	// 	acct := eth.GetDefaultAccount()
 
-		state.EthDKG = NewEthDKGState()
-		state.EthDKG.Address = acct.Address
-		state.EthDKG.Schedule = schedule
-		state.EthDKG.TransportPrivateKey = private
-		state.EthDKG.TransportPublicKey = public
+	// 	state.EthDKG = NewEthDKGState()
+	// 	state.EthDKG.Address = acct.Address
+	// 	state.EthDKG.Schedule = schedule
+	// 	state.EthDKG.TransportPrivateKey = private
+	// 	state.EthDKG.TransportPublicKey = public
 
-		taskLogger := logging.GetLogger("rt")
+	// 	taskLogger := logging.GetLogger("rt")
+	// 	taskLogger.Infof("Stubbed out")
 
-		task := dkgtasks.NewRegisterTask(
-			eth.GetDefaultAccount(),
-			state.EthDKG.TransportPublicKey,
-			state.EthDKG.Schedule.RegistrationEnd)
+	// 	// TODO build a proper RegisterTask with the correct EthDKGState struct
+	// 	// task := dkgtasks.NewRegisterTask(
+	// 	// 	eth.GetDefaultAccount(),
+	// 	// 	state.EthDKG.TransportPublicKey,
+	// 	// 	state.EthDKG.Schedule.RegistrationEnd)
 
-		state.EthDKG.RegistrationTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
+	// 	// task := dkgtasks.NewRegisterTask(state.EthDKG)
 
-		state.EthDKG.RegistrationTH.Start()
+	// 	// state.EthDKG.RegistrationTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
 
-	} else {
-		logger.Infof("Not participating in DKG... registration ends at height %v but height %v is finalized.",
-			event.RegistrationEnds, state.HighestBlockFinalized)
-		// state.ethdkg = EthDKGState{} // TODO I need to cancel any TaskHandlers too
-	}
+	// 	// state.EthDKG.RegistrationTH.Start()
+
+	// } else {
+	// 	logger.Infof("Not participating in DKG... registration ends at height %v but height %v is finalized.",
+	// 		event.RegistrationEnds, state.HighestBlockFinalized)
+	// 	// state.ethdkg = EthDKGState{} // TODO I need to cancel any TaskHandlers too
+	// }
 
 	return nil
 }
@@ -122,22 +121,22 @@ func (svcs *Services) ProcessShareDistribution(state *State, log types.Log) erro
 	logger.Info("ProcessShareDistribution()")
 	logger.Info(strings.Repeat("-", 60))
 
-	if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
-		logger.Warn("Ignoring share distribution since we are not participating this round...")
-		return ErrCanNotContinue
-	}
+	// if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
+	// 	logger.Warn("Ignoring share distribution since we are not participating this round...")
+	// 	return ErrCanNotContinue
+	// }
 
-	eth := svcs.eth
-	c := eth.Contracts()
-	ethdkg := state.EthDKG
+	// eth := svcs.eth
+	// c := eth.Contracts()
+	// ethdkg := state.EthDKG
 
-	event, err := c.Ethdkg.ParseShareDistribution(log)
-	if err != nil {
-		return err
-	}
+	// event, err := c.Ethdkg.ParseShareDistribution(log)
+	// if err != nil {
+	// 	return err
+	// }
 
-	ethdkg.Commitments[event.Issuer] = event.Commitments
-	ethdkg.EncryptedShares[event.Issuer] = event.EncryptedShares
+	// ethdkg.Commitments[event.Issuer] = event.Commitments
+	// ethdkg.EncryptedShares[event.Issuer] = event.EncryptedShares
 
 	return nil
 }
@@ -151,28 +150,28 @@ func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) err
 	logger.Info("ProcessKeyShareSubmission()")
 	logger.Info(strings.Repeat("-", 60))
 
-	if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
-		logger.Warn("Ignoring key share submission since we are not participating this round...")
-		return ErrCanNotContinue
-	}
+	// if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
+	// 	logger.Warn("Ignoring key share submission since we are not participating this round...")
+	// 	return ErrCanNotContinue
+	// }
 
-	eth := svcs.eth
-	c := eth.Contracts()
-	event, err := c.Ethdkg.ParseKeyShareSubmission(log)
-	if err != nil {
-		return err
-	}
+	// eth := svcs.eth
+	// c := eth.Contracts()
+	// event, err := c.Ethdkg.ParseKeyShareSubmission(log)
+	// if err != nil {
+	// 	return err
+	// }
 
-	addr := event.Issuer
-	keyshareG1 := event.KeyShareG1
-	keyshareG1Proof := event.KeyShareG1CorrectnessProof
-	keyshareG2 := event.KeyShareG2
+	// addr := event.Issuer
+	// keyshareG1 := event.KeyShareG1
+	// keyshareG1Proof := event.KeyShareG1CorrectnessProof
+	// keyshareG2 := event.KeyShareG2
 
-	logger.Infof("keyshareG1:%v keyshareG2:%v", dkgtasks.FormatBigIntSlice(keyshareG1[:]), dkgtasks.FormatBigIntSlice(keyshareG2[:]))
+	// logger.Infof("keyshareG1:%v keyshareG2:%v", dkgtasks.FormatBigIntSlice(keyshareG1[:]), dkgtasks.FormatBigIntSlice(keyshareG2[:]))
 
-	state.EthDKG.KeyShareG1s[addr] = keyshareG1
-	state.EthDKG.KeyShareG1CorrectnessProofs[addr] = keyshareG1Proof
-	state.EthDKG.KeyShareG2s[addr] = keyshareG2
+	// state.EthDKG.KeyShareG1s[addr] = keyshareG1
+	// state.EthDKG.KeyShareG1CorrectnessProofs[addr] = keyshareG1Proof
+	// state.EthDKG.KeyShareG2s[addr] = keyshareG2
 
 	return nil
 }

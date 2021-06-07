@@ -1,12 +1,12 @@
-package dkg
+package math
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/logging"
@@ -30,41 +30,6 @@ var (
 	empty4Big     [4]*big.Int
 	h1BaseMessage []byte = []byte("MadHive Rocks!")
 )
-
-// Participant contains what we know about other participants, i.e. public information
-type Participant struct {
-	Address   common.Address
-	Index     int
-	PublicKey [2]*big.Int
-}
-
-// ParticipantList is a required type alias since the Sort interface is awful
-type ParticipantList []*Participant
-
-// Simplify logging
-func (p *Participant) String() string {
-	out, err := json.Marshal(p)
-	if err != nil {
-		return err.Error()
-	}
-
-	return string(out)
-}
-
-// Len returns the len of the collection
-func (pl ParticipantList) Len() int {
-	return len(pl)
-}
-
-// Less decides if element i is 'Less' than element j -- less ~= before
-func (pl ParticipantList) Less(i, j int) bool {
-	return pl[i].Index < pl[j].Index
-}
-
-// Swap swaps elements i and j within the collection
-func (pl ParticipantList) Swap(i, j int) {
-	pl[i], pl[j] = pl[j], pl[i]
-}
 
 // ThresholdForUserCount returns the threshold user count and k for successful key generation
 func ThresholdForUserCount(n int) (int, int) {
@@ -108,7 +73,7 @@ func GenerateKeys() (*big.Int, [2]*big.Int, error) {
 }
 
 // GenerateShares returns encrypted shares, private coefficients, commitments and potentially an error
-func GenerateShares(transportPrivateKey *big.Int, transportPublicKey [2]*big.Int, participants ParticipantList, threshold int) ([]*big.Int, []*big.Int, [][2]*big.Int, error) {
+func GenerateShares(transportPrivateKey *big.Int, transportPublicKey [2]*big.Int, participants dkg.ParticipantList, threshold int) ([]*big.Int, []*big.Int, [][2]*big.Int, error) {
 
 	// create coefficients (private/public)
 	privateCoefficients, err := cloudflare.ConstructPrivatePolyCoefs(rand.Reader, threshold)
@@ -260,7 +225,7 @@ func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int)
 }
 
 // GenerateGroupKeys returns the group private key, group public key, a signature and potentially an error
-func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, transportPublicKey [2]*big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants ParticipantList, threshold int) (*big.Int, [4]*big.Int, [2]*big.Int, error) {
+func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, transportPublicKey [2]*big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants dkg.ParticipantList, threshold int) (*big.Int, [4]*big.Int, [2]*big.Int, error) {
 
 	// setup
 	n := len(participants)
@@ -323,7 +288,7 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, tran
 }
 
 // VerifyGroupSigners returns whether the participants are valid or potentially an error
-func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants ParticipantList, threshold int) (bool, error) {
+func VerifyGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants dkg.ParticipantList, threshold int) (bool, error) {
 
 	// setup
 	n := len(participants)
@@ -445,7 +410,7 @@ func NChooseK(n int, k int, visitor func([]int) (bool, error)) (bool, []int, err
 }
 
 // CategorizeGroupSigners returns 0 based indicies of honest participants, 0 based indicies of dishonest participants or an error
-func CategorizeGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants ParticipantList, threshold int) ([]int, []int, error) {
+func CategorizeGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants dkg.ParticipantList, threshold int) ([]int, []int, error) {
 
 	// Setup + sanity checks before starting
 	n := len(participants)
@@ -466,7 +431,7 @@ func CategorizeGroupSigners(initialMessage []byte, masterPublicKey [4]*big.Int, 
 		// Build the public keys, signatures and participants
 		groupPublicKeys := make([][4]*big.Int, k)
 		groupSignatures := make([][2]*big.Int, k)
-		groupParticipants := make([]*Participant, k)
+		groupParticipants := make([]*dkg.Participant, k)
 
 		for idx := 0; idx < k; idx++ {
 			groupPublicKeys[idx] = publishedPublicKeys[indices[idx]]

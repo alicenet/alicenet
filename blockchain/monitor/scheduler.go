@@ -6,6 +6,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/pborman/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -132,4 +133,10 @@ func (s *SequentialSchedule) Remove(taskId uuid.UUID) error {
 	delete(s.Ranges, id)
 
 	return nil
+}
+
+func (s *SequentialSchedule) Status(logger *logrus.Logger) {
+	for id, block := range s.Ranges {
+		logger.Infof("id:%v block:%+v", id, block)
+	}
 }

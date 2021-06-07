@@ -2,20 +2,16 @@ package monitor
 
 import (
 	"context"
-	"math"
-	"math/big"
 	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -229,10 +225,10 @@ func (svcs *Services) WatchEthereum(state *State) error {
 					err := processor(state, block)
 					if err != nil {
 						logger.Warnf("Block handler for %v failed: %v", block, err)
-						if err == ErrCanNotContinue {
-							state.EthDKG = NewEthDKGState()
-							state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
-						}
+						// if err == dkg.ErrCanNotContinue {
+						// 	state.EthDKG = NewEthDKGState()
+						// 	state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
+						// }
 					}
 				}
 			}
@@ -371,84 +367,35 @@ func (svcs *Services) SetSECP256K1PrivateKey(pk []byte) error {
 	return svcs.ah.AddPrivateKey(pk, 1)
 }
 
-// RetrieveParticipants retrieves participant details from ETHDKG contract
-func RetrieveParticipants(eth blockchain.Ethereum, callOpts *bind.CallOpts) (dkg.ParticipantList, int, error) {
-
-	c := eth.Contracts()
-	myIndex := math.MaxInt32
-
-	// Need to find how many participants there will be
-	bigN, err := c.Ethdkg.NumberOfRegistrations(callOpts)
-	if err != nil {
-		return nil, myIndex, err
-	}
-	n := int(bigN.Uint64())
-
-	// Now we retrieve participant details
-	participants := make(dkg.ParticipantList, int(n))
-	for idx := 0; idx < n; idx++ {
-
-		// First retrieve the address
-		addr, err := c.Ethdkg.Addresses(callOpts, big.NewInt(int64(idx)))
-		if err != nil {
-			return nil, myIndex, err
-		}
-
-		// Now the public keys
-		var publicKey [2]*big.Int
-		publicKey[0], err = c.Ethdkg.PublicKeys(callOpts, addr, common.Big0)
-		if err != nil {
-			return nil, myIndex, ErrCanNotContinue
-		}
-		publicKey[1], err = c.Ethdkg.PublicKeys(callOpts, addr, common.Big1)
-		if err != nil {
-			return nil, myIndex, ErrCanNotContinue
-		}
-
-		participant := new(dkg.Participant)
-		participant.Address = addr
-		participant.PublicKey = publicKey
-		participant.Index = idx
-
-		if callOpts.From == addr {
-			myIndex = idx
-		}
-
-		participants[idx] = participant
-	}
-
-	return participants, myIndex, nil
-}
-
 // AbortETHDKG does the required cleanup to stop a round of ETHDKG
-func AbortETHDKG(ethdkg *EthDKGState) {
-	handlers := []tasks.TaskHandler{
-		ethdkg.RegistrationTH,
-		ethdkg.ShareDistributionTH,
-		ethdkg.DisputeTH,
-		ethdkg.KeyShareSubmissionTH,
-		ethdkg.MPKSubmissionTH,
-		ethdkg.GPKJSubmissionTH,
-		ethdkg.GPKJGroupAccusationTH,
-		ethdkg.CompleteTH}
+// func AbortETHDKG(ethdkg *EthDKGState) {
+// 	handlers := []tasks.TaskHandler{
+// 		ethdkg.RegistrationTH,
+// 		ethdkg.ShareDistributionTH,
+// 		ethdkg.DisputeTH,
+// 		ethdkg.KeyShareSubmissionTH,
+// 		ethdkg.MPKSubmissionTH,
+// 		ethdkg.GPKJSubmissionTH,
+// 		ethdkg.GPKJGroupAccusationTH,
+// 		ethdkg.CompleteTH}
 
-	// We need to cancel any handler that might be running
-	for _, handler := range handlers {
-		if handler != nil {
-			handler.Cancel()
-		}
-	}
+// 	// We need to cancel any handler that might be running
+// 	for _, handler := range handlers {
+// 		if handler != nil {
+// 			handler.Cancel()
+// 		}
+// 	}
 
-	// Erase the schedule
-	ethdkg.Schedule = &EthDKGSchedule{}
-}
+// 	// Erase the schedule
+// 	ethdkg.Schedule = &EthDKGSchedule{}
+// }
 
 // ETHDKGInProgress indicates if ETHDKG is currently running
-func ETHDKGInProgress(ethdkg *EthDKGState, currentBlock uint64) bool {
-	if ethdkg == nil {
-		return false
-	}
+// func ETHDKGInProgress(ethdkg *EthDKGState, currentBlock uint64) bool {
+// 	if ethdkg == nil {
+// 		return false
+// 	}
 
-	return currentBlock >= ethdkg.Schedule.RegistrationStart &&
-		currentBlock <= ethdkg.Schedule.CompleteEnd
-}
+// 	return currentBlock >= ethdkg.Schedule.RegistrationStart &&
+// 		currentBlock <= ethdkg.Schedule.CompleteEnd
+// }

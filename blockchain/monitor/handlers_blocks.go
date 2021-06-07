@@ -1,18 +1,12 @@
 package monitor
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"math"
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkgtasks"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,71 +18,69 @@ var big1 = big.NewInt(1)
 var big2 = big.NewInt(2)
 var big3 = big.NewInt(3)
 
-// ErrCanNotContinue standard error if we must drop out of ETHDKG
-var ErrCanNotContinue = errors.New("can not continue distributed key generation")
-
 // DoDistributeShares this should happen when it's time to distribute shares
 func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 
-	eth := svcs.eth
+	// eth := svcs.eth
 	logger := svcs.logger
 
 	logger.Infof(strings.Repeat("-", 60))
 	logger.Infof("DoDistributeShares()")
 	logger.Infof(strings.Repeat("-", 60))
 
-	// If registration wasn't successful then quit now
-	if state.EthDKG.RegistrationTH == nil || !state.EthDKG.RegistrationTH.Successful() {
-		AbortETHDKG(state.EthDKG)
-		return fmt.Errorf("Registration didn't complete succesful, exiting ETHDKG")
-	}
+	// // If registration wasn't successful then quit now
+	// if state.EthDKG.RegistrationTH == nil || !state.EthDKG.RegistrationTH.Successful() {
+	// 	AbortETHDKG(state.EthDKG)
+	// 	return fmt.Errorf("Registration didn't complete succesful, exiting ETHDKG")
+	// }
 
-	// Basic setup
-	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
-	defer cancel()
+	// // Basic setup
+	// ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
+	// defer cancel()
 
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	// callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 
-	// Retrieve validators
-	participants, myIndex, err := RetrieveParticipants(eth, callOpts)
-	if err != nil {
-		return ErrCanNotContinue
-	}
+	// // Retrieve validators
+	// participants, myIndex, err := RetrieveParticipants(eth, callOpts)
+	// if err != nil {
+	// 	return ErrCanNotContinue
+	// }
 
-	if myIndex == math.MaxInt32 {
-		logger.Errorf("Can't determine my (%v) index ", state.EthDKG.Address)
-		return ErrCanNotContinue
-	}
+	// if myIndex == math.MaxInt32 {
+	// 	logger.Errorf("Can't determine my (%v) index ", state.EthDKG.Address)
+	// 	return ErrCanNotContinue
+	// }
 
-	// Save state
-	ethdkg := state.EthDKG
+	// // Save state
+	// ethdkg := state.EthDKG
 
-	ethdkg.Index = myIndex
-	ethdkg.NumberOfValidators = len(participants)
-	ethdkg.Participants = participants
-	ethdkg.ValidatorThreshold, _ = thresholdFromUsers(state.EthDKG.NumberOfValidators)
+	// ethdkg.Index = myIndex
+	// ethdkg.NumberOfValidators = len(participants)
+	// ethdkg.Participants = participants
+	// ethdkg.ValidatorThreshold, _ = thresholdFromUsers(state.EthDKG.NumberOfValidators)
 
-	// Do the math
-	encryptedShares, privateCoefficients, commitments, err := dkg.GenerateShares(
-		ethdkg.TransportPrivateKey, ethdkg.TransportPublicKey,
-		ethdkg.Participants, ethdkg.ValidatorThreshold)
-	if err != nil {
-		return fmt.Errorf("Can't GenerateShares: %v", err)
-	}
+	// // Do the math
+	// encryptedShares, privateCoefficients, commitments, err := dkg.GenerateShares(
+	// 	ethdkg.TransportPrivateKey, ethdkg.TransportPublicKey,
+	// 	ethdkg.Participants, ethdkg.ValidatorThreshold)
+	// if err != nil {
+	// 	return fmt.Errorf("Can't GenerateShares: %v", err)
+	// }
 
-	// Store everything we'll need later
-	ethdkg.PrivateCoefficients = privateCoefficients
-	ethdkg.SecretValue = privateCoefficients[0]
+	// // Store everything we'll need later
+	// ethdkg.PrivateCoefficients = privateCoefficients
+	// ethdkg.SecretValue = privateCoefficients[0]
 
-	// Do the mechanics of calling
-	taskLogger := logging.GetLogger("sdt")
+	// // Do the mechanics of calling
+	// taskLogger := logging.GetLogger("sdt")
+	// taskLogger.Infof("%v %v", encryptedShares, commitments)
 
-	task := dkgtasks.NewShareDistributionTask(eth.GetDefaultAccount(),
-		ethdkg.TransportPublicKey, encryptedShares, commitments,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.ShareDistributionEnd)
+	// // task := dkgtasks.NewShareDistributionTask(eth.GetDefaultAccount(),
+	// // 	ethdkg.TransportPublicKey, encryptedShares, commitments,
+	// // 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.ShareDistributionEnd)
 
-	ethdkg.ShareDistributionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
-	ethdkg.ShareDistributionTH.Start()
+	// // ethdkg.ShareDistributionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
+	// // ethdkg.ShareDistributionTH.Start()
 
 	return nil
 }
@@ -100,25 +92,25 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 	svcs.logger.Infof(strings.Repeat("-", 60))
 
 	// First confirm we distributed shares
-	if state.EthDKG.ShareDistributionTH == nil || !state.EthDKG.ShareDistributionTH.Successful() {
-		AbortETHDKG(state.EthDKG)
-		return fmt.Errorf("Share distribution didn't complete succesful, exiting ETHDKG")
-	}
+	// if state.EthDKG.ShareDistributionTH == nil || !state.EthDKG.ShareDistributionTH.Successful() {
+	// 	AbortETHDKG(state.EthDKG)
+	// 	return fmt.Errorf("Share distribution didn't complete succesful, exiting ETHDKG")
+	// }
 
-	//
+	// //
 
-	// Setup and start task
-	taskLogger := logging.GetLogger("dispute")
-	eth := svcs.eth
-	ethdkg := state.EthDKG
+	// // Setup and start task
+	// taskLogger := logging.GetLogger("dispute")
+	// eth := svcs.eth
+	// ethdkg := state.EthDKG
 
-	task := dkgtasks.NewDisputeTask(
-		eth.GetDefaultAccount(),
-		ethdkg.TransportPublicKey,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.DisputeEnd)
+	// task := dkgtasks.NewDisputeTask(
+	// 	eth.GetDefaultAccount(),
+	// 	ethdkg.TransportPublicKey,
+	// 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.DisputeEnd)
 
-	ethdkg.DisputeTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
-	ethdkg.DisputeTH.Start()
+	// ethdkg.DisputeTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
+	// ethdkg.DisputeTH.Start()
 
 	return nil
 }
@@ -133,29 +125,29 @@ func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// If dispute wasn't successful then quit now
-	if state.EthDKG.DisputeTH == nil || !state.EthDKG.DisputeTH.Successful() {
-		AbortETHDKG(state.EthDKG)
-		return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
-	}
+	// if state.EthDKG.DisputeTH == nil || !state.EthDKG.DisputeTH.Successful() {
+	// 	AbortETHDKG(state.EthDKG)
+	// 	return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
+	// }
 
-	// Generate the key shares
-	g1KeyShare, g1Proof, g2KeyShare, err := dkg.GenerateKeyShare(state.EthDKG.SecretValue)
-	if err != nil {
-		return fmt.Errorf("Can't GenerateKeyShare: %v", err)
-	}
+	// // Generate the key shares
+	// g1KeyShare, g1Proof, g2KeyShare, err := dkg.GenerateKeyShare(state.EthDKG.SecretValue)
+	// if err != nil {
+	// 	return fmt.Errorf("Can't GenerateKeyShare: %v", err)
+	// }
 
-	eth := svcs.eth
-	ethdkg := state.EthDKG
+	// eth := svcs.eth
+	// ethdkg := state.EthDKG
 
-	taskLogger := logging.GetLogger("kst")
+	// taskLogger := logging.GetLogger("kst")
 
-	task := dkgtasks.NewKeyshareSubmissionTask(
-		eth.GetDefaultAccount(),
-		ethdkg.TransportPublicKey, g1KeyShare, g1Proof, g2KeyShare,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.KeyShareSubmissionEnd)
+	// task := dkgtasks.NewKeyshareSubmissionTask(
+	// 	eth.GetDefaultAccount(),
+	// 	ethdkg.TransportPublicKey, g1KeyShare, g1Proof, g2KeyShare,
+	// 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.KeyShareSubmissionEnd)
 
-	ethdkg.KeyShareSubmissionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
-	ethdkg.KeyShareSubmissionTH.Start()
+	// ethdkg.KeyShareSubmissionTH = svcs.taskMan.NewTaskHandler(taskLogger, eth, task)
+	// ethdkg.KeyShareSubmissionTH.Start()
 
 	return nil
 }
@@ -170,48 +162,48 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 	logger.Infof(strings.Repeat("-", 60))
 
 	// First confirm we submitted key shares
-	if state.EthDKG.KeyShareSubmissionTH == nil || !state.EthDKG.KeyShareSubmissionTH.Successful() {
-		AbortETHDKG(state.EthDKG)
-		return fmt.Errorf("Key share submission didn't complete succesful, exiting ETHDKG")
-	}
-	ethdkg := state.EthDKG
+	// if state.EthDKG.KeyShareSubmissionTH == nil || !state.EthDKG.KeyShareSubmissionTH.Successful() {
+	// 	AbortETHDKG(state.EthDKG)
+	// 	return fmt.Errorf("Key share submission didn't complete succesful, exiting ETHDKG")
+	// }
+	// ethdkg := state.EthDKG
 
-	keyShareG1s := make([][2]*big.Int, ethdkg.NumberOfValidators)
-	keyShareG2s := make([][4]*big.Int, ethdkg.NumberOfValidators)
+	// keyShareG1s := make([][2]*big.Int, ethdkg.NumberOfValidators)
+	// keyShareG2s := make([][4]*big.Int, ethdkg.NumberOfValidators)
 
-	for _, participant := range ethdkg.Participants {
-		logger.Infof("Participant: %v", participant.Address.Hex())
+	// for _, participant := range ethdkg.Participants {
+	// 	logger.Infof("Participant: %v", participant.Address.Hex())
 
-		pg1 := ethdkg.KeyShareG1s[participant.Address]
-		pg2 := ethdkg.KeyShareG2s[participant.Address]
+	// 	pg1 := ethdkg.KeyShareG1s[participant.Address]
+	// 	pg2 := ethdkg.KeyShareG2s[participant.Address]
 
-		logger.Infof("pg1: %v", pg1)
-		logger.Infof("pg2: %v", pg2)
+	// 	logger.Infof("pg1: %v", pg1)
+	// 	logger.Infof("pg2: %v", pg2)
 
-		keyShareG1s[participant.Index] = pg1
-		keyShareG2s[participant.Index] = pg2
-	}
+	// 	keyShareG1s[participant.Index] = pg1
+	// 	keyShareG2s[participant.Index] = pg2
+	// }
 
-	// TODO Guard against missing keyshares, panic can happen
-	mpk, err := dkg.GenerateMasterPublicKey(keyShareG1s, keyShareG2s)
-	if err != nil {
-		return fmt.Errorf("Can't GenerateMasterPublicKey: %v", err)
-	}
+	// // TODO Guard against missing keyshares, panic can happen
+	// mpk, err := dkg.GenerateMasterPublicKey(keyShareG1s, keyShareG2s)
+	// if err != nil {
+	// 	return fmt.Errorf("Can't GenerateMasterPublicKey: %v", err)
+	// }
 
-	state.EthDKG.MasterPublicKey = mpk
+	// state.EthDKG.MasterPublicKey = mpk
 
-	logger.Infof("MasterPublicKey: %v", dkgtasks.FormatBigIntSlice(mpk[:]))
+	// logger.Infof("MasterPublicKey: %v", dkgtasks.FormatBigIntSlice(mpk[:]))
 
-	// Task setup
-	eth := svcs.eth
+	// // Task setup
+	// eth := svcs.eth
 
-	task := dkgtasks.NewMPKSubmissionTask(
-		eth.GetDefaultAccount(),
-		ethdkg.TransportPublicKey, ethdkg.MasterPublicKey,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.MPKSubmissionEnd)
+	// task := dkgtasks.NewMPKSubmissionTask(
+	// 	eth.GetDefaultAccount(),
+	// 	ethdkg.TransportPublicKey, ethdkg.MasterPublicKey,
+	// 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.MPKSubmissionEnd)
 
-	state.EthDKG.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	state.EthDKG.MPKSubmissionTH.Start()
+	// state.EthDKG.MPKSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	// state.EthDKG.MPKSubmissionTH.Start()
 
 	return nil
 }
@@ -226,54 +218,54 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// If dispute wasn't successful then quit now
-	if state.EthDKG.MPKSubmissionTH == nil || !state.EthDKG.MPKSubmissionTH.Successful() {
-		AbortETHDKG(state.EthDKG)
-		return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
-	}
+	// if state.EthDKG.MPKSubmissionTH == nil || !state.EthDKG.MPKSubmissionTH.Successful() {
+	// 	AbortETHDKG(state.EthDKG)
+	// 	return fmt.Errorf("Share dispute didn't complete succesful, exiting ETHDKG")
+	// }
 
-	// setup
-	eth := svcs.eth
-	acct := eth.GetDefaultAccount()
-	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.Background(), acct)
+	// // setup
+	// eth := svcs.eth
+	// acct := eth.GetDefaultAccount()
+	// c := eth.Contracts()
+	// callOpts := eth.GetCallOpts(context.Background(), acct)
 
-	initialMessage, err := c.Ethdkg.InitialMessage(callOpts)
-	if err != nil {
-		logger.Errorf("Can't get initial message: %v", err)
-		return ErrCanNotContinue
-	}
-	logger.Infof("InitialMessage: [%v]", string(initialMessage))
+	// initialMessage, err := c.Ethdkg.InitialMessage(callOpts)
+	// if err != nil {
+	// 	logger.Errorf("Can't get initial message: %v", err)
+	// 	return ErrCanNotContinue
+	// }
+	// logger.Infof("InitialMessage: [%v]", string(initialMessage))
 
-	ethdkg := state.EthDKG
-	encryptedShares := make([][]*big.Int, ethdkg.NumberOfValidators)
-	for _, participant := range ethdkg.Participants {
-		pes, present := ethdkg.EncryptedShares[participant.Address]
-		idx := participant.Index
-		if present && idx >= 0 && idx < ethdkg.NumberOfValidators {
-			encryptedShares[participant.Index] = pes
-		}
-	}
+	// ethdkg := state.EthDKG
+	// encryptedShares := make([][]*big.Int, ethdkg.NumberOfValidators)
+	// for _, participant := range ethdkg.Participants {
+	// 	pes, present := ethdkg.EncryptedShares[participant.Address]
+	// 	idx := participant.Index
+	// 	if present && idx >= 0 && idx < ethdkg.NumberOfValidators {
+	// 		encryptedShares[participant.Index] = pes
+	// 	}
+	// }
 
-	groupPrivateKey, groupPublicKey, groupSignature, err := dkg.GenerateGroupKeys(initialMessage,
-		ethdkg.TransportPrivateKey, ethdkg.TransportPublicKey, ethdkg.PrivateCoefficients,
-		encryptedShares, ethdkg.Index, ethdkg.Participants, ethdkg.ValidatorThreshold)
+	// groupPrivateKey, groupPublicKey, groupSignature, err := dkg.GenerateGroupKeys(initialMessage,
+	// 	ethdkg.TransportPrivateKey, ethdkg.TransportPublicKey, ethdkg.PrivateCoefficients,
+	// 	encryptedShares, ethdkg.Index, ethdkg.Participants, ethdkg.ValidatorThreshold)
 
-	ethdkg.GroupPrivateKey = groupPrivateKey
-	ethdkg.GroupPublicKey = groupPublicKey
+	// ethdkg.GroupPrivateKey = groupPrivateKey
+	// ethdkg.GroupPublicKey = groupPublicKey
 
-	//
-	err = svcs.SetBN256PrivateKey(groupPrivateKey.Bytes())
-	if err != nil {
-		logger.Errorf("Error in svcs.SetBN256PrivateKey(%x): %v", groupPrivateKey.Bytes(), err)
+	// //
+	// err = svcs.SetBN256PrivateKey(groupPrivateKey.Bytes())
+	// if err != nil {
+	// 	logger.Errorf("Error in svcs.SetBN256PrivateKey(%x): %v", groupPrivateKey.Bytes(), err)
 
-		return ErrCanNotContinue
-	}
+	// 	return ErrCanNotContinue
+	// }
 
-	task := dkgtasks.NewGPKSubmissionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.GPKJSubmissionEnd)
+	// task := dkgtasks.NewGPKSubmissionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey, groupPublicKey, groupSignature,
+	// 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.GPKJSubmissionEnd)
 
-	state.EthDKG.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	state.EthDKG.GPKJSubmissionTH.Start()
+	// state.EthDKG.GPKJSubmissionTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	// state.EthDKG.GPKJSubmissionTH.Start()
 
 	return nil
 }
@@ -287,23 +279,23 @@ func (svcs *Services) DoGroupAccusationGPKj(state *State, block uint64) error {
 	logger.Infof(strings.Repeat("-", 60))
 
 	// Setup
-	eth := svcs.eth
-	acct := eth.GetDefaultAccount()
-	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.Background(), acct)
+	// eth := svcs.eth
+	// acct := eth.GetDefaultAccount()
+	// c := eth.Contracts()
+	// callOpts := eth.GetCallOpts(context.Background(), acct)
 
-	//
-	initialMessage, err := c.Ethdkg.InitialMessage(callOpts)
-	if err != nil {
-		logger.Errorf("Can't get initial message: %v", err)
-		return ErrCanNotContinue
-	}
-	logger.Infof("InitialMessage: [%v]", string(initialMessage))
+	// //
+	// initialMessage, err := c.Ethdkg.InitialMessage(callOpts)
+	// if err != nil {
+	// 	logger.Errorf("Can't get initial message: %v", err)
+	// 	return ErrCanNotContinue
+	// }
+	// logger.Infof("InitialMessage: [%v]", string(initialMessage))
 
-	//
-	for idx := 0; idx < state.EthDKG.Participants.Len(); idx++ {
+	// //
+	// for idx := 0; idx < state.EthDKG.Participants.Len(); idx++ {
 
-	}
+	// }
 
 	// dkg.CategorizeGroupSigners(initialMessage, state.EthDKG.MasterPublicKey, publishedPublicKeys [][4]*big.Int, publishedSignatures [][2]*big.Int, participants dkg.ParticipantList, threshold int)
 
@@ -318,25 +310,16 @@ func (svcs *Services) DoSuccessfulCompletion(state *State, block uint64) error {
 	logger.Infof("DoSuccessfulCompletion()")
 	logger.Infof(strings.Repeat("-", 60))
 
-	eth := svcs.eth
-	ethdkg := state.EthDKG
+	// eth := svcs.eth
+	// ethdkg := state.EthDKG
 
-	task := dkgtasks.NewCompletionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey,
-		ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.CompleteEnd)
+	// task := dkgtasks.NewCompletionTask(eth.GetDefaultAccount(), ethdkg.TransportPublicKey,
+	// 	ethdkg.Schedule.RegistrationEnd, ethdkg.Schedule.CompleteEnd)
 
-	ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
-	ethdkg.CompleteTH.Start()
+	// ethdkg.CompleteTH = svcs.taskMan.NewTaskHandler(logger, eth, task)
+	// ethdkg.CompleteTH.Start()
 
 	return nil
-}
-
-func thresholdFromUsers(n int) (int, int) {
-	k := n / 3
-	threshold := 2 * k
-	if (n - 3*k) == 2 {
-		threshold = threshold + 1
-	}
-	return threshold, k
 }
 
 func calculateInverseArray(n uint8) ([]*big.Int, error) {
