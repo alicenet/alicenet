@@ -38,7 +38,7 @@ func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []b
 		utils.DebugTrace(ce.logger, err)
 		return nil, nil, nil, nil, err
 	}
-	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return nil, nil, nil, nil, err
 	}
@@ -77,7 +77,7 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 		utils.DebugTrace(ce.logger, err)
 		return false, nil
 	}
-	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
 	}
@@ -93,7 +93,7 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 	if !ok {
 		return false, errorz.ErrInvalid{}.New("is valid returned not ok")
 	}
-	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
 	}
@@ -101,14 +101,14 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 }
 
 func (ce *Engine) applyState(txn *badger.Txn, rs *RoundStates, chainID uint32, txHashes [][]byte) error {
-	txs, missing, err := ce.dm.GetTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txHashes)
+	txs, missing, err := ce.dm.GetTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, rs.round, txHashes)
 	if err != nil {
 		return err
 	}
 	if len(missing) > 0 {
 		return errorz.ErrMissingTransactions
 	}
-	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs, false); err != nil {
+	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}

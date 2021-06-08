@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/consensus/dman"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/logging"
@@ -21,12 +22,12 @@ type Handlers struct {
 	sstore   *Store
 	secpVal  *crypto.Secp256k1Validator
 	bnVal    *crypto.BNGroupValidator
-	dm       *DMan
+	dm       *dman.DMan
 	logger   *logrus.Logger
 }
 
 // Init initializes the Handlers object
-func (mb *Handlers) Init(database *db.Database, dm *DMan) error {
+func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) error {
 	mb.logger = logging.GetLogger(constants.LoggerConsensus)
 	mb.sstore = &Store{}
 	err := mb.sstore.Init(database)
@@ -100,7 +101,7 @@ func (mb *Handlers) Store(v interface{}) error {
 			if err != nil {
 				return err
 			}
-			go mb.dm.DownloadTxs(txHshLst)
+			go mb.dm.DownloadTxs(roundState.height, roundState.round, txHshLst)
 		case *objs.PreVote:
 			err = roundState.SetPreVote(obj)
 			if err != nil {
