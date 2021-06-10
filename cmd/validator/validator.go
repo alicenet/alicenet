@@ -12,9 +12,7 @@ import (
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus"
@@ -453,12 +451,12 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 }
 
 func registerTasks() {
-	tasks.RegisterTask(&dkgtasks.CompletionTask{})
-	tasks.RegisterTask(&dkgtasks.DisputeTask{})
-	tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
-	tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.RegisterTask{})
-	tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
+	// tasks.RegisterTask(&dkgtasks.CompletionTask{})
+	// tasks.RegisterTask(&dkgtasks.DisputeTask{})
+	// tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
+	// tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
+	// tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
+	// tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
+	// tasks.RegisterTask(&dkgtasks.RegisterTask{})
+	// tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
 }

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,11 +13,11 @@ import (
 type DisputeTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
-	State                   *dkg.EthDKGState
+	State                   *objects.DkgState
 }
 
 // NewDisputeTask creates a new task
-func NewDisputeTask(state *dkg.EthDKGState) *DisputeTask {
+func NewDisputeTask(state *objects.DkgState) *DisputeTask {
 	return &DisputeTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State:                   state,

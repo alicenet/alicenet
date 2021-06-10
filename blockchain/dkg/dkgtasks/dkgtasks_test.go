@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -66,7 +68,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 		eth.UnlockAccount(acct)
 
 		// 1. Give 'acct' tokens
-		txn, err := c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		txn, err := c.StakingToken().Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on transfer %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
@@ -74,12 +76,12 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 		assert.Nil(t, err)
 
 		// 2. Allow system to take tokens from 'acct' for staking
-		txn, err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
+		txn, err = c.StakingToken().Approve(o, c.ValidatorsAddress(), big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on approval %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		// 3. Tell system to take tokens from 'acct' for staking
-		txn, err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		txn, err = c.Staking().LockStake(o, big.NewInt(1_000_000))
 		assert.Nilf(t, err, "Failed on lock %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
@@ -88,7 +90,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 		validatorId[0] = big.NewInt(int64(idx))
 		validatorId[1] = big.NewInt(int64(idx * 2))
 
-		txn, err = c.Validators.AddValidator(o, acct.Address, validatorId)
+		txn, err = c.Validators().AddValidator(o, acct.Address, validatorId)
 		assert.Nilf(t, err, "Failed on register %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 	}
@@ -106,7 +108,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) blockchai
 	return eth
 }
 
-func connectRemoteEndpoint(t *testing.T, accountAddresses []string) blockchain.Ethereum {
+func connectRemoteEndpoint(t *testing.T, accountAddresses []string) interfaces.Ethereum {
 	eth, err := blockchain.NewEthereumEndpoint(
 		"http://192.168.86.29:8545",
 		"keystore_test",
@@ -133,17 +135,23 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 
 	currentBlock := uint64(startBlock)
 	lastBlock := uint64(startBlock)
-	addresses := []common.Address{c.EthdkgAddress}
+	addresses := []common.Address{c.EthdkgAddress()}
 
 	taskManager := tasks.NewManager()
 
-	state := dkg.NewEthDKGState(validatorAcct)
+	dkgState := objects.NewDkgState(validatorAcct)
+	events := objects.NewEventMap()
+	monitorState := &objects.MonitorState{EthDKG: dkgState}
+
+	SetupEventMap(events)
 
 	scheduler := monitor.NewSequentialSchedule()
 	defer scheduler.Status(logging.GetLogger(fmt.Sprintf("scheduler%v", idx)))
 
-	for currentBlock < startBlock+50 {
-		var err error
+	var done bool
+	var err error
+
+	for !done {
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 
@@ -155,33 +163,40 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 
 			for _, log := range logs {
 
+				eventID := log.Topics[0].String()
+
+				info, present := events.Lookup(eventID)
+				if present {
+					info.Processor(logger, monitorState, log)
+				}
+
 				// RegistrationOpen
 				if log.Topics[0] == common.HexToHash("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97") {
-					event, err := c.Ethdkg.ParseRegistrationOpen(log)
+					event, err := c.Ethdkg().ParseRegistrationOpen(log)
 					assert.Nil(t, err)
 
 					logger.Debugf("open event:%+v", event)
 
 					scheduler.Purge()
 
-					state.PopulateSchedule(event) // TODO make this better, pure mutation functions are awkward
+					dkgState.PopulateSchedule(event) // TODO make this better, pure mutation functions are awkward
 
-					scheduler.Schedule(state.RegistrationStart, state.RegistrationEnd, dkgtasks.NewRegisterTask(state))                    // Registration
-					scheduler.Schedule(state.ShareDistributionStart, state.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(state)) // ShareDistribution
-					scheduler.Schedule(state.DisputeStart, state.DisputeEnd, dkgtasks.NewDisputeTask(state))                               // DisputeShares
-					scheduler.Schedule(state.KeyShareSubmissionStart, state.KeyShareSubmissionEnd, dkgtasks.NewPlaceHolder(state))         // KeyShareSubmission
-					scheduler.Schedule(state.MPKSubmissionStart, state.MPKSubmissionEnd, dkgtasks.NewPlaceHolder(state))                   // MasterPublicKeySubmission
-					scheduler.Schedule(state.GPKJSubmissionStart, state.GPKJSubmissionEnd, dkgtasks.NewPlaceHolder(state))                 // GroupPublicKeySubmission
-					scheduler.Schedule(state.GPKJGroupAccusationStart, state.GPKJGroupAccusationEnd, dkgtasks.NewPlaceHolder(state))       // DisputeGroupPublicKey
-					scheduler.Schedule(state.CompleteStart, state.CompleteEnd, dkgtasks.NewPlaceHolder(state))                             // Complete
+					scheduler.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                       // Registration
+					scheduler.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))    // ShareDistribution
+					scheduler.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                  // DisputeShares
+					scheduler.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState)) // KeyShareSubmission
+					scheduler.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                // MasterPublicKeySubmission
+					scheduler.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewPlaceHolder(dkgState))                    // GroupPublicKeySubmission
+					scheduler.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewPlaceHolder(dkgState))          // DisputeGroupPublicKey
+					scheduler.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewPlaceHolder(dkgState))                                // Complete
 
-					logger.Debugf("ethdkg state:%+v", state)
+					logger.Debugf("ethdkg state:%+v", dkgState)
 				}
 			}
 
 			for block := lastBlock + 1; block <= currentBlock; block++ {
-				uuid, _ := scheduler.Find(block)
-				if uuid != nil {
+				uuid, err := scheduler.Find(block)
+				if err == nil {
 					task, _ := scheduler.Retrieve(uuid)
 					handler := taskManager.NewTaskHandler(logger, eth, task)
 
@@ -195,12 +210,16 @@ func validator(t *testing.T, idx int, eth blockchain.Ethereum, validatorAcct acc
 		}
 
 		time.Sleep(time.Second)
+
+		dkgState.RLock()
+		done = dkgState.Complete || currentBlock > startBlock+80
+		dkgState.RUnlock()
 	}
 
 	wg.Done()
 }
 
-func TestRegisterSuccess(t *testing.T) {
+func TestDkgSuccess(t *testing.T) {
 
 	var accountAddresses []string = []string{
 		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
@@ -230,8 +249,8 @@ func TestRegisterSuccess(t *testing.T) {
 
 	c := eth.Contracts()
 
-	t.Logf("  ethdkg address: %v", c.EthdkgAddress.Hex())
-	t.Logf("registry address: %v", c.RegistryAddress.Hex())
+	// t.Logf("  ethdkg address: %v", c.EthdkgAddress().Hex())
+	// t.Logf("registry address: %v", c.RegistryAddress().Hex())
 
 	callOpts := eth.GetCallOpts(ctx, ownerAccount)
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
@@ -248,11 +267,11 @@ func TestRegisterSuccess(t *testing.T) {
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(5))
+	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(5))
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 
-	txn, err = c.Ethdkg.InitializeState(txnOpts)
+	txn, err = c.Ethdkg().InitializeState(txnOpts)
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 
@@ -262,11 +281,67 @@ func TestRegisterSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("currentHeight:%v", currentHeight)
 
-	endingHeight, err := c.Ethdkg.TREGISTRATIONEND(callOpts)
+	endingHeight, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
 	assert.Nil(t, err)
 	t.Logf("endingHeight:%v", endingHeight)
 
 	// Wait for validators to complete
 	wg.Wait()
 
+}
+
+func SetupEventMap(em *objects.EventMap) error {
+
+	// if err := em.RegisterLocked("0x3529eeacda732ca25cee203cc6382b6d0688ee079ec8e53fd2dcbf259bdd3fa1", "DepositReceived-Obsolete", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x6bae01a1b82866e1dfe8d98c42383fc58df9b4adeb47d7ac24ee4b53d409da6c", "DepositReceived-Obsolete", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", "DSTokenApproval", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0xce241d7ca1f669fee44b6fc00b8eba2df3bb514eed0f6f668f8f89096e81ed94", "LogSetOwner", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885", "Mint", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "Transfer", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x8c25e214c5693ebaf8008875bacedeb9e0aafd393864a314ed1801b2a4e13dd9", "ValidatorJoined", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x319bbadb03b94aedc69babb34a28675536a9cb30f4bbde343e1d0018c44ebd94", "ValidatorLeft", nil); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x1de2f07b0a1c69916a8b25b889051644192307ea08444a2e11f8654d1db3ab0c", "LockedStake", nil); err != nil {
+	// 	return err
+	// }
+
+	// Real event processors are below
+	// if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived", svcs.ProcessDepositReceived); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember", svcs.ProcessValidatorMember); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet", svcs.ProcessValidatorSet); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x6d438b6b835d16cdae6efdc0259fdfba17e6aa32dae81863a2467866f85f724a", "SnapshotTaken", svcs.ProcessSnapshotTaken); err != nil {
+	// 	return err
+	// }
+	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
+		return err
+	}
+	// if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", svcs.ProcessKeyShareSubmission); err != nil {
+	// 	return err
+	// }
+	// if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", svcs.ProcessRegistrationOpen); err != nil {
+	// 	return err
+	// }
+
+	return nil
 }

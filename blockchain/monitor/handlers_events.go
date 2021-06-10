@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -15,13 +16,13 @@ import (
 )
 
 // ProcessRegistrationOpen when we see ETHDKG has initialized we need to start
-func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error {
+func (svcs *Services) ProcessRegistrationOpen(state *objects.MonitorState, log types.Log) error {
 
 	eth := svcs.eth
 	c := eth.Contracts()
 	logger := svcs.logger
 
-	event, err := c.Ethdkg.ParseRegistrationOpen(log)
+	event, err := c.Ethdkg().ParseRegistrationOpen(log)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func (svcs *Services) ProcessRegistrationOpen(state *State, log types.Log) error
 }
 
 // ProcessShareDistribution accumulates everyones shares ETHDKG
-func (svcs *Services) ProcessShareDistribution(state *State, log types.Log) error {
+func (svcs *Services) ProcessShareDistribution(state *objects.MonitorState, log types.Log) error {
 	logger := svcs.logger
 
 	logger.Info(strings.Repeat("-", 60))
@@ -142,7 +143,7 @@ func (svcs *Services) ProcessShareDistribution(state *State, log types.Log) erro
 }
 
 // ProcessKeyShareSubmission ETHDKG
-func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) error {
+func (svcs *Services) ProcessKeyShareSubmission(state *objects.MonitorState, log types.Log) error {
 
 	logger := svcs.logger
 
@@ -177,14 +178,14 @@ func (svcs *Services) ProcessKeyShareSubmission(state *State, log types.Log) err
 }
 
 // ProcessValidatorSet handles receiving validatorSet changes
-func (svcs *Services) ProcessValidatorSet(state *State, log types.Log) error {
+func (svcs *Services) ProcessValidatorSet(state *objects.MonitorState, log types.Log) error {
 
 	eth := svcs.eth
 	c := eth.Contracts()
 
 	updatedState := state
 
-	event, err := c.Ethdkg.ParseValidatorSet(log)
+	event, err := c.Ethdkg().ParseValidatorSet(log)
 	if err != nil {
 		return err
 	}
@@ -210,12 +211,12 @@ func (svcs *Services) ProcessValidatorSet(state *State, log types.Log) error {
 }
 
 // ProcessValidatorMember handles receiving keys for a specific validator
-func (svcs *Services) ProcessValidatorMember(state *State, log types.Log) error {
+func (svcs *Services) ProcessValidatorMember(state *objects.MonitorState, log types.Log) error {
 
 	eth := svcs.eth
 	c := eth.Contracts()
 
-	event, err := c.Ethdkg.ParseValidatorMember(log)
+	event, err := c.Ethdkg().ParseValidatorMember(log)
 	if err != nil {
 		return err
 	}
@@ -224,13 +225,13 @@ func (svcs *Services) ProcessValidatorMember(state *State, log types.Log) error 
 
 	index := uint8(event.Index.Uint64()) - 1
 
-	v := Validator{
+	v := objects.Validator{
 		Account:   event.Account,
 		Index:     index,
 		SharedKey: [4]big.Int{*event.Share0, *event.Share1, *event.Share2, *event.Share3},
 	}
 	if len(state.Validators) < int(index+1) {
-		newValList := make([]Validator, int(index+1))
+		newValList := make([]objects.Validator, int(index+1))
 		copy(newValList, state.Validators[epoch])
 		state.Validators[epoch] = newValList
 	}
@@ -252,7 +253,7 @@ func (svcs *Services) ProcessValidatorMember(state *State, log types.Log) error 
 	return nil
 }
 
-func (svcs *Services) checkValidatorSet(state *State, epoch uint32) error {
+func (svcs *Services) checkValidatorSet(state *objects.MonitorState, epoch uint32) error {
 	logger := svcs.logger
 
 	// Make sure we've received a validator set event
@@ -316,13 +317,13 @@ func (svcs *Services) checkValidatorSet(state *State, epoch uint32) error {
 }
 
 // ProcessDepositReceived handles logic around receiving a deposit event
-func (svcs *Services) ProcessDepositReceived(state *State, log types.Log) error {
+func (svcs *Services) ProcessDepositReceived(state *objects.MonitorState, log types.Log) error {
 
 	eth := svcs.eth
 	c := eth.Contracts()
 	logger := svcs.logger
 
-	event, err := c.Deposit.ParseDepositReceived(log)
+	event, err := c.Deposit().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}
@@ -344,13 +345,13 @@ func (svcs *Services) ProcessDepositReceived(state *State, log types.Log) error 
 }
 
 // ProcessSnapshotTaken handles receiving snapshots
-func (svcs *Services) ProcessSnapshotTaken(state *State, log types.Log) error {
+func (svcs *Services) ProcessSnapshotTaken(state *objects.MonitorState, log types.Log) error {
 
 	eth := svcs.eth
 	c := eth.Contracts()
 	logger := svcs.logger
 
-	event, err := c.Validators.ParseSnapshotTaken(log)
+	event, err := c.Validators().ParseSnapshotTaken(log)
 	if err != nil {
 		return err // TODO consensus on side will stop
 	}
@@ -366,12 +367,12 @@ func (svcs *Services) ProcessSnapshotTaken(state *State, log types.Log) error {
 
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 
-	rawBClaims, err := c.Validators.GetRawBlockClaimsSnapshot(callOpts, epoch)
+	rawBClaims, err := c.Validators().GetRawBlockClaimsSnapshot(callOpts, epoch)
 	if err != nil {
 		return err
 	}
 
-	rawSignature, err := c.Validators.GetRawSignatureSnapshot(callOpts, epoch)
+	rawSignature, err := c.Validators().GetRawSignatureSnapshot(callOpts, epoch)
 	if err != nil {
 		return err
 	}

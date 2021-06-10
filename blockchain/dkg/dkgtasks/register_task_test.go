@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,7 +37,7 @@ func TestRegisterTask(t *testing.T) {
 
 	// Check status
 	callOpts := eth.GetCallOpts(ctx, acct)
-	valid, err := c.Participants.IsValidator(callOpts, acct.Address)
+	valid, err := c.Participants().IsValidator(callOpts, acct.Address)
 	assert.Nil(t, err, "Failed checking validator status")
 	assert.True(t, valid)
 
@@ -45,7 +45,7 @@ func TestRegisterTask(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
 
-	mess, err := c.Ethdkg.InitialMessage(callOpts)
+	mess, err := c.Ethdkg().InitialMessage(callOpts)
 	assert.Nil(t, err)
 	assert.NotNil(t, mess)
 
@@ -56,7 +56,7 @@ func TestRegisterTask(t *testing.T) {
 	)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, err = c.Ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(4))
+	txn, err = c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(4))
 	assert.Nil(t, err)
 
 	eth.Queue().QueueAndWait(ctx, txn)
@@ -64,7 +64,7 @@ func TestRegisterTask(t *testing.T) {
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
-	txn, err = c.Ethdkg.InitializeState(txnOpts)
+	txn, err = c.Ethdkg().InitializeState(txnOpts)
 	assert.Nil(t, err)
 
 	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
@@ -84,11 +84,11 @@ func TestRegisterTask(t *testing.T) {
 
 	// Make sure we found the open event
 	assert.NotNil(t, openLog)
-	openEvent, err := c.Ethdkg.ParseRegistrationOpen(*openLog)
+	openEvent, err := c.Ethdkg().ParseRegistrationOpen(*openLog)
 	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
-	state := dkg.NewEthDKGState(acct)
+	state := objects.NewDkgState(acct)
 	state.RegistrationStart = openLog.BlockNumber
 	state.RegistrationEnd = openEvent.RegistrationEnds.Uint64()
 

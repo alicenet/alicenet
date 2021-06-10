@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/gob"
 
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -15,8 +16,8 @@ var stateKey = []byte("monitorStateKey")
 
 // Database describes required functionality for monitor persistence
 type Database interface {
-	FindState() (*State, error)
-	UpdateState(state *State) error
+	FindState() (*objects.MonitorState, error)
+	UpdateState(state *objects.MonitorState) error
 }
 
 type monitorDB struct {
@@ -50,15 +51,15 @@ func NewDatabase(ctx context.Context, directoryName string, inMemory bool) Datab
 }
 
 func NewDatabaseFromExisting(db *badger.DB) Database {
-logger := logging.GetLogger("monitor_db")
-return &monitorDB{
-  logger:   logger,
-  database: db}
+	logger := logging.GetLogger("monitor_db")
+	return &monitorDB{
+		logger:   logger,
+		database: db}
 }
 
-func (mon *monitorDB) FindState() (*State, error) {
+func (mon *monitorDB) FindState() (*objects.MonitorState, error) {
 
-	state := &State{}
+	state := &objects.MonitorState{}
 
 	fn := func(txn *badger.Txn) error {
 		data, err := utils.GetValue(txn, stateKey)
@@ -83,7 +84,7 @@ func (mon *monitorDB) FindState() (*State, error) {
 	return state, nil
 }
 
-func (mon *monitorDB) UpdateState(state *State) error {
+func (mon *monitorDB) UpdateState(state *objects.MonitorState) error {
 
 	buf := &bytes.Buffer{}
 

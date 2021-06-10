@@ -53,7 +53,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 	}
 
 	// Register
-	txn, err := c.Ethdkg.SuccessfulCompletion(txnOpts)
+	txn, err := c.Ethdkg().SuccessfulCompletion(txnOpts)
 	if err != nil {
 		logger.Errorf("completion failed: %v", err)
 		return false

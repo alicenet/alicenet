@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
@@ -71,11 +72,11 @@ func (mon *monitor) StartEventLoop() (chan<- bool, error) {
 		}
 
 		startingBlock := config.Configuration.Ethereum.StartingBlock
-		initialState = &State{
+		initialState = &objects.MonitorState{
 			HighestBlockProcessed: uint64(startingBlock),
 			HighestBlockFinalized: uint64(startingBlock),
-			Validators:            make(map[uint32][]Validator),
-			ValidatorSets:         make(map[uint32]ValidatorSet),
+			Validators:            make(map[uint32][]objects.Validator),
+			ValidatorSets:         make(map[uint32]objects.ValidatorSet),
 			// EthDKG:                NewEthDKGState(),
 		}
 		logger.Info("Setting initial state to defaults...")
@@ -93,7 +94,7 @@ func (mon *monitor) StartEventLoop() (chan<- bool, error) {
 	return cancelChan, nil
 }
 
-func (mon *monitor) eventLoop(state *State, cancelChan <-chan bool) error {
+func (mon *monitor) eventLoop(state *objects.MonitorState, cancelChan <-chan bool) error {
 
 	done := false
 	for !done {
@@ -111,7 +112,7 @@ func (mon *monitor) eventLoop(state *State, cancelChan <-chan bool) error {
 	return nil
 }
 
-func (mon *monitor) eventLoopTick(state *State, tick time.Time, shutdownRequested bool) error {
+func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, shutdownRequested bool) error {
 
 	logger := mon.logger
 
@@ -128,7 +129,7 @@ func (mon *monitor) eventLoopTick(state *State, tick time.Time, shutdownRequeste
 	select {
 	case responseValue := <-resp.Response():
 		switch value := responseValue.(type) {
-		case *State:
+		case *objects.MonitorState:
 			diff := originalState.Diff(state)
 			if len(diff) > 0 {
 				select {

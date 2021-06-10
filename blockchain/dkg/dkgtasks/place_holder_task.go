@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
 type PlaceHolder struct {
-	state *dkg.EthDKGState
+	state *objects.DkgState
 }
 
-func NewPlaceHolder(state *dkg.EthDKGState) *PlaceHolder {
+func NewPlaceHolder(state *objects.DkgState) *PlaceHolder {
 	return &PlaceHolder{state: state}
 }
 

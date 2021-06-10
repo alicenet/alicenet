@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	geth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,16 +49,16 @@ type TransactionProfile struct {
 // Behind is the struct used while monitoring Ethereum transactions
 type Behind struct {
 	sync.Mutex
-	waitingTxns    []common.Hash                       // Just a list of transactions whose receipts we're looking for
-	readyTxns      map[common.Hash]*types.Receipt      // All the transaction -> receipt pairs we know of
-	selectors      map[common.Hash]FuncSelector        // Maps a transaction to it's function selector
-	groups         map[int][]common.Hash               // A group is just an ID and a list of transactions
-	names          map[FuncSelector]string             // Map function selector's to their names
-	aggregates     map[FuncSelector]TransactionProfile //
-	client         GethClient                          // An interface with the Geth functionality we need
-	knownSelectors *SelectorMap                        //
-	logger         *logrus.Logger                      //
-	reqch          <-chan *Request                     //
+	waitingTxns    []common.Hash                                  // Just a list of transactions whose receipts we're looking for
+	readyTxns      map[common.Hash]*types.Receipt                 // All the transaction -> receipt pairs we know of
+	selectors      map[common.Hash]interfaces.FuncSelector        // Maps a transaction to it's function selector
+	groups         map[int][]common.Hash                          // A group is just an ID and a list of transactions
+	names          map[interfaces.FuncSelector]string             // Map function selector's to their names
+	aggregates     map[interfaces.FuncSelector]TransactionProfile //
+	client         interfaces.GethClient                          // An interface with the Geth functionality we need
+	knownSelectors interfaces.SelectorMap                         //
+	logger         *logrus.Logger                                 //
+	reqch          <-chan *Request                                //
 }
 
 func (b *Behind) Loop() {
@@ -273,13 +274,13 @@ func (b *Behind) unknown(req *Request) *Response {
 	return &Response{err: ErrUnknownRequest}
 }
 
-type TxnQueue struct {
+type TxnQueueDetail struct {
 	backend *Behind
 	logger  *logrus.Logger
 	reqch   chan<- *Request
 }
 
-func NewTxnQueue(client GethClient, sm *SelectorMap) *TxnQueue {
+func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap) *TxnQueueDetail {
 	reqch := make(chan *Request, 10)
 
 	b := &Behind{
@@ -288,12 +289,12 @@ func NewTxnQueue(client GethClient, sm *SelectorMap) *TxnQueue {
 		logger:         logging.GetLogger("behind"),
 		waitingTxns:    make([]common.Hash, 0, 20),
 		readyTxns:      make(map[common.Hash]*types.Receipt),
-		selectors:      make(map[common.Hash]FuncSelector),
-		aggregates:     make(map[FuncSelector]TransactionProfile),
+		selectors:      make(map[common.Hash]interfaces.FuncSelector),
+		aggregates:     make(map[interfaces.FuncSelector]TransactionProfile),
 		knownSelectors: sm,
 		groups:         make(map[int][]common.Hash)}
 
-	q := &TxnQueue{
+	q := &TxnQueueDetail{
 		reqch:   reqch,
 		backend: b,
 		logger:  logging.GetLogger("infront")}
@@ -301,11 +302,11 @@ func NewTxnQueue(client GethClient, sm *SelectorMap) *TxnQueue {
 	return q
 }
 
-func (f *TxnQueue) StartLoop() {
+func (f *TxnQueueDetail) StartLoop() {
 	go f.backend.Loop()
 }
 
-func (f *TxnQueue) QueueTransaction(ctx context.Context, txn *types.Transaction) {
+func (f *TxnQueueDetail) QueueTransaction(ctx context.Context, txn *types.Transaction) {
 	txn.Data()
 	f.logger.Infof("queue...")
 	req := &Request{name: "queue", txn: txn} // no response channel because I don't want to wait
@@ -313,19 +314,19 @@ func (f *TxnQueue) QueueTransaction(ctx context.Context, txn *types.Transaction)
 	f.logger.Infof("...done queueing")
 }
 
-func (f *TxnQueue) QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction) {
+func (f *TxnQueueDetail) QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction) {
 	f.logger.Infof("queue...")
 	req := &Request{name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
 	f.logger.Infof("...done queueing")
 }
 
-func (f *TxnQueue) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
 	f.QueueTransaction(ctx, txn)
 	return f.WaitTransaction(ctx, txn)
 }
 
-func (f *TxnQueue) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
 	f.logger.Infof("waiting...")
 	req := &Request{name: "wait", txn: txn, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
@@ -338,7 +339,7 @@ func (f *TxnQueue) WaitTransaction(ctx context.Context, txn *types.Transaction) 
 	return resp.rcpt, nil
 }
 
-func (f *TxnQueue) WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error) {
+func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error) {
 	f.logger.Infof("waiting...")
 	req := &Request{name: "wait", group: grp, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
@@ -351,7 +352,12 @@ func (f *TxnQueue) WaitGroupTransactions(ctx context.Context, grp int) ([]*types
 	return resp.rcpts, nil
 }
 
-func (f *TxnQueue) requestWait(ctx context.Context, req *Request) *Response {
+func (f *TxnQueueDetail) Close() {
+	f.logger.Debugf("closing request channel...")
+	close(f.reqch)
+}
+
+func (f *TxnQueueDetail) requestWait(ctx context.Context, req *Request) *Response {
 	f.reqch <- req
 
 	logReciept := func(message string, rcpt *types.Receipt) {
@@ -393,9 +399,4 @@ func (f *TxnQueue) requestWait(ctx context.Context, req *Request) *Response {
 	}
 
 	return nil // no response channel, so no meaningful response
-}
-
-func (f *TxnQueue) Close() {
-	f.logger.Debugf("closing request channel...")
-	close(f.reqch)
 }

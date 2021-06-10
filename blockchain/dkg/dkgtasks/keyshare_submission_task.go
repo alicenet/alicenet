@@ -6,38 +6,49 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
-// KeyshareSubmissionTask contains required state for safely performing a registration
+// DisputeTask stores the data required to dispute shares
 type KeyshareSubmissionTask struct {
 	sync.Mutex
-	Account         accounts.Account
-	RegistrationEnd uint64
-	LastBlock       uint64
-	PublicKey       [2]*big.Int
-	KeyshareG1      [2]*big.Int
-	KeyshareG1Proof [2]*big.Int
-	KeyshareG2      [4]*big.Int
+	OriginalRegistrationEnd uint64
+	State                   *objects.DkgState
 }
 
-// NewKeyshareSubmissionTask creates a background task that attempts to register with ETHDKG
-func NewKeyshareSubmissionTask(
-	acct accounts.Account,
-	publicKey [2]*big.Int,
-	keyshareG1 [2]*big.Int, keyshareG1Proof [2]*big.Int,
-	keyshareG2 [4]*big.Int,
-	registrationEnd uint64, lastBlock uint64) *KeyshareSubmissionTask {
+// NewKeyshareSubmissionTask creates a new task
+func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		Account:         acct,
-		PublicKey:       blockchain.CloneBigInt2(publicKey),
-		KeyshareG1:      blockchain.CloneBigInt2(keyshareG1),
-		KeyshareG1Proof: blockchain.CloneBigInt2(keyshareG1Proof),
-		KeyshareG2:      blockchain.CloneBigInt4(keyshareG2),
-		RegistrationEnd: registrationEnd,
-		LastBlock:       lastBlock,
+		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
+		State:                   state,
 	}
+}
+
+// This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
+func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+	if t.State.KeyShareG1s == nil {
+
+		// Generate the key shares
+		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
+		if err != nil {
+			return false
+		}
+
+		// t.State.KeyShareG1s[state.Account.Address]
+		me := t.State.Account.Address
+
+		t.State.KeyShareG1s = make(map[common.Address][2]*big.Int)
+		t.State.KeyShareG1s[me] = g1KeyShare
+		t.State.KeyShareG1CorrectnessProofs = make(map[common.Address][2]*big.Int)
+		t.State.KeyShareG1CorrectnessProofs[me] = g1Proof
+		t.State.KeyShareG2s = make(map[common.Address][4]*big.Int)
+		t.State.KeyShareG2s[me] = g2KeyShare
+	}
+
+	return true
 }
 
 // DoWork is the first attempt at registering with ethdkg
@@ -56,9 +67,14 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 	t.Lock()
 	defer t.Unlock()
 
+	// Is there any point in running? Make sure we're both initialized and within block range
+	if !t.init(ctx, logger, eth) {
+		return false
+	}
+
 	// Setup
-	c := eth.Contracts()
-	me := eth.GetDefaultAccount()
+	me := t.State.Account
+
 	txnOpts, err := eth.GetTransactionOpts(ctx, me)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
@@ -66,7 +82,10 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 	}
 
 	// Submit Keyshares
-	txn, err := c.Ethdkg.SubmitKeyShare(txnOpts, me.Address, t.KeyshareG1, t.KeyshareG1Proof, t.KeyshareG2)
+	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts, me.Address,
+		t.State.KeyShareG1s[me.Address],
+		t.State.KeyShareG1CorrectnessProofs[me.Address],
+		t.State.KeyShareG2s[me.Address])
 	if err != nil {
 		logger.Errorf("submitting keyshare failed: %v", err)
 		return false
@@ -101,15 +120,17 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	t.Lock()
 	defer t.Unlock()
 
+	state := t.State
+
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, t.Account, logger, eth,
-		t.PublicKey, t.RegistrationEnd, t.LastBlock)
+	generalRetry := GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.KeyShareSubmissionEnd)
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
-		me := eth.GetDefaultAccount()
+		me := state.Account
 		callOpts := eth.GetCallOpts(ctx, me)
-		status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg, logger, callOpts, me.Address, t.KeyshareG1)
+		status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.KeyShareG1s[me.Address])
 		if err != nil {
 			return true
 		}

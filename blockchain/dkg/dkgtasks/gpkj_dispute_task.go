@@ -70,7 +70,7 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 	}
 
 	// Perform group accusation
-	txn, err := c.Ethdkg.GroupAccusationGPKj(txnOpts, t.Inverse, t.HonestIndicies, t.DishonestIndicies)
+	txn, err := c.Ethdkg().GroupAccusationGPKj(txnOpts, t.Inverse, t.HonestIndicies, t.DishonestIndicies)
 	if err != nil {
 		logger.Errorf("group accusation failed: %v", err)
 		return false

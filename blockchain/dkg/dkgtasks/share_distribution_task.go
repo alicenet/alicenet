@@ -8,6 +8,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -16,11 +17,11 @@ import (
 type ShareDistributionTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
-	State                   *dkg.EthDKGState
+	State                   *objects.DkgState
 }
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *dkg.EthDKGState) *ShareDistributionTask {
+func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	return &ShareDistributionTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State:                   state,
@@ -33,7 +34,8 @@ func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger,
 
 	if state.Participants == nil {
 
-		callOpts := eth.GetCallOpts(ctx, t.State.Account)
+		me := state.Account
+		callOpts := eth.GetCallOpts(ctx, me)
 
 		// Retrieve information about other participants from smart contracts
 		participants, index, err := dkg.RetrieveParticipants(eth, callOpts)
@@ -55,14 +57,16 @@ func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger,
 		}
 
 		// Store calculated values
+
 		state.Commitments = make(map[common.Address][][2]*big.Int)
-		state.Commitments[state.Account.Address] = commitments
+		state.Commitments[me.Address] = commitments
 		state.EncryptedShares = make(map[common.Address][]*big.Int)
-		state.EncryptedShares[state.Account.Address] = encryptedShares
+		state.EncryptedShares[me.Address] = encryptedShares
 		state.Index = index
 		state.NumberOfValidators = numParticipants
 		state.Participants = participants
 		state.PrivateCoefficients = privateCoefficients
+		state.SecretValue = privateCoefficients[0]
 		state.ValidatorThreshold = threshold
 	}
 
@@ -103,15 +107,13 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 
 	// Distribute shares
 	logger.Infof("# shares:%d # commitments:%d", len(state.EncryptedShares), len(state.Commitments))
-	txn, err := c.Ethdkg.DistributeShares(txnOpts, state.EncryptedShares[me], state.Commitments[me])
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, state.EncryptedShares[me], state.Commitments[me])
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
-
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -144,7 +146,7 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
 		callOpts := eth.GetCallOpts(ctx, state.Account)
-		distributionHash, err := eth.Contracts().Ethdkg.ShareDistributionHashes(callOpts, state.Account.Address)
+		distributionHash, err := eth.Contracts().Ethdkg().ShareDistributionHashes(callOpts, state.Account.Address)
 		if err != nil {
 			return true
 		}

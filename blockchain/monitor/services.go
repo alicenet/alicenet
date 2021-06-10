@@ -6,6 +6,7 @@ import (
 
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/admin"
@@ -20,7 +21,7 @@ import (
 //
 type eventProcessor struct {
 	name      string
-	processor func(*State, types.Log) error
+	processor func(*objects.MonitorState, types.Log) error
 }
 
 // Services just a bundle of requirements common for monitoring functionality
@@ -43,8 +44,8 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 	c := eth.Contracts()
 
 	contractAddresses := []common.Address{
-		c.DepositAddress, c.EthdkgAddress, c.RegistryAddress,
-		c.StakingTokenAddress, c.UtilityTokenAddress, c.ValidatorsAddress}
+		c.DepositAddress(), c.EthdkgAddress(), c.RegistryAddress(),
+		c.StakingTokenAddress(), c.UtilityTokenAddress(), c.ValidatorsAddress()}
 
 	serviceLogger := logging.GetLogger("services")
 
@@ -118,7 +119,7 @@ func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler,
 }
 
 // WatchEthereum checks state of Ethereum and processes interesting conditions
-func (svcs *Services) WatchEthereum(state *State) error {
+func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 	logger := svcs.logger
 	eth := svcs.eth
 
@@ -219,19 +220,19 @@ func (svcs *Services) WatchEthereum(state *State) error {
 			}
 
 			// Get the blocks currently interesting
-			if processor, present := state.interestingBlocks[block]; present {
-				logger.Debugf("... block:%v processor:%p", block, processor)
-				if present && processor != nil {
-					err := processor(state, block)
-					if err != nil {
-						logger.Warnf("Block handler for %v failed: %v", block, err)
-						// if err == dkg.ErrCanNotContinue {
-						// 	state.EthDKG = NewEthDKGState()
-						// 	state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
-						// }
-					}
-				}
-			}
+			// if processor, present := state.interestingBlocks[block]; present {
+			// 	logger.Debugf("... block:%v processor:%p", block, processor)
+			// 	if present && processor != nil {
+			// 		err := processor(state, block)
+			// 		if err != nil {
+			// 			logger.Warnf("Block handler for %v failed: %v", block, err)
+			// 			// if err == dkg.ErrCanNotContinue {
+			// 			// 	state.EthDKG = NewEthDKGState()
+			// 			// 	state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
+			// 			// }
+			// 		}
+			// 	}
+			// }
 
 			state.HighestBlockProcessed = lastBlock
 		}
@@ -250,7 +251,7 @@ func (svcs *Services) WatchEthereum(state *State) error {
 }
 
 // RegisterEvent registers a handler for when an interesting event shows up
-func (svcs *Services) RegisterEvent(selector string, name string, fn func(*State, types.Log) error) error {
+func (svcs *Services) RegisterEvent(selector string, name string, fn func(*objects.MonitorState, types.Log) error) error {
 
 	svcs.events[selector] = &eventProcessor{processor: fn, name: name}
 	return nil
@@ -258,7 +259,7 @@ func (svcs *Services) RegisterEvent(selector string, name string, fn func(*State
 
 // EndpointInSync Checks if our endpoint is good to use
 // -- This function is different. Because we need to be aware of errors, state is always updated
-func (svcs *Services) EndpointInSync(ctx context.Context, state *State) error {
+func (svcs *Services) EndpointInSync(ctx context.Context, state *objects.MonitorState) error {
 
 	// Default to assuming everything is awful
 	state.EthereumInSync = false
@@ -293,7 +294,7 @@ func (svcs *Services) EndpointInSync(ctx context.Context, state *State) error {
 }
 
 // UpdateProgress updates what we know of Ethereum chain height
-func (svcs *Services) UpdateProgress(ctx context.Context, state *State) error {
+func (svcs *Services) UpdateProgress(ctx context.Context, state *objects.MonitorState) error {
 	height, err := svcs.eth.GetFinalizedHeight(ctx)
 	if err != nil {
 		return err
@@ -330,7 +331,7 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!
 	}
 
-	txn, err := c.Validators.Snapshot(txnOpts, rawSigGroup, rawBclaims)
+	txn, err := c.Validators().Snapshot(txnOpts, rawSigGroup, rawBclaims)
 	if err != nil {
 		logger.Errorf("Failed to take snapshot: %v", err)
 		return nil //CAN NOT RETURN ERROR OR SUBSCRIPTION IS LOST!

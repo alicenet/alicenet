@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
-	geth "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
@@ -49,7 +49,7 @@ type Ethereum interface {
 	GetAccount(common.Address) (accounts.Account, error)
 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
 	GetBalance(common.Address) (*big.Int, error)
-	GetGethClient() GethClient
+	GetGethClient() interfaces.GethClient
 	GetCoinbaseAddress() common.Address
 	GetCurrentHeight(context.Context) (uint64, error)
 	GetDefaultAccount() accounts.Account
@@ -58,12 +58,13 @@ type Ethereum interface {
 	GetFinalizedHeight(context.Context) (uint64, error)
 	GetPeerCount(context.Context) (uint64, error)
 	GetSnapshot() ([]byte, error)
-	GetSyncProgress() (bool, *geth.SyncProgress, error)
+	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
 	GetValidators(context.Context) ([]common.Address, error)
 
-	KnownSelectors() *SelectorMap
-	Queue() *TxnQueue
+	Contracts() interfaces.Contracts
+	KnownSelectors() interfaces.SelectorMap
+	Queue() interfaces.TxnQueue
 
 	// WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
 
@@ -71,8 +72,6 @@ type Ethereum interface {
 	RetryDelay() time.Duration
 
 	Timeout() time.Duration
-
-	Contracts() *Contracts
 }
 
 // Ethereum specific errors
@@ -83,45 +82,45 @@ var (
 )
 
 // GethClient is an amalgamation of the geth interfaces used
-type GethClient interface {
+// type GethClient interface {
 
-	// geth.ChainReader
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (geth.Subscription, error)
+// 	// geth.ChainReader
+// 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
+// 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+// 	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
+// 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
+// 	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
+// 	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
+// 	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (geth.Subscription, error)
 
-	// geth.TransactionReader
-	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+// 	// geth.TransactionReader
+// 	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
+// 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 
-	// geth.ChainStateReader
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
-	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+// 	// geth.ChainStateReader
+// 	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
+// 	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
+// 	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
+// 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
 
-	// bind.ContractBackend
-	// -- bind.ContractCaller
-	// CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-	CallContract(ctx context.Context, call geth.CallMsg, blockNumber *big.Int) ([]byte, error)
+// 	// bind.ContractBackend
+// 	// -- bind.ContractCaller
+// 	// CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
+// 	CallContract(ctx context.Context, call geth.CallMsg, blockNumber *big.Int) ([]byte, error)
 
-	// -- bind.ContractTransactor
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-	EstimateGas(ctx context.Context, call geth.CallMsg) (gas uint64, err error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
+// 	// -- bind.ContractTransactor
+// 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
+// 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+// 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
+// 	EstimateGas(ctx context.Context, call geth.CallMsg) (gas uint64, err error)
+// 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 
-	// -- bind.ContractFilterer
-	FilterLogs(ctx context.Context, query geth.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query geth.FilterQuery, ch chan<- types.Log) (geth.Subscription, error)
-}
+// 	// -- bind.ContractFilterer
+// 	FilterLogs(ctx context.Context, query geth.FilterQuery) ([]types.Log, error)
+// 	SubscribeFilterLogs(ctx context.Context, query geth.FilterQuery, ch chan<- types.Log) (geth.Subscription, error)
+// }
 
-type ethereum struct {
+type EthereumDetails struct {
 	logger         *logrus.Logger
 	endpoint       string
 	keystore       *keystore.KeyStore
@@ -134,37 +133,15 @@ type ethereum struct {
 	timeout        time.Duration
 	retryCount     int
 	retryDelay     time.Duration
-	contracts      *Contracts
-	client         GethClient
+	contracts      interfaces.Contracts
+	client         interfaces.GethClient
 	close          func() error
 	commit         func()
 	chainID        *big.Int
-	syncing        func(ctx context.Context) (*geth.SyncProgress, error)
+	syncing        func(ctx context.Context) (*ethereum.SyncProgress, error)
 	peerCount      func(ctx context.Context) (uint64, error)
-	queue          *TxnQueue
-	selectors      *SelectorMap
-}
-
-// Contracts contains bindings to smart contract system
-type Contracts struct {
-	eth                 *ethereum
-	Crypto              *bindings.Crypto
-	CryptoAddress       common.Address
-	Deposit             *bindings.Deposit
-	DepositAddress      common.Address
-	Ethdkg              *bindings.ETHDKG
-	EthdkgAddress       common.Address
-	Participants        *bindings.Participants
-	Registry            *bindings.Registry
-	RegistryAddress     common.Address
-	Snapshots           *bindings.Snapshots
-	Staking             *bindings.Staking
-	StakingToken        *bindings.Token
-	StakingTokenAddress common.Address
-	UtilityToken        *bindings.Token
-	UtilityTokenAddress common.Address
-	Validators          *bindings.Validators
-	ValidatorsAddress   common.Address
+	queue          interfaces.TxnQueue
+	selectors      interfaces.SelectorMap
 }
 
 //NewEthereumSimulator returns a simulator for testing
@@ -176,7 +153,7 @@ func NewEthereumSimulator(
 	timeout time.Duration,
 	finalityDelay int,
 	wei *big.Int,
-	addresses ...string) (Ethereum, error) {
+	addresses ...string) (*EthereumDetails, error) {
 	logger := logging.GetLogger("ethsim")
 
 	if len(addresses) < 1 {
@@ -191,7 +168,7 @@ func NewEthereumSimulator(
 		genAlloc[addr] = core.GenesisAccount{Balance: wei}
 	}
 
-	eth := &ethereum{
+	eth := &EthereumDetails{
 		logger:        logger,
 		accounts:      make(map[common.Address]accounts.Account),
 		keys:          make(map[common.Address]*keystore.Key),
@@ -201,7 +178,7 @@ func NewEthereumSimulator(
 		timeout:       timeout,
 		finalityDelay: uint64(finalityDelay),
 		selectors:     newKnownSelectors()}
-	eth.contracts = &Contracts{eth: eth}
+	eth.contracts = &ContractDetails{eth: eth}
 
 	eth.LoadAccounts(pathKeystore)
 	err := eth.LoadPasscodes(pathPasscodes)
@@ -226,7 +203,7 @@ func NewEthereumSimulator(
 	eth.peerCount = func(context.Context) (uint64, error) {
 		return 0, nil
 	}
-	eth.syncing = func(ctx context.Context) (*geth.SyncProgress, error) {
+	eth.syncing = func(ctx context.Context) (*ethereum.SyncProgress, error) {
 		return nil, nil
 	}
 
@@ -250,11 +227,11 @@ func NewEthereumEndpoint(
 	timeout time.Duration,
 	retryCount int,
 	retryDelay time.Duration,
-	finalityDelay int) (Ethereum, error) {
+	finalityDelay int) (*EthereumDetails, error) {
 
 	logger := logging.GetLogger("ethereum")
 
-	eth := &ethereum{
+	eth := &EthereumDetails{
 		endpoint:      endpoint,
 		logger:        logger,
 		accounts:      make(map[common.Address]accounts.Account),
@@ -266,7 +243,7 @@ func NewEthereumEndpoint(
 		retryDelay:    retryDelay,
 		selectors:     newKnownSelectors()}
 
-	eth.contracts = &Contracts{eth: eth}
+	eth.contracts = &ContractDetails{eth: eth}
 
 	// Load accounts + passcodes
 	eth.LoadAccounts(pathKeystore)
@@ -321,10 +298,10 @@ func NewEthereumEndpoint(
 	return eth, nil
 }
 
-func newKnownSelectors() *SelectorMap {
+func newKnownSelectors() interfaces.SelectorMap {
 	sm := NewSelectorMap()
 
-	byteCodePrefix := FuncSelector{0x60, 0x80, 0x60, 0x40}
+	byteCodePrefix := interfaces.FuncSelector{0x60, 0x80, 0x60, 0x40}
 
 	sm.selectors["_deploy_"] = byteCodePrefix
 	sm.signatures[byteCodePrefix] = "_deploy_"
@@ -439,32 +416,32 @@ func newKnownSelectors() *SelectorMap {
 	return sm
 }
 
-func (eth *ethereum) KnownSelectors() *SelectorMap {
+func (eth *EthereumDetails) KnownSelectors() interfaces.SelectorMap {
 	return eth.selectors
 }
 
-func (eth *ethereum) Close() error {
+func (eth *EthereumDetails) Close() error {
 	eth.queue.Close()
 	return eth.close()
 }
 
-func (eth *ethereum) Commit() {
+func (eth *EthereumDetails) Commit() {
 	eth.commit()
 }
 
-func (eth *ethereum) Contracts() *Contracts {
+func (eth *EthereumDetails) Contracts() interfaces.Contracts {
 	return eth.contracts
 }
 
-func (eth *ethereum) GetPeerCount(ctx context.Context) (uint64, error) {
+func (eth *EthereumDetails) GetPeerCount(ctx context.Context) (uint64, error) {
 	return eth.peerCount(ctx)
 }
 
-func (eth *ethereum) Queue() *TxnQueue {
+func (eth *EthereumDetails) Queue() interfaces.TxnQueue {
 	return eth.queue
 }
 
-func (eth *ethereum) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
+func (eth *EthereumDetails) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
 	// Let's see how many peers our endpoint has
 	var peerCountString string
 	if err := rpcClient.CallContext(ctx, &peerCountString, "net_peerCount"); err != nil {
@@ -482,7 +459,7 @@ func (eth *ethereum) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (u
 }
 
 //IsEthereumAccessible checks against endpoint to confirm server responds
-func (eth *ethereum) IsEthereumAccessible() bool {
+func (eth *EthereumDetails) IsEthereumAccessible() bool {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 	block, err := eth.client.BlockByNumber(ctx, nil)
@@ -495,7 +472,7 @@ func (eth *ethereum) IsEthereumAccessible() bool {
 }
 
 // Scans the directory specified and loads all the accounts found
-func (eth *ethereum) LoadAccounts(directoryPath string) {
+func (eth *EthereumDetails) LoadAccounts(directoryPath string) {
 	logger := eth.logger
 
 	logger.Infof("LoadAccounts(\"%v\")...", directoryPath)
@@ -514,7 +491,7 @@ func (eth *ethereum) LoadAccounts(directoryPath string) {
 }
 
 // LoadPasscodes loads the specified passcode file
-func (eth *ethereum) LoadPasscodes(filePath string) error {
+func (eth *EthereumDetails) LoadPasscodes(filePath string) error {
 	logger := eth.logger
 
 	logger.Infof("LoadPasscodes(\"%v\")...", filePath)
@@ -548,7 +525,7 @@ func (eth *ethereum) LoadPasscodes(filePath string) error {
 }
 
 // UnlockAccount unlocks the previously loaded account using the previously loaded passcode
-func (eth *ethereum) UnlockAccount(acct accounts.Account) error {
+func (eth *EthereumDetails) UnlockAccount(acct accounts.Account) error {
 
 	passcode, passcodeFound := eth.passcodes[acct.Address]
 	if !passcodeFound {
@@ -578,12 +555,12 @@ func (eth *ethereum) UnlockAccount(acct accounts.Account) error {
 }
 
 // GetGethClient returns an amalgamated geth client interface
-func (eth *ethereum) GetGethClient() GethClient {
+func (eth *EthereumDetails) GetGethClient() interfaces.GethClient {
 	return eth.client
 }
 
 // GetAccount returns the account specified
-func (eth *ethereum) GetAccount(addr common.Address) (accounts.Account, error) {
+func (eth *EthereumDetails) GetAccount(addr common.Address) (accounts.Account, error) {
 	acct, accountFound := eth.accounts[addr]
 	if !accountFound {
 		return acct, ErrAccountNotFound
@@ -592,7 +569,7 @@ func (eth *ethereum) GetAccount(addr common.Address) (accounts.Account, error) {
 	return acct, nil
 }
 
-func (eth *ethereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
+func (eth *EthereumDetails) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
 	if key, ok := eth.keys[addr]; ok {
 		return key, nil
 	}
@@ -600,22 +577,22 @@ func (eth *ethereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) 
 }
 
 // SetDefaultAccount designates the account to be used by default
-func (eth *ethereum) SetDefaultAccount(acct accounts.Account) {
+func (eth *EthereumDetails) SetDefaultAccount(acct accounts.Account) {
 	eth.defaultAccount = acct
 }
 
 // GetDefaultAccount returns the default account
-func (eth *ethereum) GetDefaultAccount() accounts.Account {
+func (eth *EthereumDetails) GetDefaultAccount() accounts.Account {
 	return eth.defaultAccount
 }
 
 // GetCoinbaseAddress returns the account to use for contract deploys
-func (eth *ethereum) GetCoinbaseAddress() common.Address {
+func (eth *EthereumDetails) GetCoinbaseAddress() common.Address {
 	return eth.coinbase
 }
 
 // GetBalance returns the ETHER balance of account specified
-func (eth *ethereum) GetBalance(addr common.Address) (*big.Int, error) {
+func (eth *EthereumDetails) GetBalance(addr common.Address) (*big.Int, error) {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 	balance, err := eth.client.BalanceAt(ctx, addr, nil)
@@ -625,16 +602,16 @@ func (eth *ethereum) GetBalance(addr common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
-func (eth *ethereum) GetEndpoint() string {
+func (eth *EthereumDetails) GetEndpoint() string {
 	return eth.endpoint
 }
 
-func (eth *ethereum) GetTimeoutContext() (context.Context, context.CancelFunc) {
+func (eth *EthereumDetails) GetTimeoutContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), eth.timeout)
 }
 
 // GetSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error
-func (eth *ethereum) GetSyncProgress() (bool, *geth.SyncProgress, error) {
+func (eth *EthereumDetails) GetSyncProgress() (bool, *ethereum.SyncProgress, error) {
 
 	ctx, ctxCancel := eth.GetTimeoutContext()
 	progress, err := eth.syncing(ctx)
@@ -651,13 +628,13 @@ func (eth *ethereum) GetSyncProgress() (bool, *geth.SyncProgress, error) {
 	return false, nil, err
 }
 
-func (eth *ethereum) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
+func (eth *EthereumDetails) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 
 	logger := eth.logger
 
 	logger.Debugf("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
 
-	query := geth.FilterQuery{
+	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetUint64(firstBlock),
 		ToBlock:   new(big.Int).SetUint64(lastBlock),
 		Addresses: addresses}
@@ -678,12 +655,12 @@ func (eth *ethereum) GetEvents(ctx context.Context, firstBlock uint64, lastBlock
 	return logs, nil
 }
 
-func (eth *ethereum) RetryCount() int {
+func (eth *EthereumDetails) RetryCount() int {
 	return eth.retryCount
 }
 
 // WaitForReceipt
-func (eth *ethereum) WaitForReceipt(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+func (eth *EthereumDetails) WaitForReceipt(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
 
 	count := 1
 	receipt, err := eth.client.TransactionReceipt(ctx, txn.Hash())
@@ -691,7 +668,7 @@ func (eth *ethereum) WaitForReceipt(ctx context.Context, txn *types.Transaction)
 	// Ugly condition, because
 	// -- Real endpoint returns err==geth.NotFound if receipt is nil
 	// -- Simulated endpoint returns err==nil and receipt==nil until commit() is called
-	for err == geth.NotFound || (err == nil && receipt == nil) {
+	for err == ethereum.NotFound || (err == nil && receipt == nil) {
 		eth.logger.Debugf("Retry #%d getting receipt for %v ...", count, txn.Hash().Hex())
 		count++
 		SleepWithContext(ctx, eth.retryDelay)
@@ -701,16 +678,16 @@ func (eth *ethereum) WaitForReceipt(ctx context.Context, txn *types.Transaction)
 	return receipt, err
 }
 
-func (eth *ethereum) RetryDelay() time.Duration {
+func (eth *EthereumDetails) RetryDelay() time.Duration {
 	return eth.retryDelay
 }
 
-func (eth *ethereum) Timeout() time.Duration {
+func (eth *EthereumDetails) Timeout() time.Duration {
 	return eth.timeout
 }
 
-func (eth *ethereum) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
-	opts, err := bind.NewKeyStoreTransactor(eth.keystore, account)
+func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
+	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
 		eth.logger.Errorf("could not create transactor for %v: %v", account.Address.Hex(), err)
 	} else {
@@ -724,7 +701,7 @@ func (eth *ethereum) GetTransactionOpts(ctx context.Context, account accounts.Ac
 	return opts, err
 }
 
-func (eth *ethereum) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts { // TODO provide and use context
+func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts { // TODO provide and use context
 	return &bind.CallOpts{
 		BlockNumber: nil,
 		Context:     ctx,
@@ -733,7 +710,7 @@ func (eth *ethereum) GetCallOpts(ctx context.Context, account accounts.Account) 
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked
-func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
+func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
 
 	nonce, err := eth.client.PendingNonceAt(context.Background(), from)
 	if err != nil {
@@ -770,7 +747,7 @@ func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *
 }
 
 // GetCurrentHeight gets the height of the endpoints chain
-func (eth *ethereum) GetCurrentHeight(ctx context.Context) (uint64, error) {
+func (eth *EthereumDetails) GetCurrentHeight(ctx context.Context) (uint64, error) {
 	header, err := eth.client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -780,7 +757,7 @@ func (eth *ethereum) GetCurrentHeight(ctx context.Context) (uint64, error) {
 }
 
 // GetFinalizedHeight gets the height of the endpoints chain at which is is considered finalized
-func (eth *ethereum) GetFinalizedHeight(ctx context.Context) (uint64, error) {
+func (eth *EthereumDetails) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 	height, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return height, err
@@ -793,13 +770,13 @@ func (eth *ethereum) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 
 }
 
-func (eth *ethereum) GetSnapshot() ([]byte, error) {
+func (eth *EthereumDetails) GetSnapshot() ([]byte, error) {
 	return nil, nil
 }
 
-func (eth *ethereum) GetValidators(ctx context.Context) ([]common.Address, error) {
+func (eth *EthereumDetails) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
-	validatorAddresses, err := c.Validators.GetValidators(eth.GetCallOpts(ctx, eth.defaultAccount))
+	validatorAddresses, err := c.Validators().GetValidators(eth.GetCallOpts(ctx, eth.defaultAccount))
 	if err != nil {
 		eth.logger.Warnf("Could not call contract:%v", err)
 		return nil, err
@@ -808,563 +785,12 @@ func (eth *ethereum) GetValidators(ctx context.Context) ([]common.Address, error
 	return validatorAddresses, nil
 }
 
-func (eth *ethereum) Clone(defaultAccount accounts.Account) Ethereum {
+func (eth *EthereumDetails) Clone(defaultAccount accounts.Account) *EthereumDetails {
 	nEth := *eth
 
 	nEth.defaultAccount = defaultAccount
 
 	return &nEth
-}
-
-// LookupContracts uses the registry to lookup and create bindings for all required contracts
-func (c *Contracts) LookupContracts(ctx context.Context, registryAddress common.Address) error {
-
-	eth := c.eth
-	logger := eth.logger
-
-	// Load the registry first
-	registry, err := bindings.NewRegistry(registryAddress, eth.client)
-	if err != nil {
-		return err
-	}
-	c.Registry = registry
-	c.RegistryAddress = registryAddress
-
-	// Just a help for looking up other contracts
-	lookup := func(name string) (common.Address, error) {
-		addr, err := registry.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), name)
-		if err != nil {
-			logger.Errorf("Failed lookup of \"%v\": %v", name, err)
-		} else {
-			logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
-		}
-		return addr, err
-	}
-
-	c.DepositAddress, err = lookup("deposit/v1")
-	logAndEat(logger, err)
-
-	c.Deposit, err = bindings.NewDeposit(c.DepositAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.EthdkgAddress, err = lookup("ethdkg/v1")
-	logAndEat(logger, err)
-
-	c.Ethdkg, err = bindings.NewETHDKG(c.EthdkgAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.StakingTokenAddress, err = lookup("stakingToken/v1")
-	logAndEat(logger, err)
-
-	c.StakingToken, err = bindings.NewToken(c.StakingTokenAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.UtilityTokenAddress, err = lookup("utilityToken/v1")
-	logAndEat(logger, err)
-
-	c.UtilityToken, err = bindings.NewToken(c.UtilityTokenAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.ValidatorsAddress, err = lookup("validators/v1")
-	logAndEat(logger, err)
-
-	// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
-	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	stakingAddress, err := lookup("staking/v1")
-	logAndEat(logger, err)
-
-	c.Staking, err = bindings.NewStaking(stakingAddress, eth.client)
-	logAndEat(logger, err)
-
-	return nil
-}
-
-// DeployContracts deploys and does basic setup for all contracts. It returns a binding to the registry, it's address or an error.
-func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Account) (*bindings.Registry, common.Address, error) {
-	eth := c.eth
-	logger := eth.logger
-	eth.contracts = c
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, account)
-	if err != nil {
-		return nil, common.Address{}, err
-	}
-
-	q := eth.Queue()
-
-	deployGroup := 111
-	facetConfigGroup := 222
-
-	var txn *types.Transaction
-	c.RegistryAddress, txn, c.Registry, err = bindings.DeployRegistry(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy registry...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-	logger.Infof("* registryAddress = \"0x%0.40x\"", c.RegistryAddress)
-
-	c.StakingTokenAddress, txn, c.StakingToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("STK"), StringToBytes32("MadNet Staking"))
-	if err != nil {
-		logger.Errorf("Failed to deploy stakingToken...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-	logger.Infof("  stakingTokenAddress = \"0x%0.40x\"", c.StakingTokenAddress)
-
-	c.CryptoAddress, txn, c.Crypto, err = bindings.DeployCrypto(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy crypto...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-	logger.Infof("        cryptoAddress = \"0x%0.40x\"", c.CryptoAddress)
-
-	c.UtilityTokenAddress, txn, c.UtilityToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("UTL"), StringToBytes32("MadNet Utility"))
-	if err != nil {
-		logger.Errorf("Failed to deploy utilityToken...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-	logger.Infof("  utilityTokenAddress = \"0x%0.40x\"", c.UtilityTokenAddress)
-
-	c.DepositAddress, txn, c.Deposit, err = bindings.DeployDeposit(txnOpts, eth.client, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to deploy deposit...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-	logger.Infof("  depositAddress = \"0x%0.40x\"", c.DepositAddress)
-
-	// Deploy ValidatorsDiamond
-	c.ValidatorsAddress, txn, _, err = bindings.DeployValidatorsDiamond(txnOpts, eth.client) // Deploy the core diamond
-	if err != nil {
-		logger.Errorf("Failed to deploy validators diamond...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-
-	// Deploy validators facets
-	participantsFacet, txn, _, err := bindings.DeployParticipantsFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Error("Failed to deploy participants facet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-
-	snapshotsFacet, txn, _, err := bindings.DeploySnapshotsFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Error("Failed to deploy snapshots facet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-
-	stakingFacet, txn, _, err := bindings.DeployStakingFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Error("Failed to deploy staking facet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-
-	// Bind diamond to interfaces
-	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Staking, err = bindings.NewStaking(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Participants, err = bindings.NewParticipants(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Snapshots, err = bindings.NewSnapshots(c.ValidatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.Validators, err = bindings.NewValidators(c.ValidatorsAddress, eth.client) // Validators is just an interface
-	if err != nil {
-		logger.Errorf("Failed to deploy validators...")
-		return nil, common.Address{}, err
-	}
-	logger.Infof("  validatorsAddress = \"0x%0.40x\"", c.ValidatorsAddress)
-
-	validatorsUpdate, err := bindings.NewDiamondUpdateFacet(c.ValidatorsAddress, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to bind validators update  ..")
-		return nil, common.Address{}, err
-	}
-
-	// Wait for all the deploys to finish
-	eth.commit()
-
-	q.WaitGroupTransactions(ctx, deployGroup)
-
-	// Register all the validators facets
-	vu := &Updater{Updater: validatorsUpdate, TxnOpts: txnOpts, Logger: logger}
-
-	// Staking maintenance
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeStaking(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceReward()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceRewardFor(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceStake()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceStakeFor(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlocked()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedFor(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedReward()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedRewardFor(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("currentEpoch()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("lockStake(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorFine(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorStakeFine()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minimumStake()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minorFine(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minorStakeFine()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("requestUnlockStake()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardAmount()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardBonus()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setCurrentEpoch(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMajorStakeFine(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinimumStake(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinorStakeFine(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setRewardAmount(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setRewardBonus(uint256)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("unlockStake(uint256)", stakingFacet))
-
-	// Snapshot maintenance
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeSnapshots(address)", snapshotsFacet))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("snapshot(bytes,bytes)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minEthSnapshotSize()", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinMadSnapshotSize(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minMadSnapshotSize()", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setEpoch(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("epoch()", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getChainIdFromSnapshot(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getRawBlockClaimsSnapshot(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getRawSignatureSnapshot(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getHeightFromSnapshot(uint256)", snapshotsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getMadHeightFromSnapshot(uint256)", snapshotsFacet))
-
-	// Validator maintenance
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeParticipants(address)", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("addValidator(address,uint256[2])", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("removeValidator(address,uint256[2])", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("isValidator(address)", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getValidatorPublicKey(address)", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("confirmValidators()", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("validatorMaxCount()", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("validatorCount()", participantsFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setValidatorMaxCount(uint8)", participantsFacet))
-
-	c.EthdkgAddress, txn, _, err = bindings.DeployEthDKGDiamond(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGDiamond...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress)
-
-	c.Ethdkg, err = bindings.NewETHDKG(c.EthdkgAddress, eth.client)
-	logAndEat(logger, err)
-
-	var ethdkgCompletionAddress common.Address
-	ethdkgCompletionAddress, txn, _, err = bindings.DeployEthDKGCompletionFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGCompletionFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGCompletionFacet = \"0x%0.40x\"", txn.Gas(), ethdkgCompletionAddress)
-
-	var ethdkgGroupAccusationAddress common.Address
-	ethdkgGroupAccusationAddress, txn, _, err = bindings.DeployEthDKGGroupAccusationFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGGroupAccusationFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGGroupAccusationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgGroupAccusationAddress)
-
-	var ethdkgInitializeAddress common.Address
-	ethdkgInitializeAddress, txn, _, err = bindings.DeployEthDKGInitializeFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGInitializeFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGInitializeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInitializeAddress)
-
-	var ethdkgSubmitMPKAddress common.Address
-	ethdkgSubmitMPKAddress, txn, _, err = bindings.DeployEthDKGSubmitMPKFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGSubmitMPKFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGSubmitMPKFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitMPKAddress)
-
-	var ethdkgSubmitDisputeAddress common.Address
-	ethdkgSubmitDisputeAddress, txn, _, err = bindings.DeployEthDKGSubmitDisputeFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGSubmitDisputeFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGSubmitDisputeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitDisputeAddress)
-
-	var ethdkgMiscAddress common.Address
-	ethdkgMiscAddress, txn, _, err = bindings.DeployEthDKGMiscFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGMiscFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGMiscFacet = \"0x%0.40x\"", txn.Gas(), ethdkgMiscAddress)
-
-	var ethdkgInfoFacetAddress common.Address
-	ethdkgInfoFacetAddress, txn, _, err = bindings.DeployEthDKGInformationFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGInformationFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGInformationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInfoFacetAddress)
-
-	ethdkgUpdate, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to bind ethdkg update  ..")
-		return nil, common.Address{}, err
-	}
-
-	// Wait for all the deploys to finish
-	eth.commit()
-
-	q.WaitGroupTransactions(ctx, facetConfigGroup)
-	// flushQ(txnQueue)
-
-	// Register all the ethdkg facets
-	vu = &Updater{Updater: ethdkgUpdate, TxnOpts: txnOpts, Logger: logger}
-
-	//
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeEthDKG(address)", ethdkgInitializeAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeState()", ethdkgInitializeAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("updatePhaseLength(uint256)", ethdkgInitializeAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getPhaseLength()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialMessage()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("isMalicious(address)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("master_public_key(uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj(uint256[],uint256[],uint256[])", ethdkgGroupAccusationAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj_Comp(uint256[][],uint256[2][][],uint256,address)", ethdkgGroupAccusationAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_dispute(address,uint256,uint256,uint256[],uint256[2][],uint256[2],uint256[2])", ethdkgSubmitDisputeAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("register(uint256[2])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Successful_Completion()", ethdkgCompletionAddress))
-
-	// Flush everything
-	// eth.contracts = c
-	eth.commit()
-
-	txn, err = c.Registry.Register(txnOpts, "deposit/v1", c.DepositAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "ethdkg/v1", c.EthdkgAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "crypto/v1", c.CryptoAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "staking/v1", c.ValidatorsAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "stakingToken/v1", c.StakingTokenAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "utilityToken/v1", c.UtilityTokenAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	txn, err = c.Registry.Register(txnOpts, "validators/v1", c.ValidatorsAddress)
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-
-	eth.commit()
-
-	// Wait for all the deploys to finish
-	q.WaitGroupTransactions(ctx, facetConfigGroup)
-
-	// Initialize Snapshots facet
-	tx, err := c.Snapshots.InitializeSnapshots(txnOpts, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to initialize SnapshotsFacet: %v", err)
-		return nil, common.Address{}, err
-	}
-	eth.commit()
-	rcpt, err := eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for initializing Snapshots facet: %v", err)
-		return nil, common.Address{}, err
-	}
-	if rcpt != nil {
-		logger.Infof("Snapshots update status: %v", rcpt.Status)
-	} else {
-		logger.Errorf("Snapshots update receipt is nil")
-	}
-
-	tx, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(1))
-	if err != nil {
-		logger.Errorf("Failed to initialize Snapshots facet next snapshot: %v", err)
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	// Default staking values
-	tx, err = c.Staking.SetMinimumStake(txnOpts, big.NewInt(1000000))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Staking.SetMajorStakeFine(txnOpts, big.NewInt(200000))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Staking.SetMinorStakeFine(txnOpts, big.NewInt(50000))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Staking.SetRewardAmount(txnOpts, big.NewInt(1000))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Staking.SetRewardBonus(txnOpts, big.NewInt(1000))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Snapshots.SetMinMadSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength)))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	tx, err = c.Snapshots.SetMinEthSnapshotSize(txnOpts, big.NewInt(int64(constants.EpochLength/8)))
-	logAndEat(logger, err)
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-
-	eth.commit()
-
-	q.WaitGroupTransactions(ctx, facetConfigGroup)
-
-	// Initialize Participants facet
-	tx, err = c.Participants.InitializeParticipants(txnOpts, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to initialize Participants facet: %v", err)
-		return nil, common.Address{}, err
-	}
-	eth.commit()
-
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for initializing Participants facet: %v", err)
-		return nil, common.Address{}, err
-	}
-	if rcpt != nil {
-		logger.Infof("Participants update status: %v", rcpt.Status)
-	} else {
-		logger.Errorf("Participants update receipt is nil")
-	}
-
-	tx, err = c.Participants.SetValidatorMaxCount(txnOpts, 10)
-	if err != nil {
-		logger.Errorf("Failed to initialize Participants facet: %v", err)
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, tx)
-	eth.commit()
-	q.WaitGroupTransactions(ctx, facetConfigGroup)
-
-	// Staking updates
-	tx, err = c.Staking.InitializeStaking(txnOpts, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to update staking contract references: %v", err)
-		return nil, common.Address{}, err
-	}
-	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for staking update: %v", err)
-		return nil, common.Address{}, err
-
-	}
-	if rcpt != nil {
-		logger.Infof("staking update status: %v", rcpt.Status)
-	} else {
-		logger.Errorf("staking receipt is nil")
-	}
-
-	// Deposit updates
-	tx, err = c.Deposit.ReloadRegistry(txnOpts)
-	if err != nil {
-		logger.Errorf("Failed to update deposit contract references: %v", err)
-		return nil, common.Address{}, err
-	}
-	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for deposit update: %v", err)
-		return nil, common.Address{}, err
-	} else if rcpt != nil {
-		logger.Infof("deposit update status: %v", rcpt.Status)
-	}
-
-	// ETHDKG updates
-	tx, err = c.Ethdkg.InitializeEthDKG(txnOpts, c.RegistryAddress)
-	if err != nil {
-		logger.Errorf("Failed to update ethdkg contract references: %v", err)
-		return nil, common.Address{}, err
-	}
-	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
-	if err != nil {
-		logger.Errorf("Failed to get receipt for ethdkg update: %v", err)
-		return nil, common.Address{}, err
-	} else if rcpt != nil {
-		logger.Infof("ethdkg update status: %v", rcpt.Status)
-	}
-
-	return c.Registry, c.RegistryAddress, nil
 }
 
 // StringToBytes32 is useful for convert a Go string into a bytes32 useful calling Solidity

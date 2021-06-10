@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,11 +14,11 @@ import (
 type RegisterTask struct {
 	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
 	OriginalRegistrationEnd uint64
-	State                   *dkg.EthDKGState
+	State                   *objects.DkgState
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(state *dkg.EthDKGState) *RegisterTask {
+func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 	return &RegisterTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State:                   state,
@@ -76,7 +76,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth bl
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := c.Ethdkg.Register(txnOpts, t.State.TransportPublicKey)
+	txn, err := c.Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return false
@@ -126,7 +126,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	}
 
 	// Check if the registration window has moved, quit if it has
-	lastBlock, err := c.Ethdkg.TREGISTRATIONEND(callOpts)
+	lastBlock, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
 	if err != nil {
 		return true
 	}
@@ -138,7 +138,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	}
 
 	// Check to see if we are already registered
-	ethdkg := eth.Contracts().Ethdkg
+	ethdkg := eth.Contracts().Ethdkg()
 	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Warnf("could not check if we're registered: %v", err)

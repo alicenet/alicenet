@@ -59,7 +59,7 @@ func (t *SnapshotTask) doTask(ctx context.Context) bool {
 		return false
 	}
 
-	txn, err := c.Validators.Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
+	txn, err := c.Validators().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
 	if err != nil {
 		t.logger.Errorf("Failed to take snapshot: %v", err)
 		return false
@@ -94,7 +94,7 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context) bool {
 	c := t.eth.Contracts()
 
 	callOpts := t.eth.GetCallOpts(ctx, t.acct)
-	height, err := c.Validators.GetHeightFromSnapshot(callOpts, t.epoch)
+	height, err := c.Validators().GetHeightFromSnapshot(callOpts, t.epoch)
 	if err != nil {
 		return true
 	}

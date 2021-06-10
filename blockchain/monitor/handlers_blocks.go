@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/bridge/bindings"
@@ -19,7 +20,7 @@ var big2 = big.NewInt(2)
 var big3 = big.NewInt(3)
 
 // DoDistributeShares this should happen when it's time to distribute shares
-func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
+func (svcs *Services) DoDistributeShares(state *objects.MonitorState, block uint64) error {
 
 	// eth := svcs.eth
 	logger := svcs.logger
@@ -86,7 +87,7 @@ func (svcs *Services) DoDistributeShares(state *State, block uint64) error {
 }
 
 // DoSubmitDispute submits a dispute if any of the shares we've seen are bad
-func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
+func (svcs *Services) DoSubmitDispute(state *objects.MonitorState, block uint64) error {
 	svcs.logger.Infof(strings.Repeat("-", 60))
 	svcs.logger.Infof("=== DoSubmitDispute                                     ===")
 	svcs.logger.Infof(strings.Repeat("-", 60))
@@ -116,7 +117,7 @@ func (svcs *Services) DoSubmitDispute(state *State, block uint64) error {
 }
 
 // DoSubmitKeyShare does something
-func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
+func (svcs *Services) DoSubmitKeyShare(state *objects.MonitorState, block uint64) error {
 
 	logger := svcs.logger
 
@@ -153,7 +154,7 @@ func (svcs *Services) DoSubmitKeyShare(state *State, block uint64) error {
 }
 
 // DoSubmitMasterPublicKey does something
-func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error {
+func (svcs *Services) DoSubmitMasterPublicKey(state *objects.MonitorState, block uint64) error {
 
 	logger := svcs.logger
 
@@ -185,7 +186,7 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 	// }
 
 	// // TODO Guard against missing keyshares, panic can happen
-	// mpk, err := dkg.GenerateMasterPublicKey(keyShareG1s, keyShareG2s)
+	// mpk, err := math.GenerateMasterPublicKey(keyShareG1s, keyShareG2s)
 	// if err != nil {
 	// 	return fmt.Errorf("Can't GenerateMasterPublicKey: %v", err)
 	// }
@@ -209,7 +210,7 @@ func (svcs *Services) DoSubmitMasterPublicKey(state *State, block uint64) error 
 }
 
 // DoSubmitGPKj does something
-func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
+func (svcs *Services) DoSubmitGPKj(state *objects.MonitorState, block uint64) error {
 
 	logger := svcs.logger
 
@@ -271,7 +272,7 @@ func (svcs *Services) DoSubmitGPKj(state *State, block uint64) error {
 }
 
 // DoGroupAccusationGPKj does something
-func (svcs *Services) DoGroupAccusationGPKj(state *State, block uint64) error {
+func (svcs *Services) DoGroupAccusationGPKj(state *objects.MonitorState, block uint64) error {
 	logger := svcs.logger
 
 	logger.Infof(strings.Repeat("-", 60))
@@ -303,7 +304,7 @@ func (svcs *Services) DoGroupAccusationGPKj(state *State, block uint64) error {
 }
 
 // DoSuccessfulCompletion does something
-func (svcs *Services) DoSuccessfulCompletion(state *State, block uint64) error {
+func (svcs *Services) DoSuccessfulCompletion(state *objects.MonitorState, block uint64) error {
 	logger := svcs.logger
 
 	logger.Infof(strings.Repeat("-", 60))

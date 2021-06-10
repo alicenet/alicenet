@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/rbus"
 	"github.com/sirupsen/logrus"
@@ -104,7 +105,7 @@ func (bus *monitorBus) Request(serviceName string, timeOut time.Duration, reques
 
 // SvcProcessEvents Exposes the ProcessEvents method on the bus
 func (bus *monitorBus) SvcProcessEvents(request rbus.Request) error {
-	var state = request.Request().(*State)
+	var state = request.Request().(*objects.MonitorState)
 	err := bus.svcs.WatchEthereum(state)
 	if err != nil {
 		request.Respond(err)

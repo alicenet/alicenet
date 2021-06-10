@@ -72,7 +72,7 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Logger,
 
 	// This essentially checks if ethdkg was restarted while this task was running
 	callOpts := eth.GetCallOpts(ctx, acct)
-	registrationEnd, err := eth.Contracts().Ethdkg.TREGISTRATIONEND(callOpts)
+	registrationEnd, err := eth.Contracts().Ethdkg().TREGISTRATIONEND(callOpts)
 	if err != nil {
 		logger.Warnf("could not check when registration should have ended: %v", err)
 		return true
@@ -83,7 +83,7 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Logger,
 	}
 
 	// Check to see if we are already registered
-	status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg, logger, callOpts, acct.Address, publicKey)
+	status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg(), logger, callOpts, acct.Address, publicKey)
 	if err != nil {
 		// This probably means an endpoint issue, so we have to try again
 		logger.Warnf("could not check if we're registered: %v", err)

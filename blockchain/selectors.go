@@ -3,24 +3,23 @@ package blockchain
 import (
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-type FuncSelector [4]byte
-
-type SelectorMap struct {
+type SelectorMapDetail struct {
 	sync.RWMutex
-	signatures map[FuncSelector]string
-	selectors  map[string]FuncSelector
+	signatures map[interfaces.FuncSelector]string
+	selectors  map[string]interfaces.FuncSelector
 }
 
-func NewSelectorMap() *SelectorMap {
-	return &SelectorMap{
-		signatures: make(map[FuncSelector]string, 20),
-		selectors:  make(map[string]FuncSelector, 20)}
+func NewSelectorMap() *SelectorMapDetail {
+	return &SelectorMapDetail{
+		signatures: make(map[interfaces.FuncSelector]string, 20),
+		selectors:  make(map[string]interfaces.FuncSelector, 20)}
 }
 
-func (selectorMap *SelectorMap) Selector(signature string) FuncSelector {
+func (selectorMap *SelectorMapDetail) Selector(signature string) interfaces.FuncSelector {
 
 	// First check if we already have it
 	selectorMap.RLock()
@@ -40,7 +39,7 @@ func (selectorMap *SelectorMap) Selector(signature string) FuncSelector {
 	return selector
 }
 
-func (selectorMap *SelectorMap) Signature(selector FuncSelector) string {
+func (selectorMap *SelectorMapDetail) Signature(selector interfaces.FuncSelector) string {
 	selectorMap.RLock()
 	defer selectorMap.RUnlock()
 
@@ -48,7 +47,7 @@ func (selectorMap *SelectorMap) Signature(selector FuncSelector) string {
 }
 
 // CalculateSelector calculates the hash of the supplied function signature
-func CalculateSelector(signature string) FuncSelector {
+func CalculateSelector(signature string) interfaces.FuncSelector {
 	var selector [4]byte
 
 	selectorSlice := crypto.Keccak256([]byte(signature))[:4]
@@ -60,7 +59,7 @@ func CalculateSelector(signature string) FuncSelector {
 	return selector
 }
 
-func ExtractSelector(data []byte) FuncSelector {
+func ExtractSelector(data []byte) interfaces.FuncSelector {
 	var selector [4]byte
 
 	if len(data) >= 4 {
