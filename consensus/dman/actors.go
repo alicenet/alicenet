@@ -66,7 +66,7 @@ func (a *RootActor) Close() {
 
 // TODO verify blockheader cache is being cleaned
 func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
-	txList, txHashList := a.txc.GetHeight(height)
+	txList, txHashList := a.txc.GetHeight(height + 1)
 	for i := 0; i < len(txList); i++ {
 		txb, err := txList[i].MarshalBinary()
 		if err != nil {
@@ -76,48 +76,75 @@ func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 			return err
 		}
 	}
-	dropKeys := a.bhc.DropBeforeHeight(height)
-	dropKeys = append(dropKeys, a.txc.DropBeforeHeight(height)...)
-	for i := 0; i < len(dropKeys); i++ {
-		delete(a.reqs, dropKeys[i])
+	return nil
+}
+
+func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
+	if height > 10 {
+		dropKeys := a.bhc.DropBeforeHeight(height - 5)
+		dropKeys = append(dropKeys, a.txc.DropBeforeHeight(height-5)...)
+		for i := 0; i < len(dropKeys); i++ {
+			delete(a.reqs, dropKeys[i])
+		}
 	}
 	return nil
 }
 
 func (a *RootActor) DownloadPendingTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingTxRequest, height, round)
-	a.download(req)
+	a.download(req, false)
 }
 
 func (a *RootActor) DownloadMinedTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, MinedTxRequest, height, round)
-	a.download(req)
+	a.download(req, false)
 }
 
 func (a *RootActor) DownloadTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingAndMinedTxRequest, height, round)
-	a.download(req)
+	a.download(req, false)
 }
 
 func (a *RootActor) DownloadBlockHeader(height, round uint32) {
 	req := NewBlockHeaderDownloadRequest(height, round, BlockHeaderRequest)
-	a.download(req)
+	a.download(req, false)
 }
 
-func (a *RootActor) download(b DownloadRequest) {
+func (a *RootActor) download(b DownloadRequest, retry bool) {
 	select {
 	case <-a.closeChan:
 		return
 	default:
 		a.wg.Add(1)
-		go a.doDownload(b)
+		go a.doDownload(b, retry)
 	}
 }
 
-func (a *RootActor) doDownload(b DownloadRequest) {
+func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 	defer a.wg.Done()
 	switch b.DownloadType() {
-	case PendingAndMinedTxRequest, PendingTxRequest, MinedTxRequest:
+	case PendingTxRequest, MinedTxRequest:
+		ok := func() bool {
+			a.Lock()
+			defer a.Unlock()
+			if a.txc.Contains([]byte(b.Identifier())) {
+				return false
+			}
+			if _, exists := a.reqs[b.Identifier()]; exists {
+				if retry {
+					return true
+				}
+				return false
+			}
+			a.reqs[b.Identifier()] = true
+			return true
+		}()
+		if !ok {
+			return
+		}
+		a.dispatchQ <- b
+		a.await(b)
+	case PendingAndMinedTxRequest:
 		ok := func() bool {
 			a.Lock()
 			defer a.Unlock()
@@ -133,6 +160,38 @@ func (a *RootActor) doDownload(b DownloadRequest) {
 		if !ok {
 			return
 		}
+		bc0 := &TxDownloadRequest{
+			TxHash:       []byte(b.Identifier()),
+			Dtype:        PendingTxRequest,
+			Height:       b.RequestHeight(),
+			Round:        b.RequestRound(),
+			responseChan: make(chan DownloadResponse),
+		}
+		bc1 := &TxDownloadRequest{
+			TxHash:       []byte(b.Identifier()),
+			Dtype:        MinedTxRequest,
+			Height:       b.RequestHeight(),
+			Round:        b.RequestRound(),
+			responseChan: make(chan DownloadResponse),
+		}
+		ptxc := make(chan struct{})
+		mtxc := make(chan struct{})
+		go func() {
+			defer close(ptxc)
+			a.dispatchQ <- bc0
+			a.await(bc0)
+		}()
+		go func() {
+			defer close(mtxc)
+			a.dispatchQ <- bc1
+			a.await(bc1)
+		}()
+		select {
+		case <-ptxc:
+			<-mtxc
+		case <-mtxc:
+			<-ptxc
+		}
 	case BlockHeaderRequest:
 		ok := func() bool {
 			a.Lock()
@@ -141,6 +200,9 @@ func (a *RootActor) doDownload(b DownloadRequest) {
 				return false
 			}
 			if _, exists := a.reqs[b.Identifier()]; exists {
+				if retry {
+					return true
+				}
 				return false
 			}
 			a.reqs[b.Identifier()] = true
@@ -149,11 +211,11 @@ func (a *RootActor) doDownload(b DownloadRequest) {
 		if !ok {
 			return
 		}
+		a.dispatchQ <- b
+		a.await(b)
 	default:
 		panic(b.DownloadType())
 	}
-	a.dispatchQ <- b
-	a.await(b)
 }
 
 func (a *RootActor) await(req DownloadRequest) {
@@ -162,11 +224,14 @@ func (a *RootActor) await(req DownloadRequest) {
 		return
 	}
 	switch resp.DownloadType() {
-	case PendingTxRequest, MinedTxRequest, PendingAndMinedTxRequest:
+	case PendingTxRequest, MinedTxRequest:
 		r := resp.(*TxDownloadResponse)
 		if r.Err != nil {
-			utils.DebugTrace(a.logger, r.Err)
-			defer a.download(req)
+			exists := a.txc.Contains(r.TxHash)
+			if !exists {
+				utils.DebugTrace(a.logger, r.Err)
+				defer a.download(req, true)
+			}
 			return
 		}
 		ok := func() bool {
@@ -179,12 +244,12 @@ func (a *RootActor) await(req DownloadRequest) {
 		if ok {
 			return
 		}
-		defer a.download(req)
+		defer a.download(req, true)
 	case BlockHeaderRequest:
 		r := resp.(*BlockHeaderDownloadResponse)
 		if r.Err != nil {
 			utils.DebugTrace(a.logger, r.Err)
-			defer a.download(req)
+			defer a.download(req, true)
 			return
 		}
 		ok := func() bool {
@@ -197,7 +262,7 @@ func (a *RootActor) await(req DownloadRequest) {
 		if ok {
 			return
 		}
-		defer a.download(req)
+		defer a.download(req, true)
 	default:
 		panic(req.DownloadType())
 	}
@@ -250,7 +315,7 @@ func (a *blockActor) run() {
 func (a *blockActor) await(req DownloadRequest) {
 	var subReq DownloadRequest
 	switch req.DownloadType() {
-	case PendingTxRequest, MinedTxRequest, PendingAndMinedTxRequest:
+	case PendingTxRequest, MinedTxRequest:
 		reqTyped := req.(*TxDownloadRequest)
 		subReq = NewTxDownloadRequest(reqTyped.TxHash, reqTyped.Dtype, reqTyped.Height, reqTyped.Round)
 		a.DisptachQ <- subReq
@@ -329,13 +394,6 @@ func (a *downloadActor) run() {
 				a.PendingDispatchQ <- req.(*TxDownloadRequest)
 			case MinedTxRequest:
 				a.MinedDispatchQ <- req.(*TxDownloadRequest)
-			case PendingAndMinedTxRequest:
-				select {
-				case a.MinedDispatchQ <- req.(*TxDownloadRequest):
-					a.PendingDispatchQ <- req.(*TxDownloadRequest)
-				case a.PendingDispatchQ <- req.(*TxDownloadRequest):
-					a.MinedDispatchQ <- req.(*TxDownloadRequest)
-				}
 			case BlockHeaderRequest:
 				a.BlockDispatchQ <- req.(*BlockHeaderDownloadRequest)
 			default:

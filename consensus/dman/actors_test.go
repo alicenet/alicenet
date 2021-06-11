@@ -275,7 +275,7 @@ func TestRootActor_download(t *testing.T) {
 				ra.Start()
 				defer ra.Close()
 				trb.expect(tt.proxyCalls, tt.proxyReturns)
-				ra.download(tt.args.b)
+				ra.download(tt.args.b, false)
 			}()
 		})
 		if tt.args.check {
