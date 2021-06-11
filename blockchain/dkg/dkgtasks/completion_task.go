@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -30,16 +31,16 @@ func NewCompletionTask(acct accounts.Account, publicKey [2]*big.Int, registratio
 }
 
 // DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -84,7 +85,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()

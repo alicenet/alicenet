@@ -71,7 +71,12 @@ type DkgState struct {
 }
 
 func NewDkgState(account accounts.Account) *DkgState {
-	return &DkgState{Account: account}
+	return &DkgState{
+		Account:                     account,
+		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
+		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
+		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
+	}
 }
 
 func (state *DkgState) PopulateSchedule(event *bindings.ETHDKGRegistrationOpen) {

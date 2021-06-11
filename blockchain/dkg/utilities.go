@@ -4,14 +4,14 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // RetrieveParticipants retrieves participant details from ETHDKG contract
-func RetrieveParticipants(eth blockchain.Ethereum, callOpts *bind.CallOpts) (objects.ParticipantList, int, error) {
+func RetrieveParticipants(eth interfaces.Ethereum, callOpts *bind.CallOpts) (objects.ParticipantList, int, error) {
 
 	c := eth.Contracts()
 	myIndex := math.MaxInt32

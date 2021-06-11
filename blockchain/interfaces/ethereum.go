@@ -12,6 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/pborman/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 //Ethereum contains state information about a connection to Ethereum
@@ -137,4 +139,32 @@ type Contracts interface {
 	UtilityTokenAddress() common.Address
 	Validators() *bindings.Validators
 	ValidatorsAddress() common.Address
+}
+
+// Task the interface requirements of a task
+type Task interface {
+	DoDone(*logrus.Logger)
+	DoRetry(context.Context, *logrus.Logger, Ethereum) bool
+	DoWork(context.Context, *logrus.Logger, Ethereum) bool
+	ShouldRetry(context.Context, *logrus.Logger, Ethereum) bool
+}
+
+// TaskHandler required functionality of a task
+type TaskHandler interface {
+	Cancel()
+	Start()
+	Complete() bool
+	Successful() bool
+}
+
+// Schedule simple interface to a block based schedule
+type Schedule interface {
+	Schedule(start uint64, end uint64, thing Task) (uuid.UUID, error)
+	Purge()
+	PurgePrior(now uint64)
+	Find(now uint64) (uuid.UUID, error)
+	Retrieve(taskId uuid.UUID) (Task, error)
+	Length() int
+	Remove(taskId uuid.UUID) error
+	Status(logger *logrus.Logger)
 }

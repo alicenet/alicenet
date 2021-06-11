@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
@@ -26,43 +26,23 @@ func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	}
 }
 
-// MPKSubmissionTask contains required state for safely performing a registration
-// type MPKSubmissionTask struct {
-// 	sync.Mutex
-// 	Account         accounts.Account
-// 	RegistrationEnd uint64
-// 	LastBlock       uint64
-// 	PublicKey       [2]*big.Int
-// 	MasterPublicKey [4]*big.Int
-// }
-
-// // NewMPKSubmissionTask creates a background task that attempts to register with ETHDKG
-// func NewMPKSubmissionTask(
-// 	acct accounts.Account,
-// 	publicKey [2]*big.Int,
-// 	masterPublicKey [4]*big.Int,
-// 	registrationEnd uint64, lastBlock uint64) *MPKSubmissionTask {
-// 	return &MPKSubmissionTask{
-// 		Account:         acct,
-// 		PublicKey:       blockchain.CloneBigInt2(publicKey),
-// 		MasterPublicKey: blockchain.CloneBigInt4(masterPublicKey),
-// 		RegistrationEnd: registrationEnd,
-// 		LastBlock:       lastBlock,
-// 	}
-// }
-
-func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	state := t.State
 
 	if state.MasterPublicKey[0] == nil {
+
+		logger.Infof("MPK0==nil")
 		g1KeyShares := make([][2]*big.Int, state.NumberOfValidators)
 		g2KeyShares := make([][4]*big.Int, state.NumberOfValidators)
 
 		for idx, participant := range state.Participants {
-			// Bringing these in from state but could just directly query contract
+
+			// Bringing these in from state but could directly query contract
 			g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
 			g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
+
+			logger.Infof("INIT idx:%v address:%v g1:%v g2:%v", idx, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
 		}
 
 		mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
@@ -73,24 +53,26 @@ func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth
 
 		// Master public key is all we generate here so save it
 		state.MasterPublicKey = mpk
+	} else {
+		logger.Infof("MPK0!=nil")
 	}
 
 	return true
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	t.Lock()
 	defer t.Unlock()
 
@@ -138,7 +120,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	t.Lock()
 	defer t.Unlock()
 

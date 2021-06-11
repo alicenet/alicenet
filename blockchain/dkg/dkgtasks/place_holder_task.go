@@ -3,7 +3,7 @@ package dkgtasks
 import (
 	"context"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
@@ -16,17 +16,17 @@ func NewPlaceHolder(state *objects.DkgState) *PlaceHolder {
 	return &PlaceHolder{state: state}
 }
 
-func (ph *PlaceHolder) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (ph *PlaceHolder) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Infof("ph dowork")
 	return true
 }
 
-func (ph *PlaceHolder) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (ph *PlaceHolder) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Infof("ph doretry")
 	return true
 }
 
-func (ph *PlaceHolder) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (ph *PlaceHolder) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Infof("ph shouldretry")
 	return false
 }

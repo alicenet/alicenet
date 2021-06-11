@@ -2,13 +2,11 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,8 +26,9 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	if t.State.KeyShareG1s == nil {
+func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+	if true {
+		// if t.State.KeyShareG1s == nil {
 
 		// Generate the key shares
 		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
@@ -40,11 +39,10 @@ func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger
 		// t.State.KeyShareG1s[state.Account.Address]
 		me := t.State.Account.Address
 
-		t.State.KeyShareG1s = make(map[common.Address][2]*big.Int)
+		logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
+
 		t.State.KeyShareG1s[me] = g1KeyShare
-		t.State.KeyShareG1CorrectnessProofs = make(map[common.Address][2]*big.Int)
 		t.State.KeyShareG1CorrectnessProofs[me] = g1Proof
-		t.State.KeyShareG2s = make(map[common.Address][4]*big.Int)
 		t.State.KeyShareG2s[me] = g2KeyShare
 	}
 
@@ -52,18 +50,18 @@ func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	t.Lock()
 	defer t.Unlock()
 
@@ -82,6 +80,11 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 	}
 
 	// Submit Keyshares
+	logger.Infof("submitting key shares: %v %p %p %p",
+		me.Address,
+		t.State.KeyShareG1s[me.Address],
+		t.State.KeyShareG1CorrectnessProofs[me.Address],
+		t.State.KeyShareG2s[me.Address])
 	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts, me.Address,
 		t.State.KeyShareG1s[me.Address],
 		t.State.KeyShareG1CorrectnessProofs[me.Address],
@@ -90,10 +93,9 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 		logger.Errorf("submitting keyshare failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -116,7 +118,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	t.Lock()
 	defer t.Unlock()
 

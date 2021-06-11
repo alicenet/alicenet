@@ -3,33 +3,75 @@ package dkgevents
 import (
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessShareDistribution(logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+	logger.Info(strings.Repeat("-", 60))
+	logger.Info("ProcessOpenRegistration()")
+	logger.Info(strings.Repeat("-", 60))
+
+	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpen(log)
+	if err != nil {
+		return err
+	}
+
+	dkgState := state.EthDKG
+
+	state.Schedule.Purge()
+
+	state.EthDKG.PopulateSchedule(event)
+
+	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                       // Registration
+	state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))    // ShareDistribution
+	state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                  // DisputeShares
+	state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState)) // KeyShareSubmission
+	state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                // MasterPublicKeySubmission
+	state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewPlaceHolder(dkgState))                    // GroupPublicKeySubmission
+	state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewPlaceHolder(dkgState))          // DisputeGroupPublicKey
+	state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewPlaceHolder(dkgState))                                // Complete
+
+	return nil
+}
+
+func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+	logger.Info(strings.Repeat("-", 60))
+	logger.Info("ProcessKeyShareSubmission()")
+	logger.Info(strings.Repeat("-", 60))
+
+	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmission(log)
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("KeyShareSubmission: %+v", event)
+
+	state.EthDKG.KeyShareG1s[event.Issuer] = event.KeyShareG1
+	state.EthDKG.KeyShareG1CorrectnessProofs[event.Issuer] = event.KeyShareG1CorrectnessProof
+	state.EthDKG.KeyShareG2s[event.Issuer] = event.KeyShareG2
+
+	return nil
+}
+
+func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info(strings.Repeat("-", 60))
 	logger.Info("ProcessShareDistribution()")
 	logger.Info(strings.Repeat("-", 60))
 
-	// if !ETHDKGInProgress(state.EthDKG, log.BlockNumber) {
-	// 	logger.Warn("Ignoring share distribution since we are not participating this round...")
-	// 	return ErrCanNotContinue
-	// }
+	event, err := eth.Contracts().Ethdkg().ParseShareDistribution(log)
+	if err != nil {
+		return err
+	}
 
-	// eth := svcs.eth
-	// c := eth.Contracts()
-	// ethdkg := state.EthDKG
+	logger.Infof("ShareDistribution: %+v", event)
 
-	// event, err := c.Ethdkg.ParseShareDistribution(log)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// ethdkg.Commitments[event.Issuer] = event.Commitments
-	// ethdkg.EncryptedShares[event.Issuer] = event.EncryptedShares
+	state.EthDKG.Commitments[event.Issuer] = event.Commitments
+	state.EthDKG.EncryptedShares[event.Issuer] = event.EncryptedShares
 
 	return nil
 }

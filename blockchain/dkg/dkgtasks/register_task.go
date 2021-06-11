@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +26,7 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	if t.State.TransportPrivateKey == nil {
 		priv, pub, err := math.GenerateKeys()
 		if err != nil {
@@ -41,16 +41,16 @@ func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth bloc
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -107,7 +107,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth bl
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()

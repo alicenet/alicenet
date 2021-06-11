@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -15,14 +15,14 @@ type SnapshotTask struct {
 	sync.Mutex
 	acct        accounts.Account
 	epoch       *big.Int
-	eth         blockchain.Ethereum
+	eth         interfaces.Ethereum
 	logger      *logrus.Logger
 	rawBclaims  []byte
 	rawSigGroup []byte
 }
 
 // NewSnapshotTask creates a new task
-func NewSnapshotTask(acct accounts.Account, logger *logrus.Logger, eth blockchain.Ethereum, epoch *big.Int, rawBclaims []byte, rawSigGroup []byte) *SnapshotTask {
+func NewSnapshotTask(acct accounts.Account, logger *logrus.Logger, eth interfaces.Ethereum, epoch *big.Int, rawBclaims []byte, rawSigGroup []byte) *SnapshotTask {
 	return &SnapshotTask{
 		acct:        acct,
 		epoch:       epoch,

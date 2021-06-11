@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -28,7 +28,7 @@ func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	}
 }
 
-func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	state := t.State
 
@@ -75,16 +75,16 @@ func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger,
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -133,7 +133,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()

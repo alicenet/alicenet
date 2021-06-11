@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
@@ -27,7 +27,7 @@ type eventProcessor struct {
 // Services just a bundle of requirements common for monitoring functionality
 type Services struct {
 	logger            *logrus.Logger
-	eth               blockchain.Ethereum
+	eth               interfaces.Ethereum
 	consensusDb       *db.Database
 	dph               *deposit.Handler
 	ah                *admin.Handlers
@@ -39,7 +39,7 @@ type Services struct {
 }
 
 // NewServices creates a new Services struct
-func NewServices(eth blockchain.Ethereum, db *db.Database, dph *deposit.Handler, ah *admin.Handlers, batchSize int, chainID uint32) *Services {
+func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler, ah *admin.Handlers, batchSize int, chainID uint32) *Services {
 
 	c := eth.Contracts()
 

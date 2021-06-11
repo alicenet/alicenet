@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
@@ -25,24 +25,24 @@ func NewDisputeTask(state *objects.DkgState) *DisputeTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *DisputeTask) init(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *DisputeTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	return true
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -57,7 +57,7 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blo
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()

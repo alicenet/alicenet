@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -14,7 +14,7 @@ import (
 // GeneralTaskShouldRetry is the general logic used to determine if a task should try again
 // -- Process is
 func GeneralTaskShouldRetry(ctx context.Context, acct accounts.Account, logger *logrus.Logger,
-	eth blockchain.Ethereum, publicKey [2]*big.Int,
+	eth interfaces.Ethereum, publicKey [2]*big.Int,
 	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
 
 	result := internalGeneralTaskShouldRetry(ctx, logger, eth, acct, publicKey, expectedRegistrationEnd, expectedLastBlock)
@@ -56,7 +56,7 @@ func FormatBigIntSlice(slice []*big.Int) string {
 }
 
 func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Logger,
-	eth blockchain.Ethereum, acct accounts.Account, publicKey [2]*big.Int,
+	eth interfaces.Ethereum, acct accounts.Account, publicKey [2]*big.Int,
 	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
 
 	// Make sure we're in the right block range to continue

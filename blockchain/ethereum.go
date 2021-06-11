@@ -27,52 +27,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//Ethereum contains state information about a connection to Ethereum
-type Ethereum interface {
+// //Ethereum contains state information about a connection to Ethereum
+// type Ethereum interface {
 
-	// Extensions for use with simulator
-	Close() error
-	Commit()
+// 	// Extensions for use with simulator
+// 	Close() error
+// 	Commit()
 
-	IsEthereumAccessible() bool
+// 	IsEthereumAccessible() bool
 
-	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
-	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
+// 	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
+// 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
 
-	LoadAccounts(string)
-	LoadPasscodes(string) error
+// 	LoadAccounts(string)
+// 	LoadPasscodes(string) error
 
-	UnlockAccount(accounts.Account) error
+// 	UnlockAccount(accounts.Account) error
 
-	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
+// 	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
 
-	GetAccount(common.Address) (accounts.Account, error)
-	GetAccountKeys(addr common.Address) (*keystore.Key, error)
-	GetBalance(common.Address) (*big.Int, error)
-	GetGethClient() interfaces.GethClient
-	GetCoinbaseAddress() common.Address
-	GetCurrentHeight(context.Context) (uint64, error)
-	GetDefaultAccount() accounts.Account
-	GetEndpoint() string
-	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
-	GetFinalizedHeight(context.Context) (uint64, error)
-	GetPeerCount(context.Context) (uint64, error)
-	GetSnapshot() ([]byte, error)
-	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
-	GetTimeoutContext() (context.Context, context.CancelFunc)
-	GetValidators(context.Context) ([]common.Address, error)
+// 	GetAccount(common.Address) (accounts.Account, error)
+// 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
+// 	GetBalance(common.Address) (*big.Int, error)
+// 	GetGethClient() interfaces.GethClient
+// 	GetCoinbaseAddress() common.Address
+// 	GetCurrentHeight(context.Context) (uint64, error)
+// 	GetDefaultAccount() accounts.Account
+// 	GetEndpoint() string
+// 	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
+// 	GetFinalizedHeight(context.Context) (uint64, error)
+// 	GetPeerCount(context.Context) (uint64, error)
+// 	GetSnapshot() ([]byte, error)
+// 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
+// 	GetTimeoutContext() (context.Context, context.CancelFunc)
+// 	GetValidators(context.Context) ([]common.Address, error)
 
-	Contracts() interfaces.Contracts
-	KnownSelectors() interfaces.SelectorMap
-	Queue() interfaces.TxnQueue
+// 	Contracts() interfaces.Contracts
+// 	KnownSelectors() interfaces.SelectorMap
+// 	Queue() interfaces.TxnQueue
 
-	// WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
+// 	// WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
 
-	RetryCount() int
-	RetryDelay() time.Duration
+// 	RetryCount() int
+// 	RetryDelay() time.Duration
 
-	Timeout() time.Duration
-}
+// 	Timeout() time.Duration
+// }
 
 // Ethereum specific errors
 var (

@@ -4,21 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	ErrOverlappingSchedule = errors.New("Overlapping schedule range")
-	ErrNothingScheduled    = errors.New("Nothing schedule for time")
-	ErrNotScheduled        = errors.New("Scheduled task not found")
+	ErrOverlappingSchedule = errors.New("overlapping schedule range")
+	ErrNothingScheduled    = errors.New("nothing schedule for time")
+	ErrNotScheduled        = errors.New("scheduled task not found")
 )
 
 type Block struct {
 	Start uint64
 	End   uint64
-	Task  tasks.Task
+	Task  interfaces.Task
 }
 
 type innerBlock struct {
@@ -70,7 +71,7 @@ func NewSequentialSchedule() *SequentialSchedule {
 	return &SequentialSchedule{Ranges: make(map[string]*Block)}
 }
 
-func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing tasks.Task) (uuid.UUID, error) {
+func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.Task) (uuid.UUID, error) {
 
 	for _, block := range s.Ranges {
 		if start <= block.End && block.Start <= end {
@@ -109,7 +110,7 @@ func (s *SequentialSchedule) Find(now uint64) (uuid.UUID, error) {
 	return nil, ErrNothingScheduled
 }
 
-func (s *SequentialSchedule) Retrieve(taskId uuid.UUID) (tasks.Task, error) {
+func (s *SequentialSchedule) Retrieve(taskId uuid.UUID) (interfaces.Task, error) {
 	block, present := s.Ranges[taskId.String()]
 	if !present {
 		return nil, ErrNotScheduled

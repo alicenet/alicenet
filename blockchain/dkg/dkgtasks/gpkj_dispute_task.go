@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -43,20 +44,20 @@ func NewGPKJDisputeTask(
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoWork() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 	logger.Info("DoRetry() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()
@@ -101,7 +102,7 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
+func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
 
 	t.Lock()
 	defer t.Unlock()

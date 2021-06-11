@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,8 +26,9 @@ type MonitorState struct {
 	PeerCount              uint32
 	ValidatorSets          map[uint32]ValidatorSet
 	Validators             map[uint32][]Validator
-	interestingBlocks      map[uint64]func(*MonitorState, uint64) error
+	Schedule               interfaces.Schedule
 	EthDKG                 *DkgState
+	// interestingBlocks      map[uint64]func(*MonitorState, uint64) error
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in

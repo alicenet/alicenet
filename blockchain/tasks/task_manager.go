@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,22 +23,6 @@ var (
 // Task interfaces and structs
 // ========================================================
 
-// Task the interface requirements of a task
-type Task interface {
-	DoDone(*logrus.Logger)
-	DoRetry(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-	DoWork(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-	ShouldRetry(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-}
-
-// TaskHandler required functionality of a task
-type TaskHandler interface {
-	Cancel()
-	Start()
-	Complete() bool
-	Successful() bool
-}
-
 // TaskWrapper is used when marshalling and unmarshalling tasks
 type TaskWrapper struct {
 	TaskName string
@@ -48,12 +33,12 @@ type TaskWrapper struct {
 type TaskHandlerDetails struct {
 	complete   bool
 	count      int
-	eth        blockchain.Ethereum
+	eth        interfaces.Ethereum
 	ID         int
 	label      string
 	logger     *logrus.Logger
 	successful bool
-	task       Task
+	task       interfaces.Task
 	taskCancel context.CancelFunc
 	wg         *sync.WaitGroup
 }
@@ -183,7 +168,7 @@ func (td *TaskHandlerDetails) wrappedDoDone() {
 
 // Manager describtes the basic functionality of a task Manager
 type Manager interface {
-	NewTaskHandler(logger *logrus.Logger, eth blockchain.Ethereum, t Task) TaskHandler
+	NewTaskHandler(logger *logrus.Logger, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
 	WaitForTasks()
 }
 
@@ -203,7 +188,7 @@ func NewManager() Manager {
 
 // NewTaskHandler creates a new task handler, where each phase can take upto 'timeout'
 // duration and there is a delay of 'retryDelay' before a retry.
-func (md *ManagerDetails) NewTaskHandler(logger *logrus.Logger, eth blockchain.Ethereum, task Task) TaskHandler {
+func (md *ManagerDetails) NewTaskHandler(logger *logrus.Logger, eth interfaces.Ethereum, task interfaces.Task) interfaces.TaskHandler {
 
 	taskID := rand.Intn(0x10000)
 	taskLabel := fmt.Sprintf("0x%04x", taskID)
@@ -233,7 +218,7 @@ var taskRegistry struct {
 	b map[string]reflect.Type
 }
 
-func RegisterTask(t Task) {
+func RegisterTask(t interfaces.Task) {
 	taskRegistry.Lock()
 	defer taskRegistry.Unlock()
 
@@ -272,7 +257,7 @@ func lookupType(name string) (reflect.Type, bool) {
 	return present, tipe
 }
 
-func WrapTask(t Task) (TaskWrapper, error) {
+func WrapTask(t interfaces.Task) (TaskWrapper, error) {
 
 	tipe := reflect.TypeOf(t)
 	if tipe.Kind() == reflect.Ptr {
@@ -293,7 +278,7 @@ func WrapTask(t Task) (TaskWrapper, error) {
 	return TaskWrapper{TaskName: name, TaskRaw: rawTask}, nil
 }
 
-func UnwrapTask(wrapper TaskWrapper) (Task, error) {
+func UnwrapTask(wrapper TaskWrapper) (interfaces.Task, error) {
 
 	tipe, present := lookupType(wrapper.TaskName)
 	if !present {
@@ -306,5 +291,5 @@ func UnwrapTask(wrapper TaskWrapper) (Task, error) {
 		return nil, err
 	}
 
-	return val.Interface().(Task), nil
+	return val.Interface().(interfaces.Task), nil
 }
