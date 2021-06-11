@@ -53,6 +53,10 @@ func (dm *DMan) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	return dm.downloadActor.FlushCacheToDisk(txn, height)
 }
 
+func (dm *DMan) CleanCache(txn *badger.Txn, height uint32) error {
+	return dm.downloadActor.CleanCache(txn, height)
+}
+
 func (dm *DMan) AddTxs(txn *badger.Txn, height uint32, txs []interfaces.Transaction) error {
 	for i := 0; i < len(txs); i++ {
 		tx := txs[i]
@@ -90,6 +94,7 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 			continue
 		}
 		if err := result.addRaw(txb); err != nil {
+			utils.DebugTrace(dm.logger, err)
 			return nil, nil, err
 		}
 	}
@@ -101,6 +106,35 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 		if err != errorz.ErrMissingTransactions && !errors.As(err, &e) && err != badger.ErrKeyNotFound {
 			utils.DebugTrace(dm.logger, err)
 			return nil, nil, err
+		}
+	}
+	for i := 0; i < len(found); i++ {
+		txh, err := found[i].TxHash()
+		if err != nil {
+			utils.DebugTrace(dm.logger, err)
+			return nil, nil, err
+		}
+		txb, err := found[i].MarshalBinary()
+		if err != nil {
+			utils.DebugTrace(dm.logger, err)
+			return nil, nil, err
+		}
+		err = dm.database.SetTxCacheItem(txn, height, txh, txb)
+		if err != nil {
+			utils.DebugTrace(dm.logger, err)
+			return nil, nil, err
+		}
+	}
+	if err := result.addMany(found); err != nil {
+		utils.DebugTrace(dm.logger, err)
+		return nil, nil, err
+	}
+	missing = result.missing()
+	found = []interfaces.Transaction{}
+	for i := 0; i < len(missing); i++ {
+		txi, ok := dm.downloadActor.txc.Get(missing[i])
+		if ok {
+			found = append(found, txi)
 		}
 	}
 	if err := result.addMany(found); err != nil {
@@ -149,10 +183,13 @@ func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, validator
 		dm.downloadActor.bhc.Del(targetHeight)
 		return nil, nil, false, errorz.ErrInvalid{}.New("BlockHash does not match previous!")
 	}
-	txs, _, err := dm.GetTxs(txn, targetHeight, 1, bhCache.TxHshLst)
+	txs, missing, err := dm.GetTxs(txn, targetHeight, 1, bhCache.TxHshLst)
 	if err != nil {
 		utils.DebugTrace(dm.logger, err)
 		return nil, nil, false, err
+	}
+	if len(missing) > 0 {
+		return nil, nil, false, nil
 	}
 	// verify the signature and group key
 	if err := bhCache.ValidateSignatures(dm.bnVal); err != nil {

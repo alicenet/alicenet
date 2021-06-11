@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/interfaces"
+	"github.com/MadBase/MadNet/utils"
 )
 
 type txCache struct {
@@ -32,7 +33,7 @@ func (txc *txCache) Add(height uint32, tx interfaces.Transaction) error {
 		return err
 	}
 	txc.rcache[string(txHash)] = height
-	txc.cache[string(txHash)] = txb
+	txc.cache[string(txHash)] = utils.CopySlice(txb)
 	return nil
 }
 
@@ -52,10 +53,9 @@ func (txc *txCache) Get(txHsh []byte) (interfaces.Transaction, bool) {
 }
 
 func (txc *txCache) getInternal(txHsh []byte) (interfaces.Transaction, bool) {
-	txIf, ok := txc.cache[string(txHsh)]
+	txb, ok := txc.cache[string(txHsh)]
 	if ok {
-		txb := txIf
-		tx, err := txc.app.UnmarshalTx(txb)
+		tx, err := txc.app.UnmarshalTx(utils.CopySlice(txb))
 		if err != nil {
 			txc.delInternal(txHsh)
 			return nil, false
@@ -72,7 +72,7 @@ func (txc *txCache) GetHeight(height uint32) ([]interfaces.Transaction, [][]byte
 	outhsh := [][]byte{}
 	for hash, rh := range txc.rcache {
 		hash, rh := hash, rh
-		if height == rh {
+		if rh <= height {
 			if txi, ok := txc.getInternal([]byte(hash)); ok {
 				out = append(out, txi)
 				outhsh = append(outhsh, []byte(hash))

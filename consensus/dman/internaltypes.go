@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	heightDropLag       = 2
-	downloadWorkerCount = 4
+	heightDropLag       = 5
+	downloadWorkerCount = 16
 )
 
 type reqBusView interface {

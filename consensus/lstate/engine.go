@@ -123,17 +123,6 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-	err = ce.database.Update(func(txn *badger.Txn) error {
-		ownState, err := ce.database.GetOwnState(txn)
-		if err != nil {
-			return err
-		}
-		height, _ := objs.ExtractHR(ownState.SyncToBH)
 		vs, err := ce.database.GetValidatorSet(txn, height)
 		if err != nil {
 			return err
@@ -193,6 +182,10 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		}
 		err = ce.sstore.WriteState(txn, roundState)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.dm.CleanCache(txn, height); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
