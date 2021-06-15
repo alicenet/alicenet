@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/consensus/dman"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/consensus/request"
 	"github.com/MadBase/MadNet/constants"
@@ -43,11 +44,11 @@ type Engine struct {
 	ethAcct []byte
 	EthPubk []byte
 
-	dm *DMan
+	dm *dman.DMan
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf
@@ -118,6 +119,10 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 			return err
 		}
 		height, _ := objs.ExtractHR(ownState.SyncToBH)
+		err = ce.dm.FlushCacheToDisk(txn, height)
+		if err != nil {
+			return err
+		}
 		vs, err := ce.database.GetValidatorSet(txn, height)
 		if err != nil {
 			return err
@@ -177,6 +182,10 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		}
 		err = ce.sstore.WriteState(txn, roundState)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.dm.CleanCache(txn, height); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
@@ -530,23 +539,25 @@ func (ce *Engine) Sync() (bool, error) {
 			}
 		}
 		ce.logger.Debugf("SyncOneBH:  MBHS:%v  STBH:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height)
-		txs, bh, err := ce.dm.SyncOneBH(txn, rs)
+		txs, bh, ok, err := ce.dm.SyncOneBH(txn, rs.OwnState.SyncToBH, rs.ValidatorSet)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
-		ok, err := ce.isValid(txn, rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, txs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return err
-		}
-		if !ok {
-			return nil
-		}
-		err = ce.setMostRecentBlockHeader(txn, rs, bh)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return err
+		if ok {
+			ok, err = ce.isValid(txn, rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, txs)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+			if !ok {
+				return nil
+			}
+			err = ce.setMostRecentBlockHeader(txn, rs, bh)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
 		}
 		err = ce.sstore.WriteState(txn, rs)
 		if err != nil {
