@@ -5,42 +5,118 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
 // GPKJDisputeTask contains required state for performing a group accusation
 type GPKJDisputeTask struct {
-	sync.Mutex
-	Account           accounts.Account
-	RregistrationEnd  uint64
-	LastBlock         uint64
-	PublicKey         [2]*big.Int
-	Inverse           []*big.Int
-	HonestIndicies    []*big.Int
-	DishonestIndicies []*big.Int
-	RegistrationEnd   uint64
+	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
+	OriginalRegistrationEnd uint64
+	State                   *objects.DkgState
+	Success                 bool
 }
 
+// 	sync.Mutex
+// 	Account           accounts.Account
+// 	RregistrationEnd  uint64
+// 	LastBlock         uint64
+// 	PublicKey         [2]*big.Int
+// 	Inverse           []*big.Int
+// 	HonestIndicies    []*big.Int
+// 	DishonestIndicies []*big.Int
+// 	RegistrationEnd   uint64
+// }
+
 // NewGPKJDisputeTask creates a background task that attempts perform a group accusation if necessary
-func NewGPKJDisputeTask(
-	acct accounts.Account,
-	publicKey [2]*big.Int,
-	inverse []*big.Int,
-	honestIndicies []*big.Int,
-	dishonestIndicies []*big.Int,
-	registrationEnd uint64, lastBlock uint64) *GPKJDisputeTask {
+func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	return &GPKJDisputeTask{
-		Account:           acct,
-		PublicKey:         blockchain.CloneBigInt2(publicKey),
-		Inverse:           blockchain.CloneBigIntSlice(inverse),
-		HonestIndicies:    blockchain.CloneBigIntSlice(honestIndicies),
-		DishonestIndicies: blockchain.CloneBigIntSlice(dishonestIndicies),
-		RegistrationEnd:   registrationEnd,
-		LastBlock:         lastBlock,
+		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
+		State:                   state,
 	}
+}
+
+// acct accounts.Account,
+// publicKey [2]*big.Int,
+// inverse []*big.Int,
+// honestIndicies []*big.Int,
+// dishonestIndicies []*big.Int,
+// registrationEnd uint64, lastBlock uint64) *GPKJDisputeTask {
+// return &GPKJDisputeTask{
+// 	Account:           acct,
+// 	PublicKey:         blockchain.CloneBigInt2(publicKey),
+// 	Inverse:           blockchain.CloneBigIntSlice(inverse),
+// 	HonestIndicies:    blockchain.CloneBigIntSlice(honestIndicies),
+// 	DishonestIndicies: blockchain.CloneBigIntSlice(dishonestIndicies),
+// 	RegistrationEnd:   registrationEnd,
+// 	LastBlock:         lastBlock,
+// }
+func (t *GPKJDisputeTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+
+	var (
+		groupPublicKeys [][4]*big.Int
+		groupSignatures [][2]*big.Int
+	)
+
+	// dkg.RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address)
+
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	for _, participant := range t.State.Participants {
+
+		// Retrieve values all group keys and signatures from contract
+		groupPublicKey, err := dkg.RetrieveGroupPublicKey(callOpts, eth, participant.Address)
+		if err != nil {
+			logger.Errorf("Failed to retrieve group public key for %v", participant.Address.Hex())
+			return false
+		}
+
+		groupSignature, err := dkg.RetrieveSignature(callOpts, eth, participant.Address)
+		if err != nil {
+			logger.Errorf("Failed to retrieve group signature for %v", participant.Address.Hex())
+			return false
+		}
+
+		// Save the values
+		t.State.GroupPublicKeys[participant.Address] = groupPublicKey
+		t.State.GroupSignatures[participant.Address] = groupSignature
+
+		// Build array
+		groupPublicKeys = append(groupPublicKeys, groupPublicKey)
+		groupSignatures = append(groupSignatures, groupSignature)
+	}
+
+	//
+	honest, dishonest, err := math.CategorizeGroupSigners(t.State.InitialMessage, t.State.MasterPublicKey, groupPublicKeys, groupSignatures, t.State.Participants, t.State.ValidatorThreshold)
+	if err != nil {
+		logger.Errorf("Failed to determine honest vs dishonest validators: %v", err)
+		return false
+	}
+
+	inverse, err := math.InverseArrayForUserCount(t.State.NumberOfValidators)
+	if err != nil {
+		logger.Errorf("Failed to calculate inversion: %v", err)
+		return false
+	}
+
+	// The indices returned are into the participants array _not_ the Index of the participant in smart contract
+	for idx := range honest {
+		honest[idx] = t.State.Participants[idx].Index + 1
+	}
+	for idx := range dishonest {
+		dishonest[idx] = t.State.Participants[idx].Index + 1
+	}
+
+	logger.Debugf("   Honest indices: %v", honest)
+	logger.Debugf("Dishonest indices: %v", dishonest)
+
+	t.State.DishonestValidatorsIndicies = dkg.IntsToBigInts(dishonest)
+	t.State.HonestValidatorsIndicies = dkg.IntsToBigInts(honest)
+	t.State.Inverse = inverse
+
+	return true
 }
 
 // DoWork is the first attempt at registering with ethdkg
@@ -62,24 +138,37 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 	t.Lock()
 	defer t.Unlock()
 
+	if !t.init(ctx, logger, eth) {
+		return false
+	}
+
 	// Setup
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
 	}
 
 	// Perform group accusation
-	txn, err := c.Ethdkg().GroupAccusationGPKj(txnOpts, t.Inverse, t.HonestIndicies, t.DishonestIndicies)
+	logger.Infof("   Honest: %v", t.State.HonestValidatorsIndicies)
+	logger.Infof("Dishonest: %v", t.State.DishonestValidatorsIndicies)
+
+	// TODO How about I just store these already with the + 1?
+	honest := make([]*big.Int, len(t.State.HonestValidatorsIndicies))
+	for i := range t.State.HonestValidatorsIndicies {
+		// honest[i] = big.NewInt(1)
+		honest[i] = big.NewInt(0)
+		honest[i].Add(honest[i], t.State.HonestValidatorsIndicies[i])
+	}
+
+	txn, err := eth.Contracts().Ethdkg().GroupAccusationGPKj(txnOpts, t.State.Inverse, honest, t.State.DishonestValidatorsIndicies)
 	if err != nil {
 		logger.Errorf("group accusation failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -95,7 +184,9 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 		return false
 	}
 
-	return true
+	t.Success = true
+
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -108,12 +199,19 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger
 	defer t.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.Account, logger,
-		eth, t.PublicKey,
-		t.RegistrationEnd, t.LastBlock)
+	// return GeneralTaskShouldRetry(ctx, t.Account, logger,
+	// 	eth, t.PublicKey,
+	// 	t.RegistrationEnd, t.LastBlock)
+
+	return false
 }
 
 // DoDone creates a log entry saying task is complete
 func (t *GPKJDisputeTask) DoDone(logger *logrus.Logger) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.GPKJGroupAccusation = t.Success
 }

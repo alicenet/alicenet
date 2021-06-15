@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/logging"
@@ -44,12 +44,12 @@ func TestGenerateShares(t *testing.T) {
 	assert.Equal(t, 2, threshold)
 
 	// Make n participants
-	participants := []*dkg.Participant{}
+	participants := []*objects.Participant{}
 	for idx := 0; idx < n; idx++ {
 
 		address, _, publicKey := generateTestAddress(t)
 
-		participant := &dkg.Participant{
+		participant := &objects.Participant{
 			Address:   address,
 			Index:     idx,
 			PublicKey: publicKey}
@@ -78,12 +78,12 @@ func TestGenerateKeyShare(t *testing.T) {
 	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
-	participants := []*dkg.Participant{{Index: 0}}
+	participants := []*objects.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
 		address, _, publicKey := generateTestAddress(t)
 
-		participant := &dkg.Participant{
+		participant := &objects.Participant{
 			Address:   address,
 			Index:     idx,
 			PublicKey: publicKey}
@@ -123,13 +123,13 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*dkg.Participant{{Index: 0}}
+	participants := []*objects.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
 		address, privateKey, publicKey := generateTestAddress(t)
 
 		privateKeys[address] = privateKey
-		participant := &dkg.Participant{
+		participant := &objects.Participant{
 			Address:   address,
 			Index:     idx,
 			PublicKey: publicKey}
@@ -179,13 +179,13 @@ func TestGenerateGroupKeys(t *testing.T) {
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*dkg.Participant{{Index: 0}}
+	participants := []*objects.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
 		address, privateKey, publicKey := generateTestAddress(t)
 
 		privateKeys[address] = privateKey
-		participant := &dkg.Participant{
+		participant := &objects.Participant{
 			Address:   address,
 			Index:     idx,
 			PublicKey: publicKey}
@@ -275,8 +275,8 @@ func TestCategorizeGroupSigners(t *testing.T) {
 
 	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
-	assert.Equal(t, len(participants), len(honest), "all participants are honest")
-	assert.Equal(t, 0, len(dishonest), "no participants are dishonest")
+	assert.Equal(t, len(participants), len(honest), "all participants should be honest")
+	assert.Equal(t, 0, len(dishonest), "no participants should be dishonest")
 }
 
 func TestCategorizeGroupSigners1Negative(t *testing.T) {
@@ -308,13 +308,22 @@ func TestCategorizeGroupSigners2Negative(t *testing.T) {
 
 	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
-	assert.Equal(t, len(participants)-2, len(honest), "all but 2 participant are honest")
-	assert.Equal(t, 2, len(dishonest), "2 participant are dishonest")
+
+	t.Logf("n:%v threshold:%v", n, threshold)
+
+	t.Logf("%v participant are honest", len(participants)-2)
+	assert.Equal(t, len(participants)-2, len(honest))
+
+	t.Logf("%v participant are dishonest", len(dishonest))
+	assert.Equal(t, 2, len(dishonest))
+
+	// assert.Equal(t, , len(honest), "all but 2 participant should be honest")
+	// assert.Equal(t, 2, len(dishonest), "2 participants should be dishonest")
 }
 
-func TestCategorizeGroupSignersNegative(t *testing.T) {
+func TestCategorizeGroupSignersJustEnough(t *testing.T) {
 
-	n := 15
+	n := 10
 
 	logger := logging.GetLogger("dkg")
 	logger.SetLevel(logrus.WarnLevel)
@@ -328,8 +337,12 @@ func TestCategorizeGroupSignersNegative(t *testing.T) {
 
 	honest, dishonest, err := math.CategorizeGroupSigners(initialMessage, masterPublicKey, publishedPublicKeys, publishedSignatures, participants, threshold)
 	assert.Nil(t, err, "failed to categorize group signers")
-	assert.Equalf(t, threshold+1, len(honest), "%v participant are honest", threshold+1)
-	assert.Equalf(t, n-threshold-1, len(dishonest), "%v participant are dishonest", n-threshold-1)
+
+	t.Logf("%v participant are honest", threshold+1)
+	assert.Equal(t, threshold+1, len(honest))
+
+	t.Logf("%v participant are dishonest", n-threshold-1)
+	assert.Equal(t, n-threshold-1, len(dishonest))
 }
 
 // ---------------------------------------------------------------------------
@@ -347,21 +360,21 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 }
 
 // ---------------------------------------------------------------------------
-func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*big.Int, []*dkg.Participant, int) {
+func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*big.Int, []*objects.Participant, int) {
 
 	// Number participants in key generation
 	threshold, _ := math.ThresholdForUserCount(n)
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*dkg.Participant{}
+	participants := []*objects.Participant{}
 
 	for idx := 0; idx < n; idx++ {
 
 		address, privateKey, publicKey := generateTestAddress(t)
 
 		privateKeys[address] = privateKey
-		participant := &dkg.Participant{
+		participant := &objects.Participant{
 			Address:   address,
 			Index:     idx,
 			PublicKey: publicKey}

@@ -22,7 +22,7 @@ func TestBidirectionalGob(t *testing.T) {
 	assert.Nilf(t, err, "Should be no errors marshalling data")
 
 	// Decode the bytes
-	ms2 := &objects.State{}
+	ms2 := &objects.MonitorState{}
 	dec := gob.NewDecoder(buf)
 	err = dec.Decode(ms2)
 	assert.Nilf(t, err, "Should be no errors unmarshalling data")
@@ -43,7 +43,7 @@ func TestBidirectionalJson(t *testing.T) {
 	t.Logf("raw:%v", string(raw))
 
 	// Decode the bytes
-	ms2 := &objects.State{}
+	ms2 := &objects.MonitorState{}
 	err = json.Unmarshal(raw, ms2)
 	assert.Nilf(t, err, "Should be no errors unmarshalling data")
 
@@ -51,7 +51,7 @@ func TestBidirectionalJson(t *testing.T) {
 	assertStateMatch(t, ms2)
 }
 
-func createState() *objects.State {
+func createState() *objects.MonitorState {
 
 	// task := &dumbTask{}
 
@@ -59,7 +59,7 @@ func createState() *objects.State {
 
 	// s.Schedule(2, 5, task)
 
-	ms := &objects.State{
+	ms := &objects.MonitorState{
 		Version:                0,
 		HighestBlockProcessed:  614,
 		HighestBlockFinalized:  911,
@@ -74,7 +74,7 @@ func createState() *objects.State {
 	return ms
 }
 
-func assertStateMatch(t *testing.T, ms *objects.State) {
+func assertStateMatch(t *testing.T, ms *objects.MonitorState) {
 	// Make sure the new struct looks like the old struct
 	assert.Equal(t, uint64(614), ms.HighestBlockProcessed)
 	assert.Equal(t, uint64(911), ms.HighestBlockFinalized)

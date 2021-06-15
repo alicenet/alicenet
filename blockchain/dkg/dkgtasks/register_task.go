@@ -12,9 +12,10 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
+	sync.Mutex              // TODO Update tasks to not be a Mutex, just use State as Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
@@ -27,6 +28,8 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
 func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+
+	// TODO Figure out the best place for this function to be invoked
 	if t.State.TransportPrivateKey == nil {
 		priv, pub, err := math.GenerateKeys()
 		if err != nil {
@@ -100,7 +103,9 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth in
 		return false
 	}
 
-	return true
+	t.Success = true
+
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -155,4 +160,9 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 // DoDone just creates a log entry saying task is complete
 func (t *RegisterTask) DoDone(logger *logrus.Logger) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.Registration = t.Success
 }

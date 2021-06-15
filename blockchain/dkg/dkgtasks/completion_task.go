@@ -2,31 +2,26 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
 	sync.Mutex
-	Account         accounts.Account
-	PublicKey       [2]*big.Int
-	RegistrationEnd uint64
-	LastBlock       uint64
+	OriginalRegistrationEnd uint64
+	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(acct accounts.Account, publicKey [2]*big.Int, registrationEnd uint64, lastBlock uint64) *CompletionTask {
+func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	return &CompletionTask{
-		Account:         acct,
-		PublicKey:       blockchain.CloneBigInt2(publicKey),
-		RegistrationEnd: registrationEnd,
-		LastBlock:       lastBlock,
+		OriginalRegistrationEnd: state.RegistrationEnd,
+		State:                   state,
 	}
 }
 
@@ -47,7 +42,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
@@ -59,10 +54,11 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 		logger.Errorf("completion failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
+
+	logger.Info("Completion completed")
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -78,7 +74,9 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 		return false
 	}
 
-	return true
+	t.Success = true
+
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -90,13 +88,19 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger,
 	t.Lock()
 	defer t.Unlock()
 
+	state := t.State
+
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.Account, logger,
-		eth, t.PublicKey,
-		t.RegistrationEnd, t.LastBlock)
+	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.DisputeEnd)
 }
 
 // DoDone creates a log entry saying task is complete
 func (t *CompletionTask) DoDone(logger *logrus.Logger) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.Complete = t.Success
 }

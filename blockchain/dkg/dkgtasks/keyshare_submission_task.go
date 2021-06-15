@@ -15,6 +15,7 @@ type KeyshareSubmissionTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewKeyshareSubmissionTask creates a new task
@@ -27,7 +28,10 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
 func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-	if true {
+
+	// TODO Figure out the best place for this function to be invoked
+
+	if true { // TODO Use the correct guard
 		// if t.State.KeyShareG1s == nil {
 
 		// Generate the key shares
@@ -111,7 +115,9 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 		return false
 	}
 
-	return true
+	t.Success = true
+
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again

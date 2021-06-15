@@ -2,14 +2,12 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,6 +16,7 @@ type ShareDistributionTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewShareDistributionTask creates a new task
@@ -32,16 +31,24 @@ func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger,
 
 	state := t.State
 
+	// TODO Figure out the best place for this function to be invoked
 	if state.Participants == nil {
 
 		me := state.Account
 		callOpts := eth.GetCallOpts(ctx, me)
 
 		// Retrieve information about other participants from smart contracts
-		participants, index, err := dkg.RetrieveParticipants(eth, callOpts)
+		participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
 		if err != nil {
 			logger.Errorf("Failed to retrieve other participants: %v", err)
 			return false
+		}
+
+		//
+		if logger.IsLevelEnabled(logrus.DebugLevel) {
+			for idx, participant := range participants {
+				logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
+			}
 		}
 
 		numParticipants := len(participants)
@@ -57,10 +64,7 @@ func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger,
 		}
 
 		// Store calculated values
-
-		state.Commitments = make(map[common.Address][][2]*big.Int)
 		state.Commitments[me.Address] = commitments
-		state.EncryptedShares = make(map[common.Address][]*big.Int)
 		state.EncryptedShares[me.Address] = encryptedShares
 		state.Index = index
 		state.NumberOfValidators = numParticipants
@@ -128,8 +132,9 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 		logger.Errorf("receipt status indicates failure: %v", receipt.Status)
 		return false
 	}
+	t.Success = true
 
-	return true
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -162,4 +167,9 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 // DoDone creates a log entry saying task is complete
 func (t *ShareDistributionTask) DoDone(logger *logrus.Logger) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.ShareDistribution = t.Success
 }

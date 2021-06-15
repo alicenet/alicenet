@@ -4,30 +4,21 @@ go 1.15
 
 require (
 	github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
-	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/containerd/fifo v1.0.0 // indirect
 	// github.com/MadBase/bridge v0.6.0
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
-	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
-	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-metrics v0.0.1 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.3
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.1.5
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.1.1
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/highwayhash v1.0.1
-	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pborman/uuid v0.0.0-20170112150404-1b00554d8222
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.6.0

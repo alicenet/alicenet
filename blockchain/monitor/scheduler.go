@@ -138,6 +138,10 @@ func (s *SequentialSchedule) Remove(taskId uuid.UUID) error {
 
 func (s *SequentialSchedule) Status(logger *logrus.Logger) {
 	for id, block := range s.Ranges {
-		logger.Infof("id:%v block:%+v", id, block)
+		str, err := block.MarshalJSON()
+		if err != nil {
+			logger.Errorf("id:%v unable to marshal block: %v", id, err)
+		}
+		logger.Infof("id:%v block:%+v", id, string(str))
 	}
 }

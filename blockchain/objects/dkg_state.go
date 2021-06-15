@@ -23,8 +23,10 @@ type DkgState struct {
 	// Local validator info
 	Account             accounts.Account
 	Index               int
+	InitialMessage      []byte
 	GroupPrivateKey     *big.Int
 	GroupPublicKey      [4]*big.Int
+	GroupSignature      [2]*big.Int
 	MasterPublicKey     [4]*big.Int
 	NumberOfValidators  int
 	PrivateCoefficients []*big.Int
@@ -36,10 +38,15 @@ type DkgState struct {
 	// Remote validator info
 	Commitments                 map[common.Address][][2]*big.Int // ShareDistribution Event
 	EncryptedShares             map[common.Address][]*big.Int    // "
+	DishonestValidatorsIndicies []*big.Int                       //  Calculated for group accusation
+	HonestValidatorsIndicies    []*big.Int                       // "
+	Inverse                     []*big.Int                       // "
 	KeyShareG1s                 map[common.Address][2]*big.Int   // KeyShare Event
 	KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int   // "
 	KeyShareG2s                 map[common.Address][4]*big.Int   // "
 	Participants                ParticipantList                  // Index, Address & PublicKey
+	GroupPublicKeys             map[common.Address][4]*big.Int   // Retrieved to validate group keys
+	GroupSignatures             map[common.Address][2]*big.Int   // ""
 
 	// Flags indicating phase success
 	Registration        bool
@@ -73,6 +80,10 @@ type DkgState struct {
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
 		Account:                     account,
+		Commitments:                 make(map[common.Address][][2]*big.Int),
+		EncryptedShares:             make(map[common.Address][]*big.Int),
+		GroupPublicKeys:             make(map[common.Address][4]*big.Int),
+		GroupSignatures:             make(map[common.Address][2]*big.Int),
 		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
 		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
 		KeyShareG2s:                 make(map[common.Address][4]*big.Int),

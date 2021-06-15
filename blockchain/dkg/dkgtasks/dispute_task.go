@@ -14,6 +14,7 @@ type DisputeTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewDisputeTask creates a new task
@@ -26,7 +27,7 @@ func NewDisputeTask(state *objects.DkgState) *DisputeTask {
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
 func (t *DisputeTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-
+	// TODO Figure out the best place for this function to be invoked
 	return true
 }
 
@@ -53,7 +54,9 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth int
 	}
 
 	// TODO Implement
-	return true
+	t.Success = true
+
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again

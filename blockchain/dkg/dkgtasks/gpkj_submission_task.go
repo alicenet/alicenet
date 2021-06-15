@@ -5,38 +5,63 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
-// GPKSubmissionTask contains required state for safely performing a registration
+// GPKSubmissionTask contains required state for gpk submission
 type GPKSubmissionTask struct {
-	sync.Mutex
-	Account         accounts.Account
-	RegistrationEnd uint64
-	LastBlock       uint64
-	PublicKey       [2]*big.Int
-	GroupPublicKey  [4]*big.Int
-	Signature       [2]*big.Int
+	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
+	OriginalRegistrationEnd uint64
+	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewGPKSubmissionTask creates a background task that attempts to register with ETHDKG
-func NewGPKSubmissionTask(
-	acct accounts.Account,
-	publicKey [2]*big.Int,
-	groupPublicKey [4]*big.Int,
-	signature [2]*big.Int,
-	registrationEnd uint64, lastBlock uint64) *GPKSubmissionTask {
+func NewGPKSubmissionTask(state *objects.DkgState) *GPKSubmissionTask {
 	return &GPKSubmissionTask{
-		Account:         acct,
-		PublicKey:       blockchain.CloneBigInt2(publicKey),
-		GroupPublicKey:  blockchain.CloneBigInt4(groupPublicKey),
-		Signature:       blockchain.CloneBigInt2(signature),
-		RegistrationEnd: registrationEnd,
-		LastBlock:       lastBlock,
+		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
+		State:                   state,
 	}
+}
+
+func (t *GPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+
+	// TODO Guard
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	initialMessage, err := eth.Contracts().Ethdkg().InitialMessage(callOpts)
+	if err != nil {
+		logger.Errorf("Could not retrieve initial message: %v", err)
+		return false
+	}
+
+	encryptedShares := make([][]*big.Int, t.State.NumberOfValidators)
+	for idx, participant := range t.State.Participants {
+		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
+		pes, present := t.State.EncryptedShares[participant.Address]
+		if present && idx >= 0 && idx < t.State.NumberOfValidators {
+			encryptedShares[idx] = pes
+		} else {
+			logger.Errorf("Encrypted share state broken for %v", idx)
+		}
+	}
+
+	groupPrivateKey, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage,
+		t.State.TransportPrivateKey, t.State.TransportPublicKey, t.State.PrivateCoefficients,
+		encryptedShares, t.State.Index, t.State.Participants, t.State.ValidatorThreshold)
+	if err != nil {
+		logger.Errorf("Could not generate group keys: %v", err)
+		return false
+	}
+
+	t.State.InitialMessage = initialMessage
+	t.State.GroupPrivateKey = groupPrivateKey
+	t.State.GroupPublicKey = groupPublicKey
+	t.State.GroupSignature = groupSignature
+
+	return true
 }
 
 // DoWork is the first attempt at registering with ethdkg
@@ -53,24 +78,27 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 	t.Lock()
 	defer t.Unlock()
 
+	// Is there any point in running? Make sure we're both initialized and within block range
+	if !t.init(ctx, logger, eth) {
+		return false
+	}
+
 	// Setup
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
 		return false
 	}
 
-	// Register
-	txn, err := c.Ethdkg().SubmitGPKj(txnOpts, t.GroupPublicKey, t.Signature)
+	// Do it
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKj(txnOpts, t.State.GroupPublicKey, t.State.GroupSignature)
 	if err != nil {
-		logger.Errorf("submitting gpkj failed: %v", err)
+		logger.Errorf("submitting master public key failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -79,14 +107,9 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 		logger.Error("missing registration receipt")
 		return false
 	}
+	t.Success = true
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
-	}
-
-	return true
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -94,13 +117,14 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-
 	t.Lock()
 	defer t.Unlock()
 
-	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.Account, logger, eth,
-		t.PublicKey, t.RegistrationEnd, t.LastBlock)
+	state := t.State
+
+	// This wraps the retry logic for the general case
+	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.KeyShareSubmissionEnd)
 }
 
 // DoDone creates a log entry saying task is complete

@@ -11,7 +11,7 @@ import (
 )
 
 // RetrieveParticipants retrieves participant details from ETHDKG contract
-func RetrieveParticipants(eth interfaces.Ethereum, callOpts *bind.CallOpts) (objects.ParticipantList, int, error) {
+func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (objects.ParticipantList, int, error) {
 
 	c := eth.Contracts()
 	myIndex := math.MaxInt32
@@ -57,4 +57,60 @@ func RetrieveParticipants(eth interfaces.Ethereum, callOpts *bind.CallOpts) (obj
 	}
 
 	return participants, myIndex, nil
+}
+
+func RetrieveSignature(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([2]*big.Int, error) {
+	var err error
+	var sigBig [2]*big.Int
+
+	ethdkg := eth.Contracts().Ethdkg()
+
+	sigBig[0], err = ethdkg.InitialSignatures(callOpts, addr, common.Big0)
+	if err != nil {
+		return sigBig, err
+	}
+
+	sigBig[1], err = ethdkg.InitialSignatures(callOpts, addr, common.Big1)
+	if err != nil {
+		return sigBig, err
+	}
+
+	return sigBig, nil
+}
+
+func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([4]*big.Int, error) {
+	var err error
+	var gpkjBig [4]*big.Int
+
+	ethdkg := eth.Contracts().Ethdkg()
+
+	gpkjBig[0], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big0)
+	if err != nil {
+		return gpkjBig, err
+	}
+
+	gpkjBig[1], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big1)
+	if err != nil {
+		return gpkjBig, err
+	}
+
+	gpkjBig[2], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big2)
+	if err != nil {
+		return gpkjBig, err
+	}
+
+	gpkjBig[3], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big3)
+	if err != nil {
+		return gpkjBig, err
+	}
+
+	return gpkjBig, nil
+}
+
+func IntsToBigInts(ints []int) []*big.Int {
+	bi := make([]*big.Int, len(ints))
+	for idx, num := range ints {
+		bi[idx] = big.NewInt(int64(num))
+	}
+	return bi
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -145,8 +146,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 	events := objects.NewEventMap()
 
 	SetupEventMap(events)
-
-	defer scheduler.Status(logging.GetLogger(fmt.Sprintf("scheduler%v", idx)))
+	SetupTasks()
 
 	var done bool
 	var err error
@@ -161,6 +161,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 			logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
 			assert.Nil(t, err)
 
+			// Check all the logs for an event we want to process
 			for _, log := range logs {
 
 				eventID := log.Topics[0].String()
@@ -180,30 +181,9 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 						nks)
 				}
 
-				// RegistrationOpen
-				// if log.Topics[0] == common.HexToHash("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97") {
-				// 	event, err := c.Ethdkg().ParseRegistrationOpen(log)
-				// 	assert.Nil(t, err)
-
-				// 	logger.Debugf("open event:%+v", event)
-
-				// 	scheduler.Purge()
-
-				// 	dkgState.PopulateSchedule(event) // TODO make this better, pure mutation functions are awkward
-
-				// 	scheduler.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                       // Registration
-				// 	scheduler.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))    // ShareDistribution
-				// 	scheduler.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                  // DisputeShares
-				// 	scheduler.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState)) // KeyShareSubmission
-				// 	scheduler.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                // MasterPublicKeySubmission
-				// 	scheduler.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewPlaceHolder(dkgState))                    // GroupPublicKeySubmission
-				// 	scheduler.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewPlaceHolder(dkgState))          // DisputeGroupPublicKey
-				// 	scheduler.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewPlaceHolder(dkgState))                                // Complete
-
-				// 	logger.Debugf("ethdkg state:%+v", dkgState)
-				// }
 			}
 
+			// Check if any tasks are scheduled
 			for block := lastBlock + 1; block <= currentBlock; block++ {
 				uuid, err := scheduler.Find(block)
 				if err == nil {
@@ -222,7 +202,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		time.Sleep(time.Second)
 
 		dkgState.RLock()
-		done = dkgState.Complete || currentBlock > startBlock+80
+		done = dkgState.Complete
 		dkgState.RUnlock()
 	}
 
@@ -234,7 +214,7 @@ func TestDkgSuccess(t *testing.T) {
 	var accountAddresses []string = []string{
 		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
 		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
-		"0x63a6627b79813A7A43829490C4cE409254f64177"}
+		"0x63a6627b79813A7A43829490C4cE409254f64177", "0x16564cf3e880d9f5d09909f51b922941ebbbc24d"}
 
 	logging.GetLogger("ethsim").SetLevel(logrus.InfoLevel)
 
@@ -268,7 +248,7 @@ func TestDkgSuccess(t *testing.T) {
 
 	// Start validators running
 	wg := sync.WaitGroup{}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 5; i++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
 		assert.Nil(t, err)
 
@@ -311,6 +291,18 @@ func TestFoo(t *testing.T) {
 	assert.Equal(t, 2, len(m))
 
 	t.Logf("m:%p", m)
+}
+
+func SetupTasks() {
+	tasks.RegisterTask(&dkgtasks.PlaceHolder{})
+	tasks.RegisterTask(&dkgtasks.RegisterTask{})
+	tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
+	tasks.RegisterTask(&dkgtasks.DisputeTask{})
+	tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
+	tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
+	tasks.RegisterTask(&dkgtasks.CompletionTask{})
 }
 
 func SetupEventMap(em *objects.EventMap) error {

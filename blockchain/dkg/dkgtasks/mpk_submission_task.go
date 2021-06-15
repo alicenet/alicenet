@@ -16,6 +16,7 @@ type MPKSubmissionTask struct {
 	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
+	Success                 bool
 }
 
 // NewDisputeTask creates a new task
@@ -30,6 +31,7 @@ func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth
 
 	state := t.State
 
+	// TODO Figure out the best place for this function to be invoked
 	if state.MasterPublicKey[0] == nil {
 
 		logger.Infof("MPK0==nil")
@@ -42,7 +44,7 @@ func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth
 			g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
 			g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
 
-			logger.Infof("INIT idx:%v address:%v g1:%v g2:%v", idx, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
+			logger.Infof("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
 		}
 
 		mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
@@ -94,10 +96,9 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 		logger.Errorf("submitting master public key failed: %v", err)
 		return false
 	}
-	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return false
@@ -112,8 +113,9 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 		return false
 	}
+	t.Success = true
 
-	return true
+	return t.Success
 }
 
 // ShouldRetry checks if it makes sense to try again

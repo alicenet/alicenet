@@ -268,7 +268,6 @@ func WrapTask(t interfaces.Task) (TaskWrapper, error) {
 	if !present {
 		return TaskWrapper{}, ErrUnknownTaskType
 	}
-	fmt.Printf("Marshaling %v...\n", name)
 
 	rawTask, err := json.Marshal(t)
 	if err != nil {
