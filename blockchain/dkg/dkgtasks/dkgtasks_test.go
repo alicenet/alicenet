@@ -173,12 +173,6 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 						logger.Errorf("Failed processing event: %v", err)
 					}
 
-					nks := len(monitorState.EthDKG.KeyShareG1s)
-					logger.Infof("MS: %p EK: %p C: %p Number of g1 key shares: %v",
-						monitorState,
-						monitorState.EthDKG,
-						monitorState.EthDKG.KeyShareG1s,
-						nks)
 				}
 
 			}
