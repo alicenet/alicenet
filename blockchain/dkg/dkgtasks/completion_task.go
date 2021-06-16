@@ -92,7 +92,7 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger,
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.DisputeEnd)
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.CompleteEnd)
 }
 
 // DoDone creates a log entry saying task is complete

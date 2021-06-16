@@ -114,7 +114,7 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logg
 
 	// This wraps the retry logic for the general case
 	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.KeyShareSubmissionEnd)
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJSubmissionEnd)
 }
 
 // DoDone creates a log entry saying task is complete

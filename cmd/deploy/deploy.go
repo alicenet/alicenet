@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
@@ -80,7 +81,7 @@ func deployNode(cmd *cobra.Command, args []string) {
 
 }
 
-func testMigrations(eth blockchain.Ethereum) error {
+func testMigrations(eth interfaces.Ethereum) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
@@ -95,7 +96,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 	}
 
 	// Try staking first
-	migrateStaking, err := bindings.NewMigrateStakingFacet(c.ValidatorsAddress, client)
+	migrateStaking, err := bindings.NewMigrateStakingFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("binding migrateStaking failed: %v", err)
 		return err
@@ -110,7 +111,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 	logger.Infof("setting balances for %v. Gas = %v", account.Address.Hex(), txn.Gas())
 
 	// Try snapshoting
-	migrateSnapshots, err := bindings.NewMigrateSnapshotsFacet(c.ValidatorsAddress, client)
+	migrateSnapshots, err := bindings.NewMigrateSnapshotsFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("binding migrateSnapshots failed: %v", err)
 		return err
@@ -127,7 +128,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 	eth.Queue().QueueAndWait(ctx, txn)
 	logger.Infof("creating snapshot Gas = %v", txn.Gas())
 
-	txn, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(2))
+	txn, err = c.Snapshots().SetEpoch(txnOpts, big.NewInt(2))
 	if err != nil {
 		logger.Errorf("setting epoch failed: %v", err)
 		return err
@@ -139,7 +140,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 	return nil
 }
 
-func deployMigrations(eth blockchain.Ethereum) error {
+func deployMigrations(eth interfaces.Ethereum) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
@@ -213,7 +214,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 	logger.Infof("Deploy migrateEthDKGAddr = \"0x%0.40x\" gas = %v", migrateEthDKGAddr, txn.Gas())
 
 	// Wire validators migration contracts
-	validatorUpdater, err := bindings.NewDiamondUpdateFacet(c.ValidatorsAddress, client)
+	validatorUpdater, err := bindings.NewDiamondUpdateFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("failed to bind diamond updater to validators: %v", err)
 		return err
@@ -226,7 +227,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 	q(vu.Add("removeValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
 
 	// Wire EthDKG migration contract
-	ethdkgUpdater, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress, client)
+	ethdkgUpdater, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress(), client)
 	if err != nil {
 		logger.Errorf("failed to bind diamond updater to ethdkg: %v", err)
 		return err

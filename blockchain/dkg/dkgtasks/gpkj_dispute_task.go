@@ -159,12 +159,11 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger
 	t.Lock()
 	defer t.Unlock()
 
-	// This wraps the retry logic for every phase, _except_ registration
-	// return GeneralTaskShouldRetry(ctx, t.Account, logger,
-	// 	eth, t.PublicKey,
-	// 	t.RegistrationEnd, t.LastBlock)
+	state := t.State
 
-	return false
+	// This wraps the retry logic for every phase, _except_ registration
+	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
+		state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJGroupAccusationEnd)
 }
 
 // DoDone creates a log entry saying task is complete
