@@ -144,8 +144,9 @@ type Contracts interface {
 // Task the interface requirements of a task
 type Task interface {
 	DoDone(*logrus.Logger)
-	DoRetry(context.Context, *logrus.Logger, Ethereum) bool
-	DoWork(context.Context, *logrus.Logger, Ethereum) bool
+	DoRetry(context.Context, *logrus.Logger, Ethereum) error
+	DoWork(context.Context, *logrus.Logger, Ethereum) error
+	Initialize(context.Context, *logrus.Logger, Ethereum) error
 	ShouldRetry(context.Context, *logrus.Logger, Ethereum) bool
 }
 

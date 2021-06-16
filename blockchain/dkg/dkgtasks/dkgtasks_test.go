@@ -182,9 +182,9 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 				uuid, err := scheduler.Find(block)
 				if err == nil {
 					task, _ := scheduler.Retrieve(uuid)
-					handler := taskManager.NewTaskHandler(logger, eth, task)
 
-					handler.Start()
+					handler := taskManager.StartTask(logger, eth, task)
+					logger.Infof("handler:%p", handler)
 
 					scheduler.Remove(uuid)
 				}
@@ -232,9 +232,6 @@ func TestDkgSuccess(t *testing.T) {
 	defer cancel()
 
 	c := eth.Contracts()
-
-	// t.Logf("  ethdkg address: %v", c.EthdkgAddress().Hex())
-	// t.Logf("registry address: %v", c.RegistryAddress().Hex())
 
 	callOpts := eth.GetCallOpts(ctx, ownerAccount)
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)

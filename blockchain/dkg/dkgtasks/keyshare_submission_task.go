@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -27,60 +28,48 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *KeyshareSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
-	// TODO Figure out the best place for this function to be invoked
-
-	if true { // TODO Use the correct guard
-		// if t.State.KeyShareG1s == nil {
-
-		// Generate the key shares
-		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
-		if err != nil {
-			return false
-		}
-
-		// t.State.KeyShareG1s[state.Account.Address]
-		me := t.State.Account.Address
-
-		logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
-
-		t.State.KeyShareG1s[me] = g1KeyShare
-		t.State.KeyShareG1CorrectnessProofs[me] = g1Proof
-		t.State.KeyShareG2s[me] = g2KeyShare
+	// Generate the key shares
+	g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
+	if err != nil {
+		return err
 	}
 
-	return true
+	// t.State.KeyShareG1s[state.Account.Address]
+	me := t.State.Account.Address
+
+	logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
+
+	t.State.KeyShareG1s[me] = g1KeyShare
+	t.State.KeyShareG1CorrectnessProofs[me] = g1Proof
+	t.State.KeyShareG2s[me] = g2KeyShare
+
+	return nil
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	t.Lock()
 	defer t.Unlock()
-
-	// Is there any point in running? Make sure we're both initialized and within block range
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
 
 	// Setup
 	me := t.State.Account
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, me)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Submit Keyshares
@@ -94,30 +83,26 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 		t.State.KeyShareG1CorrectnessProofs[me.Address],
 		t.State.KeyShareG2s[me.Address])
 	if err != nil {
-		logger.Errorf("submitting keyshare failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		logger.Error("missing submit keyshare receipt")
-		return false
+		return dkg.LogReturnErrorf(logger, "missing submit keyshare receipt")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("submit keyshare status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
+		dkg.LogReturnErrorf(logger, "submit keyshare status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

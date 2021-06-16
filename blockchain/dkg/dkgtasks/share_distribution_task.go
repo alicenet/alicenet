@@ -2,12 +2,15 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/errorz"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,76 +30,66 @@ func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	}
 }
 
-func (t *ShareDistributionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	state := t.State
 
-	// TODO Figure out the best place for this function to be invoked
-	if state.Participants == nil {
+	me := state.Account
+	callOpts := eth.GetCallOpts(ctx, me)
 
-		me := state.Account
-		callOpts := eth.GetCallOpts(ctx, me)
-
-		// Retrieve information about other participants from smart contracts
-		participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
-		if err != nil {
-			logger.Errorf("Failed to retrieve other participants: %v", err)
-			return false
-		}
-
-		//
-		if logger.IsLevelEnabled(logrus.DebugLevel) {
-			for idx, participant := range participants {
-				logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
-			}
-		}
-
-		numParticipants := len(participants)
-		threshold, _ := math.ThresholdForUserCount(numParticipants)
-
-		// Generate shares
-		encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-			state.TransportPrivateKey, state.TransportPublicKey,
-			participants, threshold)
-		if err != nil {
-			logger.Errorf("Failed to generate shares: %v", err)
-			return false
-		}
-
-		// Store calculated values
-		state.Commitments[me.Address] = commitments
-		state.EncryptedShares[me.Address] = encryptedShares
-		state.Index = index
-		state.NumberOfValidators = numParticipants
-		state.Participants = participants
-		state.PrivateCoefficients = privateCoefficients
-		state.SecretValue = privateCoefficients[0]
-		state.ValidatorThreshold = threshold
+	// Retrieve information about other participants from smart contracts
+	participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
+	if err != nil {
+		logger.Errorf("Failed to retrieve other participants: %v", err)
+		return err
 	}
 
-	// Making it here means initialization has been completed
-	return true
+	//
+	if logger.IsLevelEnabled(logrus.DebugLevel) {
+		for idx, participant := range participants {
+			logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
+		}
+	}
+
+	numParticipants := len(participants)
+	threshold, _ := math.ThresholdForUserCount(numParticipants)
+
+	// Generate shares
+	encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
+		state.TransportPrivateKey, state.TransportPublicKey,
+		participants, threshold)
+	if err != nil {
+		logger.Errorf("Failed to generate shares: %v", err)
+		return err
+	}
+
+	// Store calculated values
+	state.Commitments[me.Address] = commitments
+	state.EncryptedShares[me.Address] = encryptedShares
+	state.Index = index
+	state.NumberOfValidators = numParticipants
+	state.Participants = participants
+	state.PrivateCoefficients = privateCoefficients
+	state.SecretValue = privateCoefficients[0]
+	state.ValidatorThreshold = threshold
+
+	return nil
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	t.Lock()
 	defer t.Unlock()
-
-	// Is there any point in running? Make sure we're both initialized and within block range
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
 
 	// Setup
 	c := eth.Contracts()
@@ -106,7 +99,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return err
 	}
 
 	// Distribute shares
@@ -114,27 +107,30 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 	txn, err := c.Ethdkg().DistributeShares(txnOpts, state.EncryptedShares[me], state.Commitments[me])
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
-		return false
+		return err
 	}
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return err
 	}
 	if receipt == nil {
-		logger.Error("missing distribute shares receipt")
-		return false
+		errorz.Wrap(err)
+		message := "missing distribute shares receipt"
+		logger.Error(message)
+		return errors.New(message)
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("receipt status indicates failure: %v", receipt.Status)
-		return false
+		message := fmt.Sprintf("receipt status indicates failure: %v", receipt.Status)
+		logger.Errorf(message)
+		return errors.New(message)
 	}
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -27,14 +28,13 @@ func NewGPKSubmissionTask(state *objects.DkgState) *GPKSubmissionTask {
 	}
 }
 
-func (t *GPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	// TODO Guard
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	initialMessage, err := eth.Contracts().Ethdkg().InitialMessage(callOpts)
 	if err != nil {
-		logger.Errorf("Could not retrieve initial message: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "Could not retrieve initial message: %v", err)
 	}
 
 	encryptedShares := make([][]*big.Int, t.State.NumberOfValidators)
@@ -52,8 +52,7 @@ func (t *GPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth
 		t.State.TransportPrivateKey, t.State.TransportPublicKey, t.State.PrivateCoefficients,
 		encryptedShares, t.State.Index, t.State.Participants, t.State.ValidatorThreshold)
 	if err != nil {
-		logger.Errorf("Could not generate group keys: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
 	t.State.InitialMessage = initialMessage
@@ -61,55 +60,46 @@ func (t *GPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth
 	t.State.GroupPublicKey = groupPublicKey
 	t.State.GroupSignature = groupSignature
 
-	return true
+	return nil
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	t.Lock()
 	defer t.Unlock()
-
-	// Is there any point in running? Make sure we're both initialized and within block range
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Do it
 	txn, err := eth.Contracts().Ethdkg().SubmitGPKj(txnOpts, t.State.GroupPublicKey, t.State.GroupSignature)
 	if err != nil {
-		logger.Errorf("submitting master public key failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		logger.Error("missing registration receipt")
-		return false
+		return dkg.LogReturnErrorf(logger, "missing registration receipt")
 	}
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

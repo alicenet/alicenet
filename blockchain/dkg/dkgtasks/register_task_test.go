@@ -96,6 +96,6 @@ func TestRegisterTask(t *testing.T) {
 
 	t.Logf("registration ends:%v", openEvent.RegistrationEnds.Uint64())
 
-	success := task.DoWork(ctx, logger, eth)
-	assert.True(t, success)
+	err = task.DoWork(ctx, logger, eth)
+	assert.Nil(t, err)
 }

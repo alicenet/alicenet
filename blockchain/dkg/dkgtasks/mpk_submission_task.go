@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -27,95 +28,79 @@ func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	}
 }
 
-func (t *MPKSubmissionTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	state := t.State
 
-	// TODO Figure out the best place for this function to be invoked
-	if state.MasterPublicKey[0] == nil {
+	logger.Infof("MPK0==nil")
+	g1KeyShares := make([][2]*big.Int, state.NumberOfValidators)
+	g2KeyShares := make([][4]*big.Int, state.NumberOfValidators)
 
-		logger.Infof("MPK0==nil")
-		g1KeyShares := make([][2]*big.Int, state.NumberOfValidators)
-		g2KeyShares := make([][4]*big.Int, state.NumberOfValidators)
+	for idx, participant := range state.Participants {
 
-		for idx, participant := range state.Participants {
+		// Bringing these in from state but could directly query contract
+		g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
+		g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
 
-			// Bringing these in from state but could directly query contract
-			g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
-			g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
-
-			logger.Infof("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
-		}
-
-		mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
-		if err != nil {
-			logger.Errorf("Failed to generate master public key:%v", err)
-			return false
-		}
-
-		// Master public key is all we generate here so save it
-		state.MasterPublicKey = mpk
-	} else {
-		logger.Infof("MPK0!=nil")
+		logger.Infof("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
 	}
 
-	return true
+	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
+	}
+
+	// Master public key is all we generate here so save it
+	state.MasterPublicKey = mpk
+
+	return nil
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	t.Lock()
 	defer t.Unlock()
-
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Register
 	logger.Infof("submitting master public key:%v", t.State.MasterPublicKey)
 	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, t.State.MasterPublicKey)
 	if err != nil {
-		logger.Errorf("submitting master public key failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		logger.Error("missing registration receipt")
-		return false
+		return dkg.LogReturnErrorf(logger, "missing registration receipt")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
+		dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again
@@ -134,4 +119,9 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logg
 // DoDone creates a log entry saying task is complete
 func (t *MPKSubmissionTask) DoDone(logger *logrus.Logger) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.MPKSubmission = t.Success
 }

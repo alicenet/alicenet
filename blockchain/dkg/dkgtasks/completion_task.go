@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
@@ -25,17 +26,21 @@ func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	}
 }
 
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+	return nil
+}
+
 // DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	t.Lock()
 	defer t.Unlock()
@@ -44,15 +49,13 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Register
 	txn, err := c.Ethdkg().SuccessfulCompletion(txnOpts)
 	if err != nil {
-		logger.Errorf("completion failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
 	logger.Info("Completion completed")
@@ -60,23 +63,20 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		logger.Error("missing completion receipt")
-		return false
+		return dkg.LogReturnErrorf(logger, "missing completion receipt")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
+		return dkg.LogReturnErrorf(logger, "completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

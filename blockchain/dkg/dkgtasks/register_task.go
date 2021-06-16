@@ -2,6 +2,8 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -27,45 +29,42 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *RegisterTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
-	// TODO Figure out the best place for this function to be invoked
-	if t.State.TransportPrivateKey == nil {
-		priv, pub, err := math.GenerateKeys()
-		if err != nil {
-			return false
-		}
-
-		t.State.TransportPrivateKey = priv
-		t.State.TransportPublicKey = pub
+	priv, pub, err := math.GenerateKeys()
+	if err != nil {
+		return err
 	}
 
-	return true
+	t.State.TransportPrivateKey = priv
+	t.State.TransportPublicKey = pub
+
+	return nil
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	t.Lock()
 	defer t.Unlock()
 
 	// Is there any point in running? Make sure we're both initialized and within block range
-	if !t.init(ctx, logger, eth) {
-		return false
+	block, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return err
 	}
 
-	block, err := eth.GetCurrentHeight(ctx)
-	if err != nil || block >= t.State.RegistrationEnd {
-		return false
+	if block >= t.State.RegistrationEnd {
+		return fmt.Errorf("at block %v but registration ends at %v", block, t.State.RegistrationEnd)
 	}
 
 	// Setup
@@ -73,7 +72,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth in
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return err
 	}
 
 	// Register
@@ -82,7 +81,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth in
 	txn, err := c.Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
-		return false
+		return err
 	}
 	eth.Queue().QueueTransaction(ctx, txn)
 
@@ -90,22 +89,23 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth in
 	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return err
 	}
 	if receipt == nil {
 		logger.Error("missing registration receipt")
-		return false
+		return errors.New("registration receipt is nil")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
+		message := fmt.Sprintf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		logger.Error(message)
+		return errors.New(message)
 	}
 
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

@@ -26,37 +26,32 @@ func NewDisputeTask(state *objects.DkgState) *DisputeTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *DisputeTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	// TODO Figure out the best place for this function to be invoked
-	return true
+	return nil
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	t.Lock()
 	defer t.Unlock()
 
-	// Is there any point in running? Make sure we're both initialized and within block range
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
-
 	// TODO Implement
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again

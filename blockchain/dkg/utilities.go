@@ -1,6 +1,8 @@
 package dkg
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/big"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // RetrieveParticipants retrieves participant details from ETHDKG contract
@@ -113,4 +116,10 @@ func IntsToBigInts(ints []int) []*big.Int {
 		bi[idx] = big.NewInt(int64(num))
 	}
 	return bi
+}
+
+func LogReturnErrorf(logger *logrus.Logger, mess string, args ...interface{}) error {
+	message := fmt.Sprintf(mess, args...)
+	logger.Error(message)
+	return errors.New(message)
 }

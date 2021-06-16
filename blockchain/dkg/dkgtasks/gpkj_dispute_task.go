@@ -20,17 +20,6 @@ type GPKJDisputeTask struct {
 	Success                 bool
 }
 
-// 	sync.Mutex
-// 	Account           accounts.Account
-// 	RregistrationEnd  uint64
-// 	LastBlock         uint64
-// 	PublicKey         [2]*big.Int
-// 	Inverse           []*big.Int
-// 	HonestIndicies    []*big.Int
-// 	DishonestIndicies []*big.Int
-// 	RegistrationEnd   uint64
-// }
-
 // NewGPKJDisputeTask creates a background task that attempts perform a group accusation if necessary
 func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	return &GPKJDisputeTask{
@@ -39,22 +28,7 @@ func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	}
 }
 
-// acct accounts.Account,
-// publicKey [2]*big.Int,
-// inverse []*big.Int,
-// honestIndicies []*big.Int,
-// dishonestIndicies []*big.Int,
-// registrationEnd uint64, lastBlock uint64) *GPKJDisputeTask {
-// return &GPKJDisputeTask{
-// 	Account:           acct,
-// 	PublicKey:         blockchain.CloneBigInt2(publicKey),
-// 	Inverse:           blockchain.CloneBigIntSlice(inverse),
-// 	HonestIndicies:    blockchain.CloneBigIntSlice(honestIndicies),
-// 	DishonestIndicies: blockchain.CloneBigIntSlice(dishonestIndicies),
-// 	RegistrationEnd:   registrationEnd,
-// 	LastBlock:         lastBlock,
-// }
-func (t *GPKJDisputeTask) init(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	var (
 		groupPublicKeys [][4]*big.Int
@@ -69,14 +43,12 @@ func (t *GPKJDisputeTask) init(ctx context.Context, logger *logrus.Logger, eth i
 		// Retrieve values all group keys and signatures from contract
 		groupPublicKey, err := dkg.RetrieveGroupPublicKey(callOpts, eth, participant.Address)
 		if err != nil {
-			logger.Errorf("Failed to retrieve group public key for %v", participant.Address.Hex())
-			return false
+			return dkg.LogReturnErrorf(logger, "Failed to retrieve group public key for %v", participant.Address.Hex())
 		}
 
 		groupSignature, err := dkg.RetrieveSignature(callOpts, eth, participant.Address)
 		if err != nil {
-			logger.Errorf("Failed to retrieve group signature for %v", participant.Address.Hex())
-			return false
+			return dkg.LogReturnErrorf(logger, "Failed to retrieve group signature for %v", participant.Address.Hex())
 		}
 
 		// Save the values
@@ -91,14 +63,12 @@ func (t *GPKJDisputeTask) init(ctx context.Context, logger *logrus.Logger, eth i
 	//
 	honest, dishonest, err := math.CategorizeGroupSigners(t.State.InitialMessage, t.State.MasterPublicKey, groupPublicKeys, groupSignatures, t.State.Participants, t.State.ValidatorThreshold)
 	if err != nil {
-		logger.Errorf("Failed to determine honest vs dishonest validators: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
 	inverse, err := math.InverseArrayForUserCount(t.State.NumberOfValidators)
 	if err != nil {
-		logger.Errorf("Failed to calculate inversion: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
 
 	// The indices returned are into the participants array _not_ the Index of the participant in smart contract
@@ -116,37 +86,32 @@ func (t *GPKJDisputeTask) init(ctx context.Context, logger *logrus.Logger, eth i
 	t.State.HonestValidatorsIndicies = dkg.IntsToBigInts(honest)
 	t.State.Inverse = inverse
 
-	return true
+	return nil
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
 
 	t.Lock()
 	defer t.Unlock()
 
-	if !t.init(ctx, logger, eth) {
-		return false
-	}
-
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Perform group accusation
@@ -163,30 +128,26 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 
 	txn, err := eth.Contracts().Ethdkg().GroupAccusationGPKj(txnOpts, t.State.Inverse, honest, t.State.DishonestValidatorsIndicies)
 	if err != nil {
-		logger.Errorf("group accusation failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
 	}
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return false
+		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		logger.Error("missing registration receipt")
-		return false
+		return dkg.LogReturnErrorf(logger, "missing registration receipt")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		return false
+		return dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 
 	t.Success = true
 
-	return t.Success
+	return nil
 }
 
 // ShouldRetry checks if it makes sense to try again
