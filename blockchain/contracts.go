@@ -453,7 +453,8 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 	eth.commit()
-	rcpt, err := eth.WaitForReceipt(ctx, tx)
+
+	rcpt, err := eth.Queue().QueueAndWait(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for initializing Snapshots facet: %v", err)
 		return nil, common.Address{}, err
@@ -512,7 +513,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	}
 	eth.commit()
 
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for initializing Participants facet: %v", err)
 		return nil, common.Address{}, err
@@ -538,8 +539,11 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		logger.Errorf("Failed to update staking contract references: %v", err)
 		return nil, common.Address{}, err
 	}
+	eth.Queue().QueueTransaction(ctx, tx)
+
 	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
+
+	rcpt, err = eth.Queue().WaitTransaction(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for staking update: %v", err)
 		return nil, common.Address{}, err
@@ -558,7 +562,8 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
+
+	rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for deposit update: %v", err)
 		return nil, common.Address{}, err
@@ -573,7 +578,8 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 	eth.commit()
-	rcpt, err = eth.WaitForReceipt(ctx, tx)
+
+	rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
 	if err != nil {
 		logger.Errorf("Failed to get receipt for ethdkg update: %v", err)
 		return nil, common.Address{}, err

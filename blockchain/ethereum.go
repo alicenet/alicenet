@@ -27,98 +27,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// //Ethereum contains state information about a connection to Ethereum
-// type Ethereum interface {
-
-// 	// Extensions for use with simulator
-// 	Close() error
-// 	Commit()
-
-// 	IsEthereumAccessible() bool
-
-// 	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
-// 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
-
-// 	LoadAccounts(string)
-// 	LoadPasscodes(string) error
-
-// 	UnlockAccount(accounts.Account) error
-
-// 	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
-
-// 	GetAccount(common.Address) (accounts.Account, error)
-// 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
-// 	GetBalance(common.Address) (*big.Int, error)
-// 	GetGethClient() interfaces.GethClient
-// 	GetCoinbaseAddress() common.Address
-// 	GetCurrentHeight(context.Context) (uint64, error)
-// 	GetDefaultAccount() accounts.Account
-// 	GetEndpoint() string
-// 	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
-// 	GetFinalizedHeight(context.Context) (uint64, error)
-// 	GetPeerCount(context.Context) (uint64, error)
-// 	GetSnapshot() ([]byte, error)
-// 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
-// 	GetTimeoutContext() (context.Context, context.CancelFunc)
-// 	GetValidators(context.Context) ([]common.Address, error)
-
-// 	Contracts() interfaces.Contracts
-// 	KnownSelectors() interfaces.SelectorMap
-// 	Queue() interfaces.TxnQueue
-
-// 	// WaitForReceipt(context.Context, *types.Transaction) (*types.Receipt, error)
-
-// 	RetryCount() int
-// 	RetryDelay() time.Duration
-
-// 	Timeout() time.Duration
-// }
-
 // Ethereum specific errors
 var (
 	ErrAccountNotFound  = errors.New("could not find specified account")
 	ErrKeysNotFound     = errors.New("account either not found or not unlocked")
 	ErrPasscodeNotFound = errors.New("could not find specified passcode")
 )
-
-// GethClient is an amalgamation of the geth interfaces used
-// type GethClient interface {
-
-// 	// geth.ChainReader
-// 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-// 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-// 	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-// 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-// 	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-// 	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
-// 	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (geth.Subscription, error)
-
-// 	// geth.TransactionReader
-// 	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
-// 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-// 	// geth.ChainStateReader
-// 	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-// 	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
-// 	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
-// 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
-
-// 	// bind.ContractBackend
-// 	// -- bind.ContractCaller
-// 	// CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-// 	CallContract(ctx context.Context, call geth.CallMsg, blockNumber *big.Int) ([]byte, error)
-
-// 	// -- bind.ContractTransactor
-// 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-// 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-// 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-// 	EstimateGas(ctx context.Context, call geth.CallMsg) (gas uint64, err error)
-// 	SendTransaction(ctx context.Context, tx *types.Transaction) error
-
-// 	// -- bind.ContractFilterer
-// 	FilterLogs(ctx context.Context, query geth.FilterQuery) ([]types.Log, error)
-// 	SubscribeFilterLogs(ctx context.Context, query geth.FilterQuery, ch chan<- types.Log) (geth.Subscription, error)
-// }
 
 type EthereumDetails struct {
 	logger         *logrus.Logger
@@ -657,25 +571,6 @@ func (eth *EthereumDetails) GetEvents(ctx context.Context, firstBlock uint64, la
 
 func (eth *EthereumDetails) RetryCount() int {
 	return eth.retryCount
-}
-
-// WaitForReceipt
-func (eth *EthereumDetails) WaitForReceipt(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
-
-	count := 1
-	receipt, err := eth.client.TransactionReceipt(ctx, txn.Hash())
-
-	// Ugly condition, because
-	// -- Real endpoint returns err==geth.NotFound if receipt is nil
-	// -- Simulated endpoint returns err==nil and receipt==nil until commit() is called
-	for err == ethereum.NotFound || (err == nil && receipt == nil) {
-		eth.logger.Debugf("Retry #%d getting receipt for %v ...", count, txn.Hash().Hex())
-		count++
-		SleepWithContext(ctx, eth.retryDelay)
-		receipt, err = eth.client.TransactionReceipt(ctx, txn.Hash())
-	}
-
-	return receipt, err
 }
 
 func (eth *EthereumDetails) RetryDelay() time.Duration {

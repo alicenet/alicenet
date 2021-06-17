@@ -182,7 +182,7 @@ func (b *Behind) queue(req *Request) *Response {
 	txnHash := req.txn.Hash()
 
 	selector := ExtractSelector(req.txn.Data())
-	b.logger.Infof("queueing selector:%x", selector)
+	b.logger.Infof("queueing selector:%x signature:%v", selector, b.knownSelectors.Signature(selector))
 
 	b.selectors[txnHash] = selector
 	b.waitingTxns = append(b.waitingTxns, txnHash)
