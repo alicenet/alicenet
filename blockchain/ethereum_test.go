@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -22,7 +23,7 @@ var accountAddresses []string = []string{
 	"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 	"0x63a6627b79813A7A43829490C4cE409254f64177"}
 
-func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
+func connectSimulatorEndpoint(t *testing.T) interfaces.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
 		"../assets/test/keys",
 		"../assets/test/passcodes.txt",
@@ -65,18 +66,18 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 		assert.Nil(t, err)
 		eth.UnlockAccount(acct)
 
-		txn, err = c.StakingToken.Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		txn, err = c.StakingToken().Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on transfer %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		o, err := eth.GetTransactionOpts(ctx, acct)
 		assert.Nil(t, err)
 
-		txn, err = c.StakingToken.Approve(o, c.ValidatorsAddress, big.NewInt(10_000_000))
+		txn, err = c.StakingToken().Approve(o, c.ValidatorsAddress(), big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on approval %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
-		txn, err = c.Staking.LockStake(o, big.NewInt(1_000_000))
+		txn, err = c.Staking().LockStake(o, big.NewInt(1_000_000))
 		assert.Nilf(t, err, "Failed on lock %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
@@ -85,7 +86,7 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 		validatorId[0] = big.NewInt(int64(idx))
 		validatorId[1] = big.NewInt(int64(idx * 2))
 
-		txn, err = c.Validators.AddValidator(o, acct.Address, validatorId)
+		txn, err = c.Validators().AddValidator(o, acct.Address, validatorId)
 		assert.Nilf(t, err, "Failed on register %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 	}
@@ -100,7 +101,7 @@ func connectSimulatorEndpoint(t *testing.T) blockchain.Ethereum {
 	return eth
 }
 
-func setupEthereum(t *testing.T) (blockchain.Ethereum, error) {
+func setupEthereum(t *testing.T) (interfaces.Ethereum, error) {
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
 
@@ -172,12 +173,12 @@ func TestValues(t *testing.T) {
 	amount := big.NewInt(987654321)
 	t.Logf("amount:%v", amount.Text(10))
 
-	txn, err := c.Staking.SetMinimumStake(txnOpts, amount)
+	txn, err := c.Staking().SetMinimumStake(txnOpts, amount)
 	assert.Nil(t, err)
 
 	eth.Queue().QueueAndWait(context.Background(), txn)
 
-	ms, err := c.Staking.MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
+	ms, err := c.Staking().MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
 	assert.Nil(t, err)
 	t.Logf("minimum stake:%v", ms.Text(10))
 

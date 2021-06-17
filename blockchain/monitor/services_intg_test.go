@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type ServicesSuite struct {
 	suite.Suite
-	eth blockchain.Ethereum
+	eth interfaces.Ethereum
 }
 
 func (s *ServicesSuite) SetupTest() {

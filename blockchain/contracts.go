@@ -286,7 +286,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress)
+	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress())
 
 	c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
 	logAndEat(logger, err)

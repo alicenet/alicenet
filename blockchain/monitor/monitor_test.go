@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T) blockchain.Ethereum {
+func setupEthereum(t *testing.T) interfaces.Ethereum {
 
 	eth, err := blockchain.NewEthereumSimulator(
 		"../../assets/test/keys",
@@ -70,7 +71,7 @@ func TestMonitor(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(context.TODO(), eth.GetDefaultAccount())
 	assert.Nil(t, err, "Failed to build txnOpts endpoint... %v", err)
 
-	_, err = c.Ethdkg.InitializeState(txnOpts)
+	_, err = c.Ethdkg().InitializeState(txnOpts)
 	assert.Nil(t, err, "Failed to Initialize state... %v", err)
 
 	eth.Commit()

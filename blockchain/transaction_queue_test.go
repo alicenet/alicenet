@@ -33,11 +33,11 @@ func TestFoo(t *testing.T) {
 	amount := int64(1_999_999)
 	bAmount := big.NewInt(amount)
 
-	txn, err := c.StakingToken.Transfer(txnOpts, who, bAmount)
+	txn, err := c.StakingToken().Transfer(txnOpts, who, bAmount)
 	assert.Nil(t, err)
 	queue.QueueGroupTransaction(toctx, 511, txn)
 
-	txn, err = eth.TransferEther(who, c.StakingTokenAddress, bAmount)
+	txn, err = eth.TransferEther(who, c.StakingTokenAddress(), bAmount)
 	assert.Nil(t, err)
 	queue.QueueGroupTransaction(toctx, 511, txn)
 
@@ -45,7 +45,7 @@ func TestFoo(t *testing.T) {
 	assert.Nil(t, err)
 
 	for idx := 0; idx < txnCount; idx++ {
-		txn, err = c.StakingToken.Transfer(txnOpts, who, big.NewInt(amount))
+		txn, err = c.StakingToken().Transfer(txnOpts, who, big.NewInt(amount))
 		queue.QueueGroupTransaction(toctx, 5+idx%txnGroupCount, txn)
 	}
 

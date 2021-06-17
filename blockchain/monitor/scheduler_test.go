@@ -1,52 +1,25 @@
 package monitor_test
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/pborman/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
-
-type dumbTask struct {
-	Val int
-}
-
-// DoDone(*logrus.Logger)
-// DoRetry(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-// DoWork(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-// ShouldRetry(context.Context, *logrus.Logger, blockchain.Ethereum) bool
-
-func (task *dumbTask) DoDone(logger *logrus.Logger) {
-	logger.Infof("DoDone():%v", task.Val)
-}
-
-func (task *dumbTask) DoRetry(context context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	logger.Infof("DoRetry():%v", task.Val)
-	return true
-}
-
-func (task *dumbTask) DoWork(context context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	logger.Infof("DoWork():%v", task.Val)
-	return true
-}
-
-func (task *dumbTask) ShouldRetry(context context.Context, logger *logrus.Logger, eth blockchain.Ethereum) bool {
-	logger.Infof("ShouldRetry():%v", task.Val)
-	return true
-}
 
 func TestSchedule(t *testing.T) {
 	s := monitor.NewSequentialSchedule()
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task tasks.Task
+	var task interfaces.Task
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -68,7 +41,7 @@ func TestPurge(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task tasks.Task
+	var task interfaces.Task
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -94,7 +67,7 @@ func TestPurgePrior(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task tasks.Task
+	var task interfaces.Task
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -120,7 +93,7 @@ func TestFailSchedule(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task tasks.Task
+	var task interfaces.Task
 
 	_, err = s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -144,7 +117,7 @@ func TestFind(t *testing.T) {
 	s := monitor.NewSequentialSchedule()
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var task tasks.Task
+	var task interfaces.Task
 
 	id, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -158,7 +131,7 @@ func TestFailFind(t *testing.T) {
 	s := monitor.NewSequentialSchedule()
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var task tasks.Task
+	var task interfaces.Task
 
 	_, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -168,9 +141,10 @@ func TestFailFind(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	acct := accounts.Account{}
+	state := objects.NewDkgState(acct)
+	task := dkgtasks.NewPlaceHolder(state)
 	s := monitor.NewSequentialSchedule()
-
-	task := new(dumbTask)
 
 	taskID, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -183,9 +157,10 @@ func TestRemove(t *testing.T) {
 }
 
 func TestFailRemove(t *testing.T) {
+	acct := accounts.Account{}
+	state := objects.NewDkgState(acct)
+	task := dkgtasks.NewPlaceHolder(state)
 	s := monitor.NewSequentialSchedule()
-
-	task := new(dumbTask)
 
 	// Schedule something but don't bother saving the id
 	_, err := s.Schedule(5, 15, task)
@@ -202,9 +177,10 @@ func TestFailRemove(t *testing.T) {
 }
 
 func TestRetreive(t *testing.T) {
+	acct := accounts.Account{}
+	state := objects.NewDkgState(acct)
+	task := dkgtasks.NewPlaceHolder(state)
 	s := monitor.NewSequentialSchedule()
-
-	var task tasks.Task = &dumbTask{Val: 4}
 
 	tasks.RegisterTask(task)
 
@@ -217,10 +193,10 @@ func TestRetreive(t *testing.T) {
 }
 
 func TestFailRetrieve(t *testing.T) {
-
+	acct := accounts.Account{}
+	state := objects.NewDkgState(acct)
+	task := dkgtasks.NewPlaceHolder(state)
 	s := monitor.NewSequentialSchedule()
-
-	var task tasks.Task = &dumbTask{Val: 4}
 
 	tasks.RegisterTask(task)
 
@@ -233,10 +209,10 @@ func TestFailRetrieve(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
-
+	acct := accounts.Account{}
+	state := objects.NewDkgState(acct)
+	task := dkgtasks.NewPlaceHolder(state)
 	s := monitor.NewSequentialSchedule()
-
-	var task tasks.Task = &dumbTask{Val: 4}
 
 	tasks.RegisterTask(task)
 

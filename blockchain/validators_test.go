@@ -92,11 +92,11 @@ func TestSnapshot(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
 	assert.Nil(t, err)
 
-	good, err := c.Crypto.Verify(callOpts, bhsh, signature, publicKey)
+	good, err := c.Crypto().Verify(callOpts, bhsh, signature, publicKey)
 	assert.Nil(t, err)
 	assert.True(t, good)
 
-	txn, err := c.Validators.Snapshot(txnOpts, rawSigGroup, rawBclaims)
+	txn, err := c.Validators().Snapshot(txnOpts, rawSigGroup, rawBclaims)
 	assert.Nil(t, err)
 	assert.NotNil(t, txn)
 	eth.Commit()
@@ -109,16 +109,16 @@ func TestSnapshot(t *testing.T) {
 	foundIt := false
 	for _, log := range rcpt.Logs {
 		if log.Topics[0].String() == SnapshotTakenSelector {
-			snapshotTaken, err := c.Validators.ParseSnapshotTaken(*log)
+			snapshotTaken, err := c.Validators().ParseSnapshotTaken(*log)
 			assert.Nil(t, err)
 			assert.Equal(t, uint64(1), snapshotTaken.Epoch.Uint64())
 			foundIt = true
 
 			// Now see if I can reconstruct the header from what we have
-			rawEventBclaims, err := c.Validators.GetRawBlockClaimsSnapshot(callOpts, snapshotTaken.Epoch)
+			rawEventBclaims, err := c.Validators().GetRawBlockClaimsSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
-			rawEventSigGroup, err := c.Validators.GetRawSignatureSnapshot(callOpts, snapshotTaken.Epoch)
+			rawEventSigGroup, err := c.Validators().GetRawSignatureSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
 			assert.Equal(t, rawBclaims, rawEventBclaims)
@@ -259,13 +259,13 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	publicKey := bn256.G2ToBigIntArray(publicKeyG2)
 	signature := bn256.G1ToBigIntArray(signatureG1)
 
-	good, err := c.Crypto.Verify(callOpts, bclaimsHash, signature, publicKey)
+	good, err := c.Crypto().Verify(callOpts, bclaimsHash, signature, publicKey)
 	assert.Nil(t, err)
 	assert.True(t, good)
 
 	t.Logf("rawBclaims: 0x%x", rawBclaims)
 
-	txn, err := c.Validators.Snapshot(txnOpts, rawSigGroup, rawBclaims)
+	txn, err := c.Validators().Snapshot(txnOpts, rawSigGroup, rawBclaims)
 	assert.Nil(t, err)
 	assert.NotNil(t, txn)
 	eth.Commit()
@@ -278,22 +278,22 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	foundIt := false
 	for _, log := range rcpt.Logs {
 		if log.Topics[0].String() == SnapshotTakenSelector {
-			snapshotTaken, err := c.Validators.ParseSnapshotTaken(*log)
+			snapshotTaken, err := c.Validators().ParseSnapshotTaken(*log)
 			assert.Nil(t, err)
 			assert.Equal(t, uint64(1), snapshotTaken.Epoch.Uint64())
 			foundIt = true
 
 			// Now see if I can reconstruct the header from what we have
-			rawEventBclaims, err := c.Validators.GetRawBlockClaimsSnapshot(callOpts, snapshotTaken.Epoch)
+			rawEventBclaims, err := c.Validators().GetRawBlockClaimsSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
-			rawEventSigGroup, err := c.Validators.GetRawSignatureSnapshot(callOpts, snapshotTaken.Epoch)
+			rawEventSigGroup, err := c.Validators().GetRawSignatureSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
-			chainId, err := c.Validators.GetChainIdFromSnapshot(callOpts, snapshotTaken.Epoch)
+			chainId, err := c.Validators().GetChainIdFromSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
-			height, err := c.Validators.GetMadHeightFromSnapshot(callOpts, snapshotTaken.Epoch)
+			height, err := c.Validators().GetMadHeightFromSnapshot(callOpts, snapshotTaken.Epoch)
 			assert.Nil(t, err)
 
 			assert.Equal(t, rawBclaims, rawEventBclaims)
