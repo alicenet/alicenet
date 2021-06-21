@@ -385,7 +385,12 @@ func (eth *EthereumDetails) IsEthereumAccessible() bool {
 	return false
 }
 
-// Scans the directory specified and loads all the accounts found
+//ChainID returns the ID used to build ethereum client
+func (eth *EthereumDetails) ChainID() *big.Int {
+	return eth.chainID
+}
+
+//LoadAccounts Scans the directory specified and loads all the accounts found
 func (eth *EthereumDetails) LoadAccounts(directoryPath string) {
 	logger := eth.logger
 

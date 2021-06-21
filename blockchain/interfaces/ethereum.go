@@ -20,6 +20,7 @@ import (
 type Ethereum interface {
 
 	// Extensions for use with simulator
+	ChainID() *big.Int
 	Close() error
 	Commit()
 

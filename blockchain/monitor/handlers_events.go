@@ -328,6 +328,10 @@ func (svcs *Services) ProcessDepositReceived(state *objects.MonitorState, log ty
 		return err
 	}
 
+	bigChainID := svcs.eth.ChainID()
+	//TODO check to make sure chainID fits into a uint32
+	chainID := uint32(bigChainID.Uint64())
+
 	logger.Infof("deposit depositID:%x ethereum:0x%x amount:%d",
 		event.DepositID, event.Depositor, event.Amount)
 
@@ -340,7 +344,7 @@ func (svcs *Services) ProcessDepositReceived(state *objects.MonitorState, log ty
 			logger.Debugf("Error in Services.ProcessDepositReceived at owner.New: %v", err)
 			return err
 		}
-		return svcs.dph.Add(txn, svcs.chainID, depositNonce, event.Amount, owner)
+		return svcs.dph.Add(txn, chainID, depositNonce, event.Amount, owner)
 	})
 }
 

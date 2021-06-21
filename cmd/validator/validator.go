@@ -314,7 +314,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	registerTasks()
 
 	// Setup Request Bus Services
-	svcs := monitor.NewServices(eth, conDB, dph, ah, batchSize, chainID)
+	svcs := monitor.NewServices(eth, conDB, dph, ah, batchSize)
 
 	// Setup Request Bus
 	mb, err := monitor.NewBus(rbus.NewRBus(), svcs)
