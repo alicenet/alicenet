@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/stretchr/testify/assert"
@@ -84,4 +87,30 @@ func assertStateMatch(t *testing.T, ms *objects.MonitorState) {
 	assert.Equal(t, uint32(1), ms.LatestDepositProcessed)
 	assert.Equal(t, uint32(5), ms.LatestDepositSeen)
 	assert.Equal(t, uint8(7), ms.Validators[614][0].Index)
+}
+
+func TestFubar(t *testing.T) {
+
+	var m map[int]string
+	// var o sync.Once
+
+	fn := func(n int) string {
+		return m[n]
+	}
+
+	// m := map[int]string{0: "bob", 1: "ross", 2: "foo", 3: "bar", 4: "Ah!"}
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 100; j++ {
+				fmt.Println(fn(j % 5))
+				time.Sleep(100 * time.Millisecond)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }

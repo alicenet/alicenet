@@ -3,7 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"math/big"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -14,7 +13,6 @@ import (
 
 // GPKJDisputeTask contains required state for performing a group accusation
 type GPKJDisputeTask struct {
-	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -28,7 +26,14 @@ func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	}
 }
 
-func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.GPKJSubmission {
+		return objects.ErrCanNotContinue
+	}
 
 	var (
 		groupPublicKeys [][4]*big.Int
@@ -90,23 +95,23 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Logger,
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -154,10 +159,10 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	state := t.State
 
@@ -167,7 +172,7 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *GPKJDisputeTask) DoDone(logger *logrus.Logger) {
+func (t *GPKJDisputeTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
 
 	t.State.Lock()

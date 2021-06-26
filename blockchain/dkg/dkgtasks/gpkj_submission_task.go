@@ -3,7 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"math/big"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -14,7 +13,6 @@ import (
 
 // GPKSubmissionTask contains required state for gpk submission
 type GPKSubmissionTask struct {
-	sync.Mutex              // TODO Do I need this? It might be sufficient to only use a RWMutex on `State`
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -28,7 +26,14 @@ func NewGPKSubmissionTask(state *objects.DkgState) *GPKSubmissionTask {
 	}
 }
 
-func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.MPKSubmission {
+		return objects.ErrCanNotContinue
+	}
 
 	// TODO Guard
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
@@ -64,18 +69,18 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logge
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
-	t.Lock()
-	defer t.Unlock()
+func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -106,9 +111,9 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-	t.Lock()
-	defer t.Unlock()
+func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	state := t.State
 
@@ -118,6 +123,11 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logg
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *GPKSubmissionTask) DoDone(logger *logrus.Logger) {
+func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.GPKJSubmission = t.Success
 }

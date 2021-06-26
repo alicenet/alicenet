@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -11,7 +10,6 @@ import (
 
 // DisputeTask stores the data required to dispute shares
 type DisputeTask struct {
-	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -26,27 +24,33 @@ func NewDisputeTask(state *objects.DkgState) *DisputeTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
-	// TODO Figure out the best place for this function to be invoked
+func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.ShareDistribution {
+		return objects.ErrCanNotContinue
+	}
+
 	return nil
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// TODO Implement
 	t.Success = true
@@ -55,19 +59,22 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Logger, eth int
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
-	t.Lock()
-	defer t.Unlock()
-
-	state := t.State
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.DisputeEnd)
+	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.DisputeEnd)
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *DisputeTask) DoDone(logger *logrus.Logger) {
+func (t *DisputeTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.Dispute = t.Success
 }

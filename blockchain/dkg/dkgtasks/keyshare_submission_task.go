@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -13,7 +12,6 @@ import (
 
 // DisputeTask stores the data required to dispute shares
 type KeyshareSubmissionTask struct {
-	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -28,7 +26,14 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.Dispute {
+		return objects.ErrCanNotContinue
+	}
 
 	// Generate the key shares
 	g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
@@ -49,20 +54,20 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
-	t.Lock()
-	defer t.Unlock()
+func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Setup
 	me := t.State.Account
@@ -109,9 +114,9 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Logg
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-	t.Lock()
-	defer t.Unlock()
+func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	state := t.State
 
@@ -139,6 +144,11 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Logger) {
+func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	t.State.KeyShareSubmission = t.Success
 }

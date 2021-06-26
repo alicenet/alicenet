@@ -3,6 +3,8 @@ package blockchain
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -16,7 +18,7 @@ import (
 
 //
 var (
-	ErrUnknownRequest = errors.New("Unknown request type")
+	ErrUnknownRequest = errors.New("unknown request type")
 )
 
 //
@@ -25,7 +27,6 @@ type Request struct {
 	txn    *types.Transaction
 	group  int
 	respch chan *Response
-	to     time.Duration
 }
 
 //
@@ -36,7 +37,7 @@ type Response struct {
 	rcpts   []*types.Receipt
 }
 
-// TransactionProfile // TODO calculate updated values for each receipt receipt
+// TransactionProfile
 type TransactionProfile struct {
 	AverageGas   uint64
 	MinimumGas   uint64
@@ -53,11 +54,10 @@ type Behind struct {
 	readyTxns      map[common.Hash]*types.Receipt                 // All the transaction -> receipt pairs we know of
 	selectors      map[common.Hash]interfaces.FuncSelector        // Maps a transaction to it's function selector
 	groups         map[int][]common.Hash                          // A group is just an ID and a list of transactions
-	names          map[interfaces.FuncSelector]string             // Map function selector's to their names
 	aggregates     map[interfaces.FuncSelector]TransactionProfile //
 	client         interfaces.GethClient                          // An interface with the Geth functionality we need
 	knownSelectors interfaces.SelectorMap                         //
-	logger         *logrus.Logger                                 //
+	logger         *logrus.Entry                                  //
 	reqch          <-chan *Request                                //
 }
 
@@ -93,11 +93,10 @@ func (b *Behind) Loop() {
 
 		case <-time.After(500 * time.Millisecond):
 			// No request, so let's do some work
-			b.logger.Debugf("tick")
 			b.collectReceipts()
 		}
 	}
-	b.logger.Infof("buh bye")
+	b.logger.Debug("finished")
 }
 
 func (b *Behind) collectReceipts() {
@@ -125,10 +124,12 @@ func (b *Behind) collectReceipts() {
 
 			var profile TransactionProfile
 			var selector [4]byte
+			var sig string
 			var present bool
 
 			if selector, present = b.selectors[txn]; present {
 				profile = b.aggregates[selector]
+				sig = b.knownSelectors.Signature(selector)
 			} else {
 				profile = TransactionProfile{}
 			}
@@ -148,7 +149,24 @@ func (b *Behind) collectReceipts() {
 			}
 
 			b.aggregates[selector] = profile
-			b.logger.Infof("found receipt for transaction: %v profile:%+v", rcpt.TxHash.Hex(), profile)
+			logEntry := b.logger.WithField("Transaction", rcpt.TxHash.Hex()).
+				WithField("Function", sig).
+				WithField("Selector", fmt.Sprintf("%x", selector)).
+				WithField("Successful", rcpt.Status == 1)
+
+			// This is hideous but useful when troubleshooting with simulator
+			if b.logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
+				fullTxn, _, err := b.client.TransactionByHash(ctx, txn)
+				if err == nil {
+					signer := types.NewEIP155Signer(big.NewInt(1337))
+					msg, err := fullTxn.AsMessage(signer)
+					if err == nil {
+						logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
+					}
+				}
+			}
+
+			logEntry.Debugf("Receipt collected")
 		}
 
 		if _, present := b.readyTxns[txn]; !present {
@@ -162,7 +180,7 @@ func (b *Behind) collectReceipts() {
 
 func (b *Behind) process(req *Request, handler func(req *Request) *Response) {
 
-	b.logger.Infof("processing request...")
+	b.logger.Debug("processing request...")
 
 	resp := handler(req)
 
@@ -171,7 +189,7 @@ func (b *Behind) process(req *Request, handler func(req *Request) *Response) {
 		req.respch <- resp
 		close(req.respch)
 	}
-	b.logger.Infof("...done processing request")
+	b.logger.Debug("...done processing request")
 }
 
 func (b *Behind) queue(req *Request) *Response {
@@ -182,7 +200,12 @@ func (b *Behind) queue(req *Request) *Response {
 	txnHash := req.txn.Hash()
 
 	selector := ExtractSelector(req.txn.Data())
-	b.logger.Infof("queueing selector:%x signature:%v", selector, b.knownSelectors.Signature(selector))
+
+	sig := b.knownSelectors.Signature(selector)
+
+	logEntry := b.logger.WithField("Transaction", txnHash).
+		WithField("Function", sig).
+		WithField("Selector", fmt.Sprintf("%x", selector))
 
 	b.selectors[txnHash] = selector
 	b.waitingTxns = append(b.waitingTxns, txnHash)
@@ -192,12 +215,16 @@ func (b *Behind) queue(req *Request) *Response {
 	}
 	b.groups[req.group] = append(b.groups[req.group], txnHash)
 
-	if b.logger.Level <= logrus.DebugLevel {
-		b.logger.Debugf("total completed: %v pending:%v", len(b.readyTxns), len(b.waitingTxns))
-		for k, v := range b.groups {
-			b.logger.Debugf("txn group:%v txn count:%v", k, len(v))
+	// This is hideous but useful when troubleshooting with simulator
+	if b.logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
+		signer := types.NewEIP155Signer(big.NewInt(1337))
+		msg, err := req.txn.AsMessage(signer)
+		if err == nil {
+			logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
 		}
 	}
+
+	logEntry.Debug("Transaction queued")
 
 	return &Response{message: "queued transaction"}
 }
@@ -206,8 +233,16 @@ func (b *Behind) status(req *Request) *Response {
 	b.Lock()
 	defer b.Unlock()
 
+	b.logger.WithField("Completed", len(b.readyTxns)).
+		WithField("Pending", len(b.waitingTxns)).
+		Info("Transaction counts")
+
 	for selector, profile := range b.aggregates {
-		b.logger.Infof("function selector:%x signature:%v profile:%+v", selector, b.knownSelectors.Signature(selector), profile)
+		sig := b.knownSelectors.Signature(selector)
+		b.logger.WithField("Selector", fmt.Sprintf("%x", selector)).
+			WithField("Function", sig).
+			WithField("Profile", fmt.Sprintf("%+v", profile)).
+			Info("Status")
 	}
 
 	return &Response{message: "status check"}
@@ -233,7 +268,7 @@ func (b *Behind) wait(req *Request) *Response {
 				// delete(b.readyTxns, txn) // TODO Add an explicit purge/cleanup
 				done = true
 			} else {
-				b.logger.Infof("rcpt not ready yet for %v", txn.Hex())
+				b.logger.Debugf("rcpt not ready yet for %v", txn.Hex())
 			}
 		} else {
 			// waiting for a group of transactions to complete
@@ -276,7 +311,7 @@ func (b *Behind) unknown(req *Request) *Response {
 
 type TxnQueueDetail struct {
 	backend *Behind
-	logger  *logrus.Logger
+	logger  *logrus.Entry
 	reqch   chan<- *Request
 }
 
@@ -286,7 +321,7 @@ func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap) *TxnQu
 	b := &Behind{
 		reqch:          reqch,
 		client:         client,
-		logger:         logging.GetLogger("behind"),
+		logger:         logging.GetLogger("ethereum").WithField("Component", "behind"),
 		waitingTxns:    make([]common.Hash, 0, 20),
 		readyTxns:      make(map[common.Hash]*types.Receipt),
 		selectors:      make(map[common.Hash]interfaces.FuncSelector),
@@ -297,7 +332,7 @@ func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap) *TxnQu
 	q := &TxnQueueDetail{
 		reqch:   reqch,
 		backend: b,
-		logger:  logging.GetLogger("infront")}
+		logger:  logging.GetLogger("ethereum").WithField("Component", "infront")}
 
 	return q
 }
@@ -308,17 +343,17 @@ func (f *TxnQueueDetail) StartLoop() {
 
 func (f *TxnQueueDetail) QueueTransaction(ctx context.Context, txn *types.Transaction) {
 	txn.Data()
-	f.logger.Infof("queue...")
+	f.logger.Debug("queue...")
 	req := &Request{name: "queue", txn: txn} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
-	f.logger.Infof("...done queueing")
+	f.logger.Debug("...done queueing")
 }
 
 func (f *TxnQueueDetail) QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction) {
-	f.logger.Infof("queue...")
+	f.logger.Debug("queue...")
 	req := &Request{name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
-	f.logger.Infof("...done queueing")
+	f.logger.Debug("...done queueing")
 }
 
 func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
@@ -327,10 +362,10 @@ func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transactio
 }
 
 func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
-	f.logger.Infof("waiting...")
+	f.logger.Debug("waiting...")
 	req := &Request{name: "wait", txn: txn, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
-	f.logger.Infof("...done waiting")
+	f.logger.Debug("...done waiting")
 
 	if resp.err != nil {
 		return nil, resp.err
@@ -340,10 +375,10 @@ func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transac
 }
 
 func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error) {
-	f.logger.Infof("waiting...")
+	f.logger.Debug("waiting...")
 	req := &Request{name: "wait", group: grp, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
-	f.logger.Infof("...done waiting")
+	f.logger.Debug("...done waiting")
 
 	if resp.err != nil {
 		return nil, resp.err
@@ -353,7 +388,7 @@ func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]
 }
 
 func (f *TxnQueueDetail) Close() {
-	f.logger.Debugf("closing request channel...")
+	f.logger.Debug("closing request channel...")
 	close(f.reqch)
 }
 

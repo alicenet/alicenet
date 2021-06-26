@@ -3,7 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"math/big"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -14,7 +13,6 @@ import (
 
 // DisputeTask stores the data required to dispute shares
 type MPKSubmissionTask struct {
-	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -28,22 +26,42 @@ func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	}
 }
 
-func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.KeyShareSubmission {
+		return objects.ErrCanNotContinue
+	}
 
 	state := t.State
 
-	logger.Infof("MPK0==nil")
 	g1KeyShares := make([][2]*big.Int, state.NumberOfValidators)
 	g2KeyShares := make([][4]*big.Int, state.NumberOfValidators)
 
 	for idx, participant := range state.Participants {
-
 		// Bringing these in from state but could directly query contract
 		g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
 		g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
 
-		logger.Infof("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
+		logger.Debugf("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
+
+		for i := range g1KeyShares[idx] {
+			if g1KeyShares[idx][i] == nil {
+				logger.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+			}
+		}
+
+		for i := range g2KeyShares[idx] {
+			if g2KeyShares[idx][i] == nil {
+				logger.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+			}
+		}
+
 	}
+
+	logger.Debugf("# Participants:%v Data:%+v", len(state.Participants), state.Participants)
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 	if err != nil {
@@ -57,20 +75,20 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Logge
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
-	t.Lock()
-	defer t.Unlock()
+func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -107,9 +125,10 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Logger, e
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
-	t.Lock()
-	defer t.Unlock()
+func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
@@ -117,7 +136,7 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Logg
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *MPKSubmissionTask) DoDone(logger *logrus.Logger) {
+func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
 
 	t.State.Lock()

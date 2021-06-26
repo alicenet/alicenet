@@ -18,7 +18,7 @@ var (
 
 // EthDKGState is used to track the state of the ETHDKG
 type DkgState struct {
-	sync.RWMutex // TODO Make sure this is always used
+	sync.RWMutex
 
 	// Local validator info
 	Account             accounts.Account

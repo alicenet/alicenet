@@ -118,7 +118,7 @@ func IntsToBigInts(ints []int) []*big.Int {
 	return bi
 }
 
-func LogReturnErrorf(logger *logrus.Logger, mess string, args ...interface{}) error {
+func LogReturnErrorf(logger *logrus.Entry, mess string, args ...interface{}) error {
 	message := fmt.Sprintf(mess, args...)
 	logger.Error(message)
 	return errors.New(message)

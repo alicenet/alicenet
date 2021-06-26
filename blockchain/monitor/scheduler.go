@@ -136,7 +136,7 @@ func (s *SequentialSchedule) Remove(taskId uuid.UUID) error {
 	return nil
 }
 
-func (s *SequentialSchedule) Status(logger *logrus.Logger) {
+func (s *SequentialSchedule) Status(logger *logrus.Entry) {
 	for id, block := range s.Ranges {
 		str, err := block.MarshalJSON()
 		if err != nil {

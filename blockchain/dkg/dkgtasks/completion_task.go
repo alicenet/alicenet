@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -12,7 +11,6 @@ import (
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -26,24 +24,32 @@ func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	}
 }
 
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	if !t.State.GPKJGroupAccusation {
+		return objects.ErrCanNotContinue
+	}
+
 	return nil
 }
 
 // DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Setup
 	c := eth.Contracts()
@@ -83,20 +89,18 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Logger, eth 
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
-	t.Lock()
-	defer t.Unlock()
-
-	state := t.State
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.CompleteEnd)
+	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.CompleteEnd)
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *CompletionTask) DoDone(logger *logrus.Logger) {
+func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
 
 	t.State.Lock()

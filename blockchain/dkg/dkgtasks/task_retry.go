@@ -13,7 +13,7 @@ import (
 
 // GeneralTaskShouldRetry is the general logic used to determine if a task should try again
 // -- Process is
-func GeneralTaskShouldRetry(ctx context.Context, acct accounts.Account, logger *logrus.Logger,
+func GeneralTaskShouldRetry(ctx context.Context, acct accounts.Account, logger *logrus.Entry,
 	eth interfaces.Ethereum, publicKey [2]*big.Int,
 	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
 
@@ -55,7 +55,7 @@ func FormatBigIntSlice(slice []*big.Int) string {
 	return fmt.Sprintf("0x%v...%v", str[0:3], str[len(str)-3:])
 }
 
-func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Logger,
+func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 	eth interfaces.Ethereum, acct accounts.Account, publicKey [2]*big.Int,
 	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
 

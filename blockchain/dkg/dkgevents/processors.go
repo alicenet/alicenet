@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	logger.Info(strings.Repeat("-", 60))
 	logger.Info("ProcessOpenRegistration()")
 	logger.Info(strings.Repeat("-", 60))
@@ -35,10 +35,12 @@ func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Logger, sta
 	state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))      // DisputeGroupPublicKey
 	state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                             // Complete
 
+	state.Schedule.Status(logger)
+
 	return nil
 }
 
-func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	logger.Info(strings.Repeat("-", 60))
 	logger.Info("ProcessKeyShareSubmission()")
 	logger.Info(strings.Repeat("-", 60))
@@ -48,7 +50,7 @@ func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Logger, s
 		return err
 	}
 
-	logger.Infof("KeyShareSubmission: %+v", event)
+	logger.Debugf("KeyShareSubmission: %+v", event)
 
 	state.EthDKG.KeyShareG1s[event.Issuer] = event.KeyShareG1
 	state.EthDKG.KeyShareG1CorrectnessProofs[event.Issuer] = event.KeyShareG1CorrectnessProof
@@ -57,7 +59,7 @@ func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Logger, s
 	return nil
 }
 
-func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Logger, state *objects.MonitorState, log types.Log) error {
+func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info(strings.Repeat("-", 60))
 	logger.Info("ProcessShareDistribution()")
@@ -68,7 +70,7 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Logger, st
 		return err
 	}
 
-	logger.Infof("ShareDistribution: %+v", event)
+	logger.Debugf("ShareDistribution: %+v", event)
 
 	state.EthDKG.Commitments[event.Issuer] = event.Commitments
 	state.EthDKG.EncryptedShares[event.Issuer] = event.EncryptedShares

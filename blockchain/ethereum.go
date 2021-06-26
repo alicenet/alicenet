@@ -68,7 +68,7 @@ func NewEthereumSimulator(
 	finalityDelay int,
 	wei *big.Int,
 	addresses ...string) (*EthereumDetails, error) {
-	logger := logging.GetLogger("ethsim")
+	logger := logging.GetLogger("ethereum")
 
 	if len(addresses) < 1 {
 		return nil, errors.New("at least 1 account address required")

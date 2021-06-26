@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type EventProcessor func(eth interfaces.Ethereum, logger *logrus.Logger, state *MonitorState, log types.Log) error
+type EventProcessor func(eth interfaces.Ethereum, logger *logrus.Entry, state *MonitorState, log types.Log) error
 
 type EventInformation struct {
 	Name      string

@@ -2,7 +2,6 @@ package dkgtasks_test
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"sync"
 	"testing"
@@ -124,8 +123,11 @@ func connectRemoteEndpoint(t *testing.T, accountAddresses []string) interfaces.E
 }
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup) {
-	name := fmt.Sprintf("validator%2d", idx)
-	logger := logging.GetLogger(name)
+	logger := logging.
+		GetLogger("validator").
+		WithField("Index", idx).
+		WithField("Address", validatorAcct.Address.Hex())
+
 	c := eth.Contracts()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -156,7 +158,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		assert.Nil(t, err)
 
 		if currentBlock != lastBlock {
-			logger.Infof("Block %d -> %d", lastBlock, currentBlock)
+			logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
 
 			logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
 			assert.Nil(t, err)
@@ -165,14 +167,18 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 			for _, log := range logs {
 
 				eventID := log.Topics[0].String()
+				logEntry := logger.WithField("EventID", eventID)
 
 				info, present := events.Lookup(eventID)
 				if present {
-					err := info.Processor(eth, logger, monitorState, log)
+					logEntry = logEntry.WithField("Event", info.Name)
+					err := info.Processor(eth, logEntry, monitorState, log)
 					if err != nil {
 						logger.Errorf("Failed processing event: %v", err)
 					}
 
+				} else {
+					logEntry.Debug("Found unkown event")
 				}
 
 			}
@@ -182,9 +188,9 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 				uuid, err := scheduler.Find(block)
 				if err == nil {
 					task, _ := scheduler.Retrieve(uuid)
+					log := logger.WithField("TaskID", uuid.String())
 
-					handler := taskManager.StartTask(logger, eth, task)
-					logger.Infof("handler:%p", handler)
+					taskManager.StartTask(log, eth, task)
 
 					scheduler.Remove(uuid)
 				}
@@ -195,12 +201,21 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 		time.Sleep(time.Second)
 
+		// Quit test when we either:
+		// 1) complete successfully, or
+		// 2) past the point when we possible could. This means we aborted somewhere along the way and failed DKG
 		dkgState.RLock()
-		done = dkgState.Complete
+		done = dkgState.Complete || (dkgState.CompleteEnd > 0 && currentBlock >= dkgState.CompleteEnd)
 		dkgState.RUnlock()
 	}
 
 	wg.Done()
+}
+
+func TestAck(t *testing.T) {
+	for i := 0; i < 20; i++ {
+		TestDkgSuccess(t)
+	}
 }
 
 func TestDkgSuccess(t *testing.T) {
@@ -210,7 +225,12 @@ func TestDkgSuccess(t *testing.T) {
 		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 		"0x63a6627b79813A7A43829490C4cE409254f64177", "0x16564cf3e880d9f5d09909f51b922941ebbbc24d"}
 
-	logging.GetLogger("ethsim").SetLevel(logrus.InfoLevel)
+	for _, logger := range logging.GetKnownLoggers() {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+
+	// logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
+	// logging.GetLogger("validator").SetLevel(logrus.DebugLevel)
 
 	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
@@ -248,7 +268,7 @@ func TestDkgSuccess(t *testing.T) {
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(2))
+	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(4))
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 

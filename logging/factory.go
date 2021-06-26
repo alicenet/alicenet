@@ -19,18 +19,24 @@ var loggers loggerDetails // map[string]*logrus.Logger{}
 
 //LogFormatter applies consistent formatting to every message
 type LogFormatter struct {
-	frm func(*logrus.Entry) ([]byte, error)
+	Name string
 }
 
 //Format satisfies logrus' Format interface while staying flexible
 func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	if f.frm != nil {
-		return f.frm(entry)
+	genericFormatter := logrus.TextFormatter{PadLevelText: true, TimestampFormat: "1-2|15:04:05.000", FullTimestamp: true}
+	formatted, err := genericFormatter.Format(entry)
+	if err != nil {
+		return nil, err
 	}
 
-	genericFormatter := logrus.TextFormatter{PadLevelText: true, TimestampFormat: "1-2|15:04:05.000", FullTimestamp: true}
+	label := fmt.Sprintf("%-10s ", f.Name)
 
-	return genericFormatter.Format(entry)
+	line := bytes.Join([][]byte{
+		[]byte(label), formatted},
+		[]byte(" "))
+
+	return line, nil
 }
 
 //LogWriter struct used to provide an io.Writer
@@ -48,23 +54,8 @@ func (ld *loggerDetails) init() {
 	ld.Do(func() {
 		loggers.loggers = make(map[string]*logrus.Logger, len(constants.ValidLoggers))
 		for _, loggerName := range constants.ValidLoggers {
-			formatter := &LogFormatter{frm: func(entry *logrus.Entry) ([]byte, error) {
-				defaultFormat, e := (&logrus.TextFormatter{
-					PadLevelText:    true,
-					TimestampFormat: "1-2|15:04:05.000",
-					FullTimestamp:   true}).Format(entry)
-
-				label := fmt.Sprintf("%-10s ", loggerName)
-
-				line := bytes.Join([][]byte{
-					[]byte(label), defaultFormat},
-					[]byte(" "))
-
-				return line, e
-			}}
-
 			logger := logrus.New()
-			logger.SetFormatter(formatter)
+			logger.SetFormatter(&LogFormatter{Name: loggerName})
 			logger.SetLevel(logrus.InfoLevel)
 
 			loggers.loggers[loggerName] = logger

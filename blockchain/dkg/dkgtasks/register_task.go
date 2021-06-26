@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -14,7 +13,6 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	sync.Mutex              // TODO Update tasks to not be a Mutex, just use State as Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -29,7 +27,7 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
@@ -43,19 +41,19 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Logger, et
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// Is there any point in running? Make sure we're both initialized and within block range
 	block, err := eth.GetCurrentHeight(ctx)
@@ -112,10 +110,10 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Logger, eth in
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	c := eth.Contracts()
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
@@ -124,9 +122,11 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 	if err != nil {
 		return true
 	}
+	logger = logger.WithField("CurrentHeight", currentBlock)
 
 	// Definitely past quitting time
 	if currentBlock >= t.State.RegistrationEnd {
+		logger.Info("aborting registration due to scheduled end")
 		return false
 	}
 
@@ -158,7 +158,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, e
 }
 
 // DoDone just creates a log entry saying task is complete
-func (t *RegisterTask) DoDone(logger *logrus.Logger) {
+func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
 
 	t.State.Lock()

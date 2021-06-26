@@ -42,7 +42,7 @@ const (
 
 // CheckRegistration checks if given address is registered as expected
 func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
 	publicKey [2]*big.Int) (RegistrationStatus, error) {
@@ -81,7 +81,7 @@ func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
 
 // CheckKeyShare checks if a given address submitted the keyshare expected
 func CheckKeyShare(ctx context.Context, ethdkg *bindings.ETHDKG,
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
 	keyshare [2]*big.Int) (KeyShareStatus, error) {

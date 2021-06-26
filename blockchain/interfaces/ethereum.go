@@ -144,11 +144,11 @@ type Contracts interface {
 
 // Task the interface requirements of a task
 type Task interface {
-	DoDone(*logrus.Logger)
-	DoRetry(context.Context, *logrus.Logger, Ethereum) error
-	DoWork(context.Context, *logrus.Logger, Ethereum) error
-	Initialize(context.Context, *logrus.Logger, Ethereum) error
-	ShouldRetry(context.Context, *logrus.Logger, Ethereum) bool
+	DoDone(*logrus.Entry)
+	DoRetry(context.Context, *logrus.Entry, Ethereum) error
+	DoWork(context.Context, *logrus.Entry, Ethereum) error
+	Initialize(context.Context, *logrus.Entry, Ethereum) error
+	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
 }
 
 // TaskHandler required functionality of a task
@@ -168,5 +168,5 @@ type Schedule interface {
 	Retrieve(taskId uuid.UUID) (Task, error)
 	Length() int
 	Remove(taskId uuid.UUID) error
-	Status(logger *logrus.Logger)
+	Status(logger *logrus.Entry)
 }

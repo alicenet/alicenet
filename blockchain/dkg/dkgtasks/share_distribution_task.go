@@ -4,19 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/errorz"
 	"github.com/sirupsen/logrus"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	sync.Mutex
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
@@ -30,12 +27,17 @@ func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	}
 }
 
-func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	state := t.State
+	t.State.Lock()
+	defer t.State.Unlock()
 
-	me := state.Account
+	me := t.State.Account
 	callOpts := eth.GetCallOpts(ctx, me)
+
+	if !t.State.Registration {
+		return objects.ErrCanNotContinue
+	}
 
 	// Retrieve information about other participants from smart contracts
 	participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
@@ -45,7 +47,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.L
 	}
 
 	//
-	if logger.IsLevelEnabled(logrus.DebugLevel) {
+	if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
 		for idx, participant := range participants {
 			logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
 		}
@@ -56,7 +58,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.L
 
 	// Generate shares
 	encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-		state.TransportPrivateKey, state.TransportPublicKey,
+		t.State.TransportPrivateKey, t.State.TransportPublicKey,
 		participants, threshold)
 	if err != nil {
 		logger.Errorf("Failed to generate shares: %v", err)
@@ -64,37 +66,36 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.L
 	}
 
 	// Store calculated values
-	state.Commitments[me.Address] = commitments
-	state.EncryptedShares[me.Address] = encryptedShares
-	state.Index = index
-	state.NumberOfValidators = numParticipants
-	state.Participants = participants
-	state.PrivateCoefficients = privateCoefficients
-	state.SecretValue = privateCoefficients[0]
-	state.ValidatorThreshold = threshold
+	t.State.Commitments[me.Address] = commitments
+	t.State.EncryptedShares[me.Address] = encryptedShares
+	t.State.Index = index
+	t.State.NumberOfValidators = numParticipants
+	t.State.Participants = participants
+	t.State.PrivateCoefficients = privateCoefficients
+	t.State.SecretValue = privateCoefficients[0]
+	t.State.ValidatorThreshold = threshold
 
 	return nil
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) error {
-
-	t.Lock()
-	defer t.Unlock()
+func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
 	// Setup
+	t.State.Lock()
+	defer t.State.Unlock()
+
 	c := eth.Contracts()
-	state := t.State
-	me := state.Account.Address
+	me := t.State.Account.Address
 	logger.Debugf("me:%v", me.Hex())
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
@@ -103,8 +104,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 	}
 
 	// Distribute shares
-	logger.Infof("# shares:%d # commitments:%d", len(state.EncryptedShares), len(state.Commitments))
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, state.EncryptedShares[me], state.Commitments[me])
+	logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.EncryptedShares[me], t.State.Commitments[me])
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
@@ -116,7 +117,6 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 		return err
 	}
 	if receipt == nil {
-		errorz.Wrap(err)
 		message := "missing distribute shares receipt"
 		logger.Error(message)
 		return errors.New(message)
@@ -134,20 +134,19 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Logge
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Logger, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
-	t.Lock()
-	defer t.Unlock()
-
-	state := t.State
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, state.Account, logger, eth, state.TransportPublicKey, t.OriginalRegistrationEnd, state.ShareDistributionEnd)
+	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.ShareDistributionEnd)
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
-		callOpts := eth.GetCallOpts(ctx, state.Account)
-		distributionHash, err := eth.Contracts().Ethdkg().ShareDistributionHashes(callOpts, state.Account.Address)
+		callOpts := eth.GetCallOpts(ctx, t.State.Account)
+		distributionHash, err := eth.Contracts().Ethdkg().ShareDistributionHashes(callOpts, t.State.Account.Address)
 		if err != nil {
 			return true
 		}
@@ -156,12 +155,15 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		logger.Infof("DistributionHash: %x", distributionHash)
 	}
 
-	// return generalRetry
+	if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
+		logger.Info("Logging at Info because Debug is enabled.")
+	}
+
 	return false
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *ShareDistributionTask) DoDone(logger *logrus.Logger) {
+func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.Infof("done")
 
 	t.State.Lock()

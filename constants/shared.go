@@ -85,5 +85,5 @@ const (
 // TODO Find a way to store this list that feels right
 var ValidLoggers []string = []string{"madnet", "consensus", "transport", "app", "db",
 	"gossipbus", "badger", "peerMan", "localRPC", "dman", "peer", "yamux",
-	"ethereum", "main", "deploy", "utils", "monitor", "dkg", "txn",
-	"services"}
+	"ethereum", "main", "deploy", "utils", "monitor", "dkg",
+	"services", "settings", "validator", "muxHandler", "bootnode", "p2pmux"}

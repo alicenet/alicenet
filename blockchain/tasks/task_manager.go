@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"math/rand"
 	"reflect"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -170,7 +169,7 @@ type TaskWrapper struct {
 // Manager describtes the basic functionality of a task Manager
 type Manager interface {
 	// NewTaskHandler(logger *logrus.Logger, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
-	StartTask(logger *logrus.Logger, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
+	StartTask(logger *logrus.Entry, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
 	WaitForTasks()
 }
 
@@ -206,30 +205,17 @@ func NewManager() Manager {
 // 		wg:     &md.wg}
 // }
 
-func (md *ManagerDetails) StartTask(logger *logrus.Logger, eth interfaces.Ethereum, task interfaces.Task) interfaces.TaskHandler {
+func (md *ManagerDetails) StartTask(logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task) interfaces.TaskHandler {
 	md.wg.Add(1)
 
 	go func() {
 		defer task.DoDone(logger)
 		defer md.wg.Done()
 
-		// We want the ID to always show up in the logs
-		taskID := fmt.Sprintf("0x%04x", rand.Intn(0x10000))
-
-		// This is really useful sometimes but fairly expensive
-		if logger.IsLevelEnabled(logrus.InfoLevel) {
-			taskType := reflect.TypeOf(task)
-			if taskType.Kind() == reflect.Ptr {
-				taskType = taskType.Elem()
-			}
-
-			logger.WithField("TaskID", taskID).Infof("Task type %v starting...", taskType)
-		}
-
 		retryCount := eth.RetryCount()
 		retryDelay := eth.RetryDelay()
 		timeout := eth.Timeout()
-		logger.WithField("TaskID", taskID).Debugf("Task timeout is %v, retryCount is %v and retryDelay is %v", timeout, retryCount, retryDelay)
+		logger.Debugf("Task timeout is %v, retryCount is %v and retryDelay is %v", timeout, retryCount, retryDelay)
 
 		// Setup
 		ctx, cancel := context.WithCancel(context.Background())
@@ -239,22 +225,35 @@ func (md *ManagerDetails) StartTask(logger *logrus.Logger, eth interfaces.Ethere
 		var err error
 
 		err = task.Initialize(ctx, logger, eth)
-		logger.WithField("TaskID", taskID).Debugf("Initialize ... error %v", err)
+		logger.Debugf("Initialize ... error %v", err)
 		for err != nil && count < retryCount {
+			if err == objects.ErrCanNotContinue {
+				logger.Error("can not continue:", err)
+				return
+			}
 			time.Sleep(retryDelay)
 			err = task.Initialize(ctx, logger, eth)
 			count++
 		}
-
 		if err != nil {
-			logger.WithField("TaskID", taskID).Errorf("Failed to initialize task: %v", err)
+			logger.Errorf("Failed to initialize task: %v", err)
 			return
 		}
 
+		count = 0
 		err = task.DoWork(ctx, logger, eth)
 		for err != nil && count < retryCount && task.ShouldRetry(ctx, logger, eth) {
+			if err == objects.ErrCanNotContinue {
+				logger.Error("can not continue", err)
+				return
+			}
 			time.Sleep(retryDelay)
 			err = task.DoRetry(ctx, logger, eth)
+			count++
+		}
+		if err != nil {
+			logger.Errorf("Failed to execute task: %v", err)
+			return
 		}
 	}()
 

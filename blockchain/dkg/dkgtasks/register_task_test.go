@@ -11,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,8 @@ func TestRegisterTask(t *testing.T) {
 
 	tasks.RegisterTask(&dkgtasks.RegisterTask{})
 
-	logger := logging.GetLogger("register_task")
+	logger := logging.GetLogger("ethereum")
+	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()
 
@@ -59,7 +61,8 @@ func TestRegisterTask(t *testing.T) {
 	txn, err = c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(4))
 	assert.Nil(t, err)
 
-	eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
@@ -96,6 +99,11 @@ func TestRegisterTask(t *testing.T) {
 
 	t.Logf("registration ends:%v", openEvent.RegistrationEnds.Uint64())
 
-	err = task.DoWork(ctx, logger, eth)
+	log := logger.WithField("TaskID", "foo")
+
+	err = task.Initialize(ctx, log, eth)
+	assert.Nil(t, err)
+
+	err = task.DoWork(ctx, log, eth)
 	assert.Nil(t, err)
 }
