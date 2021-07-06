@@ -73,7 +73,7 @@ var DepositCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Logger) (interfaces.Ethereum, error) {
+func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
 	eth, err := blockchain.NewEthereumEndpoint(
 		config.Configuration.Ethereum.Endpoint,
@@ -100,7 +100,7 @@ func setupEthereum(logger *logrus.Logger) (interfaces.Ethereum, error) {
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Logger, eth interfaces.Ethereum) {
+func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 
 	acct := eth.GetDefaultAccount()
 	err := eth.UnlockAccount(acct)
@@ -190,10 +190,8 @@ func LogStatus(logger *logrus.Logger, eth interfaces.Ethereum) {
 }
 
 func utilsNode(cmd *cobra.Command, args []string) {
-	logLevel := logging.GetLogger("utils").Level
 
-	logger := logging.GetLogger(cmd.Use)
-	logger.SetLevel(logLevel)
+	logger := logging.GetLogger("utils").WithField("Component", cmd.Use)
 
 	// Utils wide setup
 	eth, err := setupEthereum(logger)
@@ -240,7 +238,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func register(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
@@ -300,7 +298,7 @@ func register(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command
 	return 0
 }
 
-func unregister(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
@@ -323,7 +321,7 @@ func unregister(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Comma
 	return 0
 }
 
-func approvetokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// Arguments are 1) who is being approved, and 2) amount being approved
 	if len(args) != 2 {
@@ -385,7 +383,7 @@ func approvetokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Co
 	return 0
 }
 
-func deposittokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func deposittokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
@@ -423,7 +421,7 @@ func deposittokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Co
 	return 0
 }
 
-func transfertokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func transfertokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// Arguments are 1) src of tokens, and 2) amount to transfer
 	if len(args) != 2 {
@@ -460,7 +458,7 @@ func transfertokens(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.C
 	return 0
 }
 
-func sendwei(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
@@ -485,7 +483,7 @@ func sendwei(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command,
 	return 0
 }
 
-func ethdkg(logger *logrus.Logger, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()

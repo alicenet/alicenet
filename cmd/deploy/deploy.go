@@ -12,9 +12,10 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang-collections/go-datastructures/queue"
 	"github.com/spf13/cobra"
 )
+
+const DEPLOY_GRP = 973
 
 var RequiredWei = big.NewInt(8_000_000_000_000)
 
@@ -155,29 +156,6 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		return err
 	}
 
-	txnQueue := queue.New(10)
-	q := func(tx *types.Transaction) {
-		if tx != nil {
-			logger.Debugf("Queueing transaction %v", tx.Hash().String())
-			txnQueue.Put(tx)
-		} else {
-			logger.Warn("Ignoring nil transaction")
-		}
-	}
-
-	flushQ := func(queue *queue.Queue) {
-		logger.Debugf("waiting for txns...")
-		for txns, err := queue.Get(1); !queue.Empty(); txns, err = queue.Get(1) {
-			if err != nil {
-				logger.Errorf("failure: %v", err)
-			}
-			tx := txns[0].(*types.Transaction)
-			logger.Debugf("waiting for txn: %v", tx.Hash().String())
-			eth.Queue().QueueAndWait(ctx, tx)
-		}
-	}
-
-	//
 	var txn *types.Transaction
 
 	// Deploy all the migration contracts
@@ -186,7 +164,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateStakingAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
 	logger.Infof("Deploy migrateStakingAddr = \"0x%0.40x\" gas = %v", migrateStakingAddr, txn.Gas())
 
 	migrateSnapshotsAddr, txn, _, err := bindings.DeployMigrateSnapshotsFacet(txnOpts, client)
@@ -194,7 +172,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateSnapshotsAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
 	logger.Infof("Deploy migrateSnapshotsAddr = \"0x%0.40x\" gas = %v", migrateSnapshotsAddr, txn.Gas())
 
 	migrateParticipantsAddr, txn, _, err := bindings.DeployMigrateParticipantsFacet(txnOpts, client)
@@ -202,7 +180,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateParticipantsAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
 	logger.Infof("Deploy migrateParticipantsAddr = \"0x%0.40x\" gas = %v", migrateParticipantsAddr, txn.Gas())
 
 	migrateEthDKGAddr, txn, _, err := bindings.DeployMigrateETHDKG(txnOpts, client)
@@ -210,7 +188,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateEthDKGAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
 	logger.Infof("Deploy migrateEthDKGAddr = \"0x%0.40x\" gas = %v", migrateEthDKGAddr, txn.Gas())
 
 	// Wire validators migration contracts
@@ -235,7 +213,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 	eu := &blockchain.Updater{Updater: ethdkgUpdater, TxnOpts: txnOpts, Logger: logger}
 	q(eu.Add("migrate(uint256,uint32,uint32,uint256[4],address[],uint256[4][])", migrateEthDKGAddr))
 
-	flushQ(txnQueue)
+	eth.Queue().WaitGroupTransactions(ctx, DEPLOY_GRP)
 
 	return nil
 }

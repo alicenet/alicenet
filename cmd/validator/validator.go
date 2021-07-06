@@ -137,7 +137,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Can't find contract registry: %v", err)
 		panic(err)
 	}
-	utils.LogStatus(logger, eth)
+	utils.LogStatus(logger.WithField("Component", "validator"), eth)
 
 	// Load accounts
 	acct := eth.GetDefaultAccount()

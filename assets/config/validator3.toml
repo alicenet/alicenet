@@ -1,5 +1,3 @@
-logging = "localRPC=info,gossipbus=info,utils=info,services=info,ethereum=info,main=warn,validator=info,monitor=info,deploy=info,consensus=info,peerMan=info,muxHandler=info,p2pmux=info,app=error,transport=error,dman=info,status=info,db=info,yamux=error,badger=error,monitor_bus=error"
-
 [chain]
 id = 42
 stateDB = "~/validator3/"

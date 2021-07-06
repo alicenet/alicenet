@@ -105,7 +105,7 @@ func setupEthereum(t *testing.T) (interfaces.Ethereum, error) {
 	wei, ok := new(big.Int).SetString("9000000000000000000000", 10)
 	assert.True(t, ok)
 
-	logging.GetLogger("ethsim").SetLevel(logrus.InfoLevel)
+	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
 	eth, err := blockchain.NewEthereumSimulator(
 		"../assets/test/keys",

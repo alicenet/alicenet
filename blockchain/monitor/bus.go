@@ -22,7 +22,7 @@ type monitorBus struct {
 	sync.WaitGroup
 	svcs              *Services
 	rbus              rbus.Rbus
-	logger            *logrus.Logger
+	logger            *logrus.Entry
 	processEventsChan <-chan rbus.Request
 	cancelChan        chan bool
 }
@@ -55,7 +55,7 @@ func NewBus(rb rbus.Rbus, svcs *Services) (Bus, error) {
 	}
 
 	return &monitorBus{
-		logger:            logging.GetLogger("monitor_bus"),
+		logger:            logging.GetLogger("monitor").WithField("Component", "bus"),
 		svcs:              svcs,
 		rbus:              rb,
 		processEventsChan: processEventsChan}, nil

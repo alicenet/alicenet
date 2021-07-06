@@ -22,13 +22,13 @@ type Database interface {
 
 type monitorDB struct {
 	database *badger.DB
-	logger   *logrus.Logger
+	logger   *logrus.Entry
 }
 
 // NewDatabase initializes a new monitor database
 func NewDatabase(ctx context.Context, directoryName string, inMemory bool) Database {
 
-	logger := logging.GetLogger("monitor_db")
+	logger := logging.GetLogger("monitor").WithField("Component", "database")
 
 	logger.Infof("Opening badger DB... In-Memory:%v Directory:%v", inMemory, directoryName)
 
@@ -51,7 +51,7 @@ func NewDatabase(ctx context.Context, directoryName string, inMemory bool) Datab
 }
 
 func NewDatabaseFromExisting(db *badger.DB) Database {
-	logger := logging.GetLogger("monitor_db")
+	logger := logging.GetLogger("monitor").WithField("Component", "database")
 	return &monitorDB{
 		logger:   logger,
 		database: db}
