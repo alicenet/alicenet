@@ -46,6 +46,7 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 				loggerName := settingComponent[0]
 				loggerLevel := strings.ToLower(settingComponent[1])
 
+				logger.Infof("Setting log level for '%v' to '%v'", loggerName, loggerLevel)
 				lgr := logging.GetLogger(loggerName)
 
 				switch loggerLevel {

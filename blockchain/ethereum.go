@@ -187,6 +187,7 @@ func NewEthereumEndpoint(
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
 	eth.queue = NewTxnQueue(ethClient, eth.selectors)
+	eth.queue.StartLoop()
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)

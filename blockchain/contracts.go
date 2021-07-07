@@ -115,6 +115,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 
+	logger.Debug("Deploying contracts...")
 	q := eth.Queue()
 
 	deployGroup := 111

@@ -11,15 +11,14 @@ import (
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/cobra"
 )
 
-const DEPLOY_GRP = 973
+const MIGRATION_GRP = 973
 
 var RequiredWei = big.NewInt(8_000_000_000_000)
 
-// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
+// Command is the cobra.Command specifically for running deploying contracts
 var Command = cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys required smart contracts to Ethereum",
@@ -156,7 +155,8 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		return err
 	}
 
-	var txn *types.Transaction
+	//
+	logger.Infof("Deploying migrations...")
 
 	// Deploy all the migration contracts
 	migrateStakingAddr, txn, _, err := bindings.DeployMigrateStakingFacet(txnOpts, client)
@@ -164,7 +164,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateStakingAddr...")
 		return err
 	}
-	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateStakingAddr = \"0x%0.40x\" gas = %v", migrateStakingAddr, txn.Gas())
 
 	migrateSnapshotsAddr, txn, _, err := bindings.DeployMigrateSnapshotsFacet(txnOpts, client)
@@ -172,7 +172,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateSnapshotsAddr...")
 		return err
 	}
-	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateSnapshotsAddr = \"0x%0.40x\" gas = %v", migrateSnapshotsAddr, txn.Gas())
 
 	migrateParticipantsAddr, txn, _, err := bindings.DeployMigrateParticipantsFacet(txnOpts, client)
@@ -180,7 +180,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateParticipantsAddr...")
 		return err
 	}
-	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateParticipantsAddr = \"0x%0.40x\" gas = %v", migrateParticipantsAddr, txn.Gas())
 
 	migrateEthDKGAddr, txn, _, err := bindings.DeployMigrateETHDKG(txnOpts, client)
@@ -188,7 +188,7 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateEthDKGAddr...")
 		return err
 	}
-	eth.Queue().QueueGroupTransaction(ctx, DEPLOY_GRP, txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateEthDKGAddr = \"0x%0.40x\" gas = %v", migrateEthDKGAddr, txn.Gas())
 
 	// Wire validators migration contracts
@@ -198,11 +198,13 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		return err
 	}
 	vu := &blockchain.Updater{Updater: validatorUpdater, TxnOpts: txnOpts, Logger: logger}
-	q(vu.Add("setBalancesFor(address,uint256,uint256,uint256)", migrateStakingAddr))
-	q(vu.Add("snapshot(uint256,bytes,bytes)", migrateSnapshotsAddr))
 
-	q(vu.Add("addValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
-	q(vu.Add("removeValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
+	//
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("setBalancesFor(address,uint256,uint256,uint256)", migrateStakingAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("snapshot(uint256,bytes,bytes)", migrateSnapshotsAddr))
+
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("addValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("removeValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
 
 	// Wire EthDKG migration contract
 	ethdkgUpdater, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress(), client)
@@ -211,9 +213,9 @@ func deployMigrations(eth interfaces.Ethereum) error {
 		return err
 	}
 	eu := &blockchain.Updater{Updater: ethdkgUpdater, TxnOpts: txnOpts, Logger: logger}
-	q(eu.Add("migrate(uint256,uint32,uint32,uint256[4],address[],uint256[4][])", migrateEthDKGAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, eu.Add("migrate(uint256,uint32,uint32,uint256[4],address[],uint256[4][])", migrateEthDKGAddr))
 
-	eth.Queue().WaitGroupTransactions(ctx, DEPLOY_GRP)
+	eth.Queue().WaitGroupTransactions(ctx, MIGRATION_GRP)
 
 	return nil
 }
