@@ -7,7 +7,6 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -22,7 +21,9 @@ func TestRegisterTask(t *testing.T) {
 		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
 		"0x63a6627b79813A7A43829490C4cE409254f64177"}
 
-	tasks.RegisterTask(&dkgtasks.RegisterTask{})
+	tr := &objects.TypeRegistry{}
+
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)

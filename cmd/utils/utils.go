@@ -66,6 +66,13 @@ var UnregisterCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
+//
+var UpdateValueCommand = cobra.Command{
+	Use:   "updatevalue",
+	Short: "Dynamically updates a value",
+	Long:  "",
+	Run:   utilsNode}
+
 // DepositCommand is the command that triggers a token deposit for the caller
 var DepositCommand = cobra.Command{
 	Use:   "deposit",
@@ -173,6 +180,7 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress().Hex())
 	logger.Infof("*   Registry contract: %v", c.RegistryAddress().Hex())
 	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress().Hex())
+	logger.Infof("    Governor contract: %v", c.GovernorAddress().Hex())
 	logger.Infof("  Validators contract: %v", c.ValidatorsAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
@@ -226,6 +234,8 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		exitCode = unregister(logger, eth, cmd, args)
 	case "utils":
 		exitCode = 0
+	case "updatevalue":
+		exitCode = updatevalue(logger, eth, cmd, args)
 	case "transfertokens":
 		exitCode = transfertokens(logger, eth, cmd, args)
 	case "deposit":
@@ -287,7 +297,7 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
-	rcpt, err = eth.Queue().WaitTransaction(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
@@ -379,6 +389,58 @@ func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 		logger.Infof("retrying...")
 		time.Sleep(time.Second)
 	}
+
+	return 0
+}
+
+func updatevalue(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+
+	acct := eth.GetDefaultAccount()
+
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
+	if err != nil {
+		logger.Errorf("txnopts failed: %v", err)
+		return 1
+	}
+
+	epoch, valid := new(big.Int).SetString(args[0], 10)
+	if !valid {
+		logger.Errorf("Could not set epoch using: %v", args[0])
+		return 1
+	}
+
+	key, valid := new(big.Int).SetString(args[1], 10)
+	if !valid {
+		logger.Errorf("Could not determine key using: %v", args[1])
+		return 1
+	}
+
+	value := blockchain.StringToBytes32(args[2])
+
+	logger = logger.WithFields(logrus.Fields{
+		"Epoch": epoch,
+		"Key":   key,
+		"Value": value,
+	})
+
+	txn, err := eth.Contracts().Governor().UpdateValue(txnOpts, epoch, key, value)
+	if err != nil {
+		logger.Errorf("Could not call updateValue: %v", err)
+		return 1
+	}
+
+	rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
+	if err != nil {
+		logger.Errorf("Could not retrieve receipt: %v", err)
+		return 1
+	}
+
+	if rcpt.Status != 1 {
+		logger.Error("Transaction failed")
+		return 1
+	}
+
+	logger.Info("Value updated")
 
 	return 0
 }

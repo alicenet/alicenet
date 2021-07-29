@@ -107,10 +107,10 @@ func NewEthereumSimulator(
 		return nil, err
 	}
 
-	gasLimit := uint64(10000000000000000)
+	gasLimit := uint64(150000000)
 	sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
 	eth.client = sim
-	eth.queue = NewTxnQueue(sim, eth.selectors)
+	eth.queue = NewTxnQueue(sim, eth.selectors, timeout)
 	eth.queue.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
@@ -186,7 +186,7 @@ func NewEthereumEndpoint(
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
-	eth.queue = NewTxnQueue(ethClient, eth.selectors)
+	eth.queue = NewTxnQueue(ethClient, eth.selectors, timeout)
 	eth.queue.StartLoop()
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
@@ -602,7 +602,7 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	return opts, err
 }
 
-func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts { // TODO provide and use context
+func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts {
 	return &bind.CallOpts{
 		BlockNumber: nil,
 		Context:     ctx,
@@ -613,34 +613,63 @@ func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Ac
 // TransferEther transfer's ether from one account to another, assumes from is unlocked
 func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
 
-	nonce, err := eth.client.PendingNonceAt(context.Background(), from)
+	ctx, cancel := eth.GetTimeoutContext()
+	defer cancel()
+
+	nonce, err := eth.client.PendingNonceAt(ctx, from)
 	if err != nil {
 		return nil, err
 	}
 
-	gasPrice, err := eth.client.SuggestGasPrice(context.Background())
+	gasPrice, err := eth.client.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var data []byte
+	block, err := eth.client.BlockByNumber(ctx, nil)
+	if err != nil && block == nil {
+		return nil, errors.New("beats me")
+	}
+
+	eth.logger.Infof("Previous BaseFee:%v GasUsed:%v GasLimit:%v",
+		block.BaseFee().String(),
+		block.GasUsed(),
+		block.GasLimit())
+
+	// var data []byte
 	gasLimit := uint64(21000)
-	tx := types.NewTransaction(nonce, to, wei, gasLimit, gasPrice, data)
+	eth.logger.Infof("gasLimit:%v SuggestGasPrice(): %v", gasLimit, gasPrice.String())
+	// tx := types.NewTransaction(nonce, to, wei, gasLimit, gasPrice, data)
+
+	baseFee := big.NewInt(block.BaseFee().Int64())
+
+	// baseFee.Div(baseFee, big.NewInt(8))
+	// baseFee.Mul(baseFee, big.NewInt(7))
+
+	// baseFee.Add(baseFee, big.NewInt(14595))
+
+	txRough := &types.DynamicFeeTx{}
+	txRough.ChainID = eth.chainID
+	txRough.To = &to
+	txRough.GasFeeCap = baseFee
+	txRough.GasTipCap = big.NewInt(1)
+	txRough.Gas = gasLimit
+	txRough.Nonce = nonce
+	txRough.Value = wei
 
 	eth.logger.Debugf("TransferEther => chainID:%v from:%v nonce:%v, to:%v, wei:%v, gasLimit:%v, gasPrice:%v",
 		eth.chainID, from.Hex(), nonce, to.Hex(), wei, gasLimit, gasPrice)
 
-	signer := types.NewEIP155Signer(eth.chainID)
+	signer := types.NewLondonSigner(eth.chainID)
 
-	signedTx, err := types.SignTx(tx, signer, eth.keys[from].PrivateKey)
+	signedTx, err := types.SignNewTx(eth.keys[from].PrivateKey, signer, txRough)
 	if err != nil {
-		eth.logger.Error(err)
+		eth.logger.Errorf("signing error:%v", err)
 		return nil, err
 	}
-	ctx, cancel := eth.GetTimeoutContext()
-	defer cancel()
 	err = eth.client.SendTransaction(ctx, signedTx)
 	if err != nil {
+		eth.logger.Errorf("sending error:%v", err)
 		return nil, err
 	}
 

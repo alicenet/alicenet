@@ -93,6 +93,7 @@ type GethClient interface {
 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
+	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 
@@ -107,6 +108,7 @@ type TxnQueue interface {
 	QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction)
 	QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
 	StartLoop()
+	Status(ctx context.Context) error
 	WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
 	WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error)
 }
@@ -129,6 +131,8 @@ type Contracts interface {
 	DepositAddress() common.Address
 	Ethdkg() *bindings.ETHDKG
 	EthdkgAddress() common.Address
+	Governor() *bindings.Governor
+	GovernorAddress() common.Address
 	Participants() *bindings.Participants
 	Registry() *bindings.Registry
 	RegistryAddress() common.Address
@@ -149,6 +153,10 @@ type Task interface {
 	DoWork(context.Context, *logrus.Entry, Ethereum) error
 	Initialize(context.Context, *logrus.Entry, Ethereum) error
 	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
+}
+
+type AdminClient interface {
+	SetAdminHandler(AdminHandler)
 }
 
 // TaskHandler required functionality of a task

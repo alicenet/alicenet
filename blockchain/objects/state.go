@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,23 +13,22 @@ import (
 
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
-	// TODO decide if a mutex is required
-	Version                uint8
-	CommunicationFailures  uint32
-	EthereumInSync         bool
-	HighestBlockProcessed  uint64
-	HighestBlockFinalized  uint64
-	HighestEpochProcessed  uint32
-	HighestEpochSeen       uint32
-	InSync                 bool
-	LatestDepositProcessed uint32
-	LatestDepositSeen      uint32
-	PeerCount              uint32
-	ValidatorSets          map[uint32]ValidatorSet
-	Validators             map[uint32][]Validator
-	Schedule               interfaces.Schedule
-	EthDKG                 *DkgState
-	// interestingBlocks      map[uint64]func(*MonitorState, uint64) error
+	sync.RWMutex           `json:"-"`
+	Version                uint8                   `json:"version"`
+	CommunicationFailures  uint32                  `json:"communicationFailtures"`
+	EthereumInSync         bool                    `json:"ethereumInSync"`
+	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
+	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
+	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
+	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
+	InSync                 bool                    `json:"inSync"`
+	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
+	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
+	PeerCount              uint32                  `json:"peerCount"`
+	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
+	Validators             map[uint32][]Validator  `json:"validators"`
+	Schedule               interfaces.Schedule     `json:"schedule"`
+	EthDKG                 *DkgState               `json:"ethDKG"`
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in
@@ -135,7 +135,19 @@ type Share struct {
 	EncryptedShares []*big.Int
 }
 
-func (s MonitorState) String() string {
+func NewMonitorState(dkgState *DkgState, schedule interfaces.Schedule) *MonitorState {
+	return &MonitorState{
+		EthDKG:        dkgState,
+		Schedule:      schedule,
+		ValidatorSets: make(map[uint32]ValidatorSet),
+		Validators:    make(map[uint32][]Validator),
+	}
+}
+
+func (s *MonitorState) String() string {
+	s.RLock()
+	defer s.RUnlock()
+
 	str, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Sprintf("%#v", s)
@@ -146,7 +158,7 @@ func (s MonitorState) String() string {
 
 // Clone builds a deep copy of a state
 func (s *MonitorState) Clone() *MonitorState {
-	ns := new(MonitorState)
+	ns := NewMonitorState(s.EthDKG, s.Schedule)
 
 	ns.HighestBlockFinalized = s.HighestBlockFinalized
 	ns.HighestBlockProcessed = s.HighestBlockProcessed
@@ -160,6 +172,12 @@ func (s *MonitorState) Clone() *MonitorState {
 
 // Diff builds a textual description between states
 func (s *MonitorState) Diff(o *MonitorState) string {
+	s.RLock()
+	defer s.RUnlock()
+
+	o.RLock()
+	defer o.RUnlock()
+
 	d := []string{}
 
 	if s.InSync != o.InSync {

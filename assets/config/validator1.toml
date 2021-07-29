@@ -36,7 +36,7 @@ testEther = "f000000000000000000"
 finalityDelay = 2
 retryCount = 3
 retryDelay = "5s"
-startingBlock = 1
+startingBlock = 9000
 registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
 
 [edge]

@@ -139,6 +139,15 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 	utils.LogStatus(logger.WithField("Component", "validator"), eth)
 
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
+			eth.Queue().Status(ctx)
+			cf()
+		}
+	}()
+
 	// Load accounts
 	acct := eth.GetDefaultAccount()
 	if err := eth.UnlockAccount(acct); err != nil {
@@ -323,7 +332,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// Setup monitor
-	mon, err := monitor.NewMonitor(monitorDb, mb, monitorInterval, oneHour)
+	mon, err := monitor.NewMonitor(monitorDb, mb, ah, monitorInterval, oneHour)
 	if err != nil {
 		panic(err)
 	}
@@ -398,7 +407,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	monitorCancelChan, err := mon.StartEventLoop()
+	monitorCancelChan, err := mon.StartEventLoop(eth.GetDefaultAccount())
 	if err != nil {
 		panic(err)
 	}

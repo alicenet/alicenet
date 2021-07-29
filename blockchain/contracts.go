@@ -18,6 +18,8 @@ type ContractDetails struct {
 	cryptoAddress       common.Address
 	deposit             *bindings.Deposit
 	depositAddress      common.Address
+	governor            *bindings.Governor
+	governorAddress     common.Address
 	ethdkg              *bindings.ETHDKG
 	ethdkgAddress       common.Address
 	participants        *bindings.Participants
@@ -58,6 +60,14 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, registryAddress c
 		return addr, err
 	}
 
+	// Lookup up governance address and bind to it
+	c.governorAddress, err = lookup("governance/v1")
+	logAndEat(logger, err)
+
+	c.governor, err = bindings.NewGovernor(c.governorAddress, eth.client)
+	logAndEat(logger, err)
+
+	// Lookup up deposit address and bind to it
 	c.depositAddress, err = lookup("deposit/v1")
 	logAndEat(logger, err)
 
@@ -122,6 +132,8 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	facetConfigGroup := 222
 
 	var txn *types.Transaction
+
+	// Deploy registry
 	c.registryAddress, txn, c.registry, err = bindings.DeployRegistry(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy registry...")
@@ -130,6 +142,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("* registryAddress = \"0x%0.40x\"", c.registryAddress)
 
+	// Deploy staking token
 	c.stakingTokenAddress, txn, c.stakingToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("STK"), StringToBytes32("MadNet Staking"))
 	if err != nil {
 		logger.Errorf("Failed to deploy stakingToken...")
@@ -138,6 +151,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("  stakingTokenAddress = \"0x%0.40x\"", c.stakingTokenAddress)
 
+	// Deploy reference crypto contract
 	c.cryptoAddress, txn, c.crypto, err = bindings.DeployCrypto(txnOpts, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy crypto...")
@@ -146,6 +160,19 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("        cryptoAddress = \"0x%0.40x\"", c.cryptoAddress)
 
+	// Deploy governor
+	c.governorAddress, txn, _, err = bindings.DeployDirectGovernance(txnOpts, eth.client)
+	if err != nil {
+		logger.Errorf("Failed to deploy governance contract...")
+		return nil, common.Address{}, err
+	}
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
+	logger.Infof("    governanceAddress = \"0x%0.40x\"", c.governorAddress)
+
+	c.governor, err = bindings.NewGovernor(c.governorAddress, eth.client)
+	logAndEat(logger, err)
+
+	// Deploy utility token
 	c.utilityTokenAddress, txn, c.utilityToken, err = bindings.DeployToken(txnOpts, eth.client, StringToBytes32("UTL"), StringToBytes32("MadNet Utility"))
 	if err != nil {
 		logger.Errorf("Failed to deploy utilityToken...")
@@ -426,6 +453,10 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	logAndEat(logger, err)
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
+	txn, err = c.registry.Register(txnOpts, "governance/v1", c.governorAddress)
+	logAndEat(logger, err)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
+
 	txn, err = c.registry.Register(txnOpts, "staking/v1", c.validatorsAddress)
 	logAndEat(logger, err)
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
@@ -613,6 +644,14 @@ func (c *ContractDetails) Ethdkg() *bindings.ETHDKG {
 
 func (c *ContractDetails) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
+}
+
+func (c *ContractDetails) Governor() *bindings.Governor {
+	return c.governor
+}
+
+func (c *ContractDetails) GovernorAddress() common.Address {
+	return c.governorAddress
 }
 
 func (c *ContractDetails) Participants() *bindings.Participants {

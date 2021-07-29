@@ -43,9 +43,11 @@ func TestFoo(t *testing.T) {
 
 	rcpts, err := queue.WaitGroupTransactions(toctx, 511)
 	assert.Nil(t, err)
+	assert.Equal(t, 2, len(rcpts))
 
 	for idx := 0; idx < txnCount; idx++ {
 		txn, err = c.StakingToken().Transfer(txnOpts, who, big.NewInt(amount))
+		assert.Nil(t, err)
 		queue.QueueGroupTransaction(toctx, 5+idx%txnGroupCount, txn)
 	}
 

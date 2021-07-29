@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ -z "$ENDPOINT" ]; then
-    ./madnet --config ./assets/config/validator0.toml validator > validator0.log 2>&1 &
+    ./madnet --config ./assets/config/validator0.toml validator --ethereum.startingBlock 8913 > validator0.log 2>&1 &
     ./madnet --config ./assets/config/validator1.toml validator > validator1.log 2>&1 &
     ./madnet --config ./assets/config/validator2.toml validator > validator2.log 2>&1 &
     ./madnet --config ./assets/config/validator3.toml validator > validator3.log 2>&1 &

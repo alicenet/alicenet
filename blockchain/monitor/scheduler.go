@@ -3,9 +3,11 @@ package monitor
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -25,50 +27,21 @@ type Block struct {
 type innerBlock struct {
 	Start       uint64
 	End         uint64
-	WrappedTask tasks.TaskWrapper
-}
-
-func (b *Block) MarshalJSON() ([]byte, error) {
-
-	wrappedTask, err := tasks.WrapTask(b.Task)
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := json.Marshal(&innerBlock{
-		Start:       b.Start,
-		End:         b.End,
-		WrappedTask: wrappedTask,
-	})
-
-	return raw, err
-}
-
-func (b *Block) UnmarshalJSON(raw []byte) error {
-	aa := &innerBlock{}
-
-	err := json.Unmarshal(raw, aa)
-	if err != nil {
-		return err
-	}
-
-	b.Start = aa.Start
-	b.End = aa.End
-
-	b.Task, err = tasks.UnwrapTask(aa.WrappedTask)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	WrappedTask *objects.InstanceWrapper
 }
 
 type SequentialSchedule struct {
-	Ranges map[string]*Block
+	Ranges       map[string]*Block
+	adminHandler interfaces.AdminHandler
+	marshaller   *objects.TypeRegistry
 }
 
-func NewSequentialSchedule() *SequentialSchedule {
-	return &SequentialSchedule{Ranges: make(map[string]*Block)}
+type innerSequentialSchedule struct {
+	Ranges map[string]*innerBlock
+}
+
+func NewSequentialSchedule(m *objects.TypeRegistry, adminHandler interfaces.AdminHandler) *SequentialSchedule {
+	return &SequentialSchedule{Ranges: make(map[string]*Block), adminHandler: adminHandler, marshaller: m}
 }
 
 func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.Task) (uuid.UUID, error) {
@@ -137,11 +110,60 @@ func (s *SequentialSchedule) Remove(taskId uuid.UUID) error {
 }
 
 func (s *SequentialSchedule) Status(logger *logrus.Entry) {
-	for id, block := range s.Ranges {
-		str, err := block.MarshalJSON()
+	// for id, block := range s.Ranges {
+	// 	str, err := block.MarshalJSON()
+	// 	if err != nil {
+	// 		logger.Errorf("id:%v unable to marshal block: %v", id, err)
+	// 	}
+	// 	logger.Infof("id:%v block:%+v", id, string(str))
+	// }
+}
+
+func (ss *SequentialSchedule) MarshalJSON() ([]byte, error) {
+
+	ws := &innerSequentialSchedule{Ranges: make(map[string]*innerBlock)}
+
+	for k, v := range ss.Ranges {
+		wt, err := ss.marshaller.WrapInstance(v.Task)
 		if err != nil {
-			logger.Errorf("id:%v unable to marshal block: %v", id, err)
+			return []byte{}, err
 		}
-		logger.Infof("id:%v block:%+v", id, string(str))
+		ws.Ranges[k] = &innerBlock{Start: v.Start, End: v.End, WrappedTask: wt}
 	}
+
+	raw, err := json.Marshal(&ws)
+	logging.GetLogger("test").Infof("RaW:%v", string(raw))
+
+	return raw, err
+}
+
+func (ss *SequentialSchedule) UnmarshalJSON(raw []byte) error {
+	aa := &innerSequentialSchedule{}
+
+	err := json.Unmarshal(raw, aa)
+	if err != nil {
+		return err
+	}
+
+	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
+
+	ss.Ranges = make(map[string]*Block)
+	for k, v := range aa.Ranges {
+		logging.GetLogger("test").Infof("Ranges k:%v v:%v", k, v)
+		t, err := ss.marshaller.UnwrapInstance(v.WrappedTask)
+		if err != nil {
+			return err
+		}
+
+		// Marshalling service handlers is mostly non-sense, so
+		isAdminClient := reflect.TypeOf(t).Implements(adminInterface)
+		if isAdminClient {
+			adminClient := t.(interfaces.AdminClient)
+			adminClient.SetAdminHandler(ss.adminHandler)
+		}
+
+		ss.Ranges[k] = &Block{Start: v.Start, End: v.End, Task: t.(interfaces.Task)}
+	}
+
+	return nil
 }

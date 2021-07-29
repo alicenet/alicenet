@@ -59,6 +59,7 @@ type Behind struct {
 	knownSelectors interfaces.SelectorMap                         //
 	logger         *logrus.Entry                                  //
 	reqch          <-chan *Request                                //
+	timeout        time.Duration                                  // How long will we wait for a receipt
 }
 
 func (b *Behind) Loop() {
@@ -159,7 +160,7 @@ func (b *Behind) collectReceipts() {
 				fullTxn, _, err := b.client.TransactionByHash(ctx, txn)
 				if err == nil {
 					signer := types.NewEIP155Signer(big.NewInt(1337))
-					msg, err := fullTxn.AsMessage(signer)
+					msg, err := fullTxn.AsMessage(signer, nil)
 					if err == nil {
 						logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
 					}
@@ -218,7 +219,7 @@ func (b *Behind) queue(req *Request) *Response {
 	// This is hideous but useful when troubleshooting with simulator
 	if b.logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
 		signer := types.NewEIP155Signer(big.NewInt(1337))
-		msg, err := req.txn.AsMessage(signer)
+		msg, err := req.txn.AsMessage(signer, nil)
 		if err == nil {
 			logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
 		}
@@ -250,7 +251,7 @@ func (b *Behind) status(req *Request) *Response {
 
 func (b *Behind) wait(req *Request) *Response {
 
-	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second) // TODO context or duration has to be passed in
+	ctx, cf := context.WithTimeout(context.Background(), b.timeout)
 	defer cf()
 
 	resp := &Response{message: "status check"}
@@ -315,8 +316,8 @@ type TxnQueueDetail struct {
 	reqch   chan<- *Request
 }
 
-func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap) *TxnQueueDetail {
-	reqch := make(chan *Request, 10)
+func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap, to time.Duration) *TxnQueueDetail {
+	reqch := make(chan *Request, 100)
 
 	b := &Behind{
 		reqch:          reqch,
@@ -327,6 +328,7 @@ func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap) *TxnQu
 		selectors:      make(map[common.Hash]interfaces.FuncSelector),
 		aggregates:     make(map[interfaces.FuncSelector]TransactionProfile),
 		knownSelectors: sm,
+		timeout:        to,
 		groups:         make(map[int][]common.Hash)}
 
 	q := &TxnQueueDetail{
@@ -387,6 +389,15 @@ func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]
 	return resp.rcpts, nil
 }
 
+func (f *TxnQueueDetail) Status(ctx context.Context) error {
+	req := &Request{name: "status"}
+	logger := f.logger.WithField("Command", req.name)
+	logger.Debug("waiting...")
+	f.requestWait(ctx, req)
+	logger.Debug("...done waiting")
+	return nil
+}
+
 func (f *TxnQueueDetail) Close() {
 	f.logger.Debug("closing request channel...")
 	close(f.reqch)
@@ -396,12 +407,13 @@ func (f *TxnQueueDetail) requestWait(ctx context.Context, req *Request) *Respons
 	f.reqch <- req
 
 	logReciept := func(message string, rcpt *types.Receipt) {
-		f.logger.Debugf("response message: %v txn: %v block: %v gas: %v status: %v",
-			message,
-			rcpt.TxHash.Hex(),
-			rcpt.BlockNumber.String(),
-			rcpt.GasUsed,
-			rcpt.Status)
+		f.logger.WithFields(logrus.Fields{
+			"Message":     message,
+			"Transaction": rcpt.TxHash.Hex(),
+			"Block":       rcpt.BlockNumber.String(),
+			"GasUsed":     rcpt.GasUsed,
+			"Status":      rcpt.Status,
+		}).Debugf("Received response")
 	}
 
 	if req.respch != nil {

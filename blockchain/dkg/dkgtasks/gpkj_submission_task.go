@@ -8,6 +8,8 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/consensus/admin"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,13 +18,15 @@ type GPKSubmissionTask struct {
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
+	adminHandler            interfaces.AdminHandler
 }
 
 // NewGPKSubmissionTask creates a background task that attempts to register with ETHDKG
-func NewGPKSubmissionTask(state *objects.DkgState) *GPKSubmissionTask {
+func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.AdminHandler) *GPKSubmissionTask {
 	return &GPKSubmissionTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State:                   state,
+		adminHandler:            adminHandler,
 	}
 }
 
@@ -64,6 +68,14 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	t.State.GroupPrivateKey = groupPrivateKey
 	t.State.GroupPublicKey = groupPublicKey
 	t.State.GroupSignature = groupSignature
+
+	// Pass private key on to consensus
+	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
+	err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
+	if err != nil {
+		logger.Errorf("Error adding private key: %v", err)
+		return objects.ErrCanNotContinue // TODO this is seriously bad, any better actions possible?
+	}
 
 	return nil
 }
@@ -130,4 +142,8 @@ func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	t.State.GPKJSubmission = t.Success
+}
+
+func (t *GPKSubmissionTask) SetAdminHandler(adminHandler *admin.Handlers) {
+	t.adminHandler = adminHandler
 }

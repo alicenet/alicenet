@@ -1,8 +1,6 @@
 package dkgevents
 
 import (
-	"strings"
-
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -10,10 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-	logger.Info(strings.Repeat("-", 60))
-	logger.Info("ProcessOpenRegistration()")
-	logger.Info(strings.Repeat("-", 60))
+func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+	adminHandler interfaces.AdminHandler) error {
+
+	logger.Info("ProcessOpenRegistration() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpen(log)
 	if err != nil {
@@ -26,14 +24,14 @@ func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, stat
 
 	state.EthDKG.PopulateSchedule(event)
 
-	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                       // Registration
-	state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))    // ShareDistribution
-	state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                  // DisputeShares
-	state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState)) // KeyShareSubmission
-	state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                // MasterPublicKeySubmission
-	state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewGPKSubmissionTask(dkgState))              // GroupPublicKeySubmission
-	state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))      // DisputeGroupPublicKey
-	state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                             // Complete
+	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                        // Registration
+	state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))     // ShareDistribution
+	state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                   // DisputeShares
+	state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState))  // KeyShareSubmission
+	state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                 // MasterPublicKeySubmission
+	state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewGPKSubmissionTask(dkgState, adminHandler)) // GroupPublicKeySubmission
+	state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))       // DisputeGroupPublicKey
+	state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                              // Complete
 
 	state.Schedule.Status(logger)
 
@@ -41,9 +39,8 @@ func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, stat
 }
 
 func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-	logger.Info(strings.Repeat("-", 60))
-	logger.Info("ProcessKeyShareSubmission()")
-	logger.Info(strings.Repeat("-", 60))
+
+	logger.Info("ProcessKeyShareSubmission() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmission(log)
 	if err != nil {
@@ -61,9 +58,7 @@ func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Entry, st
 
 func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
-	logger.Info(strings.Repeat("-", 60))
-	logger.Info("ProcessShareDistribution()")
-	logger.Info(strings.Repeat("-", 60))
+	logger.Info("ProcessShareDistribution() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseShareDistribution(log)
 	if err != nil {

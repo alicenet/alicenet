@@ -119,12 +119,13 @@ func main() {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},
 
 		&utils.ApproveTokensCommand:  {},
+		&utils.DepositCommand:        {},
 		&utils.EthdkgCommand:         {},
 		&utils.RegisterCommand:       {},
 		&utils.SendWeiCommand:        {},
 		&utils.TransferTokensCommand: {},
 		&utils.UnregisterCommand:     {},
-		&utils.DepositCommand:        {},
+		&utils.UpdateValueCommand:    {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
@@ -148,6 +149,7 @@ func main() {
 		&utils.ApproveTokensCommand:  &utils.Command,
 		&utils.EthdkgCommand:         &utils.Command,
 		&utils.RegisterCommand:       &utils.Command,
+		&utils.UpdateValueCommand:    &utils.Command,
 		&utils.SendWeiCommand:        &utils.Command,
 		&utils.TransferTokensCommand: &utils.Command,
 		&utils.UnregisterCommand:     &utils.Command,

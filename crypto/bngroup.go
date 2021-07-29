@@ -5,6 +5,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/MadBase/MadNet/logging"
 )
 
 // BNGroupSigner creates cryptographic signatures using the bn256 curve.
@@ -83,6 +84,7 @@ func (bns *BNGroupSigner) PubkeyGroup() ([]byte, error) {
 // BNGroupSigner; this signature can be aggregated to form a valid
 // group signature.
 func (bns *BNGroupSigner) Sign(msg []byte) ([]byte, error) {
+	logging.GetLogger("test").Warnf("msg:%x bns:%+v p:%p", msg, bns, bn256.HashToG1)
 	sigpoint, err := bn256.Sign(msg, bns.privk, bn256.HashToG1)
 	if err != nil {
 		return nil, err

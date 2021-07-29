@@ -7,16 +7,17 @@ require (
 	// github.com/MadBase/bridge v0.6.0
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/emicklei/proto v1.9.0
-	github.com/ethereum/go-ethereum v1.10.3
+	github.com/ethereum/go-ethereum v1.10.6
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
-	github.com/holiman/uint256 v1.1.1
+	github.com/holiman/uint256 v1.2.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/highwayhash v1.0.1
 	github.com/pborman/uuid v0.0.0-20170112150404-1b00554d8222

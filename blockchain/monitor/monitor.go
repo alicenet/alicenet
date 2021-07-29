@@ -7,10 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/config"
+	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +27,7 @@ var (
 
 // Monitor describes required functionality to monitor Ethereum
 type Monitor interface {
-	StartEventLoop() (chan<- bool, error)
+	StartEventLoop(accounts.Account) (chan<- bool, error)
 	GetStatus() <-chan string
 }
 
@@ -35,22 +38,42 @@ type monitor struct {
 	tickInterval time.Duration
 	timeout      time.Duration
 	statusMsg    chan string
+	adminHandler *admin.Handlers
+	typeRegistry *objects.TypeRegistry
 }
 
 // NewMonitor creates a new Monitor
-func NewMonitor(db Database, bus Bus, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
+func NewMonitor(db Database, bus Bus, adminHandler *admin.Handlers, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
 
 	logger := logging.GetLogger("monitor")
 
 	rand.Seed(time.Now().UnixNano())
 
+	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
+	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
+	//    in advance.
+	tr := &objects.TypeRegistry{}
+
+	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+
 	return &monitor{
+		adminHandler: adminHandler,
 		database:     db,
 		bus:          bus,
 		logger:       logger,
+		statusMsg:    make(chan string, 1),
 		tickInterval: tickInterval,
 		timeout:      timeout,
-		statusMsg:    make(chan string, 1)}, nil
+		typeRegistry: tr,
+	}, nil
 }
 
 func (mon *monitor) GetStatus() <-chan string {
@@ -58,7 +81,7 @@ func (mon *monitor) GetStatus() <-chan string {
 }
 
 // StartEventLoop starts the event loop
-func (mon *monitor) StartEventLoop() (chan<- bool, error) {
+func (mon *monitor) StartEventLoop(acct accounts.Account) (chan<- bool, error) {
 
 	logger := mon.logger
 
@@ -71,17 +94,19 @@ func (mon *monitor) StartEventLoop() (chan<- bool, error) {
 			return nil, err
 		}
 
-		startingBlock := config.Configuration.Ethereum.StartingBlock
-		initialState = &objects.MonitorState{
-			HighestBlockProcessed: uint64(startingBlock),
-			HighestBlockFinalized: uint64(startingBlock),
-			Validators:            make(map[uint32][]objects.Validator),
-			ValidatorSets:         make(map[uint32]objects.ValidatorSet),
-		}
 		logger.Info("Setting initial state to defaults...")
+		startingBlock := config.Configuration.Ethereum.StartingBlock
+		schedule := NewSequentialSchedule(mon.typeRegistry, mon.adminHandler)
+		dkgState := objects.NewDkgState(acct)
+
+		initialState = objects.NewMonitorState(dkgState, schedule)
+		initialState.HighestBlockFinalized = uint64(startingBlock)
+		initialState.HighestBlockProcessed = uint64(startingBlock)
 	}
+
 	initialState.InSync = false
 	logger.Info("Current state:")
+	logger.Infof("...Ethereum in sync: %v", initialState.EthereumInSync)
 	logger.Infof("...Highest block finalized: %v", initialState.HighestBlockFinalized)
 	logger.Infof("...Highest block processed: %v", initialState.HighestBlockProcessed)
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())

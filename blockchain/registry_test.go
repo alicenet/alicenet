@@ -27,5 +27,5 @@ func TestRegister(t *testing.T) {
 	addr, err := c.Registry().Lookup(callOpts, "myself")
 	assert.Nil(t, err, "Failed to lookup of name from registry")
 
-	assert.Equal(t, c.RegistryAddress, addr)
+	assert.Equal(t, c.RegistryAddress(), addr)
 }

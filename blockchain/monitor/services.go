@@ -5,12 +5,10 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
@@ -20,10 +18,10 @@ import (
 )
 
 //
-type eventProcessor struct {
-	name      string
-	processor func(*objects.MonitorState, types.Log) error
-}
+// type eventProcessor struct {
+// 	name      string
+// 	processor func(*objects.MonitorState, types.Log) error
+// }
 
 // Services just a bundle of requirements common for monitoring functionality
 type Services struct {
@@ -31,22 +29,22 @@ type Services struct {
 	eth               interfaces.Ethereum
 	consensusDb       *db.Database
 	dph               *deposit.Handler
-	ah                *admin.Handlers
+	ah                interfaces.AdminHandler
 	contractAddresses []common.Address
 	batchSize         int
 	eventMap          *objects.EventMap
-	events            map[string]*eventProcessor
-	taskMan           tasks.Manager
+	taskManager       tasks.Manager
 }
 
 // NewServices creates a new Services struct
-func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler, ah *admin.Handlers, batchSize int) *Services {
+func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler, ah interfaces.AdminHandler, batchSize int) *Services {
 
 	c := eth.Contracts()
 
 	contractAddresses := []common.Address{
 		c.DepositAddress(), c.EthdkgAddress(), c.RegistryAddress(),
-		c.StakingTokenAddress(), c.UtilityTokenAddress(), c.ValidatorsAddress()}
+		c.StakingTokenAddress(), c.UtilityTokenAddress(), c.ValidatorsAddress(),
+		c.GovernorAddress()}
 
 	serviceLogger := logging.GetLogger("services")
 
@@ -58,127 +56,18 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 		dph:               dph,
 		eth:               eth,
 		eventMap:          objects.NewEventMap(),
-		events:            make(map[string]*eventProcessor),
 		logger:            serviceLogger,
-		taskMan:           tasks.NewManager()}
+		taskManager:       tasks.NewManager(),
+	}
 
 	// Register handlers for known events, if this failed we really can't continue
-	if err := SetupEventMap(svcs.eventMap); err != nil {
-		panic(err)
-	}
-
-	// Below are the RegisterEvent()'s with nil fn's to improve logging by correlating a name with the topic
-	if err := svcs.RegisterEvent("0x3529eeacda732ca25cee203cc6382b6d0688ee079ec8e53fd2dcbf259bdd3fa1", "DepositReceived-Obsolete", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x6bae01a1b82866e1dfe8d98c42383fc58df9b4adeb47d7ac24ee4b53d409da6c", "DepositReceived-Obsolete", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", "DSTokenApproval", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0xce241d7ca1f669fee44b6fc00b8eba2df3bb514eed0f6f668f8f89096e81ed94", "LogSetOwner", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885", "Mint", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "Transfer", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x8c25e214c5693ebaf8008875bacedeb9e0aafd393864a314ed1801b2a4e13dd9", "ValidatorJoined", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x319bbadb03b94aedc69babb34a28675536a9cb30f4bbde343e1d0018c44ebd94", "ValidatorLeft", nil); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x1de2f07b0a1c69916a8b25b889051644192307ea08444a2e11f8654d1db3ab0c", "LockedStake", nil); err != nil {
-		panic(err)
-	}
-
-	// Real event processors are below
-	if err := svcs.RegisterEvent("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived", svcs.ProcessDepositReceived); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember", svcs.ProcessValidatorMember); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet", svcs.ProcessValidatorSet); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x6d438b6b835d16cdae6efdc0259fdfba17e6aa32dae81863a2467866f85f724a", "SnapshotTaken", svcs.ProcessSnapshotTaken); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", svcs.ProcessShareDistribution); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", svcs.ProcessKeyShareSubmission); err != nil {
-		panic(err)
-	}
-	if err := svcs.RegisterEvent("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", svcs.ProcessRegistrationOpen); err != nil {
+	if err := SetupEventMap(svcs.eventMap, svcs.consensusDb, dph, ah); err != nil {
 		panic(err)
 	}
 
 	ah.RegisterSnapshotCallback(svcs.PersistSnapshot) // HUNTER: moved out of main func and into constructor
 
 	return svcs
-}
-
-// SetupEventMap populates map with known log topics
-func SetupEventMap(em *objects.EventMap) error {
-
-	// if err := em.RegisterLocked("0x3529eeacda732ca25cee203cc6382b6d0688ee079ec8e53fd2dcbf259bdd3fa1", "DepositReceived-Obsolete", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x6bae01a1b82866e1dfe8d98c42383fc58df9b4adeb47d7ac24ee4b53d409da6c", "DepositReceived-Obsolete", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", "DSTokenApproval", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0xce241d7ca1f669fee44b6fc00b8eba2df3bb514eed0f6f668f8f89096e81ed94", "LogSetOwner", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885", "Mint", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "Transfer", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x8c25e214c5693ebaf8008875bacedeb9e0aafd393864a314ed1801b2a4e13dd9", "ValidatorJoined", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x319bbadb03b94aedc69babb34a28675536a9cb30f4bbde343e1d0018c44ebd94", "ValidatorLeft", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x1de2f07b0a1c69916a8b25b889051644192307ea08444a2e11f8654d1db3ab0c", "LockedStake", nil); err != nil {
-	// 	return err
-	// }
-
-	// Real event processors are below
-	// if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived", svcs.ProcessDepositReceived); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember", svcs.ProcessValidatorMember); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet", svcs.ProcessValidatorSet); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x6d438b6b835d16cdae6efdc0259fdfba17e6aa32dae81863a2467866f85f724a", "SnapshotTaken", svcs.ProcessSnapshotTaken); err != nil {
-	// 	return err
-	// }
-	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", dkgevents.ProcessOpenRegistration); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // WatchEthereum checks state of Ethereum and processes interesting conditions
@@ -262,40 +151,45 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 		// Interesting blocks can change based on an event, so we need to look at all blocks in range in order
 		for block := firstBlock; block <= lastBlock; block++ {
 
+			logEntry := logger.WithField("Block", block)
+
 			// If current block has any events, we process all of them
 			if logs, present := logsByBlock[block]; present {
 				for _, log := range logs {
+
 					eventSelector := log.Topics[0].String()
 
-					ep, ok := svcs.events[eventSelector]
+					logEntry = logEntry.WithField("EventSelector", eventSelector)
+
+					ei, ok := svcs.eventMap.Lookup(eventSelector)
 					if ok {
-						logger.Debugf("... block:%v event:%v name:%v", block, eventSelector, ep.name)
-						if ep.processor != nil {
-							err := ep.processor(state, log)
+
+						logEntry = logEntry.WithField("EventName", ei.Name)
+
+						logEntry.Info("Found event handler")
+
+						if ei.Processor != nil {
+							err := ei.Processor(eth, logEntry, state, log)
 							if err != nil {
-								logger.Errorf("Event handler for %v failed: %v", eventSelector, err)
+								logEntry.Errorf("Event handler failed: %v", err)
 							}
 						}
 					} else {
-						logger.Debugf("... block:%v event:%v", block, eventSelector)
+						logEntry.Info("No event handler found")
 					}
 				}
 			}
 
-			// Get the blocks currently interesting
-			// if processor, present := state.interestingBlocks[block]; present {
-			// 	logger.Debugf("... block:%v processor:%p", block, processor)
-			// 	if present && processor != nil {
-			// 		err := processor(state, block)
-			// 		if err != nil {
-			// 			logger.Warnf("Block handler for %v failed: %v", block, err)
-			// 			// if err == dkg.ErrCanNotContinue {
-			// 			// 	state.EthDKG = NewEthDKGState()
-			// 			// 	state.interestingBlocks = make(map[uint64]func(*State, uint64) error)
-			// 			// }
-			// 		}
-			// 	}
-			// }
+			// Check if any tasks are scheduled
+			uuid, err := state.Schedule.Find(block)
+			if err == nil {
+				task, _ := state.Schedule.Retrieve(uuid)
+				log := logEntry.WithField("TaskID", uuid.String())
+
+				svcs.taskManager.StartTask(log, eth, task)
+
+				state.Schedule.Remove(uuid)
+			}
 
 			state.HighestBlockProcessed = lastBlock
 		}
@@ -313,47 +207,40 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 	return nil
 }
 
-// RegisterEvent registers a handler for when an interesting event shows up
-func (svcs *Services) RegisterEvent(selector string, name string, fn func(*objects.MonitorState, types.Log) error) error {
-
-	svcs.events[selector] = &eventProcessor{processor: fn, name: name}
-	return nil
-}
-
 // EndpointInSync Checks if our endpoint is good to use
 // -- This function is different. Because we need to be aware of errors, state is always updated
-func (svcs *Services) EndpointInSync(ctx context.Context, state *objects.MonitorState) error {
+func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) (bool, uint32, error) {
 
 	// Default to assuming everything is awful
-	state.EthereumInSync = false
-	state.PeerCount = 0
+	inSync := false
+	peerCount := uint32(0)
 
 	// Check if the endpoint is itself still syncing
-	syncing, progress, err := svcs.eth.GetSyncProgress()
+	syncing, progress, err := eth.GetSyncProgress()
 	if err != nil {
-		svcs.logger.Warnf("Could not check if Ethereum endpoint it still syncing: %v", err)
-		return err
+		logger.Warnf("Could not check if Ethereum endpoint it still syncing: %v", err)
+		return inSync, peerCount, err
 	}
 
 	if syncing && progress != nil {
-		svcs.logger.Debugf("Ethereum endpoint syncing... at block %v of %v.",
+		logger.Debugf("Ethereum endpoint syncing... at block %v of %v.",
 			progress.CurrentBlock, progress.HighestBlock)
 	}
 
-	state.EthereumInSync = !syncing
+	inSync = !syncing
 
-	peerCount, err := svcs.eth.GetPeerCount(ctx)
+	peerCount64, err := eth.GetPeerCount(ctx)
 	if err != nil {
-		return err
+		return inSync, peerCount, err
 	}
-	state.PeerCount = uint32(peerCount)
+	peerCount = uint32(peerCount64)
 
 	// TODO Remove direct reference to config. Specific values should be passed in.
-	if state.EthereumInSync && state.PeerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
-		state.EthereumInSync = true
+	if inSync && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+		inSync = true
 	}
 
-	return nil
+	return inSync, peerCount, err
 }
 
 // UpdateProgress updates what we know of Ethereum chain height
@@ -419,16 +306,6 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 	}
 
 	return nil
-}
-
-// SetBN256PrivateKey informs the admin bus of the BN256 private key
-func (svcs *Services) SetBN256PrivateKey(pk []byte) error {
-	return svcs.ah.AddPrivateKey(pk, 2)
-}
-
-// SetSECP256K1PrivateKey informs the admin bus of the SECP256K1 private key
-func (svcs *Services) SetSECP256K1PrivateKey(pk []byte) error {
-	return svcs.ah.AddPrivateKey(pk, 1)
 }
 
 // AbortETHDKG does the required cleanup to stop a round of ETHDKG

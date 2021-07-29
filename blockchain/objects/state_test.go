@@ -1,8 +1,6 @@
 package objects_test
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -12,27 +10,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestBidirectionalGob(t *testing.T) {
-
-	// Build up a pseudo-realistic State instance
-	ms := createState()
-
-	// Encode the test instance
-	buf := &bytes.Buffer{}
-	enc := gob.NewEncoder(buf)
-	err := enc.Encode(ms)
-	assert.Nilf(t, err, "Should be no errors marshalling data")
-
-	// Decode the bytes
-	ms2 := &objects.MonitorState{}
-	dec := gob.NewDecoder(buf)
-	err = dec.Decode(ms2)
-	assert.Nilf(t, err, "Should be no errors unmarshalling data")
-
-	// Good?
-	assertStateMatch(t, ms2)
-}
 
 func TestBidirectionalJson(t *testing.T) {
 
@@ -55,12 +32,6 @@ func TestBidirectionalJson(t *testing.T) {
 }
 
 func createState() *objects.MonitorState {
-
-	// task := &dumbTask{}
-
-	// s := monitor.NewSequentialSchedule()
-
-	// s.Schedule(2, 5, task)
 
 	ms := &objects.MonitorState{
 		Version:                0,

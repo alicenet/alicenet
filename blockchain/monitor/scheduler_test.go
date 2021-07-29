@@ -8,14 +8,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSchedule(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
@@ -37,7 +37,8 @@ func TestSchedule(t *testing.T) {
 }
 
 func TestPurge(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
@@ -63,7 +64,8 @@ func TestPurge(t *testing.T) {
 }
 
 func TestPurgePrior(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
@@ -89,7 +91,8 @@ func TestPurgePrior(t *testing.T) {
 }
 
 func TestFailSchedule(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
@@ -114,7 +117,8 @@ func TestFailSchedule(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var task interfaces.Task
@@ -128,7 +132,8 @@ func TestFind(t *testing.T) {
 }
 
 func TestFailFind(t *testing.T) {
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var task interfaces.Task
@@ -144,7 +149,8 @@ func TestRemove(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 
 	taskID, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -160,7 +166,9 @@ func TestFailRemove(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
-	s := monitor.NewSequentialSchedule()
+
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 
 	// Schedule something but don't bother saving the id
 	_, err := s.Schedule(5, 15, task)
@@ -180,9 +188,10 @@ func TestRetreive(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 
-	tasks.RegisterTask(task)
+	// tasks.RegisterTask(task)
 
 	// Schedule something
 	taskID, err := s.Schedule(5, 15, task)
@@ -196,9 +205,10 @@ func TestFailRetrieve(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
-	s := monitor.NewSequentialSchedule()
+	m := &objects.TypeRegistry{}
+	s := monitor.NewSequentialSchedule(m, nil)
 
-	tasks.RegisterTask(task)
+	// tasks.RegisterTask(task)
 
 	// Schedule something
 	_, err := s.Schedule(5, 15, task)
@@ -211,10 +221,11 @@ func TestFailRetrieve(t *testing.T) {
 func TestMarshal(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewPlaceHolder(state)
-	s := monitor.NewSequentialSchedule()
-
-	tasks.RegisterTask(task)
+	task := dkgtasks.NewAdminPlaceHolder(state)
+	m := &objects.TypeRegistry{}
+	m.RegisterInstanceType(&monitor.Block{})
+	m.RegisterInstanceType(task)
+	s := monitor.NewSequentialSchedule(m, nil)
 
 	// Schedule something
 	taskID, err := s.Schedule(5, 15, task)
@@ -227,11 +238,16 @@ func TestMarshal(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Unmarshal the schedule
-	ns := &monitor.SequentialSchedule{}
+	ns := monitor.NewSequentialSchedule(m, nil)
 	err = json.Unmarshal(raw, &ns)
 	assert.Nil(t, err)
-	assert.NotNil(t, taskID)
-	assert.Equal(t, 1, s.Length())
+	assert.Equal(t, 1, ns.Length())
+
+	// Make sure the schedule and task  are correct
+	block, present := ns.Ranges[taskID.String()]
+	assert.True(t, present)
+	assert.Equal(t, uint64(5), block.Start)
+	assert.Equal(t, uint64(15), block.End)
 
 	// Confirm task survived marshalling
 	_, err = s.Retrieve(taskID)

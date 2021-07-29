@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +23,37 @@ import (
 )
 
 const SETUP_GROUP int = 13
+
+type adminHandlerMock struct {
+	snapshotCalled     bool
+	privateKeyCalled   bool
+	validatorSetCalled bool
+	registerSnapshot   bool
+	setSynchronized    bool
+}
+
+func (ah *adminHandlerMock) AddPrivateKey([]byte, constants.CurveSpec) error {
+	ah.privateKeyCalled = true
+	return nil
+}
+
+func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool) error {
+	ah.snapshotCalled = true
+	return nil
+}
+
+func (ah *adminHandlerMock) AddValidatorSet(*objs.ValidatorSet) error {
+	ah.validatorSetCalled = true
+	return nil
+}
+
+func (ah *adminHandlerMock) RegisterSnapshotCallback(func(*objs.BlockHeader) error) {
+	ah.registerSnapshot = true
+}
+
+func (ah *adminHandlerMock) SetSynchronized(v bool) {
+	ah.setSynchronized = true
+}
 
 func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interfaces.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
@@ -107,22 +139,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 	return eth
 }
 
-func connectRemoteEndpoint(t *testing.T, accountAddresses []string) interfaces.Ethereum {
-	eth, err := blockchain.NewEthereumEndpoint(
-		"http://192.168.86.29:8545",
-		"keystore_test",
-		"assets_test/passcodes.txt",
-		accountAddresses[0],
-		3*time.Second, // This is the timeout for blocking actions
-		30,            // Let's do lots of retries
-		1*time.Second, // This is the retry delay
-		2)             // For testing finality is 2 blocks
-	assert.Nil(t, err)
-
-	return eth
-}
-
-func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup) {
+func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
 	logger := logging.
 		GetLogger("validator").
 		WithField("Index", idx).
@@ -135,69 +152,70 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 	startBlock := uint64(1)
 
+	adminHandler := new(adminHandlerMock)
+
 	currentBlock := uint64(startBlock)
 	lastBlock := uint64(startBlock)
 	addresses := []common.Address{c.EthdkgAddress()}
 
 	dkgState := objects.NewDkgState(validatorAcct)
-	scheduler := monitor.NewSequentialSchedule()
+	schedule := monitor.NewSequentialSchedule(tr, adminHandler)
 
-	monitorState := &objects.MonitorState{EthDKG: dkgState, Schedule: scheduler}
+	monitorState := objects.NewMonitorState(dkgState, schedule)
 
 	taskManager := tasks.NewManager()
 	events := objects.NewEventMap()
 
-	SetupEventMap(events)
-	SetupTasks()
+	monitor.SetupEventMap(events, nil, nil, adminHandler)
 
 	var done bool
 	var err error
 
 	for !done {
-		currentBlock, err = eth.GetCurrentHeight(ctx)
-		assert.Nil(t, err)
+		// currentBlock, err = eth.GetCurrentHeight(ctx)
+		// assert.Nil(t, err)
 
-		if currentBlock != lastBlock {
-			logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
+		// if currentBlock != lastBlock {
+		// 	logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
 
-			logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
-			assert.Nil(t, err)
+		// 	logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
+		// 	assert.Nil(t, err)
 
-			// Check all the logs for an event we want to process
-			for _, log := range logs {
+		// 	// Check all the logs for an event we want to process
+		// 	for _, log := range logs {
 
-				eventID := log.Topics[0].String()
-				logEntry := logger.WithField("EventID", eventID)
+		// 		eventID := log.Topics[0].String()
+		// 		logEntry := logger.WithField("EventID", eventID)
 
-				info, present := events.Lookup(eventID)
-				if present {
-					logEntry = logEntry.WithField("Event", info.Name)
-					err := info.Processor(eth, logEntry, monitorState, log)
-					if err != nil {
-						logger.Errorf("Failed processing event: %v", err)
-					}
+		// 		info, present := events.Lookup(eventID)
+		// 		if present {
+		// 			logEntry = logEntry.WithField("Event", info.Name)
+		// 			err := info.Processor(eth, logEntry, monitorState, log)
+		// 			if err != nil {
+		// 				logger.Errorf("Failed processing event: %v", err)
+		// 			}
 
-				} else {
-					logEntry.Debug("Found unkown event")
-				}
+		// 		} else {
+		// 			logEntry.Debug("Found unkown event")
+		// 		}
 
-			}
+		// 	}
 
-			// Check if any tasks are scheduled
-			for block := lastBlock + 1; block <= currentBlock; block++ {
-				uuid, err := scheduler.Find(block)
-				if err == nil {
-					task, _ := scheduler.Retrieve(uuid)
-					log := logger.WithField("TaskID", uuid.String())
+		// 	// Check if any tasks are scheduled
+		// 	for block := lastBlock + 1; block <= currentBlock; block++ {
+		// 		uuid, err := schedule.Find(block)
+		// 		if err == nil {
+		// 			task, _ := schedule.Retrieve(uuid)
+		// 			log := logger.WithField("TaskID", uuid.String())
 
-					taskManager.StartTask(log, eth, task)
+		// 			taskManager.StartTask(log, eth, task)
 
-					scheduler.Remove(uuid)
-				}
-			}
+		// 			schedule.Remove(uuid)
+		// 		}
+		// 	}
 
-			lastBlock = currentBlock
-		}
+		// 	lastBlock = currentBlock
+		// }
 
 		time.Sleep(time.Second)
 
@@ -209,12 +227,79 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		dkgState.RUnlock()
 	}
 
+	// Make sure we used the admin handler
+	assert.True(t, adminHandler.privateKeyCalled)
+	assert.True(t, dkgState.Complete)
+
 	wg.Done()
 }
 
-func TestAck(t *testing.T) {
-	for i := 0; i < 20; i++ {
-		TestDkgSuccess(t)
+func MonitorTick(ctx context.Context, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry) error {
+
+	// monitorState.HighestBlockProcessed
+
+	var err error
+
+	// monitorState.InSync, monitorState.PeerCount, err = monitor.EndpointInSync(ctx, eth, logger)
+	inSync, peerCount, err := monitor.EndpointInSync(ctx, eth, logger)
+
+	err := svcs.EndpointInSync(ctx, monitorState)
+	if err != nil {
+		logger.Warnf("Failed checking if endpoint is synchronized: %v", err)
+		state.CommunicationFailures++
+		if state.CommunicationFailures >= uint32(svcs.eth.RetryCount()) {
+			state.InSync = false
+			svcs.ah.SetSynchronized(false)
+		}
+		return nil
+	}
+	state.CommunicationFailures = 0
+
+	monitorState.HighestBlockFinalized, err = eth.GetCurrentHeight(ctx)
+
+	currentBlock, err = eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+
+	if currentBlock != lastBlock {
+		logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
+
+		logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
+		assert.Nil(t, err)
+
+		// Check all the logs for an event we want to process
+		for _, log := range logs {
+
+			eventID := log.Topics[0].String()
+			logEntry := logger.WithField("EventID", eventID)
+
+			info, present := events.Lookup(eventID)
+			if present {
+				logEntry = logEntry.WithField("Event", info.Name)
+				err := info.Processor(eth, logEntry, monitorState, log)
+				if err != nil {
+					logger.Errorf("Failed processing event: %v", err)
+				}
+
+			} else {
+				logEntry.Debug("Found unkown event")
+			}
+
+		}
+
+		// Check if any tasks are scheduled
+		for block := lastBlock + 1; block <= currentBlock; block++ {
+			uuid, err := schedule.Find(block)
+			if err == nil {
+				task, _ := schedule.Retrieve(uuid)
+				log := logger.WithField("TaskID", uuid.String())
+
+				taskManager.StartTask(log, eth, task)
+
+				schedule.Remove(uuid)
+			}
+		}
+
+		lastBlock = currentBlock
 	}
 }
 
@@ -259,12 +344,14 @@ func TestDkgSuccess(t *testing.T) {
 
 	// Start validators running
 	wg := sync.WaitGroup{}
+	tr := &objects.TypeRegistry{}
+	SetupTasks(tr)
 	for i := 0; i < 5; i++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
 		assert.Nil(t, err)
 
 		wg.Add(1)
-		go validator(t, i, eth, acct, &wg)
+		go validator(t, i, eth, acct, &wg, tr)
 	}
 
 	// Kick off a round of ethdkg
@@ -304,70 +391,28 @@ func TestFoo(t *testing.T) {
 	t.Logf("m:%p", m)
 }
 
-func SetupTasks() {
-	tasks.RegisterTask(&dkgtasks.PlaceHolder{})
-	tasks.RegisterTask(&dkgtasks.RegisterTask{})
-	tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
-	tasks.RegisterTask(&dkgtasks.DisputeTask{})
-	tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
-	tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
-	tasks.RegisterTask(&dkgtasks.CompletionTask{})
+func SetupTasks(tr *objects.TypeRegistry) {
+	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
 
-func SetupEventMap(em *objects.EventMap) error {
+// func SetupEventMap(em *objects.EventMap) error {
+// 	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
+// 		return err
+// 	}
+// 	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
+// 		return err
+// 	}
+// 	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", dkgevents.ProcessOpenRegistration); err != nil {
+// 		return err
+// 	}
 
-	// if err := em.RegisterLocked("0x3529eeacda732ca25cee203cc6382b6d0688ee079ec8e53fd2dcbf259bdd3fa1", "DepositReceived-Obsolete", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x6bae01a1b82866e1dfe8d98c42383fc58df9b4adeb47d7ac24ee4b53d409da6c", "DepositReceived-Obsolete", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", "DSTokenApproval", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0xce241d7ca1f669fee44b6fc00b8eba2df3bb514eed0f6f668f8f89096e81ed94", "LogSetOwner", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885", "Mint", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "Transfer", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x8c25e214c5693ebaf8008875bacedeb9e0aafd393864a314ed1801b2a4e13dd9", "ValidatorJoined", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x319bbadb03b94aedc69babb34a28675536a9cb30f4bbde343e1d0018c44ebd94", "ValidatorLeft", nil); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x1de2f07b0a1c69916a8b25b889051644192307ea08444a2e11f8654d1db3ab0c", "LockedStake", nil); err != nil {
-	// 	return err
-	// }
-
-	// Real event processors are below
-	// if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived", svcs.ProcessDepositReceived); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember", svcs.ProcessValidatorMember); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet", svcs.ProcessValidatorSet); err != nil {
-	// 	return err
-	// }
-	// if err := em.RegisterLocked("0x6d438b6b835d16cdae6efdc0259fdfba17e6aa32dae81863a2467866f85f724a", "SnapshotTaken", svcs.ProcessSnapshotTaken); err != nil {
-	// 	return err
-	// }
-	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", dkgevents.ProcessOpenRegistration); err != nil {
-		return err
-	}
-
-	return nil
-}
+// 	return nil
+// }
