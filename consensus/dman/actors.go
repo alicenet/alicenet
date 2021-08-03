@@ -272,22 +272,30 @@ type blockActor struct {
 	sync.RWMutex
 	ra            *downloadActor
 	WorkQ         chan DownloadRequest
-	DisptachQ     chan DownloadRequest
+	dispatchQ     chan DownloadRequest
 	CurrentHeight uint32
 	Logger        *logrus.Logger
 }
 
 func (a *blockActor) init(workQ chan DownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
 	a.WorkQ = workQ
-	a.DisptachQ = make(chan DownloadRequest)
+	a.dispatchQ = make(chan DownloadRequest)
 	a.ra = &downloadActor{}
 	a.Logger = logger
-	return a.ra.init(a.DisptachQ, logger, reqBus)
+	return a.ra.init(a.dispatchQ, logger, reqBus)
 }
 
 func (a *blockActor) start() {
 	go a.run()
 	a.ra.start()
+}
+
+func (a *blockActor) updateHeight(newHeight uint32) {
+	a.Lock()
+	defer a.Unlock()
+	if newHeight > a.CurrentHeight {
+		a.CurrentHeight = newHeight
+	}
 }
 
 func (a *blockActor) run() {
@@ -299,9 +307,6 @@ func (a *blockActor) run() {
 			if req.RequestHeight()+heightDropLag < a.CurrentHeight {
 				close(req.ResponseChan())
 				return false
-			}
-			if req.RequestHeight() > a.CurrentHeight {
-				a.CurrentHeight = req.RequestHeight()
 			}
 			return true
 		}()
@@ -318,11 +323,11 @@ func (a *blockActor) await(req DownloadRequest) {
 	case PendingTxRequest, MinedTxRequest:
 		reqTyped := req.(*TxDownloadRequest)
 		subReq = NewTxDownloadRequest(reqTyped.TxHash, reqTyped.Dtype, reqTyped.Height, reqTyped.Round)
-		a.DisptachQ <- subReq
+		a.dispatchQ <- subReq
 	case BlockHeaderRequest:
 		reqTyped := req.(*BlockHeaderDownloadRequest)
 		subReq = NewBlockHeaderDownloadRequest(reqTyped.Height, reqTyped.Round, reqTyped.Dtype)
-		a.DisptachQ <- subReq
+		a.dispatchQ <- subReq
 	default:
 		panic(fmt.Sprintf("req download type not found: %v", req.DownloadType()))
 	}

@@ -70,7 +70,11 @@ func Test_txCache_GetHeight(t *testing.T) {
 	if len(txs2) < 1 {
 		t.Fatal("2: not found in get")
 	}
-	h2t, _ := txs2[1].TxHash()
+	if len(txs2) != 1 {
+		t.Fatal("should only return 1")
+	}
+	h2t, _ := txs2[0].TxHash()
+
 	if string(h2t) != string(h2) {
 		t.Fatal("2: bad hash")
 	}
