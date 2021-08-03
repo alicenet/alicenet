@@ -12,7 +12,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
@@ -140,8 +139,10 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 }
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
-	logger := logging.
-		GetLogger("validator").
+
+	defer wg.Done()
+
+	logger := logging.GetLogger("validator").
 		WithField("Index", idx).
 		WithField("Address", validatorAcct.Address.Hex())
 
@@ -155,67 +156,23 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 	adminHandler := new(adminHandlerMock)
 
 	currentBlock := uint64(startBlock)
-	lastBlock := uint64(startBlock)
-	addresses := []common.Address{c.EthdkgAddress()}
+	// lastBlock := uint64(startBlock)
+	// addresses := []common.Address{c.EthdkgAddress()}
 
 	dkgState := objects.NewDkgState(validatorAcct)
 	schedule := monitor.NewSequentialSchedule(tr, adminHandler)
 
 	monitorState := objects.NewMonitorState(dkgState, schedule)
 
-	taskManager := tasks.NewManager()
 	events := objects.NewEventMap()
 
 	monitor.SetupEventMap(events, nil, nil, adminHandler)
 
 	var done bool
-	var err error
 
 	for !done {
-		// currentBlock, err = eth.GetCurrentHeight(ctx)
-		// assert.Nil(t, err)
-
-		// if currentBlock != lastBlock {
-		// 	logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
-
-		// 	logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
-		// 	assert.Nil(t, err)
-
-		// 	// Check all the logs for an event we want to process
-		// 	for _, log := range logs {
-
-		// 		eventID := log.Topics[0].String()
-		// 		logEntry := logger.WithField("EventID", eventID)
-
-		// 		info, present := events.Lookup(eventID)
-		// 		if present {
-		// 			logEntry = logEntry.WithField("Event", info.Name)
-		// 			err := info.Processor(eth, logEntry, monitorState, log)
-		// 			if err != nil {
-		// 				logger.Errorf("Failed processing event: %v", err)
-		// 			}
-
-		// 		} else {
-		// 			logEntry.Debug("Found unkown event")
-		// 		}
-
-		// 	}
-
-		// 	// Check if any tasks are scheduled
-		// 	for block := lastBlock + 1; block <= currentBlock; block++ {
-		// 		uuid, err := schedule.Find(block)
-		// 		if err == nil {
-		// 			task, _ := schedule.Retrieve(uuid)
-		// 			log := logger.WithField("TaskID", uuid.String())
-
-		// 			taskManager.StartTask(log, eth, task)
-
-		// 			schedule.Remove(uuid)
-		// 		}
-		// 	}
-
-		// 	lastBlock = currentBlock
-		// }
+		err := monitor.MonitorTick(ctx, wg, eth, monitorState, logger, events, schedule, adminHandler)
+		assert.Nil(t, err)
 
 		time.Sleep(time.Second)
 
@@ -230,77 +187,6 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 	// Make sure we used the admin handler
 	assert.True(t, adminHandler.privateKeyCalled)
 	assert.True(t, dkgState.Complete)
-
-	wg.Done()
-}
-
-func MonitorTick(ctx context.Context, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry) error {
-
-	// monitorState.HighestBlockProcessed
-
-	var err error
-
-	// monitorState.InSync, monitorState.PeerCount, err = monitor.EndpointInSync(ctx, eth, logger)
-	inSync, peerCount, err := monitor.EndpointInSync(ctx, eth, logger)
-
-	err := svcs.EndpointInSync(ctx, monitorState)
-	if err != nil {
-		logger.Warnf("Failed checking if endpoint is synchronized: %v", err)
-		state.CommunicationFailures++
-		if state.CommunicationFailures >= uint32(svcs.eth.RetryCount()) {
-			state.InSync = false
-			svcs.ah.SetSynchronized(false)
-		}
-		return nil
-	}
-	state.CommunicationFailures = 0
-
-	monitorState.HighestBlockFinalized, err = eth.GetCurrentHeight(ctx)
-
-	currentBlock, err = eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
-
-	if currentBlock != lastBlock {
-		logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
-
-		logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
-		assert.Nil(t, err)
-
-		// Check all the logs for an event we want to process
-		for _, log := range logs {
-
-			eventID := log.Topics[0].String()
-			logEntry := logger.WithField("EventID", eventID)
-
-			info, present := events.Lookup(eventID)
-			if present {
-				logEntry = logEntry.WithField("Event", info.Name)
-				err := info.Processor(eth, logEntry, monitorState, log)
-				if err != nil {
-					logger.Errorf("Failed processing event: %v", err)
-				}
-
-			} else {
-				logEntry.Debug("Found unkown event")
-			}
-
-		}
-
-		// Check if any tasks are scheduled
-		for block := lastBlock + 1; block <= currentBlock; block++ {
-			uuid, err := schedule.Find(block)
-			if err == nil {
-				task, _ := schedule.Retrieve(uuid)
-				log := logger.WithField("TaskID", uuid.String())
-
-				taskManager.StartTask(log, eth, task)
-
-				schedule.Remove(uuid)
-			}
-		}
-
-		lastBlock = currentBlock
-	}
 }
 
 func TestDkgSuccess(t *testing.T) {
@@ -313,9 +199,6 @@ func TestDkgSuccess(t *testing.T) {
 	for _, logger := range logging.GetKnownLoggers() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
-
-	// logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
-	// logging.GetLogger("validator").SetLevel(logrus.DebugLevel)
 
 	eth := connectSimulatorEndpoint(t, accountAddresses)
 	defer eth.Close()

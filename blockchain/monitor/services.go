@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
@@ -33,7 +34,7 @@ type Services struct {
 	contractAddresses []common.Address
 	batchSize         int
 	eventMap          *objects.EventMap
-	taskManager       tasks.Manager
+	// taskManager       tasks.Manager
 }
 
 // NewServices creates a new Services struct
@@ -57,7 +58,7 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 		eth:               eth,
 		eventMap:          objects.NewEventMap(),
 		logger:            serviceLogger,
-		taskManager:       tasks.NewManager(),
+		// taskManager:       tasks.NewManager(),
 	}
 
 	// Register handlers for known events, if this failed we really can't continue
@@ -80,16 +81,16 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 
 	// This is making sure Ethereum endpoint has synced and has peers
 	// -- This doesn't care if _we_ are insync with Ethereum
-	err := svcs.EndpointInSync(ctx, state)
-	if err != nil {
-		logger.Warnf("Failed checking if endpoint is synchronized: %v", err)
-		state.CommunicationFailures++
-		if state.CommunicationFailures >= uint32(svcs.eth.RetryCount()) {
-			state.InSync = false
-			svcs.ah.SetSynchronized(false)
-		}
-		return nil
-	}
+	// err := svcs.EndpointInSync(ctx, state)
+	// if err != nil {
+	// 	logger.Warnf("Failed checking if endpoint is synchronized: %v", err)
+	// 	state.CommunicationFailures++
+	// 	if state.CommunicationFailures >= uint32(svcs.eth.RetryCount()) {
+	// 		state.InSync = false
+	// 		svcs.ah.SetSynchronized(false)
+	// 	}
+	// 	return nil
+	// }
 	state.CommunicationFailures = 0
 
 	// If Ethereum is not in synced, it isn't an error but we can't go on
@@ -101,7 +102,7 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 		return nil
 	}
 
-	err = svcs.UpdateProgress(ctx, state)
+	err := svcs.UpdateProgress(ctx, state)
 	if err != nil {
 		return err
 	}
@@ -186,7 +187,10 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 				task, _ := state.Schedule.Retrieve(uuid)
 				log := logEntry.WithField("TaskID", uuid.String())
 
-				svcs.taskManager.StartTask(log, eth, task)
+				var wg sync.WaitGroup
+
+				wg.Add(1)
+				tasks.StartTask(log, &wg, eth, task)
 
 				state.Schedule.Remove(uuid)
 			}
@@ -202,6 +206,96 @@ func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
 			svcs.ah.SetSynchronized(true)
 		}
 
+	}
+
+	return nil
+}
+
+// MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
+func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
+	eventMap *objects.EventMap, schedule interfaces.Schedule, adminHandler interfaces.AdminHandler) error {
+
+	defer wg.Done()
+
+	// 1. Check if our Ethereum endpoint is sync with sufficient peers
+	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
+	if err != nil {
+		monitorState.CommunicationFailures++
+
+		logger.WithField("CommunicationFailures", monitorState.CommunicationFailures).
+			WithField("Error", err).
+			Warn("EndpointInSync() Failed")
+
+		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
+			monitorState.InSync = false
+			adminHandler.SetSynchronized(false)
+		}
+		return nil
+	}
+	monitorState.CommunicationFailures = 0
+	monitorState.PeerCount = peerCount
+	monitorState.InSync = inSync
+
+	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+		return nil
+	}
+
+	// 2. Check what the latest finalized block number is
+	monitorState.HighestBlockFinalized, err = eth.GetFinalizedHeight(ctx)
+
+	// 3. Grab up to the next _batch size_ unprocessed block(s)
+	finalized := monitorState.HighestBlockFinalized
+	processed := monitorState.HighestBlockProcessed
+
+	lastBlock := finalized
+	if finalized-processed > 1000 {
+		lastBlock = processed + 1000
+	}
+
+	for currentBlock := processed + 1; currentBlock < lastBlock; currentBlock++ {
+		logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
+
+		logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
+		if err != nil {
+			return err
+		}
+
+		// Check all the logs for an event we want to process
+		for _, log := range logs {
+
+			eventID := log.Topics[0].String()
+			logEntry := logger.WithField("EventID", eventID)
+
+			info, present := eventMap.Lookup(eventID)
+			if present {
+				logEntry = logEntry.WithField("Event", info.Name)
+				err := info.Processor(eth, logEntry, monitorState, log)
+				if err != nil {
+					logger.Errorf("Failed processing event: %v", err)
+					return err
+				}
+
+			} else {
+				logEntry.Debug("Found unkown event")
+			}
+
+		}
+
+		// Check if any tasks are scheduled
+		for block := lastBlock + 1; block <= currentBlock; block++ {
+			uuid, err := schedule.Find(block)
+			if err == nil {
+				task, _ := schedule.Retrieve(uuid)
+				log := logger.WithField("TaskID", uuid.String())
+
+				wg.Add(1)
+				tasks.StartTask(log, wg, eth, task)
+
+				schedule.Remove(uuid)
+			}
+		}
+
+		lastBlock = currentBlock
 	}
 
 	return nil

@@ -161,27 +161,20 @@ var (
 // ========================================================
 
 // Manager describtes the basic functionality of a task Manager
-type Manager interface {
-	// NewTaskHandler(logger *logrus.Logger, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
-	StartTask(logger *logrus.Entry, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
-	WaitForTasks()
-}
+// type Manager interface {
+// 	// NewTaskHandler(logger *logrus.Logger, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
+// 	StartTask(logger *logrus.Entry, eth interfaces.Ethereum, t interfaces.Task) interfaces.TaskHandler
+// 	WaitForTasks()
+// }
 
-// ManagerDetails contains information required for implmentation of task Manager
-type ManagerDetails struct {
-	wg sync.WaitGroup
-}
+// // ManagerDetails contains information required for implmentation of task Manager
+// type ManagerDetails struct {
+// 	wg sync.WaitGroup
+// }
 
 // ========================================================
 // Manager implementation
 // ========================================================
-
-// NewManager creates a new Manager
-func NewManager() Manager {
-	md := &ManagerDetails{wg: sync.WaitGroup{}}
-
-	return md
-}
 
 // NewTaskHandler creates a new task handler, where each phase can take upto 'timeout'
 // duration and there is a delay of 'retryDelay' before a retry.
@@ -201,12 +194,11 @@ func NewManager() Manager {
 // 		wg:     &md.wg}
 // }
 
-func (md *ManagerDetails) StartTask(logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task) interfaces.TaskHandler {
-	md.wg.Add(1)
+func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task) interfaces.TaskHandler {
 
 	go func() {
 		defer task.DoDone(logger)
-		defer md.wg.Done()
+		defer wg.Done()
 
 		retryCount := eth.RetryCount()
 		retryDelay := eth.RetryDelay()
@@ -258,11 +250,6 @@ func (md *ManagerDetails) StartTask(logger *logrus.Entry, eth interfaces.Ethereu
 	}()
 
 	return nil
-}
-
-// WaitForTasks blocks until all tasks associated withis Manager have completed
-func (md *ManagerDetails) WaitForTasks() {
-	md.wg.Wait()
 }
 
 // ========================================================
