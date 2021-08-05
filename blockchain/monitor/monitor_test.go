@@ -62,7 +62,7 @@ func setupEthereum(t *testing.T) blockchain.Ethereum {
 	// Transfer some eth
 	testingEth := big.NewInt(200000)
 	t.Logf("Transfering %v from %v to %v", testingEth, deployAcct.Address.Hex(), acct.Address.Hex())
-	err = eth.TransferEther(deployAcct.Address, acct.Address, testingEth)
+	_, err = eth.TransferEther(deployAcct.Address, acct.Address, testingEth)
 	assert.Nil(t, err, "Failed to transfer ether to default account")
 
 	_, _, err = c.DeployContracts(context.TODO(), acct)

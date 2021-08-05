@@ -46,7 +46,7 @@ type Ethereum interface {
 
 	UnlockAccount(accounts.Account) error
 
-	TransferEther(common.Address, common.Address, *big.Int) error
+	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
 
 	GetAccount(common.Address) (accounts.Account, error)
 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
@@ -118,6 +118,9 @@ type GethClient interface {
 	// -- bind.ContractFilterer
 	FilterLogs(ctx context.Context, query geth.FilterQuery) ([]types.Log, error)
 	SubscribeFilterLogs(ctx context.Context, query geth.FilterQuery, ch chan<- types.Log) (geth.Subscription, error)
+
+	// -- EIP1559 aka London
+	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 }
 
 type ethereum struct {
@@ -572,7 +575,7 @@ func (eth *ethereum) Timeout() time.Duration {
 }
 
 func (eth *ethereum) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
-	opts, err := bind.NewKeyStoreTransactor(eth.keystore, account)
+	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
 		eth.logger.Errorf("could not create transactor for %v: %v", account.Address.Hex(), err)
 	} else {
@@ -595,39 +598,62 @@ func (eth *ethereum) GetCallOpts(ctx context.Context, account accounts.Account) 
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked
-func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *big.Int) error {
+func (eth *ethereum) TransferEther(from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
 
-	nonce, err := eth.client.PendingNonceAt(context.Background(), from)
+	ctx, cancel := eth.GetTimeoutContext()
+	defer cancel()
+
+	nonce, err := eth.client.PendingNonceAt(ctx, from)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	gasPrice, err := eth.client.SuggestGasPrice(context.Background())
+	gasPrice, err := eth.client.SuggestGasPrice(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var data []byte
+	block, err := eth.client.BlockByNumber(ctx, nil)
+	if err != nil && block == nil {
+		return nil, errors.New("beats me")
+	}
+
+	eth.logger.Infof("Previous BaseFee:%v GasUsed:%v GasLimit:%v",
+		block.BaseFee().String(),
+		block.GasUsed(),
+		block.GasLimit())
+
 	gasLimit := uint64(21000)
-	tx := types.NewTransaction(nonce, to, wei, gasLimit, gasPrice, data)
+	eth.logger.Infof("gasLimit:%v SuggestGasPrice(): %v", gasLimit, gasPrice.String())
+
+	baseFee := big.NewInt(block.BaseFee().Int64())
+
+	txRough := &types.DynamicFeeTx{}
+	txRough.ChainID = eth.chainID
+	txRough.To = &to
+	txRough.GasFeeCap = baseFee
+	txRough.GasTipCap = big.NewInt(1)
+	txRough.Gas = gasLimit
+	txRough.Nonce = nonce
+	txRough.Value = wei
 
 	eth.logger.Debugf("TransferEther => chainID:%v from:%v nonce:%v, to:%v, wei:%v, gasLimit:%v, gasPrice:%v",
 		eth.chainID, from.Hex(), nonce, to.Hex(), wei, gasLimit, gasPrice)
 
-	signer := types.NewEIP155Signer(eth.chainID)
+	signer := types.NewLondonSigner(eth.chainID)
 
-	signedTx, err := types.SignTx(tx, signer, eth.keys[from].PrivateKey)
+	signedTx, err := types.SignNewTx(eth.keys[from].PrivateKey, signer, txRough)
 	if err != nil {
-		eth.logger.Error(err)
+		eth.logger.Errorf("signing error:%v", err)
+		return nil, err
 	}
-	ctx, cancel := eth.GetTimeoutContext()
-	defer cancel()
 	err = eth.client.SendTransaction(ctx, signedTx)
 	if err != nil {
-		return err
+		eth.logger.Errorf("sending error:%v", err)
+		return nil, err
 	}
 
-	return nil
+	return signedTx, nil
 }
 
 // GetCurrentHeight gets the height of the endpoints chain
@@ -669,7 +695,7 @@ func (eth *ethereum) GetValidators() ([]common.Address, error) {
 	return validatorAddresses, nil
 }
 
-func (eth *ethereum) Clone(defaultAccount accounts.Account) Ethereum {
+func (eth *ethereum) Clone(defaultAccount accounts.Account) *ethereum {
 	nEth := *eth
 
 	nEth.defaultAccount = defaultAccount
@@ -784,7 +810,7 @@ func (c *Contracts) DeployContracts(ctx context.Context, account accounts.Accoun
 	var txn *types.Transaction
 	c.RegistryAddress, txn, c.Registry, err = bindings.DeployRegistry(txnOpts, eth.client)
 	if err != nil {
-		logger.Errorf("Failed to deploy registry...")
+		logger.Errorf("Failed to deploy registry...: %v", err)
 		return nil, common.Address{}, err
 	}
 	q(txn)

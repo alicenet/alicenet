@@ -200,7 +200,7 @@ func (u *Uint256) Add(a, b *Uint256) (*Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: nil args")
 	}
 	z := u.Clone()
-	overflowed := z.val.AddOverflow(a.val, b.val)
+	_, overflowed := z.val.AddOverflow(a.val, b.val)
 	if overflowed {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: overflow")
 	}
@@ -238,7 +238,7 @@ func (u *Uint256) Sub(a, b *Uint256) (*Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: nil args")
 	}
 	z := u.Clone()
-	overflowed := z.val.SubOverflow(a.val, b.val)
+	_, overflowed := z.val.SubOverflow(a.val, b.val)
 	if overflowed {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: overflow")
 	}
@@ -258,7 +258,7 @@ func (u *Uint256) Mul(a, b *Uint256) (*Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: nil args")
 	}
 	z := u.Clone()
-	overflowed := z.val.MulOverflow(a.val, b.val)
+	_, overflowed := z.val.MulOverflow(a.val, b.val)
 	if overflowed {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: overflow")
 	}

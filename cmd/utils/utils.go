@@ -471,7 +471,7 @@ func sendwei(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command,
 
 	from := eth.GetDefaultAccount()
 	for idx := 1; idx < len(args); idx++ {
-		err := eth.TransferEther(from.Address, common.HexToAddress(args[idx]), wei)
+		_, err := eth.TransferEther(from.Address, common.HexToAddress(args[idx]), wei)
 		if err != nil {
 			logger.Errorf("Transfer failed: %v", err)
 			return 1
