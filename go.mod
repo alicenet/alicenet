@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
-	// github.com/MadBase/bridge v0.6.0
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
