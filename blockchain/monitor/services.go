@@ -283,36 +283,3 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 
 	return nil
 }
-
-// AbortETHDKG does the required cleanup to stop a round of ETHDKG
-// func AbortETHDKG(ethdkg *EthDKGState) {
-// 	handlers := []tasks.TaskHandler{
-// 		ethdkg.RegistrationTH,
-// 		ethdkg.ShareDistributionTH,
-// 		ethdkg.DisputeTH,
-// 		ethdkg.KeyShareSubmissionTH,
-// 		ethdkg.MPKSubmissionTH,
-// 		ethdkg.GPKJSubmissionTH,
-// 		ethdkg.GPKJGroupAccusationTH,
-// 		ethdkg.CompleteTH}
-
-// 	// We need to cancel any handler that might be running
-// 	for _, handler := range handlers {
-// 		if handler != nil {
-// 			handler.Cancel()
-// 		}
-// 	}
-
-// 	// Erase the schedule
-// 	ethdkg.Schedule = &EthDKGSchedule{}
-// }
-
-// ETHDKGInProgress indicates if ETHDKG is currently running
-// func ETHDKGInProgress(ethdkg *EthDKGState, currentBlock uint64) bool {
-// 	if ethdkg == nil {
-// 		return false
-// 	}
-
-// 	return currentBlock >= ethdkg.Schedule.RegistrationStart &&
-// 		currentBlock <= ethdkg.Schedule.CompleteEnd
-// }
