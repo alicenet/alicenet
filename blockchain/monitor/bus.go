@@ -1,9 +1,11 @@
 package monitor
 
 import (
+	"context"
 	"sync"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/rbus"
@@ -105,11 +107,23 @@ func (bus *monitorBus) Request(serviceName string, timeOut time.Duration, reques
 
 // SvcProcessEvents Exposes the ProcessEvents method on the bus
 func (bus *monitorBus) SvcProcessEvents(request rbus.Request) error {
-	var state = request.Request().(*objects.MonitorState)
-	err := bus.svcs.WatchEthereum(state)
+
+	// setup
+	ctx := context.Background()
+	wg := &sync.WaitGroup{}
+	eth := bus.svcs.eth
+	monitorState := request.Request().(*objects.MonitorState)
+
+	// TODO Fix this garbage
+	logger := logging.GetLogger("services").WithField("Field", "Foo")
+	var eventMap *objects.EventMap
+	var adminHandler interfaces.AdminHandler
+	var schedule interfaces.Schedule
+
+	err := MonitorTick(ctx, wg, eth, monitorState, logger, eventMap, schedule, adminHandler)
 	if err != nil {
 		request.Respond(err)
 	}
-	request.Respond(state) // TODO Is this required? I only care about error or not, state mutation just happens
+	request.Respond(monitorState) // TODO Is this required? I only care about error or not, state mutation just happens
 	return nil
 }

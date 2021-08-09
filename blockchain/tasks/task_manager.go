@@ -220,7 +220,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 		logger.Debugf("Initialize ... error %v", err)
 		for err != nil && count < retryCount {
 			if err == objects.ErrCanNotContinue {
-				logger.Error("can not continue:", err)
+				logger.Error("can not continue", err)
 				return
 			}
 			time.Sleep(retryDelay)
@@ -244,7 +244,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 			count++
 		}
 		if err != nil {
-			logger.Errorf("Failed to execute task: %v", err)
+			logger.Error("Failed to execute task", err)
 			return
 		}
 	}()

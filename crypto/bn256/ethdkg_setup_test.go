@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/bridge/bindings"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ const gasLim uint64 = 10000000
 
 // Perform the initial setup of the Ethdkg contract for n users and return the
 // necessary objects.
-func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, *bindings.Validators, blockchain.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
+func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, *bindings.Validators, interfaces.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
 	if n < 1 || n > 6 {
 		t.Fatal("Must have at between 1 and 6 user(s) for contract setup")
 	}
@@ -80,13 +81,13 @@ func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypt
 	_, _, err = c.DeployContracts(context.TODO(), acct)
 	assert.Nil(t, err)
 
-	stakingToken := c.StakingToken
-	stakingAddr := c.ValidatorsAddress
-	staking := c.Staking
+	stakingToken := c.StakingToken()
+	stakingAddr := c.ValidatorsAddress()
+	staking := c.Staking()
 
-	ethdkg := c.Ethdkg
-	cryptoContract := c.Crypto
-	validators := c.Validators
+	ethdkg := c.Ethdkg()
+	cryptoContract := c.Crypto()
+	validators := c.Validators()
 
 	//
 	initialTokenBalance := big.NewInt(9000000000000000000)
@@ -119,7 +120,7 @@ func EthdkgContractSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypt
 }
 
 // Allow for the res
-func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, blockchain.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts, []*big.Int, []*cloudflare.G1) {
+func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, interfaces.Ethereum, []*ecdsa.PrivateKey, []*bind.TransactOpts, []*big.Int, []*cloudflare.G1) {
 	c, cc, v, sim, keyArray, authArray := EthdkgContractSetup(t, n)
 
 	big0 := big.NewInt(0)
@@ -199,7 +200,7 @@ func InitialTestSetup(t *testing.T, n int) (*bindings.ETHDKG, *bindings.Crypto, 
 	return c, cc, sim, keyArray, authArray, privKArray, pubKArray
 }
 
-func AdvanceBlocksUntil(eth blockchain.Ethereum, m *big.Int) {
+func AdvanceBlocksUntil(eth interfaces.Ethereum, m *big.Int) {
 	ctx := context.TODO()
 
 	height, _ := eth.GetCurrentHeight(ctx)
@@ -213,7 +214,7 @@ func AdvanceBlocksUntil(eth blockchain.Ethereum, m *big.Int) {
 	}
 }
 
-func CurrentBlock(eth blockchain.Ethereum) *big.Int {
+func CurrentBlock(eth interfaces.Ethereum) *big.Int {
 	height, _ := eth.GetCurrentHeight(context.TODO())
 	return new(big.Int).SetUint64(height)
 }

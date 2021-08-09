@@ -9,6 +9,7 @@ import (
 
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/bridge/bindings"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
@@ -27,7 +28,8 @@ func SolidityContractSetup(t *testing.T, users int) (*bindings.Crypto, *backends
 	authArray := make([]*bind.TransactOpts, users)
 	for k := 0; k < users; k++ {
 		key, _ := crypto.GenerateKey()
-		auth := bind.NewKeyedTransactor(key)
+		auth, err := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+		assert.Nil(t, err)
 		genAlloc[auth.From] = core.GenesisAccount{Balance: big.NewInt(9223372036854775807)}
 		keyArray[k] = key
 		authArray[k] = auth

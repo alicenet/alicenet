@@ -14,7 +14,6 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +33,6 @@ type Services struct {
 	contractAddresses []common.Address
 	batchSize         int
 	eventMap          *objects.EventMap
-	// taskManager       tasks.Manager
 }
 
 // NewServices creates a new Services struct
@@ -71,151 +69,13 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 	return svcs
 }
 
-// WatchEthereum checks state of Ethereum and processes interesting conditions
-func (svcs *Services) WatchEthereum(state *objects.MonitorState) error {
-	logger := svcs.logger
-	eth := svcs.eth
-
-	ctx, cancelFunc := eth.GetTimeoutContext()
-	defer cancelFunc()
-
-	// This is making sure Ethereum endpoint has synced and has peers
-	// -- This doesn't care if _we_ are insync with Ethereum
-	// err := svcs.EndpointInSync(ctx, state)
-	// if err != nil {
-	// 	logger.Warnf("Failed checking if endpoint is synchronized: %v", err)
-	// 	state.CommunicationFailures++
-	// 	if state.CommunicationFailures >= uint32(svcs.eth.RetryCount()) {
-	// 		state.InSync = false
-	// 		svcs.ah.SetSynchronized(false)
-	// 	}
-	// 	return nil
-	// }
-	state.CommunicationFailures = 0
-
-	// If Ethereum is not in synced, it isn't an error but we can't go on
-	if !state.EthereumInSync {
-		s := state.Diff(state)
-		if len(s) > 0 {
-			logger.Warnf("...Ethereum endpoint not ready %s", s)
-		}
-		return nil
-	}
-
-	err := svcs.UpdateProgress(ctx, state)
-	if err != nil {
-		return err
-	}
-
-	// Decide what events to look for
-	firstBlock := state.HighestBlockProcessed + 1
-	lastBlock := state.HighestBlockProcessed + uint64(svcs.batchSize) // Be optimistic
-
-	// Make sure we weren't too optimistic...
-	finalizedHeight, err := eth.GetFinalizedHeight(ctx)
-	if err != nil {
-		return err
-	}
-
-	// This could happen if finality delay is too small
-	if state.HighestBlockProcessed > finalizedHeight {
-		logger.Warnf("Chain height shrank. Processed %v blocks but only %v are finalized.", state.HighestBlockProcessed, finalizedHeight)
-		return nil
-	}
-
-	// Don't process anything past the finalized height
-	if lastBlock > finalizedHeight {
-		lastBlock = finalizedHeight
-	}
-
-	// No need to look for events if we're caught up
-	if lastBlock >= firstBlock {
-
-		logsByBlock := make(map[uint64][]types.Log)
-
-		// Grab all the events in range
-		logs, err := svcs.eth.GetEvents(ctx, firstBlock, lastBlock, svcs.contractAddresses)
-		if err != nil {
-			return err
-		}
-
-		// Find the blocks with events
-		for _, log := range logs {
-			bn := log.BlockNumber
-			if la, ok := logsByBlock[bn]; ok {
-				logsByBlock[bn] = append(la, log)
-			} else {
-				logsByBlock[bn] = []types.Log{log}
-			}
-		}
-
-		// Interesting blocks can change based on an event, so we need to look at all blocks in range in order
-		for block := firstBlock; block <= lastBlock; block++ {
-
-			logEntry := logger.WithField("Block", block)
-
-			// If current block has any events, we process all of them
-			if logs, present := logsByBlock[block]; present {
-				for _, log := range logs {
-
-					eventSelector := log.Topics[0].String()
-
-					logEntry = logEntry.WithField("EventSelector", eventSelector)
-
-					ei, ok := svcs.eventMap.Lookup(eventSelector)
-					if ok {
-
-						logEntry = logEntry.WithField("EventName", ei.Name)
-
-						logEntry.Info("Found event handler")
-
-						if ei.Processor != nil {
-							err := ei.Processor(eth, logEntry, state, log)
-							if err != nil {
-								logEntry.Errorf("Event handler failed: %v", err)
-							}
-						}
-					} else {
-						logEntry.Info("No event handler found")
-					}
-				}
-			}
-
-			// Check if any tasks are scheduled
-			uuid, err := state.Schedule.Find(block)
-			if err == nil {
-				task, _ := state.Schedule.Retrieve(uuid)
-				log := logEntry.WithField("TaskID", uuid.String())
-
-				var wg sync.WaitGroup
-
-				wg.Add(1)
-				tasks.StartTask(log, &wg, eth, task)
-
-				state.Schedule.Remove(uuid)
-			}
-
-			state.HighestBlockProcessed = lastBlock
-		}
-
-		if lastBlock < finalizedHeight {
-			state.InSync = false
-			svcs.ah.SetSynchronized(false)
-		} else {
-			state.InSync = true
-			svcs.ah.SetSynchronized(true)
-		}
-
-	}
-
-	return nil
-}
-
 // MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
 func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, schedule interfaces.Schedule, adminHandler interfaces.AdminHandler) error {
 
-	defer wg.Done()
+	c := eth.Contracts()
+
+	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
@@ -241,21 +101,27 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	}
 
 	// 2. Check what the latest finalized block number is
-	monitorState.HighestBlockFinalized, err = eth.GetFinalizedHeight(ctx)
+	finalized, err := eth.GetFinalizedHeight(ctx)
+	if err != nil {
+		return err
+	}
 
 	// 3. Grab up to the next _batch size_ unprocessed block(s)
-	finalized := monitorState.HighestBlockFinalized
 	processed := monitorState.HighestBlockProcessed
 
-	lastBlock := finalized
-	if finalized-processed > 1000 {
+	lastBlock := uint64(0)
+	remaining := finalized - processed
+	if remaining <= 1000 {
+		lastBlock = processed + remaining
+	} else {
 		lastBlock = processed + 1000
 	}
 
-	for currentBlock := processed + 1; currentBlock < lastBlock; currentBlock++ {
-		logger.Debugf("Block %d -> %d", lastBlock, currentBlock)
+	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
 
-		logs, err := eth.GetEvents(ctx, lastBlock+1, currentBlock, addresses)
+		logEntry := logger.WithField("Block", currentBlock)
+
+		logs, err := eth.GetEvents(ctx, currentBlock, currentBlock, addresses)
 		if err != nil {
 			return err
 		}
@@ -264,15 +130,19 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		for _, log := range logs {
 
 			eventID := log.Topics[0].String()
-			logEntry := logger.WithField("EventID", eventID)
+			logEntry := logEntry.WithField("EventID", eventID)
 
 			info, present := eventMap.Lookup(eventID)
 			if present {
 				logEntry = logEntry.WithField("Event", info.Name)
-				err := info.Processor(eth, logEntry, monitorState, log)
-				if err != nil {
-					logger.Errorf("Failed processing event: %v", err)
-					return err
+				if info.Processor != nil {
+					err := info.Processor(eth, logEntry, monitorState, log)
+					if err != nil {
+						logEntry.Errorf("Failed processing event: %v", err)
+						return err
+					}
+				} else {
+					logEntry.Info("No processor configured.")
 				}
 
 			} else {
@@ -282,21 +152,33 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		}
 
 		// Check if any tasks are scheduled
-		for block := lastBlock + 1; block <= currentBlock; block++ {
-			uuid, err := schedule.Find(block)
-			if err == nil {
-				task, _ := schedule.Retrieve(uuid)
-				log := logger.WithField("TaskID", uuid.String())
+		logEntry.Info("Looking for scheduled task")
+		uuid, err := schedule.Find(currentBlock)
+		if err == nil {
+			task, _ := schedule.Retrieve(uuid)
+			log := logEntry.WithField("TaskID", uuid.String())
 
-				wg.Add(1)
-				tasks.StartTask(log, wg, eth, task)
+			var wg sync.WaitGroup
 
-				schedule.Remove(uuid)
-			}
+			wg.Add(1)
+			tasks.StartTask(log, &wg, eth, task)
+
+			schedule.Remove(uuid)
+		} else if err == ErrNothingScheduled {
+			logEntry.Debug("No tasks scheduled")
+		} else {
+			logEntry.Warnf("Error retrieving scheduled task: %v", err)
 		}
 
-		lastBlock = currentBlock
+		processed = currentBlock
 	}
+
+	// Only after batch is processed do we update monitor state
+	logger.Debugf("Block Processed %d -> %d, Finalized %d -> %d",
+		monitorState.HighestBlockProcessed, processed,
+		monitorState.HighestBlockFinalized, finalized)
+	monitorState.HighestBlockFinalized = finalized
+	monitorState.HighestBlockProcessed = processed
 
 	return nil
 }

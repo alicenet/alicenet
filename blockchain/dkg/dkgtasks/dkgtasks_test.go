@@ -2,6 +2,7 @@ package dkgtasks_test
 
 import (
 	"context"
+	"math"
 	"math/big"
 	"sync"
 	"testing"
@@ -62,7 +63,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 		1*time.Second,
 		5*time.Second,
 		0,
-		big.NewInt(9223372036854775807),
+		big.NewInt(math.MaxInt64),
 		accountAddresses...)
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
@@ -138,7 +139,7 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 	return eth
 }
 
-func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
+func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
 
 	defer wg.Done()
 
@@ -146,23 +147,15 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		WithField("Index", idx).
 		WithField("Address", validatorAcct.Address.Hex())
 
-	c := eth.Contracts()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	startBlock := uint64(1)
-
-	adminHandler := new(adminHandlerMock)
-
-	currentBlock := uint64(startBlock)
-	// lastBlock := uint64(startBlock)
-	// addresses := []common.Address{c.EthdkgAddress()}
 
 	dkgState := objects.NewDkgState(validatorAcct)
 	schedule := monitor.NewSequentialSchedule(tr, adminHandler)
 
 	monitorState := objects.NewMonitorState(dkgState, schedule)
+	monitorState.HighestBlockProcessed = 0
+	monitorState.HighestBlockFinalized = 1
 
 	events := objects.NewEventMap()
 
@@ -178,9 +171,9 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 		// Quit test when we either:
 		// 1) complete successfully, or
-		// 2) past the point when we possible could. This means we aborted somewhere along the way and failed DKG
+		// 2) past the point when we possibly could. This means we aborted somewhere along the way and failed DKG
 		dkgState.RLock()
-		done = dkgState.Complete || (dkgState.CompleteEnd > 0 && currentBlock >= dkgState.CompleteEnd)
+		done = dkgState.Complete || (dkgState.CompleteEnd > 0 && monitorState.HighestBlockProcessed >= dkgState.CompleteEnd)
 		dkgState.RUnlock()
 	}
 
@@ -228,13 +221,15 @@ func TestDkgSuccess(t *testing.T) {
 	// Start validators running
 	wg := sync.WaitGroup{}
 	tr := &objects.TypeRegistry{}
+	adminHandlers := make([]*adminHandlerMock, 0)
 	SetupTasks(tr)
 	for i := 0; i < 5; i++ {
 		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
 		assert.Nil(t, err)
 
+		adminHandlers = append(adminHandlers, new(adminHandlerMock))
 		wg.Add(1)
-		go validator(t, i, eth, acct, &wg, tr)
+		go validator(t, i, eth, acct, adminHandlers[i], &wg, tr)
 	}
 
 	// Kick off a round of ethdkg
@@ -250,15 +245,14 @@ func TestDkgSuccess(t *testing.T) {
 	// TODO this should be based on an OpenRegistration event
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	t.Logf("currentHeight:%v", currentHeight)
+	t.Logf("Current Height:%v", currentHeight)
 
 	endingHeight, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
 	assert.Nil(t, err)
-	t.Logf("endingHeight:%v", endingHeight)
+	t.Logf("Registration Close Height:%v", endingHeight)
 
 	// Wait for validators to complete
 	wg.Wait()
-
 }
 
 func TestFoo(t *testing.T) {

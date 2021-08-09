@@ -140,7 +140,7 @@ func TestProceedToKeySubmissionPhase(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -355,7 +355,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -604,7 +604,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 	}
 	sim.Commit()
 
-	rcpt, err := sim.WaitForReceipt(context.Background(), tx)
+	rcpt, err := sim.Queue().QueueAndWait(context.Background(), tx)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(1), rcpt.Status)
 
@@ -813,7 +813,7 @@ func TestSubmitDisputeFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1241,7 +1241,7 @@ func TestSubmitDisputeFailAddresses(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1670,7 +1670,7 @@ func TestSubmitDisputeFailHashValue(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2099,7 +2099,7 @@ func TestSubmitDisputeFailDLEQProof(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2506,7 +2506,7 @@ func TestSubmitDisputeFailValidShare(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}

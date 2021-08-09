@@ -137,7 +137,7 @@ func TestSubmitMasterPublicKeySuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
@@ -488,7 +488,7 @@ func TestSubmitMasterPublicKeyFailWrongBlock(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
@@ -839,7 +839,7 @@ func TestSubmitMasterPublicKeyFailInvalidMPK(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Error("Unexpected error in TransactionReceipt")
 		}
