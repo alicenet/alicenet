@@ -16,7 +16,7 @@ cacheSize = 20
 [transport]
 originLimit = 50
 privateKey = "dddddddddddddddddddddddddddddddd"
-bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
+bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@bootnode:4242"
 p2pListeningAddress = "0.0.0.0:4346"
 discoveryListeningAddress = "0.0.0.0:4447"
 localStateListeningAddress = "0.0.0.0:8887"
@@ -29,7 +29,7 @@ interval = "7s"
 
 [ethereum]
 defaultAccount = "0x16564cF3e880d9F5d09909F51b922941EbBbC24d"
-endpoint = "http://localhost:8545"
+endpoint = "http://geth:8545"
 endpointPeers = 0
 keystore = "assets/test/keys"
 timeout = "1h"

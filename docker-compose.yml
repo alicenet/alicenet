@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+
+  bootnode:
+    build: .
+    command: scripts/bootnode.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+
+  geth:
+    image: ethereum/client-go:alltools-stable
+    command: >
+      /bin/sh -c "cd /madnet && 
+                  /bin/sh scripts/geth-local-snapshot-restore.sh &&
+                  /bin/sh scripts/geth-local-resume.sh"
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    - ./snapshot.zip:/madnet/snapshot.zip
+    depends_on:
+    - bootnode
+
+  validator0:
+    build: .
+    command: scripts/wait-for.sh geth:8545 -- scripts/validator0.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    depends_on:
+    - bootnode
+    - geth
+
+  validator1:
+    build: .
+    command: scripts/wait-for.sh geth:8545 -- scripts/validator1.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    depends_on:
+    - bootnode
+    - geth
+
+  validator2:
+    build: .
+    command: scripts/wait-for.sh geth:8545 -- scripts/validator2.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    depends_on:
+    - bootnode
+    - geth
+
+  validator3:
+    build: .
+    command: scripts/wait-for.sh geth:8545 -- scripts/validator3.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    depends_on:
+    - bootnode
+    - geth
+
+  validator4:
+    build: .
+    command: scripts/wait-for.sh geth:8545 -- scripts/validator4.sh
+    volumes:
+    - ./assets:/madnet/assets
+    - ./scripts:/madnet/scripts
+    depends_on:
+    - bootnode
+    - geth
