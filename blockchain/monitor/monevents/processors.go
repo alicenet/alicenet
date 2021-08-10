@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MadBase/MadNet/application/deposit"
 	aobjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -17,7 +16,7 @@ import (
 )
 
 func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	consensusDb *db.Database, depositHandler *deposit.Handler) error {
+	consensusDb *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 

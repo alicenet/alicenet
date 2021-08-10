@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/monevents"
@@ -11,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SetupEventMap(em *objects.EventMap, consensusDb *db.Database, depositHandler *deposit.Handler, adminHandler interfaces.AdminHandler) error {
+func SetupEventMap(em *objects.EventMap, consensusDb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
 	// DKG event processors
 	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen",

@@ -2,13 +2,11 @@ package monitor
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -16,12 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
-
-//
-// type eventProcessor struct {
-// 	name      string
-// 	processor func(*objects.MonitorState, types.Log) error
-// }
 
 // Services just a bundle of requirements common for monitoring functionality
 type Services struct {
@@ -67,120 +59,6 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 	ah.RegisterSnapshotCallback(svcs.PersistSnapshot) // HUNTER: moved out of main func and into constructor
 
 	return svcs
-}
-
-// MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
-func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, schedule interfaces.Schedule, adminHandler interfaces.AdminHandler) error {
-
-	c := eth.Contracts()
-
-	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
-
-	// 1. Check if our Ethereum endpoint is sync with sufficient peers
-	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
-	if err != nil {
-		monitorState.CommunicationFailures++
-
-		logger.WithField("CommunicationFailures", monitorState.CommunicationFailures).
-			WithField("Error", err).
-			Warn("EndpointInSync() Failed")
-
-		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
-			monitorState.InSync = false
-			adminHandler.SetSynchronized(false)
-		}
-		return nil
-	}
-	monitorState.CommunicationFailures = 0
-	monitorState.PeerCount = peerCount
-	monitorState.InSync = inSync
-
-	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
-		return nil
-	}
-
-	// 2. Check what the latest finalized block number is
-	finalized, err := eth.GetFinalizedHeight(ctx)
-	if err != nil {
-		return err
-	}
-
-	// 3. Grab up to the next _batch size_ unprocessed block(s)
-	processed := monitorState.HighestBlockProcessed
-
-	lastBlock := uint64(0)
-	remaining := finalized - processed
-	if remaining <= 1000 {
-		lastBlock = processed + remaining
-	} else {
-		lastBlock = processed + 1000
-	}
-
-	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
-
-		logEntry := logger.WithField("Block", currentBlock)
-
-		logs, err := eth.GetEvents(ctx, currentBlock, currentBlock, addresses)
-		if err != nil {
-			return err
-		}
-
-		// Check all the logs for an event we want to process
-		for _, log := range logs {
-
-			eventID := log.Topics[0].String()
-			logEntry := logEntry.WithField("EventID", eventID)
-
-			info, present := eventMap.Lookup(eventID)
-			if present {
-				logEntry = logEntry.WithField("Event", info.Name)
-				if info.Processor != nil {
-					err := info.Processor(eth, logEntry, monitorState, log)
-					if err != nil {
-						logEntry.Errorf("Failed processing event: %v", err)
-						return err
-					}
-				} else {
-					logEntry.Info("No processor configured.")
-				}
-
-			} else {
-				logEntry.Debug("Found unkown event")
-			}
-
-		}
-
-		// Check if any tasks are scheduled
-		logEntry.Info("Looking for scheduled task")
-		uuid, err := schedule.Find(currentBlock)
-		if err == nil {
-			task, _ := schedule.Retrieve(uuid)
-			log := logEntry.WithField("TaskID", uuid.String())
-
-			var wg sync.WaitGroup
-
-			wg.Add(1)
-			tasks.StartTask(log, &wg, eth, task)
-
-			schedule.Remove(uuid)
-		} else if err == ErrNothingScheduled {
-			logEntry.Debug("No tasks scheduled")
-		} else {
-			logEntry.Warnf("Error retrieving scheduled task: %v", err)
-		}
-
-		processed = currentBlock
-	}
-
-	// Only after batch is processed do we update monitor state
-	logger.Debugf("Block Processed %d -> %d, Finalized %d -> %d",
-		monitorState.HighestBlockProcessed, processed,
-		monitorState.HighestBlockFinalized, finalized)
-	monitorState.HighestBlockFinalized = finalized
-	monitorState.HighestBlockProcessed = processed
-
-	return nil
 }
 
 // EndpointInSync Checks if our endpoint is good to use

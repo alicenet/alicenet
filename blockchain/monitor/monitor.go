@@ -1,19 +1,24 @@
 package monitor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus/admin"
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,23 +32,29 @@ var (
 
 // Monitor describes required functionality to monitor Ethereum
 type Monitor interface {
+	Start() error
+	Stop()
 	StartEventLoop(accounts.Account) (chan<- bool, error)
 	GetStatus() <-chan string
 }
 
 type monitor struct {
-	database     Database
-	bus          Bus
-	logger       *logrus.Logger
-	tickInterval time.Duration
-	timeout      time.Duration
-	statusMsg    chan string
-	adminHandler *admin.Handlers
-	typeRegistry *objects.TypeRegistry
+	adminHandler   interfaces.AdminHandler
+	depositHandler interfaces.DepositHandler
+	eth            interfaces.Ethereum
+	consensusDB    *db.Database
+	monitorDB      Database
+	tickInterval   time.Duration
+	timeout        time.Duration
+	logger         *logrus.Logger
+	cancelChan     chan bool
+	statusChan     chan string
+	typeRegistry   *objects.TypeRegistry
+	state          *objects.MonitorState
 }
 
 // NewMonitor creates a new Monitor
-func NewMonitor(db Database, bus Bus, adminHandler *admin.Handlers, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
+func NewMonitor(consensusDB *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, eth interfaces.Ethereum, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
 
 	logger := logging.GetLogger("monitor")
 
@@ -64,20 +75,47 @@ func NewMonitor(db Database, bus Bus, adminHandler *admin.Handlers, tickInterval
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
+	eventMap := objects.NewEventMap()
+	err := SetupEventMap(eventMap, consensusDB, adminHandler, depositHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	schedule := NewSequentialSchedule(tr, adminHandler)
+	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
+	state := objects.NewMonitorState(dkgState, schedule)
+
 	return &monitor{
-		adminHandler: adminHandler,
-		database:     db,
-		bus:          bus,
-		logger:       logger,
-		statusMsg:    make(chan string, 1),
-		tickInterval: tickInterval,
-		timeout:      timeout,
-		typeRegistry: tr,
+		adminHandler:   adminHandler,
+		depositHandler: depositHandler,
+		eth:            eth,
+		consensusDB:    consensusDB,
+		typeRegistry:   tr,
+		logger:         logger,
+		tickInterval:   tickInterval,
+		timeout:        timeout,
+		cancelChan:     make(chan bool, 1),
+		statusChan:     make(chan string, 1),
+		state:          state,
 	}, nil
+
 }
 
 func (mon *monitor) GetStatus() <-chan string {
-	return mon.statusMsg
+	return mon.statusChan
+}
+
+func (mon *monitor) Start() error {
+
+	mon.logger.WithFields(logrus.Fields{
+		"s": "f",
+	}).Info("Starting event loop")
+
+	return nil
+}
+
+func (mon *monitor) Stop() {
+	mon.cancelChan <- true
 }
 
 // StartEventLoop starts the event loop
@@ -157,7 +195,7 @@ func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, s
 			diff := originalState.Diff(state)
 			if len(diff) > 0 {
 				select {
-				case mon.statusMsg <- fmt.Sprintf("State \xce\x94 %v", diff):
+				case mon.statusChan <- fmt.Sprintf("State \xce\x94 %v", diff):
 				default:
 				}
 				mon.database.UpdateState(value)
@@ -171,6 +209,120 @@ func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, s
 	case to := <-resp.Timeout():
 		logger.Warnf("SvcWatchEthereum() : Timeout %v", to)
 	}
+
+	return nil
+}
+
+// MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
+func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
+	eventMap *objects.EventMap, schedule interfaces.Schedule, adminHandler interfaces.AdminHandler) error {
+
+	c := eth.Contracts()
+
+	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
+
+	// 1. Check if our Ethereum endpoint is sync with sufficient peers
+	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
+	if err != nil {
+		monitorState.CommunicationFailures++
+
+		logger.WithField("CommunicationFailures", monitorState.CommunicationFailures).
+			WithField("Error", err).
+			Warn("EndpointInSync() Failed")
+
+		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
+			monitorState.InSync = false
+			adminHandler.SetSynchronized(false)
+		}
+		return nil
+	}
+	monitorState.CommunicationFailures = 0
+	monitorState.PeerCount = peerCount
+	monitorState.InSync = inSync
+
+	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+		return nil
+	}
+
+	// 2. Check what the latest finalized block number is
+	finalized, err := eth.GetFinalizedHeight(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 3. Grab up to the next _batch size_ unprocessed block(s)
+	processed := monitorState.HighestBlockProcessed
+
+	lastBlock := uint64(0)
+	remaining := finalized - processed
+	if remaining <= 1000 {
+		lastBlock = processed + remaining
+	} else {
+		lastBlock = processed + 1000
+	}
+
+	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
+
+		logEntry := logger.WithField("Block", currentBlock)
+
+		logs, err := eth.GetEvents(ctx, currentBlock, currentBlock, addresses)
+		if err != nil {
+			return err
+		}
+
+		// Check all the logs for an event we want to process
+		for _, log := range logs {
+
+			eventID := log.Topics[0].String()
+			logEntry := logEntry.WithField("EventID", eventID)
+
+			info, present := eventMap.Lookup(eventID)
+			if present {
+				logEntry = logEntry.WithField("Event", info.Name)
+				if info.Processor != nil {
+					err := info.Processor(eth, logEntry, monitorState, log)
+					if err != nil {
+						logEntry.Errorf("Failed processing event: %v", err)
+						return err
+					}
+				} else {
+					logEntry.Info("No processor configured.")
+				}
+
+			} else {
+				logEntry.Debug("Found unkown event")
+			}
+
+		}
+
+		// Check if any tasks are scheduled
+		logEntry.Info("Looking for scheduled task")
+		uuid, err := schedule.Find(currentBlock)
+		if err == nil {
+			task, _ := schedule.Retrieve(uuid)
+			log := logEntry.WithField("TaskID", uuid.String())
+
+			var wg sync.WaitGroup
+
+			wg.Add(1)
+			tasks.StartTask(log, &wg, eth, task)
+
+			schedule.Remove(uuid)
+		} else if err == ErrNothingScheduled {
+			logEntry.Debug("No tasks scheduled")
+		} else {
+			logEntry.Warnf("Error retrieving scheduled task: %v", err)
+		}
+
+		processed = currentBlock
+	}
+
+	// Only after batch is processed do we update monitor state
+	logger.Debugf("Block Processed %d -> %d, Finalized %d -> %d",
+		monitorState.HighestBlockProcessed, processed,
+		monitorState.HighestBlockFinalized, finalized)
+	monitorState.HighestBlockFinalized = finalized
+	monitorState.HighestBlockProcessed = processed
 
 	return nil
 }
