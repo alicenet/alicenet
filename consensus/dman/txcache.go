@@ -72,7 +72,7 @@ func (txc *txCache) GetHeight(height uint32) ([]interfaces.Transaction, [][]byte
 	outhsh := [][]byte{}
 	for hash, rh := range txc.rcache {
 		hash, rh := hash, rh
-		if rh <= height {
+		if rh == height {
 			if txi, ok := txc.getInternal([]byte(hash)); ok {
 				out = append(out, txi)
 				outhsh = append(outhsh, []byte(hash))

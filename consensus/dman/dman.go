@@ -155,6 +155,9 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 // canonical bh
 func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
 	targetHeight := syncToBH.BClaims.Height + 1
+
+	dm.downloadActor.ba.updateHeight(syncToBH.BClaims.Height)
+
 	bhCache, inCache := dm.downloadActor.bhc.Get(targetHeight)
 	if !inCache {
 		dm.downloadActor.DownloadBlockHeader(targetHeight, 1)
