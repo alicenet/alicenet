@@ -3,35 +3,27 @@ package transport
 import (
 	"sync"
 
-	"github.com/jcuga/go-upnp"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/NebulousLabs/go-upnp"
 )
 
 type UPnPProtocol int
-
-const (
-	TCP UPnPProtocol = iota
-	UDP
-)
 
 type UPnPMapper struct {
 	// This is the logger for the transport
 	logger *logrus.Logger
 	// Port to map
 	port uint16
-	// Protocol to map
-	protoStr string
 	// Gateway
-	gateway upnp.IGD
+	gateway *upnp.IGD
 	// Start / stop mutex
 	mux sync.Mutex
 }
 
-func NewUPnPMapper(logger *logrus.Logger, port int, proto UPnPProtocol) (*UPnPMapper, error) {
+func NewUPnPMapper(logger *logrus.Logger, port int) (*UPnPMapper, error) {
 	manager := &UPnPMapper{
-		logger:   logrus.New(),
-		port:     uint16(port),
-		protoStr: upnpProtocolToString(proto),
+		logger: logrus.New(),
+		port:   uint16(port),
 	}
 	return manager, nil
 }
@@ -51,7 +43,7 @@ func (u *UPnPMapper) Start() {
 	}
 	u.gateway = d
 
-	err = u.gateway.Forward(u.port, "Requested by MadNet", u.protoStr)
+	err = u.gateway.Forward(u.port, "Requested by MadNet")
 	if err != nil {
 		u.logger.WithError(err).Error("UPnP forward failed")
 		return
@@ -66,21 +58,10 @@ func (u *UPnPMapper) Close() {
 		return
 	}
 
-	err := u.gateway.Clear(u.port, u.protoStr)
+	err := u.gateway.Clear(u.port)
 	if err != nil {
 		u.logger.WithError(err).Error("UPnP close forward failed")
 		return
 	}
 	u.gateway = nil
-}
-
-func upnpProtocolToString(p UPnPProtocol) string {
-	switch p {
-	case TCP:
-		return "TCP"
-	case UDP:
-		return "UDP"
-	default:
-		return "Unknown"
-	}
 }

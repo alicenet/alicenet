@@ -74,7 +74,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 	}
 	var upnpMapper *transport.UPnPMapper
 	if upnp {
-		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port, transport.TCP)
+		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port)
 		if err != nil {
 			utils.DebugTrace(logger, err)
 			cf()
