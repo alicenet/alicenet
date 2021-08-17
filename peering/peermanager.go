@@ -45,11 +45,12 @@ type PeerManager struct {
 	fireWallMode             bool
 	fireWallHost             interfaces.NodeAddr
 	peeringComplete          bool
+	upnpMapper               *transport.UPnPMapper
 }
 
 // NewPeerManager creates a new peer manager based on the Configuration
 // values passed to the process.
-func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string) (*PeerManager, error) {
+func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
 	logger := logging.GetLogger(constants.LoggerPeerMan)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
@@ -70,6 +71,15 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		utils.DebugTrace(logger, err)
 		cf()
 		return nil, err
+	}
+	var upnpMapper *transport.UPnPMapper
+	if upnp {
+		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port, transport.TCP)
+		if err != nil {
+			utils.DebugTrace(logger, err)
+			cf()
+			return nil, err
+		}
 	}
 	// create the actual peer manager
 	pm := &PeerManager{
@@ -99,6 +109,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		mux:              &transport.P2PMux{},
 		transport:        p2ptransport,
 		p2pServerHandler: NewMuxServerHandler(logger, p2ptransport.NodeAddr(), p2pServer),
+		upnpMapper:       upnpMapper,
 	}
 	pm.discServerHandler = NewDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
 	if fwMode { // config.Configuration.Transport.FirewallMode
@@ -123,6 +134,9 @@ func (ps *PeerManager) Start() {
 	ps.wg.Add(2)
 	go ps.runDiscoveryLoops()
 	go ps.acceptLoop()
+	if ps.upnpMapper != nil {
+		go ps.upnpMapper.Start()
+	}
 	<-ps.CloseChan()
 }
 
@@ -164,6 +178,10 @@ func (ps *PeerManager) Close() error {
 		ps.inactive.close()
 		for _, s := range ps.subscribers {
 			s.close()
+		}
+		if ps.upnpMapper != nil {
+			ps.logger.Warning("PeerManager stopping upnp mapper")
+			ps.upnpMapper.Close()
 		}
 		ps.wg.Wait()
 		ps.logger.Warning("PeerManager Graceful exit complete")

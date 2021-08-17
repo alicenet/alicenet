@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.0
+	github.com/jcuga/go-upnp v0.0.0-20160830125909-492b17f02cbb // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/highwayhash v1.0.1
 	github.com/rs/cors v1.7.0
