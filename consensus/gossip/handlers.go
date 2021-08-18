@@ -9,6 +9,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/lstate"
@@ -165,7 +166,7 @@ func (mb *Handlers) heightAndSync() (uint32, bool, error) {
 	err := mb.database.View(func(txn *badger.Txn) error {
 		os, err := mb.database.GetOwnState(txn)
 		if err != nil {
-			// utils.DebugTrace(mb.logger, err)
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		maxHeight = os.MaxBHSeen.BClaims.Height + 1
@@ -209,7 +210,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddProposal(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNpvChan:
@@ -224,7 +225,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddPreVote(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNpvnChan:
@@ -239,7 +240,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddPreVoteNil(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNpcChan:
@@ -254,7 +255,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddPreCommit(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNpcnChan:
@@ -269,7 +270,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddPreCommitNil(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNnrChan:
@@ -284,7 +285,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddNextRound(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNnhChan:
@@ -299,7 +300,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddNextHeight(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNbhChan:
@@ -310,7 +311,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err := mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddBlockHeader(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		case obj := <-mb.iNtxChan:
@@ -325,7 +326,7 @@ func (mb *Handlers) UpdateStateFromGossip(forceExit <-chan struct{}, mut interfa
 			err = mb.handleStateUpdateErrors(obj.ctx, mb.updateTxsFromGossip(obj.msg), obj.errC)
 			mut.Unlock()
 			if err != nil {
-				// utils.DebugTrace(mb.logger, err)
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 		}
@@ -336,19 +337,19 @@ func (mb *Handlers) updateTxsFromGossip(tx []byte) error {
 	err := mb.database.Update(func(txn *badger.Txn) error {
 		os, err := mb.database.GetOwnState(txn)
 		if err != nil {
-			// utils.DebugTrace(mb.logger, err)
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		chainID := os.SyncToBH.BClaims.ChainID
 		height := os.SyncToBH.BClaims.Height + 1
 		tx, err := mb.app.UnmarshalTx(tx)
 		if err != nil {
-			// utils.DebugTrace(mb.logger, err)
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		err = mb.app.PendingTxAdd(txn, chainID, height, []interfaces.Transaction{tx})
 		if err != nil {
-			// utils.DebugTrace(mb.logger, err)
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		return nil
@@ -456,11 +457,11 @@ func (mb *Handlers) HandleP2PGossipProposal(pctx context.Context, msg *pb.Gossip
 	obj := &objs.Proposal{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipProposalAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipProposalAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -490,11 +491,11 @@ func (mb *Handlers) HandleP2PGossipPreVote(pctx context.Context, msg *pb.GossipP
 	obj := &objs.PreVote{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -524,11 +525,11 @@ func (mb *Handlers) HandleP2PGossipPreVoteNil(pctx context.Context, msg *pb.Goss
 	obj := &objs.PreVoteNil{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteNilAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteNilAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -558,11 +559,11 @@ func (mb *Handlers) HandleP2PGossipPreCommit(pctx context.Context, msg *pb.Gossi
 	obj := &objs.PreCommit{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -592,11 +593,11 @@ func (mb *Handlers) HandleP2PGossipPreCommitNil(pctx context.Context, msg *pb.Go
 	obj := &objs.PreCommitNil{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitNilAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitNilAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -626,11 +627,11 @@ func (mb *Handlers) HandleP2PGossipNextRound(pctx context.Context, msg *pb.Gossi
 	obj := &objs.NextRound{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextRoundAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextRoundAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -660,11 +661,11 @@ func (mb *Handlers) HandleP2PGossipNextHeight(pctx context.Context, msg *pb.Goss
 	obj := &objs.NextHeight{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextHeightAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextHeightAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, false)
@@ -694,11 +695,11 @@ func (mb *Handlers) HandleP2PGossipBlockHeader(pctx context.Context, msg *pb.Gos
 	obj := &objs.BlockHeader{}
 	err = obj.UnmarshalBinary(rawmsg)
 	if err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipBlockHeaderAck{}, err
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		// utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipBlockHeaderAck{}, err
 	}
 	// mb.preventGossip(ctx, rawmsg, false, true)

@@ -12,9 +12,16 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	pb "github.com/MadBase/MadNet/proto"
 	"github.com/MadBase/MadNet/utils"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
+
+const maxRetryCount = 12
+const backOffAmount = 1
+const backOffJitter = float64(.1)
 
 type appClient interface {
 	GetTxsForGossip(txnState *badger.Txn, currentHeight uint32) ([]interfaces.Transaction, error)
@@ -77,55 +84,55 @@ func (mb *Client) Start() error {
 	mb.database.SubscribeBroadcastTransaction(
 		mb.ctx,
 		func(v []byte) error {
-			mb.gossipTransaction(v)
+			go mb.gossipTransaction(v)
 			return nil
 		},
 	)
 
 	pgfn := func(v []byte) error {
-		mb.gossipProposal(v)
+		go mb.gossipProposal(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastProposal(mb.ctx, pgfn)
 
 	pvgfn := func(v []byte) error {
-		mb.gossipPreVote(v)
+		go mb.gossipPreVote(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastPreVote(mb.ctx, pvgfn)
 
 	pvngfn := func(v []byte) error {
-		mb.gossipPreVoteNil(v)
+		go mb.gossipPreVoteNil(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastPreVoteNil(mb.ctx, pvngfn)
 
 	pcgfn := func(v []byte) error {
-		mb.gossipPreCommit(v)
+		go mb.gossipPreCommit(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastPreCommit(mb.ctx, pcgfn)
 
 	pcngfn := func(v []byte) error {
-		mb.gossipPreCommitNil(v)
+		go mb.gossipPreCommitNil(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastPreCommitNil(mb.ctx, pcngfn)
 
 	nrgfn := func(v []byte) error {
-		mb.gossipNextRound(v)
+		go mb.gossipNextRound(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastNextRound(mb.ctx, nrgfn)
 
 	nhgfn := func(v []byte) error {
-		mb.gossipNextHeight(v)
+		go mb.gossipNextHeight(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastNextHeight(mb.ctx, nhgfn)
 
 	bhgfn := func(v []byte) error {
-		mb.gossipBlockHeader(v)
+		go mb.gossipBlockHeader(v)
 		return nil
 	}
 	mb.database.SubscribeBroadcastBlockHeader(mb.ctx, bhgfn)
@@ -285,7 +292,11 @@ func (mb *Client) gossipTransaction(transaction []byte) {
 	msg := &pb.GossipTransactionMessage{
 		Transaction: utils.CopySlice(transaction),
 	}
-	_, err := mb.client.GossipTransaction(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipTransaction(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -295,7 +306,11 @@ func (mb *Client) gossipProposal(proposal []byte) {
 	msg := &pb.GossipProposalMessage{
 		Proposal: proposal,
 	}
-	_, err := mb.client.GossipProposal(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipProposal(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -324,7 +339,11 @@ func (mb *Client) gossipPreVote(preVote []byte) {
 	msg := &pb.GossipPreVoteMessage{
 		PreVote: preVote,
 	}
-	_, err := mb.client.GossipPreVote(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipPreVote(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -337,7 +356,11 @@ func (mb *Client) gossipPreVoteNil(preVoteNil []byte) {
 	msg := &pb.GossipPreVoteNilMessage{
 		PreVoteNil: preVoteNil,
 	}
-	_, err := mb.client.GossipPreVoteNil(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipPreVoteNil(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -350,7 +373,11 @@ func (mb *Client) gossipPreCommit(preCommit []byte) {
 	msg := &pb.GossipPreCommitMessage{
 		PreCommit: preCommit,
 	}
-	_, err := mb.client.GossipPreCommit(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipPreCommit(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -363,7 +390,11 @@ func (mb *Client) gossipPreCommitNil(preCommitNil []byte) {
 	msg := &pb.GossipPreCommitNilMessage{
 		PreCommitNil: preCommitNil,
 	}
-	_, err := mb.client.GossipPreCommitNil(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipPreCommitNil(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -376,7 +407,11 @@ func (mb *Client) gossipNextRound(nextRound []byte) {
 	msg := &pb.GossipNextRoundMessage{
 		NextRound: nextRound,
 	}
-	_, err := mb.client.GossipNextRound(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipNextRound(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -389,7 +424,11 @@ func (mb *Client) gossipNextHeight(nextHeight []byte) {
 	msg := &pb.GossipNextHeightMessage{
 		NextHeight: nextHeight,
 	}
-	_, err := mb.client.GossipNextHeight(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipNextHeight(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}
@@ -402,7 +441,11 @@ func (mb *Client) gossipBlockHeader(blockHeader []byte) {
 	msg := &pb.GossipBlockHeaderMessage{
 		BlockHeader: blockHeader,
 	}
-	_, err := mb.client.GossipBlockHeader(context.Background(), msg)
+	opts := []grpc.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
+		grpc_retry.WithMax(maxRetryCount),
+	}
+	_, err := mb.client.GossipBlockHeader(context.Background(), msg, opts...)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
 	}

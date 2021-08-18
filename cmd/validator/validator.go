@@ -2,7 +2,6 @@ package validator
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"net/http"
 	_ "net/http/pprof"
 
 	"github.com/MadBase/MadNet/application"
@@ -50,9 +48,9 @@ var Command = cobra.Command{
 	Run:   validatorNode}
 
 func validatorNode(cmd *cobra.Command, args []string) {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	// 	go func() {
+	// 		log.Println(http.ListenAndServe("localhost:6060", nil))
+	// 	}()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////

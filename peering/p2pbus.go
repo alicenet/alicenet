@@ -223,6 +223,7 @@ func NewP2PBus(client interfaces.P2PClient, reqChan <-chan interface{}, gossipCh
 	p2p := &P2PBus{
 		client:            client,
 		reqChan:           reqChan,
+		gossipChan:        gossipChan,
 		closeChan:         closeChan,
 		maxRequestWorkers: reqCount,
 		metricChan:        make(chan error, reqCount),
@@ -361,7 +362,7 @@ func (p2p *P2PBus) gossipWorker() {
 		select {
 		case <-p2p.closeChan:
 			return
-		case msg := <-p2p.reqChan:
+		case msg := <-p2p.gossipChan:
 			p2p.dispatch(msg)
 		}
 	}
