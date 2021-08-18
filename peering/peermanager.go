@@ -43,14 +43,14 @@ type PeerManager struct {
 	fireWallMode             bool
 	fireWallHost             interfaces.NodeAddr
 	peeringComplete          bool
-
-	gossipPubSub *caster.Caster
-	reqChan      chan interface{}
+	gossipPubSub             *caster.Caster
+	reqChan                  chan interface{}
+	upnpMapper               *transport.UPnPMapper
 }
 
 // NewPeerManager creates a new peer manager based on the Configuration
 // values passed to the process.
-func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string) (*PeerManager, error) {
+func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
 	logger := logging.GetLogger(constants.LoggerPeerMan)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
@@ -71,6 +71,15 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		utils.DebugTrace(logger, err)
 		cf()
 		return nil, err
+	}
+	var upnpMapper *transport.UPnPMapper
+	if upnp {
+		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port)
+		if err != nil {
+			utils.DebugTrace(logger, err)
+			cf()
+			return nil, err
+		}
 	}
 	// create the actual peer manager
 	pm := &PeerManager{
@@ -98,6 +107,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		mux:              &transport.P2PMux{},
 		transport:        p2ptransport,
 		p2pServerHandler: NewMuxServerHandler(logger, p2ptransport.NodeAddr(), p2pServer),
+		upnpMapper:       upnpMapper,
 	}
 	pm.discServerHandler = NewDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
 	if fwMode { // config.Configuration.Transport.FirewallMode
@@ -123,6 +133,9 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 func (ps *PeerManager) Start() {
 	go ps.runDiscoveryLoops()
 	go ps.acceptLoop()
+	if ps.upnpMapper != nil {
+		go ps.upnpMapper.Start()
+	}
 	<-ps.CloseChan()
 }
 
@@ -162,6 +175,10 @@ func (ps *PeerManager) Close() error {
 		}
 		ps.active.close()
 		ps.inactive.close()
+		if ps.upnpMapper != nil {
+			ps.logger.Warning("PeerManager stopping upnp mapper")
+			ps.upnpMapper.Close()
+		}
 		ps.logger.Warning("PeerManager Graceful exit complete")
 	}
 	ps.closeOnce.Do(fn)
