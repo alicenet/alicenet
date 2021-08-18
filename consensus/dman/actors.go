@@ -4,15 +4,21 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
+	"github.com/MadBase/MadNet/middleware"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
+
+const backoffAmount = 1 // 1 ms backoff per
+const retryMax = 6      // equates to approx 4 seconds
 
 // Root Actor spawns top level actor types
 type RootActor struct {
@@ -50,7 +56,7 @@ func (a *RootActor) Init(logger *logrus.Logger, proxy typeProxyIface) error {
 	a.logger = logger
 	a.ba = &blockActor{}
 	a.database = proxy
-	return a.ba.init(a.dispatchQ, logger, proxy)
+	return a.ba.init(a.dispatchQ, logger, proxy, a.closeChan)
 }
 
 func (a *RootActor) Start() {
@@ -142,8 +148,12 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 		if !ok {
 			return
 		}
-		a.dispatchQ <- b
-		a.await(b)
+		select {
+		case <-a.closeChan:
+			return
+		case a.dispatchQ <- b:
+			a.await(b)
+		}
 	case PendingAndMinedTxRequest:
 		ok := func() bool {
 			a.Lock()
@@ -165,32 +175,50 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 			Dtype:        PendingTxRequest,
 			Height:       b.RequestHeight(),
 			Round:        b.RequestRound(),
-			responseChan: make(chan DownloadResponse),
+			responseChan: make(chan DownloadResponse, 1),
 		}
 		bc1 := &TxDownloadRequest{
 			TxHash:       []byte(b.Identifier()),
 			Dtype:        MinedTxRequest,
 			Height:       b.RequestHeight(),
 			Round:        b.RequestRound(),
-			responseChan: make(chan DownloadResponse),
+			responseChan: make(chan DownloadResponse, 1),
 		}
 		ptxc := make(chan struct{})
 		mtxc := make(chan struct{})
 		go func() {
 			defer close(ptxc)
-			a.dispatchQ <- bc0
-			a.await(bc0)
+			select {
+			case <-a.closeChan:
+				return
+			case a.dispatchQ <- bc0:
+				a.await(bc0)
+			}
 		}()
 		go func() {
 			defer close(mtxc)
-			a.dispatchQ <- bc1
-			a.await(bc1)
+			select {
+			case <-a.closeChan:
+				return
+			case a.dispatchQ <- bc1:
+				a.await(bc1)
+			}
 		}()
 		select {
+		case <-a.closeChan:
+			return
 		case <-ptxc:
-			<-mtxc
+			select {
+			case <-a.closeChan:
+				return
+			case <-mtxc:
+			}
 		case <-mtxc:
-			<-ptxc
+			select {
+			case <-a.closeChan:
+				return
+			case <-ptxc:
+			}
 		}
 	case BlockHeaderRequest:
 		ok := func() bool {
@@ -211,60 +239,68 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 		if !ok {
 			return
 		}
-		a.dispatchQ <- b
-		a.await(b)
+		select {
+		case <-a.closeChan:
+			return
+		case a.dispatchQ <- b:
+			a.await(b)
+		}
 	default:
 		panic(b.DownloadType())
 	}
 }
 
 func (a *RootActor) await(req DownloadRequest) {
-	resp := <-req.ResponseChan()
-	if resp == nil {
+	select {
+	case <-a.closeChan:
 		return
-	}
-	switch resp.DownloadType() {
-	case PendingTxRequest, MinedTxRequest:
-		r := resp.(*TxDownloadResponse)
-		if r.Err != nil {
-			exists := a.txc.Contains(r.TxHash)
-			if !exists {
+	case resp := <-req.ResponseChan():
+		if resp == nil {
+			return
+		}
+		switch resp.DownloadType() {
+		case PendingTxRequest, MinedTxRequest:
+			r := resp.(*TxDownloadResponse)
+			if r.Err != nil {
+				exists := a.txc.Contains(r.TxHash)
+				if !exists {
+					utils.DebugTrace(a.logger, r.Err)
+					defer a.download(req, true)
+				}
+				return
+			}
+			ok := func() bool {
+				if err := a.txc.Add(resp.RequestHeight(), r.Tx); err != nil {
+					utils.DebugTrace(a.logger, err)
+					return false
+				}
+				return true
+			}()
+			if ok {
+				return
+			}
+			defer a.download(req, true)
+		case BlockHeaderRequest:
+			r := resp.(*BlockHeaderDownloadResponse)
+			if r.Err != nil {
 				utils.DebugTrace(a.logger, r.Err)
 				defer a.download(req, true)
+				return
 			}
-			return
-		}
-		ok := func() bool {
-			if err := a.txc.Add(resp.RequestHeight(), r.Tx); err != nil {
-				utils.DebugTrace(a.logger, err)
-				return false
+			ok := func() bool {
+				if err := a.bhc.Add(r.BH); err != nil {
+					utils.DebugTrace(a.logger, err)
+					return false
+				}
+				return true
+			}()
+			if ok {
+				return
 			}
-			return true
-		}()
-		if ok {
-			return
-		}
-		defer a.download(req, true)
-	case BlockHeaderRequest:
-		r := resp.(*BlockHeaderDownloadResponse)
-		if r.Err != nil {
-			utils.DebugTrace(a.logger, r.Err)
 			defer a.download(req, true)
-			return
+		default:
+			panic(req.DownloadType())
 		}
-		ok := func() bool {
-			if err := a.bhc.Add(r.BH); err != nil {
-				utils.DebugTrace(a.logger, err)
-				return false
-			}
-			return true
-		}()
-		if ok {
-			return
-		}
-		defer a.download(req, true)
-	default:
-		panic(req.DownloadType())
 	}
 }
 
@@ -275,14 +311,16 @@ type blockActor struct {
 	dispatchQ     chan DownloadRequest
 	CurrentHeight uint32
 	Logger        *logrus.Logger
+	closeChan     chan struct{}
 }
 
-func (a *blockActor) init(workQ chan DownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
+func (a *blockActor) init(workQ chan DownloadRequest, logger *logrus.Logger, reqBus typeProxyIface, closeChan chan struct{}) error {
 	a.WorkQ = workQ
 	a.dispatchQ = make(chan DownloadRequest)
 	a.ra = &downloadActor{}
 	a.Logger = logger
-	return a.ra.init(a.dispatchQ, logger, reqBus)
+	a.closeChan = closeChan
+	return a.ra.init(a.dispatchQ, logger, reqBus, a.closeChan)
 }
 
 func (a *blockActor) start() {
@@ -298,22 +336,32 @@ func (a *blockActor) updateHeight(newHeight uint32) {
 	}
 }
 
+func (a *blockActor) getHeight() uint32 {
+	a.RLock()
+	defer a.RUnlock()
+	return a.CurrentHeight
+}
+
 func (a *blockActor) run() {
 	for {
-		req := <-a.WorkQ
-		ok := func() bool {
-			a.Lock()
-			defer a.Unlock()
-			if req.RequestHeight()+heightDropLag < a.CurrentHeight {
-				close(req.ResponseChan())
-				return false
+		select {
+		case <-a.closeChan:
+			return
+		case req := <-a.WorkQ:
+			ok := func() bool {
+				a.Lock()
+				defer a.Unlock()
+				if req.RequestHeight()+heightDropLag < a.CurrentHeight {
+					close(req.ResponseChan())
+					return false
+				}
+				return true
+			}()
+			if !ok {
+				continue
 			}
-			return true
-		}()
-		if !ok {
-			continue
+			go a.await(req)
 		}
-		go a.await(req)
 	}
 }
 
@@ -323,32 +371,48 @@ func (a *blockActor) await(req DownloadRequest) {
 	case PendingTxRequest, MinedTxRequest:
 		reqTyped := req.(*TxDownloadRequest)
 		subReq = NewTxDownloadRequest(reqTyped.TxHash, reqTyped.Dtype, reqTyped.Height, reqTyped.Round)
-		a.dispatchQ <- subReq
+		select {
+		case <-a.closeChan:
+			return
+		case a.dispatchQ <- subReq:
+		}
 	case BlockHeaderRequest:
 		reqTyped := req.(*BlockHeaderDownloadRequest)
 		subReq = NewBlockHeaderDownloadRequest(reqTyped.Height, reqTyped.Round, reqTyped.Dtype)
-		a.dispatchQ <- subReq
+		select {
+		case <-a.closeChan:
+			return
+		case a.dispatchQ <- subReq:
+		}
 	default:
 		panic(fmt.Sprintf("req download type not found: %v", req.DownloadType()))
 	}
-	resp := <-subReq.ResponseChan()
-	if resp == nil {
-		close(req.ResponseChan())
+	select {
+	case <-a.closeChan:
 		return
-	}
-	ok := func() bool {
-		a.RLock()
-		defer a.RUnlock()
-		if a.CurrentHeight > heightDropLag+1 {
-			return resp.RequestHeight() >= a.CurrentHeight-heightDropLag
+	case resp := <-subReq.ResponseChan():
+		if resp == nil {
+			close(req.ResponseChan())
+			return
 		}
-		return true
-	}()
-	if !ok {
-		close(req.ResponseChan())
-		return
+		ok := func() bool {
+			a.RLock()
+			defer a.RUnlock()
+			if a.CurrentHeight > heightDropLag+1 {
+				return resp.RequestHeight() >= a.CurrentHeight-heightDropLag
+			}
+			return true
+		}()
+		if !ok {
+			close(req.ResponseChan())
+			return
+		}
+		select {
+		case <-a.closeChan:
+			return
+		case req.ResponseChan() <- resp:
+		}
 	}
-	req.ResponseChan() <- resp
 }
 
 type downloadActor struct {
@@ -360,24 +424,26 @@ type downloadActor struct {
 	mtxa             *minedDownloadActor
 	bha              *blockHeaderDownloadActor
 	Logger           *logrus.Logger
+	closeChan        chan struct{}
 }
 
-func (a *downloadActor) init(workQ chan DownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
-	a.PendingDispatchQ = make(chan *TxDownloadRequest, downloadWorkerCount)
-	a.MinedDispatchQ = make(chan *TxDownloadRequest, downloadWorkerCount)
-	a.BlockDispatchQ = make(chan *BlockHeaderDownloadRequest, downloadWorkerCount)
+func (a *downloadActor) init(workQ chan DownloadRequest, logger *logrus.Logger, reqBus typeProxyIface, closeChan chan struct{}) error {
+	a.PendingDispatchQ = make(chan *TxDownloadRequest, downloadWorkerCountPendingTx)
+	a.MinedDispatchQ = make(chan *TxDownloadRequest, downloadWorkerCountMinedTx)
+	a.BlockDispatchQ = make(chan *BlockHeaderDownloadRequest, downloadWorkerCountBlockHeader)
 	a.WorkQ = workQ
 	a.ptxa = &pendingDownloadActor{}
 	a.Logger = logger
-	if err := a.ptxa.init(a.PendingDispatchQ, logger, reqBus); err != nil {
+	a.closeChan = closeChan
+	if err := a.ptxa.init(a.PendingDispatchQ, logger, reqBus, closeChan); err != nil {
 		return err
 	}
 	a.mtxa = &minedDownloadActor{}
-	if err := a.mtxa.init(a.MinedDispatchQ, logger, reqBus); err != nil {
+	if err := a.mtxa.init(a.MinedDispatchQ, logger, reqBus, closeChan); err != nil {
 		return err
 	}
 	a.bha = &blockHeaderDownloadActor{}
-	if err := a.bha.init(a.BlockDispatchQ, logger, reqBus); err != nil {
+	if err := a.bha.init(a.BlockDispatchQ, logger, reqBus, closeChan); err != nil {
 		return err
 	}
 	return nil
@@ -393,6 +459,8 @@ func (a *downloadActor) start() {
 func (a *downloadActor) run() {
 	for {
 		select {
+		case <-a.closeChan:
+			return
 		case req := <-a.WorkQ:
 			switch req.DownloadType() {
 			case PendingTxRequest:
@@ -409,131 +477,166 @@ func (a *downloadActor) run() {
 }
 
 type minedDownloadActor struct {
-	WorkQ  chan *TxDownloadRequest
-	reqBus typeProxyIface
-	Logger *logrus.Logger
+	WorkQ     chan *TxDownloadRequest
+	reqBus    typeProxyIface
+	Logger    *logrus.Logger
+	closeChan chan struct{}
 }
 
-func (a *minedDownloadActor) init(workQ chan *TxDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
+func (a *minedDownloadActor) init(workQ chan *TxDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface, closeChan chan struct{}) error {
 	a.WorkQ = workQ
 	a.reqBus = reqBus
 	a.Logger = logger
+	a.closeChan = closeChan
 	return nil
 }
 
 func (a *minedDownloadActor) start() {
-	for i := 0; i < downloadWorkerCount; i++ {
+	for i := 0; i < downloadWorkerCountMinedTx; i++ {
 		go a.run()
 	}
 }
 
 func (a *minedDownloadActor) run() {
 	for {
-		reqOrig := <-a.WorkQ
-		tx, err := func(req *TxDownloadRequest) (interfaces.Transaction, error) {
-			ctx := context.Background()
-			subCtx, cf := context.WithTimeout(ctx, constants.MsgTimeout)
-			defer cf()
-			txLst, err := a.reqBus.RequestP2PGetMinedTxs(subCtx, [][]byte{req.TxHash})
-			if err != nil {
-				utils.DebugTrace(a.Logger, err)
-				return nil, errorz.ErrInvalid{}.New(err.Error())
-			}
-			if len(txLst) != 1 {
-				return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 txn when only should have 1")
-			}
-			tx, err := a.reqBus.UnmarshalTx(utils.CopySlice(txLst[0]))
-			if err != nil {
-				utils.DebugTrace(a.Logger, err)
-				return nil, errorz.ErrInvalid{}.New(err.Error())
-			}
-			return tx, nil
-		}(reqOrig)
-		reqOrig.ResponseChan() <- NewTxDownloadResponse(reqOrig, tx, MinedTxRequest, err)
+		select {
+		case <-a.closeChan:
+			return
+		case reqOrig := <-a.WorkQ:
+			tx, err := func(req *TxDownloadRequest) (interfaces.Transaction, error) {
+				opts := []grpc.CallOption{
+					grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backoffAmount*time.Millisecond, .1)),
+					grpc_retry.WithMax(retryMax),
+				}
+				peerOpt := middleware.NewPeerInterceptor()
+				newOpts := append(opts, peerOpt)
+				txLst, err := a.reqBus.RequestP2PGetMinedTxs(context.Background(), [][]byte{req.TxHash}, newOpts...)
+				if err != nil {
+					utils.DebugTrace(a.Logger, err)
+					return nil, errorz.ErrInvalid{}.New(err.Error())
+				}
+				peer := peerOpt.Peer()
+				if len(txLst) != 1 {
+					peer.Feedback(-3)
+					return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 txn when only should have 1")
+				}
+				tx, err := a.reqBus.UnmarshalTx(utils.CopySlice(txLst[0]))
+				if err != nil {
+					peer.Feedback(-2)
+					utils.DebugTrace(a.Logger, err)
+					return nil, errorz.ErrInvalid{}.New(err.Error())
+				}
+				return tx, nil
+			}(reqOrig)
+			reqOrig.ResponseChan() <- NewTxDownloadResponse(reqOrig, tx, MinedTxRequest, err)
+		}
 	}
 }
 
 type pendingDownloadActor struct {
-	WorkQ  chan *TxDownloadRequest
-	reqBus typeProxyIface
-	Logger *logrus.Logger
+	WorkQ     chan *TxDownloadRequest
+	reqBus    typeProxyIface
+	Logger    *logrus.Logger
+	closeChan chan struct{}
 }
 
-func (a *pendingDownloadActor) init(workQ chan *TxDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
+func (a *pendingDownloadActor) init(workQ chan *TxDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface, closeChan chan struct{}) error {
 	a.WorkQ = workQ
 	a.reqBus = reqBus
 	a.Logger = logger
+	a.closeChan = closeChan
 	return nil
 }
 
 func (a *pendingDownloadActor) start() {
-	for i := 0; i < downloadWorkerCount; i++ {
+	for i := 0; i < downloadWorkerCountPendingTx; i++ {
 		go a.run()
 	}
 }
 
 func (a *pendingDownloadActor) run() {
 	for {
-		reqOrig := <-a.WorkQ
-		tx, err := func(req *TxDownloadRequest) (interfaces.Transaction, error) {
-			ctx := context.Background()
-			subCtx, cf := context.WithTimeout(ctx, constants.MsgTimeout)
-			defer cf()
-			txLst, err := a.reqBus.RequestP2PGetPendingTx(subCtx, [][]byte{req.TxHash})
-			if err != nil {
-				utils.DebugTrace(a.Logger, err)
-				return nil, errorz.ErrInvalid{}.New(err.Error())
-			}
-			if len(txLst) != 1 {
-				return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 txn when only should have 1")
-			}
-			tx, err := a.reqBus.UnmarshalTx(utils.CopySlice(txLst[0]))
-			if err != nil {
-				utils.DebugTrace(a.Logger, err)
-				return nil, errorz.ErrInvalid{}.New(err.Error())
-			}
-			return tx, nil
-		}(reqOrig)
-		reqOrig.ResponseChan() <- NewTxDownloadResponse(reqOrig, tx, PendingTxRequest, err)
+		select {
+		case <-a.closeChan:
+			return
+		case reqOrig := <-a.WorkQ:
+			tx, err := func(req *TxDownloadRequest) (interfaces.Transaction, error) {
+				opts := []grpc.CallOption{
+					grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backoffAmount*time.Millisecond, .1)),
+					grpc_retry.WithMax(retryMax),
+				}
+				peerOpt := middleware.NewPeerInterceptor()
+				newOpts := append(opts, peerOpt)
+				txLst, err := a.reqBus.RequestP2PGetPendingTx(context.Background(), [][]byte{req.TxHash}, newOpts...)
+				if err != nil {
+					utils.DebugTrace(a.Logger, err)
+					return nil, errorz.ErrInvalid{}.New(err.Error())
+				}
+				peer := peerOpt.Peer()
+				if len(txLst) != 1 {
+					peer.Feedback(-3)
+					return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 txn when only should have 1")
+				}
+				tx, err := a.reqBus.UnmarshalTx(utils.CopySlice(txLst[0]))
+				if err != nil {
+					peer.Feedback(-2)
+					utils.DebugTrace(a.Logger, err)
+					return nil, errorz.ErrInvalid{}.New(err.Error())
+				}
+				return tx, nil
+			}(reqOrig)
+			reqOrig.ResponseChan() <- NewTxDownloadResponse(reqOrig, tx, PendingTxRequest, err)
+		}
 	}
 }
 
 type blockHeaderDownloadActor struct {
-	WorkQ  chan *BlockHeaderDownloadRequest
-	reqBus typeProxyIface
-	Logger *logrus.Logger
+	WorkQ     chan *BlockHeaderDownloadRequest
+	reqBus    typeProxyIface
+	Logger    *logrus.Logger
+	closeChan chan struct{}
 }
 
-func (a *blockHeaderDownloadActor) init(workQ chan *BlockHeaderDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface) error {
+func (a *blockHeaderDownloadActor) init(workQ chan *BlockHeaderDownloadRequest, logger *logrus.Logger, reqBus typeProxyIface, closeChan chan struct{}) error {
 	a.WorkQ = workQ
 	a.reqBus = reqBus
 	a.Logger = logger
+	a.closeChan = closeChan
 	return nil
 }
 
 func (a *blockHeaderDownloadActor) start() {
-	for i := 0; i < downloadWorkerCount; i++ {
+	for i := 0; i < downloadWorkerCountBlockHeader; i++ {
 		go a.run()
 	}
 }
 
 func (a *blockHeaderDownloadActor) run() {
 	for {
-		reqOrig := <-a.WorkQ
-		bh, err := func(req *BlockHeaderDownloadRequest) (*objs.BlockHeader, error) {
-			ctx := context.Background()
-			subCtx, cf := context.WithTimeout(ctx, constants.MsgTimeout)
-			defer cf()
-			bhLst, err := a.reqBus.RequestP2PGetBlockHeaders(subCtx, []uint32{req.Height})
-			if err != nil {
-				utils.DebugTrace(a.Logger, err)
-				return nil, errorz.ErrInvalid{}.New(err.Error())
-			}
-			if len(bhLst) != 1 {
-				return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 block header when only should have 1")
-			}
-			return bhLst[0], nil
-		}(reqOrig)
-		reqOrig.ResponseChan() <- NewBlockHeaderDownloadResponse(reqOrig, bh, BlockHeaderRequest, err)
+		select {
+		case <-a.closeChan:
+			return
+		case reqOrig := <-a.WorkQ:
+			bh, err := func(req *BlockHeaderDownloadRequest) (*objs.BlockHeader, error) {
+				opts := []grpc.CallOption{
+					grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backoffAmount*time.Millisecond, .1)),
+					grpc_retry.WithMax(retryMax),
+				}
+				peerOpt := middleware.NewPeerInterceptor()
+				newOpts := append(opts, peerOpt)
+				bhLst, err := a.reqBus.RequestP2PGetBlockHeaders(context.Background(), []uint32{req.Height}, newOpts...)
+				if err != nil {
+					utils.DebugTrace(a.Logger, err)
+					return nil, errorz.ErrInvalid{}.New(err.Error())
+				}
+				peer := peerOpt.Peer()
+				if len(bhLst) != 1 {
+					peer.Feedback(-3)
+					return nil, errorz.ErrInvalid{}.New("Downloaded more than 1 block header when only should have 1")
+				}
+				return bhLst[0], nil
+			}(reqOrig)
+			reqOrig.ResponseChan() <- NewBlockHeaderDownloadResponse(reqOrig, bh, BlockHeaderRequest, err)
+		}
 	}
 }

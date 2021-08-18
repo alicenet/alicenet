@@ -5,7 +5,6 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs/nextround"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -26,6 +25,7 @@ func (b *NextRound) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -40,7 +40,7 @@ func (b *NextRound) UnmarshalCapn(bh mdefs.NextRound) error {
 	if err != nil {
 		return err
 	}
-	b.Signature = gUtils.CopySlice(bh.Signature())
+	b.Signature = bh.Signature()
 	return nil
 }
 
@@ -54,6 +54,7 @@ func (b *NextRound) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return nextround.Marshal(bh)
 }
 

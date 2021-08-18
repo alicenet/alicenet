@@ -68,6 +68,27 @@ func (rb *Handler) Exit() {
 }
 
 //HandleP2PGetBlockHeaders serves block headers
+func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*pb.StatusResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		rb.wg.Add(1)
+		defer rb.wg.Done()
+	}
+
+	err := rb.database.View(func(txn *badger.Txn) error {
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.StatusResponse{}
+	return resp, nil
+}
+
+//HandleP2PGetBlockHeaders serves block headers
 func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockHeadersRequest) (*pb.GetBlockHeadersResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -80,11 +101,7 @@ func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockH
 	byteCount := 0
 	err := rb.database.View(func(txn *badger.Txn) error {
 		for _, blknum := range r.BlockNumbers {
-			hdr, err := rb.database.GetCommittedBlockHeader(txn, blknum)
-			if err != nil {
-				return err
-			}
-			hdrbytes, err := hdr.MarshalBinary()
+			hdrbytes, err := rb.database.GetCommittedBlockHeaderRaw(txn, blknum)
 			if err != nil {
 				return err
 			}
