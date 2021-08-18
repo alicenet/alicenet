@@ -103,6 +103,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	firewallHost := config.Configuration.Transport.FirewallHost
 	p2PListeningAddress := config.Configuration.Transport.P2PListeningAddress
 	xportPrivateKey := config.Configuration.Transport.PrivateKey
+	upnp := config.Configuration.Transport.UPnP
 
 	lStateListenAddr := config.Configuration.Transport.LocalStateListeningAddress
 
@@ -235,6 +236,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		firewallHost,
 		p2PListeningAddress,
 		xportPrivateKey,
+		upnp,
 	)
 	if err != nil {
 		panic(err)
