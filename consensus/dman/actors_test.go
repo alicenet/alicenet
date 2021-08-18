@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
+	"google.golang.org/grpc"
 )
 
 type testingProxyCall int
@@ -97,7 +98,7 @@ func (dv *testingProxy) TxCacheDropBefore(txn *badger.Txn, beforeHeight uint32, 
 	panic("")
 }
 
-func (trb *testingProxy) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte) ([][]byte, error) {
+func (trb *testingProxy) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	defer func() {
 		trb.callIndex++
 	}()
@@ -122,7 +123,7 @@ func (trb *testingProxy) RequestP2PGetPendingTx(ctx context.Context, txHashes []
 	return tx, nil
 }
 
-func (trb *testingProxy) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte) ([][]byte, error) {
+func (trb *testingProxy) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	defer func() {
 		trb.callIndex++
 	}()
@@ -147,7 +148,7 @@ func (trb *testingProxy) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][
 	return tx, nil
 }
 
-func (trb *testingProxy) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32) ([]*objs.BlockHeader, error) {
+func (trb *testingProxy) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32, opts ...grpc.CallOption) ([]*objs.BlockHeader, error) {
 	defer func() {
 		trb.callIndex++
 	}()

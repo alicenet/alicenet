@@ -8,7 +8,6 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/ovstate"
 	"github.com/MadBase/MadNet/constants"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -30,6 +29,7 @@ func (b *OwnValidatingState) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -39,8 +39,8 @@ func (b *OwnValidatingState) UnmarshalCapn(bh mdefs.OwnValidatingState) error {
 	if err != nil {
 		return err
 	}
-	b.VAddr = gUtils.CopySlice(bh.VAddr())
-	b.GroupKey = gUtils.CopySlice(bh.GroupKey())
+	b.VAddr = bh.VAddr()
+	b.GroupKey = bh.GroupKey()
 	b.RoundStarted = bh.RoundStarted()
 	b.PreVoteStepStarted = bh.PreVoteStepStarted()
 	b.PreCommitStepStarted = bh.PreCommitStepStarted()
@@ -71,6 +71,7 @@ func (b *OwnValidatingState) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return ovstate.Marshal(bh)
 }
 

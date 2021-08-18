@@ -13,8 +13,8 @@ func Marshal(v mdefs.BClaims) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := utils.CopySlice(raw)
-	return out, nil
+	defer v.Struct.Segment().Message().Reset(nil)
+	return raw, nil
 }
 
 // Unmarshal will unmarshal the BClaims object.
@@ -26,8 +26,7 @@ func Unmarshal(data []byte) (mdefs.BClaims, error) {
 				err = errorz.ErrInvalid{}.New("bad serialization")
 			}
 		}()
-		dataCopy := utils.CopySlice(data)
-		msg := &capnp.Message{Arena: capnp.SingleSegment(dataCopy)}
+		msg := &capnp.Message{Arena: capnp.SingleSegment(data)}
 		obj, tmp := mdefs.ReadRootBClaims(msg)
 		err = tmp
 		return obj, err

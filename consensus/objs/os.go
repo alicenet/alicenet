@@ -4,7 +4,6 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/ostate"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -25,6 +24,7 @@ func (b *OwnState) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -38,8 +38,8 @@ func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
 	if err != nil {
 		return err
 	}
-	b.VAddr = gUtils.CopySlice(bh.VAddr())
-	b.GroupKey = gUtils.CopySlice(bh.GroupKey())
+	b.VAddr = bh.VAddr()
+	b.GroupKey = bh.GroupKey()
 	err = b.SyncToBH.UnmarshalCapn(bh.SyncToBH())
 	if err != nil {
 		return err
@@ -56,7 +56,6 @@ func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -70,6 +69,7 @@ func (b *OwnState) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return ostate.Marshal(bh)
 }
 

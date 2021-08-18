@@ -74,14 +74,6 @@ func (rpcm *MuxHandler) gRPCserverHandler(conn interfaces.P2PMuxConn) (interface
 		nodeAddr:     conn.NodeAddr(),
 		conn:         conn,
 	}
-	c.consensusQueue, err = newMsgQueue(constants.ConsensusMsgQSize, constants.ConsensusMsgQWorkers, c)
-	if err != nil {
-		return nil, err
-	}
-	c.txQueue, err = newMsgQueue(constants.TxMsgQSize, constants.TxMsgQWorkers, c)
-	if err != nil {
-		return nil, err
-	}
 	return c, nil
 }
 
@@ -104,14 +96,6 @@ func (rpcm *MuxHandler) gRPCclientHandler(conn interfaces.P2PMuxConn) (interface
 		P2PClientRaw: client,
 		nodeAddr:     conn.NodeAddr(),
 		conn:         conn,
-	}
-	c.consensusQueue, err = newMsgQueue(constants.ConsensusMsgQSize, constants.ConsensusMsgQWorkers, c)
-	if err != nil {
-		return nil, err
-	}
-	c.txQueue, err = newMsgQueue(constants.TxMsgQSize, constants.TxMsgQWorkers, c)
-	if err != nil {
-		return nil, err
 	}
 	return c, nil
 }

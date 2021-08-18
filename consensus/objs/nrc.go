@@ -8,7 +8,6 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/nrclaims"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -28,6 +27,7 @@ func (b *NRClaims) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -47,7 +47,7 @@ func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
 	if err != nil {
 		return err
 	}
-	b.SigShare = gUtils.CopySlice(bh.SigShare())
+	b.SigShare = bh.SigShare()
 	if b.RCert.RClaims.Height != b.RClaims.Height {
 		return errorz.ErrInvalid{}.New("nrc height mismatch")
 	}
@@ -73,6 +73,7 @@ func (b *NRClaims) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return nrclaims.Marshal(bh)
 }
 

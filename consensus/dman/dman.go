@@ -153,17 +153,31 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 // the initialization of prevBH from SyncToBH implies SyncToBH must be updated to
 // the canonical bh before we begin unless we are syncing from a height gt the
 // canonical bh
-func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
+func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
 	targetHeight := syncToBH.BClaims.Height + 1
+
+	currentHeight := dm.downloadActor.ba.getHeight()
+
+	bhCache, inCache := dm.downloadActor.bhc.Get(targetHeight)
+	if !inCache && currentHeight != targetHeight {
+		for i := currentHeight + 1; i < currentHeight+1024; i++ {
+			height := i
+			if height > maxBHSeen.BClaims.Height {
+				break
+			}
+			_, inCache := dm.downloadActor.bhc.Get(height)
+			if !inCache {
+				dm.downloadActor.DownloadBlockHeader(height, 1)
+			} else {
+				break
+			}
+		}
+		dm.downloadActor.ba.updateHeight(syncToBH.BClaims.Height)
+		return nil, nil, false, nil
+	}
 
 	dm.downloadActor.ba.updateHeight(syncToBH.BClaims.Height)
 
-	bhCache, inCache := dm.downloadActor.bhc.Get(targetHeight)
-	if !inCache {
-		dm.downloadActor.DownloadBlockHeader(targetHeight, 1)
-		return nil, nil, false, nil
-		//return nil, nil, errorz.ErrInvalid{}.New("block header was not in the bh cache")
-	}
 	// check the chainID of bh
 	if bhCache.BClaims.ChainID != syncToBH.BClaims.ChainID {
 		dm.downloadActor.bhc.Del(targetHeight)

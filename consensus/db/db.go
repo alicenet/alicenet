@@ -374,11 +374,25 @@ func (db *Database) SetCommittedBlockHeaderFastSync(txn *badger.Txn, v *objs.Blo
 	return db.setCommittedBlockHeaderInternal(txn, v)
 }
 
+func (db *Database) CountCommittedBlockHeaders(txn *badger.Txn) (int, error) {
+	return db.rawDB.getCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount())
+}
+
 func (db *Database) setCommittedBlockHeaderInternal(txn *badger.Txn, v *objs.BlockHeader) error {
 	key, err := db.makeCommittedBlockHeaderKey(v.BClaims.Height)
 	if err != nil {
 		return err
 	}
+
+	if _, err := utils.GetValue(txn, key); err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		if err := db.rawDB.incrementCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount()); err != nil {
+			return err
+		}
+	}
+
 	bHash, err := v.BlockHash()
 	if err != nil {
 		return err
@@ -509,7 +523,20 @@ func (db *Database) GetCommittedBlockHeader(txn *badger.Txn, height uint32) (*ob
 	}
 	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
-		utils.DebugTrace(db.logger, err)
+		// utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func (db *Database) GetCommittedBlockHeaderRaw(txn *badger.Txn, height uint32) ([]byte, error) {
+	key, err := db.makeCommittedBlockHeaderKey(height)
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.rawDB.getValue(txn, key)
+	if err != nil {
+		// utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
 	return result, nil
@@ -585,7 +612,7 @@ func (db *Database) GetOwnState(txn *badger.Txn) (*objs.OwnState, error) {
 	key := db.makeOwnStateKey()
 	result, err := db.rawDB.GetOwnState(txn, key)
 	if err != nil {
-		utils.DebugTrace(db.logger, err)
+		// utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
 	return result, nil
@@ -954,9 +981,9 @@ func (db *Database) GetSnapshotBlockHeader(txn *badger.Txn, height uint32) (*obj
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.rawDB.GetBlockHeaderUnsafe(txn, key)
+	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
-		utils.DebugTrace(db.logger, err)
+		// utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
 	return result, nil
@@ -985,7 +1012,7 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}
-	result, err := db.rawDB.GetBlockHeaderUnsafe(txn, lastkey)
+	result, err := db.rawDB.GetBlockHeader(txn, lastkey)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -1113,13 +1140,35 @@ func (db *Database) makePendingHdrNodeKey(nodeKey []byte) ([]byte, error) {
 	return key.MarshalBinary()
 }
 
+func (db *Database) incrementPendingHdrNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+}
+
+func (db *Database) decrementPendingHdrNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+}
+
+func (db *Database) zeroPendingHdrNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+}
+
+func (db *Database) CountPendingHdrNodeKeys(txn *badger.Txn) (int, error) {
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+}
+
 func (db *Database) makePendingHdrNodeKeyIterKey() []byte {
 	prefix := dbprefix.PrefixPendingHdrNodeKey()
 	return prefix
 }
 
-func (db *Database) DropPendingHdrNodeKeys() error {
-	return db.rawDB.DropPrefix(db.makePendingHdrNodeKeyIterKey())
+func (db *Database) DropPendingHdrNodeKeys(txn *badger.Txn) error {
+	if err := db.rawDB.DropPrefix(db.makePendingHdrNodeKeyIterKey()); err != nil {
+		return err
+	}
+	if err := db.zeroPendingHdrNodeKeyCount(txn); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *Database) SetPendingHdrNodeKey(txn *badger.Txn, nodeKey []byte, layer int) error {
@@ -1128,7 +1177,23 @@ func (db *Database) SetPendingHdrNodeKey(txn *badger.Txn, nodeKey []byte, layer 
 		return err
 	}
 	layerBytes := utils.MarshalUint16(uint16(layer))
-	return utils.SetValue(txn, pnkey, layerBytes)
+	notExist := false
+	_, err = utils.GetValue(txn, pnkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		notExist = true
+	}
+	if notExist {
+		if err := utils.SetValue(txn, pnkey, layerBytes); err != nil {
+			return err
+		}
+		if err := db.incrementPendingHdrNodeKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingHdrNodeKey(txn *badger.Txn, nodeKey []byte) (int, error) {
@@ -1152,24 +1217,23 @@ func (db *Database) DeletePendingHdrNodeKey(txn *badger.Txn, nodeKey []byte) err
 	if err != nil {
 		return err
 	}
-	return utils.DeleteValue(txn, pnkey)
-}
-
-func (db *Database) CountPendingHdrNodeKeys(txn *badger.Txn) (int, error) {
-	count := 0
-	iter := db.GetPendingHdrNodeKeysIter(txn)
-	defer iter.Close()
-	for {
-		_, _, isDone, err := iter.Next()
-		if err != nil {
-			return 0, err
+	exist := true
+	_, err = utils.GetValue(txn, pnkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
 		}
-		if isDone {
-			break
-		}
-		count++
+		exist = false
 	}
-	return count, nil
+	if exist {
+		if err := utils.DeleteValue(txn, pnkey); err != nil {
+			return err
+		}
+		if err := db.decrementPendingHdrNodeKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingHdrNodeKeysIter(txn *badger.Txn) *PendingHdrNodeIter {
@@ -1244,8 +1308,14 @@ func (db *Database) makePendingNodeKeyIterKey() []byte {
 	return prefix
 }
 
-func (db *Database) DropPendingNodeKeys() error {
-	return db.rawDB.DropPrefix(db.makePendingNodeKeyIterKey())
+func (db *Database) DropPendingNodeKeys(txn *badger.Txn) error {
+	if err := db.rawDB.DropPrefix(db.makePendingNodeKeyIterKey()); err != nil {
+		return err
+	}
+	if err := db.zeroPendingNodeKeyCount(txn); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *Database) SetPendingNodeKey(txn *badger.Txn, nodeKey []byte, layer int) error {
@@ -1254,7 +1324,23 @@ func (db *Database) SetPendingNodeKey(txn *badger.Txn, nodeKey []byte, layer int
 		return err
 	}
 	layerBytes := utils.MarshalUint16(uint16(layer))
-	return utils.SetValue(txn, pnkey, layerBytes)
+	notExist := false
+	_, err = utils.GetValue(txn, pnkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		notExist = true
+	}
+	if notExist {
+		if err := utils.SetValue(txn, pnkey, layerBytes); err != nil {
+			return err
+		}
+		if err := db.incrementPendingNodeKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingNodeKey(txn *badger.Txn, nodeKey []byte) (int, error) {
@@ -1278,24 +1364,39 @@ func (db *Database) DeletePendingNodeKey(txn *badger.Txn, nodeKey []byte) error 
 	if err != nil {
 		return err
 	}
-	return utils.DeleteValue(txn, pnkey)
+	exist := true
+	_, err = utils.GetValue(txn, pnkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		exist = false
+	}
+	if exist {
+		if err := utils.DeleteValue(txn, pnkey); err != nil {
+			return err
+		}
+		if err := db.decrementPendingNodeKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *Database) incrementPendingNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+}
+
+func (db *Database) decrementPendingNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+}
+
+func (db *Database) zeroPendingNodeKeyCount(txn *badger.Txn) error {
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) CountPendingNodeKeys(txn *badger.Txn) (int, error) {
-	count := 0
-	iter := db.GetPendingNodeKeysIter(txn)
-	defer iter.Close()
-	for {
-		_, _, isDone, err := iter.Next()
-		if err != nil {
-			return 0, err
-		}
-		if isDone {
-			break
-		}
-		count++
-	}
-	return count, nil
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) GetPendingNodeKeysIter(txn *badger.Txn) *PendingNodeIter {
@@ -1370,8 +1471,30 @@ func (db *Database) makePendingLeafKeyIterKey() []byte {
 	return prefix
 }
 
-func (db *Database) DropPendingLeafKeys() error {
-	return db.rawDB.DropPrefix(db.makePendingLeafKeyIterKey())
+func (db *Database) incrementPendingLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+}
+
+func (db *Database) decrementPendingLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+}
+
+func (db *Database) zeroPendingLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+}
+
+func (db *Database) CountPendingLeafKeys(txn *badger.Txn) (int, error) {
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+}
+
+func (db *Database) DropPendingLeafKeys(txn *badger.Txn) error {
+	if err := db.rawDB.DropPrefix(db.makePendingLeafKeyIterKey()); err != nil {
+		return err
+	}
+	if err := db.zeroPendingLeafKeyCount(txn); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *Database) SetPendingLeafKey(txn *badger.Txn, leafKey []byte, value []byte) error {
@@ -1379,7 +1502,23 @@ func (db *Database) SetPendingLeafKey(txn *badger.Txn, leafKey []byte, value []b
 	if err != nil {
 		return err
 	}
-	return utils.SetValue(txn, plkey, value)
+	notExist := false
+	_, err = utils.GetValue(txn, plkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		notExist = true
+	}
+	if notExist {
+		if err := utils.SetValue(txn, plkey, value); err != nil {
+			return err
+		}
+		if err := db.incrementPendingLeafKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingLeafKey(txn *badger.Txn, leafKey []byte) ([]byte, error) {
@@ -1399,24 +1538,23 @@ func (db *Database) DeletePendingLeafKey(txn *badger.Txn, leafKey []byte) error 
 	if err != nil {
 		return err
 	}
-	return utils.DeleteValue(txn, plkey)
-}
-
-func (db *Database) CountPendingLeafKeys(txn *badger.Txn) (int, error) {
-	count := 0
-	iter := db.GetPendingLeafKeysIter(txn)
-	defer iter.Close()
-	for {
-		_, _, isDone, err := iter.Next()
-		if err != nil {
-			return 0, err
+	exist := true
+	_, err = utils.GetValue(txn, plkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
 		}
-		if isDone {
-			break
-		}
-		count++
+		exist = false
 	}
-	return count, nil
+	if exist {
+		if err := utils.DeleteValue(txn, plkey); err != nil {
+			return err
+		}
+		if err := db.decrementPendingLeafKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingLeafKeysIter(txn *badger.Txn) *PendingLeafIter {
@@ -1553,8 +1691,30 @@ func (db *Database) makePendingHdrLeafKeyIterKey() []byte {
 	return prefix
 }
 
-func (db *Database) DropPendingHdrLeafKeys() error {
-	return db.rawDB.DropPrefix(db.makePendingHdrLeafKeyIterKey())
+func (db *Database) incrementPendingHdrLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+}
+
+func (db *Database) decrementPendingHdrLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+}
+
+func (db *Database) zeroPendingHdrLeafKeyCount(txn *badger.Txn) error {
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+}
+
+func (db *Database) CountPendingHdrLeafKeys(txn *badger.Txn) (int, error) {
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+}
+
+func (db *Database) DropPendingHdrLeafKeys(txn *badger.Txn) error {
+	if err := db.rawDB.DropPrefix(db.makePendingHdrLeafKeyIterKey()); err != nil {
+		return err
+	}
+	if err := db.zeroPendingHdrLeafKeyCount(txn); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *Database) SetPendingHdrLeafKey(txn *badger.Txn, hdrLeafKey []byte, value []byte) error {
@@ -1562,7 +1722,24 @@ func (db *Database) SetPendingHdrLeafKey(txn *badger.Txn, hdrLeafKey []byte, val
 	if err != nil {
 		return err
 	}
-	return utils.SetValue(txn, phlkey, value)
+	notExist := false
+	_, err = utils.GetValue(txn, phlkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		notExist = true
+	}
+	if notExist {
+		if err := utils.SetValue(txn, phlkey, value); err != nil {
+			return err
+		}
+
+		if err := db.incrementPendingHdrLeafKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingHdrLeafKey(txn *badger.Txn, hdrLeafKey []byte) ([]byte, error) {
@@ -1582,24 +1759,23 @@ func (db *Database) DeletePendingHdrLeafKey(txn *badger.Txn, hdrLeafKey []byte) 
 	if err != nil {
 		return err
 	}
-	return utils.DeleteValue(txn, phlkey)
-}
-
-func (db *Database) CountPendingHdrLeafKeys(txn *badger.Txn) (int, error) {
-	count := 0
-	iter := db.GetPendingHdrLeafKeysIter(txn)
-	defer iter.Close()
-	for {
-		_, _, isDone, err := iter.Next()
-		if err != nil {
-			return 0, err
+	exist := true
+	_, err = utils.GetValue(txn, phlkey)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
 		}
-		if isDone {
-			break
-		}
-		count++
+		exist = false
 	}
-	return count, nil
+	if exist {
+		if err := utils.DeleteValue(txn, phlkey); err != nil {
+			return err
+		}
+		if err := db.decrementPendingHdrLeafKeyCount(txn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *Database) GetPendingHdrLeafKeysIter(txn *badger.Txn) *PendingHdrLeafIter {
@@ -1650,136 +1826,4 @@ func (phli *PendingHdrLeafIter) Next() ([]byte, []byte, bool, error) {
 
 func (phli *PendingHdrLeafIter) Close() {
 	phli.it.Close()
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-func (db *Database) makeStagedBlockHeaderKey(height uint32) ([]byte, error) {
-	prefix := dbprefix.PrefixStagedBlockHeaderKey()
-	heightBytes := utils.MarshalUint32(height)
-	key := &objs.StagedBlockHeaderKey{
-		Prefix: prefix,
-		Key:    heightBytes,
-	}
-	return key.MarshalBinary()
-}
-
-func (db *Database) makeStagedBlockHeaderKeyIterKey() []byte {
-	prefix := dbprefix.PrefixStagedBlockHeaderKey()
-	return prefix
-}
-
-func (db *Database) DropStagedBlockHeaderKeys() error {
-	return db.rawDB.DropPrefix(db.makeStagedBlockHeaderKeyIterKey())
-}
-
-func (db *Database) SetStagedBlockHeader(txn *badger.Txn, height uint32, value []byte) error {
-	sbhkey, err := db.makeStagedBlockHeaderKey(height)
-	if err != nil {
-		return err
-	}
-	return utils.SetValue(txn, sbhkey, value)
-}
-
-func (db *Database) GetStagedBlockHeader(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
-	sbhkey, err := db.makeStagedBlockHeaderKey(height)
-	if err != nil {
-		return nil, err
-	}
-	vBytes, err := utils.GetValue(txn, sbhkey)
-	if err != nil {
-		return nil, err
-	}
-	v := &objs.BlockHeader{}
-	err = v.UnmarshalBinary(vBytes)
-	if err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-func (db *Database) DeleteStagedBlockHeaderKey(txn *badger.Txn, height uint32) error {
-	sbhkey, err := db.makeStagedBlockHeaderKey(height)
-	if err != nil {
-		return err
-	}
-	return utils.DeleteValue(txn, sbhkey)
-}
-
-func (db *Database) CountStagedBlockHeaderKeys(txn *badger.Txn) (int, error) {
-	count := 0
-	iter := db.GetStagedBlockHeaderKeyIter(txn)
-	defer iter.Close()
-	for {
-		_, _, isDone, err := iter.Next()
-		if err != nil {
-			return 0, err
-		}
-		if isDone {
-			break
-		}
-		count++
-	}
-	return count, nil
-}
-
-type StagedBlockHeaderKeyIter struct {
-	it        *badger.Iterator
-	prefixLen int
-}
-
-func (db *Database) GetStagedBlockHeaderKeyIter(txn *badger.Txn) *StagedBlockHeaderKeyIter {
-	prefix := db.makeStagedBlockHeaderKeyIterKey()
-	opts := badger.IteratorOptions{
-		PrefetchSize:   100,
-		PrefetchValues: true,
-		Prefix:         prefix,
-	}
-	it := txn.NewIterator(opts)
-	seek := []byte{}
-	seek = append(seek, utils.CopySlice(prefix)...)
-	seek = append(seek, []byte{0, 0, 0, 0}...)
-	it.Seek(seek)
-	return &StagedBlockHeaderKeyIter{it: it, prefixLen: len(prefix)}
-}
-
-func (sbhki *StagedBlockHeaderKeyIter) Next() (uint32, *objs.BlockHeader, bool, error) {
-	var height uint32
-	var bhdr *objs.BlockHeader
-	var isDone bool
-	err := func() error {
-		if !sbhki.it.Valid() {
-			isDone = true
-			return nil
-		}
-		defer sbhki.it.Next()
-		itm := sbhki.it.Item()
-		key := itm.KeyCopy(nil)
-		value, err := itm.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		tmpHeight, err := utils.UnmarshalUint32(key[sbhki.prefixLen:])
-		if err != nil {
-			return err
-		}
-		tmpBhdr := &objs.BlockHeader{}
-		err = tmpBhdr.UnmarshalBinary(value)
-		if err != nil {
-			return err
-		}
-		height = tmpHeight
-		bhdr = tmpBhdr
-		return nil
-	}()
-	if err != nil {
-		return 0, nil, isDone, err
-	}
-	return height, bhdr, isDone, nil
-}
-
-func (sbhki *StagedBlockHeaderKeyIter) Close() {
-	sbhki.it.Close()
 }

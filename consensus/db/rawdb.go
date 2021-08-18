@@ -250,27 +250,8 @@ func (db *rawDataBase) GetBlockHeader(txn *badger.Txn, key []byte) (*objs.BlockH
 	if err != nil {
 		return nil, err
 	}
-	if v == nil {
-		return nil, nil
-	}
 	vv := &objs.BlockHeader{}
 	err = vv.UnmarshalBinary(v)
-	if err != nil {
-		return nil, err
-	}
-	return vv, nil
-}
-
-func (db *rawDataBase) GetBlockHeaderUnsafe(txn *badger.Txn, key []byte) (*objs.BlockHeader, error) {
-	v, err := db.getValue(txn, key)
-	if err != nil {
-		return nil, err
-	}
-	if v == nil {
-		return nil, nil
-	}
-	vv := &objs.BlockHeader{}
-	err = vv.UnmarshalBinaryUnsafe(v)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +491,7 @@ func (db *rawDataBase) GetU32(txn *badger.Txn, key []byte) (uint32, error) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (db *rawDataBase) GetInt(txn *badger.Txn, key []byte) (time.Duration, error) {
+func (db *rawDataBase) GetInt(txn *badger.Txn, key []byte) (int64, error) {
 	v, err := db.getValue(txn, key)
 	if err != nil {
 		return 0, err
@@ -522,7 +503,7 @@ func (db *rawDataBase) GetInt(txn *badger.Txn, key []byte) (time.Duration, error
 	if err != nil {
 		return 0, err
 	}
-	return time.Duration(int(vv)), nil
+	return vv, nil
 }
 
 func (db *rawDataBase) SetInt(txn *badger.Txn, key []byte, v int) error {
@@ -539,7 +520,7 @@ func (db *rawDataBase) GetDuration(txn *badger.Txn, key []byte) (time.Duration, 
 	if err != nil {
 		return 0, err
 	}
-	return v, nil
+	return time.Duration(v), nil
 }
 
 func (db *rawDataBase) SetDuration(txn *badger.Txn, key []byte, v time.Duration) error {
@@ -569,4 +550,41 @@ func (db *rawDataBase) SetTime(txn *badger.Txn, key []byte, t time.Time) error {
 		return err
 	}
 	return utils.SetValue(txn, key, val)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (db *rawDataBase) incrementCounter(txn *badger.Txn, k []byte) error {
+	v, err := db.getCounter(txn, k)
+	if err != nil {
+		return err
+	}
+	v++
+	return db.SetInt(txn, k, v)
+}
+
+func (db *rawDataBase) decrementCounter(txn *badger.Txn, k []byte) error {
+	v, err := db.getCounter(txn, k)
+	if err != nil {
+		return err
+	}
+	v--
+	return db.SetInt(txn, k, v)
+}
+
+func (db *rawDataBase) zeroCounter(txn *badger.Txn, k []byte) error {
+	return db.SetInt(txn, k, 0)
+}
+
+func (db *rawDataBase) getCounter(txn *badger.Txn, k []byte) (int, error) {
+	v, err := db.GetInt(txn, k)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return 0, err
+		}
+		v = 0
+	}
+	return int(v), nil
 }

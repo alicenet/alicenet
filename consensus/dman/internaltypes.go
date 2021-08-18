@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 type DownloadType int
@@ -22,14 +23,16 @@ const (
 )
 
 const (
-	heightDropLag       = 5
-	downloadWorkerCount = 16
+	heightDropLag                  = 5
+	downloadWorkerCountMinedTx     = 512
+	downloadWorkerCountPendingTx   = 512
+	downloadWorkerCountBlockHeader = 256
 )
 
 type reqBusView interface {
-	RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte) ([][]byte, error)
-	RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte) ([][]byte, error)
-	RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32) ([]*objs.BlockHeader, error)
+	RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error)
+	RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error)
+	RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32, opts ...grpc.CallOption) ([]*objs.BlockHeader, error)
 }
 
 type txMarshaller interface {

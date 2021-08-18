@@ -5,7 +5,6 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs/nhclaims"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -24,6 +23,7 @@ func (b *NHClaims) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -38,7 +38,7 @@ func (b *NHClaims) UnmarshalCapn(bh mdefs.NHClaims) error {
 	if err != nil {
 		return err
 	}
-	b.SigShare = gUtils.CopySlice(bh.SigShare())
+	b.SigShare = bh.SigShare()
 	return nil
 }
 
@@ -52,6 +52,7 @@ func (b *NHClaims) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return nhclaims.Marshal(bh)
 }
 

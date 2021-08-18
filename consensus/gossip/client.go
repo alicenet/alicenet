@@ -2,15 +2,12 @@ package gossip
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/lstate"
-	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	pb "github.com/MadBase/MadNet/proto"
@@ -28,7 +25,7 @@ type appClient interface {
 type Client struct {
 	sync.Mutex
 	wg       sync.WaitGroup
-	peerSub  interfaces.PeerSubscription
+	client   pb.P2PClient
 	database *db.Database
 	sstore   *lstate.Store
 
@@ -44,7 +41,7 @@ type Client struct {
 
 // Init sets ups all subscriptions. This MUST be run at least once.
 // It has no effect if run more than once.
-func (mb *Client) Init(database *db.Database, peerSub interfaces.PeerSubscription, app appClient) error {
+func (mb *Client) Init(database *db.Database, client pb.P2PClient, app appClient) error {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
@@ -52,7 +49,7 @@ func (mb *Client) Init(database *db.Database, peerSub interfaces.PeerSubscriptio
 	mb.ctx = ctx
 	mb.wg = sync.WaitGroup{}
 	mb.database = database
-	mb.peerSub = peerSub
+	mb.client = client
 	mb.app = app
 	mb.sstore = &lstate.Store{}
 	err := mb.sstore.Init(database)
@@ -226,11 +223,6 @@ func (mb *Client) ReGossip() error {
 		return err
 	}
 	if p != nil {
-		err := mb.gossipPreValidate(p)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := p.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -239,11 +231,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipProposal(b)
 	}
 	if pv != nil {
-		err := mb.gossipPreValidate(pv)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := pv.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -252,11 +239,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipPreVote(b)
 	}
 	if pvn != nil {
-		err := mb.gossipPreValidate(pvn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := pvn.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -265,11 +247,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipPreVoteNil(b)
 	}
 	if pc != nil {
-		err := mb.gossipPreValidate(pc)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := pc.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -278,11 +255,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipPreCommit(b)
 	}
 	if pcn != nil {
-		err := mb.gossipPreValidate(pcn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := pcn.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -291,11 +263,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipPreCommitNil(b)
 	}
 	if nr != nil {
-		err := mb.gossipPreValidate(nr)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := nr.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -304,11 +271,6 @@ func (mb *Client) ReGossip() error {
 		go mb.gossipNextRound(b)
 	}
 	if nh != nil {
-		err := mb.gossipPreValidate(nh)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
 		b, err := nh.MarshalBinary()
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
@@ -321,365 +283,127 @@ func (mb *Client) ReGossip() error {
 
 func (mb *Client) gossipTransaction(transaction []byte) {
 	msg := &pb.GossipTransactionMessage{
-		Transaction: transaction,
+		Transaction: utils.CopySlice(transaction),
 	}
-	txIf, err := mb.app.UnmarshalTx(transaction)
+	_, err := mb.client.GossipTransaction(context.Background(), msg)
 	if err != nil {
 		utils.DebugTrace(mb.logger, err)
-		return
 	}
-	hsh, err := txIf.TxHash()
-	if err != nil {
-		utils.DebugTrace(mb.logger, err)
-		return
-	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipTransaction(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	}
-	mb.peerSub.GossipTx(hsh, fn)
 }
 
 func (mb *Client) gossipProposal(proposal []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
-		return
-	}
 	msg := &pb.GossipProposalMessage{
 		Proposal: proposal,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipProposal(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipProposal(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(proposal, fn)
 }
 
-func (mb *Client) gossipPreVote(preVote []byte) {
+func (mb *Client) inSync() bool {
 	var isSync bool
 	var err error
 	mb.database.View(func(txn *badger.Txn) error {
 		isSync, err = mb.sstore.IsSync(txn)
 		if err != nil {
-			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		return nil
 	})
-	if !isSync {
+	if err != nil {
+		return false
+	}
+	return isSync
+}
+
+func (mb *Client) gossipPreVote(preVote []byte) {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipPreVoteMessage{
 		PreVote: preVote,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipPreVote(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipPreVote(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(preVote, fn)
 }
 
 func (mb *Client) gossipPreVoteNil(preVoteNil []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipPreVoteNilMessage{
 		PreVoteNil: preVoteNil,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipPreVoteNil(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipPreVoteNil(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(preVoteNil, fn)
 }
 
 func (mb *Client) gossipPreCommit(preCommit []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipPreCommitMessage{
 		PreCommit: preCommit,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipPreCommit(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipPreCommit(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(preCommit, fn)
 }
 
 func (mb *Client) gossipPreCommitNil(preCommitNil []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipPreCommitNilMessage{
 		PreCommitNil: preCommitNil,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipPreCommitNil(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipPreCommitNil(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(preCommitNil, fn)
 }
 
 func (mb *Client) gossipNextRound(nextRound []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipNextRoundMessage{
 		NextRound: nextRound,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipNextRound(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipNextRound(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(nextRound, fn)
 }
 
 func (mb *Client) gossipNextHeight(nextHeight []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipNextHeightMessage{
 		NextHeight: nextHeight,
 	}
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipNextHeight(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
+	_, err := mb.client.GossipNextHeight(context.Background(), msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
 	}
-	mb.peerSub.GossipConsensus(nextHeight, fn)
 }
 
 func (mb *Client) gossipBlockHeader(blockHeader []byte) {
-	var isSync bool
-	var err error
-	mb.database.View(func(txn *badger.Txn) error {
-		isSync, err = mb.sstore.IsSync(txn)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	})
-	if !isSync {
+	if !mb.inSync() {
 		return
 	}
 	msg := &pb.GossipBlockHeaderMessage{
 		BlockHeader: blockHeader,
 	}
-	bh := objs.BlockHeader{}
-	err = bh.UnmarshalBinary(blockHeader)
+	_, err := mb.client.GossipBlockHeader(context.Background(), msg)
 	if err != nil {
-		return
+		utils.DebugTrace(mb.logger, err)
 	}
-	hsh := utils.MarshalUint32(bh.BClaims.Height)
-	fn := func(ctx context.Context, peer interfaces.PeerLease) error {
-		bh := &objs.BlockHeader{}
-		err := bh.UnmarshalBinary(blockHeader)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-
-		subCtx, cancelFunc := context.WithTimeout(ctx, constants.MsgTimeout)
-		defer cancelFunc()
-		_, err = client.GossipBlockHeader(subCtx, msg)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
-		}
-		return nil
-	}
-	mb.peerSub.GossipConsensus(hsh, fn)
-}
-
-// gossipPreValidate ensures that no Height 1 object is ever gossiped
-func (mb *Client) gossipPreValidate(any interface{}) error {
-	var rcHeight uint32
-	switch v := any.(type) {
-	case *objs.Proposal:
-		rc := v.PClaims.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.PreVote:
-		rc := v.Proposal.PClaims.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.PreVoteNil:
-		rc := v.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.PreCommit:
-		rc := v.Proposal.PClaims.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.PreCommitNil:
-		rc := v.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.NextRound:
-		rc := v.NRClaims.RCert.RClaims
-		rcHeight = rc.Height
-	case *objs.NextHeight:
-		rc := v.NHClaims.Proposal.PClaims.RCert.RClaims
-		rcHeight = rc.Height
-	default:
-		panic(fmt.Sprintf("undefined type for getting RCert Height and Round: %T", v))
-	}
-	if rcHeight == 1 || rcHeight == 0 {
-		// This should never be gossiped; Height 1 block already set
-		// and Height 0 objects should not exist
-		return errorz.ErrInvalid{}.New("No Height 1 objects should ever be gossiped")
-	}
-	return nil
 }

@@ -29,6 +29,7 @@ func (b *BlockHeader) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -51,6 +52,7 @@ func (b *BlockHeader) UnmarshalBinaryUnsafe(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.unmarshalCapnUnsafe(bh)
 }
 
@@ -70,7 +72,7 @@ func (b *BlockHeader) unmarshalCapnUnsafe(bh mdefs.BlockHeader) error {
 	if err != nil {
 		return err
 	}
-	b.SigGroup = gUtils.CopySlice(bh.SigGroup())
+	b.SigGroup = bh.SigGroup()
 	return nil
 }
 
@@ -84,6 +86,7 @@ func (b *BlockHeader) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return blockheader.Marshal(bh)
 }
 

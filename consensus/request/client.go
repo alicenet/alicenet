@@ -7,279 +7,160 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/middleware"
 	pb "github.com/MadBase/MadNet/proto"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
+
+type CtxP2PFeedBackKey struct{}
 
 // Client serves incoming requests and handles routing of outgoing
 // requests for data from the consensus system.
 type Client struct {
-	peerSub  interfaces.PeerSubscription
+	client   pb.P2PClient
 	logger   *logrus.Logger
 	secpVal  *crypto.Secp256k1Validator
 	groupVal *crypto.BNGroupValidator
 }
 
 // Init initializes the object
-func (rb *Client) Init(peerSub interfaces.PeerSubscription) error {
+func (rb *Client) Init(client pb.P2PClient) error {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
-	rb.peerSub = peerSub
+	rb.client = client
 	rb.groupVal = &crypto.BNGroupValidator{}
 	rb.secpVal = &crypto.Secp256k1Validator{}
 	return nil
 }
 
-func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, key []byte) ([]byte, error) {
+func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotNodeRequest{
 		Height:   height,
 		NodeHash: key,
 	}
-	var node []byte
-	peerLease, err := rb.peerSub.PeerLease(ctx)
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetSnapShotNode(ctx, req, newOpts...)
 	if err != nil {
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
-	}
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			return err
-		}
-		resp, err := client.GetSnapShotNode(ctx, req)
-		if err != nil {
-			utils.DebugTrace(rb.logger, err)
-			return err
-		}
-		node = resp.Node
-		return nil
-	}
-	if reqErr != nil {
 		return nil, err
 	}
-	peerLease.Do(fn)
-	if node == nil {
+	peer := peerOpt.Peer()
+	if resp.Node == nil {
+		peer.Feedback(-2)
 		return nil, errorz.ErrBadResponse
 	}
-	return node, nil
+	return resp.Node, nil
 }
 
-func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte) ([]byte, error) {
+func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotHdrNodeRequest{
 		NodeHash: key,
 	}
-	var node []byte
-	peerLease, err := rb.peerSub.PeerLease(ctx)
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetSnapShotHdrNode(ctx, req, newOpts...)
 	if err != nil {
-		utils.DebugTrace(rb.logger, err)
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
-	}
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			utils.DebugTrace(rb.logger, err)
-			return err
-		}
-		resp, err := client.GetSnapShotHdrNode(ctx, req)
-		if err != nil {
-			utils.DebugTrace(rb.logger, err)
-			return err
-		}
-		node = resp.Node
-		return nil
-	}
-	if reqErr != nil {
 		return nil, err
 	}
-	peerLease.Do(fn)
-	if node == nil {
-		utils.DebugTrace(rb.logger, err)
+	peer := peerOpt.Peer()
+	if resp.Node == nil {
+		peer.Feedback(-2)
 		return nil, errorz.ErrBadResponse
 	}
-	return node, nil
+	return resp.Node, nil
 }
 
-func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32) ([]*objs.BlockHeader, error) {
+func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32, opts ...grpc.CallOption) ([]*objs.BlockHeader, error) {
 	req := &pb.GetBlockHeadersRequest{
 		BlockNumbers: blockNums,
 	}
-	var hdrs []*objs.BlockHeader
-	hsh := utils.MarshalUint32(blockNums[0])
-	peerLease, err := rb.peerSub.RequestLease(ctx, hsh)
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetBlockHeaders(ctx, req, newOpts...)
 	if err != nil {
-		utils.DebugTrace(rb.logger, err)
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
+		return nil, err
 	}
-	byteCount := 0
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
+	peer := peerOpt.Peer()
+	hdrs := []*objs.BlockHeader{}
+	if len(resp.BlockHeaders) > len(blockNums) {
+		peer.Feedback(-2)
+		return nil, errorz.ErrBadResponse
+	}
+	for _, hdrbytes := range resp.BlockHeaders {
+		hdr := &objs.BlockHeader{}
+		err := hdr.UnmarshalBinary(utils.CopySlice(hdrbytes))
 		if err != nil {
-			utils.DebugTrace(rb.logger, err)
-			return err
+			peer.Feedback(-2)
+			return nil, errorz.ErrBadResponse
 		}
-		resp, err := client.GetBlockHeaders(ctx, req)
-		if err != nil {
-			utils.DebugTrace(rb.logger, err)
-			return err
-		}
-		tmpHdrs := []*objs.BlockHeader{}
-		if len(resp.BlockHeaders) > len(blockNums) {
-			reqErr = errorz.ErrBadResponse
-			return errorz.ErrInvalid{}.New("too many headers")
-		}
-		for _, hdrbytes := range resp.BlockHeaders {
-			byteCount = byteCount + len(utils.CopySlice(hdrbytes))
-			if byteCount > constants.MaxBytes {
-				reqErr = errorz.ErrBadResponse
-				return errorz.ErrInvalid{}.New("too big of hdr msg")
-			}
-			hdr := &objs.BlockHeader{}
-			err := hdr.UnmarshalBinary(utils.CopySlice(hdrbytes))
-			if err != nil {
-				reqErr = errorz.ErrBadResponse
-				return err
-			}
-			if err := hdr.ValidateSignatures(rb.groupVal); err != nil {
-				reqErr = errorz.ErrBadResponse
-				return errorz.ErrInvalid{}.New("bad signatures")
-			}
-			tmpHdrs = append(tmpHdrs, hdr)
-		}
-		hdrs = tmpHdrs
-		return nil
+		hdrs = append(hdrs, hdr)
 	}
-	if reqErr != nil {
-		utils.DebugTrace(rb.logger, err)
-		return nil, reqErr
-	}
-	peerLease.Do(fn)
 	if hdrs == nil {
 		utils.DebugTrace(rb.logger, err)
+		peer.Feedback(-2)
 		return nil, errorz.ErrBadResponse
 	}
 	return hdrs, nil
 }
 
-func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte) ([][]byte, error) {
+func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetPendingTxsRequest{
 		TxHashes: txHashes,
 	}
-	var transactions [][]byte
-	peerLease, err := rb.peerSub.RequestLease(ctx, txHashes[0])
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetPendingTxs(ctx, req, newOpts...)
 	if err != nil {
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
-	}
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			return err
-		}
-		resp, err := client.GetPendingTxs(ctx, req)
-		if err != nil {
-			return err
-		}
-		transactions = resp.Txs
-		return nil
-	}
-	if reqErr != nil {
 		return nil, err
 	}
-	peerLease.Do(fn)
-	if transactions == nil {
+	peer := peerOpt.Peer()
+	if resp.Txs == nil {
+		peer.Feedback(-2)
 		return nil, errorz.ErrBadResponse
 	}
-	return transactions, nil
+	if len(resp.Txs) == 0 {
+		peer.Feedback(-2)
+		utils.DebugTrace(rb.logger, err)
+		return nil, errorz.ErrBadResponse
+	}
+	return resp.Txs, err
 }
 
-func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte) ([][]byte, error) {
+func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetMinedTxsRequest{
 		TxHashes: txHashes,
 	}
-	var transactions [][]byte
-	peerLease, err := rb.peerSub.PeerLease(ctx)
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetMinedTxs(ctx, req, newOpts...)
 	if err != nil {
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
-	}
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			return err
-		}
-		resp, err := client.GetMinedTxs(ctx, req)
-		if err != nil {
-			return err
-		}
-		transactions = resp.Txs
-		return nil
-	}
-	if reqErr != nil {
 		return nil, err
 	}
-	peerLease.Do(fn)
-	if transactions == nil {
+	peer := peerOpt.Peer()
+	if resp.Txs == nil {
+		peer.Feedback(-2)
 		return nil, errorz.ErrBadResponse
 	}
-	return transactions, nil
+	return resp.Txs, err
 }
 
-func (rb *Client) RequestP2PGetSnapShotStateData(ctx context.Context, key []byte) ([]byte, error) {
+func (rb *Client) RequestP2PGetSnapShotStateData(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotStateDataRequest{
 		Key: key,
 	}
-	var leaf []byte
-	peerLease, err := rb.peerSub.PeerLease(ctx)
+	peerOpt := middleware.NewPeerInterceptor()
+	newOpts := append(opts, peerOpt)
+	resp, err := rb.client.GetSnapShotStateData(ctx, req, newOpts...)
 	if err != nil {
-		if err == ctx.Err() {
-			return nil, err
-		}
-		return nil, errorz.ErrClosing
-	}
-	var reqErr error
-
-	fn := func(peer interfaces.PeerLease) error {
-		client, err := peer.P2PClient()
-		if err != nil {
-			return err
-		}
-		resp, err := client.GetSnapShotStateData(ctx, req)
-		if err != nil {
-			return err
-		}
-		leaf = resp.Data
-		return nil
-	}
-	if reqErr != nil {
 		return nil, err
 	}
-	peerLease.Do(fn)
-	if leaf == nil {
+	peer := peerOpt.Peer()
+	if resp.Data == nil {
+		peer.Feedback(-2)
+		utils.DebugTrace(rb.logger, err)
 		return nil, errorz.ErrBadResponse
 	}
-	return leaf, nil
+	return resp.Data, err
 }

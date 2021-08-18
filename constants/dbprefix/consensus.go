@@ -1,12 +1,10 @@
 package dbprefix
 
-
 // All functions in this file are prefix designators for database data types.
 // These functions name the resource being referenced in the function name.
 // All prefixes should use two character length identifiers and should start
 // at `a` as the first character allowed at index zero of an identifier.
 // The identifiers should increase alpha-numeric from that point forward.
-
 
 func PrefixOwnValidatingState() []byte {
 	return []byte("aa")
@@ -122,4 +120,24 @@ func PrefixPendingHdrLeafKey() []byte {
 
 func PrefixStagedBlockHeaderKey() []byte {
 	return []byte("a3")
+}
+
+func PrefixPendingNodeKeyCount() []byte {
+	return []byte("Ay")
+}
+
+func PrefixPendingLeafKeyCount() []byte {
+	return []byte("Az")
+}
+
+func PrefixPendingHdrNodeKeyCount() []byte {
+	return []byte("A1")
+}
+
+func PrefixPendingHdrLeafKeyCount() []byte {
+	return []byte("A2")
+}
+
+func PrefixCommittedBlockHeaderCount() []byte {
+	return []byte("A3")
 }

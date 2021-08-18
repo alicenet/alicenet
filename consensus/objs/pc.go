@@ -31,6 +31,7 @@ func (b *PreCommit) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -51,7 +52,7 @@ func (b *PreCommit) UnmarshalCapn(bh mdefs.PreCommit) error {
 	if err != nil {
 		return err
 	}
-	b.Signature = gUtils.CopySlice(bh.Signature())
+	b.Signature = bh.Signature()
 	return nil
 }
 
@@ -65,6 +66,7 @@ func (b *PreCommit) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return precommit.Marshal(bh)
 }
 

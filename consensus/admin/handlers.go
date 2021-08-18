@@ -455,7 +455,7 @@ func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 					return nil
 				})
 				if err != nil {
-					utils.DebugTrace(ah.logger, err)
+					// utils.DebugTrace(ah.logger, err)
 					return false, nil
 				}
 				ah.Lock()

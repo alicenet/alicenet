@@ -345,10 +345,10 @@ func (a *Application) GetSnapShotStateData(txn *badger.Txn, utxoID []byte) ([]by
 	utxo, err := a.txHandler.GetSnapShotStateData(txn, [][]byte{utxoID})
 	if err != nil {
 		utils.DebugTrace(a.logger, err)
-		return nil, errorz.ErrInvalid{}.New(err.Error())
+		return nil, err
 	}
 	if len(utxo) != 1 {
-		return nil, errorz.ErrInvalid{}.New("missing utxo")
+		return nil, badger.ErrKeyNotFound
 	}
 	utxoBytes, err := utxo[0].MarshalBinary()
 	if err != nil {
