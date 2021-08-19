@@ -2,10 +2,10 @@ package monitor
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
 
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -33,36 +33,12 @@ type Database interface {
 }
 
 type monitorDB struct {
-	database *badger.DB
+	database *db.Database
 	logger   *logrus.Entry
 }
 
 // NewDatabase initializes a new monitor database
-func NewDatabase(ctx context.Context, directoryName string, inMemory bool) Database {
-
-	logger := logging.GetLogger("monitor").WithField("Component", "database")
-
-	logger.Infof("Opening badger DB... In-Memory:%v Directory:%v", inMemory, directoryName)
-
-	opts := badger.DefaultOptions(directoryName).WithInMemory(inMemory)
-	opts.Logger = logger
-
-	db, err := badger.Open(opts)
-	if err != nil {
-		logger.Panicf("Could not open database: %v", err)
-	}
-
-	go func() {
-		defer db.Close()
-		<-ctx.Done()
-	}()
-
-	return &monitorDB{
-		logger:   logger,
-		database: db}
-}
-
-func NewDatabaseFromExisting(db *badger.DB) Database {
+func NewDatabase(db *db.Database) Database {
 	logger := logging.GetLogger("monitor").WithField("Component", "database")
 	return &monitorDB{
 		logger:   logger,

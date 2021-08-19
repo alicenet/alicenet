@@ -159,12 +159,12 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 	events := objects.NewEventMap()
 
-	monitor.SetupEventMap(events, nil, nil, adminHandler)
+	monitor.SetupEventMap(events, nil, adminHandler, nil)
 
 	var done bool
 
 	for !done {
-		err := monitor.MonitorTick(ctx, wg, eth, monitorState, logger, events, schedule, adminHandler)
+		err := monitor.MonitorTick(ctx, wg, eth, monitorState, logger, events, adminHandler, 10)
 		assert.Nil(t, err)
 
 		time.Sleep(time.Second)
@@ -174,6 +174,12 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		// 2) past the point when we possibly could. This means we aborted somewhere along the way and failed DKG
 		dkgState.RLock()
 		done = dkgState.Complete || (dkgState.CompleteEnd > 0 && monitorState.HighestBlockProcessed >= dkgState.CompleteEnd)
+		logger.WithFields(logrus.Fields{
+			"Complete":              dkgState.Complete,
+			"CompleteEnd":           dkgState.CompleteEnd,
+			"HighestBlockProcessed": monitorState.HighestBlockProcessed,
+			"Done":                  done,
+		}).Info("Completion check")
 		dkgState.RUnlock()
 	}
 

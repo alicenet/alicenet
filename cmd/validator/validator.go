@@ -29,7 +29,6 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
 	"github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/rbus"
 	"github.com/MadBase/MadNet/status"
 	mnutils "github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -190,7 +189,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txnDb.Close()
 
 	// Open monitor database
-	rawMonDb, err := mnutils.OpenBadger(
+	monitorDb, err := mnutils.OpenBadger(
 		nodeCtx.Done(),
 		monitorDbPath,
 		monitorDbInMemory,
@@ -198,8 +197,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	defer rawMonDb.Close()
-	monitorDb := monitor.NewDatabaseFromExisting(rawMonDb)
+	defer monitorDb.Close()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -208,6 +206,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	inboundRPCDispatch := proto.NewInboundRPCDispatch()
 	stateRPCDispatch := proto.NewLocalStateDispatch()
 	conDB := &db.Database{}
+	monDB := &db.Database{}
 	pool := &evidence.Pool{}
 	app := &application.Application{}
 	ah := &admin.Handlers{}
@@ -231,6 +230,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// Initialize consensus database
 	if err := conDB.Init(stateDb); err != nil {
+		panic(err)
+	}
+
+	// Initialize monitor database
+	if err = monDB.Init(monitorDb); err != nil {
 		panic(err)
 	}
 
@@ -323,16 +327,16 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	registerTasks()
 
 	// Setup Request Bus Services
-	svcs := monitor.NewServices(eth, conDB, dph, ah, batchSize)
+	// svcs := monitor.NewServices(eth, conDB, dph, ah, batchSize)
 
 	// Setup Request Bus
-	mb, err := monitor.NewBus(rbus.NewRBus(), svcs)
-	if err != nil {
-		panic(err)
-	}
+	// mb, err := monitor.NewBus(rbus.NewRBus(), svcs)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// Setup monitor
-	mon, err := monitor.NewMonitor(monitorDb, mb, ah, monitorInterval, oneHour)
+	mon, err := monitor.NewMonitor(monDB, ah, dph, eth, monitorInterval, oneHour, uint64(batchSize))
 	if err != nil {
 		panic(err)
 	}
@@ -346,7 +350,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		tDB = nil
 	}
 	if monitorDbInMemory {
-		mDB = rawMonDb
+		mDB = monitorDb
 	} else {
 		mDB = nil
 	}
@@ -407,14 +411,14 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	monitorCancelChan, err := mon.StartEventLoop(eth.GetDefaultAccount())
+	err = mon.Start()
 	if err != nil {
 		panic(err)
 	}
-	defer func() { monitorCancelChan <- true }()
+	defer mon.Close()
 
-	mb.StartLoop()
-	defer mb.StopLoop()
+	// mb.StartLoop()
+	// defer mb.StopLoop()
 
 	go peerManager.Start()
 	defer peerManager.Close()

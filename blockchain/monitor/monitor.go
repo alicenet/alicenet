@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strings"
 	"sync"
@@ -17,7 +16,6 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -33,8 +31,8 @@ var (
 // Monitor describes required functionality to monitor Ethereum
 type Monitor interface {
 	Start() error
-	Stop()
-	StartEventLoop(accounts.Account) (chan<- bool, error)
+	Close()
+	// Start(accounts.Account) (chan<- bool, error)
 	GetStatus() <-chan string
 }
 
@@ -42,23 +40,36 @@ type monitor struct {
 	adminHandler   interfaces.AdminHandler
 	depositHandler interfaces.DepositHandler
 	eth            interfaces.Ethereum
-	consensusDB    *db.Database
-	monitorDB      Database
+	eventMap       *objects.EventMap
+	db             Database
 	tickInterval   time.Duration
 	timeout        time.Duration
-	logger         *logrus.Logger
+	logger         *logrus.Entry
 	cancelChan     chan bool
 	statusChan     chan string
 	typeRegistry   *objects.TypeRegistry
 	state          *objects.MonitorState
+	wg             sync.WaitGroup
+	batchSize      uint64
 }
 
 // NewMonitor creates a new Monitor
-func NewMonitor(consensusDB *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, eth interfaces.Ethereum, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
+func NewMonitor(db *db.Database,
+	adminHandler interfaces.AdminHandler,
+	depositHandler interfaces.DepositHandler,
+	eth interfaces.Ethereum,
+	tickInterval time.Duration,
+	timeout time.Duration,
+	batchSize uint64) (Monitor, error) {
 
-	logger := logging.GetLogger("monitor")
+	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
+		"Interval": tickInterval.String(),
+		"Timeout":  timeout.String(),
+	})
 
 	rand.Seed(time.Now().UnixNano())
+
+	monitorDB := NewDatabase(db)
 
 	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
@@ -76,7 +87,7 @@ func NewMonitor(consensusDB *db.Database, adminHandler interfaces.AdminHandler, 
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, consensusDB, adminHandler, depositHandler)
+	err := SetupEventMap(eventMap, db, adminHandler, depositHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +100,8 @@ func NewMonitor(consensusDB *db.Database, adminHandler interfaces.AdminHandler, 
 		adminHandler:   adminHandler,
 		depositHandler: depositHandler,
 		eth:            eth,
-		consensusDB:    consensusDB,
+		eventMap:       eventMap,
+		db:             monitorDB,
 		typeRegistry:   tr,
 		logger:         logger,
 		tickInterval:   tickInterval,
@@ -97,6 +109,8 @@ func NewMonitor(consensusDB *db.Database, adminHandler interfaces.AdminHandler, 
 		cancelChan:     make(chan bool, 1),
 		statusChan:     make(chan string, 1),
 		state:          state,
+		wg:             sync.WaitGroup{},
+		batchSize:      batchSize,
 	}, nil
 
 }
@@ -105,37 +119,37 @@ func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
 
-func (mon *monitor) Start() error {
+// func (mon *monitor) Start() error {
 
-	mon.logger.WithFields(logrus.Fields{
-		"s": "f",
-	}).Info("Starting event loop")
+// 	mon.logger.WithFields(logrus.Fields{
+// 		"s": "f",
+// 	}).Info("Starting event loop")
 
-	return nil
-}
+// 	return nil
+// }
 
-func (mon *monitor) Stop() {
+func (mon *monitor) Close() {
 	mon.cancelChan <- true
 }
 
-// StartEventLoop starts the event loop
-func (mon *monitor) StartEventLoop(acct accounts.Account) (chan<- bool, error) {
+// Start starts the event loop
+func (mon *monitor) Start() error {
 
 	logger := mon.logger
 
 	// Load or create initial state
 	logger.Info(strings.Repeat("-", 80))
-	initialState, err := mon.database.FindState()
+	initialState, err := mon.db.FindState()
 	if err != nil {
 		logger.Warnf("could not find previous state: %v", err)
 		if err != badger.ErrKeyNotFound {
-			return nil, err
+			return err
 		}
 
 		logger.Info("Setting initial state to defaults...")
 		startingBlock := config.Configuration.Ethereum.StartingBlock
 		schedule := NewSequentialSchedule(mon.typeRegistry, mon.adminHandler)
-		dkgState := objects.NewDkgState(acct)
+		dkgState := objects.NewDkgState(mon.eth.GetDefaultAccount())
 
 		initialState = objects.NewMonitorState(dkgState, schedule)
 		initialState.HighestBlockFinalized = uint64(startingBlock)
@@ -150,23 +164,30 @@ func (mon *monitor) StartEventLoop(acct accounts.Account) (chan<- bool, error) {
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
 	logger.Info(strings.Repeat("-", 80))
 
-	cancelChan := make(chan bool)
-	go mon.eventLoop(initialState, cancelChan)
+	mon.cancelChan = make(chan bool)
+	mon.wg.Add(1)
+	go mon.eventLoop(&mon.wg, logger, initialState, mon.cancelChan)
 
-	return cancelChan, nil
+	return nil
 }
 
-func (mon *monitor) eventLoop(state *objects.MonitorState, cancelChan <-chan bool) error {
+func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorState *objects.MonitorState, cancelChan <-chan bool) error {
+
+	defer wg.Done()
 
 	done := false
 	for !done {
 		select {
 		case done = <-cancelChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
-		case tick := <-time.After(500 * time.Millisecond):
-			err := mon.eventLoopTick(state, tick, done)
-			if err != nil {
-				mon.logger.Warnf("Error occurred: %v", err)
+		case tick := <-time.After(mon.tickInterval):
+			mon.logger.WithTime(tick).Debug("Tick")
+
+			ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
+			defer cf()
+
+			if err := MonitorTick(ctx, wg, mon.eth, monitorState, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
+				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 		}
 	}
@@ -174,50 +195,53 @@ func (mon *monitor) eventLoop(state *objects.MonitorState, cancelChan <-chan boo
 	return nil
 }
 
-func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, shutdownRequested bool) error {
+// func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, shutdownRequested bool) error {
 
-	logger := mon.logger
+// 	logger := mon.logger
 
-	// Make a backup of state to monitor for changes
-	originalState := state.Clone()
+// 	// Make a backup of state to monitor for changes
+// 	originalState := state.Clone()
 
-	// Every tick we request events be processed and we require it doesn't overlap with the next
-	resp, err := mon.bus.Request(SvcWatchEthereum, mon.timeout, state)
-	if err != nil {
-		logger.Warnf("Could not request SvcWatchEthereum: %v", err)
-		return err
-	}
+// 	// Every tick we request events be processed and we require it doesn't overlap with the next
+// 	resp, err := mon.bus.Request(SvcWatchEthereum, mon.timeout, state)
+// 	if err != nil {
+// 		logger.Warnf("Could not request SvcWatchEthereum: %v", err)
+// 		return err
+// 	}
 
-	select {
-	case responseValue := <-resp.Response():
-		switch value := responseValue.(type) {
-		case *objects.MonitorState:
-			diff := originalState.Diff(state)
-			if len(diff) > 0 {
-				select {
-				case mon.statusChan <- fmt.Sprintf("State \xce\x94 %v", diff):
-				default:
-				}
-				mon.database.UpdateState(value)
-			}
-			return nil
-		case error:
-			logger.Warnf("SvcWatchEthereum() : %v", value)
-		default:
-			logger.Errorf("SvcWatchEthereum() invalid return type: %v", value)
-		}
-	case to := <-resp.Timeout():
-		logger.Warnf("SvcWatchEthereum() : Timeout %v", to)
-	}
+// 	select {
+// 	case responseValue := <-resp.Response():
+// 		switch value := responseValue.(type) {
+// 		case *objects.MonitorState:
+// 			diff := originalState.Diff(state)
+// 			if len(diff) > 0 {
+// 				select {
+// 				case mon.statusChan <- fmt.Sprintf("State \xce\x94 %v", diff):
+// 				default:
+// 				}
+// 				mon.database.UpdateState(value)
+// 			}
+// 			return nil
+// 		case error:
+// 			logger.Warnf("SvcWatchEthereum() : %v", value)
+// 		default:
+// 			logger.Errorf("SvcWatchEthereum() invalid return type: %v", value)
+// 		}
+// 	case to := <-resp.Timeout():
+// 		logger.Warnf("SvcWatchEthereum() : Timeout %v", to)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
 func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, schedule interfaces.Schedule, adminHandler interfaces.AdminHandler) error {
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
+
+	logger.WithField("Method", "MonitorTick").Infof("Tick state %p", monitorState)
 
 	c := eth.Contracts()
+	schedule := monitorState.Schedule
 
 	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
 
@@ -252,13 +276,16 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 
 	// 3. Grab up to the next _batch size_ unprocessed block(s)
 	processed := monitorState.HighestBlockProcessed
+	if processed >= finalized {
+		return nil
+	}
 
 	lastBlock := uint64(0)
 	remaining := finalized - processed
-	if remaining <= 1000 {
+	if remaining <= batchSize {
 		lastBlock = processed + remaining
 	} else {
-		lastBlock = processed + 1000
+		lastBlock = processed + batchSize
 	}
 
 	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
@@ -302,10 +329,8 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 			task, _ := schedule.Retrieve(uuid)
 			log := logEntry.WithField("TaskID", uuid.String())
 
-			var wg sync.WaitGroup
-
 			wg.Add(1)
-			tasks.StartTask(log, &wg, eth, task)
+			tasks.StartTask(log, wg, eth, task)
 
 			schedule.Remove(uuid)
 		} else if err == ErrNothingScheduled {
@@ -325,4 +350,40 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	monitorState.HighestBlockProcessed = processed
 
 	return nil
+}
+
+// EndpointInSync Checks if our endpoint is good to use
+// -- This function is different. Because we need to be aware of errors, state is always updated
+func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) (bool, uint32, error) {
+
+	// Default to assuming everything is awful
+	inSync := false
+	peerCount := uint32(0)
+
+	// Check if the endpoint is itself still syncing
+	syncing, progress, err := eth.GetSyncProgress()
+	if err != nil {
+		logger.Warnf("Could not check if Ethereum endpoint it still syncing: %v", err)
+		return inSync, peerCount, err
+	}
+
+	if syncing && progress != nil {
+		logger.Debugf("Ethereum endpoint syncing... at block %v of %v.",
+			progress.CurrentBlock, progress.HighestBlock)
+	}
+
+	inSync = !syncing
+
+	peerCount64, err := eth.GetPeerCount(ctx)
+	if err != nil {
+		return inSync, peerCount, err
+	}
+	peerCount = uint32(peerCount64)
+
+	// TODO Remove direct reference to config. Specific values should be passed in.
+	if inSync && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+		inSync = true
+	}
+
+	return inSync, peerCount, err
 }

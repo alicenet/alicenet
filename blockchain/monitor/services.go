@@ -7,7 +7,6 @@ import (
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
@@ -52,49 +51,13 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 	}
 
 	// Register handlers for known events, if this failed we really can't continue
-	if err := SetupEventMap(svcs.eventMap, svcs.consensusDb, dph, ah); err != nil {
+	if err := SetupEventMap(svcs.eventMap, svcs.consensusDb, ah, dph); err != nil {
 		panic(err)
 	}
 
 	ah.RegisterSnapshotCallback(svcs.PersistSnapshot) // HUNTER: moved out of main func and into constructor
 
 	return svcs
-}
-
-// EndpointInSync Checks if our endpoint is good to use
-// -- This function is different. Because we need to be aware of errors, state is always updated
-func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) (bool, uint32, error) {
-
-	// Default to assuming everything is awful
-	inSync := false
-	peerCount := uint32(0)
-
-	// Check if the endpoint is itself still syncing
-	syncing, progress, err := eth.GetSyncProgress()
-	if err != nil {
-		logger.Warnf("Could not check if Ethereum endpoint it still syncing: %v", err)
-		return inSync, peerCount, err
-	}
-
-	if syncing && progress != nil {
-		logger.Debugf("Ethereum endpoint syncing... at block %v of %v.",
-			progress.CurrentBlock, progress.HighestBlock)
-	}
-
-	inSync = !syncing
-
-	peerCount64, err := eth.GetPeerCount(ctx)
-	if err != nil {
-		return inSync, peerCount, err
-	}
-	peerCount = uint32(peerCount64)
-
-	// TODO Remove direct reference to config. Specific values should be passed in.
-	if inSync && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
-		inSync = true
-	}
-
-	return inSync, peerCount, err
 }
 
 // UpdateProgress updates what we know of Ethereum chain height
@@ -106,6 +69,10 @@ func (svcs *Services) UpdateProgress(ctx context.Context, state *objects.Monitor
 
 	// Only updated single attribute so no need to copy -- Not sure if check is required
 	state.HighestBlockFinalized = height
+	return nil
+}
+
+func (svcs *Services) AccuseDoubleProposal() error {
 	return nil
 }
 
