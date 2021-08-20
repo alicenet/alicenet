@@ -173,14 +173,14 @@ func (ce *Engine) doPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node must have cast a preVote to get here
 	// count the prevotes and prevote nils
-	pvl, _, err := rs.GetCurrentPreVotes()
+	pvl, pvnl, err := rs.GetCurrentPreVotes()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	// if we have enough prevotes, cast a precommit
 	// this will update the locked value
 	if len(pvl) >= rs.GetCurrentThreshold() {
@@ -201,7 +201,6 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node must have cast a preVote nil
 	// count the preVotes and prevote nils
 	pvl, pvnl, err := rs.GetCurrentPreVotes()
@@ -209,6 +208,7 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		p, err := pvl.GetProposal()
 		if err != nil {
@@ -239,7 +239,6 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	// prevote timeout hit with no clear consensus in either direction
@@ -250,6 +249,7 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	// if we have prevote consensus now
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		// if we preVoted for the proposal then preCommit
@@ -299,14 +299,14 @@ func (ce *Engine) doPreCommitStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node cast a precommit this round
 	// count the precommits
-	pcl, _, err := rs.GetCurrentPreCommits()
+	pcl, pcnl, err := rs.GetCurrentPreCommits()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if we have consensus and can verify
 	// cast the nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -335,7 +335,6 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node cast a precommit nil this round
 	// count the precommits
 	pcl, pcnl, err := rs.GetCurrentPreCommits()
@@ -343,6 +342,7 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if we have a preCommit consensus,
 	// move directly to next height
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -381,7 +381,6 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	// the precommit timeout has been hit
@@ -391,6 +390,7 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if greater than threshold precommits,
 	// use our own precommit if we did a precommit this round
 	// if not use a random precommit. This is safe due to
@@ -464,15 +464,15 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// count the precommit messages from this round
-	pcl, _, err := rs.GetCurrentPreCommits()
+	pcl, pcnl, err := rs.GetCurrentPreCommits()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	// check for enough preCommits in current round to cast nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
+		ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 		p, err := pcl.GetProposal()
 		if err != nil {
 			return err
@@ -501,11 +501,12 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 		}
 	}
 	// last of all count next round messages from this round only
-	_, nrl, err := rs.GetCurrentNext()
+	nhl, nrl, err := rs.GetCurrentNext()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   NH:%v   NR:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl), len(nrl))
 
 	// form a new round cert if we have enough
 	if len(nrl) >= rs.GetCurrentThreshold() {
@@ -602,7 +603,7 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 	// if we can just jump up to this height, do so.
 	// if the height is only one more, we can simply move to this
 	// height if everything looks okay
-	if rcert.RClaims.Height <= rs.Height()+1 {
+	if rcert.RClaims.Height == rs.OwnState.SyncToBH.BClaims.Height+1 {
 		// if we have a valid value, check if the valid value
 		// matches the previous blockhash of block n+1
 		// if so, form the block and jump up to this level

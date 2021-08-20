@@ -10,7 +10,8 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/middleware"
 	pb "github.com/MadBase/MadNet/proto"
-	"github.com/guiguan/caster"
+	"github.com/MadBase/MadNet/utils"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -100,10 +101,9 @@ type GetSnapShotHdrNodeResponse struct {
 }
 
 type GossipTransactionMessage struct {
-	ctx   context.Context
-	req   *pb.GossipTransactionMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipTransactionAck
+	ctx  context.Context
+	req  *pb.GossipTransactionMessage
+	opts []grpc.CallOption
 }
 
 type GossipTransactionAck struct {
@@ -112,10 +112,9 @@ type GossipTransactionAck struct {
 }
 
 type GossipProposalMessage struct {
-	ctx   context.Context
-	req   *pb.GossipProposalMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipProposalAck
+	ctx  context.Context
+	req  *pb.GossipProposalMessage
+	opts []grpc.CallOption
 }
 
 type GossipProposalAck struct {
@@ -124,10 +123,9 @@ type GossipProposalAck struct {
 }
 
 type GossipPreVoteMessage struct {
-	ctx   context.Context
-	req   *pb.GossipPreVoteMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipPreVoteAck
+	ctx  context.Context
+	req  *pb.GossipPreVoteMessage
+	opts []grpc.CallOption
 }
 
 type GossipPreVoteAck struct {
@@ -136,10 +134,9 @@ type GossipPreVoteAck struct {
 }
 
 type GossipPreVoteNilMessage struct {
-	ctx   context.Context
-	req   *pb.GossipPreVoteNilMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipPreVoteNilAck
+	ctx  context.Context
+	req  *pb.GossipPreVoteNilMessage
+	opts []grpc.CallOption
 }
 
 type GossipPreVoteNilAck struct {
@@ -148,10 +145,9 @@ type GossipPreVoteNilAck struct {
 }
 
 type GossipPreCommitMessage struct {
-	ctx   context.Context
-	req   *pb.GossipPreCommitMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipPreCommitAck
+	ctx  context.Context
+	req  *pb.GossipPreCommitMessage
+	opts []grpc.CallOption
 }
 
 type GossipPreCommitAck struct {
@@ -160,10 +156,9 @@ type GossipPreCommitAck struct {
 }
 
 type GossipPreCommitNilMessage struct {
-	ctx   context.Context
-	req   *pb.GossipPreCommitNilMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipPreCommitNilAck
+	ctx  context.Context
+	req  *pb.GossipPreCommitNilMessage
+	opts []grpc.CallOption
 }
 
 type GossipPreCommitNilAck struct {
@@ -172,10 +167,9 @@ type GossipPreCommitNilAck struct {
 }
 
 type GossipNextRoundMessage struct {
-	ctx   context.Context
-	req   *pb.GossipNextRoundMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipNextRoundAck
+	ctx  context.Context
+	req  *pb.GossipNextRoundMessage
+	opts []grpc.CallOption
 }
 
 type GossipNextRoundAck struct {
@@ -184,10 +178,9 @@ type GossipNextRoundAck struct {
 }
 
 type GossipNextHeightMessage struct {
-	ctx   context.Context
-	req   *pb.GossipNextHeightMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipNextHeightAck
+	ctx  context.Context
+	req  *pb.GossipNextHeightMessage
+	opts []grpc.CallOption
 }
 
 type GossipNextHeightAck struct {
@@ -196,10 +189,9 @@ type GossipNextHeightAck struct {
 }
 
 type GossipBlockHeaderMessage struct {
-	ctx   context.Context
-	req   *pb.GossipBlockHeaderMessage
-	opts  []grpc.CallOption
-	rChan chan *GossipBlockHeaderAck
+	ctx  context.Context
+	req  *pb.GossipBlockHeaderMessage
+	opts []grpc.CallOption
 }
 
 type GossipBlockHeaderAck struct {
@@ -219,16 +211,20 @@ type GetPeersResponse struct {
 	err  error
 }
 
-func NewP2PBus(client interfaces.P2PClient, reqChan <-chan interface{}, gossipChan <-chan interface{}, closeChan <-chan struct{}, reqCount int, gossipCount int) *P2PBus {
+// NewP2PBus binds a peer to the common work sharing and broadcast channels of
+// the peer system.
+func newP2PBus(client interfaces.P2PClient, reqChan <-chan interface{}, gossipChan <-chan interface{}, gossipTxChan <-chan interface{}, closeChan <-chan struct{}, reqCount int, gossipCount int, gossipTxCount int, cleanup func()) *P2PBus {
 	p2p := &P2PBus{
 		client:            client,
 		reqChan:           reqChan,
 		gossipChan:        gossipChan,
+		gossipTxChan:      gossipTxChan,
 		closeChan:         closeChan,
 		maxRequestWorkers: reqCount,
 		metricChan:        make(chan error, reqCount),
 		workerKillChan:    make(chan struct{}),
 		logger:            logging.GetLogger(constants.LoggerPeerMan),
+		cleanup:           cleanup,
 	}
 	p2p.numWorkers++
 	go p2p.reqWorker()
@@ -237,7 +233,11 @@ func NewP2PBus(client interfaces.P2PClient, reqChan <-chan interface{}, gossipCh
 	for i := 0; i < gossipCount; i++ {
 		go p2p.gossipWorker()
 	}
+	for i := 0; i < gossipTxCount; i++ {
+		go p2p.gossipTxWorker()
+	}
 	go p2p.workerOversight()
+	go p2p.cleaner()
 	return p2p
 }
 
@@ -268,6 +268,7 @@ type P2PBus struct {
 	client            interfaces.P2PClient
 	reqChan           <-chan interface{}
 	gossipChan        <-chan interface{}
+	gossipTxChan      <-chan interface{}
 	closeChan         <-chan struct{}
 	maxRequestWorkers int
 	minRequestWorkers int
@@ -277,6 +278,13 @@ type P2PBus struct {
 	numWorkers        int
 	backoff           int
 	logger            *logrus.Logger
+	cleanup           func()
+}
+
+func (p2p *P2PBus) cleaner() {
+	<-p2p.closeChan
+	p2p.cleanup()
+	<-time.After(6 * constants.MsgTimeout)
 }
 
 // TODO: add additional logic that allows better introspection
@@ -363,6 +371,18 @@ func (p2p *P2PBus) gossipWorker() {
 		case <-p2p.closeChan:
 			return
 		case msg := <-p2p.gossipChan:
+			p2p.dispatch(msg)
+		}
+	}
+}
+
+func (p2p *P2PBus) gossipTxWorker() {
+	p2p.logger.Debugf("Starting gossipTx worker for peer %v", p2p.client.NodeAddr())
+	for {
+		select {
+		case <-p2p.closeChan:
+			return
+		case msg := <-p2p.gossipTxChan:
 			p2p.dispatch(msg)
 		}
 	}
@@ -455,131 +475,116 @@ func (p2p *P2PBus) dispatch(obj interface{}) {
 			return
 		}
 	case *GossipTransactionMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipTransaction(ctx, req.req, req.opts...)
-		req.rChan <- &GossipTransactionAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipTransaction(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipProposalMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipProposal(ctx, req.req, req.opts...)
-		req.rChan <- &GossipProposalAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipProposal(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipPreVoteMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipPreVote(ctx, req.req, req.opts...)
-		req.rChan <- &GossipPreVoteAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipPreVote(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipPreVoteNilMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipPreVoteNil(ctx, req.req, req.opts...)
-		req.rChan <- &GossipPreVoteNilAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipPreVoteNil(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipPreCommitMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipPreCommit(ctx, req.req, req.opts...)
-		req.rChan <- &GossipPreCommitAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipPreCommit(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipPreCommitNilMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipPreCommitNil(ctx, req.req, req.opts...)
-		req.rChan <- &GossipPreCommitNilAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipPreCommitNil(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipNextRoundMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipNextRound(ctx, req.req, req.opts...)
-		req.rChan <- &GossipNextRoundAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipNextRound(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipNextHeightMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipNextHeight(ctx, req.req, req.opts...)
-		req.rChan <- &GossipNextHeightAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipNextHeight(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GossipBlockHeaderMessage:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
-		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
+		opts := []grpc.CallOption{
+			grpc_retry.WithPerRetryTimeout(constants.MsgTimeout),
+			grpc_retry.WithMax(3),
+		}
+		ctx, cf := context.WithTimeout(req.ctx, 3*constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GossipBlockHeader(ctx, req.req, req.opts...)
-		req.rChan <- &GossipBlockHeaderAck{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
+		_, err := p2p.client.GossipBlockHeader(ctx, req.req, opts...)
+		if err != nil {
+			utils.DebugTrace(p2p.logger, err)
 		}
 	case *GetPeersRequest:
-		middleware.SetPeer(&p2PBus{p2p.client, p2p}, req.opts...)
 		ctx, cf := context.WithTimeout(req.ctx, constants.MsgTimeout)
 		defer cf()
-		r, err := p2p.client.GetPeers(ctx, req.req, req.opts...)
+		r, err := p2p.client.GetPeers(ctx, req.req)
 		req.rChan <- &GetPeersResponse{r, err}
-		select {
-		case p2p.metricChan <- err:
-			return
-		case <-p2p.closeChan:
-			return
-		}
 	}
 }
 
 type P2PClient struct {
 	reqChan      chan interface{}
-	gossipPubSub *caster.Caster
+	gossipChan   chan interface{}
+	gossipTxChan chan interface{}
 }
 
 func (p2p *P2PClient) Status(ctx context.Context, in *pb.StatusRequest, opts ...grpc.CallOption) (*pb.StatusResponse, error) {
@@ -592,17 +597,9 @@ func (p2p *P2PClient) Status(ctx context.Context, in *pb.StatusRequest, opts ...
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetBlockHeaders(ctx context.Context, in *pb.GetBlockHeadersRequest, opts ...grpc.CallOption) (*pb.GetBlockHeadersResponse, error) {
@@ -615,17 +612,9 @@ func (p2p *P2PClient) GetBlockHeaders(ctx context.Context, in *pb.GetBlockHeader
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetMinedTxs(ctx context.Context, in *pb.GetMinedTxsRequest, opts ...grpc.CallOption) (*pb.GetMinedTxsResponse, error) {
@@ -638,17 +627,9 @@ func (p2p *P2PClient) GetMinedTxs(ctx context.Context, in *pb.GetMinedTxsRequest
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetPendingTxs(ctx context.Context, in *pb.GetPendingTxsRequest, opts ...grpc.CallOption) (*pb.GetPendingTxsResponse, error) {
@@ -661,17 +642,9 @@ func (p2p *P2PClient) GetPendingTxs(ctx context.Context, in *pb.GetPendingTxsReq
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetSnapShotNode(ctx context.Context, in *pb.GetSnapShotNodeRequest, opts ...grpc.CallOption) (*pb.GetSnapShotNodeResponse, error) {
@@ -684,17 +657,9 @@ func (p2p *P2PClient) GetSnapShotNode(ctx context.Context, in *pb.GetSnapShotNod
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetSnapShotStateData(ctx context.Context, in *pb.GetSnapShotStateDataRequest, opts ...grpc.CallOption) (*pb.GetSnapShotStateDataResponse, error) {
@@ -707,17 +672,9 @@ func (p2p *P2PClient) GetSnapShotStateData(ctx context.Context, in *pb.GetSnapSh
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetSnapShotHdrNode(ctx context.Context, in *pb.GetSnapShotHdrNodeRequest, opts ...grpc.CallOption) (*pb.GetSnapShotHdrNodeResponse, error) {
@@ -730,17 +687,9 @@ func (p2p *P2PClient) GetSnapShotHdrNode(ctx context.Context, in *pb.GetSnapShot
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GetPeers(ctx context.Context, in *pb.GetPeersRequest, opts ...grpc.CallOption) (*pb.GetPeersResponse, error) {
@@ -753,134 +702,126 @@ func (p2p *P2PClient) GetPeers(ctx context.Context, in *pb.GetPeersRequest, opts
 			return nil, middleware.ErrWouldBlock
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case p2p.reqChan <- req:
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
-	}
+	p2p.reqChan <- req
+	r := <-rchan
+	return r.resp, r.err
 }
 
 func (p2p *P2PClient) GossipTransaction(ctx context.Context, in *pb.GossipTransactionMessage, opts ...grpc.CallOption) (*pb.GossipTransactionAck, error) {
-	rchan := make(chan *GossipTransactionAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipTransactionMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipTransactionMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipTxChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipTxChan <- req
+	return &pb.GossipTransactionAck{}, nil
 }
 
 func (p2p *P2PClient) GossipProposal(ctx context.Context, in *pb.GossipProposalMessage, opts ...grpc.CallOption) (*pb.GossipProposalAck, error) {
-	rchan := make(chan *GossipProposalAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipProposalMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipProposalMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipProposalAck{}, nil
 }
 
 func (p2p *P2PClient) GossipPreVote(ctx context.Context, in *pb.GossipPreVoteMessage, opts ...grpc.CallOption) (*pb.GossipPreVoteAck, error) {
-	rchan := make(chan *GossipPreVoteAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipPreVoteMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipPreVoteMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipPreVoteAck{}, nil
 }
 
 func (p2p *P2PClient) GossipPreVoteNil(ctx context.Context, in *pb.GossipPreVoteNilMessage, opts ...grpc.CallOption) (*pb.GossipPreVoteNilAck, error) {
-	rchan := make(chan *GossipPreVoteNilAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipPreVoteNilMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipPreVoteNilMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipPreVoteNilAck{}, nil
 }
 
 func (p2p *P2PClient) GossipPreCommit(ctx context.Context, in *pb.GossipPreCommitMessage, opts ...grpc.CallOption) (*pb.GossipPreCommitAck, error) {
-	rchan := make(chan *GossipPreCommitAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipPreCommitMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipPreCommitMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipPreCommitAck{}, nil
 }
 
 func (p2p *P2PClient) GossipPreCommitNil(ctx context.Context, in *pb.GossipPreCommitNilMessage, opts ...grpc.CallOption) (*pb.GossipPreCommitNilAck, error) {
-	rchan := make(chan *GossipPreCommitNilAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipPreCommitNilMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipPreCommitNilMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipPreCommitNilAck{}, nil
 }
 
 func (p2p *P2PClient) GossipNextRound(ctx context.Context, in *pb.GossipNextRoundMessage, opts ...grpc.CallOption) (*pb.GossipNextRoundAck, error) {
-	rchan := make(chan *GossipNextRoundAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipNextRoundMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipNextRoundMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipNextRoundAck{}, nil
 }
 
 func (p2p *P2PClient) GossipNextHeight(ctx context.Context, in *pb.GossipNextHeightMessage, opts ...grpc.CallOption) (*pb.GossipNextHeightAck, error) {
-	rchan := make(chan *GossipNextHeightAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipNextHeightMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipNextHeightMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipNextHeightAck{}, nil
 }
 
 func (p2p *P2PClient) GossipBlockHeader(ctx context.Context, in *pb.GossipBlockHeaderMessage, opts ...grpc.CallOption) (*pb.GossipBlockHeaderAck, error) {
-	rchan := make(chan *GossipBlockHeaderAck, 1)
-	if !p2p.gossipPubSub.TryPub(&GossipBlockHeaderMessage{ctx, in, opts, rchan}) {
-		return nil, ErrWouldBlock
-	}
+	req := &GossipBlockHeaderMessage{ctx, in, opts}
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-rchan:
-		return r.resp, r.err
+	case p2p.gossipChan <- req:
+	default:
+		if !middleware.CanBlock(opts...) {
+			return nil, ErrWouldBlock
+		}
 	}
+	p2p.gossipChan <- req
+	return &pb.GossipBlockHeaderAck{}, nil
 }
 
 var ErrWouldBlock = errors.New("unable to broadcast due to blocking")

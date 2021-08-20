@@ -15,7 +15,6 @@ import (
 	"github.com/MadBase/MadNet/transport"
 	"github.com/MadBase/MadNet/types"
 	"github.com/MadBase/MadNet/utils"
-	"github.com/guiguan/caster"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +42,10 @@ type PeerManager struct {
 	fireWallMode             bool
 	fireWallHost             interfaces.NodeAddr
 	peeringComplete          bool
-	gossipPubSub             *caster.Caster
+	gossipMap                map[string]chan interface{}
+	gossipTxMap              map[string]chan interface{}
+	gossipChan               chan interface{}
+	gossipTxChan             chan interface{}
 	reqChan                  chan interface{}
 	upnpMapper               *transport.UPnPMapper
 }
@@ -125,7 +127,10 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		return nil, err
 	}
 	pm.reqChan = make(chan interface{}, pLimMax)
-	pm.gossipPubSub = caster.New(nil)
+	pm.gossipChan = make(chan interface{}, 8)
+	pm.gossipTxChan = make(chan interface{}, ((pLimMax - pLimMin) / 2))
+	pm.gossipMap = make(map[string]chan interface{})
+	pm.gossipTxMap = make(map[string]chan interface{})
 	return pm, nil
 }
 
@@ -133,10 +138,75 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 func (ps *PeerManager) Start() {
 	go ps.runDiscoveryLoops()
 	go ps.acceptLoop()
+	go ps.gossipLoop()
+	go ps.gossipTxLoop()
 	if ps.upnpMapper != nil {
 		go ps.upnpMapper.Start()
 	}
 	<-ps.CloseChan()
+}
+
+type peerChan chan interface{}
+type chanList []chan interface{}
+type chanMap map[string]chan interface{}
+
+func (ps *PeerManager) getPeerChans(cmap chanMap) chanList {
+	chans := []chan interface{}{}
+	ps.Lock()
+	defer ps.Unlock()
+	for _, peer := range cmap {
+		p := peer
+		chans = append(chans, p)
+	}
+	return chans
+}
+
+func (ps *PeerManager) sendOnPeerChans(obj interface{}, chans chanList) {
+	for i := 0; i < len(chans); i++ {
+		j := i
+		go func() {
+			select {
+			case chans[j] <- obj:
+			case <-time.After(constants.MsgTimeout):
+			}
+		}()
+	}
+}
+
+func (ps *PeerManager) drainPeerChans(obj interface{}, chans chanList, source peerChan) {
+	for {
+		select {
+		case obj := <-source:
+			go ps.sendOnPeerChans(obj, chans)
+		default:
+			return
+		}
+	}
+}
+
+func (ps *PeerManager) peerGossipLoop(source peerChan, cmap chanMap) {
+	for {
+		select {
+		case <-ps.CloseChan():
+			return
+		case obj := <-source:
+			chans := ps.getPeerChans(cmap)
+			go ps.sendOnPeerChans(obj, chans)
+			ps.drainPeerChans(obj, chans, source)
+		}
+	}
+}
+
+func (ps *PeerManager) gossipLoop() {
+	source := ps.gossipChan
+	cmap := ps.gossipMap
+	ps.peerGossipLoop(source, cmap)
+}
+
+func (ps *PeerManager) gossipTxLoop() {
+	source := ps.gossipTxChan
+	cmap := ps.gossipTxMap
+	ps.peerGossipLoop(source, cmap)
 }
 
 // isMe verifies returns true if the public key of the node addr is the same
@@ -251,19 +321,32 @@ func (ps *PeerManager) handleP2P(conn interfaces.P2PConn) {
 		}
 		return
 	}
-	gossipChan, _ := ps.gossipPubSub.Sub(nil, 16)
-	NewP2PBus(client, ps.reqChan, gossipChan, client.CloseChan(), 256, 4)
 	// must be done synchronously to protect data races
+	gossipChan := make(chan interface{}, 5)
+	gossipTxChan := make(chan interface{}, 16)
+	key := client.NodeAddr().String() + fmt.Sprintf("%v", time.Now())
 	func() {
 		ps.Lock()
 		defer ps.Unlock()
 		ps.active.add(client)
 		ps.inactive.del(client.NodeAddr())
+		ps.gossipMap[key] = gossipChan
+		ps.gossipTxMap[key] = gossipTxChan
 	}()
+	cleanup := func() {
+		ps.Lock()
+		defer ps.Unlock()
+		delete(ps.gossipMap, key)
+		delete(ps.gossipTxMap, key)
+	}
+	go newP2PBus(client, ps.reqChan, gossipChan, gossipTxChan, client.CloseChan(), 256, 5, 16, cleanup)
 }
 
+// P2PClient returns a wrapper around the gossip and request bus channels for
+// use by remote systems to make requests through the load balanced work sharing
+// system.
 func (ps *PeerManager) P2PClient() pb.P2PClient {
-	return &P2PClient{reqChan: ps.reqChan, gossipPubSub: ps.gossipPubSub}
+	return &P2PClient{reqChan: ps.reqChan, gossipChan: ps.gossipChan, gossipTxChan: ps.gossipTxChan}
 }
 
 // dialp2p dials remote peers
@@ -379,13 +462,7 @@ func (ps *PeerManager) getPeersActive() {
 	ps.logger.WithFields(smap).Debug("Running get peers active")
 	active, _ := ps.Counts()
 	if active < ps.peeringMaxThreshold && active > 0 {
-		peer, ok := ps.active.randomClient()
-		if !ok {
-			return
-		}
-		ctx, cf := context.WithTimeout(ps.ctx, 5*time.Second)
-		defer cf()
-		resp, err := peer.GetPeers(ctx, &pb.GetPeersRequest{})
+		resp, err := ps.P2PClient().GetPeers(context.Background(), &pb.GetPeersRequest{})
 		if err != nil {
 			utils.DebugTrace(ps.logger, err)
 			return
