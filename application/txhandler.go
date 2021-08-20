@@ -259,6 +259,7 @@ func (tm *txHandler) UTXOGetData(txn *badger.Txn, owner *objs.Owner, dataIdx []b
 }
 
 func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, pt *objs.PaginationToken) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
+	const maxCount = 100
 	allIds := [][]byte{}
 
 	totalValue := uint256.Zero()
@@ -283,10 +284,7 @@ func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minVal
 			break
 		}
 
-		const maxCount = 100
-
 		var lastKey []byte
-
 		if !started {
 			if pt.LastPaginatedType == v.retrieveType {
 				started = true
