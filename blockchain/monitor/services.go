@@ -73,6 +73,7 @@ func (svcs *Services) UpdateProgress(ctx context.Context, state *objects.Monitor
 }
 
 func (svcs *Services) AccuseDoubleProposal() error {
+
 	return nil
 }
 
