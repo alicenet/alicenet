@@ -6,7 +6,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -28,6 +27,7 @@ func (b *BClaims) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bc.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bc)
 }
 
@@ -41,6 +41,7 @@ func (b *BClaims) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bc.Struct.Segment().Message().Reset(nil)
 	return bclaims.Marshal(bc)
 }
 
@@ -53,10 +54,10 @@ func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 	b.ChainID = bc.ChainID()
 	b.Height = bc.Height()
 	b.TxCount = bc.TxCount()
-	b.PrevBlock = gUtils.CopySlice(bc.PrevBlock())
-	b.HeaderRoot = gUtils.CopySlice(bc.HeaderRoot())
-	b.StateRoot = gUtils.CopySlice(bc.StateRoot())
-	b.TxRoot = gUtils.CopySlice(bc.TxRoot())
+	b.PrevBlock = bc.PrevBlock()
+	b.HeaderRoot = bc.HeaderRoot()
+	b.StateRoot = bc.StateRoot()
+	b.TxRoot = bc.TxRoot()
 	if len(b.PrevBlock) != constants.HashLen {
 		return errorz.ErrInvalid{}.New("capn bclaims prevblock bad len")
 	}

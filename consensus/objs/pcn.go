@@ -25,6 +25,7 @@ func (b *PreCommitNil) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -53,6 +54,7 @@ func (b *PreCommitNil) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return precommitnil.Marshal(bh)
 }
 

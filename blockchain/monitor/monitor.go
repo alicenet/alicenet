@@ -156,6 +156,9 @@ func (mon *monitor) Start() error {
 		initialState.HighestBlockProcessed = uint64(startingBlock)
 	}
 
+	// initialState.HighestBlockProcessed = uint64(config.Configuration.Ethereum.StartingBlock)
+	// initialState.HighestBlockFinalized = uint64(config.Configuration.Ethereum.StartingBlock)
+
 	initialState.InSync = false
 	logger.Info("Current state:")
 	logger.Infof("...Ethereum in sync: %v", initialState.EthereumInSync)

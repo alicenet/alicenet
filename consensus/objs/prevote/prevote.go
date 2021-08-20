@@ -3,7 +3,6 @@ package prevote
 import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -13,8 +12,8 @@ func Marshal(v mdefs.PreVote) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := gUtils.CopySlice(raw)
-	return out, nil
+	defer v.Struct.Segment().Message().Reset(nil)
+	return raw, nil
 }
 
 // Unmarshal will unmarshal the PreVote object.
@@ -26,8 +25,7 @@ func Unmarshal(data []byte) (mdefs.PreVote, error) {
 				err = errorz.ErrInvalid{}.New("bad serialization")
 			}
 		}()
-		dataCopy := gUtils.CopySlice(data)
-		msg := &capnp.Message{Arena: capnp.SingleSegment(dataCopy)}
+		msg := &capnp.Message{Arena: capnp.SingleSegment(data)}
 		obj, tmp := mdefs.ReadRootPreVote(msg)
 		err = tmp
 		return obj, err

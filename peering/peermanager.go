@@ -15,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/transport"
 	"github.com/MadBase/MadNet/types"
 	"github.com/MadBase/MadNet/utils"
+	"github.com/guiguan/caster"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +27,6 @@ type PeerManager struct {
 	sync.RWMutex
 	ctx                      context.Context
 	cf                       func()
-	wg                       *sync.WaitGroup
 	logger                   *logrus.Logger
 	closeOnce                sync.Once
 	closeChan                chan struct{}
@@ -38,18 +38,19 @@ type PeerManager struct {
 	transport                interfaces.P2PTransport
 	inactive                 *inactivePeerStore
 	active                   *activePeerStore
-	subscribers              map[int]*PeerSubscription
-	subscriberCount          int
 	peeringCompleteThreshold int
 	peeringMaxThreshold      int
 	fireWallMode             bool
 	fireWallHost             interfaces.NodeAddr
 	peeringComplete          bool
+	gossipPubSub             *caster.Caster
+	reqChan                  chan interface{}
+	upnpMapper               *transport.UPnPMapper
 }
 
 // NewPeerManager creates a new peer manager based on the Configuration
 // values passed to the process.
-func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string) (*PeerManager, error) {
+func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
 	logger := logging.GetLogger(constants.LoggerPeerMan)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
@@ -71,17 +72,24 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		cf()
 		return nil, err
 	}
+	var upnpMapper *transport.UPnPMapper
+	if upnp {
+		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port)
+		if err != nil {
+			utils.DebugTrace(logger, err)
+			cf()
+			return nil, err
+		}
+	}
 	// create the actual peer manager
 	pm := &PeerManager{
 		ctx:                      subCtx,
 		cf:                       cf,
 		logger:                   logger,
-		wg:                       &sync.WaitGroup{},
 		closeChan:                make(chan struct{}),
 		peeringCompleteThreshold: pLimMin, // config.Configuration.Transport.PeerLimitMin
 		peeringMaxThreshold:      pLimMax, // config.Configuration.Transport.PeerLimitMax
 		bootNodes:                &bootNodeList{},
-		subscribers:              make(map[int]*PeerSubscription),
 		clientHandler:            newClientHandler(),
 		active: &activePeerStore{
 			canClose:  true,
@@ -99,6 +107,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		mux:              &transport.P2PMux{},
 		transport:        p2ptransport,
 		p2pServerHandler: NewMuxServerHandler(logger, p2ptransport.NodeAddr(), p2pServer),
+		upnpMapper:       upnpMapper,
 	}
 	pm.discServerHandler = NewDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
 	if fwMode { // config.Configuration.Transport.FirewallMode
@@ -115,14 +124,18 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		utils.DebugTrace(pm.logger, err)
 		return nil, err
 	}
+	pm.reqChan = make(chan interface{}, pLimMax)
+	pm.gossipPubSub = caster.New(nil)
 	return pm, nil
 }
 
 // Start launches the background loops of the peer manager
 func (ps *PeerManager) Start() {
-	ps.wg.Add(2)
 	go ps.runDiscoveryLoops()
 	go ps.acceptLoop()
+	if ps.upnpMapper != nil {
+		go ps.upnpMapper.Start()
+	}
 	<-ps.CloseChan()
 }
 
@@ -162,10 +175,10 @@ func (ps *PeerManager) Close() error {
 		}
 		ps.active.close()
 		ps.inactive.close()
-		for _, s := range ps.subscribers {
-			s.close()
+		if ps.upnpMapper != nil {
+			ps.logger.Warning("PeerManager stopping upnp mapper")
+			ps.upnpMapper.Close()
 		}
-		ps.wg.Wait()
 		ps.logger.Warning("PeerManager Graceful exit complete")
 	}
 	ps.closeOnce.Do(fn)
@@ -175,7 +188,6 @@ func (ps *PeerManager) Close() error {
 // acceptLoop accepts incoming peer connections
 func (ps *PeerManager) acceptLoop() {
 	defer func() { go ps.Close() }()
-	defer ps.wg.Done()
 	for {
 		conn, err := ps.transport.Accept()
 		if err != nil {
@@ -239,46 +251,19 @@ func (ps *PeerManager) handleP2P(conn interfaces.P2PConn) {
 		}
 		return
 	}
+	gossipChan, _ := ps.gossipPubSub.Sub(nil, 16)
+	NewP2PBus(client, ps.reqChan, gossipChan, client.CloseChan(), 256, 4)
 	// must be done synchronously to protect data races
 	func() {
 		ps.Lock()
 		defer ps.Unlock()
 		ps.active.add(client)
 		ps.inactive.del(client.NodeAddr())
-		ps.notify(client)
 	}()
 }
 
-func (ps *PeerManager) notify(c interfaces.P2PClient) {
-	for _, s := range ps.subscribers {
-		s.actives.add(c)
-	}
-}
-
-// Subscribe returns a peer subscription. This allows the caller to
-// have a remote copy of the active peer set for calling rpc methods on
-// the peers without blocking the discovery system. The remote copy will
-// update as peers are added and dropped, but any peer in the remote active
-// set may have its connections closed at any time. Thus the caller should
-// always gracefully handle communication failures.
-func (ps *PeerManager) Subscribe() interfaces.PeerSubscription {
-	ps.Lock()
-	defer ps.Unlock()
-	ps.subscriberCount++
-	sub := &PeerSubscription{
-		clientChan: make(chan interfaces.P2PClient, 16),
-		closeChan:  make(chan struct{}),
-		log:        logging.GetLogger(constants.LoggerPeer),
-		closeOnce:  sync.Once{},
-		actives: &activePeerStore{
-			store:     make(map[string]interfaces.P2PClient),
-			pid:       make(map[string]uint64),
-			closeChan: make(chan struct{}),
-			closeOnce: sync.Once{},
-		},
-	}
-	ps.subscribers[ps.subscriberCount] = sub
-	return sub
+func (ps *PeerManager) P2PClient() pb.P2PClient {
+	return &P2PClient{reqChan: ps.reqChan, gossipPubSub: ps.gossipPubSub}
 }
 
 // dialp2p dials remote peers
@@ -351,19 +336,16 @@ func (ps *PeerManager) PeeringComplete() bool {
 
 func (ps *PeerManager) runDiscoveryLoops() {
 	defer ps.Close()
-	defer ps.wg.Done()
 	defer func() { ps.logger.Warning("Discovery loop exit") }()
-	ps.wg.Add(5)
-	go ps.doLoop("bootnode", ps.discoDialBootnode, time.Second*31)
 	go ps.doLoop("inactive", ps.dialInactive, time.Second*13)
 	go ps.doLoop("active", ps.getPeersActive, time.Second*17)
 	go ps.doLoop("firewall", ps.dialFirewall, time.Second*10)
+	go ps.doLoop("bootnode", ps.discoDialBootnode, time.Second*31)
 	go ps.doLoop("peerStatus", ps.peerStatus, time.Second*3)
 	<-ps.CloseChan()
 }
 
 func (ps *PeerManager) doLoop(name string, fn func(), interval time.Duration) {
-	defer ps.wg.Done()
 	defer func() { go ps.Close() }()
 	defer func() { ps.logger.Warningf("Discovery loop %s exited.", name) }()
 	for {

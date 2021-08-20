@@ -9,6 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	_ "net/http/pprof"
+
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
@@ -45,6 +47,9 @@ var Command = cobra.Command{
 	Run:   validatorNode}
 
 func validatorNode(cmd *cobra.Command, args []string) {
+	// 	go func() {
+	// 		log.Println(http.ListenAndServe("localhost:6060", nil))
+	// 	}()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -102,6 +107,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	firewallHost := config.Configuration.Transport.FirewallHost
 	p2PListeningAddress := config.Configuration.Transport.P2PListeningAddress
 	xportPrivateKey := config.Configuration.Transport.PrivateKey
+	upnp := config.Configuration.Transport.UPnP
 
 	lStateListenAddr := config.Configuration.Transport.LocalStateListeningAddress
 
@@ -248,6 +254,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		firewallHost,
 		p2PListeningAddress,
 		xportPrivateKey,
+		upnp,
 	)
 	if err != nil {
 		panic(err)
@@ -269,7 +276,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize the request bus client
-	if err := rbusClient.Init(peerManager.Subscribe()); err != nil {
+	if err := rbusClient.Init(peerManager.P2PClient()); err != nil {
 		panic(err)
 	}
 
@@ -304,12 +311,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize the gossip bus handler
-	if err := gh.Init(conDB, peerManager.Subscribe(), app, lstateHandlers); err != nil {
+	if err := gh.Init(conDB, peerManager.P2PClient(), app, lstateHandlers); err != nil {
 		panic(err)
 	}
 
 	// Initialize the gossip bus client
-	if err := gc.Init(conDB, peerManager.Subscribe(), app); err != nil {
+	if err := gc.Init(conDB, peerManager.P2PClient(), app); err != nil {
 		panic(err)
 	}
 
@@ -406,6 +413,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
+	defer func() { os.Exit(0) }()
 	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
 
 	go statusLogger.Run()

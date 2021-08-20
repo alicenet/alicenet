@@ -63,6 +63,7 @@ type transportConfig struct {
 	P2PListeningAddress        string
 	DiscoveryListeningAddress  string
 	LocalStateListeningAddress string
+	UPnP                       bool
 }
 
 type deployConfig struct {

@@ -49,7 +49,7 @@ func (ep *Pool) Done() <-chan struct{} {
 
 // Cleanup is the run function for the pool cleanup logic
 func (ep *Pool) Cleanup() error {
-	return ep.database.Update(func(txn *badger.Txn) error {
+	ep.database.Update(func(txn *badger.Txn) error {
 		_, _, _, height, _, err := ep.sstore.GetDropData(txn)
 		if err != nil {
 			return err
@@ -60,6 +60,7 @@ func (ep *Pool) Cleanup() error {
 		}
 		return nil
 	})
+	return nil
 }
 
 // Exit will kill the service

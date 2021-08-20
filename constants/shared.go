@@ -75,6 +75,7 @@ const (
 	LoggerDMan      = "dman"
 	LoggerPeer      = "peer"
 	LoggerYamux     = "yamux"
+	LoggerUPnP      = "upnp"
 )
 
 // Badger VLog GC ratio

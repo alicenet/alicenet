@@ -3,13 +3,17 @@ package blockheader
 import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
 // Marshal will marshal the BlockHeader object.
-func Marshal(p mdefs.BlockHeader) ([]byte, error) {
-	return capnp.Canonicalize(p.Struct)
+func Marshal(v mdefs.BlockHeader) ([]byte, error) {
+	raw, err := capnp.Canonicalize(v.Struct)
+	if err != nil {
+		return nil, err
+	}
+	defer v.Struct.Segment().Message().Reset(nil)
+	return raw, nil
 }
 
 // Unmarshal will unmarshal the BlockHeader object.
@@ -21,8 +25,7 @@ func Unmarshal(data []byte) (mdefs.BlockHeader, error) {
 				err = errorz.ErrInvalid{}.New("bad serialization")
 			}
 		}()
-		dataCopy := utils.CopySlice(data)
-		msg := &capnp.Message{Arena: capnp.SingleSegment(dataCopy)}
+		msg := &capnp.Message{Arena: capnp.SingleSegment(data)}
 		obj, tmp := mdefs.ReadRootBlockHeader(msg)
 		err = tmp
 		return obj, err

@@ -19,7 +19,6 @@ import (
 	pb "github.com/MadBase/MadNet/proto"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/peer"
 )
 
 var _ pb.P2PGossipProposalHandler = (*Handlers)(nil)
@@ -39,7 +38,7 @@ type appHandler interface {
 
 // Handlers consumes gossip and updates local state
 type Handlers struct {
-	peerSub interfaces.PeerSubscription
+	client pb.P2PClient
 
 	wg        sync.WaitGroup
 	database  *db.Database
@@ -67,9 +66,9 @@ type Handlers struct {
 // Init will initialize the gossip consumer
 // it must be run at least once and will have no
 // effect if run more than once
-func (mb *Handlers) Init(database *db.Database, peerSub interfaces.PeerSubscription, app appHandler, handlers *lstate.Handlers) error {
+func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers) error {
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
-	mb.peerSub = peerSub
+	mb.client = client
 	mb.app = app
 	mb.database = database
 	mb.shandlers = handlers
@@ -365,49 +364,46 @@ func (mb *Handlers) updateTxsFromGossip(tx []byte) error {
 func (mb *Handlers) UpdateBlocksFromGossip() error {
 	for {
 		select {
-		case <-mb.ctx.Done():
-			return nil
 		case obj := <-mb.iNbhChan:
 			return mb.handleStateUpdateErrors(obj.ctx, mb.shandlers.AddBlockHeader(obj.msg), obj.errC)
-		default:
-			// go back to sync logic if no block header present
+		case <-mb.ctx.Done():
 			return nil
 		}
 	}
 }
 
 func (mb *Handlers) preventGossip(ctx context.Context, rawmsg []byte, isTx bool, isBh bool) {
-	peerAddr, ok := peer.FromContext(ctx)
-	if !ok {
-		return
-	}
-	nodeAddr, ok := peerAddr.Addr.(interfaces.NodeAddr)
-	if !ok {
-		return
-	}
-	if isTx {
-		txIf, err := mb.app.UnmarshalTx(rawmsg)
-		if err != nil {
-			return
-		}
-		hsh, err := txIf.TxHash()
-		if err != nil {
-			return
-		}
-		mb.peerSub.PreventGossipTx(nodeAddr, hsh)
-		return
-	}
-	if isBh {
-		bh := objs.BlockHeader{}
-		err := bh.UnmarshalBinary(rawmsg)
-		if err != nil {
-			return
-		}
-		hsh := utils.MarshalUint32(bh.BClaims.Height)
-		mb.peerSub.PreventGossipConsensus(nodeAddr, hsh)
-		return
-	}
-	mb.peerSub.PreventGossipConsensus(nodeAddr, rawmsg)
+	// peerAddr, ok := peer.FromContext(ctx)
+	// if !ok {
+	// 	return
+	// }
+	// nodeAddr, ok := peerAddr.Addr.(interfaces.NodeAddr)
+	// if !ok {
+	// 	return
+	// }
+	// if isTx {
+	// 	txIf, err := mb.app.UnmarshalTx(rawmsg)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// hsh, err := txIf.TxHash()
+	// if err != nil {
+	// 	return
+	// }
+	//mb.peerSub.PreventGossipTx(nodeAddr, hsh)
+	// return
+	// }
+	// if isBh {
+	// 	bh := objs.BlockHeader{}
+	// 	err := bh.UnmarshalBinary(rawmsg)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	//hsh := utils.MarshalUint32(bh.BClaims.Height)
+	//mb.peerSub.PreventGossipConsensus(nodeAddr, hsh)
+	// return
+	// }
+	//mb.peerSub.PreventGossipConsensus(nodeAddr, rawmsg)
 }
 
 func (mb *Handlers) setupHandler(pctx context.Context) (context.Context, func(), chan error, error) {
@@ -419,7 +415,7 @@ func (mb *Handlers) setupHandler(pctx context.Context) (context.Context, func(),
 	default:
 		mb.wg.Add(1)
 	}
-	return ctx, cf, make(chan error), nil
+	return ctx, cf, make(chan error, 4), nil
 }
 
 // HandleP2PGossipTransaction adds a transaction to the database
@@ -434,11 +430,13 @@ func (mb *Handlers) HandleP2PGossipTransaction(pctx context.Context, msg *pb.Gos
 	defer mb.wg.Done()
 	defer cf()
 	rawmsg := msg.Transaction
-	mb.preventGossip(ctx, rawmsg, true, false)
+	// // mb.preventGossip(ctx, rawmsg, true, false)
 	mobj := &transactionMsg{ctx, cf, rawmsg, eC}
 	select {
 	case mb.iNtxChan <- mobj:
 		return &pb.GossipTransactionAck{}, <-mobj.errC
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-mb.ctx.Done():
 		return nil, errorz.ErrClosing
 	}
@@ -466,11 +464,13 @@ func (mb *Handlers) HandleP2PGossipProposal(pctx context.Context, msg *pb.Gossip
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipProposalAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &proposalMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNpChan <- mobj:
 		return &pb.GossipProposalAck{}, <-mobj.errC
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-mb.ctx.Done():
 		return nil, errorz.ErrClosing
 	}
@@ -498,11 +498,13 @@ func (mb *Handlers) HandleP2PGossipPreVote(pctx context.Context, msg *pb.GossipP
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &preVoteMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNpvChan <- mobj:
 		return &pb.GossipPreVoteAck{}, <-mobj.errC
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-mb.ctx.Done():
 		return nil, errorz.ErrClosing
 	}
@@ -530,11 +532,13 @@ func (mb *Handlers) HandleP2PGossipPreVoteNil(pctx context.Context, msg *pb.Goss
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreVoteNilAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &preVoteNilMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNpvnChan <- mobj:
 		return &pb.GossipPreVoteNilAck{}, <-mobj.errC
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-mb.ctx.Done():
 		return nil, errorz.ErrClosing
 	}
@@ -562,11 +566,13 @@ func (mb *Handlers) HandleP2PGossipPreCommit(pctx context.Context, msg *pb.Gossi
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &preCommitMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNpcChan <- mobj:
 		return &pb.GossipPreCommitAck{}, <-mobj.errC
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-mb.ctx.Done():
 		return nil, errorz.ErrClosing
 	}
@@ -594,7 +600,7 @@ func (mb *Handlers) HandleP2PGossipPreCommitNil(pctx context.Context, msg *pb.Go
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipPreCommitNilAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &preCommitNilMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNpcnChan <- mobj:
@@ -628,7 +634,7 @@ func (mb *Handlers) HandleP2PGossipNextRound(pctx context.Context, msg *pb.Gossi
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextRoundAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &nextRoundMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNnrChan <- mobj:
@@ -662,7 +668,7 @@ func (mb *Handlers) HandleP2PGossipNextHeight(pctx context.Context, msg *pb.Goss
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipNextHeightAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, false)
+	// mb.preventGossip(ctx, rawmsg, false, false)
 	mobj := &nextHeightMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNnhChan <- mobj:
@@ -696,7 +702,7 @@ func (mb *Handlers) HandleP2PGossipBlockHeader(pctx context.Context, msg *pb.Gos
 		utils.DebugTrace(mb.logger, err)
 		return &pb.GossipBlockHeaderAck{}, err
 	}
-	mb.preventGossip(ctx, rawmsg, false, true)
+	// mb.preventGossip(ctx, rawmsg, false, true)
 	mobj := &blockHeaderMsg{ctx, cf, obj, eC}
 	select {
 	case mb.iNbhChan <- mobj:

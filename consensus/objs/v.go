@@ -21,6 +21,7 @@ func (b *Validator) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return b.UnmarshalCapn(bh)
 }
 
@@ -45,6 +46,7 @@ func (b *Validator) MarshalBinary() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer bh.Struct.Segment().Message().Reset(nil)
 	return validator.Marshal(bh)
 }
 
