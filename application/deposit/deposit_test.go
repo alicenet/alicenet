@@ -130,7 +130,7 @@ func TestDeposit(t *testing.T) {
 			t.Fatal(err)
 		}
 		//utxoIDs, retVal, err := hndlr.GetValueForOwner(txn, testingOwner(), 2)
-		utxoIDs, retVal, err := hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two())
+		utxoIDs, retVal, _, err := hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +154,7 @@ func TestDeposit(t *testing.T) {
 		}
 		mis.spend(utils.ForceSliceToLength(two.Bytes(), constants.HashLen))
 		//utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), 2)
-		utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two())
+		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -185,7 +185,7 @@ func TestDeposit(t *testing.T) {
 			t.Fatal(err)
 		}
 		//utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), 2)
-		utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two())
+		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -573,7 +573,7 @@ func TestDepositGetValueForOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = db.Update(func(txn *badger.Txn) error {
-		_, _, err := hndlr.GetValueForOwner(txn, nil, minValue)
+		_, _, _, err := hndlr.GetValueForOwner(txn, nil, minValue, 256, nil)
 		if err == nil {
 			t.Fatal("Should have raised error for invalid owner")
 		}

@@ -129,33 +129,10 @@ func (dp *Handler) Remove(txn *badger.Txn, utxoID []byte) error {
 
 // GetValueForOwner allows a list of utxoIDs to be returned that are equal or
 // greater than the value passed as minValue, and are owned by owner.
-func (dp *Handler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
-	exclusionSet := [][]byte{}
-	for {
-		utxoIDOUT := [][]byte{}
-		retry := false
-		utxoIDs, val, err := dp.valueIndex.GetValueForOwner(txn, owner, minValue, exclusionSet)
-		if err != nil {
-			utils.DebugTrace(dp.logger, err)
-			return nil, nil, err
-		}
-		for _, utxoID := range utxoIDs {
-			spent, err := dp.IsSpent(txn, utils.CopySlice(utxoID))
-			if err != nil {
-				utils.DebugTrace(dp.logger, err)
-				return nil, nil, err
-			}
-			if spent {
-				retry = true
-				exclusionSet = append(exclusionSet, utils.CopySlice(utxoID))
-			} else {
-				utxoIDOUT = append(utxoIDOUT, utils.CopySlice(utxoID))
-			}
-		}
-		if !retry {
-			return utxoIDOUT, val, nil
-		}
-	}
+func (dp *Handler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, maxCount int, lastKey []byte) ([][]byte, *uint256.Uint256, []byte, error) {
+	return dp.valueIndex.GetValueForOwner(txn, owner, minValue, func(utxoID []byte) (bool, error) {
+		return dp.IsSpent(txn, utils.CopySlice(utxoID))
+	}, maxCount, lastKey)
 }
 
 // Get returns four values <found>, <missing>, <spent>, <error>

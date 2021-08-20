@@ -298,14 +298,25 @@ func (a *Application) UTXOGetData(txn *badger.Txn, curveSpec constants.CurveSpec
 	return a.txHandler.UTXOGetData(txn, owner, dataIdx)
 }
 
-func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
+func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256, ptBytes []byte) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
 	owner := &objs.Owner{}
 	err := owner.New(account, curveSpec)
 	if err != nil {
 		utils.DebugTrace(a.logger, err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return a.txHandler.GetValueForOwner(txn, owner, minValue)
+
+	var pt *objs.PaginationToken
+	if ptBytes != nil {
+		pt = &objs.PaginationToken{}
+		err := pt.UnmarshalBinary(ptBytes)
+		if err != nil {
+			utils.DebugTrace(a.logger, err)
+			return nil, nil, nil, err
+		}
+	}
+
+	return a.txHandler.GetValueForOwner(txn, owner, minValue, pt)
 }
 
 // UTXOGet returns a list of UTXO objects
