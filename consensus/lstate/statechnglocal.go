@@ -603,7 +603,7 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 	// if we can just jump up to this height, do so.
 	// if the height is only one more, we can simply move to this
 	// height if everything looks okay
-	if rcert.RClaims.Height == rs.OwnState.SyncToBH.BClaims.Height+1 {
+	if rcert.RClaims.Height == rs.Height()+1 {
 		// if we have a valid value, check if the valid value
 		// matches the previous blockhash of block n+1
 		// if so, form the block and jump up to this level
