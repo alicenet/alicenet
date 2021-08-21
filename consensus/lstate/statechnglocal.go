@@ -261,19 +261,18 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 				return err
 			}
 			return nil
-		} else {
-			// update the valid value
-			p, err := pvl.GetProposal()
-			if err != nil {
+		}
+		// update the valid value
+		p, err := pvl.GetProposal()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 				utils.DebugTrace(ce.logger, err)
 				return err
-			}
-			if err := ce.updateValidValue(txn, rs, p); err != nil {
-				var e *errorz.ErrInvalid
-				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
-					utils.DebugTrace(ce.logger, err)
-					return err
-				}
 			}
 		}
 	} // fallthrough to precommit nil

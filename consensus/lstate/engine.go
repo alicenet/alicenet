@@ -232,9 +232,6 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 //  do a possible do a proposal if not already proposed and is proposer
 //  do nothing if not any of above is true
 func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bool, error) {
-	if err := ce.loadValidationKey(rs); err != nil {
-		return false, nil
-	}
 	os := rs.OwnRoundState()
 
 	// extract the round cert for use
@@ -289,6 +286,13 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	// at this point no height jump is possible
 	// otherwise we would have followed it
 
+	// Below this line node must be a validator to proceed
+	if !rs.IsCurrentValidator() {
+		return len(FH) == 0, nil
+	}
+	if err := ce.loadValidationKey(rs); err != nil {
+		return false, nil
+	}
 	////////////////////////////////////////////////////////////////////////////////
 
 	// look for a round certificate from the dead block round
