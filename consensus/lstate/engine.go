@@ -270,18 +270,20 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		var maxHR *objs.RoundState
 		maxHeight := uint32(0)
 		for _, vroundState := range FH {
-			if vroundState.RCert.RClaims.Height > maxHeight {
+			// only care about round 1 because this is only useful round to perform
+			// height jump
+			if vroundState.RCert.RClaims.Height > maxHeight && vroundState.RCert.RClaims.Round == 1 {
 				maxHR = vroundState
 				maxHeight = vroundState.RCert.RClaims.Height
 			}
 		}
 		if maxHR != nil {
-			err := ce.doHeightJumpStep(txn, rs, maxHR.RCert)
+			inSync, err := ce.doHeightJumpStep(txn, rs, maxHR.RCert)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
-			return true, nil
+			return inSync, nil
 		}
 	}
 	// at this point no height jump is possible

@@ -5,7 +5,9 @@ import (
 	"errors"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/utils"
 
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -597,43 +599,99 @@ func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) error {
+func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) (bool, error) {
 	ce.logger.Debugf("doHeightJumpStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// get the last element of the sorted future height
 	// if we can just jump up to this height, do so.
 	// if the height is only one more, we can simply move to this
 	// height if everything looks okay
-	if rcert.RClaims.Height == rs.Height()+1 {
-		// if we have a valid value, check if the valid value
-		// matches the previous blockhash of block n+1
-		// if so, form the block and jump up to this level
-		// this is safe because we call isValid on all values
-		// before storing in a lock
-		if rs.ValidValueCurrent() {
-			bhsh, err := rs.ValidValue().PClaims.BClaims.BlockHash()
+	if rcert.RClaims.Height != rs.Height()+1 {
+		return false, nil
+	}
+	if rcert.RClaims.Round != 1 {
+		return false, nil
+	}
+	// if we have a valid value, check if the valid value
+	// matches the previous blockhash of block n+1
+	// if so, form the block and jump up to this level
+	// this is safe because we call isValid on all values
+	// before storing in a lock
+	if rs.ValidValueCurrent() {
+		bhsh, err := rs.ValidValue().PClaims.BClaims.BlockHash()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return false, err
+		}
+		if bytes.Equal(bhsh, rcert.RClaims.PrevBlock) {
+			vv := rs.ValidValue()
+			err := ce.castNewCommittedBlockFromProposalAndRCert(txn, rs, vv, rcert)
 			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return err
-			}
-			if bytes.Equal(bhsh, rcert.RClaims.PrevBlock) && rcert.RClaims.Round == 1 {
-				vv := rs.ValidValue()
-				err := ce.castNewCommittedBlockFromProposalAndRCert(txn, rs, vv, rcert)
-				if err != nil {
-					var e *errorz.ErrInvalid
-					if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
-						utils.DebugTrace(ce.logger, err)
-						return err
-					}
+				var e *errorz.ErrInvalid
+				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
 				}
-				rs.OwnValidatingState.ValidValue = nil
-				rs.OwnValidatingState.LockedValue = nil
-				return nil
+				return false, nil
 			}
+			rs.OwnValidatingState.ValidValue = nil
+			rs.OwnValidatingState.LockedValue = nil
+			return true, nil
 		}
 	}
-	// we can not do anything from here without a ton of work
-	// so easier to just wait for the next block header to unsync us
-	return nil
+	// could not use valid value - only option left is to check if the block
+	// had no tx's in it - if so we can build it with no additional information
+	// that what we have in scope by forming bclaims for empty block and
+	// checking if it has correct hash
+	os := rs.OwnRoundState()
+	ownRcert := os.RCert
+	txs := [][]byte{}
+	TxRoot, err := objs.MakeTxRoot(txs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	bclaims := rs.OwnState.SyncToBH.BClaims
+	PrevBlock := gUtils.CopySlice(ownRcert.RClaims.PrevBlock)
+	headerRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	StateRoot := gUtils.CopySlice(bclaims.StateRoot)
+	bh := &objs.BlockHeader{
+		BClaims: &objs.BClaims{
+			PrevBlock:  PrevBlock,
+			HeaderRoot: headerRoot,
+			StateRoot:  StateRoot,
+			TxRoot:     TxRoot,
+			ChainID:    ownRcert.RClaims.ChainID,
+			Height:     ownRcert.RClaims.Height,
+		},
+		TxHshLst: txs,
+		SigGroup: gUtils.CopySlice(rcert.SigGroup),
+	}
+	bhash, err := bh.BlockHash()
+	if err != nil {
+		return false, err
+	}
+	if !bytes.Equal(bhash, rcert.RClaims.PrevBlock) {
+		return false, nil
+	}
+	ok, err := ce.isValid(txn, rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, []interfaces.Transaction{})
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	if err := bh.ValidateSignatures(&crypto.BNGroupValidator{}); err != nil {
+		return false, nil // if sig is not valid then move to sync mode
+	}
+	if err := ce.setMostRecentBlockHeader(txn, rs, bh); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
