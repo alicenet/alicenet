@@ -557,6 +557,57 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 	return nil
 }
 
+func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
+	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	// local node cast a precommit nil this round
+	// count the precommits
+	pcl, pcnl, err := rs.GetCurrentPreCommits()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+	// if local node knows of even a single
+	// precommit, update the valid value
+	if len(pcl) > rs.GetCurrentThreshold() {
+		p, err := pcl.GetProposal()
+		if err != nil {
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+		}
+	}
+	if len(pcl)+len(pcnl) >= rs.GetCurrentThreshold() {
+		return nil
+	}
+	pvl, _, err := rs.GetCurrentPreVotes()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+	// if we have prevote consensus now
+	if len(pvl) >= rs.GetCurrentThreshold() {
+		// update the valid value
+		p, err := pvl.GetProposal()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

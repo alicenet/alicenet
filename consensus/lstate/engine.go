@@ -286,12 +286,17 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	// at this point no height jump is possible
 	// otherwise we would have followed it
 
-	// Below this line node must be a validator to proceed
+	// if not a validator check for updates to valid value
 	if !rs.IsCurrentValidator() {
+		if err := ce.doCheckValidValue(txn, rs); err != nil {
+			return false, err
+		}
 		return len(FH) == 0, nil
 	}
+
+	// Below this line node must be a validator to proceed
 	if err := ce.loadValidationKey(rs); err != nil {
-		return false, nil
+		return false, err
 	}
 	////////////////////////////////////////////////////////////////////////////////
 
