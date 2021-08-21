@@ -286,18 +286,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	// at this point no height jump is possible
 	// otherwise we would have followed it
 
-	// if not a validator check for updates to valid value
-	if !rs.IsCurrentValidator() {
-		if err := ce.doCheckValidValue(txn, rs); err != nil {
-			return false, err
-		}
-		return len(FH) == 0, nil
-	}
-
-	// Below this line node must be a validator to proceed
-	if err := ce.loadValidationKey(rs); err != nil {
-		return false, err
-	}
 	////////////////////////////////////////////////////////////////////////////////
 
 	// look for a round certificate from the dead block round
@@ -318,6 +306,19 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 			}
 			return true, nil
 		}
+	}
+
+	// if not a validator check for updates to valid value
+	if !rs.IsCurrentValidator() {
+		if err := ce.doCheckValidValue(txn, rs); err != nil {
+			return false, err
+		}
+		return len(FH) == 0, nil
+	}
+
+	// Below this line node must be a validator to proceed
+	if err := ce.loadValidationKey(rs); err != nil {
+		return false, err
 	}
 
 	// if we have voted for the next round in round preceding the

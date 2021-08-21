@@ -559,9 +559,28 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 
 func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
 	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
-	// local node cast a precommit nil this round
-	// count the precommits
-	pcl, pcnl, err := rs.GetCurrentPreCommits()
+
+	nhl, _, err := rs.GetCurrentNext()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+
+	// if we have a threshold
+	// make a new round cert and form the new block header
+	// proceed to next height
+	if len(nhl) >= rs.GetCurrentThreshold() {
+		if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
+			utils.DebugTrace(ce.logger, err)
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				return err
+			}
+		}
+		return nil
+	}
+
+	pcl, _, err := rs.GetCurrentPreCommits()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
@@ -580,10 +599,9 @@ func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
 				return err
 			}
 		}
-	}
-	if len(pcl)+len(pcnl) >= rs.GetCurrentThreshold() {
 		return nil
 	}
+
 	pvl, _, err := rs.GetCurrentPreVotes()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
