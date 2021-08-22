@@ -570,19 +570,20 @@ func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
 	// make a new round cert and form the new block header
 	// proceed to next height
 	if len(nhl) >= rs.GetCurrentThreshold() {
-		if err := ce.updateValidValue(txn, rs, nhl[0].NHClaims.Proposal); err != nil {
+		err := ce.updateValidValue(txn, rs, nhl[0].NHClaims.Proposal)
+		if err != nil {
 			var e *errorz.ErrInvalid
 			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 				utils.DebugTrace(ce.logger, err)
 				return err
 			}
-			return nil
-		}
-		if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
-			utils.DebugTrace(ce.logger, err)
-			var e *errorz.ErrInvalid
-			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
-				return err
+		} else {
+			if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
+				utils.DebugTrace(ce.logger, err)
+				var e *errorz.ErrInvalid
+				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+					return err
+				}
 			}
 		}
 		return nil
