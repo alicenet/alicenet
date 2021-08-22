@@ -576,6 +576,7 @@ func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
 				utils.DebugTrace(ce.logger, err)
 				return err
 			}
+			return nil
 		}
 		if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
 			utils.DebugTrace(ce.logger, err)
