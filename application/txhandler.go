@@ -259,7 +259,7 @@ func (tm *txHandler) UTXOGetData(txn *badger.Txn, owner *objs.Owner, dataIdx []b
 }
 
 func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, pt *objs.PaginationToken) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
-	const maxCount = 100
+	const maxCount = 256
 	allIds := [][]byte{}
 
 	totalValue := uint256.Zero()
@@ -272,21 +272,23 @@ func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minVal
 		}
 	}
 
-	started := pt == nil
-	for _, v := range []struct {
-		retrieveFn   func(*badger.Txn, *objs.Owner, *uint256.Uint256, int, []byte) ([][]byte, *uint256.Uint256, []byte, error)
-		retrieveType objs.LastPaginatedType
+	txTypes := []struct {
+		retrieve func(*badger.Txn, *objs.Owner, *uint256.Uint256, int, []byte) ([][]byte, *uint256.Uint256, []byte, error)
+		lpType   objs.LastPaginatedType
 	}{
 		{tm.uHdlr.GetValueForOwner, objs.LastPaginatedUtxo},
 		{tm.dHdlr.GetValueForOwner, objs.LastPaginatedDeposit},
-	} {
+	}
+
+	started := pt == nil
+	for _, v := range txTypes {
 		if totalValue.Gte(minValue) {
 			break
 		}
 
 		var lastKey []byte
 		if !started {
-			if pt.LastPaginatedType == v.retrieveType {
+			if pt.LastPaginatedType == v.lpType {
 				started = true
 				lastKey = pt.LastKey
 			} else {
@@ -296,10 +298,10 @@ func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minVal
 
 		remainder, err := new(uint256.Uint256).Sub(minValue, totalValue)
 		if err != nil {
-			break // value exceeded
+			break // underflow -> value exceeded
 		}
 
-		utxoIDs, value, lk, err := v.retrieveFn(txn, owner, remainder, maxCount-len(allIds), lastKey)
+		utxoIDs, value, lk, err := v.retrieve(txn, owner, remainder, maxCount-len(allIds), lastKey)
 		if err != nil {
 			utils.DebugTrace(tm.logger, err)
 			return nil, nil, nil, err
@@ -314,7 +316,7 @@ func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minVal
 		allIds = append(allIds, utxoIDs...)
 
 		if len(allIds) >= maxCount {
-			return allIds, totalValue, &objs.PaginationToken{LastPaginatedType: v.retrieveType, TotalValue: totalValue, LastKey: lk}, nil
+			return allIds, totalValue, &objs.PaginationToken{LastPaginatedType: v.lpType, TotalValue: totalValue, LastKey: lk}, nil
 		}
 	}
 

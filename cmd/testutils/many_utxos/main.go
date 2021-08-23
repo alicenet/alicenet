@@ -112,10 +112,7 @@ func (f *funder) setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	if err != nil {
 		panic(err)
 	}
-	//if i%2 == 0 {
 	return f.setupSecpSigner(privk)
-	//}
-	//return f.setupBNSigner(privk)
 }
 
 func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {

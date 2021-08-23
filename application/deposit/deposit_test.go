@@ -129,7 +129,6 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//utxoIDs, retVal, err := hndlr.GetValueForOwner(txn, testingOwner(), 2)
 		utxoIDs, retVal, _, err := hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
