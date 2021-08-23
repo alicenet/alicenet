@@ -258,8 +258,6 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 		return nil, err
 	}
 
-	srpc.logger.Errorf("%x, %s", account, accountH)
-
 	var utxoIDs [][]byte
 	var value *uint256.Uint256
 	var paginationToken *objs.PaginationToken
