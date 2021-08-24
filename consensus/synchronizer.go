@@ -468,7 +468,7 @@ func (s *Synchronizer) setupLoops() {
 	stateLoopNoSyncConfig := newLoopConfig().
 		withName("StateLoop-NoSync").
 		withFn2(s.stateHandler.Sync, s.madSyncDone.set).
-		withFreq(10 * time.Millisecond).
+		withFreq(100 * time.Millisecond).
 		withDelayOnConditionFailure(1 * time.Second).
 		withLockFreeCondition(s.isNotClosing).
 		withLockFreeCondition(s.initialized.isSet).

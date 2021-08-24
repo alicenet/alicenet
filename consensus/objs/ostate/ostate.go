@@ -13,6 +13,7 @@ func Marshal(v mdefs.OwnState) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer v.Struct.Segment().Message().Reset(nil)
 	out := gUtils.CopySlice(raw)
 	return out, nil
 }
@@ -26,8 +27,7 @@ func Unmarshal(data []byte) (mdefs.OwnState, error) {
 				err = errorz.ErrInvalid{}.New("bad serialization")
 			}
 		}()
-		dataCopy := gUtils.CopySlice(data)
-		msg := &capnp.Message{Arena: capnp.SingleSegment(dataCopy)}
+		msg := &capnp.Message{Arena: capnp.SingleSegment(data)}
 		obj, tmp := mdefs.ReadRootOwnState(msg)
 		err = tmp
 		return obj, err

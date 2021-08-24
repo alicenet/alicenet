@@ -504,53 +504,10 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 
 // GetValueForOwner allows a list of utxoIDs to be returned that are equal or
 // greater than the value passed as minValue, and are owned by owner.
-func (ut *UTXOHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
-	out := [][]byte{}
-	vout := uint256.Zero()
-	exclude := [][]byte{}
-	for {
-		utxos, _, err := ut.valueIndex.GetValueForOwner(txn, owner, minValue.Clone(), exclude)
-		if err != nil {
-			utils.DebugTrace(ut.logger, err)
-			return nil, nil, err
-		}
-		if len(utxos) == 0 {
-			break
-		}
-		for i := 0; i < len(utxos); i++ {
-			utxo, err := ut.getInternal(txn, utxos[i])
-			if err != nil {
-				utils.DebugTrace(ut.logger, err)
-				return nil, nil, err
-			}
-			missing, err := ut.trie.Contains(txn, [][]byte{utxos[i]})
-			if err != nil {
-				utils.DebugTrace(ut.logger, err)
-				return nil, nil, err
-			}
-			if len(missing) > 0 {
-				exclude = append(exclude, utxos[i])
-				continue
-			}
-			value, err := utxo.Value()
-			if err != nil {
-				utils.DebugTrace(ut.logger, err)
-				return nil, nil, err
-			}
-			tmpvout, err := vout.Clone().Add(vout.Clone(), value.Clone())
-			if err != nil {
-				utils.DebugTrace(ut.logger, err)
-				return nil, nil, err
-			}
-			vout = tmpvout
-			out = append(out, utxos[i])
-			exclude = append(exclude, utxos[i])
-			if vout.Clone().Gte(minValue.Clone()) {
-				break
-			}
-		}
-	}
-	return out, vout, nil
+func (ut *UTXOHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, maxCount int, startKey []byte) ([][]byte, *uint256.Uint256, []byte, error) {
+	// This function operates under the assumption that the valueIndex and the trie are always in sync
+	// If you make any change breaking this assumption, the results must be checked against the trie
+	return ut.valueIndex.GetValueForOwner(txn, owner, minValue, nil, maxCount, startKey)
 }
 
 // PaginateDataByOwner ...

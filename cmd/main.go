@@ -109,6 +109,7 @@ func main() {
 			{"transport.bootnodeAddresses", "", "", &config.Configuration.Transport.BootNodeAddresses},
 			{"transport.p2pListeningAddress", "", "", &config.Configuration.Transport.P2PListeningAddress},
 			{"transport.discoveryListeningAddress", "", "", &config.Configuration.Transport.DiscoveryListeningAddress},
+			{"transport.upnp", "", "", &config.Configuration.Transport.UPnP},
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
 			{"transport.firewallMode", "", "", &config.Configuration.Transport.FirewallMode},

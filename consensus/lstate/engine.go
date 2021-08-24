@@ -169,7 +169,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				updateLocalState = false
 			}
 		}
-		if roundState.OwnState.SyncToBH.BClaims.Height < roundState.OwnState.MaxBHSeen.BClaims.Height {
+		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height {
 			isSync = false
 			updateLocalState = false
 		}
@@ -480,13 +480,14 @@ func (ce *Engine) Sync() (bool, error) {
 	// see if sync is done
 	// if yes exit
 	syncDone := false
-	// ce.logger.Error("!!! OPEN SYNC TXN")
-	// defer func() { ce.logger.Error("!!! CLOSE SYNC TXN") }()
 	err := ce.database.Update(func(txn *badger.Txn) error {
 		rs, err := ce.sstore.LoadLocalState(txn)
 		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return err
+			if err != badger.ErrKeyNotFound {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+			return nil
 		}
 		// begin handling logic
 		if rs.OwnState.MaxBHSeen.BClaims.Height == rs.OwnState.SyncToBH.BClaims.Height {
@@ -503,22 +504,15 @@ func (ce *Engine) Sync() (bool, error) {
 				epochOfMaxBHSeen := utils.Epoch(rs.OwnState.MaxBHSeen.BClaims.Height)
 				canonicalEpoch := epochOfMaxBHSeen - 2
 				canonicalSnapShotHeight := canonicalEpoch * constants.EpochLength
-				mrcbh, err := ce.database.GetMostRecentCommittedBlockHeaderFastSync(txn)
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return err
-				}
 				csbh, err := ce.database.GetSnapshotBlockHeader(txn, canonicalSnapShotHeight)
 				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return err
+					if err != badger.ErrKeyNotFound {
+						utils.DebugTrace(ce.logger, err)
+						return err
+					}
+					return errorz.ErrInvalid{}.New("Snapshot header not available for sync")
 				}
-				canonicalBlockHash, err := csbh.BlockHash()
-				if err != nil {
-					utils.DebugTrace(ce.logger, err)
-					return err
-				}
-				fastSyncDone, err := ce.fastSync.Update(txn, csbh.BClaims.Height, mrcbh.BClaims.Height, csbh.BClaims.StateRoot, csbh.BClaims.HeaderRoot, canonicalBlockHash)
+				fastSyncDone, err := ce.fastSync.Update(txn, csbh)
 				if err != nil {
 					utils.DebugTrace(ce.logger, err)
 					return err
@@ -539,7 +533,7 @@ func (ce *Engine) Sync() (bool, error) {
 			}
 		}
 		ce.logger.Debugf("SyncOneBH:  MBHS:%v  STBH:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height)
-		txs, bh, ok, err := ce.dm.SyncOneBH(txn, rs.OwnState.SyncToBH, rs.ValidatorSet)
+		txs, bh, ok, err := ce.dm.SyncOneBH(txn, rs.OwnState.SyncToBH, rs.OwnState.MaxBHSeen, rs.ValidatorSet)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err

@@ -298,14 +298,25 @@ func (a *Application) UTXOGetData(txn *badger.Txn, curveSpec constants.CurveSpec
 	return a.txHandler.UTXOGetData(txn, owner, dataIdx)
 }
 
-func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
+func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256, ptBytes []byte) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
 	owner := &objs.Owner{}
 	err := owner.New(account, curveSpec)
 	if err != nil {
 		utils.DebugTrace(a.logger, err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return a.txHandler.GetValueForOwner(txn, owner, minValue)
+
+	var pt *objs.PaginationToken
+	if ptBytes != nil {
+		pt = &objs.PaginationToken{}
+		err := pt.UnmarshalBinary(ptBytes)
+		if err != nil {
+			utils.DebugTrace(a.logger, err)
+			return nil, nil, nil, err
+		}
+	}
+
+	return a.txHandler.GetValueForOwner(txn, owner, minValue, pt)
 }
 
 // UTXOGet returns a list of UTXO objects
@@ -345,10 +356,10 @@ func (a *Application) GetSnapShotStateData(txn *badger.Txn, utxoID []byte) ([]by
 	utxo, err := a.txHandler.GetSnapShotStateData(txn, [][]byte{utxoID})
 	if err != nil {
 		utils.DebugTrace(a.logger, err)
-		return nil, errorz.ErrInvalid{}.New(err.Error())
+		return nil, err
 	}
 	if len(utxo) != 1 {
-		return nil, errorz.ErrInvalid{}.New("missing utxo")
+		return nil, badger.ErrKeyNotFound
 	}
 	utxoBytes, err := utxo[0].MarshalBinary()
 	if err != nil {

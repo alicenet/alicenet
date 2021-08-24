@@ -7,11 +7,7 @@
 package proto
 
 import (
-	context "context"
 	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -206,84 +202,4 @@ func file_bootnode_proto_init() {
 	file_bootnode_proto_rawDesc = nil
 	file_bootnode_proto_goTypes = nil
 	file_bootnode_proto_depIdxs = nil
-}
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConnInterface
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
-
-// BootNodeClient is the client API for BootNode service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BootNodeClient interface {
-	KnownNodes(ctx context.Context, in *BootNodeRequest, opts ...grpc.CallOption) (*BootNodeResponse, error)
-}
-
-type bootNodeClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewBootNodeClient(cc grpc.ClientConnInterface) BootNodeClient {
-	return &bootNodeClient{cc}
-}
-
-func (c *bootNodeClient) KnownNodes(ctx context.Context, in *BootNodeRequest, opts ...grpc.CallOption) (*BootNodeResponse, error) {
-	out := new(BootNodeResponse)
-	err := c.cc.Invoke(ctx, "/proto.BootNode/KnownNodes", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// BootNodeServer is the server API for BootNode service.
-type BootNodeServer interface {
-	KnownNodes(context.Context, *BootNodeRequest) (*BootNodeResponse, error)
-}
-
-// UnimplementedBootNodeServer can be embedded to have forward compatible implementations.
-type UnimplementedBootNodeServer struct {
-}
-
-func (*UnimplementedBootNodeServer) KnownNodes(context.Context, *BootNodeRequest) (*BootNodeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method KnownNodes not implemented")
-}
-
-func RegisterBootNodeServer(s *grpc.Server, srv BootNodeServer) {
-	s.RegisterService(&_BootNode_serviceDesc, srv)
-}
-
-func _BootNode_KnownNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BootNodeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BootNodeServer).KnownNodes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.BootNode/KnownNodes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BootNodeServer).KnownNodes(ctx, req.(*BootNodeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _BootNode_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.BootNode",
-	HandlerType: (*BootNodeServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "KnownNodes",
-			Handler:    _BootNode_KnownNodes_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "bootnode.proto",
 }
