@@ -67,7 +67,7 @@ func (rb *Handler) Exit() {
 	rb.cancelCtx()
 }
 
-//HandleP2PGetBlockHeaders serves block headers
+//HandleP2PStatus serves status message from P2P protocol
 func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*pb.StatusResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -200,7 +200,7 @@ func (rb *Handler) HandleP2PGetMinedTxs(ctx context.Context, r *pb.GetMinedTxsRe
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotNode ....
+// HandleP2PGetSnapShotHdrNode serves nodes of the Header Trie to the caller
 func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapShotNodeRequest) (*pb.GetSnapShotNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -225,6 +225,7 @@ func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapSh
 	return resp, nil
 }
 
+// HandleP2PGetSnapShotHdrNode serves nodes of the State Trie to the caller
 func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSnapShotHdrNodeRequest) (*pb.GetSnapShotHdrNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -249,7 +250,7 @@ func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSna
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotStateData ....
+// HandleP2PGetSnapShotStateData serves UTXOs based on State Trie hash data
 func (rb *Handler) HandleP2PGetSnapShotStateData(ctx context.Context, r *pb.GetSnapShotStateDataRequest) (*pb.GetSnapShotStateDataResponse, error) {
 	select {
 	case <-ctx.Done():

@@ -421,9 +421,6 @@ func (ce *Engine) castNewCommittedBlockHeader(txn *badger.Txn, rs *RoundStates, 
 }
 
 func (ce *Engine) castNewCommittedBlockFromProposalAndRCert(txn *badger.Txn, rs *RoundStates, p *objs.Proposal, rc *objs.RCert) error {
-	if !rs.IsCurrentValidator() {
-		return nil
-	}
 	bh := &objs.BlockHeader{
 		SigGroup: rc.SigGroup,
 		BClaims:  p.PClaims.BClaims,

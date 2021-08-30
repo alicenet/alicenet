@@ -23,6 +23,7 @@ discoveryListeningAddress = "0.0.0.0:4444"
 localStateListeningAddress = "0.0.0.0:8884"
 peerLimitMax = 24
 peerLimitMin = 3
+upnp=false
 
 
 [monitor]

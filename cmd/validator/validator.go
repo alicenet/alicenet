@@ -48,9 +48,9 @@ var Command = cobra.Command{
 	Run:   validatorNode}
 
 func validatorNode(cmd *cobra.Command, args []string) {
-	// 	go func() {
-	// 		log.Println(http.ListenAndServe("localhost:6060", nil))
-	// 	}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -417,7 +417,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	go gc.Start()
 	defer gc.Close()
-	defer gh.Close()
 
 	go dman.Start()
 	defer dman.Close()
@@ -428,6 +427,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go stateRPCHandler.Start()
 	defer stateRPCHandler.Stop()
 
+	go gh.Start()
+	defer gh.Close()
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////
