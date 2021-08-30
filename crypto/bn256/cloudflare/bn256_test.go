@@ -955,3 +955,73 @@ func TestPairingCheck(t *testing.T) {
 		t.Fatal("Error in PairingCheck (g2neg)")
 	}
 }
+
+func TestG1Double(t *testing.T) {
+	k := 1
+	s := big.NewInt(int64(k))
+	p := new(G1).ScalarBaseMult(s)
+	if !p.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	m := p.Add(p, p).Marshal()
+	if _, err := p.Unmarshal(m); err != nil {
+		t.Fatalf("p.Add(p, p) not in G1: %v", err)
+	}
+}
+
+func TestG2Double(t *testing.T) {
+	k := 1
+	s := big.NewInt(int64(k))
+	p := new(G2).ScalarBaseMult(s)
+	if !p.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	m := p.Add(p, p).Marshal()
+	if _, err := p.Unmarshal(m); err != nil {
+		t.Fatalf("p.Add(p, p) not in G2: %v", err)
+	}
+}
+
+func TestGTDouble(t *testing.T) {
+	k := 1
+	s := big.NewInt(int64(k))
+	g1 := new(G1).ScalarBaseMult(s)
+	g2 := new(G2).ScalarBaseMult(s)
+	gT := Pair(g1, g2)
+	if gT.p.IsOne() {
+		t.Fatal("p should not be 1")
+	}
+	if !gT.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	m := gT.Add(gT, gT).Marshal()
+	if _, err := gT.Unmarshal(m); err != nil {
+		t.Fatalf("p.Add(p, p) not in GT: %v", err)
+	}
+
+	gT = Pair(g1, g2)
+	if !gT.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	gT.p.Square(gT.p)
+	if !gT.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	n := gT.Marshal()
+	if _, err := gT.Unmarshal(n); err != nil {
+		t.Fatalf("p.Add(p, p) not in GT (2): %v", err)
+	}
+
+	gT = Pair(g1, g2)
+	if !gT.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	gT.p.Mul(gT.p, gT.p)
+	if !gT.p.IsOnCurve() {
+		t.Fatal("p isn't on curve")
+	}
+	b := gT.Marshal()
+	if _, err := gT.Unmarshal(b); err != nil {
+		t.Fatalf("p.Add(p, p) not in GT (3): %v", err)
+	}
+}

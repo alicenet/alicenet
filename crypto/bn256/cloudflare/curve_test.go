@@ -113,3 +113,31 @@ func TestAdd(t *testing.T) {
 		t.Fatal("curvePoint Add changed curveGen")
 	}
 }
+
+func TestCurveDouble(t *testing.T) {
+	c := &curvePoint{}
+	c.Add(curveGen, curveGen)
+	if !c.IsOnCurve() {
+		t.Fatal("curvePoint should be on curve (1)")
+	}
+
+	a := &curvePoint{}
+	a.Set(curveGen)
+	a.Add(a, a)
+	if !a.IsOnCurve() {
+		t.Fatal("curvePoint should be on curve (2)")
+	}
+	if !c.IsEqual(a) {
+		t.Fatal("curvePoints should be equal (2)")
+	}
+
+	b := &curvePoint{}
+	b.Set(curveGen)
+	b.Double(b)
+	if !b.IsOnCurve() {
+		t.Fatal("curvePoint should be on curve (3)")
+	}
+	if !c.IsEqual(b) {
+		t.Fatal("curvePoints should be equal (3)")
+	}
+}
