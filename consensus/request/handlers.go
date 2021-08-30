@@ -77,15 +77,22 @@ func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*p
 		defer rb.wg.Done()
 	}
 
-	err := rb.database.View(func(txn *badger.Txn) error {
+	var resp pb.StatusResponse
 
+	err := rb.database.View(func(txn *badger.Txn) error {
+		os, err := rb.database.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		resp.SyncToBlockHeight = os.SyncToBH.BClaims.Height
+		resp.MaxBlockHeightSeen = os.MaxBHSeen.BClaims.Height
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.StatusResponse{}
-	return resp, nil
+	return &resp, nil
 }
 
 //HandleP2PGetBlockHeaders serves block headers

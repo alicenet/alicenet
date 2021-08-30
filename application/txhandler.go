@@ -258,39 +258,69 @@ func (tm *txHandler) UTXOGetData(txn *badger.Txn, owner *objs.Owner, dataIdx []b
 	return tm.uHdlr.GetData(txn, owner, dataIdx)
 }
 
-func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
-	var u [][]byte
-	v := uint256.Zero()
-	utxoIDs, value, err := tm.uHdlr.GetValueForOwner(txn, owner, minValue)
-	if err != nil {
-		utils.DebugTrace(tm.logger, err)
-		return nil, nil, err
-	}
-	v, err = v.Clone().Add(v.Clone(), value.Clone())
-	if err != nil {
-		utils.DebugTrace(tm.logger, err)
-		return nil, nil, err
-	}
-	u = append(u, utxoIDs...)
-	if v.Lt(minValue) {
-		remainder, err := new(uint256.Uint256).Sub(minValue.Clone(), v.Clone())
+func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, pt *objs.PaginationToken) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
+	const maxCount = 256
+	allIds := [][]byte{}
+
+	totalValue := uint256.Zero()
+	if pt != nil {
+		var err error
+		totalValue, err = totalValue.Add(totalValue, pt.TotalValue)
 		if err != nil {
 			utils.DebugTrace(tm.logger, err)
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
-		utxoIDs, value, err := tm.dHdlr.GetValueForOwner(txn, owner, remainder)
-		if err != nil {
-			utils.DebugTrace(tm.logger, err)
-			return nil, nil, err
-		}
-		v, err = v.Clone().Add(v.Clone(), value.Clone())
-		if err != nil {
-			utils.DebugTrace(tm.logger, err)
-			return nil, nil, err
-		}
-		u = append(u, utxoIDs...)
 	}
-	return u, v, nil
+
+	txTypes := []struct {
+		retrieve func(*badger.Txn, *objs.Owner, *uint256.Uint256, int, []byte) ([][]byte, *uint256.Uint256, []byte, error)
+		lpType   objs.LastPaginatedType
+	}{
+		{tm.uHdlr.GetValueForOwner, objs.LastPaginatedUtxo},
+		{tm.dHdlr.GetValueForOwner, objs.LastPaginatedDeposit},
+	}
+
+	started := pt == nil
+	for _, v := range txTypes {
+		if totalValue.Gte(minValue) {
+			break
+		}
+
+		var lastKey []byte
+		if !started {
+			if pt.LastPaginatedType == v.lpType {
+				started = true
+				lastKey = pt.LastKey
+			} else {
+				break
+			}
+		}
+
+		remainder, err := new(uint256.Uint256).Sub(minValue, totalValue)
+		if err != nil {
+			break // underflow -> value exceeded
+		}
+
+		utxoIDs, value, lk, err := v.retrieve(txn, owner, remainder, maxCount-len(allIds), lastKey)
+		if err != nil {
+			utils.DebugTrace(tm.logger, err)
+			return nil, nil, nil, err
+		}
+
+		totalValue, err = totalValue.Add(totalValue, value)
+		if err != nil {
+			utils.DebugTrace(tm.logger, err)
+			return nil, nil, nil, err
+		}
+
+		allIds = append(allIds, utxoIDs...)
+
+		if len(allIds) >= maxCount {
+			return allIds, totalValue, &objs.PaginationToken{LastPaginatedType: v.lpType, TotalValue: totalValue, LastKey: lk}, nil
+		}
+	}
+
+	return allIds, totalValue, nil, nil
 }
 
 func (tm *txHandler) UTXOGet(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, error) {

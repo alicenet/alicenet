@@ -755,7 +755,6 @@ func TestValueIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	value5Clone := value5.Clone()
 
 	// object to delete
 	acct1 := trie.Hasher([]byte("owner1"))[12:]
@@ -794,34 +793,33 @@ func TestValueIndex(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		utxoIDs, value, err := index.GetValueForOwner(txn, owner1, uint256.One(), nil)
+
+		utxoIDs, value, _, err := index.GetValueForOwner(txn, owner1, uint256.One(), nil, 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(utxoIDs) != 1 {
 			t.Fatal("wrong utxo len")
 		}
-		//if value != 1 {
 		if !value.Eq(uint256.One()) {
 			t.Fatal("wrong utxo value")
 		}
 		if !bytes.Equal(utxoIDs[0], utxoido11) {
 			t.Fatal("wrong utxo")
 		}
-		//six := &uint256.Uint256{}
+
 		six, err := new(uint256.Uint256).FromUint64(6)
 		if err != nil {
 			t.Fatal(err)
 		}
-		sixClone := six.Clone()
-		utxoIDs, valueOut, err := index.GetValueForOwner(txn, owner1, six, nil)
+		utxoIDs, valueOut, _, err := index.GetValueForOwner(txn, owner1, six, nil, 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(utxoIDs) != 2 {
 			t.Fatal("wrong utxo len")
 		}
-		if !valueOut.Eq(sixClone) {
+		if !valueOut.Eq(six) {
 			t.Fatal("wrong utxo value")
 		}
 		if !bytes.Equal(utxoIDs[0], utxoido11) {
@@ -830,37 +828,70 @@ func TestValueIndex(t *testing.T) {
 		if !bytes.Equal(utxoIDs[1], utxoido15) {
 			t.Fatal("wrong utxo")
 		}
+
+		big, err := new(uint256.Uint256).FromUint64(1e6)
+		if err != nil {
+			t.Fatal(err)
+		}
+		utxoIDs, value, lk, err := index.GetValueForOwner(txn, owner1, big, nil, 1, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(utxoIDs) != 1 {
+			t.Fatal("wrong utxo len", len(utxoIDs))
+		}
+		if !value.Eq(value1) {
+			t.Fatal("wrong utxo value")
+		}
+		if !bytes.Equal(utxoIDs[0], utxoido11) {
+			t.Fatal("wrong utxo")
+		}
+		utxoIDs, value, _, err = index.GetValueForOwner(txn, owner1, big, nil, 2, lk)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(utxoIDs) != 1 {
+			t.Fatal("wrong utxo len", len(utxoIDs))
+		}
+		if !value.Eq(value5) {
+			t.Fatal("wrong utxo value")
+		}
+		if !bytes.Equal(utxoIDs[0], utxoido15) {
+			t.Fatal("wrong utxo")
+		}
+
 		err = index.Drop(txn, utxoido11)
 		if err != nil {
 			t.Fatal(err)
 		}
-		utxoIDs, value, err = index.GetValueForOwner(txn, owner1, uint256.One(), nil)
+		utxoIDs, value, _, err = index.GetValueForOwner(txn, owner1, uint256.One(), nil, 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(utxoIDs) != 1 {
 			t.Fatal("wrong utxo len")
 		}
-		if !value.Eq(value5Clone) {
+		if !value.Eq(value5) {
 			t.Fatal("wrong utxo value")
 		}
 		if !bytes.Equal(utxoIDs[0], utxoido15) {
 			t.Fatal("wrong utxo")
 		}
+
 		err = index.Add(txn, utxoidOld, owner1, uint256.One())
 		if err != nil {
 			t.Fatal(err)
 		}
-		utxoIDs, value, err = index.GetValueForOwner(txn, owner1, uint256.BaseDatasizeConst(), nil)
+		utxoIDs, value, _, err = index.GetValueForOwner(txn, owner1, uint256.BaseDatasizeConst(), nil, 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(utxoIDs) != 2 {
 			t.Fatal("wrong utxo len")
 		}
-		if !value.Eq(sixClone) {
+		if !value.Eq(six) {
 			fmt.Println(value)
-			fmt.Println(sixClone)
+			fmt.Println(six)
 			t.Fatal("wrong utxo value")
 		}
 		return nil

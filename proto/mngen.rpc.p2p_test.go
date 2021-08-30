@@ -10,7 +10,10 @@ import (
 type testP2PStatusHandler struct{}
 
 func (th *testP2PStatusHandler) HandleP2PStatus(context.Context, *StatusRequest) (*StatusResponse, error) {
-	return &StatusResponse{}, nil
+	return &StatusResponse{
+		SyncToBlockHeight:  1,
+		MaxBlockHeightSeen: 2,
+	}, nil
 }
 
 func TestP2PStatus(t *testing.T) {
@@ -29,10 +32,12 @@ func TestP2PStatus(t *testing.T) {
 	}
 
 	// Test calling the method TestCall
-	_, err := srvr.Status(context.Background(), &StatusRequest{})
+	res, err := srvr.Status(context.Background(), &StatusRequest{})
 	if err != nil {
 		t.Error(err)
 	}
+	assert.Equal(t, 1, res.SyncToBlockHeight, "the sync to block height must match")
+	assert.Equal(t, 2, res.MaxBlockHeightSeen, "the max block height seen must match")
 }
 
 func TestDoubleregistrationP2PStatus(t *testing.T) {
@@ -1230,4 +1235,3 @@ func TestDiscoveryGetPeersCancel(t *testing.T) {
 	cancelErr := <-errChan
 	assert.EqualError(t, cancelErr, "context canceled", "the error returned must be a context canceled error")
 }
-
