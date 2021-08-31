@@ -16,5 +16,6 @@ package MadNet
 //go:generate protoc --grpc-gateway_out=:proto/ --proto_path=proto/ proto/localstate.proto
 //go:generate protoc --swagger_out=:./localrpc/swagger --swagger_opt logtostderr=true --proto_path=proto/ proto/localstate.proto
 //go:generate mv localrpc/swagger/localstate.swagger.json localrpc/swagger/swagger.json
-//go:generate go-bindata-assetfs -pkg localrpc -prefix localrpc/swagger/ -o ./localrpc/bindata.go localrpc/swagger/...
-//go:generate goimports -w localrpc/bindata.go localrpc/bindata.go
+
+//go:generate go-bindata-assetfs -pkg localrpc -prefix localrpc/swagger/ -o ./localrpc/swagger-bindata/bindata.go localrpc/swagger/...
+//go:generate goimports -w localrpc/swagger-bindata
