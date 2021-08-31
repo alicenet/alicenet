@@ -36,6 +36,19 @@ var _ pb.LocalStateGetValueForOwnerHandler = (*Handlers)(nil)
 var _ pb.LocalStateIterateNameSpaceHandler = (*Handlers)(nil)
 var _ pb.LocalStateGetUTXOHandler = (*Handlers)(nil)
 
+func (srpc *Handlers) notReady() error {
+	if srpc.safe() {
+		return nil
+	}
+
+	select {
+	case <-srpc.ctx.Done():
+		return errors.New("closing")
+	case <-time.After(1 * time.Second):
+		return errors.New("not in sync - unsafe to serve requests at this time")
+	}
+}
+
 // Handlers is the server side of the local RPC system. Handlers dispatches
 // requests to other systems for processing.
 type Handlers struct {
@@ -116,14 +129,10 @@ func (srpc *Handlers) SafeMonitor() {
 
 // HandleLocalStateGetPendingTransaction handles the get pending tx request
 func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context, req *pb.PendingTransactionRequest) (*pb.PendingTransactionResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetPendingTransaction: %v", req)
 	if len(req.TxHash) != 64 {
 		return nil, fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
@@ -166,14 +175,10 @@ func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context,
 }
 
 func (srpc *Handlers) HandleLocalStateGetChainID(ctx context.Context, req *pb.ChainIDRequest) (*pb.ChainIDResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetChainID: %v", req)
 	var chainID uint32
 	err := srpc.database.View(func(txn *badger.Txn) error {
@@ -194,14 +199,10 @@ func (srpc *Handlers) HandleLocalStateGetChainID(ctx context.Context, req *pb.Ch
 }
 
 func (srpc *Handlers) HandleLocalStateSendTransaction(ctx context.Context, req *pb.TransactionData) (*pb.TransactionDetails, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateSendTransaction: %v", req)
 	ntx, err := ReverseTranslateTx(req.Tx)
 	if err != nil {
@@ -229,14 +230,10 @@ func (srpc *Handlers) HandleLocalStateSendTransaction(ctx context.Context, req *
 
 // HandleLocalStateGetValueForOwner ...
 func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req *pb.GetValueRequest) (*pb.GetValueResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetValueForOwner: %v", req)
 	minValue := &uint256.Uint256{}
 	err := minValue.UnmarshalString(req.Minvalue)
@@ -302,14 +299,10 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 }
 
 func (srpc *Handlers) HandleLocalStateGetBlockNumber(ctx context.Context, req *pb.BlockNumberRequest) (*pb.BlockNumberResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetBlockNumber: %v", req)
 	var height uint32
 	err := srpc.database.View(func(txn *badger.Txn) error {
@@ -328,14 +321,10 @@ func (srpc *Handlers) HandleLocalStateGetBlockNumber(ctx context.Context, req *p
 }
 
 func (srpc *Handlers) HandleLocalStateGetBlockHeader(ctx context.Context, req *pb.BlockHeaderRequest) (*pb.BlockHeaderResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetBlockHeader: %v", req)
 	if req.Height == 0 {
 		return nil, errors.New("height cannot be zero")
@@ -361,14 +350,10 @@ func (srpc *Handlers) HandleLocalStateGetBlockHeader(ctx context.Context, req *p
 }
 
 func (srpc *Handlers) HandleLocalStateGetRoundStateForValidator(ctx context.Context, req *pb.RoundStateForValidatorRequest) (*pb.RoundStateForValidatorResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetRoundStateForValidator: %v", req)
 	return nil, errors.New("not implemented")
 	/*
@@ -376,14 +361,10 @@ func (srpc *Handlers) HandleLocalStateGetRoundStateForValidator(ctx context.Cont
 }
 
 func (srpc *Handlers) HandleLocalStateGetValidatorSet(ctx context.Context, req *pb.ValidatorSetRequest) (*pb.ValidatorSetResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetValidatorSet: %v", req)
 	return nil, errors.New("not implemented")
 	/*
@@ -409,14 +390,10 @@ func (srpc *Handlers) HandleLocalStateGetValidatorSet(ctx context.Context, req *
 }
 
 func (srpc *Handlers) HandleLocalStateGetEpochNumber(ctx context.Context, req *pb.EpochNumberRequest) (*pb.EpochNumberResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetEpochNumber: %v", req)
 	var en uint32
 	err := srpc.database.View(func(txn *badger.Txn) error {
@@ -436,14 +413,10 @@ func (srpc *Handlers) HandleLocalStateGetEpochNumber(ctx context.Context, req *p
 
 // HandleLocalStateGetData ...
 func (srpc *Handlers) HandleLocalStateGetData(ctx context.Context, req *pb.GetDataRequest) (*pb.GetDataResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	var data []byte
 	srpc.logger.Debugf("HandleLocalStateGetData: %v", req)
 	if len(req.Account) != 40 {
@@ -481,14 +454,10 @@ func (srpc *Handlers) HandleLocalStateGetData(ctx context.Context, req *pb.GetDa
 
 // HandleLocalStateIterateNameSpace ...
 func (srpc *Handlers) HandleLocalStateIterateNameSpace(ctx context.Context, req *pb.IterateNameSpaceRequest) (*pb.IterateNameSpaceResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	result := []*pb.IterateNameSpaceResponse_Result{}
 	srpc.logger.Debugf("HandleLocalStateIterateNameSpace: %v", req)
 	if len(req.Account) != 40 {
@@ -559,14 +528,10 @@ func (srpc *Handlers) HandleLocalStateIterateNameSpace(ctx context.Context, req 
 
 // HandleLocalStateGetUTXO ...
 func (srpc *Handlers) HandleLocalStateGetUTXO(ctx context.Context, req *pb.UTXORequest) (*pb.UTXOResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetUTXO: %v", req)
 	for i := 0; i < len(req.UTXOIDs); i++ {
 		if len(req.UTXOIDs[i]) != 64 {
@@ -603,14 +568,10 @@ func (srpc *Handlers) HandleLocalStateGetUTXO(ctx context.Context, req *pb.UTXOR
 
 // HandleLocalStateGetMinedTransaction ...
 func (srpc *Handlers) HandleLocalStateGetMinedTransaction(ctx context.Context, req *pb.MinedTransactionRequest) (*pb.MinedTransactionResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	srpc.logger.Debugf("HandleLocalStateGetMinedTransaction: %v", req)
 	if len(req.TxHash) != 64 {
 		return nil, fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
@@ -648,14 +609,10 @@ func (srpc *Handlers) HandleLocalStateGetMinedTransaction(ctx context.Context, r
 }
 
 func (srpc *Handlers) HandleLocalStateGetTxBlockNumber(ctx context.Context, req *pb.TxBlockNumberRequest) (*pb.TxBlockNumberResponse, error) {
-	if !srpc.safe() {
-		select {
-		case <-srpc.ctx.Done():
-			return nil, errors.New("closing")
-		case <-time.After(1 * time.Second):
-			return nil, errors.New("not in sync - unsafe to serve requests at this time")
-		}
+	if err := srpc.notReady(); err != nil {
+		return nil, err
 	}
+
 	var height uint32
 	srpc.logger.Debugf("HandleLocalStateGetTxBlockNumber: %v", req)
 	if len(req.TxHash) != 64 {
