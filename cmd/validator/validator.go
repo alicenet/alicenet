@@ -202,7 +202,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	//CONSTRUCT CONSENSUS AND APPLICATION OBJECTS/////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
-	inboundRPCDispatch := proto.NewInboundRPCDispatch()
+	inboundRPCDispatch := proto.NewP2PDispatch()
 	stateRPCDispatch := proto.NewLocalStateDispatch()
 	conDB := &db.Database{}
 	pool := &evidence.Pool{}
