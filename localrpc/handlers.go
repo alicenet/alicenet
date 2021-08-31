@@ -59,7 +59,7 @@ type Handlers struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool) error {
+func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	srpc.cancelCtx = cf
@@ -70,16 +70,11 @@ func (srpc *Handlers) Init(database *db.Database, app *application.Application, 
 	srpc.GossipBus = gh
 	srpc.EthPubk = pubk
 	srpc.sstore = &lstate.Store{}
-	err := srpc.sstore.Init(database)
-	if err != nil {
-		utils.DebugTrace(srpc.logger, err)
-		return err
-	}
+	srpc.sstore.Init(database)
 	if len(srpc.EthPubk) > 0 {
 		srpc.ethAcct = crypto.GetAccount(srpc.EthPubk)
 	}
 	srpc.safeHandler = safe
-	return nil
 }
 
 func (srpc *Handlers) Start() {

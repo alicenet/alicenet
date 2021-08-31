@@ -190,11 +190,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	logger.Infof("Starting node with args %v", args)
 	defer func() { logger.Warning("Goodbye.") }()
 
-	batchSize := config.Configuration.Monitor.BatchSize
-
-	monitorInterval := config.Configuration.Monitor.Interval
-
 	chainID := uint32(config.Configuration.Chain.ID)
+	batchSize := config.Configuration.Monitor.BatchSize
 
 	eth, keys, publicKey := initEthereumConnection(logger)
 
@@ -228,23 +225,14 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consSync := &consensus.Synchronizer{}
 	localStateHandler := &localrpc.Handlers{}
 
-	// Initialize consensus database
-	if err := consDB.Init(rawConsensusDb); err != nil {
-		panic(err)
-	}
+	consDB.Init(rawConsensusDb)
 
 	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
 	localStateServer := initLocalStateServer(localStateHandler)
 
-	// Initialize deposit handler
-	if err := appDepositHandler.Init(); err != nil {
-		panic(err)
-	}
+	appDepositHandler.Init()
 
-	// Initialize the request bus client
-	if err := consReqClient.Init(peerManager.P2PClient()); err != nil {
-		panic(err)
-	}
+	consReqClient.Init(peerManager.P2PClient())
 
 	// Initialize the consensus engine signer
 	if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
@@ -252,54 +240,24 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize the evidence pool
-	if err := consTxPool.Init(consDB); err != nil {
-		panic(err)
-	}
+	consTxPool.Init(consDB)
 
 	// Initialize the app logic
 	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler); err != nil {
 		panic(err)
 	}
 
-	// Initialize the request bus handler
-	if err := consReqHandler.Init(consDB, app); err != nil {
-		panic(err)
-	}
-
-	// Initialize the download manager
-	if err := consDlManager.Init(consDB, app, consReqClient); err != nil {
-		panic(err)
-	}
-
-	// Initialize the state handlers
-	if err := consLSHandler.Init(consDB, consDlManager); err != nil {
-		panic(err)
-	}
-
-	// Initialize the gossip bus handler
-	if err := consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler); err != nil {
-		panic(err)
-	}
-
-	// Initialize the gossip bus client
-	if err := consGossipClient.Init(consDB, peerManager.P2PClient(), app); err != nil {
-		panic(err)
-	}
-
-	// Initialize admin handler
-	if err := consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey); err != nil {
-		panic(err)
-	}
-
-	// Initialize the consensus engine
-	if err := consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient); err != nil {
-		panic(err)
-	}
-
-	// Setup Request Bus Services
-	svcs := monitor.NewServices(eth, consDB, appDepositHandler, consAdminHandlers, batchSize, chainID)
+	// Initialize consensus
+	consReqHandler.Init(consDB, app)
+	consDlManager.Init(consDB, app, consReqClient)
+	consLSHandler.Init(consDB, consDlManager)
+	consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler)
+	consGossipClient.Init(consDB, peerManager.P2PClient(), app)
+	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey)
+	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient)
 
 	// Setup Request Bus
+	svcs := monitor.NewServices(eth, consDB, appDepositHandler, consAdminHandlers, batchSize, chainID)
 	monitorBus, err := monitor.NewBus(rbus.NewRBus(), svcs)
 	if err != nil {
 		panic(err)
@@ -307,10 +265,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// Setup monitor
 	oneHour := 1 * time.Hour // TODO:ANTHONY - SHOULD THIS BE MOVED TO CONFIG?
-	mon, err := monitor.NewMonitor(monitorDb, monitorBus, monitorInterval, oneHour)
-	if err != nil {
-		panic(err)
-	}
+	monitorInterval := config.Configuration.Monitor.Interval
+	mon := monitor.NewMonitor(monitorDb, monitorBus, monitorInterval, oneHour)
 
 	var tDB, mDB *badger.DB = nil, nil
 	if config.Configuration.Chain.TransactionDbInMemory {
@@ -320,19 +276,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	if config.Configuration.Chain.MonitorDbInMemory {
 		mDB = rawMonitorDb
 	}
-	if err := consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager); err != nil {
-		panic(err)
-	}
 
-	// Setup the local RPC server handler
-	if err := localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe); err != nil {
-		panic(err)
-	}
-
-	// Initialize status logger
-	if err := statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon); err != nil {
-		panic(err)
-	}
+	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager)
+	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe)
+	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
 
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////

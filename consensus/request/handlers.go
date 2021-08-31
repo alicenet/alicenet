@@ -39,7 +39,7 @@ type Handler struct {
 }
 
 // Init initializes the object
-func (rb *Handler) Init(database *db.Database, app appHandler) error {
+func (rb *Handler) Init(database *db.Database, app appHandler) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
@@ -48,7 +48,6 @@ func (rb *Handler) Init(database *db.Database, app appHandler) error {
 	rb.wg = sync.WaitGroup{}
 	rb.app = app
 	rb.database = database
-	return nil
 }
 
 // Done will trInger when both of the gossip busses have stopped

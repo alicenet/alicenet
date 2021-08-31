@@ -214,7 +214,7 @@ type Synchronizer struct {
 }
 
 // Init initializes the struct
-func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager) error {
+func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager) {
 	s.logger = logging.GetLogger(constants.LoggerConsensus)
 	s.cdb = cdb
 	s.mdb = mdb
@@ -234,7 +234,6 @@ func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc
 	s.ethSyncDone = newRemoteVar(s.adminHandler.IsSynchronized)
 	s.peerMinThresh = newRemoteVar(s.peerMan.PeeringComplete)
 	s.madSyncDone = newResetVar()
-	return nil
 }
 
 func (s *Synchronizer) CloseChan() <-chan struct{} {

@@ -75,10 +75,7 @@ func newDB(t *testing.T) (*testDB, *Database, *testparams) {
 	go tbd.init()
 	<-tbd.readyChan
 	db := &Database{}
-	err := db.Init(tbd.db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	db.Init(tbd.db)
 	params := mkTP()
 	return tbd, db, params
 }

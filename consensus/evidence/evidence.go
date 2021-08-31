@@ -24,22 +24,17 @@ type Pool struct {
 }
 
 // Init will start the in and out gossip busses
-func (ep *Pool) Init(database *db.Database) error {
+func (ep *Pool) Init(database *db.Database) {
 	ep.logger = logging.GetLogger(constants.LoggerConsensus)
 	ep.database = database
 	ep.sstore = &lstate.Store{}
-	err := ep.sstore.Init(database)
-	if err != nil {
-		ep.logger.Debugf("Error in Pool.Init at ep.sstore.Init: %v", err)
-		return err
-	}
+	ep.sstore.Init(database)
 
 	ep.maxnum = 2000
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ep.cancelCtx = cf
 	ep.ctx = ctx
-	return nil
 }
 
 // Done will trInger when both of the gossip busses have stopped

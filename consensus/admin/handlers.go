@@ -45,7 +45,7 @@ type Handlers struct {
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte) error {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -58,7 +58,6 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.secret = utils.CopySlice(secret)
 	ah.ethAcct = crypto.GetAccount(ethPubk)
 	ah.ReceiveLock = make(chan interfaces.Lockable)
-	return nil
 }
 
 // Close shuts down all workers

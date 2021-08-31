@@ -28,16 +28,12 @@ type Handlers struct {
 }
 
 // Init initializes the Handlers object
-func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) error {
+func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) {
 	mb.logger = logging.GetLogger(constants.LoggerConsensus)
 	mb.sstore = &Store{}
-	err := mb.sstore.Init(database)
-	if err != nil {
-		return err
-	}
+	mb.sstore.Init(database)
 	mb.database = database
 	mb.dm = dm
-	return nil
 }
 
 // AddProposal stores a proposal to the database

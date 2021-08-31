@@ -71,9 +71,8 @@ type nodeCache struct {
 	minHeight uint32
 }
 
-func (nc *nodeCache) Init() error {
+func (nc *nodeCache) Init() {
 	nc.objs = make(map[uint32]map[nodeKey]*nodeResponse)
-	return nil
 }
 
 func (nc *nodeCache) getNodeKeys(height uint32, maxNumber int) []nodeKey {
@@ -158,9 +157,8 @@ type stateCache struct {
 	minHeight uint32
 }
 
-func (sc *stateCache) Init() error {
+func (sc *stateCache) Init() {
 	sc.objs = make(map[uint32]map[nodeKey]*stateResponse)
-	return nil
 }
 
 func (sc *stateCache) getLeafKeys(height uint32, maxNumber int) []nodeKey {
@@ -245,9 +243,8 @@ type bhCache struct {
 	minHeight uint32
 }
 
-func (sc *bhCache) Init() error {
+func (sc *bhCache) Init() {
 	sc.objs = make(map[nodeKey]*stateResponse)
-	return nil
 }
 
 func (sc *bhCache) getLeafKeys(maxNumber int) []nodeKey {
@@ -304,9 +301,8 @@ type bhNodeCache struct {
 	minHeight uint32
 }
 
-func (sc *bhNodeCache) Init() error {
+func (sc *bhNodeCache) Init() {
 	sc.objs = make(map[nodeKey]*nodeResponse)
-	return nil
 }
 
 func (sc *bhNodeCache) getNodeKeys(maxNumber int) []nodeKey {
@@ -447,30 +443,18 @@ type SnapShotManager struct {
 }
 
 // Init initializes the SnapShotManager
-func (ndm *SnapShotManager) Init(database *db.Database) error {
+func (ndm *SnapShotManager) Init(database *db.Database) {
 	ndm.snapShotHeight = new(atomicU32)
 	ndm.logger = logging.GetLogger(constants.LoggerConsensus)
 	ndm.database = database
 	ndm.hdrNodeCache = &bhNodeCache{}
-	if err := ndm.hdrNodeCache.Init(); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
+	ndm.hdrNodeCache.Init()
 	ndm.hdrLeafCache = &bhCache{}
-	if err := ndm.hdrLeafCache.Init(); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
+	ndm.hdrLeafCache.Init()
 	ndm.stateNodeCache = &nodeCache{}
-	if err := ndm.stateNodeCache.Init(); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
+	ndm.stateNodeCache.Init()
 	ndm.stateLeafCache = &stateCache{}
-	if err := ndm.stateLeafCache.Init(); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
+	ndm.stateLeafCache.Init()
 	ndm.hdrNodeDLs = &downloadTracker{
 		sync.RWMutex{},
 		make(map[nodeKey]bool),
@@ -501,8 +485,6 @@ func (ndm *SnapShotManager) Init(database *db.Database) error {
 	go ndm.downloadWithRetryStateLeafWorker()
 	go ndm.downloadWithRetryStateNodeWorker()
 	go ndm.loggingDelayer()
-
-	return nil
 }
 
 func (ndm *SnapShotManager) close() {
