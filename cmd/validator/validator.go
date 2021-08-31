@@ -211,43 +211,40 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consDB := &db.Database{}
 	consTxPool := &evidence.Pool{}
 	app := &application.Application{}
-	consAdminHandlers := &admin.Handlers{}
-	consReqHandler := &request.Handler{}
+	appDepositHandler := &deposit.Handler{}
+
 	consReqClient := &request.Client{}
-	consLSHandler := &lstate.Handlers{}
+	consReqHandler := &request.Handler{}
 	consDlManager := &dman.DMan{}
+	consLSHandler := &lstate.Handlers{}
 	consGossipHandlers := &gossip.Handlers{}
 	consGossipClient := &gossip.Client{}
+	consAdminHandlers := &admin.Handlers{}
 	consLSEngine := &lstate.Engine{}
-	statusLogger := &status.Logger{}
 	secp256k1Signer := &mncrypto.Secp256k1Signer{}
-	appDepositHandler := &deposit.Handler{}
+
 	consSync := &consensus.Synchronizer{}
 	localStateHandler := &localrpc.Handlers{}
-
-	consDB.Init(rawConsensusDb)
+	statusLogger := &status.Logger{}
 
 	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
 	localStateServer := initLocalStateServer(localStateHandler)
-
-	appDepositHandler.Init()
-
-	consReqClient.Init(peerManager.P2PClient())
 
 	// Initialize the consensus engine signer
 	if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
 		panic(err)
 	}
 
-	// Initialize the evidence pool
+	consDB.Init(rawConsensusDb)
 	consTxPool.Init(consDB)
 
-	// Initialize the app logic
+	appDepositHandler.Init()
 	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler); err != nil {
 		panic(err)
 	}
 
 	// Initialize consensus
+	consReqClient.Init(peerManager.P2PClient())
 	consReqHandler.Init(consDB, app)
 	consDlManager.Init(consDB, app, consReqClient)
 	consLSHandler.Init(consDB, consDlManager)
