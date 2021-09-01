@@ -245,12 +245,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// account signer for ETH accounts
 	secp256k1Signer := &mncrypto.Secp256k1Signer{}
 
-	statusLogger := &status.Logger{} // stdout logger
-
-	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
+	// stdout logger
+	statusLogger := &status.Logger{}
 
 	localStateHandler := &localrpc.Handlers{}
 	localStateServer := initLocalStateServer(localStateHandler)
+	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
 
 	// Initialize the consensus engine signer
 	if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
