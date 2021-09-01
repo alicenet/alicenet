@@ -98,10 +98,9 @@ func initEthereumConnection(logger *logrus.Logger) (blockchain.Ethereum, *keysto
 }
 
 // Setup the peer manager:
-// Peer manager owns the raw TCP connections of the p2p system, responsible for turning on and off p2p connections
-// 	- gossip protocol
-// 	- way to access methods on a remote peer (another node)
-// 	- validators/miners, those who care about voting and consensus
+// Peer manager owns the raw TCP connections of the p2p system
+// Runs the gossip protocol
+// Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus)
 func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *request.Handler) *peering.PeerManager {
 	p2pDispatch := proto.NewP2PDispatch()
 
@@ -138,7 +137,7 @@ func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *reques
 	return peerManager
 }
 
-// Setup the localstate RPC server, used by e.g. wallet users (or anything that's not a node)
+// Setup the localstate RPC server, a more REST-like API, used by e.g. wallet users (or anything that's not a node)
 func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handler {
 	localStateDispatch := proto.NewLocalStateDispatch()
 	localStateServer, err := localrpc.NewStateServerHandler(
@@ -206,28 +205,51 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
 	rawMonitorDb := initDatabase(&nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
 	defer rawMonitorDb.Close()
+
+	/////////////////////////////////////////////////////////////////////////////
+	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+
+	// wrap raw badgerdbs in custom db type to gain proper abstractions
 	monitorDb := monitor.NewDatabaseFromExisting(rawMonitorDb)
-
 	consDB := &db.Database{}
-	consTxPool := &evidence.Pool{}
-	app := &application.Application{}
-	appDepositHandler := &deposit.Handler{}
 
-	consReqClient := &request.Client{}
-	consReqHandler := &request.Handler{}
+	// app maintains the UTXO set of the MadNet blockchain (module is separate from consensus e.d.)
+	app := &application.Application{}
+	appDepositHandler := &deposit.Handler{} // watches ETH blockchain about deposits
+
+	// consDlManager is used to retrieve transactions or block headers (to verify validity for proposal vote)
 	consDlManager := &dman.DMan{}
-	consLSHandler := &lstate.Handlers{}
+
+	// gossip system (e.g. I gossip the block header, I request the transactions, to drive what the next request should be)
 	consGossipHandlers := &gossip.Handlers{}
 	consGossipClient := &gossip.Client{}
+
+	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
+	consTxPool := &evidence.Pool{}
+
+	// link between ETH net and our internal logic, relays important ETH events (e.g. snapshot) into our system
 	consAdminHandlers := &admin.Handlers{}
+
+	// consensus p2p comm
+	consReqClient := &request.Client{}
+	consReqHandler := &request.Handler{}
+
+	// core of consensus algorithm: where outside stake relies, how gossip ends up, how state modifications occur
 	consLSEngine := &lstate.Engine{}
+	consLSHandler := &lstate.Handlers{}
+
+	// synchronizes execution context, makes sure everything synchronizes with the ctx system - throughout modules
+	consSync := &consensus.Synchronizer{}
+
+	// account signer for ETH accounts
 	secp256k1Signer := &mncrypto.Secp256k1Signer{}
 
-	consSync := &consensus.Synchronizer{}
-	localStateHandler := &localrpc.Handlers{}
-	statusLogger := &status.Logger{}
+	statusLogger := &status.Logger{} // stdout logger
 
 	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
+
+	localStateHandler := &localrpc.Handlers{}
 	localStateServer := initLocalStateServer(localStateHandler)
 
 	// Initialize the consensus engine signer
