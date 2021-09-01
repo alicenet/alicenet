@@ -1,6 +1,9 @@
 package errorz
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// ErrMissingTransactions should be raised by an IsValidFunc if a proposal may
@@ -31,6 +34,6 @@ func (e *ErrStale) Error() string {
 	return "the object is invalid:" + e.msg
 }
 
-func (e ErrStale) New(msg string) *ErrStale {
-	return &ErrStale{msg}
+func (e ErrStale) New(msg string, v ...interface{}) *ErrStale {
+	return &ErrStale{fmt.Sprintf(msg, v...)}
 }

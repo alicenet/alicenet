@@ -243,13 +243,13 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 		}
 	}
 	srpc.logger.Debugf("HandleLocalStateGetValueForOwner: %v", req)
-	accountH := req.Account
-	minValueString := req.Minvalue
 	minValue := &uint256.Uint256{}
-	err := minValue.UnmarshalString(minValueString)
+	err := minValue.UnmarshalString(req.Minvalue)
 	if err != nil {
 		return nil, err
 	}
+
+	accountH := req.Account
 	if len(accountH) != 40 {
 		return nil, fmt.Errorf("invalid length (%v) for Account:%s", len(req.Account), req.Account)
 	}
@@ -257,29 +257,52 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+
 	var utxoIDs [][]byte
 	var value *uint256.Uint256
+	var paginationToken *objs.PaginationToken
+	var height uint32
 	err = srpc.database.View(func(txn *badger.Txn) error {
-		tmp, v, err := srpc.AppHandler.GetValueForOwner(txn, constants.CurveSpec(req.CurveSpec), account, minValue)
+		tmp, v, pt, err := srpc.AppHandler.GetValueForOwner(txn, constants.CurveSpec(req.CurveSpec), account, minValue, req.PaginationToken)
 		if err != nil {
 			return err
 		}
 		utxoIDs = tmp
 		value = v
+		paginationToken = pt
+
+		os, err := srpc.database.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		height = os.SyncToBH.BClaims.Height
+
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	out, err := ForwardTranslateByteSlice(utxoIDs)
 	if err != nil {
 		return nil, err
 	}
+
 	valueString, err := value.MarshalString()
 	if err != nil {
 		return nil, err
 	}
-	result := &pb.GetValueResponse{TotalValue: valueString, UTXOIDs: out}
+
+	var ptBytesRet []byte
+	if paginationToken != nil {
+		ptBytesRet, err = paginationToken.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	result := &pb.GetValueResponse{TotalValue: valueString, UTXOIDs: out, PaginationToken: ptBytesRet, BlockHeight: height}
 	return result, nil
 }
 

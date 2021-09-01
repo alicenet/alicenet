@@ -1,12 +1,12 @@
 package MadNet
 
 //go:generate go build -o=mngen ./cmd/mngen
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/p2p.proto
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/bootnode.proto
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/aobjs.proto
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/cobjs.proto
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/localstatetypes.proto
-//go:generate protoc --go_out=plugins=grpc:proto/ --proto_path=proto/ proto/localstate.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/p2p.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/bootnode.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/aobjs.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/cobjs.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/localstatetypes.proto
+//go:generate protoc --go_out=proto/ --go-grpc_opt=require_unimplemented_servers=false --go-grpc_out=proto/ --proto_path=proto/ proto/localstate.proto
 //go:generate ./mngen -i=./proto/p2p.proto -o=proto -p=proto -t=rpc
 //go:generate ./mngen -i=./proto/localstate.proto -o=proto -p=proto -t=xservice
 //go:generate rm mngen

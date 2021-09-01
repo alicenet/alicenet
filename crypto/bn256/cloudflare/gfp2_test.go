@@ -353,3 +353,35 @@ func invertGFP2Int64(t *testing.T, k int64) {
 		t.Fatal("Failed to compute gfp2 inverse of", gfp2ImagK.String())
 	}
 }
+
+func TestGFP2MulSquare(t *testing.T) {
+	p := &gfP2{}
+	two := newGFp(2)
+	three := newGFp(3)
+	p.x.Set(two)
+	p.y.Set(three)
+
+	// Correct value
+	a := &gfP2{}
+	a.Set(p)
+	b := &gfP2{}
+	b.Set(p)
+	c := &gfP2{}
+	c.Mul(a, b)
+
+	// Test multiplication
+	q := &gfP2{}
+	q.Set(p)
+	q.Mul(q, q)
+	if !q.IsEqual(c) {
+		t.Fatal("gfP2 do not match (1)")
+	}
+
+	// Test squaring
+	r := &gfP2{}
+	r.Set(p)
+	r.Square(r)
+	if !r.IsEqual(c) {
+		t.Fatal("gfP2 do not match (2)")
+	}
+}

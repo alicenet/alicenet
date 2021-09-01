@@ -15,8 +15,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-type CtxP2PFeedBackKey struct{}
-
 // Client serves incoming requests and handles routing of outgoing
 // requests for data from the consensus system.
 type Client struct {
@@ -35,6 +33,8 @@ func (rb *Client) Init(client pb.P2PClient) error {
 	return nil
 }
 
+// RequestP2PGetSnapShotNode implements the client for the P2P method
+// GetSnapShotNode
 func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotNodeRequest{
 		Height:   height,
@@ -54,6 +54,8 @@ func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, 
 	return resp.Node, nil
 }
 
+// RequestP2PGetSnapShotHdrNode implements the client for the P2P method
+// GetSnapShotHdrNode
 func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotHdrNodeRequest{
 		NodeHash: key,
@@ -72,6 +74,8 @@ func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte, 
 	return resp.Node, nil
 }
 
+// RequestP2PGetBlockHeaders implements the client for the P2P method
+// GetBlockHeaders
 func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32, opts ...grpc.CallOption) ([]*objs.BlockHeader, error) {
 	req := &pb.GetBlockHeadersRequest{
 		BlockNumbers: blockNums,
@@ -105,6 +109,8 @@ func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uin
 	return hdrs, nil
 }
 
+// RequestP2PGetPendingTx implements the client for the P2P method
+// GetPendingTx
 func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetPendingTxsRequest{
 		TxHashes: txHashes,
@@ -128,6 +134,8 @@ func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte,
 	return resp.Txs, err
 }
 
+// RequestP2PGetMinedTxs implements the client for the P2P method
+// GetMinedTxs
 func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetMinedTxsRequest{
 		TxHashes: txHashes,
@@ -146,6 +154,8 @@ func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, 
 	return resp.Txs, err
 }
 
+// RequestP2PGetSnapShotStateData implements the client for the P2P method
+// GetSnapShotStateData
 func (rb *Client) RequestP2PGetSnapShotStateData(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotStateDataRequest{
 		Key: key,
