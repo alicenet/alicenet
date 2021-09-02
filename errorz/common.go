@@ -15,15 +15,45 @@ var (
 )
 
 type ErrInvalid struct {
-	msg string
+	msg     string
+	wrapped error
+}
+
+func WrapErrInvalid(err error, fmtPattern string, fmtArgs ...interface{}) *ErrInvalid {
+	if err == nil {
+		return nil
+	}
+
+	return &ErrInvalid{msg: fmt.Sprintf(fmtPattern, fmtArgs...), wrapped: err}
 }
 
 func (e *ErrInvalid) Error() string {
-	return "the object is invalid:" + e.msg
+	s := "the object is invalid:" + e.msg
+	if e.wrapped != nil {
+		return s + ":\n" + e.wrapped.Error()
+	}
+	return s
+}
+
+func (s *ErrInvalid) Unwrap() error {
+	return s.wrapped
 }
 
 func (e ErrInvalid) New(msg string) *ErrInvalid {
-	return &ErrInvalid{msg}
+	return &ErrInvalid{msg, nil}
+}
+
+type ErrConsensus struct {
+	msg     string
+	isLocal bool
+}
+
+func NewErrConsensus(msg string, isLocal bool) *ErrConsensus {
+	return &ErrConsensus{msg: msg, isLocal: isLocal}
+}
+
+func (e *ErrConsensus) Error() string {
+	return e.msg
 }
 
 type ErrStale struct {
