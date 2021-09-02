@@ -289,6 +289,10 @@ func newKnownSelectors() interfaces.SelectorMap {
 	sm.Selector("validatorCount()")
 	sm.Selector("setValidatorMaxCount(uint8)")
 
+	// Accusation management
+	sm.Selector("AccuseMultipleProposal(bytes,bytes,bytes,bytes)")
+
+	// EthDKG
 	sm.Selector("initializeEthDKG(address)")
 	sm.Selector("initializeState()")
 	sm.Selector("updatePhaseLength(uint256)")
