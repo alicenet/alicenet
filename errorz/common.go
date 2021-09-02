@@ -56,6 +56,10 @@ func (e *ErrConsensus) Error() string {
 	return e.msg
 }
 
+func (e *ErrConsensus) IsLocal() bool {
+	return e.isLocal
+}
+
 type ErrStale struct {
 	msg string
 }

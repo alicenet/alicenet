@@ -18,7 +18,7 @@ func TestErrInvalidWrapping(t *testing.T) {
 		t.Fatal("err2 should unwrap to err using errors.As")
 	}
 
-	if !wrapped.isLocal {
+	if !wrapped.IsLocal() {
 		t.Fatal("wrapped attributes should be readable")
 	}
 
