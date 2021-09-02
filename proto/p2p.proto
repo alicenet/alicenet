@@ -30,7 +30,7 @@ service P2P {
 }
 
 
-service Discovery {
+service P2PDiscovery {
   rpc GetPeers (GetPeersRequest) returns (GetPeersResponse) {}
 }
 

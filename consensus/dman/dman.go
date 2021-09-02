@@ -26,7 +26,7 @@ type DMan struct {
 	logger        *logrus.Logger
 }
 
-func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqBusView) error {
+func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqBusView) {
 	dm.logger = logging.GetLogger(constants.LoggerDMan)
 	dm.database = database
 	dm.appHandler = app
@@ -38,7 +38,6 @@ func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqB
 	}
 	dm.downloadActor = &RootActor{}
 	dm.downloadActor.Init(dm.logger, proxy)
-	return nil
 }
 
 func (dm *DMan) Start() {

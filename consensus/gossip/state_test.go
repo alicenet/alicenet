@@ -41,7 +41,7 @@ func TestState(t *testing.T) {
 	}
 	defer DB.Close()
 	database := &db.Database{}
-	err = database.Init(DB)
+	database.Init(DB)
 	if err != nil {
 		t.Fatal(err)
 	}

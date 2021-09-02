@@ -24,14 +24,13 @@ type Database struct {
 }
 
 // Init will initialize the database
-func (db *Database) Init(DB *badger.DB) error {
+func (db *Database) Init(DB *badger.DB) {
 	logger := logging.GetLogger(constants.LoggerDB)
 	db.logger = logger
 	db.rawDB = &rawDataBase{db: DB, logger: logger}
 	hdrTrie := &headerTrie{}
 	hdrTrie.init()
 	db.trie = hdrTrie
-	return nil
 }
 
 func (db *Database) DB() *badger.DB {

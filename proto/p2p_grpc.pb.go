@@ -674,84 +674,84 @@ var P2P_ServiceDesc = grpc.ServiceDesc{
 	Metadata: "p2p.proto",
 }
 
-// DiscoveryClient is the client API for Discovery service.
+// P2PDiscoveryClient is the client API for P2PDiscovery service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type DiscoveryClient interface {
+type P2PDiscoveryClient interface {
 	GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error)
 }
 
-type discoveryClient struct {
+type p2PDiscoveryClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewDiscoveryClient(cc grpc.ClientConnInterface) DiscoveryClient {
-	return &discoveryClient{cc}
+func NewP2PDiscoveryClient(cc grpc.ClientConnInterface) P2PDiscoveryClient {
+	return &p2PDiscoveryClient{cc}
 }
 
-func (c *discoveryClient) GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error) {
+func (c *p2PDiscoveryClient) GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error) {
 	out := new(GetPeersResponse)
-	err := c.cc.Invoke(ctx, "/proto.Discovery/GetPeers", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.P2PDiscovery/GetPeers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DiscoveryServer is the server API for Discovery service.
-// All implementations should embed UnimplementedDiscoveryServer
+// P2PDiscoveryServer is the server API for P2PDiscovery service.
+// All implementations should embed UnimplementedP2PDiscoveryServer
 // for forward compatibility
-type DiscoveryServer interface {
+type P2PDiscoveryServer interface {
 	GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error)
 }
 
-// UnimplementedDiscoveryServer should be embedded to have forward compatible implementations.
-type UnimplementedDiscoveryServer struct {
+// UnimplementedP2PDiscoveryServer should be embedded to have forward compatible implementations.
+type UnimplementedP2PDiscoveryServer struct {
 }
 
-func (UnimplementedDiscoveryServer) GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error) {
+func (UnimplementedP2PDiscoveryServer) GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
 }
 
-// UnsafeDiscoveryServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to DiscoveryServer will
+// UnsafeP2PDiscoveryServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to P2PDiscoveryServer will
 // result in compilation errors.
-type UnsafeDiscoveryServer interface {
-	mustEmbedUnimplementedDiscoveryServer()
+type UnsafeP2PDiscoveryServer interface {
+	mustEmbedUnimplementedP2PDiscoveryServer()
 }
 
-func RegisterDiscoveryServer(s grpc.ServiceRegistrar, srv DiscoveryServer) {
-	s.RegisterService(&Discovery_ServiceDesc, srv)
+func RegisterP2PDiscoveryServer(s grpc.ServiceRegistrar, srv P2PDiscoveryServer) {
+	s.RegisterService(&P2PDiscovery_ServiceDesc, srv)
 }
 
-func _Discovery_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _P2PDiscovery_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPeersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DiscoveryServer).GetPeers(ctx, in)
+		return srv.(P2PDiscoveryServer).GetPeers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Discovery/GetPeers",
+		FullMethod: "/proto.P2PDiscovery/GetPeers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DiscoveryServer).GetPeers(ctx, req.(*GetPeersRequest))
+		return srv.(P2PDiscoveryServer).GetPeers(ctx, req.(*GetPeersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Discovery_ServiceDesc is the grpc.ServiceDesc for Discovery service.
+// P2PDiscovery_ServiceDesc is the grpc.ServiceDesc for P2PDiscovery service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Discovery_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Discovery",
-	HandlerType: (*DiscoveryServer)(nil),
+var P2PDiscovery_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.P2PDiscovery",
+	HandlerType: (*P2PDiscoveryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "GetPeers",
-			Handler:    _Discovery_GetPeers_Handler,
+			Handler:    _P2PDiscovery_GetPeers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -72,7 +72,7 @@ func (mb *Handlers) getLock(ctx context.Context) (interfaces.Lockable, bool) {
 // Init will initialize the gossip consumer
 // it must be run at least once and will have no
 // effect if run more than once
-func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers) error {
+func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers) {
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
 	mb.client = client
 	mb.app = app
@@ -88,12 +88,7 @@ func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHand
 	mb.ReceiveLock = make(chan interfaces.Lockable)
 	mb.isValidator = &mutexBool{}
 	mb.sstore = &lstate.Store{}
-	err := mb.sstore.Init(database)
-	if err != nil {
-		utils.DebugTrace(mb.logger, err)
-		return err
-	}
-	return nil
+	mb.sstore.Init(database)
 }
 
 // Close will shut down the gossip system such that it can not be

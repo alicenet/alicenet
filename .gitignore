@@ -1,3 +1,21 @@
 local-geth/*
-madnet
 
+# output files
+/madnet
+/mngen
+**/__debug_bin
+**/*.log
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# temp files
+*.swp
+**/.DS_Store
+**/thumbs.db
+**/desktop.ini
+**/.directory

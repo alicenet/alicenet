@@ -26,14 +26,13 @@ type Handler struct {
 }
 
 // Init initializes the deposit handler
-func (dp *Handler) Init() error {
+func (dp *Handler) Init() {
 	vidx := indexer.NewValueIndex(
 		dbprefix.PrefixDepositValueKey,
 		dbprefix.PrefixDepositValueRefKey,
 	)
 	dp.valueIndex = vidx
 	dp.logger = logging.GetLogger(constants.LoggerApp)
-	return nil
 }
 
 // IsValid determines if the deposits in txvec are valid

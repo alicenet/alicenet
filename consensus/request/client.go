@@ -25,12 +25,11 @@ type Client struct {
 }
 
 // Init initializes the object
-func (rb *Client) Init(client pb.P2PClient) error {
+func (rb *Client) Init(client pb.P2PClient) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	rb.client = client
 	rb.groupVal = &crypto.BNGroupValidator{}
 	rb.secpVal = &crypto.Secp256k1Validator{}
-	return nil
 }
 
 // RequestP2PGetSnapShotNode implements the client for the P2P method

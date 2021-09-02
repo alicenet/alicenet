@@ -48,7 +48,7 @@ type Engine struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf
@@ -60,10 +60,7 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 	ce.RequestBus = rbusClient
 	ce.appHandler = app
 	ce.sstore = &Store{}
-	err := ce.sstore.Init(database)
-	if err != nil {
-		return err
-	}
+	ce.sstore.Init(database)
 	ce.dm = dm
 	if len(ce.EthPubk) > 0 {
 		ce.ethAcct = crypto.GetAccount(ce.EthPubk)
@@ -73,10 +70,7 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 		appHandler: app,
 		requestBus: ce.RequestBus,
 	}
-	if err := ce.fastSync.Init(database); err != nil {
-		return err
-	}
-	return nil
+	ce.fastSync.Init(database)
 }
 
 func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{}, error) {

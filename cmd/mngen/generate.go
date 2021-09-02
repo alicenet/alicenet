@@ -10,10 +10,10 @@ import (
 	"text/template"
 )
 
-func runTemplate(r *registrar, packagestr string, temp string, outfile string) {
+func runTemplate(r *registrar, packagestr string, tmpl string, outfile string) {
 	r.Package = packagestr
 	output := &strings.Builder{}
-	it := template.Must(template.New("").Parse(temp))
+	it := template.Must(template.New("").Parse(tmpl))
 	err := it.Execute(output, r)
 	if err != nil {
 		panic(err)
@@ -54,7 +54,7 @@ func main() {
 	var infilepath = flag.String("i", "", "Required. The relative path to the file used for input.")
 	var outpath = flag.String("o", "", "Required. The relative path to the directory used for output.")
 	var packagestr = flag.String("p", "", "Required. The package name to be used in the generated files.")
-	var templ = flag.String("t", "", "Required. The templ to use for code generation.")
+
 	var help = flag.Bool("help", false, "Shows help.")
 	flag.Parse()
 	if *help {
@@ -76,11 +76,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	if *templ == "" {
-		fmt.Println("Missing the name of the templ for output files. Use one of rpc xservice")
-		flag.Usage()
-		os.Exit(1)
-	}
+
 	if !fileExists(*infilepath) {
 		panic("input file does not exist")
 	}
@@ -90,15 +86,8 @@ func main() {
 	_, infile := filepath.Split(*infilepath)
 	infilename := strings.TrimSuffix(infile, filepath.Ext(infile))
 	proto := parseProto(*infilepath)
-	switch *templ {
-	case "rpc":
-		runTemplate(proto, *packagestr, rpcDef, filepath.Join(*outpath, strings.Join([]string{"mngen.rpc.", infilename, ".go"}, "")))
-		runTemplate(proto, *packagestr, rpcTest, filepath.Join(*outpath, strings.Join([]string{"mngen.rpc.", infilename, "_test.go"}, "")))
-	case "xservice":
-		runTemplate(proto, *packagestr, xserviceDef, filepath.Join(*outpath, strings.Join([]string{"mngen.xservice.", infilename, ".go"}, "")))
-		runTemplate(proto, *packagestr, xserviceTest, filepath.Join(*outpath, strings.Join([]string{"mngen.xservice.", infilename, "_test.go"}, "")))
-	default:
-		panic("templ is not defined. Must be one of rpc or xservice")
-	}
+
+	runTemplate(proto, *packagestr, implDef, filepath.Join(*outpath, strings.Join([]string{infilename, "mngen.go"}, "_")))
+	runTemplate(proto, *packagestr, testDef, filepath.Join(*outpath, strings.Join([]string{infilename, "mngen_test.go"}, "_")))
 
 }
