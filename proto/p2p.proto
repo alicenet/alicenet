@@ -45,7 +45,8 @@ message GetPeersResponse {
 
 message StatusRequest {}
 message StatusResponse {
-  bytes HighestBlockHeader = 1;
+  uint32 SyncToBlockHeight = 1;
+  uint32 MaxBlockHeightSeen = 2;
 }
 
 

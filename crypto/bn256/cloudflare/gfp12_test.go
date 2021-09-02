@@ -1,6 +1,9 @@
 package cloudflare
 
-import "testing"
+import (
+	"math/big"
+	"testing"
+)
 
 func TestIsEqualGFP12(t *testing.T) {
 	z1 := &gfP12{}
@@ -46,5 +49,39 @@ func TestAddSubGFP12(t *testing.T) {
 	res.Sub(one, one)
 	if !res.IsEqual(zero) {
 		t.Fatal("Should show res == 0!")
+	}
+}
+
+func TestGFP12MulSquare(t *testing.T) {
+	k := 1
+	s := big.NewInt(int64(k))
+	g1 := new(G1).ScalarBaseMult(s)
+	g2 := new(G2).ScalarBaseMult(s)
+	gT := Pair(g1, g2)
+	p := &gfP12{}
+	p.Set(gT.p)
+
+	// Correct value
+	a := &gfP12{}
+	a.Set(p)
+	b := &gfP12{}
+	b.Set(p)
+	c := &gfP12{}
+	c.Mul(a, b)
+
+	// Test multiplication
+	q := &gfP12{}
+	q.Set(p)
+	q.Mul(q, q)
+	if !q.IsEqual(c) {
+		t.Fatal("gfP12 do not match (1)")
+	}
+
+	// Test squaring
+	r := &gfP12{}
+	r.Set(p)
+	r.Square(r)
+	if !r.IsEqual(c) {
+		t.Fatal("gfP12 do not match (2)")
 	}
 }

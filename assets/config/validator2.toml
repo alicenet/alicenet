@@ -1,4 +1,4 @@
-logging = "localRPC=info,gossipbus=info,utils=info,services=info,ethereum=info,main=warn,validator=info,monitor=info,deploy=info,consensus=info,peerMan=info,muxHandler=info,p2pmux=info,app=error,transport=error,dman=info,status=info,db=info,yamux=error,badger=error,monitor_bus=error"
+logging = "localRPC=info,gossipbus=info,utils=info,services=info,ethereum=info,main=warn,validator=info,monitor=info,deploy=info,consensus=debug,peerMan=info,muxHandler=info,p2pmux=info,app=error,transport=error,dman=info,status=info,db=info,yamux=error,badger=error,monitor_bus=error"
 
 [chain]
 id = 42
@@ -14,6 +14,7 @@ listeningAddress = "0.0.0.0:4244"
 cacheSize = 20
 
 [transport]
+upnp=false
 originLimit = 50
 privateKey = "cccccccccccccccccccccccccccccccc"
 bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@bootnode:4242"

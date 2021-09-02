@@ -248,7 +248,7 @@ func (s *Synchronizer) Start() {
 		s.wg.Add(1)
 		go s.adminInteruptLoop()
 		s.wg.Add(1)
-		go s.GossipInLoop()
+		go s.gossipInteruptLoop()
 		s.setupLoops()
 		go s.adminHandler.InitializationMonitor(s.closeChan)
 	})
@@ -384,41 +384,16 @@ func (s *Synchronizer) Safe() bool {
 	return true
 }
 
-func (s *Synchronizer) GossipInLoop() {
+func (s *Synchronizer) gossipInteruptLoop() {
 	defer s.wg.Done()
 	defer func() { s.logger.Warn("Stopping Gossip loop") }()
 	s.logger.Warn("Starting Gossip loop")
 	for {
-		if s.isClosing() {
-			return
-		}
 		select {
+		case s.gossipHandler.ReceiveLock <- s:
+			continue
 		case <-s.closeChan:
 			return
-		case <-time.After(9 * constants.MsgTimeout):
-			if s.isClosing() {
-				continue
-			}
-			if s.initialized.isNotSet() {
-				continue
-			}
-			if s.ethSyncDone.isNotSet() {
-				continue
-			}
-			if s.madSyncDone.isNotSet() {
-				continue
-			}
-			if s.peerMinThresh.isNotSet() {
-				continue
-			}
-			if s.isClosing() {
-				continue
-			}
-			err := s.gossipHandler.UpdateStateFromGossip(s.closeChan, s, s.Safe)
-			if err != nil {
-				s.onError("UpdateStateFromGossip", err)
-				return
-			}
 		}
 	}
 }
@@ -429,20 +404,10 @@ func (s *Synchronizer) adminInteruptLoop() {
 	s.logger.Warn("Starting AdminInterupt loop")
 	for {
 		select {
+		case s.adminHandler.ReceiveLock <- s:
+			continue
 		case <-s.closeChan:
 			return
-		case <-s.adminHandler.RequestLock:
-			select {
-			case <-s.closeChan:
-				return
-			default:
-				select {
-				case s.adminHandler.ReceiveLock <- s:
-					continue
-				case <-s.closeChan:
-					return
-				}
-			}
 		}
 	}
 }
@@ -499,7 +464,7 @@ func (s *Synchronizer) setupLoops() {
 		withName("ReGossipLoop").
 		withInitialDelay(9 * constants.MsgTimeout).
 		withFn(s.gossipClient.ReGossip).
-		withFreq(constants.MsgTimeout * 4).
+		withFreq(9 * constants.MsgTimeout).
 		withDelayOnConditionFailure(constants.MsgTimeout).
 		withLockFreeCondition(s.isNotClosing).
 		withLockFreeCondition(s.initialized.isSet).
@@ -570,20 +535,4 @@ func (s *Synchronizer) setupLoops() {
 		s.wg.Add(1)
 		go s.loop(tdbgcLoopConfig)
 	}
-
-	gossipInLoopNoSyncConfig := newLoopConfig().
-		withName("GossipInLoop-NoSync").
-		withFn(s.gossipHandler.UpdateBlocksFromGossip).
-		withFreq(1 * time.Second).
-		withDelayOnConditionFailure(2 * time.Second).
-		withLockFreeCondition(s.isNotClosing).
-		withLockFreeCondition(s.initialized.isSet).
-		withLockFreeCondition(s.ethSyncDone.isSet).
-		withLockFreeCondition(s.madSyncDone.isNotSet).
-		withLockFreeCondition(s.peerMinThresh.isSet).
-		withLock().
-		withLockedCondition(s.isNotClosing).
-		withLockedCondition(s.madSyncDone.isNotSet)
-	s.wg.Add(1)
-	go s.loop(gossipInLoopNoSyncConfig)
 }

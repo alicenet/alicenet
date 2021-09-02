@@ -41,7 +41,6 @@ type Handlers struct {
 	ethAcct     []byte
 	ethPubk     []byte
 	appHandler  appmock.Application
-	RequestLock chan struct{}
 	ReceiveLock chan interfaces.Lockable
 }
 
@@ -58,7 +57,6 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.ethPubk = ethPubk
 	ah.secret = utils.CopySlice(secret)
 	ah.ethAcct = crypto.GetAccount(ethPubk)
-	ah.RequestLock = make(chan struct{})
 	ah.ReceiveLock = make(chan interfaces.Lockable)
 	return nil
 }
@@ -72,13 +70,8 @@ func (ah *Handlers) Close() {
 
 func (ah *Handlers) getLock() (interfaces.Lockable, bool) {
 	select {
-	case ah.RequestLock <- struct{}{}:
-		select {
-		case lock := <-ah.ReceiveLock:
-			return lock, true
-		case <-ah.ctx.Done():
-			return nil, false
-		}
+	case lock := <-ah.ReceiveLock:
+		return lock, true
 	case <-ah.ctx.Done():
 		return nil, false
 	}
