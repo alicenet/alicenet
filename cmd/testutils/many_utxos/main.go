@@ -117,7 +117,10 @@ func (f *funder) setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 
 func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	signer := &crypto.BNSigner{}
-	signer.SetPrivk(privk)
+	err := signer.SetPrivk(privk)
+	if err != nil {
+		return nil, nil, err
+	}
 	pubk, err := signer.Pubkey()
 	if err != nil {
 		return nil, nil, err

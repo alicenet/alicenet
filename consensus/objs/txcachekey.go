@@ -3,10 +3,9 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	"github.com/MadBase/MadNet/constants"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // TxCacheKey ...
@@ -23,9 +22,9 @@ func (b *TxCacheKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	TxHash := gUtils.CopySlice(b.TxHash)
-	Height := gUtils.MarshalUint32(b.Height)
+	Prefix := utils.CopySlice(b.Prefix)
+	TxHash := utils.CopySlice(b.TxHash)
+	Height := utils.MarshalUint32(b.Height)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
 	key = append(key, Height...)
@@ -45,7 +44,7 @@ func (b *TxCacheKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrCorrupt
 	}
 	b.Prefix = splitData[0]
-	Height, err := gUtils.UnmarshalUint32(splitData[1])
+	Height, err := utils.UnmarshalUint32(splitData[1])
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func (b *TxCacheKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("invalid height for unmarshalling")
 	}
 	b.Height = Height
-	TxHash := gUtils.CopySlice(splitData[2])
+	TxHash := utils.CopySlice(splitData[2])
 	if len(TxHash) != constants.HashLen {
 		return errorz.ErrInvalid{}.New("invalid txhash for unmarshalling; incorrect length")
 	}
@@ -67,8 +66,8 @@ func (b *TxCacheKey) MakeIterKey() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	Height := gUtils.MarshalUint32(b.Height)
+	Prefix := utils.CopySlice(b.Prefix)
+	Height := utils.MarshalUint32(b.Height)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
 	key = append(key, Height...)

@@ -11,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
@@ -41,11 +42,12 @@ type Handlers struct {
 	ethAcct     []byte
 	ethPubk     []byte
 	appHandler  appmock.Application
+	storage     dynamics.StorageGetter
 	ReceiveLock chan interfaces.Lockable
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte) {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte, storage dynamics.StorageGetter) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -58,6 +60,7 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.secret = utils.CopySlice(secret)
 	ah.ethAcct = crypto.GetAccount(ethPubk)
 	ah.ReceiveLock = make(chan interfaces.Lockable)
+	ah.storage = storage
 }
 
 // Close shuts down all workers
@@ -260,6 +263,28 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, startingEthDKG bool) error
 	})
 }
 
+// UpdateDynamicStorage updates dynamic storage values.
+func (ah *Handlers) UpdateDynamicStorage(txn *badger.Txn, key, value string, epoch uint32) error {
+	mutex, ok := ah.getLock()
+	if !ok {
+		return nil
+	}
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	update, err := dynamics.NewUpdate(key, value, epoch)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	err = ah.storage.UpdateStorage(txn, update)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	return nil
+}
+
 // IsInitialized returns if the database has been initialized yet
 func (ah *Handlers) IsInitialized() bool {
 	ah.RLock()
@@ -369,7 +394,10 @@ func (ah *Handlers) AddPrivateKey(pk []byte, curveSpec constants.CurveSpec) erro
 			privk := utils.CopySlice(pk)
 			// bn key
 			signer := crypto.BNGroupSigner{}
-			signer.SetPrivk(privk)
+			err := signer.SetPrivk(privk)
+			if err != nil {
+				return err
+			}
 			pubkey, err := signer.PubkeyShare()
 			if err != nil {
 				return err

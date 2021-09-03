@@ -5,7 +5,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs/prevote"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -40,7 +40,7 @@ func (b *PreVote) UnmarshalCapn(bh mdefs.PreVote) error {
 	if err != nil {
 		return err
 	}
-	b.Signature = gUtils.CopySlice(bh.Signature())
+	b.Signature = utils.CopySlice(bh.Signature())
 	return nil
 }
 

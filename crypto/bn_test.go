@@ -17,7 +17,10 @@ func TestSetPrivK(t *testing.T) {
 	privkBig, _ := new(big.Int).SetString("1234567890", 10)
 	privkBig.Mod(privkBig, cloudflare.Order)
 	privk := privkBig.Bytes()
-	s.SetPrivk(privk)
+	err = s.SetPrivk(privk)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSignAndValidate(t *testing.T) {
@@ -29,7 +32,10 @@ func TestSignAndValidate(t *testing.T) {
 	if err != ErrPrivkNotSet {
 		t.Fatal("Should raise private key not set error!")
 	}
-	s.SetPrivk(Hasher([]byte("secret")))
+	err = s.SetPrivk(Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	signature, err := s.Sign(msg)
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +73,10 @@ func TestSignerPubkeyFromSig(t *testing.T) {
 
 	// Valid signature and validation
 	s := &BNSigner{}
-	s.SetPrivk(Hasher([]byte("secret")))
+	err := s.SetPrivk(Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	signature, err := s.Sign(msg)
 	if err != nil {
 		t.Fatal(err)

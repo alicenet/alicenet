@@ -3,7 +3,7 @@ package objs
 import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // BlockHeaderHashIndexKey ...
@@ -21,8 +21,8 @@ func (b *BlockHeaderHashIndexKey) UnmarshalBinary(data []byte) error {
 	if len(data) != (constants.HashLen + 2) {
 		return errorz.ErrInvalid{}.New("Invalid BlockHeaderHashIndexKey")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	b.BlockHash = gUtils.CopySlice(data[2:])
+	b.Prefix = utils.CopySlice(data[0:2])
+	b.BlockHash = utils.CopySlice(data[2:])
 	return nil
 }
 
@@ -39,8 +39,8 @@ func (b *BlockHeaderHashIndexKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("BlockHeaderHashIndexKey: invalid Prefix")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	BlockHash := gUtils.CopySlice(b.BlockHash)
+	Prefix := utils.CopySlice(b.Prefix)
+	BlockHash := utils.CopySlice(b.BlockHash)
 	key = append(key, Prefix...)
 	key = append(key, BlockHash...)
 	return key, nil

@@ -623,7 +623,8 @@ func TestExpSizeIndex(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expObjs, expSize := index.GetExpiredObjects(txn, epoch1, 99)
+		maxBytes := uint32(99)
+		expObjs, remainingBytes := index.GetExpiredObjects(txn, epoch1, maxBytes, constants.MaxTxVectorLength)
 		if len(expObjs) != 2 {
 			t.Fatal("expObjs len wrong", len(expObjs))
 		}
@@ -633,22 +634,23 @@ func TestExpSizeIndex(t *testing.T) {
 		if !bytes.Equal(expObjs[1], txHash1) {
 			t.Fatal("exp1 wrong")
 		}
-		if expSize != size1+size2 {
-			t.Fatal("exp size wrong")
+		if maxBytes-remainingBytes != 2*constants.HashLen {
+			t.Fatal("wrong size for remainingBytes")
 		}
 		err = index.Drop(txn, txHash1)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expObjs, expSize = index.GetExpiredObjects(txn, epoch1, 99)
+		maxBytes = 99
+		expObjs, remainingBytes = index.GetExpiredObjects(txn, epoch1, maxBytes, constants.MaxTxVectorLength)
 		if len(expObjs) != 1 {
 			t.Fatal("expObjs len wrong", len(expObjs))
 		}
 		if !bytes.Equal(expObjs[0], txHash2) {
 			t.Fatal("exp0 wrong")
 		}
-		if expSize != size2 {
-			t.Fatal("exp size wrong")
+		if maxBytes-remainingBytes != constants.HashLen {
+			t.Fatal("wrong size for remainingBytes")
 		}
 		return nil
 	})

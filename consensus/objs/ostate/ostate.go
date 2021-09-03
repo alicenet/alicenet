@@ -3,7 +3,7 @@ package ostate
 import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -14,7 +14,7 @@ func Marshal(v mdefs.OwnState) ([]byte, error) {
 		return nil, err
 	}
 	defer v.Struct.Segment().Message().Reset(nil)
-	out := gUtils.CopySlice(raw)
+	out := utils.CopySlice(raw)
 	return out, nil
 }
 

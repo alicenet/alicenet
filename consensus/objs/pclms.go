@@ -3,10 +3,9 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/pclaims"
+	"github.com/MadBase/MadNet/errorz"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

@@ -117,7 +117,7 @@ func (b *TXIn) TxHash() ([]byte, error) {
 	if b == nil || b.TXInLinker == nil || len(b.TXInLinker.TxHash) != constants.HashLen {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
-	return b.TXInLinker.TxHash, nil
+	return utils.CopySlice(b.TXInLinker.TxHash), nil
 }
 
 // SetTxHash sets the TxHash of the TXIn object

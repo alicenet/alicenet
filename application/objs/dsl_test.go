@@ -42,6 +42,7 @@ func TestDSLinkerGood(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -145,6 +146,7 @@ func TestDSLinkerBad2(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, 31) // Invalid TxHash
 	dsl := &DSLinker{
@@ -394,6 +396,20 @@ func TestDSLinkerSetTXOutIdx(t *testing.T) {
 	err = dsl.SetTXOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDSLinkerIsExpired(t *testing.T) {
+	ds := &DataStore{}
+	currentHeight := uint32(1)
+	_, err := ds.DSLinker.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsl := &DSLinker{}
+	_, err = dsl.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
 	}
 }
 

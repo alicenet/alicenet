@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 )
 
 type RoundStates struct {
@@ -287,7 +286,7 @@ func (r *RoundStates) RCert() *objs.RCert {
 }
 
 func (r *RoundStates) PrevBlock() []byte {
-	prevBlock := gUtils.CopySlice(r.OwnRoundState().RCert.RClaims.PrevBlock)
+	prevBlock := utils.CopySlice(r.OwnRoundState().RCert.RClaims.PrevBlock)
 	return prevBlock
 }
 

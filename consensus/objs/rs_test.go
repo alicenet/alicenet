@@ -158,7 +158,10 @@ func makeSigners(t *testing.T, num int) ([]*crypto.Secp256k1Signer, []*crypto.BN
 		}
 		secpSigners = append(secpSigners, secpSigner)
 		bnSigner := &crypto.BNGroupSigner{}
-		bnSigner.SetPrivk(crypto.Hasher([]byte("secret" + strconv.Itoa(i))))
+		err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret" + strconv.Itoa(i))))
+		if err != nil {
+			t.Fatal(err)
+		}
 		bnSigners = append(bnSigners, bnSigner)
 	}
 	return secpSigners, bnSigners

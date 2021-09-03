@@ -76,6 +76,8 @@ func Test_txCache_GetHeight(t *testing.T) {
 	h2t, _ := txs2[0].TxHash()
 
 	if string(h2t) != string(h2) {
+		t.Logf("h2:  %s", h2)
+		t.Logf("h2t: %s", h2t)
 		t.Fatal("2: bad hash")
 	}
 	txs3, _ := txc.GetHeight(3)

@@ -39,3 +39,25 @@ func (vin Vin) IsDeposit() []bool {
 	}
 	return ids
 }
+
+// IsCleanupVin ensures we have a valid Vin object in Cleanup Tx.
+// In this case, the refUTXOs must all be expired DataStores.
+func (vin Vin) IsCleanupVin(currentHeight uint32, refUTXOs Vout) bool {
+	if len(vin) == 0 {
+		return false
+	}
+	// Must ensure that all Vin objects are expired datastores.
+	for i := 0; i < len(refUTXOs); i++ {
+		utxo := refUTXOs[i]
+		if !utxo.HasDataStore() {
+			// Must have DataStore
+			return false
+		}
+		expired, err := utxo.IsExpired(currentHeight)
+		if err != nil || !expired {
+			// DataStore must be expired
+			return false
+		}
+	}
+	return true
+}

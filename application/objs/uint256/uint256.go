@@ -146,6 +146,16 @@ func (u *Uint256) FromBigInt(a *big.Int) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
+// ToBigInt converts Uint256 into big.Int
+func (u *Uint256) ToBigInt() (*big.Int, error) {
+	buf, err := u.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	a := new(big.Int).SetBytes(buf)
+	return a, nil
+}
+
 // FromUint64 converts a uint64 into Uint256
 func (u *Uint256) FromUint64(a uint64) (*Uint256, error) {
 	buf := utils.MarshalUint64(a)
@@ -384,6 +394,18 @@ func (u *Uint256) SetZero() *Uint256 {
 	}
 	u.val.Clear()
 	return u.Clone()
+}
+
+// IsZero determines if u is 0
+func (u *Uint256) IsZero() bool {
+	if u.val == nil {
+		u.val = &uint256.Int{}
+	}
+	z := new(Uint256).SetZero()
+	if u.Eq(z) {
+		return true
+	}
+	return false
 }
 
 // DSPIMinDeposit returns constants.DSPIMinDeposit as Uint256

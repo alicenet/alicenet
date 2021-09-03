@@ -64,10 +64,12 @@ func makeVS(ownerSigner objs.Signer) *objs.TXOut {
 	owner := &objs.ValueStoreOwner{}
 	owner.New(ownerAcct, constants.CurveSecp256k1)
 
+	fee := uint256.One()
 	vsp := &objs.VSPreImage{
 		ChainID: cid,
 		Value:   val,
 		Owner:   owner,
+		Fee:     fee,
 	}
 	vs := &objs.ValueStore{
 		VSPreImage: vsp,
@@ -357,7 +359,8 @@ func TestGetProposal(t *testing.T) {
 	mustAddTx(t, hndlr, tx3, 1)
 	tx4 := makeTxConsuming(c2)
 	mustAddTx(t, hndlr, tx4, 1)
-	txs, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, constants.MaxUint32, nil)
+	maxBytes := constants.MaxUint32
+	txs, _, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, maxBytes, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,8 +4,7 @@ import (
 	"bytes"
 
 	"github.com/MadBase/MadNet/errorz"
-
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // SafeToProceedKey ...
@@ -21,8 +20,8 @@ func (b *SafeToProceedKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	Height := gUtils.MarshalUint32(b.Height)
+	Prefix := utils.CopySlice(b.Prefix)
+	Height := utils.MarshalUint32(b.Height)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
 	key = append(key, Height...)
@@ -41,7 +40,7 @@ func (b *SafeToProceedKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrCorrupt
 	}
 	b.Prefix = splitData[0]
-	Height, err := gUtils.UnmarshalUint32(splitData[1])
+	Height, err := utils.UnmarshalUint32(splitData[1])
 	if err != nil {
 		return err
 	}

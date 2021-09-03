@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/consensus/request"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/middleware"
@@ -243,15 +244,15 @@ type bhCache struct {
 	minHeight uint32
 }
 
-func (sc *bhCache) Init() {
-	sc.objs = make(map[nodeKey]*stateResponse)
+func (bhc *bhCache) Init() {
+	bhc.objs = make(map[nodeKey]*stateResponse)
 }
 
-func (sc *bhCache) getLeafKeys(maxNumber int) []nodeKey {
-	sc.RLock()
-	defer sc.RUnlock()
+func (bhc *bhCache) getLeafKeys(maxNumber int) []nodeKey {
+	bhc.RLock()
+	defer bhc.RUnlock()
 	nodeKeys := []nodeKey{}
-	for k := range sc.objs {
+	for k := range bhc.objs {
 		nodeKeys = append(nodeKeys, k)
 		if len(nodeKeys) >= maxNumber {
 			break
@@ -260,38 +261,38 @@ func (sc *bhCache) getLeafKeys(maxNumber int) []nodeKey {
 	return nodeKeys
 }
 
-func (sc *bhCache) contains(nk nodeKey) bool {
-	sc.RLock()
-	defer sc.RUnlock()
-	if sc.objs[nk] == nil {
+func (bhc *bhCache) contains(nk nodeKey) bool {
+	bhc.RLock()
+	defer bhc.RUnlock()
+	if bhc.objs[nk] == nil {
 		return false
 	}
 	return true
 }
 
-func (sc *bhCache) insert(sr *stateResponse) error {
-	sc.Lock()
-	defer sc.Unlock()
+func (bhc *bhCache) insert(sr *stateResponse) error {
+	bhc.Lock()
+	defer bhc.Unlock()
 	nk, err := newNodeKey(sr.key)
 	if err != nil {
 		return err
 	}
-	sc.objs[nk] = sr
+	bhc.objs[nk] = sr
 	return nil
 }
 
-func (sc *bhCache) pop(key []byte) (*stateResponse, error) {
-	sc.Lock()
-	defer sc.Unlock()
+func (bhc *bhCache) pop(key []byte) (*stateResponse, error) {
+	bhc.Lock()
+	defer bhc.Unlock()
 	nk, err := newNodeKey(key)
 	if err != nil {
 		return nil, err
 	}
-	if sc.objs[nk] == nil {
+	if bhc.objs[nk] == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in bhCache.pop: missing key in pop request")
 	}
-	result := sc.objs[nk]
-	delete(sc.objs, nk)
+	result := bhc.objs[nk]
+	delete(bhc.objs, nk)
 	return result, nil
 }
 
@@ -301,15 +302,15 @@ type bhNodeCache struct {
 	minHeight uint32
 }
 
-func (sc *bhNodeCache) Init() {
-	sc.objs = make(map[nodeKey]*nodeResponse)
+func (bhnc *bhNodeCache) Init() {
+	bhnc.objs = make(map[nodeKey]*nodeResponse)
 }
 
-func (sc *bhNodeCache) getNodeKeys(maxNumber int) []nodeKey {
-	sc.RLock()
-	defer sc.RUnlock()
+func (bhnc *bhNodeCache) getNodeKeys(maxNumber int) []nodeKey {
+	bhnc.RLock()
+	defer bhnc.RUnlock()
 	nodeKeys := []nodeKey{}
-	for k := range sc.objs {
+	for k := range bhnc.objs {
 		nodeKeys = append(nodeKeys, k)
 		if len(nodeKeys) >= maxNumber {
 			break
@@ -318,38 +319,38 @@ func (sc *bhNodeCache) getNodeKeys(maxNumber int) []nodeKey {
 	return nodeKeys
 }
 
-func (sc *bhNodeCache) contains(nk nodeKey) bool {
-	sc.RLock()
-	defer sc.RUnlock()
-	if sc.objs[nk] == nil {
+func (bhnc *bhNodeCache) contains(nk nodeKey) bool {
+	bhnc.RLock()
+	defer bhnc.RUnlock()
+	if bhnc.objs[nk] == nil {
 		return false
 	}
 	return true
 }
 
-func (sc *bhNodeCache) insert(sr *nodeResponse) error {
-	sc.Lock()
-	defer sc.Unlock()
+func (bhnc *bhNodeCache) insert(sr *nodeResponse) error {
+	bhnc.Lock()
+	defer bhnc.Unlock()
 	nk, err := newNodeKey(sr.root)
 	if err != nil {
 		return err
 	}
-	sc.objs[nk] = sr
+	bhnc.objs[nk] = sr
 	return nil
 }
 
-func (sc *bhNodeCache) pop(key []byte) (*nodeResponse, error) {
-	sc.Lock()
-	defer sc.Unlock()
+func (bhnc *bhNodeCache) pop(key []byte) (*nodeResponse, error) {
+	bhnc.Lock()
+	defer bhnc.Unlock()
 	nk, err := newNodeKey(key)
 	if err != nil {
 		return nil, err
 	}
-	if sc.objs[nk] == nil {
+	if bhnc.objs[nk] == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in bhNodeCache.pop: missing key in pop request")
 	}
-	result := sc.objs[nk]
-	delete(sc.objs, nk)
+	result := bhnc.objs[nk]
+	delete(bhnc.objs, nk)
 	return result, nil
 }
 
@@ -406,12 +407,12 @@ func (a *atomicU32) Get() uint32 {
 type workFunc func()
 
 type SnapShotManager struct {
-	appHandler appmock.Application
-	requestBus *request.Client
-
+	appHandler     appmock.Application
+	requestBus     *request.Client
 	database       *db.Database
 	logger         *logrus.Logger
 	snapShotHeight *atomicU32
+	storage        dynamics.StorageGetter
 
 	hdrNodeCache   *bhNodeCache
 	hdrLeafCache   *bhCache
@@ -443,161 +444,162 @@ type SnapShotManager struct {
 }
 
 // Init initializes the SnapShotManager
-func (ndm *SnapShotManager) Init(database *db.Database) {
-	ndm.snapShotHeight = new(atomicU32)
-	ndm.logger = logging.GetLogger(constants.LoggerConsensus)
-	ndm.database = database
-	ndm.hdrNodeCache = &bhNodeCache{}
-	ndm.hdrNodeCache.Init()
-	ndm.hdrLeafCache = &bhCache{}
-	ndm.hdrLeafCache.Init()
-	ndm.stateNodeCache = &nodeCache{}
-	ndm.stateNodeCache.Init()
-	ndm.stateLeafCache = &stateCache{}
-	ndm.stateLeafCache.Init()
-	ndm.hdrNodeDLs = &downloadTracker{
+func (ssm *SnapShotManager) Init(database *db.Database, storage dynamics.StorageGetter) {
+	ssm.storage = storage
+	ssm.snapShotHeight = new(atomicU32)
+	ssm.logger = logging.GetLogger(constants.LoggerConsensus)
+	ssm.database = database
+	ssm.hdrNodeCache = &bhNodeCache{}
+	ssm.hdrNodeCache.Init()
+	ssm.hdrLeafCache = &bhCache{}
+	ssm.hdrLeafCache.Init()
+	ssm.stateNodeCache = &nodeCache{}
+	ssm.stateNodeCache.Init()
+	ssm.stateLeafCache = &stateCache{}
+	ssm.stateLeafCache.Init()
+	ssm.hdrNodeDLs = &downloadTracker{
 		sync.RWMutex{},
 		make(map[nodeKey]bool),
 	}
-	ndm.hdrLeafDLs = &downloadTracker{
+	ssm.hdrLeafDLs = &downloadTracker{
 		sync.RWMutex{},
 		make(map[nodeKey]bool),
 	}
-	ndm.stateLeafDLs = &downloadTracker{
+	ssm.stateLeafDLs = &downloadTracker{
 		sync.RWMutex{},
 		make(map[nodeKey]bool),
 	}
-	ndm.stateNodeDLs = &downloadTracker{
+	ssm.stateNodeDLs = &downloadTracker{
 		sync.RWMutex{},
 		make(map[nodeKey]bool),
 	}
-	ndm.statusChan = make(chan string)
-	ndm.hdrLeafDlChan = make(chan *dlReq, chanBuffering)
-	ndm.hdrNodeDlChan = make(chan *dlReq, chanBuffering)
-	ndm.stateNodeDlChan = make(chan *dlReq, chanBuffering)
-	ndm.stateLeafDlChan = make(chan *dlReq, chanBuffering)
-	ndm.workChan = make(chan workFunc, chanBuffering*2)
-	ndm.closeChan = make(chan struct{})
-	ndm.closeOnce = sync.Once{}
+	ssm.statusChan = make(chan string)
+	ssm.hdrLeafDlChan = make(chan *dlReq, chanBuffering)
+	ssm.hdrNodeDlChan = make(chan *dlReq, chanBuffering)
+	ssm.stateNodeDlChan = make(chan *dlReq, chanBuffering)
+	ssm.stateLeafDlChan = make(chan *dlReq, chanBuffering)
+	ssm.workChan = make(chan workFunc, chanBuffering*2)
+	ssm.closeChan = make(chan struct{})
+	ssm.closeOnce = sync.Once{}
 
-	go ndm.downloadWithRetryHdrLeafWorker()
-	go ndm.downloadWithRetryHdrNodeWorker()
-	go ndm.downloadWithRetryStateLeafWorker()
-	go ndm.downloadWithRetryStateNodeWorker()
-	go ndm.loggingDelayer()
+	go ssm.downloadWithRetryHdrLeafWorker()
+	go ssm.downloadWithRetryHdrNodeWorker()
+	go ssm.downloadWithRetryStateLeafWorker()
+	go ssm.downloadWithRetryStateNodeWorker()
+	go ssm.loggingDelayer()
 }
 
-func (ndm *SnapShotManager) close() {
-	ndm.closeOnce.Do(func() {
-		close(ndm.closeChan)
+func (ssm *SnapShotManager) close() {
+	ssm.closeOnce.Do(func() {
+		close(ssm.closeChan)
 	})
 }
 
-func (ndm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
-	if ndm.finalizeFastSyncChan == nil {
-		ndm.finalizeOnce = sync.Once{}
-		ndm.finalizeFastSyncChan = make(chan struct{})
+func (ssm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
+	if ssm.finalizeFastSyncChan == nil {
+		ssm.finalizeOnce = sync.Once{}
+		ssm.finalizeFastSyncChan = make(chan struct{})
 		for i := 0; i < minWorkers; i++ {
-			go ndm.worker(ndm.finalizeFastSyncChan)
+			go ssm.worker(ssm.finalizeFastSyncChan)
 		}
 	}
-	ndm.tailSyncHeight = snapShotBlockHeader.BClaims.Height
-	if err := ndm.database.SetCommittedBlockHeaderFastSync(txn, snapShotBlockHeader); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	ssm.tailSyncHeight = snapShotBlockHeader.BClaims.Height
+	if err := ssm.database.SetCommittedBlockHeaderFastSync(txn, snapShotBlockHeader); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 
-	ndm.snapShotHeight.Set(snapShotBlockHeader.BClaims.Height)
+	ssm.snapShotHeight.Set(snapShotBlockHeader.BClaims.Height)
 
 	// call dropBefore on the caches
-	ndm.stateNodeCache.dropBefore(snapShotBlockHeader.BClaims.Height)
-	ndm.stateLeafCache.dropBefore(snapShotBlockHeader.BClaims.Height)
+	ssm.stateNodeCache.dropBefore(snapShotBlockHeader.BClaims.Height)
+	ssm.stateLeafCache.dropBefore(snapShotBlockHeader.BClaims.Height)
 
 	// cleanup the db of any previous data
-	if err := ndm.cleanupDatabase(txn); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.cleanupDatabase(txn); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 
 	// insert the request for the root node into the database
 	if !bytes.Equal(utils.CopySlice(snapShotBlockHeader.BClaims.StateRoot), make([]byte, constants.HashLen)) {
 		// Do NOT request all-zero byte slice stateRoot
-		if err := ndm.database.SetPendingNodeKey(txn, utils.CopySlice(snapShotBlockHeader.BClaims.StateRoot), 0); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.database.SetPendingNodeKey(txn, utils.CopySlice(snapShotBlockHeader.BClaims.StateRoot), 0); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 	}
-	if err := ndm.database.SetPendingHdrNodeKey(txn, utils.CopySlice(snapShotBlockHeader.BClaims.HeaderRoot), 0); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.database.SetPendingHdrNodeKey(txn, utils.CopySlice(snapShotBlockHeader.BClaims.HeaderRoot), 0); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	canonicalBHTrieKey := ndm.database.MakeHeaderTrieKeyFromHeight(snapShotBlockHeader.BClaims.Height)
+	canonicalBHTrieKey := ssm.database.MakeHeaderTrieKeyFromHeight(snapShotBlockHeader.BClaims.Height)
 	bHash, err := snapShotBlockHeader.BlockHash()
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.database.SetPendingHdrLeafKey(txn, canonicalBHTrieKey, bHash); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
-	return nil
-}
-
-func (ndm *SnapShotManager) cleanupDatabase(txn *badger.Txn) error {
-	if err := ndm.database.DropPendingLeafKeys(txn); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
-	if err := ndm.database.DropPendingNodeKeys(txn); err != nil {
-		utils.DebugTrace(ndm.logger, err)
-		return err
-	}
-	if err := ndm.appHandler.BeginSnapShotSync(txn); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.database.SetPendingHdrLeafKey(txn, canonicalBHTrieKey, bHash); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) Update(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) (bool, error) {
+func (ssm *SnapShotManager) cleanupDatabase(txn *badger.Txn) error {
+	if err := ssm.database.DropPendingLeafKeys(txn); err != nil {
+		utils.DebugTrace(ssm.logger, err)
+		return err
+	}
+	if err := ssm.database.DropPendingNodeKeys(txn); err != nil {
+		utils.DebugTrace(ssm.logger, err)
+		return err
+	}
+	if err := ssm.appHandler.BeginSnapShotSync(txn); err != nil {
+		utils.DebugTrace(ssm.logger, err)
+		return err
+	}
+	return nil
+}
+
+func (ssm *SnapShotManager) Update(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) (bool, error) {
 	// a difference in height implies the target has changed for the canonical
 	// state, thus re-init the object and drop all stale data
 	// return after the drop so the next iteration sees the dropped data is in the
 	// db transaction
-	if ndm.snapShotHeight.Get() != snapShotBlockHeader.BClaims.Height {
-		err := ndm.startFastSync(txn, snapShotBlockHeader)
+	if ssm.snapShotHeight.Get() != snapShotBlockHeader.BClaims.Height {
+		err := ssm.startFastSync(txn, snapShotBlockHeader)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return false, err
 		}
 		return false, nil
 	}
-	if err := ndm.updateSync(txn, snapShotBlockHeader.BClaims.Height); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.updateSync(txn, snapShotBlockHeader.BClaims.Height); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return false, err
 	}
-	hnCount, snCount, slCount, hlCount, bhCount, err := ndm.getKeyCounts(txn)
+	hnCount, snCount, slCount, hlCount, bhCount, err := ssm.getKeyCounts(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return false, err
 	}
 	logMsg := fmt.Sprintf("FastSyncing@%v |HN:%v HL:%v CBH:%v |SN:%v SL:%v |Prct:%v", snapShotBlockHeader.BClaims.Height, hnCount, hlCount, bhCount, snCount, slCount, (bhCount*100)/int(snapShotBlockHeader.BClaims.Height))
-	ndm.status(logMsg)
-	if err := ndm.updateDls(txn, snapShotBlockHeader.BClaims.Height, bhCount, hlCount); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	ssm.status(logMsg)
+	if err := ssm.updateDls(txn, snapShotBlockHeader.BClaims.Height, bhCount, hlCount); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return false, err
 	}
 	pCount := (int(snapShotBlockHeader.BClaims.Height) - bhCount)
 	if pCount < 0 {
 		pCount = 0
 	}
-	pCount += ndm.hdrLeafDLs.Size() + ndm.hdrNodeDLs.Size()
-	pCount += ndm.stateNodeDLs.Size() + ndm.stateLeafDLs.Size()
+	pCount += ssm.hdrLeafDLs.Size() + ssm.hdrNodeDLs.Size()
+	pCount += ssm.stateNodeDLs.Size() + ssm.stateLeafDLs.Size()
 	pCount += snCount + slCount + hnCount + hlCount
 	if pCount == 0 {
-		if err := ndm.finalizeSync(txn, snapShotBlockHeader); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.finalizeSync(txn, snapShotBlockHeader); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 			return false, err
 		}
 		return true, nil
@@ -605,164 +607,164 @@ func (ndm *SnapShotManager) Update(txn *badger.Txn, snapShotBlockHeader *objs.Bl
 	return false, nil
 }
 
-func (ndm *SnapShotManager) status(msg string) {
+func (ssm *SnapShotManager) status(msg string) {
 	select {
-	case ndm.statusChan <- msg:
+	case ssm.statusChan <- msg:
 		return
 	default:
 		return
 	}
 }
 
-func (ndm *SnapShotManager) loggingDelayer() {
+func (ssm *SnapShotManager) loggingDelayer() {
 	for {
 		select {
-		case msg := <-ndm.statusChan:
-			ndm.logger.Info(msg)
-		case <-ndm.closeChan:
+		case msg := <-ssm.statusChan:
+			ssm.logger.Info(msg)
+		case <-ssm.closeChan:
 			return
 		}
 		time.Sleep(5 * time.Second)
 	}
 }
 
-func (ndm *SnapShotManager) getKeyCounts(txn *badger.Txn) (int, int, int, int, int, error) {
-	hnCount, err := ndm.database.CountPendingHdrNodeKeys(txn)
+func (ssm *SnapShotManager) getKeyCounts(txn *badger.Txn) (int, int, int, int, int, error) {
+	hnCount, err := ssm.database.CountPendingHdrNodeKeys(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return 0, 0, 0, 0, 0, err
 	}
-	snCount, err := ndm.database.CountPendingNodeKeys(txn)
+	snCount, err := ssm.database.CountPendingNodeKeys(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return 0, 0, 0, 0, 0, err
 	}
-	slCount, err := ndm.database.CountPendingLeafKeys(txn)
+	slCount, err := ssm.database.CountPendingLeafKeys(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return 0, 0, 0, 0, 0, err
 	}
-	hlCount, err := ndm.database.CountPendingHdrLeafKeys(txn)
+	hlCount, err := ssm.database.CountPendingHdrLeafKeys(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return 0, 0, 0, 0, 0, err
 	}
-	bhCount, err := ndm.database.CountCommittedBlockHeaders(txn)
+	bhCount, err := ssm.database.CountCommittedBlockHeaders(txn)
 	if err != nil {
-		utils.DebugTrace(ndm.logger, err)
+		utils.DebugTrace(ssm.logger, err)
 		return 0, 0, 0, 0, 0, err
 	}
 	return hnCount, snCount, slCount, hlCount, bhCount, nil
 }
 
-func (ndm *SnapShotManager) finalizeSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
-	ndm.finalizeOnce.Do(func() { close(ndm.finalizeFastSyncChan) })
-	if err := ndm.database.UpdateHeaderTrieRootFastSync(txn, snapShotBlockHeader); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+func (ssm *SnapShotManager) finalizeSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
+	ssm.finalizeOnce.Do(func() { close(ssm.finalizeFastSyncChan) })
+	if err := ssm.database.UpdateHeaderTrieRootFastSync(txn, snapShotBlockHeader); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.appHandler.FinalizeSnapShotRoot(txn, snapShotBlockHeader.BClaims.StateRoot, snapShotBlockHeader.BClaims.Height); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.appHandler.FinalizeSnapShotRoot(txn, snapShotBlockHeader.BClaims.StateRoot, snapShotBlockHeader.BClaims.Height); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) updateDls(txn *badger.Txn, snapShotHeight uint32, bhCount int, hlCount int) error {
-	if err := ndm.dlHdrNodes(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+func (ssm *SnapShotManager) updateDls(txn *badger.Txn, snapShotHeight uint32, bhCount int, hlCount int) error {
+	if err := ssm.dlHdrNodes(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.dlHdrLeaves(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.dlHdrLeaves(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 	if hlCount == 0 && bhCount >= int(snapShotHeight)-int(constants.EpochLength) {
-		if err := ndm.dlStateNodes(txn, snapShotHeight); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.dlStateNodes(txn, snapShotHeight); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if err := ndm.dlStateLeaves(txn, snapShotHeight); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.dlStateLeaves(txn, snapShotHeight); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) updateSync(txn *badger.Txn, snapShotHeight uint32) error {
-	if err := ndm.syncHdrNodes(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+func (ssm *SnapShotManager) updateSync(txn *badger.Txn, snapShotHeight uint32) error {
+	if err := ssm.syncHdrNodes(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.syncHdrLeaves(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.syncHdrLeaves(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.syncTailingBlockHeaders(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.syncTailingBlockHeaders(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.syncStateNodes(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.syncStateNodes(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
-	if err := ndm.syncStateLeaves(txn, snapShotHeight); err != nil {
-		utils.DebugTrace(ndm.logger, err)
+	if err := ssm.syncStateLeaves(txn, snapShotHeight); err != nil {
+		utils.DebugTrace(ssm.logger, err)
 		return err
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32) error {
 	// get a set of node header keys and sync the header trie based on those
 	// node keys
-	nodeHdrKeys := ndm.hdrNodeCache.getNodeKeys(maxNumber)
+	nodeHdrKeys := ssm.hdrNodeCache.getNodeKeys(maxNumber)
 	for i := 0; i < len(nodeHdrKeys); i++ {
-		resp, err := ndm.hdrNodeCache.pop(utils.CopySlice(nodeHdrKeys[i].key[:]))
+		resp, err := ssm.hdrNodeCache.pop(utils.CopySlice(nodeHdrKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 		// remove the keys from the pending set in the database
-		err = ndm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
+		err = ssm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 		}
 		// store all of those nodes into the database and get new pending keys
-		pendingBatch, newLayer, lvs, err := ndm.database.SetSnapShotHdrNode(txn, resp.batch, resp.root, resp.layer)
+		pendingBatch, newLayer, lvs, err := ssm.database.SetSnapShotHdrNode(txn, resp.batch, resp.root, resp.layer)
 		if err != nil {
 			// should not return if err invalid
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 		// store new pending keys to db
 		for j := 0; j < len(pendingBatch); j++ {
-			ok, err := ndm.database.ContainsSnapShotHdrNode(txn, utils.CopySlice(pendingBatch[j]))
+			ok, err := ssm.database.ContainsSnapShotHdrNode(txn, utils.CopySlice(pendingBatch[j]))
 			if err != nil {
 				return err
 			}
 			if ok {
 				continue
 			}
-			if err := ndm.database.SetPendingHdrNodeKey(txn, utils.CopySlice(pendingBatch[j]), newLayer); err != nil {
-				utils.DebugTrace(ndm.logger, err)
+			if err := ssm.database.SetPendingHdrNodeKey(txn, utils.CopySlice(pendingBatch[j]), newLayer); err != nil {
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 		}
 		for j := 0; j < len(lvs); j++ {
 			nk, _ := newNodeKey(lvs[j].Key)
-			if ndm.hdrLeafDLs.Contains(nk) {
+			if ssm.hdrLeafDLs.Contains(nk) {
 				continue
 			}
-			if ndm.hdrLeafCache.contains(nk) {
+			if ssm.hdrLeafCache.contains(nk) {
 				continue
 			}
 			exists := true
-			_, err = ndm.database.GetCommittedBlockHeaderByHash(txn, utils.CopySlice(lvs[j].Value))
+			_, err = ssm.database.GetCommittedBlockHeaderByHash(txn, utils.CopySlice(lvs[j].Value))
 			if err != nil {
 				if err != badger.ErrKeyNotFound {
-					utils.DebugTrace(ndm.logger, err)
+					utils.DebugTrace(ssm.logger, err)
 					return err
 				}
 				exists = false
@@ -770,8 +772,8 @@ func (ndm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 			if exists {
 				continue
 			}
-			if err := ndm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(lvs[j].Key), utils.CopySlice(lvs[j].Value)); err != nil {
-				utils.DebugTrace(ndm.logger, err)
+			if err := ssm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(lvs[j].Key), utils.CopySlice(lvs[j].Value)); err != nil {
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 		}
@@ -779,14 +781,14 @@ func (ndm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 	return nil
 }
 
-func (ndm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight int, lastHeight int) (*objs.BlockHeader, error) {
+func (ssm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight int, lastHeight int) (*objs.BlockHeader, error) {
 	var lastKnown *objs.BlockHeader
 	for i := thisHeight; lastHeight < i; i-- {
 		if i <= 2 {
 			break
 		}
 		if lastKnown == nil && i%int(constants.EpochLength) == 0 {
-			bh, err := ndm.database.GetCommittedBlockHeader(txn, uint32(i))
+			bh, err := ssm.database.GetCommittedBlockHeader(txn, uint32(i))
 			if err != nil {
 				if err != badger.ErrKeyNotFound {
 					return nil, err
@@ -796,23 +798,23 @@ func (ndm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight int, 
 				lastKnown = bh
 			}
 			if lastKnown == nil {
-				ssbh, err := ndm.database.GetSnapshotBlockHeader(txn, uint32(i))
+				ssbh, err := ssm.database.GetSnapshotBlockHeader(txn, uint32(i))
 				if err != nil {
 					return nil, err
 				}
 				if ssbh != nil {
-					if err := ndm.database.SetCommittedBlockHeaderFastSync(txn, ssbh); err != nil {
-						utils.DebugTrace(ndm.logger, err)
+					if err := ssm.database.SetCommittedBlockHeaderFastSync(txn, ssbh); err != nil {
+						utils.DebugTrace(ssm.logger, err)
 						return nil, err
 					}
 					lastKnown = ssbh
 				}
 			}
 		}
-		bh, err := ndm.database.GetCommittedBlockHeader(txn, uint32(i))
+		bh, err := ssm.database.GetCommittedBlockHeader(txn, uint32(i))
 		if err != nil {
 			if err != badger.ErrKeyNotFound {
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				return nil, err
 			}
 			continue
@@ -825,54 +827,54 @@ func (ndm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight int, 
 	return lastKnown, nil
 }
 
-func (ndm *SnapShotManager) syncTailingBlockHeaders(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) syncTailingBlockHeaders(txn *badger.Txn, snapShotHeight uint32) error {
 	count := 0
 	{
-		if ndm.tailSyncHeight == 2 {
+		if ssm.tailSyncHeight == 2 {
 			return nil
 		}
-		lastKnown, err := ndm.findTailSyncHeight(txn, int(ndm.tailSyncHeight), 1)
+		lastKnown, err := ssm.findTailSyncHeight(txn, int(ssm.tailSyncHeight), 1)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if lastKnown.BClaims.Height != ndm.tailSyncHeight {
-			ndm.tailSyncHeight = lastKnown.BClaims.Height
-			key := ndm.database.MakeHeaderTrieKeyFromHeight(lastKnown.BClaims.Height - 1)
+		if lastKnown.BClaims.Height != ssm.tailSyncHeight {
+			ssm.tailSyncHeight = lastKnown.BClaims.Height
+			key := ssm.database.MakeHeaderTrieKeyFromHeight(lastKnown.BClaims.Height - 1)
 			exists := true
-			_, err = ndm.database.GetPendingHdrLeafKey(txn, utils.CopySlice(key))
+			_, err = ssm.database.GetPendingHdrLeafKey(txn, utils.CopySlice(key))
 			if err != nil {
 				if err != badger.ErrKeyNotFound {
-					utils.DebugTrace(ndm.logger, err)
+					utils.DebugTrace(ssm.logger, err)
 					return err
 				}
 				exists = false
 			}
 			nk, err := newNodeKey(utils.CopySlice(key))
 			if err != nil {
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
-			if ndm.hdrLeafDLs.Contains(nk) {
+			if ssm.hdrLeafDLs.Contains(nk) {
 				exists = true
 			}
-			if ndm.hdrLeafCache.contains(nk) {
+			if ssm.hdrLeafCache.contains(nk) {
 				exists = true
 			}
 			if !exists {
 				value := utils.CopySlice(lastKnown.BClaims.PrevBlock)
-				if err := ndm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(key), utils.CopySlice(value)); err != nil {
-					utils.DebugTrace(ndm.logger, err)
+				if err := ssm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(key), utils.CopySlice(value)); err != nil {
+					utils.DebugTrace(ssm.logger, err)
 					return err
 				}
 				count++
 			}
 		}
 	}
-	if ndm.tailSyncHeight <= constants.EpochLength {
+	if ssm.tailSyncHeight <= constants.EpochLength {
 		return nil
 	}
-	start := int(ndm.tailSyncHeight) - int(constants.EpochLength)%int(constants.EpochLength)
+	start := int(ssm.tailSyncHeight) - int(constants.EpochLength)%int(constants.EpochLength)
 	start = int(start) * int(constants.EpochLength)
 	if start <= int(constants.EpochLength) {
 		return nil
@@ -882,10 +884,10 @@ func (ndm *SnapShotManager) syncTailingBlockHeaders(txn *badger.Txn, snapShotHei
 			return nil
 		}
 		count++
-		known, err := ndm.findTailSyncHeight(txn, i, i-int(constants.EpochLength))
+		known, err := ssm.findTailSyncHeight(txn, i, i-int(constants.EpochLength))
 		if err != nil {
 			if err != badger.ErrKeyNotFound {
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 			continue
@@ -893,39 +895,39 @@ func (ndm *SnapShotManager) syncTailingBlockHeaders(txn *badger.Txn, snapShotHei
 		if known.BClaims.Height == 1 {
 			return nil
 		}
-		key := ndm.database.MakeHeaderTrieKeyFromHeight(known.BClaims.Height - 1)
+		key := ssm.database.MakeHeaderTrieKeyFromHeight(known.BClaims.Height - 1)
 		nk, err := newNodeKey(utils.CopySlice(key))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if ndm.hdrLeafDLs.Contains(nk) {
+		if ssm.hdrLeafDLs.Contains(nk) {
 			continue
 		}
-		if ndm.hdrLeafCache.contains(nk) {
+		if ssm.hdrLeafCache.contains(nk) {
 			continue
 		}
-		_, err = ndm.database.GetPendingHdrLeafKey(txn, utils.CopySlice(key))
+		_, err = ssm.database.GetPendingHdrLeafKey(txn, utils.CopySlice(key))
 		if err != nil {
 			if err != badger.ErrKeyNotFound {
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 			continue
 		}
 		value := utils.CopySlice(known.BClaims.PrevBlock)
-		if err := ndm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(key), utils.CopySlice(value)); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.database.SetPendingHdrLeafKey(txn, utils.CopySlice(key), utils.CopySlice(value)); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) dlHdrNodes(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) dlHdrNodes(txn *badger.Txn, snapShotHeight uint32) error {
 	count := 0
 	// iterate the pending keys in database and start downloads for each pending until the limit is reached
-	iter := ndm.database.GetPendingHdrNodeKeysIter(txn)
+	iter := ssm.database.GetPendingHdrNodeKeysIter(txn)
 	defer iter.Close()
 	for {
 		if count >= maxNumber {
@@ -933,7 +935,7 @@ func (ndm *SnapShotManager) dlHdrNodes(txn *badger.Txn, snapShotHeight uint32) e
 		}
 		dlroot, dllayer, isDone, err := iter.Next()
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		if isDone {
@@ -941,25 +943,25 @@ func (ndm *SnapShotManager) dlHdrNodes(txn *badger.Txn, snapShotHeight uint32) e
 		}
 		nk, err := newNodeKey(utils.CopySlice(dlroot))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		ok, err := ndm.database.ContainsSnapShotHdrNode(txn, utils.CopySlice(dlroot))
+		ok, err := ssm.database.ContainsSnapShotHdrNode(txn, utils.CopySlice(dlroot))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		if ok {
-			if err := ndm.database.DeletePendingHdrNodeKey(txn, dlroot); err != nil {
-				utils.DebugTrace(ndm.logger, err)
+			if err := ssm.database.DeletePendingHdrNodeKey(txn, dlroot); err != nil {
+				utils.DebugTrace(ssm.logger, err)
 				return nil
 			}
 			continue
 		}
-		if ndm.hdrNodeDLs.Contains(nk) {
+		if ssm.hdrNodeDLs.Contains(nk) {
 			continue
 		}
-		if ndm.hdrNodeCache.contains(nk) {
+		if ssm.hdrNodeCache.contains(nk) {
 			continue
 		}
 		r := &dlReq{
@@ -967,48 +969,48 @@ func (ndm *SnapShotManager) dlHdrNodes(txn *badger.Txn, snapShotHeight uint32) e
 			key:            utils.CopySlice(dlroot),
 			layer:          dllayer,
 		}
-		ndm.hdrNodeDLs.Push(nk)
+		ssm.hdrNodeDLs.Push(nk)
 		select {
-		case ndm.hdrNodeDlChan <- r:
+		case ssm.hdrNodeDlChan <- r:
 			count++
 		default:
-			ndm.hdrNodeDLs.Pop(nk)
+			ssm.hdrNodeDLs.Pop(nk)
 			return nil
 		}
 	}
 }
 
-func (ndm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint32) error {
 	// get keys from node cache and use those keys to store elements from the
 	// node cache into the database as well as to get the leaf keys and store
 	// those into the database as well
-	nodeKeys := ndm.stateNodeCache.getNodeKeys(snapShotHeight, maxNumber)
+	nodeKeys := ssm.stateNodeCache.getNodeKeys(snapShotHeight, maxNumber)
 	//for each key
 	for i := 0; i < len(nodeKeys); i++ {
-		resp, err := ndm.stateNodeCache.pop(snapShotHeight, utils.CopySlice(nodeKeys[i].key[:]))
+		resp, err := ssm.stateNodeCache.pop(snapShotHeight, utils.CopySlice(nodeKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 		// remove the keys from the pending set in the database
-		err = ndm.database.DeletePendingNodeKey(txn, utils.CopySlice(nodeKeys[i].key[:]))
+		err = ssm.database.DeletePendingNodeKey(txn, utils.CopySlice(nodeKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		// store all of those nodes into the database and get new pending keys
-		pendingBatch, newLayer, lvs, err := ndm.appHandler.StoreSnapShotNode(txn, utils.CopySlice(resp.batch), utils.CopySlice(resp.root), resp.layer)
+		pendingBatch, newLayer, lvs, err := ssm.appHandler.StoreSnapShotNode(txn, utils.CopySlice(resp.batch), utils.CopySlice(resp.root), resp.layer)
 		if err != nil {
 			// should not return if err invalid
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 		// store pending leaves ( blockheader height/hashes)
 		for j := 0; j < len(lvs); j++ {
 			exists := true
-			if _, err := ndm.appHandler.GetSnapShotStateData(txn, utils.CopySlice(lvs[j].Key)); err != nil {
+			if _, err := ssm.appHandler.GetSnapShotStateData(txn, utils.CopySlice(lvs[j].Key)); err != nil {
 				if err != badger.ErrKeyNotFound {
-					utils.DebugTrace(ndm.logger, err)
+					utils.DebugTrace(ssm.logger, err)
 					return err
 				}
 				exists = false
@@ -1016,15 +1018,15 @@ func (ndm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint3
 			if exists {
 				continue
 			}
-			if err := ndm.database.SetPendingLeafKey(txn, utils.CopySlice(lvs[j].Key), utils.CopySlice(lvs[j].Value)); err != nil {
-				utils.DebugTrace(ndm.logger, err)
+			if err := ssm.database.SetPendingLeafKey(txn, utils.CopySlice(lvs[j].Key), utils.CopySlice(lvs[j].Value)); err != nil {
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 		}
 		// store new pending keys to db
 		for j := 0; j < len(pendingBatch); j++ {
-			if err := ndm.database.SetPendingNodeKey(txn, utils.CopySlice(pendingBatch[j]), newLayer); err != nil {
-				utils.DebugTrace(ndm.logger, err)
+			if err := ssm.database.SetPendingNodeKey(txn, utils.CopySlice(pendingBatch[j]), newLayer); err != nil {
+				utils.DebugTrace(ssm.logger, err)
 				return err
 			}
 		}
@@ -1032,14 +1034,14 @@ func (ndm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint3
 	return nil
 }
 
-func (ndm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32) error {
 	// iterate the pending keys in database and start downloads for each pending until the limit is reached
-	iter := ndm.database.GetPendingNodeKeysIter(txn)
+	iter := ssm.database.GetPendingNodeKeysIter(txn)
 	defer iter.Close()
 	for {
 		dlroot, dllayer, isDone, err := iter.Next()
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		if isDone {
@@ -1047,13 +1049,13 @@ func (ndm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32)
 		}
 		nk, err := newNodeKey(dlroot)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if ndm.stateNodeDLs.Contains(nk) {
+		if ssm.stateNodeDLs.Contains(nk) {
 			continue
 		}
-		if ndm.stateNodeCache.contains(snapShotHeight, nk) {
+		if ssm.stateNodeCache.contains(snapShotHeight, nk) {
 			continue
 		}
 		r := &dlReq{
@@ -1061,51 +1063,51 @@ func (ndm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32)
 			layer:          dllayer,
 			key:            dlroot,
 		}
-		ndm.stateNodeDLs.Push(nk)
+		ssm.stateNodeDLs.Push(nk)
 		select {
-		case ndm.stateNodeDlChan <- r:
+		case ssm.stateNodeDlChan <- r:
 		default:
-			ndm.stateNodeDLs.Pop(nk)
+			ssm.stateNodeDLs.Pop(nk)
 			return nil
 		}
 	}
 }
 
-func (ndm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
 	// get keys from state cache use those to store the state data into the db
-	leafKeys := ndm.stateLeafCache.getLeafKeys(snapShotHeight, maxNumber)
+	leafKeys := ssm.stateLeafCache.getLeafKeys(snapShotHeight, maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
 	// store data before deleting from database.
 	for i := 0; i < len(leafKeys); i++ {
-		resp, err := ndm.stateLeafCache.pop(snapShotHeight, utils.CopySlice(leafKeys[i].key[:]))
+		resp, err := ssm.stateLeafCache.pop(snapShotHeight, utils.CopySlice(leafKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 		// remove the keys from the pending set in the database
-		err = ndm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
+		err = ssm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 		}
 		// store key-value state data
-		err = ndm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
+		err = ssm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
 		if err != nil {
 			// should not return if err invalid
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
 	// iterate the pending keys in database and start downloads for each pending until the limit is reached
-	iter := ndm.database.GetPendingLeafKeysIter(txn)
+	iter := ssm.database.GetPendingLeafKeysIter(txn)
 	defer iter.Close()
 	for {
 		dlkey, dlvalue, isDone, err := iter.Next()
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		if isDone {
@@ -1113,13 +1115,13 @@ func (ndm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32
 		}
 		nk, err := newNodeKey(dlkey)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if ndm.stateLeafDLs.Contains(nk) {
+		if ssm.stateLeafDLs.Contains(nk) {
 			continue
 		}
-		if ndm.stateLeafCache.contains(snapShotHeight, nk) {
+		if ssm.stateLeafCache.contains(snapShotHeight, nk) {
 			continue
 		}
 		r := &dlReq{
@@ -1127,55 +1129,55 @@ func (ndm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32
 			key:            dlkey,
 			value:          dlvalue,
 		}
-		ndm.stateLeafDLs.Push(nk)
+		ssm.stateLeafDLs.Push(nk)
 		select {
-		case ndm.stateLeafDlChan <- r:
+		case ssm.stateLeafDlChan <- r:
 		default:
-			ndm.stateLeafDLs.Pop(nk)
+			ssm.stateLeafDLs.Pop(nk)
 			return nil
 		}
 	}
 }
 
-func (ndm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
 	// get keys from state cache use those to store the state data into the db
-	leafKeys := ndm.hdrLeafCache.getLeafKeys(maxNumber)
+	leafKeys := ssm.hdrLeafCache.getLeafKeys(maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
 	// store data before deleting from database.
 	for i := 0; i < len(leafKeys); i++ {
-		resp, err := ndm.hdrLeafCache.pop(leafKeys[i].key[:])
+		resp, err := ssm.hdrLeafCache.pop(leafKeys[i].key[:])
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		err = ndm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
+		err = ssm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		bh := &objs.BlockHeader{}
 		err = bh.UnmarshalBinary(resp.data)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		err = ndm.database.SetCommittedBlockHeaderFastSync(txn, bh)
+		err = ssm.database.SetCommittedBlockHeaderFastSync(txn, bh)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
+func (ssm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
 	// iterate the pending keys in database and start downloads for each pending until the limit is reached
-	iter := ndm.database.GetPendingHdrLeafKeysIter(txn)
+	iter := ssm.database.GetPendingHdrLeafKeysIter(txn)
 	defer iter.Close()
 	for {
 		dlkey, dlvalue, isDone, err := iter.Next()
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
 		if isDone {
@@ -1183,13 +1185,13 @@ func (ndm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) 
 		}
 		nk, err := newNodeKey(dlkey)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return err
 		}
-		if ndm.hdrLeafDLs.Contains(nk) {
+		if ssm.hdrLeafDLs.Contains(nk) {
 			continue
 		}
-		if ndm.hdrLeafCache.contains(nk) {
+		if ssm.hdrLeafCache.contains(nk) {
 			continue
 		}
 		r := &dlReq{
@@ -1197,54 +1199,54 @@ func (ndm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) 
 			key:            dlkey,
 			value:          dlvalue,
 		}
-		ndm.hdrLeafDLs.Push(nk)
+		ssm.hdrLeafDLs.Push(nk)
 		select {
-		case ndm.hdrLeafDlChan <- r:
+		case ssm.hdrLeafDlChan <- r:
 		default:
-			ndm.hdrLeafDLs.Pop(nk)
+			ssm.hdrLeafDLs.Pop(nk)
 			break
 		}
 	}
 	return nil
 }
 
-func (ndm *SnapShotManager) worker(killChan <-chan struct{}) {
+func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
 	for {
 		select {
 		case <-killChan:
 			return
-		case <-ndm.closeChan:
+		case <-ssm.closeChan:
 			return
-		case w := <-ndm.workChan:
+		case w := <-ssm.workChan:
 			w()
 		}
 	}
 }
 
-func (ndm *SnapShotManager) sendWork(w func()) {
+func (ssm *SnapShotManager) sendWork(w func()) {
 	select {
-	case <-ndm.closeChan:
+	case <-ssm.closeChan:
 		return
-	case ndm.workChan <- w:
+	case ssm.workChan <- w:
 		return
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryStateNodeWorker() {
+func (ssm *SnapShotManager) downloadWithRetryStateNodeWorker() {
 	for {
 		select {
-		case <-ndm.closeChan:
+		case <-ssm.closeChan:
 			return
-		case dl := <-ndm.stateNodeDlChan:
-			ndm.sendWork(ndm.downloadWithRetryStateNodeClosure(dl))
+		case dl := <-ssm.stateNodeDlChan:
+			ssm.sendWork(ssm.downloadWithRetryStateNodeClosure(dl))
 		}
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryHdrLeafWorker() {
+func (ssm *SnapShotManager) downloadWithRetryHdrLeafWorker() {
 	for {
 		select {
-		case <-ndm.closeChan:
+		case <-ssm.closeChan:
 			return
 		default:
 			var stop <-chan time.Time
@@ -1252,11 +1254,11 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafWorker() {
 			func() {
 				for {
 					select {
-					case <-ndm.closeChan:
+					case <-ssm.closeChan:
 						return
 					case <-stop:
 						return
-					case dl := <-ndm.hdrLeafDlChan:
+					case dl := <-ssm.hdrLeafDlChan:
 						if stop == nil {
 							stop = time.After(50 * time.Millisecond)
 						}
@@ -1267,50 +1269,50 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafWorker() {
 					}
 				}
 			}()
-			ndm.sendWork(ndm.downloadWithRetryHdrLeafClosure(cache))
+			ssm.sendWork(ssm.downloadWithRetryHdrLeafClosure(cache))
 		}
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryHdrNodeWorker() {
+func (ssm *SnapShotManager) downloadWithRetryHdrNodeWorker() {
 	for {
 		select {
-		case <-ndm.closeChan:
+		case <-ssm.closeChan:
 			return
-		case dl := <-ndm.hdrNodeDlChan:
-			ndm.sendWork(ndm.downloadWithRetryHdrNodeClosure(dl))
+		case dl := <-ssm.hdrNodeDlChan:
+			ssm.sendWork(ssm.downloadWithRetryHdrNodeClosure(dl))
 		}
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryStateLeafWorker() {
+func (ssm *SnapShotManager) downloadWithRetryStateLeafWorker() {
 	for {
 		select {
-		case <-ndm.closeChan:
+		case <-ssm.closeChan:
 			return
-		case dl := <-ndm.stateLeafDlChan:
-			ndm.sendWork(ndm.downloadWithRetryStateLeafClosure(dl))
+		case dl := <-ssm.stateLeafDlChan:
+			ssm.sendWork(ssm.downloadWithRetryStateLeafClosure(dl))
 		}
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryStateNodeClosure(dl *dlReq) workFunc {
+func (ssm *SnapShotManager) downloadWithRetryStateNodeClosure(dl *dlReq) workFunc {
 	snapShotHeight := dl.snapShotHeight
 	root := dl.key
 	layer := dl.layer
 	nk, _ := newNodeKey(root)
 	return func() {
-		defer ndm.stateNodeDLs.Pop(nk)
-		if snapShotHeight < ndm.snapShotHeight.Get() {
+		defer ssm.stateNodeDLs.Pop(nk)
+		if snapShotHeight < ssm.snapShotHeight.Get() {
 			return
 		}
 		opts := []grpc.CallOption{
 			grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
 			grpc_retry.WithMax(maxRetryCount),
 		}
-		resp, err := ndm.requestBus.RequestP2PGetSnapShotNode(context.Background(), snapShotHeight, root, opts...)
+		resp, err := ssm.requestBus.RequestP2PGetSnapShotNode(context.Background(), snapShotHeight, root, opts...)
 		if err != nil {
-			utils.DebugTrace(ndm.logger, err)
+			utils.DebugTrace(ssm.logger, err)
 			return
 		}
 		if len(resp) == 0 {
@@ -1323,11 +1325,11 @@ func (ndm *SnapShotManager) downloadWithRetryStateNodeClosure(dl *dlReq) workFun
 			batch:          resp,
 		}
 		//    store to the cache
-		ndm.stateNodeCache.insert(snapShotHeight, nr)
+		ssm.stateNodeCache.insert(snapShotHeight, nr)
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFunc {
+func (ssm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFunc {
 	return func() {
 		heightList := make([]uint32, len(dl))
 		hashMap := make(map[uint32][]byte)
@@ -1340,7 +1342,7 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			keyMap[blockHeight] = nk
 			heightList[i] = blockHeight
 			hashMap[blockHeight] = utils.CopySlice(value)
-			defer ndm.hdrLeafDLs.Pop(nk)
+			defer ssm.hdrLeafDLs.Pop(nk)
 		}
 		opts := []grpc.CallOption{
 			grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(backOffAmount*time.Millisecond, backOffJitter)),
@@ -1348,7 +1350,7 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 		}
 		peerOpt := middleware.NewPeerInterceptor()
 		newOpts := append(opts, peerOpt)
-		resp, err := ndm.requestBus.RequestP2PGetBlockHeaders(context.Background(), heightList, newOpts...)
+		resp, err := ssm.requestBus.RequestP2PGetBlockHeaders(context.Background(), heightList, newOpts...)
 		if err != nil {
 			return
 		}
@@ -1367,18 +1369,18 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			bhashResp, err := resp[i].BlockHash()
 			if err != nil {
 				peer.Feedback(-2)
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				continue
 			}
 			if !bytes.Equal(bhash, bhashResp) {
 				peer.Feedback(-2)
-				utils.DebugTrace(ndm.logger, errors.New("Bad block hash"))
+				utils.DebugTrace(ssm.logger, errors.New("Bad block hash"))
 				continue
 			}
 			bhBytes, err := resp[i].MarshalBinary()
 			if err != nil {
 				peer.Feedback(-2)
-				utils.DebugTrace(ndm.logger, err)
+				utils.DebugTrace(ssm.logger, err)
 				return
 			}
 			nk := keyMap[height]
@@ -1390,19 +1392,19 @@ func (ndm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			}
 			//    store to the cache
 			peer.Feedback(1)
-			ndm.hdrLeafCache.insert(sr)
+			ssm.hdrLeafCache.insert(sr)
 		}
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFunc {
+func (ssm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFunc {
 	snapShotHeight := dl.snapShotHeight
 	key := dl.key
 	value := dl.value
 	nk, _ := newNodeKey(key)
 	return func() {
-		defer ndm.stateLeafDLs.Pop(nk)
-		if snapShotHeight < ndm.snapShotHeight.Get() {
+		defer ssm.stateLeafDLs.Pop(nk)
+		if snapShotHeight < ssm.snapShotHeight.Get() {
 			return
 		}
 		opts := []grpc.CallOption{
@@ -1411,7 +1413,7 @@ func (ndm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFun
 		}
 		peerOpt := middleware.NewPeerInterceptor()
 		newOpts := append(opts, peerOpt)
-		resp, err := ndm.requestBus.RequestP2PGetSnapShotStateData(context.Background(), key, newOpts...)
+		resp, err := ssm.requestBus.RequestP2PGetSnapShotStateData(context.Background(), key, newOpts...)
 
 		if err != nil {
 			return
@@ -1428,11 +1430,11 @@ func (ndm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFun
 			data:           utils.CopySlice(resp),
 		}
 		//    store to the cache
-		ndm.stateLeafCache.insert(snapShotHeight, sr)
+		ssm.stateLeafCache.insert(snapShotHeight, sr)
 	}
 }
 
-func (ndm *SnapShotManager) downloadWithRetryHdrNodeClosure(dl *dlReq) workFunc {
+func (ssm *SnapShotManager) downloadWithRetryHdrNodeClosure(dl *dlReq) workFunc {
 	snapShotHeight := dl.snapShotHeight
 	root := dl.key
 	layer := dl.layer
@@ -1444,8 +1446,8 @@ func (ndm *SnapShotManager) downloadWithRetryHdrNodeClosure(dl *dlReq) workFunc 
 		}
 		peerOpt := middleware.NewPeerInterceptor()
 		newOpts := append(opts, peerOpt)
-		defer ndm.hdrNodeDLs.Pop(nk)
-		resp, err := ndm.requestBus.RequestP2PGetSnapShotHdrNode(context.Background(), root, newOpts...)
+		defer ssm.hdrNodeDLs.Pop(nk)
+		resp, err := ssm.requestBus.RequestP2PGetSnapShotHdrNode(context.Background(), root, newOpts...)
 		if err != nil {
 			return
 		}
@@ -1461,8 +1463,8 @@ func (ndm *SnapShotManager) downloadWithRetryHdrNodeClosure(dl *dlReq) workFunc 
 			batch:          resp,
 		}
 		//    store to the cache
-		if err := ndm.hdrNodeCache.insert(nr); err != nil {
-			utils.DebugTrace(ndm.logger, err)
+		if err := ssm.hdrNodeCache.insert(nr); err != nil {
+			utils.DebugTrace(ssm.logger, err)
 		}
 	}
 }
