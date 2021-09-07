@@ -105,7 +105,8 @@ func getValuesforVerifier(membershipProof bool) {
 		return nil
 	}
 
-	err = db.Update(fn)
+	err = 
+	.Update(fn)
 	if err != nil {
 		panic(err)
 	}

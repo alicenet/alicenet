@@ -63,6 +63,10 @@ func (ut *UTXOHandler) Init(height uint32) error {
 	return ut.trie.Init(height)
 }
 
+func (ut *UTXOHandler) GetTrie() *utxotrie.UTXOTrie {
+	return ut.trie
+}
+
 // IsValid verifies the rules of batches across transactions as is generated in
 // a block
 func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32, deposits objs.Vout) (objs.Vout, error) {

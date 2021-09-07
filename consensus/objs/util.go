@@ -255,6 +255,18 @@ func MakeTxRoot(txHashes [][]byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for i := 0; i < len(txHashesSorted); i++ {
+		// returns [][]byte, bool, []byte, []byte, error
+		//merkleProof, included, proofKey, proofValue, err := smt.GetSMT().MerkleProof(nil, txHashesSorted[i]) // *badger.Txn, key []byte
+		_, _, _, _, err := smt.GetSMT().MerkleProof(nil, txHashesSorted[i]) // *badger.Txn, key []byte
+		if err != nil {
+			//log.Println("error getting merkle proof:", err)
+			continue
+		}
+		//log.Printf("merkleProof: %v\nincluded: %v\nproofKey: %v\nproofValue: %v\n", merkleProof, included, proofKey, proofValue)
+	}
+
 	return rootHash, nil
 }
 
