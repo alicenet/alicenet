@@ -14,60 +14,73 @@ var (
 	ErrCorrupt             = errors.New("something went wrong that requires shutdown")
 )
 
-type ErrInvalid struct {
+type Err struct {
 	msg     string
 	wrapped error
+	traces  []string
 }
 
-func WrapErrInvalid(err error, fmtPattern string, fmtArgs ...interface{}) *ErrInvalid {
-	if err == nil {
-		return nil
-	}
-
-	return &ErrInvalid{msg: fmt.Sprintf(fmtPattern, fmtArgs...), wrapped: err}
+func NewErr(msg string) *Err {
+	return &Err{msg, nil, []string{}}
 }
 
-func (e *ErrInvalid) Error() string {
-	s := "the object is invalid:" + e.msg
-	if e.wrapped != nil {
-		return s + ":\n" + e.wrapped.Error()
-	}
-	return s
-}
-
-func (s *ErrInvalid) Unwrap() error {
+// Unwrap returns the wrapper (inner) error
+func (s *Err) Unwrap() error {
 	return s.wrapped
 }
 
-func (e ErrInvalid) New(msg string) *ErrInvalid {
-	return &ErrInvalid{msg, nil}
+// Wrap wraps this error around a given error
+func (e *Err) Wrap(inner error) *Err {
+	if inner == nil {
+		return nil
+	}
+
+	e.wrapped = inner
+	return e
 }
 
-type ErrConsensus struct {
-	msg     string
-	isLocal bool
+// Trace adds a trace line to this error with an optional suffix
+// Suffix can be a single value, or an format string followed by format values
+func (e *Err) Trace(suffix ...interface{}) *Err {
+	return e.trace(1, suffix...)
 }
 
-func NewErrConsensus(msg string, isLocal bool) *ErrConsensus {
-	return &ErrConsensus{msg: msg, isLocal: isLocal}
+func (e *Err) trace(depth int, suffix ...interface{}) *Err {
+	if e == nil {
+		return nil
+	}
+	if e.traces == nil {
+		e.traces = make([]string, 1)
+	}
+
+	trace := MakeTrace(depth + 1)
+
+	if len(suffix) == 1 {
+		e.traces = append(e.traces, fmt.Sprintf("%v %v", trace, suffix[0]))
+	} else if len(suffix) > 1 {
+		e.traces = append(e.traces, trace+" "+fmt.Sprintf(suffix[0].(string), suffix[1:]))
+	} else {
+		e.traces = append(e.traces, trace)
+	}
+
+	return e
 }
 
-func (e *ErrConsensus) Error() string {
-	return e.msg
-}
+// Error returns the error message and traces of this error and any wrapped errors
+func (e *Err) Error() string {
+	ret := e.msg
 
-func (e *ErrConsensus) IsLocal() bool {
-	return e.isLocal
-}
+	if len(e.traces) > 0 || e.wrapped != nil {
+		ret += ":"
+	}
 
-type ErrStale struct {
-	msg string
-}
+	for _, v := range e.traces {
+		ret += "\n\t" + v
+	}
 
-func (e *ErrStale) Error() string {
-	return "the object is invalid:" + e.msg
-}
+	if e.wrapped != nil {
+		ret += "\n" + e.wrapped.Error()
+	}
 
-func (e ErrStale) New(msg string, v ...interface{}) *ErrStale {
-	return &ErrStale{fmt.Sprintf(msg, v...)}
+	return ret
 }
