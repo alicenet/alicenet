@@ -48,7 +48,7 @@ type Engine struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) error {
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf
@@ -60,10 +60,7 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 	ce.RequestBus = rbusClient
 	ce.appHandler = app
 	ce.sstore = &Store{}
-	err := ce.sstore.Init(database)
-	if err != nil {
-		return err
-	}
+	ce.sstore.Init(database)
 	ce.dm = dm
 	if len(ce.EthPubk) > 0 {
 		ce.ethAcct = crypto.GetAccount(ce.EthPubk)
@@ -73,10 +70,7 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 		appHandler: app,
 		requestBus: ce.RequestBus,
 	}
-	if err := ce.fastSync.Init(database); err != nil {
-		return err
-	}
-	return nil
+	ce.fastSync.Init(database)
 }
 
 func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{}, error) {
@@ -232,9 +226,6 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 //  do a possible do a proposal if not already proposed and is proposer
 //  do nothing if not any of above is true
 func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bool, error) {
-	if err := ce.loadValidationKey(rs); err != nil {
-		return false, nil
-	}
 	os := rs.OwnRoundState()
 
 	// extract the round cert for use
@@ -270,18 +261,20 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		var maxHR *objs.RoundState
 		maxHeight := uint32(0)
 		for _, vroundState := range FH {
-			if vroundState.RCert.RClaims.Height > maxHeight {
+			// only care about round 1 because this is only useful round to perform
+			// height jump
+			if vroundState.RCert.RClaims.Height > maxHeight && vroundState.RCert.RClaims.Round == 1 {
 				maxHR = vroundState
 				maxHeight = vroundState.RCert.RClaims.Height
 			}
 		}
 		if maxHR != nil {
-			err := ce.doHeightJumpStep(txn, rs, maxHR.RCert)
+			inSync, err := ce.doHeightJumpStep(txn, rs, maxHR.RCert)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return false, err
 			}
-			return true, nil
+			return inSync, nil
 		}
 	}
 	// at this point no height jump is possible
@@ -307,6 +300,19 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 			}
 			return true, nil
 		}
+	}
+
+	// if not a validator check for updates to valid value
+	if !rs.IsCurrentValidator() {
+		if err := ce.doCheckValidValue(txn, rs); err != nil {
+			return false, err
+		}
+		return len(FH) == 0, nil
+	}
+
+	// Below this line node must be a validator to proceed
+	if err := ce.loadValidationKey(rs); err != nil {
+		return false, err
 	}
 
 	// if we have voted for the next round in round preceding the

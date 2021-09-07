@@ -5,7 +5,9 @@ import (
 	"errors"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/utils"
 
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -173,14 +175,14 @@ func (ce *Engine) doPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node must have cast a preVote to get here
 	// count the prevotes and prevote nils
-	pvl, _, err := rs.GetCurrentPreVotes()
+	pvl, pvnl, err := rs.GetCurrentPreVotes()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	// if we have enough prevotes, cast a precommit
 	// this will update the locked value
 	if len(pvl) >= rs.GetCurrentThreshold() {
@@ -201,7 +203,6 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node must have cast a preVote nil
 	// count the preVotes and prevote nils
 	pvl, pvnl, err := rs.GetCurrentPreVotes()
@@ -209,6 +210,7 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		p, err := pvl.GetProposal()
 		if err != nil {
@@ -239,7 +241,6 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	// prevote timeout hit with no clear consensus in either direction
@@ -250,6 +251,7 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
 	// if we have prevote consensus now
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		// if we preVoted for the proposal then preCommit
@@ -259,19 +261,18 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 				return err
 			}
 			return nil
-		} else {
-			// update the valid value
-			p, err := pvl.GetProposal()
-			if err != nil {
+		}
+		// update the valid value
+		p, err := pvl.GetProposal()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
 				utils.DebugTrace(ce.logger, err)
 				return err
-			}
-			if err := ce.updateValidValue(txn, rs, p); err != nil {
-				var e *errorz.ErrInvalid
-				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
-					utils.DebugTrace(ce.logger, err)
-					return err
-				}
 			}
 		}
 	} // fallthrough to precommit nil
@@ -299,14 +300,14 @@ func (ce *Engine) doPreCommitStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node cast a precommit this round
 	// count the precommits
-	pcl, _, err := rs.GetCurrentPreCommits()
+	pcl, pcnl, err := rs.GetCurrentPreCommits()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if we have consensus and can verify
 	// cast the nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -335,7 +336,6 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// local node cast a precommit nil this round
 	// count the precommits
 	pcl, pcnl, err := rs.GetCurrentPreCommits()
@@ -343,6 +343,7 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if we have a preCommit consensus,
 	// move directly to next height
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -381,7 +382,6 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	// the precommit timeout has been hit
@@ -391,6 +391,7 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 	// if greater than threshold precommits,
 	// use our own precommit if we did a precommit this round
 	// if not use a random precommit. This is safe due to
@@ -464,15 +465,15 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// count the precommit messages from this round
-	pcl, _, err := rs.GetCurrentPreCommits()
+	pcl, pcnl, err := rs.GetCurrentPreCommits()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
 	// check for enough preCommits in current round to cast nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
+		ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
 		p, err := pcl.GetProposal()
 		if err != nil {
 			return err
@@ -501,11 +502,12 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 		}
 	}
 	// last of all count next round messages from this round only
-	_, nrl, err := rs.GetCurrentNext()
+	nhl, nrl, err := rs.GetCurrentNext()
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
+	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   NH:%v   NR:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl), len(nrl))
 
 	// form a new round cert if we have enough
 	if len(nrl) >= rs.GetCurrentThreshold() {
@@ -555,6 +557,84 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 	return nil
 }
 
+func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
+	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+
+	nhl, _, err := rs.GetCurrentNext()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+
+	// if we have a threshold
+	// make a new round cert and form the new block header
+	// proceed to next height
+	if len(nhl) >= rs.GetCurrentThreshold() {
+		err := ce.updateValidValue(txn, rs, nhl[0].NHClaims.Proposal)
+		if err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+		} else {
+			if err := ce.castNewCommittedBlockHeader(txn, rs, nhl); err != nil {
+				utils.DebugTrace(ce.logger, err)
+				var e *errorz.ErrInvalid
+				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+
+	pcl, _, err := rs.GetCurrentPreCommits()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+	// if local node knows of even a single
+	// precommit, update the valid value
+	if len(pcl) > rs.GetCurrentThreshold() {
+		p, err := pcl.GetProposal()
+		if err != nil {
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+		}
+		return nil
+	}
+
+	pvl, _, err := rs.GetCurrentPreVotes()
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+	// if we have prevote consensus now
+	if len(pvl) >= rs.GetCurrentThreshold() {
+		// update the valid value
+		p, err := pvl.GetProposal()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		if err := ce.updateValidValue(txn, rs, p); err != nil {
+			var e *errorz.ErrInvalid
+			if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -596,43 +676,99 @@ func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) error {
+func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) (bool, error) {
 	ce.logger.Debugf("doHeightJumpStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 	// get the last element of the sorted future height
 	// if we can just jump up to this height, do so.
 	// if the height is only one more, we can simply move to this
 	// height if everything looks okay
-	if rcert.RClaims.Height <= rs.Height()+1 {
-		// if we have a valid value, check if the valid value
-		// matches the previous blockhash of block n+1
-		// if so, form the block and jump up to this level
-		// this is safe because we call isValid on all values
-		// before storing in a lock
-		if rs.ValidValueCurrent() {
-			bhsh, err := rs.ValidValue().PClaims.BClaims.BlockHash()
+	if rcert.RClaims.Height != rs.Height()+1 {
+		return false, nil
+	}
+	if rcert.RClaims.Round != 1 {
+		return false, nil
+	}
+	// if we have a valid value, check if the valid value
+	// matches the previous blockhash of block n+1
+	// if so, form the block and jump up to this level
+	// this is safe because we call isValid on all values
+	// before storing in a lock
+	if rs.ValidValueCurrent() {
+		bhsh, err := rs.ValidValue().PClaims.BClaims.BlockHash()
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return false, err
+		}
+		if bytes.Equal(bhsh, rcert.RClaims.PrevBlock) {
+			vv := rs.ValidValue()
+			err := ce.castNewCommittedBlockFromProposalAndRCert(txn, rs, vv, rcert)
 			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return err
-			}
-			if bytes.Equal(bhsh, rcert.RClaims.PrevBlock) && rcert.RClaims.Round == 1 {
-				vv := rs.ValidValue()
-				err := ce.castNewCommittedBlockFromProposalAndRCert(txn, rs, vv, rcert)
-				if err != nil {
-					var e *errorz.ErrInvalid
-					if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
-						utils.DebugTrace(ce.logger, err)
-						return err
-					}
+				var e *errorz.ErrInvalid
+				if err != errorz.ErrMissingTransactions && !errors.As(err, &e) {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
 				}
-				rs.OwnValidatingState.ValidValue = nil
-				rs.OwnValidatingState.LockedValue = nil
-				return nil
+				return false, nil
 			}
+			rs.OwnValidatingState.ValidValue = nil
+			rs.OwnValidatingState.LockedValue = nil
+			return true, nil
 		}
 	}
-	// we can not do anything from here without a ton of work
-	// so easier to just wait for the next block header to unsync us
-	return nil
+	// could not use valid value - only option left is to check if the block
+	// had no tx's in it - if so we can build it with no additional information
+	// that what we have in scope by forming bclaims for empty block and
+	// checking if it has correct hash
+	os := rs.OwnRoundState()
+	ownRcert := os.RCert
+	txs := [][]byte{}
+	TxRoot, err := objs.MakeTxRoot(txs)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	bclaims := rs.OwnState.SyncToBH.BClaims
+	PrevBlock := gUtils.CopySlice(ownRcert.RClaims.PrevBlock)
+	headerRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	StateRoot := gUtils.CopySlice(bclaims.StateRoot)
+	bh := &objs.BlockHeader{
+		BClaims: &objs.BClaims{
+			PrevBlock:  PrevBlock,
+			HeaderRoot: headerRoot,
+			StateRoot:  StateRoot,
+			TxRoot:     TxRoot,
+			ChainID:    ownRcert.RClaims.ChainID,
+			Height:     ownRcert.RClaims.Height,
+		},
+		TxHshLst: txs,
+		SigGroup: gUtils.CopySlice(rcert.SigGroup),
+	}
+	bhash, err := bh.BlockHash()
+	if err != nil {
+		return false, err
+	}
+	if !bytes.Equal(bhash, rcert.RClaims.PrevBlock) {
+		return false, nil
+	}
+	ok, err := ce.isValid(txn, rs, bh.BClaims.ChainID, bh.BClaims.StateRoot, bh.BClaims.HeaderRoot, []interfaces.Transaction{})
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	if err := bh.ValidateSignatures(&crypto.BNGroupValidator{}); err != nil {
+		return false, nil // if sig is not valid then move to sync mode
+	}
+	if err := ce.setMostRecentBlockHeader(txn, rs, bh); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

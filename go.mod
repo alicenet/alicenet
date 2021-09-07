@@ -19,7 +19,6 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.0
 	github.com/kr/pretty v0.2.0 // indirect
-	github.com/minio/highwayhash v1.0.1
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0

@@ -20,7 +20,14 @@ import (
 const backoffAmount = 1 // 1 ms backoff per
 const retryMax = 6      // equates to approx 4 seconds
 
-// Root Actor spawns top level actor types
+// RootActor spawns top level actor types for download manager.
+// This system allows the synchronously run consensus algorithm to request the
+// download of tx data and blocks from remote peers as a background task.
+// The system keeps a record of all pending downloads to prevent double entry
+// and stores all data requested into a hot cache that is flushed to disk
+// by the synchronous code. This system will retry failed requests until
+// the height lag is raised to a point that invalidates the given
+// request.
 type RootActor struct {
 	sync.Mutex
 	ba        *blockActor
@@ -85,6 +92,7 @@ func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
+// CleanCache flushes all items older than 5 blocks from cache
 func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	if height > 10 {
 		dropKeys := a.bhc.DropBeforeHeight(height - 5)
@@ -96,11 +104,13 @@ func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
+// DownloadPendingTx downloads txs that are pending from remote peers
 func (a *RootActor) DownloadPendingTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingTxRequest, height, round)
 	a.download(req, false)
 }
 
+// DownloadPendingTx downloads txs that are mined from remote peers
 func (a *RootActor) DownloadMinedTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, MinedTxRequest, height, round)
 	a.download(req, false)
@@ -111,6 +121,7 @@ func (a *RootActor) DownloadTx(height, round uint32, txHash []byte) {
 	a.download(req, false)
 }
 
+// DownloadBlockHeader downloads block headers from remote peers
 func (a *RootActor) DownloadBlockHeader(height, round uint32) {
 	req := NewBlockHeaderDownloadRequest(height, round, BlockHeaderRequest)
 	a.download(req, false)
@@ -304,6 +315,7 @@ func (a *RootActor) await(req DownloadRequest) {
 	}
 }
 
+// block actor does height based filter drop on requests
 type blockActor struct {
 	sync.RWMutex
 	ra            *downloadActor
@@ -415,6 +427,7 @@ func (a *blockActor) await(req DownloadRequest) {
 	}
 }
 
+// download actor does download dispatch based on request type to worker pools
 type downloadActor struct {
 	WorkQ            chan DownloadRequest
 	PendingDispatchQ chan *TxDownloadRequest

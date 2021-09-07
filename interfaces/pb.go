@@ -28,18 +28,18 @@ type P2PServer interface {
 	pb.P2PServer
 }
 
-// DiscoveryClient implements the Discovery client service from the
+// P2PDiscoveryClient implements the Discovery client service from the
 // protobuf definition.
-type DiscoveryClient interface {
+type P2PDiscoveryClient interface {
 	Close() error
 	NodeAddr() NodeAddr
-	pb.DiscoveryClient
+	pb.P2PDiscoveryClient
 }
 
-// DiscoveryServer implements the Discovery server service from the
+// P2PDiscoveryServer implements the Discovery server service from the
 // protobuf definition.
-type DiscoveryServer interface {
-	pb.DiscoveryServer
+type P2PDiscoveryServer interface {
+	pb.P2PDiscoveryServer
 }
 
 // BootNodeServer implements the Discovery server service from the

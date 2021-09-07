@@ -6,6 +6,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/sirupsen/logrus"
 
 	"github.com/MadBase/MadNet/consensus/db"
@@ -27,16 +28,12 @@ type Handlers struct {
 }
 
 // Init initializes the Handlers object
-func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) error {
+func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) {
 	mb.logger = logging.GetLogger(constants.LoggerConsensus)
 	mb.sstore = &Store{}
-	err := mb.sstore.Init(database)
-	if err != nil {
-		return err
-	}
+	mb.sstore.Init(database)
 	mb.database = database
 	mb.dm = dm
-	return nil
 }
 
 // AddProposal stores a proposal to the database
@@ -97,77 +94,79 @@ func (mb *Handlers) Store(v interface{}) error {
 			if err != nil {
 				return err
 			}
-			err := mb.database.SetBroadcastProposal(txn, obj)
-			if err != nil {
-				return err
-			}
+			// if !roundState.IsCurrentValidator() {
+			// 	err := mb.database.SetBroadcastProposal(txn, obj)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
 			go mb.dm.DownloadTxs(roundState.height, roundState.round, txHshLst)
 		case *objs.PreVote:
 			err = roundState.SetPreVote(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastPreVote(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// err := mb.database.SetBroadcastPreVote(txn, obj)
+			// if err != nil {
+			// return err
+			// }
+			// }
 		case *objs.PreVoteNil:
 			err = roundState.SetPreVoteNil(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastPreVoteNil(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// err := mb.database.SetBroadcastPreVoteNil(txn, obj)
+			// if err != nil {
+			// return err
+			// }
+			// }
 		case *objs.PreCommit:
 			err = roundState.SetPreCommit(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastPreCommit(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// 	err := mb.database.SetBroadcastPreCommit(txn, obj)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
 		case *objs.PreCommitNil:
 			err = roundState.SetPreCommitNil(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastPreCommitNil(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// 	err := mb.database.SetBroadcastPreCommitNil(txn, obj)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
 		case *objs.NextRound:
 			err = roundState.SetNextRound(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastNextRound(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// 	err := mb.database.SetBroadcastNextRound(txn, obj)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
 		case *objs.NextHeight:
 			err = roundState.SetNextHeight(obj)
 			if err != nil {
 				return err
 			}
-			if !roundState.IsCurrentValidator() {
-				err := mb.database.SetBroadcastNextHeight(txn, obj)
-				if err != nil {
-					return err
-				}
-			}
+			// if !roundState.IsCurrentValidator() {
+			// 	err := mb.database.SetBroadcastNextHeight(txn, obj)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
 		case *objs.BlockHeader:
 			ownState := roundState.OwnState
 			if obj.BClaims.Height <= ownState.MaxBHSeen.BClaims.Height {
@@ -191,126 +190,165 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 	var GroupKey []byte
 	var CoSigners [][]byte
 	var round uint32
-	height, chainID := objs.ExtractHCID(v)
+	_, chainID := objs.ExtractHCID(v)
 	err := mb.database.View(func(txn *badger.Txn) error {
 		os, err := mb.database.GetOwnState(txn)
 		if err != nil {
 			return err
 		}
-		h, cid := objs.ExtractHCID(os.SyncToBH)
+		rs, err := mb.database.GetCurrentRoundState(txn, os.VAddr)
+		if err != nil {
+			return err
+		}
+		cid := rs.RCert.RClaims.ChainID
 		if cid != chainID {
 			return errorz.ErrInvalid{}.New("cid mismatch")
+		}
+		h := rs.RCert.RClaims.Height
+		r := rs.RCert.RClaims.Round
+		var height uint32
+		switch obj := v.(type) {
+		case *objs.Proposal:
+			height = obj.PClaims.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("Proposal h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round := obj.PClaims.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("Proposal r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			//Voter = nil
+			Proposer = obj.Proposer
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+			round = obj.PClaims.RCert.RClaims.Round
+		case *objs.PreVote:
+			height = obj.Proposal.PClaims.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("PreVote h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round = obj.Proposal.PClaims.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("PreVote r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			Proposer = obj.Proposal.Proposer
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+		case *objs.PreVoteNil:
+			height = obj.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("PreVoteNil h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round = obj.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("PreVoteNil r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			//Proposer = nil
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+		case *objs.PreCommit:
+			height = obj.Proposal.PClaims.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("PreCommit h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round = obj.Proposal.PClaims.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("PreCommit r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			Proposer = obj.Proposer
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			CoSigners = obj.Signers
+		case *objs.PreCommitNil:
+			height = obj.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("PreCommitNil h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round = obj.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("PreCommitNil r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			//Proposer = nil
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+		case *objs.NextRound:
+			height = obj.NRClaims.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("NextRound h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			round = obj.NRClaims.RCert.RClaims.Round
+			if round < r {
+				errorz.ErrStale{}.New("NextRound r<r-1: OwnR:%v ObjR:%v", r, round)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			//Proposer = nil
+			GroupShare = obj.GroupShare
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+		case *objs.NextHeight:
+			height = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Height
+			if height < h {
+				return errorz.ErrStale{}.New("NextHeight h<h-1: OwnH:%v ObjH:%v", h, height)
+			}
+			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
+				return err
+			}
+			Voter = obj.Voter
+			Proposer = obj.NHClaims.Proposal.Proposer
+			GroupShare = obj.GroupShare
+			GroupKey = obj.GroupKey
+			CoSigners = obj.Signers
+			round = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Round
+		case *objs.BlockHeader:
+			if err := obj.ValidateSignatures(mb.bnVal); err != nil {
+				return err
+			}
+			//Voter = nil
+			//Proposer = nil
+			//GroupShare = nil
+			GroupKey = obj.GroupKey
+			//CoSigners = nil
+			round = 1
 		}
 		if height == 1 {
 			return errorz.ErrInvalid{}.New("No Height 1 message is valid except for initial block")
 		}
-		if height < h-1 {
-			return errorz.ErrStale{}.New("h<h-1")
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	switch obj := v.(type) {
-	case *objs.Proposal:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		//Voter = nil
-		Proposer = obj.Proposer
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = obj.PClaims.RCert.RClaims.Round
-	case *objs.PreVote:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		Proposer = obj.Proposal.Proposer
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = obj.Proposal.PClaims.RCert.RClaims.Round
-	case *objs.PreVoteNil:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		//Proposer = nil
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = obj.RCert.RClaims.Round
-	case *objs.PreCommit:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		Proposer = obj.Proposer
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		CoSigners = obj.Signers
-		round = obj.Proposal.PClaims.RCert.RClaims.Round
-	case *objs.PreCommitNil:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		//Proposer = nil
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = obj.RCert.RClaims.Round
-	case *objs.NextRound:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		//Proposer = nil
-		GroupShare = obj.GroupShare
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = obj.NRClaims.RCert.RClaims.Round
-	case *objs.NextHeight:
-		if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
-			return err
-		}
-		Voter = obj.Voter
-		Proposer = obj.NHClaims.Proposal.Proposer
-		GroupShare = obj.GroupShare
-		GroupKey = obj.GroupKey
-		CoSigners = obj.Signers
-		round = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Round
-	case *objs.BlockHeader:
-		if err := obj.ValidateSignatures(mb.bnVal); err != nil {
-			return err
-		}
-		//Voter = nil
-		//Proposer = nil
-		//GroupShare = nil
-		GroupKey = obj.GroupKey
-		//CoSigners = nil
-		round = 1
-	}
-	// Do something in height 2 round 1 when GroupKey is not set; we set it
-	// to the value in ValidatorSet. This may not be best, as it now
-	// automatically passes those portions of the test.
-	if height == 2 && round == 1 && len(GroupKey) == 0 {
-		err := mb.database.View(func(txn *badger.Txn) error {
+		// Do something in height 2 round 1 when GroupKey is not set; we set it
+		// to the value in ValidatorSet. This may not be best, as it now
+		// automatically passes those portions of the test.
+		if height == 2 && round == 1 && len(GroupKey) == 0 {
 			vSet, err := mb.database.GetValidatorSet(txn, height)
 			if err != nil {
 				return err
 			}
 			GroupKey = gUtils.CopySlice(vSet.GroupKey)
-			return nil
-		})
-		if err != nil {
-			return err
 		}
-	}
-	return mb.database.View(func(txn *badger.Txn) error {
 		vSet, err := mb.database.GetValidatorSet(txn, height)
 		if err != nil {
 			return err
@@ -359,4 +397,9 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 		}
 		return nil
 	})
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return err
+	}
+	return nil
 }

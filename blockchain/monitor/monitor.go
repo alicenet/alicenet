@@ -37,7 +37,7 @@ type monitor struct {
 }
 
 // NewMonitor creates a new Monitor
-func NewMonitor(db Database, bus Bus, tickInterval time.Duration, timeout time.Duration) (Monitor, error) {
+func NewMonitor(db Database, bus Bus, tickInterval time.Duration, timeout time.Duration) Monitor {
 
 	logger := logging.GetLogger("monitor")
 
@@ -49,7 +49,7 @@ func NewMonitor(db Database, bus Bus, tickInterval time.Duration, timeout time.D
 		logger:       logger,
 		tickInterval: tickInterval,
 		timeout:      timeout,
-		statusMsg:    make(chan string, 1)}, nil
+		statusMsg:    make(chan string, 1)}
 }
 
 func (mon *monitor) GetStatus() <-chan string {

@@ -41,12 +41,11 @@ type Handlers struct {
 	ethAcct     []byte
 	ethPubk     []byte
 	appHandler  appmock.Application
-	RequestLock chan struct{}
 	ReceiveLock chan interfaces.Lockable
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte) error {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -58,9 +57,7 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.ethPubk = ethPubk
 	ah.secret = utils.CopySlice(secret)
 	ah.ethAcct = crypto.GetAccount(ethPubk)
-	ah.RequestLock = make(chan struct{})
 	ah.ReceiveLock = make(chan interfaces.Lockable)
-	return nil
 }
 
 // Close shuts down all workers
@@ -72,13 +69,8 @@ func (ah *Handlers) Close() {
 
 func (ah *Handlers) getLock() (interfaces.Lockable, bool) {
 	select {
-	case ah.RequestLock <- struct{}{}:
-		select {
-		case lock := <-ah.ReceiveLock:
-			return lock, true
-		case <-ah.ctx.Done():
-			return nil, false
-		}
+	case lock := <-ah.ReceiveLock:
+		return lock, true
 	case <-ah.ctx.Done():
 		return nil, false
 	}

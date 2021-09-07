@@ -10,9 +10,8 @@ type Store struct {
 	database *db.Database
 }
 
-func (ss *Store) Init(database *db.Database) error {
+func (ss *Store) Init(database *db.Database) {
 	ss.database = database
-	return nil
 }
 
 func (ss *Store) LoadLocalState(txn *badger.Txn) (*RoundStates, error) {
@@ -157,6 +156,7 @@ func (ss *Store) GetDropData(txn *badger.Txn) (isValidator bool, isSync bool, ch
 			return isValidator, isSync, chainID, height, round, err
 		}
 		round = rs.RCert.RClaims.Round
+		height = rs.RCert.RClaims.Height
 	} else {
 		round = 1
 	}
@@ -164,7 +164,7 @@ func (ss *Store) GetDropData(txn *badger.Txn) (isValidator bool, isSync bool, ch
 }
 
 // GetGossipValues ...
-func (ss *Store) GetGossipValues() (*objs.Proposal, *objs.PreVote, *objs.PreVoteNil, *objs.PreCommit, *objs.PreCommitNil, *objs.NextRound, *objs.NextHeight, error) {
+func (ss *Store) GetGossipValues(txn *badger.Txn) (*objs.Proposal, *objs.PreVote, *objs.PreVoteNil, *objs.PreCommit, *objs.PreCommitNil, *objs.NextRound, *objs.NextHeight, error) {
 	var p *objs.Proposal
 	var pv *objs.PreVote
 	var pvn *objs.PreVoteNil
@@ -172,9 +172,9 @@ func (ss *Store) GetGossipValues() (*objs.Proposal, *objs.PreVote, *objs.PreVote
 	var pcn *objs.PreCommitNil
 	var nr *objs.NextRound
 	var nh *objs.NextHeight
+	var err error
 
-	err := ss.database.View(func(txn *badger.Txn) error {
-		var err error
+	err = ss.database.View(func(txn *badger.Txn) error {
 
 		p, err = ss.database.GetBroadcastProposal(txn)
 		if err != nil {
@@ -261,6 +261,9 @@ func (ss *Store) IsSync(txn *badger.Txn) (bool, error) {
 	stbh, err := ss.GetSyncToBH(txn)
 	if err != nil {
 		return false, err
+	}
+	if stbh == nil || mbhs == nil {
+		return false, nil
 	}
 	if objs.RelateH(mbhs, stbh) == 0 {
 		return true, nil

@@ -39,7 +39,7 @@ type Handler struct {
 }
 
 // Init initializes the object
-func (rb *Handler) Init(database *db.Database, app appHandler) error {
+func (rb *Handler) Init(database *db.Database, app appHandler) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
@@ -48,7 +48,6 @@ func (rb *Handler) Init(database *db.Database, app appHandler) error {
 	rb.wg = sync.WaitGroup{}
 	rb.app = app
 	rb.database = database
-	return nil
 }
 
 // Done will trInger when both of the gossip busses have stopped
@@ -67,7 +66,7 @@ func (rb *Handler) Exit() {
 	rb.cancelCtx()
 }
 
-//HandleP2PGetBlockHeaders serves block headers
+//HandleP2PStatus serves status message from P2P protocol
 func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*pb.StatusResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -77,15 +76,22 @@ func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*p
 		defer rb.wg.Done()
 	}
 
-	err := rb.database.View(func(txn *badger.Txn) error {
+	var resp pb.StatusResponse
 
+	err := rb.database.View(func(txn *badger.Txn) error {
+		os, err := rb.database.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		resp.SyncToBlockHeight = os.SyncToBH.BClaims.Height
+		resp.MaxBlockHeightSeen = os.MaxBHSeen.BClaims.Height
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.StatusResponse{}
-	return resp, nil
+	return &resp, nil
 }
 
 //HandleP2PGetBlockHeaders serves block headers
@@ -193,7 +199,7 @@ func (rb *Handler) HandleP2PGetMinedTxs(ctx context.Context, r *pb.GetMinedTxsRe
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotNode ....
+// HandleP2PGetSnapShotHdrNode serves nodes of the Header Trie to the caller
 func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapShotNodeRequest) (*pb.GetSnapShotNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -218,6 +224,7 @@ func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapSh
 	return resp, nil
 }
 
+// HandleP2PGetSnapShotHdrNode serves nodes of the State Trie to the caller
 func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSnapShotHdrNodeRequest) (*pb.GetSnapShotHdrNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -242,7 +249,7 @@ func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSna
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotStateData ....
+// HandleP2PGetSnapShotStateData serves UTXOs based on State Trie hash data
 func (rb *Handler) HandleP2PGetSnapShotStateData(ctx context.Context, r *pb.GetSnapShotStateDataRequest) (*pb.GetSnapShotStateDataResponse, error) {
 	select {
 	case <-ctx.Done():

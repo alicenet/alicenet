@@ -199,3 +199,31 @@ func TestAddTwist(t *testing.T) {
 		t.Fatal("Twist Add changed twistGen")
 	}
 }
+
+func TestTwistDouble(t *testing.T) {
+	c := &twistPoint{}
+	c.Add(twistGen, twistGen)
+	if !c.IsOnCurve() {
+		t.Fatal("twistPoint should be on curve (1)")
+	}
+
+	a := &twistPoint{}
+	a.Set(twistGen)
+	a.Add(a, a)
+	if !a.IsOnCurve() {
+		t.Fatal("twistPoint should be on curve (2)")
+	}
+	if !c.IsEqual(a) {
+		t.Fatal("twistPoints should be equal (2)")
+	}
+
+	b := &twistPoint{}
+	b.Set(twistGen)
+	b.Double(b)
+	if !b.IsOnCurve() {
+		t.Fatal("twistPoint should be on curve (3)")
+	}
+	if !c.IsEqual(b) {
+		t.Fatal("twistPoints should be equal (3)")
+	}
+}
