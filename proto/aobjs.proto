@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-//option go_package = "github.com/MadBase/MadNet/proto";
+option go_package = "github.com/MadBase/MadNet/proto";
 
 // Protobuf message implementation for struct Tx
 message Tx {
@@ -16,6 +16,7 @@ message TXOut {
   AtomicSwap AtomicSwap = 1;
   ValueStore ValueStore = 2;
   DataStore DataStore = 3;
+  TxFee TxFee = 4;
   }
 }
 
@@ -57,6 +58,7 @@ message ASPreImage {
 	uint32 IssuedAt = 4;
 	uint32 Exp = 5;
 	string Owner = 6;
+	string Fee = 7;
 }
 
 // Protobuf message implementation for struct ValueStore
@@ -71,7 +73,8 @@ message VSPreImage {
 	uint32 ChainID = 1;
 	string Value = 2;
 	uint32 TXOutIdx = 3;
-  string Owner = 4;
+  	string Owner = 4;
+	string Fee = 5;
 }
 
 
@@ -98,4 +101,20 @@ message DSPreImage {
 	string RawData = 5;
 	uint32 TXOutIdx = 6;
 	string Owner = 7;
+	string Fee = 8;
+}
+
+
+// Protobuf message implementation for struct TxFee
+message TxFee {
+	TFPreImage TFPreImage = 1;
+	string TxHash = 2;
+}
+
+
+// Protobuf message implementation for struct TFPreImage
+message TFPreImage {
+	uint32 ChainID = 1;
+	uint32 TXOutIdx = 2;
+	string Fee = 3;
 }

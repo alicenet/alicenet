@@ -13,24 +13,28 @@ type BNSigner struct {
 }
 
 // SetPrivk sets the private key of the BNSigner.
-func (bns *BNSigner) SetPrivk(privk []byte) {
+func (bns *BNSigner) SetPrivk(privk []byte) error {
+	if bns == nil {
+		return ErrInvalid
+	}
 	bns.privk = new(big.Int).SetBytes(privk)
 	bns.privk.Mod(bns.privk, bn256.Order)
 	bns.pubk = new(bn256.G2).ScalarBaseMult(bns.privk)
+	return nil
 }
 
 // Pubkey returns the marshalled public key of the BNSigner.
 func (bns *BNSigner) Pubkey() ([]byte, error) {
-	if bns.privk != nil {
-		return bns.pubk.Marshal(), nil
+	if bns == nil || bns.privk == nil {
+		return nil, ErrPrivkNotSet
 	}
-	return nil, ErrPrivkNotSet
+	return bns.pubk.Marshal(), nil
 }
 
 // Sign will generate a signature for msg using the private key of the
 // BNSigner.
 func (bns *BNSigner) Sign(msg []byte) ([]byte, error) {
-	if bns.privk == nil {
+	if bns == nil || bns.privk == nil {
 		return nil, ErrPrivkNotSet
 	}
 	pubkbytes := bns.pubk.Marshal()

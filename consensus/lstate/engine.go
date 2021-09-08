@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
-
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -17,7 +14,10 @@ import (
 	"github.com/MadBase/MadNet/consensus/request"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
+	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -44,11 +44,13 @@ type Engine struct {
 	ethAcct []byte
 	EthPubk []byte
 
+	storage dynamics.StorageGetter
+
 	dm *dman.DMan
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client) {
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf
@@ -70,9 +72,11 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 		appHandler: app,
 		requestBus: ce.RequestBus,
 	}
-	ce.fastSync.Init(database)
+	ce.storage = storage
+	ce.fastSync.Init(database, storage)
 }
 
+// Status updates the status of the consensus engine
 func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{}, error) {
 	var rs *RoundStates
 	err := ce.database.View(func(txn *badger.Txn) error {
@@ -102,6 +106,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 	return status, nil
 }
 
+// UpdateLocalState updates the local state of the consensus engine
 func (ce *Engine) UpdateLocalState() (bool, error) {
 	var isSync bool
 	updateLocalState := true
@@ -150,6 +155,12 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		}
 		roundState, err := ce.sstore.LoadLocalState(txn)
 		if err != nil {
+			return err
+		}
+		// Load storage
+		err = ce.storage.LoadStorage(txn, utils.Epoch(roundState.OwnState.SyncToBH.BClaims.Height))
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		if roundState.OwnState.SyncToBH.BClaims.Height%constants.EpochLength == 0 {
@@ -376,6 +387,11 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		return true, nil
 	}
 
+	// Ensure that storage has updated values
+	proposalStepTO := ce.storage.GetProposalStepTimeout()
+	preVoteStepTO := ce.storage.GetPreVoteStepTimeout()
+	preCommitStepTO := ce.storage.GetPreCommitStepTimeout()
+
 	// iterate all possibles from nextRound down to proposal
 	// and take that action
 	ISProposer := rs.LocalIsProposer()
@@ -385,9 +401,9 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	PCCurrent := os.PCCurrent(rcert)
 	PCNCurrent := os.PCNCurrent(rcert)
 	NRCurrent := os.NRCurrent(rcert)
-	PTOExpired := rs.OwnValidatingState.PTOExpired()
-	PVTOExpired := rs.OwnValidatingState.PVTOExpired()
-	PCTOExpired := rs.OwnValidatingState.PCTOExpired()
+	PTOExpired := rs.OwnValidatingState.PTOExpired(proposalStepTO)
+	PVTOExpired := rs.OwnValidatingState.PVTOExpired(preVoteStepTO)
+	PCTOExpired := rs.OwnValidatingState.PCTOExpired(preCommitStepTO)
 
 	// dispatch to handlers
 	if NRCurrent {
@@ -482,6 +498,7 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	return true, nil
 }
 
+// Sync attempts to synchronize the local state of consensus engine
 func (ce *Engine) Sync() (bool, error) {
 	// see if sync is done
 	// if yes exit
@@ -494,6 +511,11 @@ func (ce *Engine) Sync() (bool, error) {
 				return err
 			}
 			return nil
+		}
+		err = ce.storage.LoadStorage(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height))
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
 		}
 		// begin handling logic
 		if rs.OwnState.MaxBHSeen.BClaims.Height == rs.OwnState.SyncToBH.BClaims.Height {
@@ -599,7 +621,11 @@ func (ce *Engine) loadValidationKey(rs *RoundStates) error {
 						return nil
 					}
 					signer := &crypto.BNGroupSigner{}
-					signer.SetPrivk(pk)
+					err = signer.SetPrivk(pk)
+					if err != nil {
+						utils.DebugTrace(ce.logger, err)
+						return nil
+					}
 					err = signer.SetGroupPubk(rs.ValidatorSet.GroupKey)
 					if err != nil {
 						utils.DebugTrace(ce.logger, err)

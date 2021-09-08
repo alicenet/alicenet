@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // BlockHeaderHeightKey ...
@@ -20,8 +20,8 @@ func (b *BlockHeaderHeightKey) UnmarshalBinary(data []byte) error {
 	if len(data) != 6 {
 		return errorz.ErrInvalid{}.New("Invalid data for BlockHeaderHeightKey unmarshalling")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	nb, err := gUtils.UnmarshalUint32(data[2:6])
+	b.Prefix = utils.CopySlice(data[0:2])
+	nb, err := utils.UnmarshalUint32(data[2:6])
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func (b *BlockHeaderHeightKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	nb := gUtils.MarshalUint32(b.Height)
+	Prefix := utils.CopySlice(b.Prefix)
+	nb := utils.MarshalUint32(b.Height)
 	key = append(key, Prefix...)
 	key = append(key, nb...)
 	return key, nil

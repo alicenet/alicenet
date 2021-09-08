@@ -27,6 +27,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/request"
 	"github.com/MadBase/MadNet/constants"
 	mncrypto "github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/localrpc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
@@ -242,6 +243,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// synchronizes execution context, makes sure everything synchronizes with the ctx system - throughout modules
 	consSync := &consensus.Synchronizer{}
 
+	// define storage to dynamic values
+	storage := &dynamics.Storage{}
+
 	// account signer for ETH accounts
 	secp256k1Signer := &mncrypto.Secp256k1Signer{}
 
@@ -261,19 +265,24 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consTxPool.Init(consDB)
 
 	appDepositHandler.Init()
-	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler); err != nil {
+	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
+		panic(err)
+	}
+
+	// Initialize storage
+	if err := storage.Init(consDB, logger); err != nil {
 		panic(err)
 	}
 
 	// Initialize consensus
-	consReqClient.Init(peerManager.P2PClient())
-	consReqHandler.Init(consDB, app)
+	consReqClient.Init(peerManager.P2PClient(), storage)
+	consReqHandler.Init(consDB, app, storage)
 	consDlManager.Init(consDB, app, consReqClient)
 	consLSHandler.Init(consDB, consDlManager)
-	consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler)
-	consGossipClient.Init(consDB, peerManager.P2PClient(), app)
-	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey)
-	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient)
+	consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler, storage)
+	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
+	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
+	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
 	// Setup Request Bus
 	svcs := monitor.NewServices(eth, consDB, appDepositHandler, consAdminHandlers, batchSize, chainID)
@@ -296,7 +305,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		mDB = rawMonitorDb
 	}
 
-	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager)
+	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, storage)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
 
@@ -305,6 +314,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	defer func() { os.Exit(0) }()
 	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
+
+	go storage.Start()
 
 	go statusLogger.Run()
 	defer statusLogger.Close()

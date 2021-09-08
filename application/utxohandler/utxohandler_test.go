@@ -56,8 +56,9 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 			Value:    value,
 			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(pubkey)},
 			TXOutIdx: 0,
+			Fee:      new(uint256.Uint256).SetZero(),
 		},
-		TxHash: make([]byte, 32),
+		TxHash: make([]byte, constants.HashLen),
 	}
 	newUTXO := &objs.TXOut{}
 	err = newUTXO.NewValueStore(newValueStore)

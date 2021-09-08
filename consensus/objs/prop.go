@@ -3,13 +3,12 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/proposal"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -51,7 +50,7 @@ func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
 		return err
 	}
 	b.TxHshLst = lst
-	b.Signature = gUtils.CopySlice(bh.Signature())
+	b.Signature = utils.CopySlice(bh.Signature())
 	if b.PClaims.RCert.RClaims.Round == constants.DEADBLOCKROUND {
 		if len(b.TxHshLst) != 0 {
 			return errorz.ErrInvalid{}.New("non empty tx hash lst in deadblockround")

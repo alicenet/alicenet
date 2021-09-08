@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // NextHeightList ...
@@ -11,7 +11,7 @@ type NextHeightList []*NextHeight
 func (nhl NextHeightList) MakeBlockHeader(bns *crypto.BNGroupSigner, groupShares [][]byte) (*BlockHeader, *RCert, error) {
 	sigs := [][]byte{}
 	for _, nh := range nhl {
-		sigs = append(sigs, gUtils.CopySlice(nh.NHClaims.SigShare))
+		sigs = append(sigs, utils.CopySlice(nh.NHClaims.SigShare))
 	}
 	SigGroup, err := bns.Aggregate(sigs, groupShares)
 	if err != nil {
@@ -28,7 +28,7 @@ func (nhl NextHeightList) MakeBlockHeader(bns *crypto.BNGroupSigner, groupShares
 	}
 	txHshlst := [][]byte{}
 	for _, hsh := range nhl[0].NHClaims.Proposal.TxHshLst {
-		chsh := gUtils.CopySlice(hsh)
+		chsh := utils.CopySlice(hsh)
 		txHshlst = append(txHshlst, chsh)
 	}
 
@@ -41,8 +41,8 @@ func (nhl NextHeightList) MakeBlockHeader(bns *crypto.BNGroupSigner, groupShares
 	if err != nil {
 		return nil, nil, err
 	}
-	PrevBlockCopy := gUtils.CopySlice(PrevBlock)
-	SigGroupCopy := gUtils.CopySlice(SigGroup)
+	PrevBlockCopy := utils.CopySlice(PrevBlock)
+	SigGroupCopy := utils.CopySlice(SigGroup)
 	rc := &RCert{
 		RClaims: &RClaims{
 			ChainID:   bclaims.ChainID,

@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/gossip"
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
@@ -211,10 +212,12 @@ type Synchronizer struct {
 	peerMinThresh *remoteVar
 	ethSyncDone   *remoteVar
 	madSyncDone   *resetVar
+
+	storage dynamics.StorageGetter
 }
 
 // Init initializes the struct
-func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager) {
+func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, storage dynamics.StorageGetter) {
 	s.logger = logging.GetLogger(constants.LoggerConsensus)
 	s.cdb = cdb
 	s.mdb = mdb
@@ -234,6 +237,7 @@ func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc
 	s.ethSyncDone = newRemoteVar(s.adminHandler.IsSynchronized)
 	s.peerMinThresh = newRemoteVar(s.peerMan.PeeringComplete)
 	s.madSyncDone = newResetVar()
+	s.storage = storage
 }
 
 func (s *Synchronizer) CloseChan() <-chan struct{} {
@@ -414,7 +418,7 @@ func (s *Synchronizer) adminInteruptLoop() {
 func (s *Synchronizer) setupLoops() {
 	stateLoopInSyncConfig := newLoopConfig().
 		withName("StateLoop-InSync").
-		withInitialDelay(9*constants.MsgTimeout).
+		withInitialDelay(9*s.storage.GetMsgTimeout()).
 		withFn2(s.stateHandler.UpdateLocalState, s.madSyncDone.set).
 		withFreq(200 * time.Millisecond).
 		withDelayOnConditionFailure(200 * time.Millisecond).
@@ -461,10 +465,10 @@ func (s *Synchronizer) setupLoops() {
 
 	reGossipLoopConfig := newLoopConfig().
 		withName("ReGossipLoop").
-		withInitialDelay(9 * constants.MsgTimeout).
+		withInitialDelay(9 * s.storage.GetMsgTimeout()).
 		withFn(s.gossipClient.ReGossip).
-		withFreq(9 * constants.MsgTimeout).
-		withDelayOnConditionFailure(constants.MsgTimeout).
+		withFreq(9 * s.storage.GetMsgTimeout()).
+		withDelayOnConditionFailure(s.storage.GetMsgTimeout()).
 		withLockFreeCondition(s.isNotClosing).
 		withLockFreeCondition(s.initialized.isSet).
 		withLockFreeCondition(s.ethSyncDone.isSet).

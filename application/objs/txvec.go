@@ -1,5 +1,10 @@
 package objs
 
+import (
+	"github.com/MadBase/MadNet/application/wrapper"
+	"github.com/MadBase/MadNet/constants"
+)
+
 // TxVec is a vector of transactions Tx
 type TxVec []*Tx
 
@@ -67,10 +72,10 @@ func (txv TxVec) PreValidateApplyState(chainID uint32) error {
 }
 
 // Validate ...
-func (txv TxVec) Validate(currentHeight uint32, consumedUTXOs Vout) error {
+func (txv TxVec) Validate(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
 	set := make(map[string]bool)
-	voutMap := make(map[[32]byte]*TXOut)
-	var key [32]byte
+	voutMap := make(map[[constants.HashLen]byte]*TXOut)
+	var key [constants.HashLen]byte
 	for i := 0; i < len(consumedUTXOs); i++ {
 		utxoID, err := consumedUTXOs[i].UTXOID()
 		if err != nil {
@@ -89,7 +94,7 @@ func (txv TxVec) Validate(currentHeight uint32, consumedUTXOs Vout) error {
 			copy(key[:], utxoIDs[j])
 			utxoSet[j] = voutMap[key]
 		}
-		if set, err = txv[i].Validate(set, currentHeight, utxoSet); err != nil {
+		if set, err = txv[i].Validate(set, currentHeight, utxoSet, storage); err != nil {
 			return err
 		}
 	}

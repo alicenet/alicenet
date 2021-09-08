@@ -86,6 +86,11 @@ func ReverseTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.Fee = &uint256.Uint256{}
+	err = t.Fee.UnmarshalString(f.Fee)
+	if err != nil {
+		return nil, err
+	}
 	b, err := t.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -117,6 +122,11 @@ func ReverseTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 	t.TXOutIdx = f.TXOutIdx
 	t.Value = &uint256.Uint256{}
 	err := t.Value.UnmarshalString(f.Value)
+	if err != nil {
+		return nil, err
+	}
+	t.Fee = &uint256.Uint256{}
+	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
 		return nil, err
 	}
@@ -280,6 +290,11 @@ func ReverseTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 	t.ChainID = f.ChainID
 	t.Deposit = &uint256.Uint256{}
 	err := t.Deposit.UnmarshalString(f.Deposit)
+	if err != nil {
+		return nil, err
+	}
+	t.Fee = &uint256.Uint256{}
+	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
 		return nil, err
 	}

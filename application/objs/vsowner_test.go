@@ -218,7 +218,10 @@ func TestVSOwnerValidateSignatureSecp(t *testing.T) {
 		t.Fatal(err)
 	}
 	bnSigner := &crypto.BNSigner{}
-	bnSigner.SetPrivk(privk)
+	err = bnSigner.SetPrivk(privk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	vssBN, err := vso.Sign(msg, bnSigner)
 	if err != nil {
 		t.Fatal(err)
@@ -280,7 +283,10 @@ func TestVSOwnerValidateSignatureBN(t *testing.T) {
 	privk := make([]byte, 32)
 	privk[0] = 1
 	privk[31] = 1
-	bnSigner.SetPrivk(privk)
+	err = bnSigner.SetPrivk(privk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	secpSigner := &crypto.Secp256k1Signer{}
 	if err := secpSigner.SetPrivk(privk); err != nil {
 		t.Fatal(err)

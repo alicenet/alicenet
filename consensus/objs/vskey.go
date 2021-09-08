@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // ValidatorSetKey ...
@@ -20,8 +20,8 @@ func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 	if len(data) != 6 {
 		return errorz.ErrInvalid{}.New("data incorrect length for unmarshalling ValidatorSetKey")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	nb, _ := gUtils.UnmarshalUint32(data[2:6])
+	b.Prefix = utils.CopySlice(data[0:2])
+	nb, _ := utils.UnmarshalUint32(data[2:6])
 	if nb == 0 {
 		return errorz.ErrInvalid{}.New("invalid NotBefore for unmarshalling ValidatorSetKey; NotBefore == 0")
 	}
@@ -36,8 +36,8 @@ func (b *ValidatorSetKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	nb := gUtils.MarshalUint32(b.NotBefore)
+	Prefix := utils.CopySlice(b.Prefix)
+	nb := utils.MarshalUint32(b.NotBefore)
 	key = append(key, Prefix...)
 	key = append(key, nb...)
 	return key, nil

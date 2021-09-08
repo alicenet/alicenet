@@ -18,7 +18,10 @@ func TestBlockHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	gk := crypto.BNGroupSigner{}
-	gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	err = gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig, err := gk.Sign(bhsh)
 	if err != nil {
 		t.Fatal(err)
@@ -82,7 +85,10 @@ func TestBlockHeaderBad(t *testing.T) {
 		t.Fatal(err)
 	}
 	gk := crypto.BNGroupSigner{}
-	gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	err = gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig, err := gk.Sign(bhsh)
 	if err != nil {
 		t.Fatal(err)
@@ -109,12 +115,7 @@ func TestBlockHeaderBad(t *testing.T) {
 		t.Fatal(err)
 	}
 	bh2 := &BlockHeader{}
-	err = bh2.UnmarshalBinaryUnsafe(bhdrBytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-	bh3 := &BlockHeader{}
-	err = bh3.UnmarshalBinary(bhdrBytes)
+	err = bh2.UnmarshalBinary(bhdrBytes)
 	if err == nil {
 		t.Fatal("Should have raised error (5)")
 	}

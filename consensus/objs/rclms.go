@@ -5,7 +5,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs/rclaims"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -37,10 +37,7 @@ func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
 	b.ChainID = bh.ChainID()
 	b.Height = bh.Height()
 	b.Round = bh.Round()
-	b.PrevBlock = gUtils.CopySlice(bh.PrevBlock())
-	if len(b.PrevBlock) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("rclaims bad prevb len")
-	}
+	b.PrevBlock = utils.CopySlice(bh.PrevBlock())
 	if b.Height < 1 {
 		return errorz.ErrInvalid{}.New("rclaims bad height")
 	}

@@ -3,10 +3,11 @@ using Go = import "/go.capnp";
 $Go.package("capn");
 $Go.import("github.com/MadBase/MadNet/application/capn");
 
-const defaultDSPreImage :DSPreImage = (chainID = 0, index = 0x"00", issuedAt = 0, deposit = 0, rawData = 0x"00", owner = 0x"00");
+const defaultDSPreImage :DSPreImage = (chainID = 0, index = 0x"00", issuedAt = 0, deposit = 0, rawData = 0x"00", owner = 0x"00", deposit1 = 0, deposit2 = 0, deposit3 = 0, deposit4 = 0, deposit5 = 0, deposit6 = 0, deposit7 = 0, fee0 = 0, fee1 = 0, fee2 = 0, fee3 = 0, fee4 = 0, fee5 = 0, fee6 = 0, fee7 = 0);
 const defaultDSLinker :DSLinker = (txHash = 0x"00", dSPreImage = .defaultDSPreImage);
-const defaultVSPreImage :VSPreImage = (chainID = 0, value = 0, owner = 0x"00");
-const defaultASPreImage :ASPreImage = (chainID = 0, value = 0, owner = 0x"00", issuedAt = 0, exp = 0);
+const defaultVSPreImage :VSPreImage = (chainID = 0, value = 0, owner = 0x"00", value1 = 0, value2 = 0, value3 = 0, value4 = 0, value5 = 0, value6 = 0, value7 = 0, fee0 = 0, fee1 = 0, fee2 = 0, fee3 = 0, fee4 = 0, fee5 = 0, fee6 = 0, fee7 = 0);
+const defaultASPreImage :ASPreImage = (chainID = 0, value = 0, owner = 0x"00", issuedAt = 0, exp = 0, value1 = 0, value2 = 0, value3 = 0, value4 = 0, value5 = 0, value6 = 0, value7 = 0, fee0 = 0, fee1 = 0, fee2 = 0, fee3 = 0, fee4 = 0, fee5 = 0, fee6 = 0, fee7 = 0);
+const defaultTFPreImage :TFPreImage = (chainID = 0, fee0 = 0, fee1 = 0, fee2 = 0, fee3 = 0, fee4 = 0, fee5 = 0, fee6 = 0, fee7 = 0);
 const defaultTXInPreImage :TXInPreImage = (chainID = 0, consumedTxIdx = 0, consumedTxHash = 0x"00");
 const defaultTXInLinker :TXInLinker = (tXInPreImage = .defaultTXInPreImage, txHash = 0x"00");
 
@@ -37,6 +38,17 @@ struct DSPreImage {
     deposit5 @11 :UInt32 = 0;
     deposit6 @12 :UInt32 = 0;
     deposit7 @13 :UInt32 = 0;
+    # Deposit stores the value of the DataStore
+
+    fee0 @14 :UInt32 = 0;
+    fee1 @15 :UInt32 = 0;
+    fee2 @16 :UInt32 = 0;
+    fee3 @17 :UInt32 = 0;
+    fee4 @18 :UInt32 = 0;
+    fee5 @19 :UInt32 = 0;
+    fee6 @20 :UInt32 = 0;
+    fee7 @21 :UInt32 = 0;
+    # Fee stores the associated fee for a DataStore
 }
 
 struct DSLinker {
@@ -75,6 +87,17 @@ struct VSPreImage {
     value5 @8 :UInt32 = 0;
     value6 @9 :UInt32 = 0;
     value7 @10 :UInt32 = 0;
+    # Value stores the value
+
+    fee0 @11 :UInt32 = 0;
+    fee1 @12 :UInt32 = 0;
+    fee2 @13 :UInt32 = 0;
+    fee3 @14 :UInt32 = 0;
+    fee4 @15 :UInt32 = 0;
+    fee5 @16 :UInt32 = 0;
+    fee6 @17 :UInt32 = 0;
+    fee7 @18 :UInt32 = 0;
+    # Fee stores the associated fee for a ValueStore
 }
 
 struct ValueStore {
@@ -114,10 +137,49 @@ struct ASPreImage {
     value5 @10 :UInt32 = 0;
     value6 @11 :UInt32 = 0;
     value7 @12 :UInt32 = 0;
+    # Value stores the value which is to be swapped
+
+    fee0 @13 :UInt32 = 0;
+    fee1 @14 :UInt32 = 0;
+    fee2 @15 :UInt32 = 0;
+    fee3 @16 :UInt32 = 0;
+    fee4 @17 :UInt32 = 0;
+    fee5 @18 :UInt32 = 0;
+    fee6 @19 :UInt32 = 0;
+    fee7 @20 :UInt32 = 0;
+    # Fee stores the associated fee for an AtomicSwap
 }
 
 struct AtomicSwap {
     aSPreImage @0 :ASPreImage = .defaultASPreImage;
+    # The structure containing particular information for this object.
+
+    txHash @1 :Data = 0x"00";
+    # The hash of the transaction that created this object.
+}
+
+################################################################################
+
+struct TFPreImage {
+    chainID @0 :UInt32 = 0;
+    # The chainID of this object.
+
+    tXOutIdx @1 :UInt32 = 0;
+    # The index at which this element appears in the transaction output list.
+
+    fee0 @2 :UInt32 = 0;
+    fee1 @3 :UInt32 = 0;
+    fee2 @4 :UInt32 = 0;
+    fee3 @5 :UInt32 = 0;
+    fee4 @6 :UInt32 = 0;
+    fee5 @7 :UInt32 = 0;
+    fee6 @8 :UInt32 = 0;
+    fee7 @9 :UInt32 = 0;
+    # Fee stores the fee
+}
+
+struct TxFee {
+    tFPreImage @0 :TFPreImage = .defaultTFPreImage;
     # The structure containing particular information for this object.
 
     txHash @1 :Data = 0x"00";
@@ -167,6 +229,10 @@ struct TXOut {
         # The output if it is a valuestore
 
         atomicSwap @2 :AtomicSwap;
+        # The output if it is an atomicswap
+
+        txFee @3 :TxFee;
+        # The output if it is a txfee
     }
 }
 

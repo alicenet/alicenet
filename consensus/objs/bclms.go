@@ -3,7 +3,6 @@ package objs
 import (
 	"github.com/MadBase/MadNet/consensus/objs/bclaims"
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
 	capnp "zombiezen.com/go/capnproto2"
@@ -58,9 +57,6 @@ func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 	b.HeaderRoot = bc.HeaderRoot()
 	b.StateRoot = bc.StateRoot()
 	b.TxRoot = bc.TxRoot()
-	if len(b.PrevBlock) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("capn bclaims prevblock bad len")
-	}
 	if b.Height < 1 {
 		return errorz.ErrInvalid{}.New("capn bclaims bad height")
 	}

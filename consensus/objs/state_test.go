@@ -248,7 +248,10 @@ func makeSigners2(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*c
 	gpk1 := new(bn256.G2).ScalarBaseMult(gsk1)
 	groupShares[0] = gpk1.Marshal()
 	s1 := new(crypto.BNGroupSigner)
-	s1.SetPrivk(gsk1.Bytes())
+	err := s1.SetPrivk(gsk1.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig1, err := s1.Sign(msg)
 	if err != nil {
 		t.Fatal(err)
@@ -259,7 +262,10 @@ func makeSigners2(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*c
 	gpk2 := new(bn256.G2).ScalarBaseMult(gsk2)
 	groupShares[1] = gpk2.Marshal()
 	s2 := new(crypto.BNGroupSigner)
-	s2.SetPrivk(gsk2.Bytes())
+	err = s2.SetPrivk(gsk2.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig2, err := s2.Sign(msg)
 	if err != nil {
 		t.Fatal(err)
@@ -270,7 +276,10 @@ func makeSigners2(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*c
 	gpk3 := new(bn256.G2).ScalarBaseMult(gsk3)
 	groupShares[2] = gpk3.Marshal()
 	s3 := new(crypto.BNGroupSigner)
-	s3.SetPrivk(gsk3.Bytes())
+	err = s3.SetPrivk(gsk3.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig3, err := s3.Sign(msg)
 	if err != nil {
 		t.Fatal(err)
@@ -281,7 +290,10 @@ func makeSigners2(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*c
 	gpk4 := new(bn256.G2).ScalarBaseMult(gsk4)
 	groupShares[3] = gpk4.Marshal()
 	s4 := new(crypto.BNGroupSigner)
-	s4.SetPrivk(gsk4.Bytes())
+	err = s4.SetPrivk(gsk4.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig4, err := s4.Sign(msg)
 	if err != nil {
 		t.Fatal(err)

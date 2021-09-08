@@ -6,7 +6,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -40,7 +40,7 @@ func (b *RCert) UnmarshalCapn(bh mdefs.RCert) error {
 	if err != nil {
 		return err
 	}
-	b.SigGroup = gUtils.CopySlice(bh.SigGroup())
+	b.SigGroup = utils.CopySlice(bh.SigGroup())
 	return nil
 }
 
@@ -98,7 +98,7 @@ func (b *RCert) MarshalCapn(seg *capnp.Segment) (mdefs.RCert, error) {
 
 // ValidateSignature validates the group signature on the RCert
 func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
-	if b == nil || b.RClaims == nil {
+	if b == nil || b.RClaims == nil || b.RClaims.Height == 0 || b.RClaims.ChainID == 0 || b.RClaims.Round == 0 || b.RClaims.Round > constants.DEADBLOCKROUND {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	if b.RClaims.Height == 1 && b.RClaims.Round == 1 {
@@ -112,6 +112,9 @@ func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
 	if b.RClaims.Height == 2 && b.RClaims.Round == 1 {
 		// There is nothing we can check because there is no group signature
 		return nil
+	}
+	if len(b.RClaims.PrevBlock) != constants.HashLen {
+		return errorz.ErrInvalid{}.New("invalid PrevBlock")
 	}
 	if b.RClaims.Round > 1 {
 		canonicalEncoding, err := b.RClaims.MarshalBinary()
@@ -192,11 +195,11 @@ func (b *RCert) NextRound(secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.B
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
-	nrrClaims := &RClaims{}
 	rcClaims, err := b.RClaims.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
+	nrrClaims := &RClaims{}
 	err = nrrClaims.UnmarshalBinary(rcClaims)
 	if err != nil {
 		return nil, err

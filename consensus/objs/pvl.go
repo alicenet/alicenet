@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 type PreVoteList []*PreVote
@@ -11,7 +11,7 @@ type PreVoteNilList []bool
 func (pvl PreVoteList) MakePreCommit(secpSigner *crypto.Secp256k1Signer) (*PreCommit, error) {
 	sigs := [][]byte{}
 	for _, pv := range pvl {
-		s := gUtils.CopySlice(pv.Signature)
+		s := utils.CopySlice(pv.Signature)
 		sigs = append(sigs, s)
 	}
 	propBytes, err := pvl[0].Proposal.MarshalBinary()

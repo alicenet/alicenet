@@ -6,6 +6,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/middleware"
@@ -22,14 +23,16 @@ type Client struct {
 	logger   *logrus.Logger
 	secpVal  *crypto.Secp256k1Validator
 	groupVal *crypto.BNGroupValidator
+	storage  dynamics.StorageGetter
 }
 
 // Init initializes the object
-func (rb *Client) Init(client pb.P2PClient) {
+func (rb *Client) Init(client pb.P2PClient, storage dynamics.StorageGetter) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	rb.client = client
 	rb.groupVal = &crypto.BNGroupValidator{}
 	rb.secpVal = &crypto.Secp256k1Validator{}
+	rb.storage = storage
 }
 
 // RequestP2PGetSnapShotNode implements the client for the P2P method

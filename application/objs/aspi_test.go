@@ -52,6 +52,7 @@ func TestASPreImageGood(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()
@@ -137,6 +138,7 @@ func TestASPreImageBad1(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()
@@ -244,6 +246,7 @@ func TestASPreImageBad3(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()
@@ -300,6 +303,7 @@ func TestASPreImageBad4(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()
@@ -356,6 +360,7 @@ func TestASPreImageBad5(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()
