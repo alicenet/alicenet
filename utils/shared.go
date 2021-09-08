@@ -4,9 +4,6 @@ import (
 	"crypto/rand"
 	"os/user"
 	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
@@ -118,30 +115,25 @@ func OpenBadger(closeChan <-chan struct{}, directoryName string, inMemory bool) 
 // Although more than one string may be passed, only the first string will
 // be displayed. The varadic property was only used to shorten calling syntax.
 func DebugTrace(logger *logrus.Logger, err error, s ...string) {
-	if logger.GetLevel() <= logrus.DebugLevel {
-		stackDepth := 2
-		pc := make([]uintptr, stackDepth*2)
-		n := runtime.Callers(stackDepth, pc)
-		frames := runtime.CallersFrames(pc[:n])
-		frame, ok := frames.Next()
-		if !ok {
-			return
-		}
-		line := strconv.Itoa(frame.Line)
-		fileparts := strings.Split(frame.File, "MadNet")
-		file := fileparts[1]
-		if err != nil {
-			if len(s) > 0 {
-				logger.WithField("f", file).WithField("l", line).Debugf("%v ::: %v", err.Error(), s[0])
-				return
-			}
-			logger.WithField("f", file).WithField("l", line).Debugf("%v", err.Error())
-			return
-		}
-		if len(s) > 0 {
-			logger.WithField("f", file).WithField("l", line).Debugf("%v", s[0])
-			return
-		}
-		logger.WithField("f", file).WithField("l", line).Debug("")
+	// TODO: make more generic, e.g. DebugTrace(l,err); DebugTrace(l,str); DebugTrace(l,pattern,v,v)
+	if logger.GetLevel() > logrus.DebugLevel {
+		return
 	}
+
+	trace := errorz.MakeTrace(1)
+
+	if err != nil {
+		if len(s) > 0 {
+			logger.WithField("l", trace).Debugf("%v ::: %v", err.Error(), s[0])
+			return
+		}
+		logger.WithField("l", trace).Debugf("%v", err.Error())
+		return
+	}
+	if len(s) > 0 {
+		logger.WithField("l", trace).Debugf("%v", s[0])
+		return
+	}
+	logger.WithField("l", trace).Debug("")
+
 }
