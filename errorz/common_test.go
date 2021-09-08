@@ -2,7 +2,6 @@ package errorz
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 )
 
@@ -10,8 +9,7 @@ func TestErrInvalidWrapping(t *testing.T) {
 	err := NewErrConsensus("something low level went wrong", true)
 	err2 := NewErrInvalid("something high level went wrong").Wrap(err)
 
-	fmt.Println(err2.Error())
-	if err2.Error() != "the object is invalid: something high level went wrong:\nsomething low level went wrong" {
+	if err2.Error() != "the object is invalid: something high level went wrong:\nconsensus error: something low level went wrong" {
 		t.Fatal("error message of wrapper error should be properly concatenated with wrapped error")
 	}
 
@@ -24,10 +22,9 @@ func TestErrInvalidWrapping(t *testing.T) {
 		t.Fatal("wrapped attributes should be readable")
 	}
 
-	if wrapped.Error() != "something low level went wrong" {
+	if wrapped.Error() != "consensus error: something low level went wrong" {
 		t.Fatal("wrapped Error() should return proper error string")
 	}
-
 }
 
 func TestErrInvalidUnwrapped(t *testing.T) {
@@ -36,5 +33,4 @@ func TestErrInvalidUnwrapped(t *testing.T) {
 	if err.Error() != "the object is invalid: something high level went wrong" {
 		t.Fatal("ErrInvalid needs proper Error() implementation when unwrapped")
 	}
-
 }
