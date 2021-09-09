@@ -157,13 +157,13 @@ func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badge
 			}
 			for i, utxoID := range utxoIDs {
 				//auditPath, included, proofKey, proofVal, err := stateTrie.MerkleProof(txn, utxoID) // *badger.Txn, key []byte
-				bitmap, auditPath, height, included, proofKey, proofVal, err := stateTrie.MerkleProofCompressed(txn, utxoID)
+				bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := stateTrie.MerkleProofCompressed(txn, utxoID)
 				if err != nil {
 					return err
 				}
 				mproof := &db.MerkleProof{
 					Included:  included,
-					KeyHeight: height,
+					KeyHeight: proofHeight,
 					Key:       proofKey,
 					Value:     proofVal,
 					Bitmap:    bitmap,
@@ -175,6 +175,8 @@ func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badge
 				}
 				log.Printf("UTXOID: %x\n", utxoID)
 				log.Printf("auditPath: %x\n", auditPath)
+				log.Printf("Bitmap: %x\n", bitmap)
+				log.Printf("Proof height: %x\n", proofHeight)
 				log.Print("Included:", included)
 				log.Printf("Proof key: %x\n", proofKey)
 				log.Printf("Proof value: %x\n", proofVal)
