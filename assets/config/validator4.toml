@@ -30,7 +30,7 @@ interval = "7s"
 
 [ethereum]
 defaultAccount = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
-endpoint = "http://127.0.0.1:8545"
+endpoint = "http://localhost:8545"
 endpointPeers = 0
 keystore = "assets/test/keys"
 timeout = "5s"
