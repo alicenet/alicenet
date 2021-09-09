@@ -3,11 +3,10 @@ package utxotrie
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-
-	aobjs "github.com/MadBase/MadNet/application/objs"
+	"github.com/MadBase/MadNet/application/objs"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -164,7 +163,7 @@ func (ut *UTXOTrie) Contains(txn *badger.Txn, utxoIDs [][]byte) ([][]byte, error
 	return missing, nil
 }
 
-func (ut *UTXOTrie) ApplyState(txn *badger.Txn, txs aobjs.TxVec, height uint32) ([]byte, error) {
+func (ut *UTXOTrie) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32) ([]byte, error) {
 	current, fn, err := ut.session(txn)
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
@@ -251,7 +250,7 @@ func (ut *UTXOTrie) GetCurrentStateRoot(txn *badger.Txn) ([]byte, error) {
 	return rt, nil
 }
 
-func (ut *UTXOTrie) GetStateRootForProposal(txn *badger.Txn, txs aobjs.TxVec) ([]byte, error) {
+func (ut *UTXOTrie) GetStateRootForProposal(txn *badger.Txn, txs objs.TxVec) ([]byte, error) {
 	if len(txs) == 0 {
 		sr, err := GetCurrentStateRoot(txn)
 		if err != nil {
@@ -274,7 +273,7 @@ func (ut *UTXOTrie) GetStateRootForProposal(txn *badger.Txn, txs aobjs.TxVec) ([
 	return sr, nil
 }
 
-func (ut *UTXOTrie) add(txn *badger.Txn, txs aobjs.TxVec, current *trie.SMT, fn func(txn *badger.Txn, current *trie.SMT, newUTXOIDs [][]byte, newUTXOHashes [][]byte, consumedUTXOIDS [][]byte) ([]byte, error)) ([]byte, error) {
+func (ut *UTXOTrie) add(txn *badger.Txn, txs objs.TxVec, current *trie.SMT, fn func(txn *badger.Txn, current *trie.SMT, newUTXOIDs [][]byte, newUTXOHashes [][]byte, consumedUTXOIDS [][]byte) ([]byte, error)) ([]byte, error) {
 	addkeys := [][]byte{}
 	addvalues := [][]byte{}
 	delkeys := [][]byte{}

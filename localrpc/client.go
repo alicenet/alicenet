@@ -106,20 +106,22 @@ func (lrpc *Client) entrancyGuard() error {
 	}
 }
 
+func (lrpc *Client) contextGuard(ctx context.Context) (context.Context, func()) {
+	if _, ok := ctx.Deadline(); !ok {
+		return context.WithTimeout(ctx, lrpc.TimeOut)
+	}
+	return ctx, func() {}
+}
+
 // GetBlockHeader allows a caller to request a BlockHeader by height
 func (lrpc *Client) GetBlockHeader(ctx context.Context, height uint32) (*objs.BlockHeader, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	request := &pb.BlockHeaderRequest{
 		Height: height,
 	}
@@ -141,14 +143,9 @@ func (lrpc *Client) GetBlockNumber(ctx context.Context) (uint32, error) {
 		return 0, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	request := &pb.BlockNumberRequest{}
 	resp, err := lrpc.client.GetBlockNumber(subCtx, request)
 	if err != nil {
@@ -164,14 +161,9 @@ func (lrpc *Client) GetEpochNumber(ctx context.Context) (uint32, error) {
 		return 0, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	request := &pb.EpochNumberRequest{}
 	resp, err := lrpc.client.GetEpochNumber(subCtx, request)
 	if err != nil {
@@ -187,14 +179,9 @@ func (lrpc *Client) SendTransaction(ctx context.Context, tx *aobjs.Tx) ([]byte, 
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	txb, err := ForwardTranslateTx(tx)
 	if err != nil {
 		return nil, err
@@ -215,14 +202,9 @@ func (lrpc *Client) GetValueForOwner(ctx context.Context, curveSpec constants.Cu
 		return nil, nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	o, err := ForwardTranslateByte(account)
 	if err != nil {
 		return nil, nil, err
@@ -256,14 +238,9 @@ func (lrpc *Client) GetUTXO(ctx context.Context, utxoIDs [][]byte) (aobjs.Vout, 
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	d, err := ForwardTranslateByteSlice(utxoIDs)
 	if err != nil {
 		return nil, err
@@ -292,14 +269,9 @@ func (lrpc *Client) GetMinedTransaction(ctx context.Context, txHash []byte) (*ao
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	txHash2, err := ForwardTranslateByte(txHash)
 	if err != nil {
 		return nil, err
@@ -323,14 +295,9 @@ func (lrpc *Client) GetPendingTransaction(ctx context.Context, txHash []byte) (*
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	txHash2, err := ForwardTranslateByte(txHash)
 	if err != nil {
 		return nil, err
@@ -353,14 +320,9 @@ func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, 
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	o, err := ForwardTranslateByte(account)
 	if err != nil {
 		return nil, err
@@ -391,14 +353,9 @@ func (lrpc *Client) PaginateDataStoreUTXOByOwner(ctx context.Context, curveSpec 
 		return nil, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	o, err := ForwardTranslateByte(account)
 	if err != nil {
 		return nil, err
@@ -437,14 +394,9 @@ func (lrpc *Client) GetBlockHeightForTx(ctx context.Context, txHash []byte) (uin
 		return 0, err
 	}
 	defer lrpc.wg.Done()
-	var subCtx context.Context
-	var cancel func()
-	if _, ok := ctx.Deadline(); !ok {
-		subCtx, cancel = context.WithTimeout(ctx, lrpc.TimeOut)
-		defer cancel()
-	} else {
-		subCtx = ctx
-	}
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
 	txh, err := ForwardTranslateByte(txHash)
 	if err != nil {
 		return 0, err

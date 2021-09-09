@@ -7,4 +7,4 @@ import (
 // Import check to ensure capnp is installed.
 var _ = capnp.Tag
 
-//go:generate capnp compile -I /home/et3p/go/src/zombiezen.com/go/capnproto2/std -ogo consensus.capnp
+//go:generate capnp compile -I $GOPATH/src/zombiezen.com/go/capnproto2/std -ogo consensus.capnp

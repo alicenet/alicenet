@@ -145,5 +145,5 @@ func (b *TXInLinker) ConsumedTxHash() ([]byte, error) {
 	if b == nil || b.TXInPreImage == nil || len(b.TXInPreImage.ConsumedTxHash) != constants.HashLen {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
-	return b.TXInPreImage.ConsumedTxHash, nil
+	return utils.CopySlice(b.TXInPreImage.ConsumedTxHash), nil
 }

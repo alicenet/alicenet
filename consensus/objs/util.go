@@ -12,6 +12,8 @@ import (
 	"github.com/MadBase/MadNet/utils"
 )
 
+// ExtractHR extracts the Height and Round from an interface;
+// it panics on undefined types.
 func ExtractHR(any interface{}) (uint32, uint32) {
 	switch v := any.(type) {
 	case *RoundState:
@@ -65,6 +67,8 @@ func ExtractHR(any interface{}) (uint32, uint32) {
 	}
 }
 
+// ExtractHCID extracts the Height and ChainID from an interface;
+// it panics on undefined types.
 func ExtractHCID(any interface{}) (uint32, uint32) {
 	switch v := any.(type) {
 	case *RCert:
@@ -94,11 +98,16 @@ func ExtractHCID(any interface{}) (uint32, uint32) {
 	case *BlockHeader:
 		rc := v.BClaims
 		return rc.Height, rc.ChainID
+	case *BClaims:
+		rc := v
+		return rc.Height, rc.ChainID
 	default:
 		panic(fmt.Sprintf("undefined type in ExtractHCID %T", v))
 	}
 }
 
+// ExtractRCertAny extracts an RCert from an interface;
+// it panics on undefined types.
 func ExtractRCertAny(any interface{}) (*RCert, error) {
 	switch v := any.(type) {
 	case *BlockHeader:
@@ -108,6 +117,8 @@ func ExtractRCertAny(any interface{}) (*RCert, error) {
 	}
 }
 
+// ExtractRCert extracts an RCert from an interface;
+// it panics on undefined types.
 func ExtractRCert(any interface{}) *RCert {
 	switch v := any.(type) {
 	case *RoundState:
@@ -151,6 +162,22 @@ func ExtractRCert(any interface{}) *RCert {
 	}
 }
 
+// RelateHR relates Height and Round between objects.
+// Simply:
+//		if a is before b, return -1
+//		if a is after b, return 1
+//		if a equals b, return 0
+//
+// More explicitly, we extract the height and round from objects a and b.
+//
+// If (aHeight == bHeight) && (aRound == bRound)
+//		return 0
+//
+// If (aHeight < bHeight) || ((aHeight == bHeight) && (aRound < bRound))
+//		return -1
+//
+// If (aHeight > bHeight) || ((aHeight == bHeight) && (aRound > bRound))
+//		return 1
 func RelateHR(a, b interface{}) int {
 	ah, ar := ExtractHR(a)
 	bh, br := ExtractHR(b)
@@ -171,6 +198,16 @@ func RelateHR(a, b interface{}) int {
 	return 1
 }
 
+// RelateH relates Height between objects
+//
+// If aHeight == bHeight
+//		return 0
+//
+// If aHeight < bHeight
+//		return -1
+//
+// If aHeight > bHeight
+//		return 1
 func RelateH(a, b interface{}) int {
 	if a == nil && b != nil {
 		return -1
@@ -189,6 +226,7 @@ func RelateH(a, b interface{}) int {
 	return 1
 }
 
+// BClaimsEqual determines if two objects have equal BClaims objects
 func BClaimsEqual(a, b interface{}) (bool, error) {
 	ab := ExtractBClaims(a)
 	bb := ExtractBClaims(b)
@@ -206,6 +244,8 @@ func BClaimsEqual(a, b interface{}) (bool, error) {
 	return true, nil
 }
 
+// ExtractBClaims extracts BClaims from an interface;
+// it panics on undefined types.
 func ExtractBClaims(any interface{}) *BClaims {
 	switch v := any.(type) {
 	case *BlockHeader:
@@ -223,12 +263,14 @@ func ExtractBClaims(any interface{}) *BClaims {
 	}
 }
 
+// PrevBlockEqual determines if objects agree on the previous block
 func PrevBlockEqual(a, b interface{}) bool {
 	ab := ExtractRCert(a)
 	bb := ExtractRCert(b)
 	return bytes.Equal(ab.RClaims.PrevBlock, bb.RClaims.PrevBlock)
 }
 
+// IsDeadBlockRound determines if an object is for the DeadBlockRound
 func IsDeadBlockRound(any interface{}) bool {
 	_, r := ExtractHR(any)
 	return r == constants.DEADBLOCKROUND
@@ -242,6 +284,9 @@ func MakeTxRoot(txHashes [][]byte) ([]byte, error) {
 	values := [][]byte{}
 	for i := 0; i < len(txHashes); i++ {
 		txHash := txHashes[i]
+		if len(txHash) != constants.HashLen {
+			return nil, errorz.ErrInvalid{}.New("incorrect txHash length")
+		}
 		values = append(values, crypto.Hasher(txHash))
 	}
 	// new in memory smt

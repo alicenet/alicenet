@@ -16,6 +16,7 @@ type VSPreImage struct {
 	Value    *uint256.Uint256
 	TXOutIdx uint32
 	Owner    *ValueStoreOwner
+	Fee      *uint256.Uint256
 	//
 	preHash []byte
 }
@@ -74,6 +75,20 @@ func (b *VSPreImage) UnmarshalCapn(bc mdefs.VSPreImage) error {
 		return err
 	}
 	b.Owner = owner
+	fObj := &uint256.Uint256{}
+	u32array[0] = bc.Fee0()
+	u32array[1] = bc.Fee1()
+	u32array[2] = bc.Fee2()
+	u32array[3] = bc.Fee3()
+	u32array[4] = bc.Fee4()
+	u32array[5] = bc.Fee5()
+	u32array[6] = bc.Fee6()
+	u32array[7] = bc.Fee7()
+	err = fObj.FromUint32Array(u32array)
+	if err != nil {
+		return err
+	}
+	b.Fee = fObj
 	return nil
 }
 
@@ -120,6 +135,18 @@ func (b *VSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.VSPreImage, error) {
 	bc.SetValue5(u32array[5])
 	bc.SetValue6(u32array[6])
 	bc.SetValue7(u32array[7])
+	u32array, err = b.Fee.ToUint32Array()
+	if err != nil {
+		return bc, err
+	}
+	bc.SetFee0(u32array[0])
+	bc.SetFee1(u32array[1])
+	bc.SetFee2(u32array[2])
+	bc.SetFee3(u32array[3])
+	bc.SetFee4(u32array[4])
+	bc.SetFee5(u32array[5])
+	bc.SetFee6(u32array[6])
+	bc.SetFee7(u32array[7])
 	bc.SetTXOutIdx(b.TXOutIdx)
 	return bc, nil
 }

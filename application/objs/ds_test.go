@@ -2,6 +2,7 @@ package objs
 
 import (
 	"bytes"
+	"math/big"
 	"testing"
 
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -50,6 +51,7 @@ func makeDataStoreGood(secpPrivk []byte) *DataStore {
 		RawData:  rawdata,
 		TXOutIdx: txOutIdx,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	dsl := &DSLinker{
 		DSPreImage: dsp,
@@ -93,6 +95,7 @@ func TestDataStoreGood(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -206,6 +209,7 @@ func TestDataStoreBad2(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -257,6 +261,7 @@ func TestOwnerSig(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -319,7 +324,10 @@ func TestOwnerSig(t *testing.T) {
 
 	{
 		bnsigner := &crypto.BNSigner{}
-		bnsigner.SetPrivk(crypto.Hasher([]byte("d")))
+		err := bnsigner.SetPrivk(crypto.Hasher([]byte("d")))
+		if err != nil {
+			t.Fatal(err)
+		}
 		txIn, err := ds2.MakeTxIn()
 		if err != nil {
 			t.Fatal(err)
@@ -349,7 +357,10 @@ func TestOwnerSig2(t *testing.T) {
 	}
 
 	ownerSigner := &crypto.BNSigner{}
-	ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	err = ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ownerPubk, err := ownerSigner.Pubkey()
 	if err != nil {
@@ -367,6 +378,7 @@ func TestOwnerSig2(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -429,7 +441,10 @@ func TestOwnerSig2(t *testing.T) {
 
 	{
 		bnsigner := &crypto.BNSigner{}
-		bnsigner.SetPrivk(crypto.Hasher([]byte("d")))
+		err := bnsigner.SetPrivk(crypto.Hasher([]byte("d")))
+		if err != nil {
+			t.Fatal(err)
+		}
 		txIn, err := ds2.MakeTxIn()
 		if err != nil {
 			t.Fatal(err)
@@ -460,7 +475,10 @@ func TestDeposit(t *testing.T) {
 	}
 
 	ownerSigner := &crypto.BNSigner{}
-	ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	err = ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ownerPubk, err := ownerSigner.Pubkey()
 	if err != nil {
@@ -478,6 +496,7 @@ func TestDeposit(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	dsl := &DSLinker{
@@ -820,6 +839,147 @@ func TestDSValueCall(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised an error (2)")
 	}
+
+	// Prep DataStore
+	numEpochs := uint32(3)
+	dataSize := uint32(1)
+	data := make([]byte, int(dataSize))
+	ds.DSLinker = &DSLinker{}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	ds.DSLinker.DSPreImage.RawData = data
+	deposit32 := (constants.BaseDatasizeConst + dataSize) * (numEpochs + 2)
+	deposit, err := new(uint256.Uint256).FromUint64(uint64(deposit32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds.DSLinker.DSPreImage.Deposit = deposit
+
+	// Check value and deposit agree
+	value, err := ds.Value()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value.Cmp(deposit) != 0 {
+		t.Fatal("true value and deposit do not agree")
+	}
+}
+
+func TestDSValuePlusFeeCallGood(t *testing.T) {
+	// Test for failures due to not being initialized
+	utxo := &TXOut{}
+	_, err := utxo.dataStore.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+	ds := &DataStore{}
+	_, err = ds.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+
+	// Prep DataStore
+	numEpochs := uint32(3)
+	dataSize := uint32(1)
+	data := make([]byte, int(dataSize))
+	ds.DSLinker = &DSLinker{}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	ds.DSLinker.DSPreImage.RawData = data
+	deposit32 := (constants.BaseDatasizeConst + dataSize) * (numEpochs + 2)
+	deposit, err := new(uint256.Uint256).FromUint64(uint64(deposit32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds.DSLinker.DSPreImage.Deposit = deposit
+	ds.DSLinker.DSPreImage.Fee = new(uint256.Uint256)
+
+	// Check value and valuePlusFee agree with fee == 0
+	value, err := ds.Value()
+	if err != nil {
+		t.Fatal(err)
+	}
+	valuePlusFee, err := ds.ValuePlusFee()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value.Cmp(valuePlusFee) != 0 {
+		t.Fatal("true value and valuePlusFee do not agree (1)")
+	}
+
+	// Prep for 1000 fee
+	perEpochFee := uint32(1000)
+
+	fee32 := perEpochFee * (numEpochs + 2)
+	fee, err := new(uint256.Uint256).FromUint64(uint64(fee32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds.DSLinker.DSPreImage.Fee = fee.Clone()
+
+	// Check value and valuePlusFee agree with fee != 0
+	valuePlusFee, err = ds.ValuePlusFee()
+	if err != nil {
+		t.Fatal(err)
+	}
+	vpfTrue, err := new(uint256.Uint256).Add(value, fee)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vpfTrue.Cmp(valuePlusFee) != 0 {
+		t.Fatal("true value and valuePlusFee do not agree (2)")
+	}
+	if value.Eq(valuePlusFee) {
+		t.Fatal("value and valuePlusFee should not be equal")
+	}
+}
+
+func TestDSValuePlusFeeCallBad1(t *testing.T) {
+	// Test for failures due to not being initialized
+	utxo := &TXOut{}
+	_, err := utxo.dataStore.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+	ds := &DataStore{}
+	_, err = ds.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+}
+
+func TestDSValuePlusFeeCallBad2(t *testing.T) {
+	// Test for failure due to large of values
+	dataSize32 := constants.MaxDataStoreSize
+	numEpochs32 := constants.MaxUint32
+	deposit64 := (uint64(constants.BaseDatasizeConst) + uint64(dataSize32)) * (2 + uint64(numEpochs32))
+	deposit, err := new(uint256.Uint256).FromUint64(deposit64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds := &DataStore{}
+	ds.DSLinker = &DSLinker{}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	ds.DSLinker.DSPreImage.RawData = make([]byte, dataSize32)
+	ds.DSLinker.DSPreImage.Deposit = deposit
+
+	_, err = ds.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error")
+	}
+}
+
+func TestDSValuePlusFeeCallBad3(t *testing.T) {
+	// Test for failure due to invalid Deposit
+	dataSize32 := uint32(1)
+	ds := &DataStore{}
+	ds.DSLinker = &DSLinker{}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	ds.DSLinker.DSPreImage.RawData = make([]byte, dataSize32)
+	ds.DSLinker.DSPreImage.Deposit = new(uint256.Uint256).SetOne()
+
+	_, err := ds.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised an error")
+	}
 }
 
 func TestDSValidatePreSignature(t *testing.T) {
@@ -941,5 +1101,82 @@ func TestDSMakeTxIn(t *testing.T) {
 	_, err = ds.MakeTxIn()
 	if err == nil {
 		t.Fatal("Should have raised an error (4)")
+	}
+}
+
+func TestDSIsExpired(t *testing.T) {
+	currentHeight := uint32(1)
+	utxo := &TXOut{}
+	_, err := utxo.dataStore.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+
+	ds := &DataStore{}
+	_, err = ds.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+}
+
+func TestDSValidateFee(t *testing.T) {
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	utxo := &TXOut{}
+	err := utxo.dataStore.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+
+	ds := &DataStore{}
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+
+	ds.DSLinker = &DSLinker{}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	ds.DSLinker.DSPreImage.RawData = make([]byte, 0)
+	ds.DSLinker.DSPreImage.Fee = new(uint256.Uint256).SetZero()
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (3)")
+	}
+
+	// Store 1 byte for 1 epoch
+	rawData := make([]byte, 1)
+	numEpochs := uint32(1)
+	ds.DSLinker.DSPreImage.RawData = rawData
+	deposit32 := (constants.BaseDatasizeConst + uint32(len(rawData))) * (numEpochs + 2)
+	deposit, err := new(uint256.Uint256).FromUint64(uint64(deposit32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds.DSLinker.DSPreImage.Deposit = deposit
+	err = ds.ValidateFee(storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set perEpochFee to 1, raising an error
+	perEpochFee32 := uint32(1)
+	msg.SetDataStoreEpochFee(big.NewInt(int64(perEpochFee32)))
+	storage = makeStorage(msg)
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (4)")
+	}
+
+	// Correct Fee value
+	fee32 := (perEpochFee32) * (numEpochs + 2)
+	fee, err := new(uint256.Uint256).FromUint64(uint64(fee32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds.DSLinker.DSPreImage.Fee = fee
+	err = ds.ValidateFee(storage)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

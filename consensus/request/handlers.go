@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/dynamics"
 
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/interfaces"
@@ -36,10 +37,11 @@ type Handler struct {
 	database  *db.Database
 	logger    *logrus.Logger
 	app       appHandler
+	storage   dynamics.StorageGetter
 }
 
 // Init initializes the object
-func (rb *Handler) Init(database *db.Database, app appHandler) error {
+func (rb *Handler) Init(database *db.Database, app appHandler, storage dynamics.StorageGetter) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
@@ -48,7 +50,7 @@ func (rb *Handler) Init(database *db.Database, app appHandler) error {
 	rb.wg = sync.WaitGroup{}
 	rb.app = app
 	rb.database = database
-	return nil
+	rb.storage = storage
 }
 
 // Done will trInger when both of the gossip busses have stopped
@@ -112,7 +114,7 @@ func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockH
 			if err != nil {
 				return err
 			}
-			if len(hdrbytes)+byteCount < constants.MaxBytes {
+			if len(hdrbytes)+byteCount < int(rb.storage.GetMaxBytes()) {
 				byteCount = byteCount + len(hdrbytes)
 				hdrs = append(hdrs, hdrbytes)
 			} else {

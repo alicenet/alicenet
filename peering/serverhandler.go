@@ -60,11 +60,11 @@ func (rpch *ServerHandler) serve() {
 	}
 }
 
-// NewDiscoveryServerHandler returns a RPC ServerHandler for the Discovery
+// NewP2PDiscoveryServerHandler returns a RPC ServerHandler for the Discovery
 // Service.
-func NewDiscoveryServerHandler(logger *logrus.Logger, addr net.Addr, service interfaces.DiscoveryServer) *ServerHandler {
+func NewP2PDiscoveryServerHandler(logger *logrus.Logger, addr net.Addr, service interfaces.P2PDiscoveryServer) *ServerHandler {
 	srvr := grpc.NewServer(grpc.ConnectionTimeout(constants.SrvrMsgTimeout), grpc.MaxConcurrentStreams(constants.MaxConcurrentStreams), grpc.NumStreamWorkers(constants.DiscoStreamWorkers), grpc.ReadBufferSize(constants.ReadBufferSize))
-	pb.RegisterDiscoveryServer(srvr, service)
+	pb.RegisterP2PDiscoveryServer(srvr, service)
 	handler := &ServerHandler{
 		listener: NewListener(logger, addr),
 		server:   srvr,

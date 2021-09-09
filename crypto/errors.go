@@ -13,6 +13,10 @@ var (
 	// ErrInvalidSignature occurs when signature validation fails
 	ErrInvalidSignature = errors.New("signature validation failed")
 
+	// ErrInvalid occurs when signer is not valid;
+	// this occurs when signer is not initialized.
+	ErrInvalid = errors.New("invalid signer")
+
 	// ErrInvalidPubkeyShares occurs when multiple copies of the same public
 	// key are contained when attempting to set GroupShares.
 	ErrInvalidPubkeyShares = errors.New("groupShares contains repeated public keys")

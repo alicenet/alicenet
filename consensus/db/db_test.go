@@ -75,25 +75,28 @@ func newDB(t *testing.T) (*testDB, *Database, *testparams) {
 	go tbd.init()
 	<-tbd.readyChan
 	db := &Database{}
-	err := db.Init(tbd.db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	db.Init(tbd.db)
 	params := mkTP()
 	return tbd, db, params
 }
 
 func TestRoundState(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	groupKey, _ := groupSigner.PubkeyShare()
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	bnKey, _ := groupSigner.PubkeyShare()
 
 	secpSigner := &crypto.Secp256k1Signer{}
-	err := secpSigner.SetPrivk(crypto.Hasher([]byte("secret3")))
+	err = secpSigner.SetPrivk(crypto.Hasher([]byte("secret3")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,15 +153,21 @@ func TestRoundState(t *testing.T) {
 
 func TestBlockHeader(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
 			t.Fatal(err)
@@ -289,15 +298,21 @@ func TestBlockHeader(t *testing.T) {
 
 func TestEncryptedStore(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, _ := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		name := []byte("foo")
 		ec := &objs.EncryptedStore{
 			Name: name,
@@ -322,18 +337,24 @@ func TestEncryptedStore(t *testing.T) {
 
 func TestValidatorSet(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	groupKey, _ := groupSigner.PubkeyShare()
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	_ = p
 	_ = db
 	defer tbd.Close()
 	badgerD := tbd.db
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		vkey0 := crypto.Hasher([]byte("s0"))[12:]
 		gShare0 := crypto.Hasher([]byte("g0"))
 		val0 := &objs.Validator{
@@ -405,21 +426,27 @@ func TestValidatorSet(t *testing.T) {
 
 func TestSnapShotMany(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
 	var bhash []byte
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for i := uint32(1); i < 1025; i++ {
+		for i := uint32(1); i < constants.EpochLength+1; i++ {
 			bh := &objs.BlockHeader{
 				SigGroup: sig,
 				BClaims: &objs.BClaims{
@@ -470,16 +497,22 @@ func TestSnapShotMany(t *testing.T) {
 
 func TestSnapShotOne(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
 	var bhash []byte
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
 			t.Fatal(err)
@@ -531,21 +564,27 @@ func TestSnapShotOne(t *testing.T) {
 
 func TestGetLastCommittedBHFSMany(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
 	var bhash []byte
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for i := uint32(1); i < 1025; i++ {
+		for i := uint32(1); i < constants.EpochLength+1; i++ {
 			bh := &objs.BlockHeader{
 				SigGroup: sig,
 				BClaims: &objs.BClaims{
@@ -594,16 +633,22 @@ func TestGetLastCommittedBHFSMany(t *testing.T) {
 
 func TestGetLastCommittedBHFSOne(t *testing.T) {
 	groupSigner := &crypto.BNGroupSigner{}
-	groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	bnSigner := &crypto.BNGroupSigner{}
-	bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tbd, db, p := newDB(t)
 	defer tbd.Close()
 	badgerD := tbd.db
 	var bhash []byte
-	err := badgerD.Update(func(txn *badger.Txn) error {
+	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
 			t.Fatal(err)

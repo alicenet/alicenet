@@ -9,6 +9,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/interfaces"
+	bindata "github.com/MadBase/MadNet/localrpc/swagger-bindata"
 	pb "github.com/MadBase/MadNet/proto"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -62,8 +63,8 @@ func NewStateServerHandler(logger *logrus.Logger, addr string, service interface
 
 	// setup the swagger-ui fileserver using the embedded assets
 	fileServer := http.FileServer(&assetfs.AssetFS{
-		Asset:    Asset,
-		AssetDir: AssetDir,
+		Asset:    bindata.Asset,
+		AssetDir: bindata.AssetDir,
 	})
 
 	// register the swagger fs handler with the server

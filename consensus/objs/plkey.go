@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // PendingLeafKey ...
@@ -20,8 +20,8 @@ func (b *PendingLeafKey) UnmarshalBinary(data []byte) error {
 	if len(data) != 34 {
 		return errorz.ErrInvalid{}.New("Invalid data for BlockHeaderHeightKey unmarshalling")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	b.Key = gUtils.CopySlice(data[2:])
+	b.Prefix = utils.CopySlice(data[0:2])
+	b.Key = utils.CopySlice(data[2:])
 	return nil
 }
 
@@ -32,7 +32,7 @@ func (b *PendingLeafKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	key = append(key, gUtils.CopySlice(b.Prefix)...)
-	key = append(key, gUtils.CopySlice(b.Key)...)
+	key = append(key, utils.CopySlice(b.Prefix)...)
+	key = append(key, utils.CopySlice(b.Key)...)
 	return key, nil
 }

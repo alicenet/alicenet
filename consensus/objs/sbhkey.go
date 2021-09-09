@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // StagedBlockHeaderKey ...
@@ -20,8 +20,8 @@ func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 	if len(data) != 6 {
 		return errorz.ErrInvalid{}.New("Invalid data for StagedBlockHeaderKey unmarshalling")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	b.Key = gUtils.CopySlice(data[2:])
+	b.Prefix = utils.CopySlice(data[0:2])
+	b.Key = utils.CopySlice(data[2:])
 	return nil
 }
 
@@ -32,7 +32,7 @@ func (b *StagedBlockHeaderKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
+	Prefix := utils.CopySlice(b.Prefix)
 	key = append(key, Prefix...)
 	key = append(key, b.Key...)
 	return key, nil

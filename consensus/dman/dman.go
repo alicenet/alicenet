@@ -26,7 +26,7 @@ type DMan struct {
 	logger        *logrus.Logger
 }
 
-func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqBusView) error {
+func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqBusView) {
 	dm.logger = logging.GetLogger(constants.LoggerDMan)
 	dm.database = database
 	dm.appHandler = app
@@ -38,7 +38,6 @@ func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqB
 	}
 	dm.downloadActor = &RootActor{}
 	dm.downloadActor.Init(dm.logger, proxy)
-	return nil
 }
 
 func (dm *DMan) Start() {
@@ -160,7 +159,7 @@ func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen
 
 	bhCache, inCache := dm.downloadActor.bhc.Get(targetHeight)
 	if !inCache && currentHeight != targetHeight {
-		for i := currentHeight + 1; i < currentHeight+1024; i++ {
+		for i := currentHeight + 1; i < currentHeight+constants.EpochLength; i++ {
 			height := i
 			if height > maxBHSeen.BClaims.Height {
 				break
@@ -227,7 +226,6 @@ func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen
 	}
 
 	return txs, bhCache, true, nil
-
 }
 
 func (dm *DMan) DownloadTxs(height, round uint32, txHshLst [][]byte) {

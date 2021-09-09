@@ -3,12 +3,11 @@ package objs
 import (
 	"errors"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/rstate"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -54,9 +53,9 @@ func (b *RoundState) UnmarshalCapn(bh mdefs.RoundState) error {
 	if err != nil {
 		return err
 	}
-	b.VAddr = gUtils.CopySlice(bh.VAddr())
-	b.GroupKey = gUtils.CopySlice(bh.GroupKey())
-	b.GroupShare = gUtils.CopySlice(bh.GroupShare())
+	b.VAddr = utils.CopySlice(bh.VAddr())
+	b.GroupKey = utils.CopySlice(bh.GroupKey())
+	b.GroupShare = utils.CopySlice(bh.GroupShare())
 	b.GroupIdx = bh.GroupIdx()
 	b.ImplicitPVN = bh.ImplicitPVN()
 	b.ImplicitPCN = bh.ImplicitPCN()

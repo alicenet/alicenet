@@ -8,6 +8,7 @@ import (
 
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/tx"
+	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
@@ -41,6 +42,12 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 func (b *Tx) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	if len(b.Vin) > constants.MaxTxVectorLength {
+		return nil, errorz.ErrInvalid{}.New("invalid tx: len(vin) > MaxTxVectorLength")
+	}
+	if len(b.Vout) > constants.MaxTxVectorLength {
+		return nil, errorz.ErrInvalid{}.New("invalid tx: len(vout) > MaxTxVectorLength")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -202,8 +209,8 @@ func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, e
 				return nil, err
 			}
 			tmp := []byte{}
-			tmp = append(tmp, utils.CopySlice(ownerBytes)...)
-			tmp = append(tmp, utils.CopySlice(index)...)
+			tmp = append(tmp, ownerBytes...)
+			tmp = append(tmp, index...)
 			hsh := crypto.Hasher(tmp)
 			if !opset[string(hsh)] {
 				opset[string(hsh)] = true
@@ -352,7 +359,7 @@ func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 
 // GeneratedPreHash returns the list of PreHashs from Vout
 func (b *Tx) GeneratedPreHash() ([][]byte, error) {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.Vout.PreHash()
@@ -360,7 +367,7 @@ func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 
 // ValidateSignature validates the signatures of the objects
 func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vin) == 0 {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	return refUTXOs.ValidateSignature(currentHeight, b.Vin)
@@ -368,20 +375,39 @@ func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
 
 // ValidatePreSignature validates the presignatures of the objects
 func (b *Tx) ValidatePreSignature() error {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.Vout.ValidatePreSignature()
 }
 
-// ValidateEqualVinVout checks the following
-// calc sum on inputs from utxos and currentHeight
-// sum inputs must equal sum outputs
-func (b *Tx) ValidateEqualVinVout(refUTXOs Vout, currentHeight uint32) error {
+// ValidateFees validates the fees of the object.
+// currentHeight and refUTXOs are needed to verify if we have a cleanup tx.
+func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.Storage) error {
 	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
-	valueOut, err := b.Vout.Value()
+	if b.IsCleanupTx(currentHeight, refUTXOs) {
+		// Tx is a valid Cleanup Tx, so we do not worry about fees
+		return nil
+	}
+	if err := b.Vout.ValidateFees(storage); err != nil {
+		return err
+	}
+	if err := b.Vout.ValidateTxFee(storage); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateEqualVinVout checks the following
+// calc sum on inputs from utxos and currentHeight
+// sum inputs must equal sum outputs
+func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
+	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+		return errorz.ErrInvalid{}.New("not initialized")
+	}
+	valueOut, err := b.Vout.ValuePlusFee()
 	if err != nil {
 		return err
 	}
@@ -399,7 +425,7 @@ func (b *Tx) ValidateEqualVinVout(refUTXOs Vout, currentHeight uint32) error {
 	if err != nil {
 		return err
 	}
-	if valueOut.Clone().Cmp(valueIn.Clone()) == 0 {
+	if valueOut.Cmp(valueIn) == 0 {
 		return nil
 	}
 	return errorz.ErrInvalid{}.New(fmt.Sprintf("input value does not match output value: IN:%v  vs  OUT:%v", valueIn, valueOut))
@@ -407,14 +433,11 @@ func (b *Tx) ValidateEqualVinVout(refUTXOs Vout, currentHeight uint32) error {
 
 // ValidateChainID validates that all elements have the correct ChainID
 func (b *Tx) ValidateChainID(chainID uint32) error {
-	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized a")
+	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+		return errorz.ErrInvalid{}.New("not initialized")
 	}
-	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("not initialized b")
-	}
-	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("not initialized c")
+	if chainID == 0 {
+		return errorz.ErrInvalid{}.New("chainID invalid: cannot be 0")
 	}
 	for _, inp := range b.Vin {
 		inpCid, err := inp.ChainID()
@@ -439,7 +462,7 @@ func (b *Tx) ValidateChainID(chainID uint32) error {
 
 // CannotBeMinedUntil ...
 func (b *Tx) CannotBeMinedUntil() (uint32, error) {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	maxBH := uint32(1)
@@ -457,7 +480,7 @@ func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 
 // ValidateIssuedAtForMining ...
 func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	hmap := make(map[uint32]bool)
@@ -489,7 +512,7 @@ func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 
 // EpochOfExpirationForMining ...
 func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	hmap := make(map[uint32]bool)
@@ -517,7 +540,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 }
 
 // Validate ...
-func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs Vout) (map[string]bool, error) {
+func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) (map[string]bool, error) {
 	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 {
 		return nil, errorz.ErrInvalid{}.New("empty input or output vector in tx")
 	}
@@ -532,11 +555,15 @@ func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs V
 	if err != nil {
 		return nil, err
 	}
-	err = b.ValidateEqualVinVout(consumedUTXOs, currentHeight)
+	err = b.ValidateEqualVinVout(currentHeight, consumedUTXOs)
 	if err != nil {
 		return nil, err
 	}
 	err = b.ValidateTxHash()
+	if err != nil {
+		return nil, err
+	}
+	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +599,7 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error
 	if b == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
-	err := b.ValidateEqualVinVout(consumedUTXOs, currentHeight)
+	err := b.ValidateEqualVinVout(currentHeight, consumedUTXOs)
 	if err != nil {
 		return err
 	}
@@ -581,6 +608,27 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error
 		return err
 	}
 	return nil
+}
+
+// IsCleanupTx checks if Tx is a cleanup transaction.
+// Cleanup transactions are unique in that there is no associated TxFee
+// or ValueStoreFee. The CleaupTx must consist of *expired* DataStores
+// with value equal to that in the only ValueStore in Vout.
+func (b *Tx) IsCleanupTx(currentHeight uint32, refUTXOs Vout) bool {
+	if b == nil {
+		return false
+	}
+	// Confirm Vin
+	cleanupVin := b.Vin.IsCleanupVin(currentHeight, refUTXOs)
+	if !cleanupVin {
+		return false
+	}
+	// Confirm Vout
+	cleanupVout := b.Vout.IsCleanupVout()
+	if !cleanupVout {
+		return false
+	}
+	return true
 }
 
 // XXXIsTx allows compile time type checking for transaction interfaces

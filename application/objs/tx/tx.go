@@ -2,6 +2,7 @@ package tx
 
 import (
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
@@ -51,6 +52,9 @@ func Validate(v mdefs.Tx) error {
 	if vin.Len() == 0 {
 		return errorz.ErrInvalid{}.New("tx capn obj is not valid; invalid Vin; zero length object")
 	}
+	if vin.Len() > constants.MaxTxVectorLength {
+		return errorz.ErrInvalid{}.New("tx capn obj is not valid; invalid Vin; length object too large")
+	}
 	if !v.HasVout() {
 		return errorz.ErrInvalid{}.New("tx capn obj does not have Vout")
 	}
@@ -60,6 +64,9 @@ func Validate(v mdefs.Tx) error {
 	}
 	if vout.Len() == 0 {
 		return errorz.ErrInvalid{}.New("tx capn obj is not valid; invalid Vout; zero length object")
+	}
+	if vout.Len() > constants.MaxTxVectorLength {
+		return errorz.ErrInvalid{}.New("tx capn obj is not valid; invalid Vout; length object too large")
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/application/objs/valuestore"
+	"github.com/MadBase/MadNet/application/wrapper"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
@@ -19,7 +20,16 @@ type ValueStore struct {
 }
 
 // New creates a new ValueStore
-func (b *ValueStore) New(chainID uint32, value *uint256.Uint256, acct []byte, curveSpec constants.CurveSpec, txHash []byte) error {
+func (b *ValueStore) New(chainID uint32, value *uint256.Uint256, fee *uint256.Uint256, acct []byte, curveSpec constants.CurveSpec, txHash []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("not initialized")
+	}
+	if value == nil || value.IsZero() {
+		return errorz.ErrInvalid{}.New("invalue value: nil or zero")
+	}
+	if fee == nil {
+		return errorz.ErrInvalid{}.New("invalue fee: nil")
+	}
 	vsowner := &ValueStoreOwner{}
 	vsowner.New(acct, curveSpec)
 	if err := vsowner.Validate(); err != nil {
@@ -33,9 +43,10 @@ func (b *ValueStore) New(chainID uint32, value *uint256.Uint256, acct []byte, cu
 	}
 	vsp := &VSPreImage{
 		ChainID:  chainID,
-		Value:    value,
+		Value:    value.Clone(),
 		TXOutIdx: constants.MaxUint32,
 		Owner:    vsowner,
+		Fee:      fee.Clone(),
 	}
 	b.VSPreImage = vsp
 	b.TxHash = utils.CopySlice(txHash)
@@ -201,10 +212,35 @@ func (b *ValueStore) ChainID() (uint32, error) {
 
 // Value returns the Value of the object
 func (b *ValueStore) Value() (*uint256.Uint256, error) {
-	if b == nil || b.VSPreImage == nil || b.VSPreImage.Value == nil {
+	if b == nil || b.VSPreImage == nil || b.VSPreImage.Value == nil || b.VSPreImage.Value.IsZero() {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.VSPreImage.Value.Clone(), nil
+}
+
+// Fee returns the Fee of the object
+func (b *ValueStore) Fee() (*uint256.Uint256, error) {
+	if b == nil || b.VSPreImage == nil || b.VSPreImage.Fee == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.VSPreImage.Fee.Clone(), nil
+}
+
+// ValuePlusFee returns the Value of the object with the associated fee
+func (b *ValueStore) ValuePlusFee() (*uint256.Uint256, error) {
+	value, err := b.Value()
+	if err != nil {
+		return nil, err
+	}
+	fee, err := b.Fee()
+	if err != nil {
+		return nil, err
+	}
+	total, err := new(uint256.Uint256).Add(value, fee)
+	if err != nil {
+		return nil, err
+	}
+	return total, nil
 }
 
 // IsDeposit returns true if the object is a deposit
@@ -258,6 +294,28 @@ func (b *ValueStore) Sign(txIn *TXIn, s Signer) error {
 		return err
 	}
 	txIn.Signature = sigb
+	return nil
+}
+
+// ValidateFee validates the fee of the object at the time of creation
+func (b *ValueStore) ValidateFee(storage *wrapper.Storage) error {
+	fee, err := b.Fee()
+	if err != nil {
+		return err
+	}
+	if b.IsDeposit() {
+		if !fee.IsZero() {
+			return errorz.ErrInvalid{}.New("vs: invalid fee; deposits should have fee equal zero")
+		}
+		return nil
+	}
+	feeTrue, err := storage.GetValueStoreFee()
+	if err != nil {
+		return err
+	}
+	if fee.Cmp(feeTrue) != 0 {
+		return errorz.ErrInvalid{}.New("vs: invalid fee")
+	}
 	return nil
 }
 

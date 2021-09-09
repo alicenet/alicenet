@@ -169,6 +169,14 @@ func (b *DSLinker) SetTXOutIdx(idx uint32) error {
 	return nil
 }
 
+// IsExpired returns true if the datastore is free for garbage collection
+func (b *DSLinker) IsExpired(currentHeight uint32) (bool, error) {
+	if b == nil {
+		return false, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.DSPreImage.IsExpired(currentHeight)
+}
+
 // EpochOfExpiration returns the epoch in which the datastore may be garbage
 // collected
 func (b *DSLinker) EpochOfExpiration() (uint32, error) {
@@ -192,6 +200,14 @@ func (b *DSLinker) Value() (*uint256.Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.DSPreImage.Value()
+}
+
+// Fee returns the fee stored in the object at the time of creation
+func (b *DSLinker) Fee() (*uint256.Uint256, error) {
+	if b == nil || b.DSPreImage == nil || b.DSPreImage.Fee == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.DSPreImage.Fee.Clone(), nil
 }
 
 // ValidateSignature validates the signature of the datastore at the time of

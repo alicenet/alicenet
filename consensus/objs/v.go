@@ -4,7 +4,7 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/validator"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -31,8 +31,8 @@ func (b *Validator) UnmarshalCapn(bh mdefs.Validator) error {
 	if err != nil {
 		return err
 	}
-	b.VAddr = gUtils.CopySlice(bh.VAddr())
-	b.GroupShare = gUtils.CopySlice(bh.GroupShare())
+	b.VAddr = utils.CopySlice(bh.VAddr())
+	b.GroupShare = utils.CopySlice(bh.GroupShare())
 	return nil
 }
 

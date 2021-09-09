@@ -2,21 +2,23 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/application/objs/uint256"
+	"github.com/MadBase/MadNet/application/wrapper"
 	"github.com/MadBase/MadNet/errorz"
 )
 
 // Vout is a vector of TXOut objects
 type Vout []*TXOut
 
-// Value sums the total value of the UTXOs without any discount
-func (vout Vout) Value() (*uint256.Uint256, error) {
+// ValuePlusFee sums the total value of the UTXOs without any discount
+// and including associated fees
+func (vout Vout) ValuePlusFee() (*uint256.Uint256, error) {
 	sum := uint256.Zero()
 	for i := 0; i < len(vout); i++ {
-		value, err := vout[i].Value()
+		value, err := vout[i].ValuePlusFee()
 		if err != nil {
 			return nil, err
 		}
-		sum, err = sum.Clone().Add(sum.Clone(), value.Clone())
+		sum, err = sum.Add(sum, value)
 		if err != nil {
 			return nil, err
 		}
@@ -32,7 +34,7 @@ func (vout Vout) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) 
 		if err != nil {
 			return nil, err
 		}
-		sum, err = sum.Clone().Add(sum.Clone(), value.Clone())
+		sum, err = sum.Add(sum, value)
 		if err != nil {
 			return nil, err
 		}
@@ -79,6 +81,13 @@ func (vout Vout) ValidateTxOutIdx() error {
 				return err
 			}
 			txOutIdx = asTxOutIdx
+		case utxo.HasTxFee():
+			tf, _ := utxo.TxFee()
+			tfTxOutIdx, err := tf.TXOutIdx()
+			if err != nil {
+				return err
+			}
+			txOutIdx = tfTxOutIdx
 		default:
 			return errorz.ErrInvalid{}.New("bad txOutIdx: Invalid Type")
 		}
@@ -121,6 +130,52 @@ func (vout Vout) PreHash() ([][]byte, error) {
 	return phs, nil
 }
 
+// ValidateFees validates the Fee from each TXOut in Vout
+func (vout Vout) ValidateFees(storage *wrapper.Storage) error {
+	for i := 0; i < len(vout); i++ {
+		err := vout[i].ValidateFee(storage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ValidateTxFee validates the transaction fee in Vout
+//
+// There can be at most one TxFee UTXO object in Vout.
+// There can be zero TxFee UTXO objects if MinTxFee is zero.
+func (vout Vout) ValidateTxFee(storage *wrapper.Storage) error {
+	maxNumTxFees := 1
+	minTxFee, err := storage.GetMinTxFee()
+	if err != nil {
+		return err
+	}
+	numTxFees := 0
+	totalTxFee := new(uint256.Uint256)
+	for i := 0; i < len(vout); i++ {
+		if vout[i].HasTxFee() {
+			numTxFees++
+			if numTxFees > maxNumTxFees {
+				return errorz.ErrInvalid{}.New("invalid Vout: more than 1 TxFee object")
+			}
+			txFee, err := vout[i].TxFee()
+			if err != nil {
+				return err
+			}
+			fee, err := txFee.Fee()
+			if err != nil {
+				return err
+			}
+			totalTxFee.Add(totalTxFee, fee)
+		}
+	}
+	if totalTxFee.Gte(minTxFee) {
+		return nil
+	}
+	return errorz.ErrInvalid{}.New("invalid Vout: totalTxFee < minTxFee")
+}
+
 // ValidatePreSignature validates the PreSignature from each TXOut in Vout
 func (vout Vout) ValidatePreSignature() error {
 	for i := 0; i < len(vout); i++ {
@@ -157,4 +212,29 @@ func (vout Vout) MakeTxIn() (Vin, error) {
 		txIns = append(txIns, txin)
 	}
 	return txIns, nil
+}
+
+// IsCleanupVout ensures we have a valid Vout object in Cleanup Tx.
+// In this case, Vout must be only one ValueStore.
+func (vout Vout) IsCleanupVout() bool {
+	if len(vout) != 1 {
+		return false
+	}
+	// Confirm utxo is ValueStore with no fee
+	utxo := vout[0]
+	if !utxo.HasValueStore() {
+		return false
+	}
+	vs, err := utxo.ValueStore()
+	if err != nil {
+		return false
+	}
+	vsFee, err := vs.Fee()
+	if err != nil {
+		return false
+	}
+	if !vsFee.IsZero() {
+		return false
+	}
+	return true
 }
