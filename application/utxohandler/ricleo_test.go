@@ -1,6 +1,7 @@
 package utxohandler
 
 import (
+	"encoding/hex"
 	"io/ioutil"
 	"log"
 	"os"
@@ -194,6 +195,56 @@ func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badge
 	return fn
 }
 
+func getStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx, utxoID []byte) func(txn *badger.Txn) error {
+	fn := func(txn *badger.Txn) error {
+		stateTrie, err := hndlr.GetTrie().GetCurrentTrie(txn)
+		if err != nil {
+			return err
+		}
+		log.Println("===========Proof of inclusion Separate Key =========")
+		log.Printf("Trie height: %d\n", stateTrie.TrieHeight)
+		bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := stateTrie.MerkleProofCompressed(txn, utxoID)
+		if err != nil {
+			return err
+		}
+		result := stateTrie.VerifyInclusionC(bitmap, utxoID, proofVal, auditPath, proofHeight)
+		log.Print("Is the proof compacted included in the trie: ", result)
+
+		auditPathNC, _, _, proofValNC, err := stateTrie.MerkleProof(txn, utxoID)
+		if err != nil {
+			return err
+		}
+		resultNC := stateTrie.VerifyInclusion(auditPathNC, utxoID, proofValNC)
+		log.Print("Is the proof non compacted included in the trie: ", resultNC)
+		log.Printf("auditPathNonCompacted: %x\n", auditPathNC)
+
+		mproof := &db.MerkleProof{
+			Included:  included,
+			KeyHeight: proofHeight,
+			Key:       proofKey,
+			Value:     proofVal,
+			Bitmap:    bitmap,
+			Path:      auditPath,
+		}
+		mpbytes, err := mproof.MarshalBinary()
+		if err != nil {
+			return err
+		}
+		log.Printf("UTXOID: %x\n", utxoID)
+		log.Printf("auditPathCompacted: %x\n", auditPath)
+		log.Printf("Bitmap: %x\n", bitmap)
+		log.Printf("Proof height: %x\n", proofHeight)
+		log.Print("Included:", included)
+		log.Printf("Proof key: %x\n", proofKey)
+		log.Printf("Proof value: %x\n", proofVal)
+		log.Printf("Proof capnproto: %x\n", mpbytes)
+		log.Println("======================================")
+		log.Println()
+		return nil
+	}
+	return fn
+}
+
 func TestRicLeo(t *testing.T) {
 	// Database setup
 	log.Println("TestRicLeo starting")
@@ -273,6 +324,23 @@ func TestRicLeo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	//80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995 -> 10000000
+	//9c2ab35f2eb16e010c0aaf3abae9f2eacd39fd564c9a151e790439f5666a9c2c
+	//10110000 -> 10110000
+	//Key: 80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995
+	// Proof Value: 0391f56ce9575815216c9c0fcffa1d50767adb008c1491b7da2dbc323b8c1fb5
+	// Height: 252 -> FC
+	// hash  80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c9950391f56ce9575815216c9c0fcffa1d50767adb008c1491b7da2dbc323b8c1fb5fc = a53ec428ed37200bcb4944a99107b738c1a58ef76287b130583095c58b0f45e4
+	// HashProof: 066c7a6ef776fbae26f10eabcc5f0eb72b0f527c4cad8c4037940a28c2fe3159 bc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a 6974f1d60877fdff3125a5c1adb630afe3aa899820a0531cea8ee6a85eb11509 25fc463686d6201f9c3973a9ebeabe4375d5a76d935bbec6cbb9d18bffe67216
+	// root 51f16d008cec2409af8104a0bca9facec585e02c12d2fa5221707672410dc692
+	utxoID, err := hex.DecodeString("80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = db.Update(getStateMerkleProofs(hndlr, txs, utxoID))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Generating block 1
 	chain, err := GenerateBlock(nil, stateRoot, txHshLst)
@@ -300,10 +368,10 @@ func TestRicLeo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.Update(getAllStateMerkleProofs(hndlr, []*objs.Tx{tx2}))
-	if err != nil {
-		t.Fatal(err)
-	}
+	// err = db.Update(getAllStateMerkleProofs(hndlr, []*objs.Tx{tx2}))
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
 	chain, err = GenerateBlock(chain, stateRoot, [][]byte{txHash2})
 	if err != nil {
