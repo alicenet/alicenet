@@ -48,7 +48,7 @@ func (ht *headerTrie) VerifyProof(txn *badger.Txn, rootHash []byte, root []byte,
 	heightBytes := utils.MarshalUint32(blockHeader.BClaims.Height)
 	key := make([]byte, constants.HashLen)
 	copy(key[:], heightBytes)
-	return tr.VerifyInclusionCR(root, mproof.Bitmap, key, mproof.Value, mproof.Path, mproof.KeyHeight), nil
+	return tr.VerifyInclusionCR(root, mproof.Bitmap, key, mproof.ProofValue, mproof.Path, mproof.KeyHeight), nil
 }
 
 func (ht *headerTrie) GetProof(txn *badger.Txn, rootHash []byte, root []byte, height uint32) (bool, []byte, error) {
@@ -61,12 +61,13 @@ func (ht *headerTrie) GetProof(txn *badger.Txn, rootHash []byte, root []byte, he
 		return false, nil, err
 	}
 	mproof := &MerkleProof{
-		Included:  included,
-		KeyHeight: keyheight,
-		Key:       proofKey,
-		Value:     proofVal,
-		Bitmap:    bitmap,
-		Path:      mp,
+		Included:   included,
+		KeyHeight:  keyheight,
+		Key:        key,
+		ProofKey:   proofKey,
+		ProofValue: proofVal,
+		Bitmap:     bitmap,
+		Path:       mp,
 	}
 	mpbytes, err := mproof.MarshalBinary()
 	if err != nil {

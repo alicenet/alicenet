@@ -163,12 +163,12 @@ func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badge
 					return err
 				}
 				mproof := &db.MerkleProof{
-					Included:  included,
-					KeyHeight: proofHeight,
-					Key:       proofKey,
-					Value:     proofVal,
-					Bitmap:    bitmap,
-					Path:      auditPath,
+					Included:   included,
+					KeyHeight:  proofHeight,
+					ProofKey:   proofKey,
+					ProofValue: proofVal,
+					Bitmap:     bitmap,
+					Path:       auditPath,
 				}
 				mpbytes, err := mproof.MarshalBinary()
 				if err != nil {
@@ -219,20 +219,30 @@ func getStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx, utxoID []byte) fun
 		log.Printf("auditPathNonCompacted: %x\n", auditPathNC)
 
 		mproof := &db.MerkleProof{
-			Included:  included,
-			KeyHeight: proofHeight,
-			Key:       proofKey,
-			Value:     proofVal,
-			Bitmap:    bitmap,
-			Path:      auditPath,
+			Included:   included,
+			KeyHeight:  proofHeight,
+			Key:        utxoID,
+			ProofKey:   proofKey,
+			ProofValue: proofVal,
+			Bitmap:     bitmap,
+			Path:       auditPath,
 		}
 		mpbytes, err := mproof.MarshalBinary()
 		if err != nil {
 			return err
 		}
-		log.Printf("UTXOID: %x\n", utxoID)
-		log.Printf("auditPathCompacted: %x\n", auditPath)
+		log.Printf("UTXOID (Key): %x\n", utxoID)
+		keyHash := []byte{}
+		if mproof.ProofValue != nil {
+			if mproof.ProofKey == nil {
+				keyHash = crypto.Hasher(mproof.Key, mproof.ProofValue, []byte{byte(stateTrie.TrieHeight - mproof.KeyHeight)})
+			} else {
+				keyHash = crypto.Hasher(mproof.ProofKey, mproof.ProofValue, []byte{byte(stateTrie.TrieHeight - mproof.KeyHeight)})
+			}
+		}
+		log.Printf("KeyHash: %x\n", keyHash)
 		log.Printf("Bitmap: %x\n", bitmap)
+		log.Printf("auditPathCompacted: %x\n", auditPath)
 		log.Printf("Proof height: %x\n", proofHeight)
 		log.Print("Included:", included)
 		log.Printf("Proof key: %x\n", proofKey)
@@ -327,7 +337,7 @@ func TestRicLeo(t *testing.T) {
 	//80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995 -> 10000000
 	//9c2ab35f2eb16e010c0aaf3abae9f2eacd39fd564c9a151e790439f5666a9c2c
 	//10110000 -> 10110000
-	//Key: 80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995
+	//Key: 80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995 -> 0101 -> 8-> 1000
 	// Proof Value: 0391f56ce9575815216c9c0fcffa1d50767adb008c1491b7da2dbc323b8c1fb5
 	// Height: 252 -> FC
 	// hash  80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c9950391f56ce9575815216c9c0fcffa1d50767adb008c1491b7da2dbc323b8c1fb5fc = a53ec428ed37200bcb4944a99107b738c1a58ef76287b130583095c58b0f45e4
