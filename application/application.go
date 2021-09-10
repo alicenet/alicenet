@@ -101,16 +101,7 @@ func (a *Application) convertIfaceToTx(txs []interfaces.Transaction) ([]*objs.Tx
 		if !ok {
 			return nil, false
 		}
-		ttbytes, err := tt.MarshalBinary()
-		if err != nil {
-			return nil, false
-		}
-		ttout := &objs.Tx{}
-		err = ttout.UnmarshalBinary(ttbytes)
-		if err != nil {
-			return nil, false
-		}
-		out[i] = ttout
+		out[i] = tt
 	}
 	return out, true
 }

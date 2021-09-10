@@ -16,24 +16,18 @@ func ReverseTranslateBlockHeader(f *from.BlockHeader) (*to.BlockHeader, error) {
 		}
 		t.BClaims = BClaims
 	}
+
 	SigGroup, err := ReverseTranslateByte(f.SigGroup)
 	if err != nil {
 		return nil, err
 	}
 	t.SigGroup = SigGroup
+
 	TxHshLst, err := ReverseTranslateByteSlice(f.TxHshLst)
 	if err != nil {
 		return nil, err
 	}
 	t.TxHshLst = TxHshLst
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -46,6 +40,7 @@ func ReverseTranslateNRClaims(f *from.NRClaims) (*to.NRClaims, error) {
 		}
 		t.RCert = RCert
 	}
+
 	if f.RClaims != nil {
 		RClaims, err := ReverseTranslateRClaims(f.RClaims)
 		if err != nil {
@@ -53,19 +48,12 @@ func ReverseTranslateNRClaims(f *from.NRClaims) (*to.NRClaims, error) {
 		}
 		t.RClaims = RClaims
 	}
+
 	SigShare, err := ReverseTranslateByte(f.SigShare)
 	if err != nil {
 		return nil, err
 	}
 	t.SigShare = SigShare
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -78,19 +66,12 @@ func ReverseTranslatePreVoteNil(f *from.PreVoteNil) (*to.PreVoteNil, error) {
 		}
 		t.RCert = RCert
 	}
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -103,24 +84,18 @@ func ReverseTranslateNextHeight(f *from.NextHeight) (*to.NextHeight, error) {
 		}
 		t.NHClaims = NHClaims
 	}
+
 	PreCommits, err := ReverseTranslateByteSlice(f.PreCommits)
 	if err != nil {
 		return nil, err
 	}
 	t.PreCommits = PreCommits
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -133,19 +108,12 @@ func ReverseTranslateRCert(f *from.RCert) (*to.RCert, error) {
 		}
 		t.RClaims = RClaims
 	}
+
 	SigGroup, err := ReverseTranslateByte(f.SigGroup)
 	if err != nil {
 		return nil, err
 	}
 	t.SigGroup = SigGroup
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -158,19 +126,12 @@ func ReverseTranslateNextRound(f *from.NextRound) (*to.NextRound, error) {
 		}
 		t.NRClaims = NRClaims
 	}
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -183,24 +144,18 @@ func ReverseTranslateProposal(f *from.Proposal) (*to.Proposal, error) {
 		}
 		t.PClaims = PClaims
 	}
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
+
 	TxHshLst, err := ReverseTranslateByteSlice(f.TxHshLst)
 	if err != nil {
 		return nil, err
 	}
 	t.TxHshLst = TxHshLst
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -211,6 +166,7 @@ func ReverseTranslatePreCommit(f *from.PreCommit) (*to.PreCommit, error) {
 		return nil, err
 	}
 	t.PreVotes = PreVotes
+
 	if f.Proposal != nil {
 		Proposal, err := ReverseTranslateProposal(f.Proposal)
 		if err != nil {
@@ -218,19 +174,12 @@ func ReverseTranslatePreCommit(f *from.PreCommit) (*to.PreCommit, error) {
 		}
 		t.Proposal = Proposal
 	}
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -243,55 +192,46 @@ func ReverseTranslatePreVote(f *from.PreVote) (*to.PreVote, error) {
 		}
 		t.Proposal = Proposal
 	}
+
 	Signature, err := ReverseTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
 	t.Signature = Signature
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
 func ReverseTranslateBClaims(f *from.BClaims) (*to.BClaims, error) {
 	t := &to.BClaims{}
 	t.ChainID = f.ChainID
+
 	HeaderRoot, err := ReverseTranslateByte(f.HeaderRoot)
 	if err != nil {
 		return nil, err
 	}
 	t.HeaderRoot = HeaderRoot
+
 	t.Height = f.Height
+
 	PrevBlock, err := ReverseTranslateByte(f.PrevBlock)
 	if err != nil {
 		return nil, err
 	}
 	t.PrevBlock = PrevBlock
+
 	StateRoot, err := ReverseTranslateByte(f.StateRoot)
 	if err != nil {
 		return nil, err
 	}
 	t.StateRoot = StateRoot
+
 	t.TxCount = f.TxCount
+
 	TxRoot, err := ReverseTranslateByte(f.TxRoot)
 	if err != nil {
 		return nil, err
 	}
 	t.TxRoot = TxRoot
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -304,19 +244,12 @@ func ReverseTranslateNHClaims(f *from.NHClaims) (*to.NHClaims, error) {
 		}
 		t.Proposal = Proposal
 	}
+
 	SigShare, err := ReverseTranslateByte(f.SigShare)
 	if err != nil {
 		return nil, err
 	}
 	t.SigShare = SigShare
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -329,6 +262,7 @@ func ReverseTranslatePClaims(f *from.PClaims) (*to.PClaims, error) {
 		}
 		t.BClaims = BClaims
 	}
+
 	if f.RCert != nil {
 		RCert, err := ReverseTranslateRCert(f.RCert)
 		if err != nil {
@@ -336,35 +270,22 @@ func ReverseTranslatePClaims(f *from.PClaims) (*to.PClaims, error) {
 		}
 		t.RCert = RCert
 	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
 func ReverseTranslateRClaims(f *from.RClaims) (*to.RClaims, error) {
 	t := &to.RClaims{}
+
 	t.ChainID = f.ChainID
 	t.Height = f.Height
+
 	PrevBlock, err := ReverseTranslateByte(f.PrevBlock)
 	if err != nil {
 		return nil, err
 	}
+
 	t.PrevBlock = PrevBlock
 	t.Round = f.Round
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
