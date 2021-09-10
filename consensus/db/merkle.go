@@ -48,12 +48,12 @@ func (mp *MerkleProof) MarshalBinary() ([]byte, error) {
 	BitMapLength := utils.MarshalUint16(uint16(len(mp.Bitmap)))
 	out = append(out, BitMapLength...)
 
+	PathLength := utils.MarshalUint16(uint16(len(mp.Path)))
+	out = append(out, PathLength...)
+
 	Bitmap := make([]byte, len(mp.Bitmap))
 	copy(Bitmap, mp.Bitmap)
 	out = append(out, Bitmap...)
-
-	PathLength := utils.MarshalUint16(uint16(len(mp.Path)))
-	out = append(out, PathLength...)
 
 	for i := 0; i < len(mp.Path); i++ {
 		key := mp.Path[i]
@@ -65,7 +65,7 @@ func (mp *MerkleProof) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // MerkleProof object
 func (mp *MerkleProof) UnmarshalBinary(data []byte) error {
-	if len(data) < 5+3*constants.HashLen {
+	if len(data) < 7+3*constants.HashLen {
 		return errorz.ErrInvalid{}.New("bad merkle proof len")
 	}
 
@@ -100,15 +100,7 @@ func (mp *MerkleProof) UnmarshalBinary(data []byte) error {
 	}
 	BitMapLengthValue := int(BitMapLength)
 
-	if len(data) < 7+3*constants.HashLen+BitMapLengthValue {
-		return errorz.ErrInvalid{}.New("bad merkle proof len")
-	}
-
-	Bitmap := make([]byte, BitMapLengthValue)
-	copy(Bitmap, data[5+3*constants.HashLen:5+3*constants.HashLen+BitMapLengthValue])
-	mp.Bitmap = Bitmap
-
-	PathLengthBytes := data[5+3*constants.HashLen+BitMapLengthValue : 7+3*constants.HashLen+BitMapLengthValue]
+	PathLengthBytes := data[5+3*constants.HashLen : 7+3*constants.HashLen]
 	PathLength, err := utils.UnmarshalUint16(PathLengthBytes)
 	if err != nil {
 		return err
@@ -117,6 +109,10 @@ func (mp *MerkleProof) UnmarshalBinary(data []byte) error {
 	if len(data) != 7+3*constants.HashLen+BitMapLengthValue+PathLengthValue*constants.HashLen {
 		return errorz.ErrInvalid{}.New("bad merkle proof len")
 	}
+
+	Bitmap := make([]byte, BitMapLengthValue)
+	copy(Bitmap, data[7+3*constants.HashLen:7+3*constants.HashLen+BitMapLengthValue])
+	mp.Bitmap = Bitmap
 
 	mp.Path = make([][]byte, PathLengthValue)
 	idx := 0

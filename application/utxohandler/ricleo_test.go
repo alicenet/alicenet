@@ -1,7 +1,10 @@
 package utxohandler
 
 import (
+	"bytes"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -137,6 +140,38 @@ func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte) 
 	return chain, nil
 }
 
+func testMerkleProofDeserialization(mpbytes []byte, mproof *db.MerkleProof) error {
+	mp1 := &db.MerkleProof{}
+	err := mp1.UnmarshalBinary(mpbytes)
+	if err != nil {
+		return err
+	}
+	if mp1.Included != mproof.Included {
+		errors.New(fmt.Sprintf("bad height: %t Expected: %t", mp1.Included, mproof.Included))
+	}
+	if mp1.KeyHeight != mproof.KeyHeight {
+		errors.New(fmt.Sprintf("bad height: %d Expected: %d", mp1.KeyHeight, mproof.KeyHeight))
+	}
+	if !bytes.Equal(mp1.Key, mproof.Key) {
+		errors.New(fmt.Sprintf("bad Key: %x Expected %x", mp1.Key, mproof.Key))
+	}
+	if !bytes.Equal(mp1.ProofKey, mproof.ProofKey) {
+		errors.New(fmt.Sprintf("bad ProofKey: %x Expected: %x", mp1.ProofKey, mproof.ProofKey))
+	}
+	if !bytes.Equal(mp1.ProofValue, mproof.ProofValue) {
+		errors.New(fmt.Sprintf("bad Next: %x Expected: %x", mp1.ProofValue, mproof.ProofValue))
+	}
+	if !bytes.Equal(mp1.Bitmap, mproof.Bitmap) {
+		errors.New(fmt.Sprintf("bad Bitmap: %x Expected: %x", mp1.Bitmap, mproof.Bitmap))
+	}
+	for i := 0; i < len(mproof.Path); i++ {
+		if !bytes.Equal(mp1.Path[i], mproof.Path[i]) {
+			errors.New(fmt.Sprintf("bad Path: %s Expected: %x", mp1.Path[i], mproof.Path[i]))
+		}
+	}
+	return nil
+}
+
 func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badger.Txn) error {
 	fn := func(txn *badger.Txn) error {
 		stateTrie, err := hndlr.GetTrie().GetCurrentTrie(txn)
@@ -165,12 +200,17 @@ func getAllStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx) func(txn *badge
 				mproof := &db.MerkleProof{
 					Included:   included,
 					KeyHeight:  proofHeight,
+					Key:        utxoID,
 					ProofKey:   proofKey,
 					ProofValue: proofVal,
 					Bitmap:     bitmap,
 					Path:       auditPath,
 				}
 				mpbytes, err := mproof.MarshalBinary()
+				if err != nil {
+					return err
+				}
+				err = testMerkleProofDeserialization(mpbytes, mproof)
 				if err != nil {
 					return err
 				}
@@ -228,6 +268,10 @@ func getStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx, utxoID []byte) fun
 			Path:       auditPath,
 		}
 		mpbytes, err := mproof.MarshalBinary()
+		if err != nil {
+			return err
+		}
+		err = testMerkleProofDeserialization(mpbytes, mproof)
 		if err != nil {
 			return err
 		}
