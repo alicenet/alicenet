@@ -264,7 +264,10 @@ func TestDSOwnerValidateSignatureBN(t *testing.T) {
 	privk := make([]byte, 32)
 	privk[0] = 1
 	privk[31] = 1
-	signer.SetPrivk(privk)
+	err = signer.SetPrivk(privk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pk, err := signer.Pubkey()
 	if err != nil {
 		t.Fatal(err)

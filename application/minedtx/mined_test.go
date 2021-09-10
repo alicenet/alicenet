@@ -46,6 +46,7 @@ func makeVS(ownerSigner objs.Signer) *objs.TXOut {
 		ChainID: cid,
 		Value:   val,
 		Owner:   owner,
+		Fee:     uint256.Zero(),
 	}
 	vs := &objs.ValueStore{
 		VSPreImage: vsp,
@@ -173,7 +174,13 @@ func TestMined(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	signer := &crypto.BNSigner{}
-	signer.SetPrivk([]byte("secret"))
+	err = signer.SetPrivk([]byte("secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
 
 	////////////////////////////////////////
 	ownerSigner := testingOwner()
@@ -181,11 +188,11 @@ func TestMined(t *testing.T) {
 
 	tx2 := makeTxConsuming(ownerSigner, consumedUTXOs)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tx2.Validate(nil, 1, tx.Vout)
+	_, err = tx2.Validate(nil, 1, tx.Vout, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +291,10 @@ func TestMinedDelete(t *testing.T) {
 	ownerSigner := testingOwner()
 	consumedUTXOs, tx := makeTxInitial(ownerSigner)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +354,10 @@ func TestMinedGet(t *testing.T) {
 	ownerSigner := testingOwner()
 	consumedUTXOs, tx := makeTxInitial(ownerSigner)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -424,7 +437,10 @@ func TestMinedGetHeightForTx(t *testing.T) {
 	ownerSigner := testingOwner()
 	consumedUTXOs, tx := makeTxInitial(ownerSigner)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -488,7 +504,10 @@ func TestMinedGetOneInternal(t *testing.T) {
 	ownerSigner := testingOwner()
 	consumedUTXOs, tx := makeTxInitial(ownerSigner)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +579,10 @@ func TestMinedAddOneInternal(t *testing.T) {
 	ownerSigner := testingOwner()
 	consumedUTXOs, tx := makeTxInitial(ownerSigner)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs)
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}

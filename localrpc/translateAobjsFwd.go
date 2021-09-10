@@ -7,6 +7,16 @@ import (
 	to "github.com/MadBase/MadNet/proto"
 )
 
+// TODO: ForwardTranslateTXOut and ReverseTranslateTXOut need to be updated
+//		 to include TxFee option in switch case. There is no option at this
+//		 point.
+//
+//		 The challenge is that there is nothing in particular that should
+//		 require this information to be fully transmitted, as anyone is
+//		 able to make a related TxFee object. This is because Tx objects
+//		 will eventually be transmitted and will *include* TxFee objects.
+//		 How this is specified as compactly as possible should be investigated.
+
 func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 	t := &to.DataStore{}
 	if f == nil {
@@ -99,6 +109,10 @@ func ForwardTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.Fee, err = f.Fee.MarshalString()
+	if err != nil {
+		return nil, err
+	}
 	return t, nil
 }
 
@@ -127,6 +141,10 @@ func ForwardTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 	}
 	t.TXOutIdx = f.TXOutIdx
 	t.Value, err = f.Value.MarshalString()
+	if err != nil {
+		return nil, err
+	}
+	t.Fee, err = f.Fee.MarshalString()
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +306,10 @@ func ForwardTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 	}
 	t.ChainID = f.ChainID
 	t.Deposit, err = f.Deposit.MarshalString()
+	if err != nil {
+		return nil, err
+	}
+	t.Fee, err = f.Fee.MarshalString()
 	if err != nil {
 		return nil, err
 	}

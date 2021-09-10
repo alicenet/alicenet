@@ -6,7 +6,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 func txckEqual(t *testing.T, txck, txck2 *TxCacheKey) {
@@ -48,7 +48,7 @@ func TestTxCacheKey(t *testing.T) {
 	}
 	txckEqual(t, txck, txck2)
 
-	hb := gUtils.MarshalUint32(height)
+	hb := utils.MarshalUint32(height)
 	iterKeyTrue := []byte{}
 	iterKeyTrue = append(iterKeyTrue, prefix...)
 	iterKeyTrue = append(iterKeyTrue, []byte("|")...)

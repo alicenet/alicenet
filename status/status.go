@@ -29,7 +29,7 @@ type Logger struct {
 }
 
 // Init initalizes the object
-func (sl *Logger) Init(ce *lstate.Engine, pm *peering.PeerManager, ad *admin.Handlers, mon monitor.Monitor) error {
+func (sl *Logger) Init(ce *lstate.Engine, pm *peering.PeerManager, ad *admin.Handlers, mon monitor.Monitor) {
 	sl.log = logging.GetLogger(constants.StatusLogger)
 	sl.ce = ce
 	sl.pm = pm
@@ -38,7 +38,6 @@ func (sl *Logger) Init(ce *lstate.Engine, pm *peering.PeerManager, ad *admin.Han
 	sl.closeChan = make(chan struct{})
 	sl.closeOnce = sync.Once{}
 	sl.wg = sync.WaitGroup{}
-	return nil
 }
 
 // Close closes the object

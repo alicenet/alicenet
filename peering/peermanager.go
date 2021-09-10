@@ -111,7 +111,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		p2pServerHandler: NewMuxServerHandler(logger, p2ptransport.NodeAddr(), p2pServer),
 		upnpMapper:       upnpMapper,
 	}
-	pm.discServerHandler = NewDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
+	pm.discServerHandler = NewP2PDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
 	if fwMode { // config.Configuration.Transport.FirewallMode
 		pm.logger.Info("RUNNING IN FIREWALL MODE")
 		pm.fireWallMode = true

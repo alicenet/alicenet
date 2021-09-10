@@ -3,11 +3,10 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/vset"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -41,7 +40,7 @@ func (b *ValidatorSet) UnmarshalCapn(bh mdefs.ValidatorSet) error {
 		return err
 	}
 	b.NotBefore = bh.NotBefore()
-	b.GroupKey = gUtils.CopySlice(bh.GroupKey())
+	b.GroupKey = utils.CopySlice(bh.GroupKey())
 	valList, err := bh.Validators()
 	if err != nil {
 		return err
@@ -136,7 +135,7 @@ func (b *ValidatorSet) GroupShareIdx(groupShare []byte) (bool, int) {
 }
 
 func (b *ValidatorSet) IsVAddrValidator(addr []byte) bool {
-	addrCopy := gUtils.CopySlice(addr)
+	addrCopy := utils.CopySlice(addr)
 	return b.ValidatorVAddrSet[string(addrCopy)]
 }
 

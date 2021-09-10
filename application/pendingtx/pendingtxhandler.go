@@ -193,19 +193,21 @@ func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHas
 
 // GetTxsForProposal returns an set of txs that are mutually exclusive with
 // respect to the consumed UTXOs. This is used to genrete new proposals.
-func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx) (objs.TxVec, error) {
-	utxos, err := pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, tx, false)
+func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx) (objs.TxVec, uint32, error) {
+	var utxos objs.TxVec
+	var err error
+	utxos, maxBytes, err = pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, tx, false)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
-		return nil, err
+		return nil, 0, err
 	}
-	return utxos, nil
+	return utxos, maxBytes, nil
 }
 
 // GetTxsForGossip returns the oldest non-expired and non-consumed txs from the
 // tx pool. These txs may be conflicting in terms of consumed UTXOS.
 func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32) ([]*objs.Tx, error) {
-	utxos, err := pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, nil, true)
+	utxos, _, err := pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, nil, true)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
 		return nil, err
@@ -218,16 +220,16 @@ func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, cu
 /////////PRIVATE METHODS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, error) {
+func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
 	txs := objs.TxVec{}
 	if tx != nil {
 		txs = append(txs, tx)
 	}
+	byteCount := uint32(0)
+	if len(txs) > 0 {
+		byteCount += constants.HashLen
+	}
 	err := pt.db.View(func(txn *badger.Txn) error {
-		byteCount := uint32(0)
-		if len(txs) > 0 {
-			byteCount += constants.HashLen
-		}
 		it, prefix := pt.indexer.GetOrderedIter(txn)
 		err := func() error {
 			defer it.Close()
@@ -309,16 +311,18 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 		}
 		return nil
 	})
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		return nil, 0, err
+	}
 	out := []*objs.Tx{}
 	for i := 0; i < len(txs); i++ {
 		if txs[i] != nil {
 			out = append(out, txs[i])
 		}
 	}
-	if err != nil {
-		utils.DebugTrace(pt.logger, err)
-	}
-	return out, err
+	remainingBytes := maxBytes - byteCount
+	return out, remainingBytes, err
 }
 
 func (pt *Handler) checkSize(maxBytes uint32, byteCount uint32) bool {

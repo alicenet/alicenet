@@ -3,12 +3,11 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/nextheight"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -52,7 +51,7 @@ func (b *NextHeight) UnmarshalCapn(bh mdefs.NextHeight) error {
 	if err != nil {
 		return err
 	}
-	b.Signature = gUtils.CopySlice(bh.Signature())
+	b.Signature = utils.CopySlice(bh.Signature())
 	return nil
 }
 
@@ -135,7 +134,7 @@ func (b *NextHeight) ValidateSignatures(secpVal *crypto.Secp256k1Validator, bnVa
 		PreCommitCE := []byte{}
 		PreCommitCE = append(PreCommitCE, PreCommitSigDesignator()...)
 		PreCommitCE = append(PreCommitCE, canonicalEncoding...)
-		pubkey, err := secpVal.Validate(PreCommitCE, gUtils.CopySlice(sig))
+		pubkey, err := secpVal.Validate(PreCommitCE, utils.CopySlice(sig))
 		if err != nil {
 			return err
 		}

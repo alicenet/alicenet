@@ -4,6 +4,7 @@ import (
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/datastore"
 	"github.com/MadBase/MadNet/application/objs/uint256"
+	"github.com/MadBase/MadNet/application/wrapper"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
@@ -207,6 +208,14 @@ func (b *DataStore) GenericOwner() (*Owner, error) {
 	return onr, nil
 }
 
+// IsExpired returns true if the datastore is free for garbage collection
+func (b *DataStore) IsExpired(currentHeight uint32) (bool, error) {
+	if b == nil {
+		return false, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.DSLinker.IsExpired(currentHeight)
+}
+
 // EpochOfExpiration returns the epoch in which the datastore may be garbage
 // collected
 func (b *DataStore) EpochOfExpiration() (uint32, error) {
@@ -230,6 +239,86 @@ func (b *DataStore) Value() (*uint256.Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.DSLinker.Value()
+}
+
+// Fee returns the fee stored in the object at the time of creation
+func (b *DataStore) Fee() (*uint256.Uint256, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.DSLinker.Fee()
+}
+
+// ValuePlusFee returns the Value of the object with the associated fee
+//
+// Given a DataStore with data of size dataSize bytes which are to be stored
+// for of numEpochs, the value is
+//
+//		value := (dataSize + BaseDatasizeConst) * (numEpochs + 2)
+//
+// Here, BaseDatasizeConst is a constant which includes the base cost of the
+// actual storage object. Furthermore, we include 2 additional epochs into
+// the standard cost for initial burning as well as miner reward.
+//
+// Given the base cost, we also want to be able to include additional fees.
+// These fees would be on a per-epoch basis. Thus, we have the form
+//
+//		valuePlusFee := (dataSize + BaseDatasizeConst + perEpochFee) * (numEpochs + 2)
+//					  = (dataSize + BaseDatasizeConst) * (numEpochs + 2)
+//					    + perEpochFee * (numEpochs + 2)
+//					  = value + fee
+//
+// with
+//
+//		fee := perEpochFee * (numEpochs + 2)
+//
+// The fee is burned at creation.
+func (b *DataStore) ValuePlusFee() (*uint256.Uint256, error) {
+	value, err := b.Value()
+	if err != nil {
+		return nil, err
+	}
+	fee, err := b.Fee()
+	if err != nil {
+		return nil, err
+	}
+	total, err := new(uint256.Uint256).Add(value, fee)
+	if err != nil {
+		return nil, err
+	}
+	return total, nil
+}
+
+// ValidateFee validates the fee of the datastore at the time of creation
+func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
+	// Get Fee
+	fee, err := b.Fee()
+	if err != nil {
+		return err
+	}
+	// Compute correct fee value
+	value, err := b.Value()
+	if err != nil {
+		return err
+	}
+	perEpochFee, err := storage.GetDataStoreEpochFee()
+	if err != nil {
+		return err
+	}
+	dataSize := uint32(len(b.DSLinker.DSPreImage.RawData))
+	numEpochs32, err := NumEpochsEquation(dataSize, value)
+	if err != nil {
+		return err
+	}
+	totalEpochs, _ := new(uint256.Uint256).FromUint64(uint64(numEpochs32) + 2)
+	feeTrue, err := new(uint256.Uint256).Mul(perEpochFee, totalEpochs)
+	if err != nil {
+		return err
+	}
+	if fee.Cmp(feeTrue) != 0 {
+		return errorz.ErrInvalid{}.New("invalid fee")
+	}
+	return nil
 }
 
 // ValidatePreSignature validates the signature of the datastore at the time of

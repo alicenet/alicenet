@@ -3,13 +3,12 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	"github.com/MadBase/MadNet/consensus/objs/blockheader"
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -35,29 +34,6 @@ func (b *BlockHeader) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
-	if err := b.unmarshalCapnUnsafe(bh); err != nil {
-		return err
-	}
-	if len(b.TxHshLst) != int(b.BClaims.TxCount) {
-		return errorz.ErrInvalid{}.New("cap bclaims txhsh lst len mismatch")
-	}
-	return nil
-}
-
-// UnmarshalBinaryUnsafe unmarshals a BlockHeader in an unsafe manner;
-// that is, we do not look at the TxHshLst. This is necessary during
-// fast synchronization, as transactions are not synced.
-func (b *BlockHeader) UnmarshalBinaryUnsafe(data []byte) error {
-	bh, err := blockheader.Unmarshal(data)
-	if err != nil {
-		return err
-	}
-	defer bh.Struct.Segment().Message().Reset(nil)
-	return b.unmarshalCapnUnsafe(bh)
-}
-
-func (b *BlockHeader) unmarshalCapnUnsafe(bh mdefs.BlockHeader) error {
-	b.BClaims = &BClaims{}
 	err := blockheader.Validate(bh)
 	if err != nil {
 		return err
@@ -68,11 +44,19 @@ func (b *BlockHeader) unmarshalCapnUnsafe(bh mdefs.BlockHeader) error {
 		return err
 	}
 	b.TxHshLst = lst
+	b.BClaims = &BClaims{}
 	err = b.BClaims.UnmarshalCapn(bh.BClaims())
 	if err != nil {
 		return err
 	}
-	b.SigGroup = bh.SigGroup()
+	sigGroup := bh.SigGroup()
+	if len(sigGroup) != constants.CurveBN256EthSigLen {
+		return errorz.ErrInvalid{}.New("cap bclaims sigGroup incorrect length")
+	}
+	b.SigGroup = sigGroup
+	if len(b.TxHshLst) != int(b.BClaims.TxCount) {
+		return errorz.ErrInvalid{}.New("cap bclaims txhsh lst len mismatch")
+	}
 	return nil
 }
 
@@ -176,7 +160,7 @@ func (b *BlockHeader) GetRCert() (*RCert, error) {
 		return nil, err
 	}
 	rc := &RCert{
-		SigGroup: b.SigGroup,
+		SigGroup: utils.CopySlice(b.SigGroup),
 		RClaims: &RClaims{
 			ChainID:   b.BClaims.ChainID,
 			Height:    b.BClaims.Height + 1,
@@ -193,8 +177,8 @@ func (b *BlockHeader) MakeDeadRoundProposal(rcert *RCert, headerRoot []byte) (*P
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	txRoot, err := MakeTxRoot([][]byte{})
-	StateRoot := gUtils.CopySlice(b.BClaims.StateRoot)
-	prevBlock := gUtils.CopySlice(rcert.RClaims.PrevBlock)
+	StateRoot := utils.CopySlice(b.BClaims.StateRoot)
+	prevBlock := utils.CopySlice(rcert.RClaims.PrevBlock)
 	if err != nil {
 		return nil, err
 	}

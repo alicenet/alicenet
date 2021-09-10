@@ -2,6 +2,7 @@ package objs
 
 import (
 	"bytes"
+	"math/big"
 	"testing"
 
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -34,6 +35,7 @@ func TestValueStoreGood(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs := &ValueStore{
@@ -86,6 +88,7 @@ func TestValueStoreBad1(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs := &ValueStore{
@@ -128,6 +131,7 @@ func TestValueStoreBad2(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen+1) // Invalid TxHash
 	vs := &ValueStore{
@@ -152,31 +156,55 @@ func TestValueStoreNew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fee, err := new(uint256.Uint256).FromUint64(0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	acct := make([]byte, 0)
 	curveSpec := constants.CurveSecp256k1
 	txHash := make([]byte, 0)
-	err = utxo.valueStore.New(chainID, value, acct, curveSpec, txHash)
+	err = utxo.valueStore.New(chainID, value, fee, acct, curveSpec, txHash)
 	if err == nil {
 		t.Fatal("Should raise an error (1)")
 	}
 
 	vs := &ValueStore{}
-	acct = make([]byte, constants.OwnerLen)
-	err = vs.New(chainID, value, acct, curveSpec, txHash)
+	err = vs.New(chainID, value, fee, acct, curveSpec, txHash)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
 
-	chainID = 1
-	err = vs.New(chainID, value, acct, curveSpec, txHash)
+	acct = make([]byte, constants.OwnerLen)
+	err = vs.New(chainID, value, fee, acct, curveSpec, txHash)
 	if err == nil {
 		t.Fatal("Should raise an error (3)")
 	}
 
+	chainID = 1
+	err = vs.New(chainID, value, fee, acct, curveSpec, txHash)
+	if err == nil {
+		t.Fatal("Should raise an error (4)")
+	}
+
 	txHash = make([]byte, constants.HashLen)
-	err = vs.New(chainID, value, acct, curveSpec, txHash)
+	err = vs.New(chainID, value, fee, acct, curveSpec, txHash)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	err = vs.New(chainID, nil, fee, acct, curveSpec, txHash)
+	if err == nil {
+		t.Fatal("Should raise an error (5)")
+	}
+
+	err = vs.New(chainID, uint256.Zero(), fee, acct, curveSpec, txHash)
+	if err == nil {
+		t.Fatal("Should raise an error (6)")
+	}
+
+	err = vs.New(chainID, value, nil, acct, curveSpec, txHash)
+	if err == nil {
+		t.Fatal("Should raise an error (7)")
 	}
 }
 
@@ -258,6 +286,7 @@ func TestValueStoreMarshalBinary(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs = &ValueStore{
@@ -313,6 +342,7 @@ func TestValueStoreUnmarshalBinary(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs = &ValueStore{
@@ -511,6 +541,83 @@ func TestValueStoreValue(t *testing.T) {
 	}
 	if !value.Eq(val) {
 		t.Fatal("Values do not match")
+	}
+}
+
+func TestValueStoreValuePlusFeeGood(t *testing.T) {
+	// Prepare ValueStore
+	vs := &ValueStore{}
+	vs.VSPreImage = &VSPreImage{}
+	value32 := uint32(1234567890)
+	value, err := new(uint256.Uint256).FromUint64(uint64(value32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	vs.VSPreImage.Value = value.Clone()
+	vs.VSPreImage.Fee = new(uint256.Uint256)
+
+	// Check valuePlusFee
+	valuePlusFee, err := vs.ValuePlusFee()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !value.Eq(valuePlusFee) {
+		t.Fatal("value and valuePlusFee do not match")
+	}
+
+	// Prepare storage with nonzero fee
+	valueStoreFee := uint32(1000)
+	vsFee, err := new(uint256.Uint256).FromUint64(uint64(valueStoreFee))
+	if err != nil {
+		t.Fatal(err)
+	}
+	vs.VSPreImage.Fee = vsFee.Clone()
+	trueVPF, err := new(uint256.Uint256).Add(vsFee, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check valuePlusFee
+	valuePlusFee, err = vs.ValuePlusFee()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !trueVPF.Eq(valuePlusFee) {
+		t.Fatal("valuePlusFee is not correct")
+	}
+	if value.Eq(valuePlusFee) {
+		t.Fatal("value and valuePlusFee should not be equal")
+	}
+}
+
+func TestValueStoreValuePlusFeeBad1(t *testing.T) {
+	vs := &ValueStore{}
+	_, err := vs.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should raise an error")
+	}
+}
+
+func TestValueStoreValuePlusFeeBad2(t *testing.T) {
+	vs := &ValueStore{}
+	vs.VSPreImage = &VSPreImage{}
+
+	// Cause overflow when computing valuePlusFee
+	bigString := "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+	bigBig, ok := new(big.Int).SetString(bigString, 16)
+	if !ok {
+		t.Fatal("Invalid conversion")
+	}
+	bigUint256, err := new(uint256.Uint256).FromBigInt(bigBig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Prep for failure
+	vs.VSPreImage.Value = bigUint256.Clone()
+	_, err = vs.ValuePlusFee()
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
 }
 
@@ -778,6 +885,51 @@ func TestValueStoreMakeTxIn(t *testing.T) {
 	}
 }
 
+func TestValueStoreValidateFee(t *testing.T) {
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	utxo := &TXOut{}
+	err := utxo.valueStore.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	vs := &ValueStore{}
+	err = vs.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	vs.VSPreImage = &VSPreImage{}
+	vs.VSPreImage.Fee = new(uint256.Uint256).SetZero()
+	err = vs.ValidateFee(storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vsFee := big.NewInt(1)
+	msg.SetValueStoreFee(vsFee)
+	storage = makeStorage(msg)
+	err = vs.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+
+	// Now tests for deposit
+	vs.VSPreImage.TXOutIdx = constants.MaxUint32
+	err = vs.ValidateFee(storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vs.VSPreImage.Fee.SetOne()
+	err = vs.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+}
+
 func TestValueStoreOwnerSig(t *testing.T) {
 	cid := uint32(2)
 	val, err := new(uint256.Uint256).FromUint64(65537)
@@ -803,6 +955,7 @@ func TestValueStoreOwnerSig(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs := &ValueStore{
@@ -863,7 +1016,10 @@ func TestValueStoreOwnerSig2(t *testing.T) {
 	txoid := uint32(17)
 
 	ownerSigner := &crypto.BNSigner{}
-	ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	err = ownerSigner.SetPrivk(crypto.Hasher([]byte("a")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	ownerPubk, err := ownerSigner.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -877,6 +1033,7 @@ func TestValueStoreOwnerSig2(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	txHash := make([]byte, constants.HashLen)
 	vs := &ValueStore{

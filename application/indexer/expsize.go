@@ -94,34 +94,38 @@ func (esi *ExpSizeIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
-func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch uint32, maxBytes uint32) ([][]byte, uint32) {
+func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch uint32, maxBytes uint32, maxObjects int) ([][]byte, uint32) {
 	result := [][]byte{}
 	byteCount := uint32(0)
+	objCount := 0
 	opts := badger.DefaultIteratorOptions
 	prefix := esi.prefix()
 	opts.Prefix = prefix
 	iter := txn.NewIterator(opts)
 	defer iter.Close()
 	for iter.Seek(prefix); iter.ValidForPrefix(prefix); iter.Next() {
+		if objCount+1 > maxObjects {
+			break
+		}
+		if byteCount+constants.HashLen > maxBytes {
+			break
+		}
 		itm := iter.Item()
 		key := itm.KeyCopy(nil)
 		key = key[len(prefix):]
 		epochBytes := key[:4]
 		// slice is 4 bytes so no error will be raised
 		epochObj, _ := utils.UnmarshalUint32(epochBytes)
-		sizeInvBytes := key[4:8]
-		// slice is 4 bytes so no error will be raised
-		sizeObjInv, _ := utils.UnmarshalUint32(sizeInvBytes)
-		sizeObj := constants.MaxUint32 - sizeObjInv
 		utxoID := key[8:]
-		if epochObj <= epoch {
-			if byteCount+sizeObj <= maxBytes {
-				byteCount += sizeObj
-				result = append(result, utxoID)
-			}
+		if epochObj > epoch {
+			break
 		}
+		byteCount += constants.HashLen
+		result = append(result, utxoID)
+		objCount++
 	}
-	return result, byteCount
+	remainingBytes := maxBytes - byteCount
+	return result, remainingBytes
 }
 
 func (esi *ExpSizeIndex) makeKey(epoch uint32, size uint32, utxoID []byte) *ExpSizeIndexKey {

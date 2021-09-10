@@ -32,9 +32,7 @@ func main() {
 	defer stateDb.Close()
 	conDB := &db.Database{}
 	// Initialize consensus database
-	if err := conDB.Init(stateDb); err != nil {
-		panic(err)
-	}
+	conDB.Init(stateDb)
 
 	err = stateDb.View(func(txn *badger.Txn) error {
 		for i := uint32(1); ; i++ {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/logging"
 )
 
 // BNGroupSigner creates cryptographic signatures using the bn256 curve.
@@ -16,15 +15,22 @@ type BNGroupSigner struct {
 }
 
 // SetPrivk sets the private key of the BNGroupSigner.
-func (bns *BNGroupSigner) SetPrivk(privk []byte) {
+func (bns *BNGroupSigner) SetPrivk(privk []byte) error {
+	if bns == nil {
+		return ErrInvalid
+	}
 	bns.privk = new(big.Int).SetBytes(privk)
 	bns.privk.Mod(bns.privk, bn256.Order)
 	bns.pubk = new(bn256.G2).ScalarBaseMult(bns.privk)
+	return nil
 }
 
 // SetGroupPubk will set the public key of the entire group;
 // this is also called the master public key.
 func (bns *BNGroupSigner) SetGroupPubk(groupPubk []byte) error {
+	if bns == nil {
+		return ErrInvalid
+	}
 	pubkpoint := new(bn256.G2)
 	_, err := pubkpoint.Unmarshal(groupPubk)
 	if err != nil {
@@ -65,26 +71,28 @@ func (bns *BNGroupSigner) VerifyGroupShares(groupShares [][]byte) error {
 
 // PubkeyShare returns the marshalled public key of the BNGroupSigner
 func (bns *BNGroupSigner) PubkeyShare() ([]byte, error) {
-	if bns.privk != nil {
-		return bns.pubk.Marshal(), nil
+	if bns == nil || bns.privk == nil {
+		return nil, ErrPrivkNotSet
 	}
-	return nil, ErrPrivkNotSet
+	return bns.pubk.Marshal(), nil
 }
 
 // PubkeyGroup returns the marshalled public key of the group
 // (master public key).
 func (bns *BNGroupSigner) PubkeyGroup() ([]byte, error) {
-	if bns.groupPubk != nil {
-		return bns.groupPubk.Marshal(), nil
+	if bns == nil || bns.groupPubk == nil {
+		return nil, ErrPubkeyGroupNotSet
 	}
-	return nil, ErrPubkeyGroupNotSet
+	return bns.groupPubk.Marshal(), nil
 }
 
 // Sign will generate a signature for msg using the private key of the
 // BNGroupSigner; this signature can be aggregated to form a valid
 // group signature.
 func (bns *BNGroupSigner) Sign(msg []byte) ([]byte, error) {
-	logging.GetLogger("test").Warnf("msg:%x bns:%+v p:%p", msg, bns, bn256.HashToG1)
+	if bns == nil {
+		return nil, ErrInvalid
+	}
 	sigpoint, err := bn256.Sign(msg, bns.privk, bn256.HashToG1)
 	if err != nil {
 		return nil, err
@@ -95,6 +103,9 @@ func (bns *BNGroupSigner) Sign(msg []byte) ([]byte, error) {
 // Aggregate attempts to combine the slice of signatures in sigs into
 // a group signature.
 func (bns *BNGroupSigner) Aggregate(sigs [][]byte, groupShares [][]byte) ([]byte, error) {
+	if bns == nil {
+		return nil, ErrInvalid
+	}
 	err := bns.VerifyGroupShares(groupShares)
 	if err != nil {
 		return nil, err

@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/utils"
-
-	"github.com/MadBase/MadNet/consensus/objs"
-	gUtils "github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -75,13 +73,13 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 			return err
 		}
 		bclaims := rs.OwnState.SyncToBH.BClaims
-		PrevBlock := gUtils.CopySlice(rcert.RClaims.PrevBlock)
+		PrevBlock := utils.CopySlice(rcert.RClaims.PrevBlock)
 		headerRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
-		StateRoot := gUtils.CopySlice(bclaims.StateRoot)
+		StateRoot := utils.CopySlice(bclaims.StateRoot)
 		p := &objs.Proposal{
 			PClaims: &objs.PClaims{
 				BClaims: &objs.BClaims{
@@ -432,7 +430,8 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 	// cast a next round
 	if rcert.RClaims.Round != constants.DEADBLOCKROUND {
 		if rcert.RClaims.Round == constants.DEADBLOCKROUNDNR {
-			if rs.OwnValidatingState.DBRNRExpired() {
+			dbrnrTO := ce.storage.GetDeadBlockRoundNextRoundTimeout()
+			if rs.OwnValidatingState.DBRNRExpired(dbrnrTO) {
 				// Wait a long time before moving into Dead Block Round
 				if len(pcl)+len(pcnl) >= rs.GetCurrentThreshold() {
 					if err := ce.castNextRound(txn, rs); err != nil {
@@ -557,6 +556,8 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 	return nil
 }
 
+// doCheckValidValue is called by non-validating nodes to update ValidValue
+// and perform other related tasks.
 func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
 	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 
@@ -714,6 +715,8 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 			rs.OwnValidatingState.LockedValue = nil
 			return true, nil
 		}
+		// TODO: handle case (else case) in which the ValidValue does not match
+		//		 with local ValidValue; may or may not be possible.
 	}
 	// could not use valid value - only option left is to check if the block
 	// had no tx's in it - if so we can build it with no additional information
@@ -728,13 +731,13 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 		return false, err
 	}
 	bclaims := rs.OwnState.SyncToBH.BClaims
-	PrevBlock := gUtils.CopySlice(ownRcert.RClaims.PrevBlock)
+	PrevBlock := utils.CopySlice(ownRcert.RClaims.PrevBlock)
 	headerRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return false, err
 	}
-	StateRoot := gUtils.CopySlice(bclaims.StateRoot)
+	StateRoot := utils.CopySlice(bclaims.StateRoot)
 	bh := &objs.BlockHeader{
 		BClaims: &objs.BClaims{
 			PrevBlock:  PrevBlock,
@@ -745,7 +748,7 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 			Height:     ownRcert.RClaims.Height,
 		},
 		TxHshLst: txs,
-		SigGroup: gUtils.CopySlice(rcert.SigGroup),
+		SigGroup: utils.CopySlice(rcert.SigGroup),
 	}
 	bhash, err := bh.BlockHash()
 	if err != nil {

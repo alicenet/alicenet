@@ -14,6 +14,7 @@ import (
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
 	eth                 *EthereumDetails
+	accusation          *bindings.Accusation
 	crypto              *bindings.Crypto
 	cryptoAddress       common.Address
 	deposit             *bindings.Deposit
@@ -181,6 +182,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 	logger.Infof("  utilityTokenAddress = \"0x%0.40x\"", c.utilityTokenAddress)
 
+	// Deploy Deposit contract
 	c.depositAddress, txn, c.deposit, err = bindings.DeployDeposit(txnOpts, eth.client, c.registryAddress)
 	if err != nil {
 		logger.Errorf("Failed to deploy deposit...")
@@ -205,6 +207,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	}
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
+	// Deploy Snapshot facet
 	snapshotsFacet, txn, _, err := bindings.DeploySnapshotsFacet(txnOpts, eth.client)
 	if err != nil {
 		logger.Error("Failed to deploy snapshots facet...")
@@ -212,6 +215,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	}
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
+	// Deploy staking facet
 	stakingFacet, txn, _, err := bindings.DeployStakingFacet(txnOpts, eth.client)
 	if err != nil {
 		logger.Error("Failed to deploy staking facet...")
@@ -219,11 +223,16 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	}
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
-	// Bind diamond to interfaces
-	c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
-	logAndEat(logger, err)
+	// Deploy accusation facet
+	accusationFacet, txn, _, err := bindings.DeployAccusationMultipleProposalFacet(txnOpts, eth.client)
+	if err != nil {
+		logger.Error("Failed to deploy accusation multiple proposal...")
+		return nil, common.Address{}, err
+	}
+	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
-	c.staking, err = bindings.NewStaking(c.validatorsAddress, eth.client)
+	// Bind diamond to interfaces
+	c.accusation, err = bindings.NewAccusation(c.validatorsAddress, eth.client)
 	logAndEat(logger, err)
 
 	c.participants, err = bindings.NewParticipants(c.validatorsAddress, eth.client)
@@ -232,7 +241,10 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	c.snapshots, err = bindings.NewSnapshots(c.validatorsAddress, eth.client)
 	logAndEat(logger, err)
 
-	c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client) // Validators is just an interface
+	c.staking, err = bindings.NewStaking(c.validatorsAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
 	if err != nil {
 		logger.Errorf("Failed to deploy validators...")
 		return nil, common.Address{}, err
@@ -253,6 +265,9 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	// Register all the validators facets
 	vu := &Updater{Updater: validatorsUpdate, TxnOpts: txnOpts, Logger: logger}
 
+	// Accusation management
+	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("AccuseMultipleProposal(bytes,bytes,bytes,bytes)", accusationFacet))
+
 	// Staking maintenance
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeStaking(address)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceReward()", stakingFacet))
@@ -263,7 +278,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedFor(address)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedReward()", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("balanceUnlockedRewardFor(address)", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("currentEpoch()", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("lockStake(uint256)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorFine(address)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("majorStakeFine()", stakingFacet))
@@ -273,7 +287,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("requestUnlockStake()", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardAmount()", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("rewardBonus()", stakingFacet))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setCurrentEpoch(uint256)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMajorStakeFine(uint256)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinimumStake(uint256)", stakingFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinorStakeFine(uint256)", stakingFacet))
@@ -283,7 +296,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 
 	// Snapshot maintenance
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeSnapshots(address)", snapshotsFacet))
-
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("snapshot(bytes,bytes)", snapshotsFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setMinEthSnapshotSize(uint256)", snapshotsFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("minEthSnapshotSize()", snapshotsFacet))

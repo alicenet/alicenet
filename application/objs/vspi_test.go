@@ -34,6 +34,7 @@ func TestVSPreImageGood(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	vsp2 := &VSPreImage{}
 	vspBytes, err := vsp.MarshalBinary()
@@ -87,6 +88,7 @@ func TestVSPreImageBad1(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	vsp2 := &VSPreImage{}
 	vspBytes, err := vsp.MarshalBinary()
@@ -177,6 +179,7 @@ func TestVSPreImagePreHash(t *testing.T) {
 		Value:    val,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	out, err := vsp.PreHash()
 	if err != nil {

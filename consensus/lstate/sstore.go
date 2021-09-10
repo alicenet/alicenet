@@ -10,9 +10,8 @@ type Store struct {
 	database *db.Database
 }
 
-func (ss *Store) Init(database *db.Database) error {
+func (ss *Store) Init(database *db.Database) {
 	ss.database = database
-	return nil
 }
 
 func (ss *Store) LoadLocalState(txn *badger.Txn) (*RoundStates, error) {

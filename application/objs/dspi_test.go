@@ -41,6 +41,7 @@ func TestDSPreImageGood(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	dsp2 := &DSPreImage{}
 	dspBytes, err := dsp.MarshalBinary()
@@ -310,6 +311,7 @@ func TestDSOwnerSig(t *testing.T) {
 		RawData:  rawdata,
 		TXOutIdx: txoid,
 		Owner:    owner,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	_, err = dsp.MarshalBinary()
 	if err != nil {
@@ -374,6 +376,7 @@ func TestDSPreImagePreHash(t *testing.T) {
 	dsp.RawData = rawData
 	dsp.TXOutIdx = txOutIdx
 	dsp.Owner = dso
+	dsp.Fee = new(uint256.Uint256).SetZero()
 
 	_, err = dsp.PreHash()
 	if err != nil {
@@ -792,8 +795,15 @@ func TestDSPreImageValidateDeposit(t *testing.T) {
 	dsp.Deposit = deposit
 	err = dsp.ValidateDeposit()
 	if err == nil {
-		// Fails because dsp.Owner == nil
+		// Fails because dsp.Fee == nil
 		t.Fatal("Should raise an error (7)")
+	}
+
+	dsp.Fee = new(uint256.Uint256)
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		// Fails because dsp.Owner == nil
+		t.Fatal("Should raise an error (8)")
 	}
 
 	dso := &DataStoreOwner{}

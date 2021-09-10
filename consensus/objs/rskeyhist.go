@@ -5,8 +5,7 @@ import (
 	"encoding/hex"
 
 	"github.com/MadBase/MadNet/errorz"
-
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // RoundStateHistoricKey ...
@@ -24,11 +23,11 @@ func (b *RoundStateHistoricKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
+	Prefix := utils.CopySlice(b.Prefix)
 	VAddr := make([]byte, hex.EncodedLen(len(b.VAddr)))
 	_ = hex.Encode(VAddr, b.VAddr)
-	Height := gUtils.MarshalUint32(b.Height)
-	Round := gUtils.MarshalUint32(b.Round)
+	Height := utils.MarshalUint32(b.Height)
+	Round := utils.MarshalUint32(b.Round)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
 	key = append(key, Height...)
@@ -50,7 +49,7 @@ func (b *RoundStateHistoricKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrCorrupt
 	}
 	b.Prefix = splitData[0]
-	Height, err := gUtils.UnmarshalUint32(splitData[1])
+	Height, err := utils.UnmarshalUint32(splitData[1])
 	if err != nil {
 		return err
 	}
@@ -58,7 +57,7 @@ func (b *RoundStateHistoricKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("invalid height in unmarshalling")
 	}
 	b.Height = Height
-	Round, err := gUtils.UnmarshalUint32(splitData[2])
+	Round, err := utils.UnmarshalUint32(splitData[2])
 	if err != nil {
 		return err
 	}
@@ -81,8 +80,8 @@ func (b *RoundStateHistoricKey) MakeIterKey() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
-	Height := gUtils.MarshalUint32(b.Height)
+	Prefix := utils.CopySlice(b.Prefix)
+	Height := utils.MarshalUint32(b.Height)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
 	key = append(key, Height...)

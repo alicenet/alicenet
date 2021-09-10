@@ -9,6 +9,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/middleware"
@@ -77,6 +78,7 @@ type Client struct {
 	lastHeight    uint32
 	lastRound     uint32
 	app           appClient
+	storage       dynamics.StorageGetter
 
 	inSync      *mutexBool
 	isValidator *mutexBool
@@ -84,7 +86,7 @@ type Client struct {
 
 // Init sets ups all subscriptions. This MUST be run at least once.
 // It has no effect if run more than once.
-func (mb *Client) Init(database *db.Database, client pb.P2PClient, app appClient) error {
+func (mb *Client) Init(database *db.Database, client pb.P2PClient, app appClient, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
@@ -97,13 +99,9 @@ func (mb *Client) Init(database *db.Database, client pb.P2PClient, app appClient
 	mb.sstore = &lstate.Store{}
 	mb.inSync = &mutexBool{}
 	mb.isValidator = &mutexBool{}
-	err := mb.sstore.Init(database)
-	if err != nil {
-		utils.DebugTrace(mb.logger, err)
-		return err
-	}
+	mb.storage = storage
+	mb.sstore.Init(database)
 	mb.gossipTimeout = constants.MsgTimeout
-	return nil
 }
 
 // Close will stop the gossip bus such that it can not be started again

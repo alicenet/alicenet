@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
 	"google.golang.org/grpc/codes"
@@ -49,7 +50,8 @@ type Handlers struct {
 
 	// channels acts as per message queues with validation occurring before
 	// the message is queued up
-	app appHandler
+	app     appHandler
+	storage dynamics.StorageGetter
 
 	height      *mutexUint32
 	chainID     *mutexUint32
@@ -72,7 +74,7 @@ func (mb *Handlers) getLock(ctx context.Context) (interfaces.Lockable, bool) {
 // Init will initialize the gossip consumer
 // it must be run at least once and will have no
 // effect if run more than once
-func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers) error {
+func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers, storage dynamics.StorageGetter) {
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
 	mb.client = client
 	mb.app = app
@@ -82,18 +84,14 @@ func (mb *Handlers) Init(database *db.Database, client pb.P2PClient, app appHand
 	ctx, cf := context.WithCancel(background)
 	mb.cancelCtx = cf
 	mb.ctx = ctx
+	mb.storage = storage
 	mb.height = &mutexUint32{}
 	mb.chainID = &mutexUint32{}
 	mb.isSync = &mutexBool{}
 	mb.ReceiveLock = make(chan interfaces.Lockable)
 	mb.isValidator = &mutexBool{}
 	mb.sstore = &lstate.Store{}
-	err := mb.sstore.Init(database)
-	if err != nil {
-		utils.DebugTrace(mb.logger, err)
-		return err
-	}
-	return nil
+	mb.sstore.Init(database)
 }
 
 // Close will shut down the gossip system such that it can not be

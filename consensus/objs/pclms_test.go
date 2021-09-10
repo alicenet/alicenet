@@ -18,7 +18,10 @@ func TestPClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	gk := crypto.BNGroupSigner{}
-	gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	err = gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig, err := gk.Sign(bhsh)
 	if err != nil {
 		t.Fatal(err)

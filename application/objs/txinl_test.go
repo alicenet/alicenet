@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/utils"
 )
 
 func TestTXInLinkerGood(t *testing.T) {
@@ -175,6 +176,22 @@ func TestTXInLinkerChainID(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
+
+	txinl.TXInPreImage = &TXInPreImage{}
+	_, err = txinl.ChainID()
+	if err == nil {
+		t.Fatal("Should raise an error (3)")
+	}
+
+	chainID := uint32(17)
+	txinl.TXInPreImage.ChainID = chainID
+	retChainID, err := txinl.ChainID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retChainID != chainID {
+		t.Fatal("ChainIDs do not match")
+	}
 }
 
 func TestTXInLinkerSetTxHash(t *testing.T) {
@@ -191,18 +208,18 @@ func TestTXInLinkerSetTxHash(t *testing.T) {
 		t.Fatal("Should raise an error (2)")
 	}
 
-	txHash := make([]byte, constants.HashLen)
-	err = txin.TXInLinker.SetTxHash(txHash)
+	txinl.TXInPreImage = &TXInPreImage{}
+	err = txinl.SetTxHash(txHashBad)
 	if err == nil {
 		t.Fatal("Should raise an error (3)")
 	}
 
-	err = txinl.SetTxHash(txHash)
+	txHash := make([]byte, constants.HashLen)
+	err = txin.TXInLinker.SetTxHash(txHash)
 	if err == nil {
 		t.Fatal("Should raise an error (4)")
 	}
 
-	txinl.TXInPreImage = &TXInPreImage{}
 	err = txinl.SetTxHash(txHash)
 	if err != nil {
 		t.Fatal("Should not raise an error")
@@ -221,6 +238,17 @@ func TestTXInLinkerConsumedTxIdx(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
+
+	consumedTxIdx := uint32(25519)
+	txinl.TXInPreImage = &TXInPreImage{}
+	txinl.TXInPreImage.ConsumedTxIdx = consumedTxIdx
+	txIdx, err := txinl.ConsumedTxIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txIdx != consumedTxIdx {
+		t.Fatal("ConsumedTxIdxes do not match")
+	}
 }
 
 func TestTXInLinkerConsumedTxHash(t *testing.T) {
@@ -234,5 +262,16 @@ func TestTXInLinkerConsumedTxHash(t *testing.T) {
 	_, err = txinl.ConsumedTxHash()
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
+	}
+
+	txhashTrue := make([]byte, constants.HashLen)
+	txinl.TXInPreImage = &TXInPreImage{}
+	txinl.TXInPreImage.ConsumedTxHash = utils.CopySlice(txhashTrue)
+	txhash, err := txinl.ConsumedTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(txhash, txhashTrue) {
+		t.Fatal("ConsumedTxHashes do not match")
 	}
 }

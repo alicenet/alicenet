@@ -17,15 +17,18 @@ type Secp256k1Signer struct {
 // Pubkey returns the marshalled public key of the Secp256k1Signer
 // (uncompressed format).
 func (secps *Secp256k1Signer) Pubkey() ([]byte, error) {
-	if secps.privk != nil {
-		return utils.CopySlice(secps.pubk), nil
+	if secps == nil || secps.privk == nil {
+		return nil, ErrPrivkNotSet
 	}
-	return nil, ErrPrivkNotSet
+	return utils.CopySlice(secps.pubk), nil
 }
 
 // SetPrivk sets the private key of the Secp256k1Signer;
 // privk is required to be 32 bytes!
 func (secps *Secp256k1Signer) SetPrivk(privk []byte) error {
+	if secps == nil {
+		return ErrInvalid
+	}
 	ecprivk, err := eth.ToECDSA(privk)
 	if err != nil {
 		return err
@@ -40,7 +43,7 @@ func (secps *Secp256k1Signer) SetPrivk(privk []byte) error {
 // Secp256k1Signer; eth.Sign *assumes* we are signing the
 // *hash of the message* (digestHash) and *not* the message itself.
 func (secps *Secp256k1Signer) Sign(msg []byte) ([]byte, error) {
-	if secps.privk == nil {
+	if secps == nil || secps.privk == nil {
 		return nil, ErrPrivkNotSet
 	}
 	digestHash := Hasher(msg)

@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/application/pendingtx"
 	"github.com/MadBase/MadNet/application/utxohandler"
+	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	consensusdb "github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
@@ -31,13 +32,19 @@ type txHandler struct {
 	mTxHdlr *minedtx.MinedTxHandler
 	dHdlr   *deposit.Handler
 	uHdlr   *utxohandler.UTXOHandler
+	storage *wrapper.Storage
 }
 
 func (tm *txHandler) GetTxsForGossip(txnState *badger.Txn, currentHeight uint32) ([]*objs.Tx, error) {
 	ctx := context.Background()
 	subCtx, cf := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cf()
-	return tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, constants.MaxBytes)
+	utxos, err := tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, tm.storage.GetMaxBytes())
+	if err != nil {
+		utils.DebugTrace(tm.logger, err)
+		return nil, err
+	}
+	return utxos, nil
 }
 
 func (tm *txHandler) IsValid(txn *badger.Txn, tx []*objs.Tx, currentHeight uint32) (objs.Vout, error) {
@@ -77,7 +84,7 @@ func (tm *txHandler) ApplyState(txn *badger.Txn, chainID uint32, height uint32, 
 		utils.DebugTrace(tm.logger, err)
 		return nil, err
 	}
-	if err := txs.Validate(height, vout); err != nil {
+	if err := txs.Validate(height, vout, tm.storage); err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, err
 	}
@@ -106,7 +113,7 @@ func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height u
 	ctx := context.Background()
 	subCtx, cf := context.WithTimeout(ctx, 1*time.Second)
 	defer cf()
-	tx, err := tm.uHdlr.GetExpiredForProposal(txn, subCtx, chainID, height, curveSpec, signer, maxBytes)
+	tx, maxBytes, err := tm.uHdlr.GetExpiredForProposal(txn, subCtx, chainID, height, curveSpec, signer, maxBytes, tm.storage)
 	if err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, nil, errorz.ErrInvalid{}.New(err.Error())
@@ -133,7 +140,7 @@ func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height u
 			return nil, nil, err
 		}
 	}
-	txs, err := tm.pTxHdlr.GetTxsForProposal(txn, subCtx, height, maxBytes, tx)
+	txs, _, err := tm.pTxHdlr.GetTxsForProposal(txn, subCtx, height, maxBytes, tx)
 	if err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, nil, errorz.ErrInvalid{}.New(err.Error())

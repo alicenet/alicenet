@@ -3,12 +3,11 @@ package objs
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/precommit"
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -145,7 +144,7 @@ func (b *PreCommit) ValidateSignatures(secpVal *crypto.Secp256k1Validator, bnVal
 	CE = append(CE, PreVoteSigDesignator()...)
 	CE = append(CE, canonicalEncoding...)
 	for _, sig := range b.PreVotes {
-		pubkey, err := secpVal.Validate(CE, gUtils.CopySlice(sig))
+		pubkey, err := secpVal.Validate(CE, utils.CopySlice(sig))
 		if err != nil {
 			return err
 		}
@@ -167,9 +166,9 @@ func (b *PreCommit) MakeImplPreVotes() (PreVoteList, error) {
 		if err != nil {
 			return nil, err
 		}
-		groupKey := gUtils.CopySlice(b.GroupKey)
-		voter := gUtils.CopySlice(b.Signers[idx])
-		sig := gUtils.CopySlice(pv)
+		groupKey := utils.CopySlice(b.GroupKey)
+		voter := utils.CopySlice(b.Signers[idx])
+		sig := utils.CopySlice(pv)
 		pV := &PreVote{
 			Signature: sig,
 			Proposal:  pc.Proposal,
