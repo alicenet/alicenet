@@ -228,6 +228,18 @@ func ForwardTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		tt := &to.TXOut_DataStore{DataStore: newObj}
 		t := &to.TXOut{Utxo: tt}
 		return t, nil
+	case f.HasTxFee():
+		obj, err := f.TxFee()
+		if err != nil {
+			return nil, err
+		}
+		newObj, err := ForwardTranslateTxFee(obj)
+		if err != nil {
+			return nil, err
+		}
+		tt := &to.TXOut_TxFee{TxFee: newObj}
+		t := &to.TXOut{Utxo: tt}
+		return t, nil
 	default:
 		return nil, errors.New("no txout in forward translate")
 	}
@@ -414,6 +426,56 @@ func ForwardTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 			return nil, err
 		}
 		t.TXInLinker = newTXInLinker
+	}
+	return t, nil
+}
+
+func ForwardTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
+	t := &to.TxFee{}
+	if f == nil {
+		return nil, errors.New("txFee object should not be nil")
+	}
+	b, err := f.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	err = f.UnmarshalBinary(b)
+	if err != nil {
+		return nil, err
+	}
+	newTxHash, err := ForwardTranslateByte(f.TxHash)
+	if err != nil {
+		return nil, err
+	}
+	t.TxHash = newTxHash
+	if f.TFPreImage != nil {
+		newTFPreImage, err := ForwardTranslateTFPreImage(f.TFPreImage)
+		if err != nil {
+			return nil, err
+		}
+		t.TFPreImage = newTFPreImage
+	}
+	return t, nil
+}
+
+func ForwardTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
+	t := &to.TFPreImage{}
+	if f == nil {
+		return nil, errors.New("object of type TFPreImage should not be nil")
+	}
+	b, err := f.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	err = f.UnmarshalBinary(b)
+	if err != nil {
+		return nil, err
+	}
+	t.ChainID = f.ChainID
+	t.TXOutIdx = f.TXOutIdx
+	t.Fee, err = f.Fee.MarshalString()
+	if err != nil {
+		return nil, err
 	}
 	return t, nil
 }

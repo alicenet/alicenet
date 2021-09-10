@@ -1,6 +1,8 @@
 package objs
 
 import (
+	"fmt"
+
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/txfee"
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -173,4 +175,8 @@ func (b *TxFee) Fee() (*uint256.Uint256, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.TFPreImage.Fee.Clone(), nil
+}
+
+func (b *TxFee) String() string {
+	return fmt.Sprintf("{TFPreImage: %v, TxHash: %v, utxoID: %v}", b.TFPreImage.String(), b.TxHash, b.utxoID)
 }
