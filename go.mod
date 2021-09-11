@@ -38,4 +38,4 @@ require (
 	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )
 
-replace github.com/MadBase/bridge => ../bridge
+// replace github.com/MadBase/bridge => ../bridge

@@ -189,8 +189,17 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorS
 			ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
 			defer cf()
 
+			oldMonitorState := monitorState.Clone()
+
 			if err := MonitorTick(ctx, wg, mon.eth, monitorState, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
+			}
+
+			diff := oldMonitorState.Diff(monitorState)
+
+			select {
+			case mon.statusChan <- diff:
+			default:
 			}
 		}
 	}
@@ -198,50 +207,11 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorS
 	return nil
 }
 
-// func (mon *monitor) eventLoopTick(state *objects.MonitorState, tick time.Time, shutdownRequested bool) error {
-
-// 	logger := mon.logger
-
-// 	// Make a backup of state to monitor for changes
-// 	originalState := state.Clone()
-
-// 	// Every tick we request events be processed and we require it doesn't overlap with the next
-// 	resp, err := mon.bus.Request(SvcWatchEthereum, mon.timeout, state)
-// 	if err != nil {
-// 		logger.Warnf("Could not request SvcWatchEthereum: %v", err)
-// 		return err
-// 	}
-
-// 	select {
-// 	case responseValue := <-resp.Response():
-// 		switch value := responseValue.(type) {
-// 		case *objects.MonitorState:
-// 			diff := originalState.Diff(state)
-// 			if len(diff) > 0 {
-// 				select {
-// 				case mon.statusChan <- fmt.Sprintf("State \xce\x94 %v", diff):
-// 				default:
-// 				}
-// 				mon.database.UpdateState(value)
-// 			}
-// 			return nil
-// 		case error:
-// 			logger.Warnf("SvcWatchEthereum() : %v", value)
-// 		default:
-// 			logger.Errorf("SvcWatchEthereum() invalid return type: %v", value)
-// 		}
-// 	case to := <-resp.Timeout():
-// 		logger.Warnf("SvcWatchEthereum() : Timeout %v", to)
-// 	}
-
-// 	return nil
-// }
-
 // MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
 func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
 
-	logger.WithField("Method", "MonitorTick").Infof("Tick state %p", monitorState)
+	logger.WithField("Method", "MonitorTick").Debugf("Tick state %p", monitorState)
 
 	c := eth.Contracts()
 	schedule := monitorState.Schedule
@@ -326,7 +296,7 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		}
 
 		// Check if any tasks are scheduled
-		logEntry.Info("Looking for scheduled task")
+		logEntry.Debug("Looking for scheduled task")
 		uuid, err := schedule.Find(currentBlock)
 		if err == nil {
 			task, _ := schedule.Retrieve(uuid)
@@ -346,9 +316,6 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	}
 
 	// Only after batch is processed do we update monitor state
-	logger.Debugf("Block Processed %d -> %d, Finalized %d -> %d",
-		monitorState.HighestBlockProcessed, processed,
-		monitorState.HighestBlockFinalized, finalized)
 	monitorState.HighestBlockFinalized = finalized
 	monitorState.HighestBlockProcessed = processed
 

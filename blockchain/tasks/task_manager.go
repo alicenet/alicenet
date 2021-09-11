@@ -207,7 +207,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 			"Timeout":    timeout,
 			"RetryCount": retryCount,
 			"RetryDelay": retryDelay,
-		}).Debug("StartTask()...")
+		}).Info("StartTask()...")
 
 		// Setup
 		ctx, cancel := context.WithCancel(context.Background())

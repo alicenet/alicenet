@@ -379,13 +379,13 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	os.Exit(1)
 }
 
-func registerTasks() {
-	// tasks.RegisterTask(&dkgtasks.CompletionTask{})
-	// tasks.RegisterTask(&dkgtasks.DisputeTask{})
-	// tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
-	// tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
-	// tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
-	// tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
-	// tasks.RegisterTask(&dkgtasks.RegisterTask{})
-	// tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
-}
+// func registerTasks() {
+// tasks.RegisterTask(&dkgtasks.CompletionTask{})
+// tasks.RegisterTask(&dkgtasks.DisputeTask{})
+// tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
+// tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.RegisterTask{})
+// tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
+// }
