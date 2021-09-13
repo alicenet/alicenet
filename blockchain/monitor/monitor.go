@@ -119,15 +119,6 @@ func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
 
-// func (mon *monitor) Start() error {
-
-// 	mon.logger.WithFields(logrus.Fields{
-// 		"s": "f",
-// 	}).Info("Starting event loop")
-
-// 	return nil
-// }
-
 func (mon *monitor) Close() {
 	mon.cancelChan <- true
 }
