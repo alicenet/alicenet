@@ -22,7 +22,7 @@ type UPnPMapper struct {
 
 func NewUPnPMapper(logger *logrus.Logger, port int) (*UPnPMapper, error) {
 	manager := &UPnPMapper{
-		logger: logrus.New(),
+		logger: logger,
 		port:   uint16(port),
 	}
 	return manager, nil
