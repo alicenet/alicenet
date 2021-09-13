@@ -22,14 +22,7 @@ func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 	if f == nil {
 		return nil, errors.New("dataStore object should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	if f.DSLinker != nil {
 		newDSLinker, err := ForwardTranslateDSLinker(f.DSLinker)
 		if err != nil {
@@ -37,6 +30,7 @@ func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 		}
 		t.DSLinker = newDSLinker
 	}
+
 	if f.Signature != nil {
 		ownerBytes, err := f.Signature.MarshalBinary()
 		if err != nil {
@@ -56,18 +50,12 @@ func ForwardTranslateValueStore(f *from.ValueStore) (*to.ValueStore, error) {
 	if f == nil {
 		return nil, errors.New("valueStore object should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	newTxHash, err := ForwardTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.TxHash = newTxHash
 	if f.VSPreImage != nil {
 		newVSPreImage, err := ForwardTranslateVSPreImage(f.VSPreImage)
@@ -84,15 +72,9 @@ func ForwardTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	if f == nil {
 		return nil, errors.New("object of type VSPreImage should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	t.ChainID = f.ChainID
+
 	if f.Owner != nil {
 		ownerBytes, err := f.Owner.MarshalBinary()
 		if err != nil {
@@ -104,11 +86,15 @@ func ForwardTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 		}
 		t.Owner = newOwner
 	}
+
 	t.TXOutIdx = f.TXOutIdx
+
+	var err error
 	t.Value, err = f.Value.MarshalString()
 	if err != nil {
 		return nil, err
 	}
+
 	t.Fee, err = f.Fee.MarshalString()
 	if err != nil {
 		return nil, err
@@ -156,14 +142,7 @@ func ForwardTranslateTXInLinker(f *from.TXInLinker) (*to.TXInLinker, error) {
 	if f == nil {
 		return nil, errors.New("object of type TXInLinker should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	if f.TXInPreImage != nil {
 		newTXInPreImage, err := ForwardTranslateTXInPreImage(f.TXInPreImage)
 		if err != nil {
@@ -183,14 +162,7 @@ func ForwardTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 	if f == nil {
 		return nil, errors.New("object of type TXOut should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	switch {
 	case f.HasAtomicSwap():
 		obj, err := f.AtomicSwap()
@@ -228,6 +200,18 @@ func ForwardTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		tt := &to.TXOut_DataStore{DataStore: newObj}
 		t := &to.TXOut{Utxo: tt}
 		return t, nil
+	case f.HasTxFee():
+		obj, err := f.TxFee()
+		if err != nil {
+			return nil, err
+		}
+		newObj, err := ForwardTranslateTxFee(obj)
+		if err != nil {
+			return nil, err
+		}
+		tt := &to.TXOut_TxFee{TxFee: newObj}
+		t := &to.TXOut{Utxo: tt}
+		return t, nil
 	default:
 		return nil, errors.New("no txout in forward translate")
 	}
@@ -238,14 +222,7 @@ func ForwardTranslateTx(f *from.Tx) (*to.Tx, error) {
 	if f == nil {
 		return nil, errors.New("tx object should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	for _, txIn := range f.Vin {
 		newVin, err := ForwardTranslateTXIn(txIn)
 		if err != nil {
@@ -253,6 +230,7 @@ func ForwardTranslateTx(f *from.Tx) (*to.Tx, error) {
 		}
 		t.Vin = append(t.Vin, newVin)
 	}
+
 	for _, txOut := range f.Vout {
 		newVout, err := ForwardTranslateTXOut(txOut)
 		if err != nil {
@@ -268,14 +246,7 @@ func ForwardTranslateAtomicSwap(f *from.AtomicSwap) (*to.AtomicSwap, error) {
 	if f == nil {
 		return nil, errors.New("atomicSwap object should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	if f.ASPreImage != nil {
 		newASPreImage, err := ForwardTranslateASPreImage(f.ASPreImage)
 		if err != nil {
@@ -296,29 +267,28 @@ func ForwardTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 	if f == nil {
 		return nil, errors.New("object of type DSPreImage should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	t.ChainID = f.ChainID
+
+	var err error
 	t.Deposit, err = f.Deposit.MarshalString()
 	if err != nil {
 		return nil, err
 	}
+
 	t.Fee, err = f.Fee.MarshalString()
 	if err != nil {
 		return nil, err
 	}
+
 	newIndex, err := ForwardTranslateByte(f.Index)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Index = newIndex
 	t.IssuedAt = f.IssuedAt
+
 	if f.Owner != nil {
 		ownerBytes, err := f.Owner.MarshalBinary()
 		if err != nil {
@@ -330,10 +300,12 @@ func ForwardTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 		}
 		t.Owner = newOwner
 	}
+
 	newRawData, err := ForwardTranslateByte(f.RawData)
 	if err != nil {
 		return nil, err
 	}
+
 	t.RawData = newRawData
 	t.TXOutIdx = f.TXOutIdx
 	return t, nil
@@ -344,19 +316,14 @@ func ForwardTranslateTXInPreImage(f *from.TXInPreImage) (*to.TXInPreImage, error
 	if f == nil {
 		return nil, errors.New("object of type TXInPreImage should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	t.ChainID = f.ChainID
+
 	newConsumedTxHash, err := ForwardTranslateByte(f.ConsumedTxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.ConsumedTxHash = newConsumedTxHash
 	t.ConsumedTxIdx = f.ConsumedTxIdx
 	return t, nil
@@ -367,14 +334,7 @@ func ForwardTranslateDSLinker(f *from.DSLinker) (*to.DSLinker, error) {
 	if f == nil {
 		return nil, errors.New("object of type DSLinker should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	if f.DSPreImage != nil {
 		newDSPreImage, err := ForwardTranslateDSPreImage(f.DSPreImage)
 		if err != nil {
@@ -382,10 +342,12 @@ func ForwardTranslateDSLinker(f *from.DSLinker) (*to.DSLinker, error) {
 		}
 		t.DSPreImage = newDSPreImage
 	}
+
 	newTxHash, err := ForwardTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.TxHash = newTxHash
 	return t, nil
 }
@@ -395,25 +357,60 @@ func ForwardTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 	if f == nil {
 		return nil, errors.New("object of type TXIn should not be nil")
 	}
-	b, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = f.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	newSignature, err := ForwardTranslateByte(f.Signature)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Signature = newSignature
+
 	if f.TXInLinker != nil {
 		newTXInLinker, err := ForwardTranslateTXInLinker(f.TXInLinker)
 		if err != nil {
 			return nil, err
 		}
 		t.TXInLinker = newTXInLinker
+	}
+	return t, nil
+}
+
+func ForwardTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
+	t := &to.TxFee{}
+	if f == nil {
+		return nil, errors.New("txFee object should not be nil")
+	}
+
+	newTxHash, err := ForwardTranslateByte(f.TxHash)
+	if err != nil {
+		return nil, err
+	}
+
+	t.TxHash = newTxHash
+
+	if f.TFPreImage != nil {
+		newTFPreImage, err := ForwardTranslateTFPreImage(f.TFPreImage)
+		if err != nil {
+			return nil, err
+		}
+		t.TFPreImage = newTFPreImage
+	}
+	return t, nil
+}
+
+func ForwardTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
+	t := &to.TFPreImage{}
+	if f == nil {
+		return nil, errors.New("object of type TFPreImage should not be nil")
+	}
+
+	t.ChainID = f.ChainID
+	t.TXOutIdx = f.TXOutIdx
+
+	var err error
+	t.Fee, err = f.Fee.MarshalString()
+	if err != nil {
+		return nil, err
 	}
 	return t, nil
 }

@@ -17,6 +17,7 @@ func ReverseTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 		}
 		t.DSLinker = newDSLinker
 	}
+
 	if f.Signature != "" {
 		signatureBytes, err := ReverseTranslateByte(f.Signature)
 		if err != nil {
@@ -29,14 +30,6 @@ func ReverseTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 		}
 		t.Signature = Signature
 	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -46,7 +39,9 @@ func ReverseTranslateValueStore(f *from.ValueStore) (*to.ValueStore, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	t.TxHash = newTxHash
+
 	if f.VSPreImage != nil {
 		newVSPreImage, err := ReverseTranslateVSPreImage(f.VSPreImage)
 		if err != nil {
@@ -54,20 +49,14 @@ func ReverseTranslateValueStore(f *from.ValueStore) (*to.ValueStore, error) {
 		}
 		t.VSPreImage = newVSPreImage
 	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	return t, nil
 }
 
 func ReverseTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	t := &to.VSPreImage{}
 	t.ChainID = f.ChainID
+
 	if f.Owner != "" {
 		ownerBytes, err := ReverseTranslateByte(f.Owner)
 		if err != nil {
@@ -80,25 +69,21 @@ func ReverseTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 		}
 		t.Owner = newOwner
 	}
+
 	t.TXOutIdx = f.TXOutIdx
+
 	t.Value = &uint256.Uint256{}
 	err := t.Value.UnmarshalString(f.Value)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Fee = &uint256.Uint256{}
 	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
 		return nil, err
 	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	return t, nil
 }
 
@@ -107,6 +92,7 @@ func ReverseTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 	t.ChainID = f.ChainID
 	t.Exp = f.Exp
 	t.IssuedAt = f.IssuedAt
+
 	if f.Owner != "" {
 		ownerBytes, err := ReverseTranslateByte(f.Owner)
 		if err != nil {
@@ -119,22 +105,17 @@ func ReverseTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 		}
 		t.Owner = newOwner
 	}
+
 	t.TXOutIdx = f.TXOutIdx
+
 	t.Value = &uint256.Uint256{}
 	err := t.Value.UnmarshalString(f.Value)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Fee = &uint256.Uint256{}
 	err = t.Fee.UnmarshalString(f.Fee)
-	if err != nil {
-		return nil, err
-	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
 	if err != nil {
 		return nil, err
 	}
@@ -150,19 +131,13 @@ func ReverseTranslateTXInLinker(f *from.TXInLinker) (*to.TXInLinker, error) {
 		}
 		t.TXInPreImage = newTXInPreImage
 	}
+
 	newTxHash, err := ReverseTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.TxHash = newTxHash
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -175,20 +150,13 @@ func ReverseTranslateTx(f *from.Tx) (*to.Tx, error) {
 		}
 		t.Vin = append(t.Vin, newVin)
 	}
+
 	for _, txOut := range f.Vout {
 		newVout, err := ReverseTranslateTXOut(txOut)
 		if err != nil {
 			return nil, err
 		}
 		t.Vout = append(t.Vout, newVout)
-	}
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
 	}
 	return t, nil
 }
@@ -202,14 +170,7 @@ func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		if err != nil {
 			return nil, err
 		}
-		b, err := obj.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		err = obj.UnmarshalBinary(b)
-		if err != nil {
-			return nil, err
-		}
+
 		err = t.NewAtomicSwap(obj)
 		if err != nil {
 			return nil, err
@@ -220,14 +181,7 @@ func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		if err != nil {
 			return nil, err
 		}
-		b, err := obj.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		err = obj.UnmarshalBinary(b)
-		if err != nil {
-			return nil, err
-		}
+
 		err = t.NewValueStore(obj)
 		if err != nil {
 			return nil, err
@@ -238,15 +192,19 @@ func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		if err != nil {
 			return nil, err
 		}
-		b, err := obj.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		err = obj.UnmarshalBinary(b)
-		if err != nil {
-			return nil, err
-		}
+
 		err = t.NewDataStore(obj)
+		if err != nil {
+			return nil, err
+		}
+	case *from.TXOut_TxFee:
+		ff := f.GetTxFee()
+		obj, err := ReverseTranslateTxFee(ff)
+		if err != nil {
+			return nil, err
+		}
+
+		err = t.NewTxFee(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -269,41 +227,39 @@ func ReverseTranslateAtomicSwap(f *from.AtomicSwap) (*to.AtomicSwap, error) {
 		}
 		t.ASPreImage = newASPreImage
 	}
+
 	newTxHash, err := ReverseTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
 	t.TxHash = newTxHash
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
 func ReverseTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 	t := &to.DSPreImage{}
 	t.ChainID = f.ChainID
+
 	t.Deposit = &uint256.Uint256{}
 	err := t.Deposit.UnmarshalString(f.Deposit)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Fee = &uint256.Uint256{}
 	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
 		return nil, err
 	}
+
 	newIndex, err := ReverseTranslateByte(f.Index)
 	if err != nil {
 		return nil, err
 	}
+
 	t.Index = newIndex
 	t.IssuedAt = f.IssuedAt
+
 	if f.Owner != "" {
 		ownerBytes, err := ReverseTranslateByte(f.Owner)
 		if err != nil {
@@ -316,40 +272,29 @@ func ReverseTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 		}
 		t.Owner = newOwner
 	}
+
 	newRawData, err := ReverseTranslateByte(f.RawData)
 	if err != nil {
 		return nil, err
 	}
+
 	t.RawData = newRawData
 	t.TXOutIdx = f.TXOutIdx
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
+
 	return t, nil
 }
 
 func ReverseTranslateTXInPreImage(f *from.TXInPreImage) (*to.TXInPreImage, error) {
 	t := &to.TXInPreImage{}
 	t.ChainID = f.ChainID
+
 	newConsumedTxHash, err := ReverseTranslateByte(f.ConsumedTxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.ConsumedTxHash = newConsumedTxHash
 	t.ConsumedTxIdx = f.ConsumedTxIdx
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -362,19 +307,13 @@ func ReverseTranslateDSLinker(f *from.DSLinker) (*to.DSLinker, error) {
 		}
 		t.DSPreImage = newDSPreImage
 	}
+
 	newTxHash, err := ReverseTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
+
 	t.TxHash = newTxHash
-	b, err := t.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	err = t.UnmarshalBinary(b)
-	if err != nil {
-		return nil, err
-	}
 	return t, nil
 }
 
@@ -385,6 +324,7 @@ func ReverseTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 		return nil, err
 	}
 	t.Signature = newSignature
+
 	if f.TXInLinker != nil {
 		newTXInLinker, err := ReverseTranslateTXInLinker(f.TXInLinker)
 		if err != nil {
@@ -392,11 +332,34 @@ func ReverseTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 		}
 		t.TXInLinker = newTXInLinker
 	}
-	b, err := t.MarshalBinary()
+	return t, nil
+}
+
+func ReverseTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
+	t := &to.TxFee{}
+	newTxHash, err := ReverseTranslateByte(f.TxHash)
 	if err != nil {
 		return nil, err
 	}
-	err = t.UnmarshalBinary(b)
+	t.TxHash = newTxHash
+
+	if f.TFPreImage != nil {
+		newTFPreImage, err := ReverseTranslateTFPreImage(f.TFPreImage)
+		if err != nil {
+			return nil, err
+		}
+		t.TFPreImage = newTFPreImage
+	}
+	return t, nil
+}
+
+func ReverseTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
+	t := &to.TFPreImage{}
+	t.ChainID = f.ChainID
+	t.TXOutIdx = f.TXOutIdx
+
+	t.Fee = &uint256.Uint256{}
+	err := t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
 		return nil, err
 	}
