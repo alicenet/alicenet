@@ -39,15 +39,15 @@ type dlReq struct {
 }
 
 type nodeKey struct {
-	key [32]byte
+	key [constants.HashLen]byte
 }
 
 func newNodeKey(s []byte) (nodeKey, error) {
-	if len(s) != 32 {
-		return nodeKey{}, errorz.ErrInvalid{}.New("Error in newNodeKey: byte slice not 32 bytes")
+	if len(s) != constants.HashLen {
+		return nodeKey{}, errorz.ErrInvalid{}.New("Error in newNodeKey: byte slice not constants.HashLen bytes")
 	}
 	nk := nodeKey{}
-	nk.key = [32]byte{}
+	nk.key = [constants.HashLen]byte{}
 	copy(nk.key[:], s)
 	return nk, nil
 }

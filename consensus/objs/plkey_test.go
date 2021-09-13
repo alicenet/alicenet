@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 )
 
@@ -17,7 +18,7 @@ func plkEqual(t *testing.T, plk, plk2 *PendingLeafKey) {
 	if !bytes.Equal(plk.Key, plk2.Key) {
 		t.Fatal("fail")
 	}
-	if len(plk.Key) != 32 {
+	if len(plk.Key) != constants.HashLen {
 		t.Fatal("fail")
 	}
 }
@@ -52,7 +53,7 @@ func TestPendingLeafKeyBad(t *testing.T) {
 	prefixBad := []byte("Prefix")
 	prefixGood := []byte("Pr")
 	keyBad := make([]byte, 33)
-	keyGood := make([]byte, 32)
+	keyGood := make([]byte, constants.HashLen)
 
 	plk = &PendingLeafKey{
 		Prefix: prefixBad,
