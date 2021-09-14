@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os"
 	"testing"
 
@@ -176,10 +177,6 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	if err != nil {
 		t.Fatal(err)
 	}
-	// err = v.Sign(tx.Vin[0], sender)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
 	return tx
 }
 
@@ -491,7 +488,11 @@ func TestRicLeo(t *testing.T) {
 	for i := uint64(0); i < 5; i++ {
 		newTxn := db.NewTransaction(true)
 		value := &uint256.Uint256{}
-		_, _ = value.FromUint64(i + 1)
+		tmp, ok := new(big.Int).SetString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
+		if !ok {
+			t.Fatal(err)
+		}
+		_, _ = value.FromBigInt(tmp)
 		deposits = append(deposits, makeDeposit(t, signer, 1, int(i), value)) // created pre-image object
 		txs = append(txs, makeTxs(t, signer, deposits[i]))
 		txHash, err := txs[i].TxHash()
@@ -506,6 +507,20 @@ func TestRicLeo(t *testing.T) {
 		txHshLst = append(txHshLst, txHash)
 		txHshSMTs = append(txHshSMTs, smtTxHsh)
 	}
+
+	txBin, err := txs[0].Vin[0].TXInLinker.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubKey, err := signer.Pubkey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("Owner address: %x", crypto.GetAccount(pubKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("TxIn binary: %x\n", txBin)
 	newTxn := db.NewTransaction(true)
 	//txHshSMTs[0].MerkleProofCompressed(newTxn, )
 
@@ -536,7 +551,7 @@ func TestRicLeo(t *testing.T) {
 	// hash  80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c9950391f56ce9575815216c9c0fcffa1d50767adb008c1491b7da2dbc323b8c1fb5fc = a53ec428ed37200bcb4944a99107b738c1a58ef76287b130583095c58b0f45e4
 	// HashProof: 066c7a6ef776fbae26f10eabcc5f0eb72b0f527c4cad8c4037940a28c2fe3159 bc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a 6974f1d60877fdff3125a5c1adb630afe3aa899820a0531cea8ee6a85eb11509 25fc463686d6201f9c3973a9ebeabe4375d5a76d935bbec6cbb9d18bffe67216
 	// root 51f16d008cec2409af8104a0bca9facec585e02c12d2fa5221707672410dc692
-	utxoID, err := hex.DecodeString("80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995")
+	utxoID, err := hex.DecodeString("80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c996")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -581,7 +596,11 @@ func TestRicLeo(t *testing.T) {
 	////////// Block 2 /////////////
 	// this is consuming utxo generated on block 1
 	log.Println("Block 2:")
-	tx2 := makeTransfer(t, signer, signer2, 1, txs[1].Vout[0])
+	tx2 := makeTransfer(t, signer, signer2, 1, txs[1].Vout[0]) //right way
+	// value := &uint256.Uint256{}
+	// _, _ = value.FromUint64(100000000 + 1)
+	// UTXOCreatedFromThinAir := makeDeposit(t, signer, 1, int(200), value)
+	// tx2 := makeTxs(t, signer, UTXOCreatedFromThinAir) //wrong way
 	txHash2, err := tx2.TxHash()
 	if err != nil {
 		t.Fatal(err)
