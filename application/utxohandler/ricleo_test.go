@@ -12,18 +12,103 @@ import (
 
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
+	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/consensus/db"
 	cobjs "github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
-func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transferAmount uint64, v *objs.ValueStore) *objs.Tx {
+// MakePersistentTxRoot creates a txRootHsh from a list of transaction hashes
+func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte, error) {
+	if len(txHashes) == 0 {
+		return nil, crypto.Hasher([]byte{}), nil
+	}
+	values := [][]byte{}
+	for i := 0; i < len(txHashes); i++ {
+		txHash := txHashes[i]
+		values = append(values, crypto.Hasher(txHash))
+	}
+	// new in persistent smt
+	smt := trie.NewSMT(nil, trie.Hasher, func() []byte { return []byte("mtr") })
+	// smt update
+	txHashesSorted, valuesSorted, err := utils.SortKVs(txHashes, values)
+	if err != nil {
+		return nil, nil, err
+	}
+	rootHash, err := smt.Update(txn, txHashesSorted, valuesSorted)
+	if err != nil {
+		return nil, nil, err
+	}
+	return smt, rootHash, nil
+}
+
+// TxHash calculates the TxHash of the transaction
+func PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
+	if b == nil {
+		return nil, nil, errorz.ErrInvalid{}.New("tx not initialized in txHash")
+	}
+	if err := b.Vout.SetTxOutIdx(); err != nil {
+		return nil, nil, err
+	}
+	keys := [][]byte{}
+	values := [][]byte{}
+	for _, txIn := range b.Vin {
+		id, err := txIn.UTXOID()
+		if err != nil {
+			return nil, nil, err
+		}
+		keys = append(keys, id)
+		hsh, err := txIn.PreHash()
+		if err != nil {
+			return nil, nil, err
+		}
+		values = append(values, hsh)
+	}
+	for idx, txOut := range b.Vout {
+		hsh, err := txOut.PreHash()
+		if err != nil {
+			return nil, nil, err
+		}
+		id := objs.MakeUTXOID(utils.CopySlice(hsh), uint32(idx))
+		keys = append(keys, id)
+		values = append(values, hsh)
+	}
+	for i, _ := range keys {
+		log.Printf("TxHash Key: %x\n", keys[i])
+		log.Printf("TxHash Value: %x\n", values[i])
+	}
+	// new in persistent smt
+	smt := trie.NewSMT(nil, trie.Hasher, func() []byte { return []byte("mtt") })
+	// smt update
+	keysSorted, valuesSorted, err := utils.SortKVs(keys, values)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(keysSorted) == 0 && len(valuesSorted) == 0 {
+		rootHash := crypto.Hasher([][]byte{}...)
+		return smt, utils.CopySlice(rootHash), nil
+	}
+	rootHash, err := smt.Update(txn, keysSorted, valuesSorted)
+	if err != nil {
+		return nil, nil, err
+	}
+	return smt, utils.CopySlice(rootHash), nil
+}
+
+func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transferAmount uint64, v *objs.TXOut) *objs.Tx {
 	txIn, err := v.MakeTxIn()
 	if err != nil {
 		t.Fatal(err)
 	}
+	txInHash, err := txIn.PreHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("TXIn PreHash: %x\n", txInHash)
 	value, err := v.Value()
 	vuint64, err := value.ToUint64()
 	returnedAmount := vuint64 - transferAmount
@@ -76,7 +161,11 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	txOutPreHash, err := newUTXOSender.PreHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("TXOut PreHash: %x\n", txOutPreHash)
 	newUTXOReceiver := &objs.TXOut{}
 	err = newUTXOReceiver.NewValueStore(newValueStoreReceiver)
 	if err != nil {
@@ -87,10 +176,10 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = v.Sign(tx.Vin[0], sender)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// err = v.Sign(tx.Vin[0], sender)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 	return tx
 }
 
@@ -249,6 +338,24 @@ func getStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx, utxoID []byte) fun
 		}
 		result := stateTrie.VerifyInclusionC(bitmap, utxoID, proofVal, auditPath, proofHeight)
 		log.Print("Is the proof compacted included in the trie: ", result)
+		fakeProofKey, err := hex.DecodeString("80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c996")
+		if err != nil {
+			return err
+		}
+		resultNonIncluded := stateTrie.VerifyNonInclusionC(auditPath, proofHeight, bitmap, utxoID, proofVal, fakeProofKey)
+		log.Print("Verify non inclusion the proof non compacted included in the trie: ", resultNonIncluded)
+
+		fakeProofKey, err = hex.DecodeString("7a6315f5d19bf3f3bed9ef4e6002ebf76d4d05a7f7e84547e20b40fde2c34411")
+		if err != nil {
+			return err
+		}
+		fakeProofValue, err := hex.DecodeString("e10fbdbaa5b72d510af6dd5ebd08da8b2fbd2b06d4787ce15a6eaf518c2d97fc")
+		if err != nil {
+			return err
+		}
+		fakeProofHeight := 2
+		resultNonIncluded = stateTrie.VerifyNonInclusionC(auditPath, fakeProofHeight, bitmap, utxoID, fakeProofValue, fakeProofKey)
+		log.Print("Verify non inclusion the proof non compacted included in the trie 2: ", resultNonIncluded)
 
 		auditPathNC, _, _, proofValNC, err := stateTrie.MerkleProof(txn, utxoID)
 		if err != nil {
@@ -297,6 +404,38 @@ func getStateMerkleProofs(hndlr *UTXOHandler, txs []*objs.Tx, utxoID []byte) fun
 		return nil
 	}
 	return fn
+}
+
+func CreateMerkleProof(included bool, proofHeight int, key []byte, proofKey []byte, proofVal []byte, bitmap []byte, auditPath [][]byte) (*db.MerkleProof, error) {
+	mproof := &db.MerkleProof{
+		Included:   included,
+		KeyHeight:  proofHeight,
+		Key:        key,
+		ProofKey:   proofKey,
+		ProofValue: proofVal,
+		Bitmap:     bitmap,
+		Path:       auditPath,
+	}
+	mpbytes, err := mproof.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	err = testMerkleProofDeserialization(mpbytes, mproof)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("===========Proof of inclusion =========")
+	log.Printf("Bitmap: %x\n", mproof.Bitmap)
+	log.Printf("auditPathCompacted: %x\n", mproof.Path)
+	log.Printf("Proof height: %x\n", mproof.KeyHeight)
+	log.Print("Included:", mproof.Included)
+	log.Printf("Proof key: %x\n", mproof.ProofKey)
+	log.Printf("Proof value: %x\n", mproof.ProofValue)
+	log.Printf("Proof capnproto: %x\n", mpbytes)
+	log.Println("======================================")
+	log.Println()
+
+	return mproof, nil
 }
 
 func TestRicLeo(t *testing.T) {
@@ -348,7 +487,9 @@ func TestRicLeo(t *testing.T) {
 	var txs []*objs.Tx
 	var deposits []*objs.ValueStore
 	var txHshLst [][]byte
+	var txHshSMTs []*trie.SMT
 	for i := uint64(0); i < 5; i++ {
+		newTxn := db.NewTransaction(true)
 		value := &uint256.Uint256{}
 		_, _ = value.FromUint64(i + 1)
 		deposits = append(deposits, makeDeposit(t, signer, 1, int(i), value)) // created pre-image object
@@ -357,9 +498,16 @@ func TestRicLeo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		smtTxHsh, _, err := PersistentTxHash(newTxn, txs[i])
+		if err != nil {
+			t.Fatal(err)
+		}
 		log.Printf("Tx hash (%d): %x", i, txHash)
 		txHshLst = append(txHshLst, txHash)
+		txHshSMTs = append(txHshSMTs, smtTxHsh)
 	}
+	newTxn := db.NewTransaction(true)
+	//txHshSMTs[0].MerkleProofCompressed(newTxn, )
 
 	var stateRoot []byte
 	err = db.Update(func(txn *badger.Txn) error {
@@ -378,6 +526,7 @@ func TestRicLeo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	//80ab269d23d84721a53f9f3accb024a1947bcf5e4910a152f38d55d7d644c995 -> 10000000
 	//9c2ab35f2eb16e010c0aaf3abae9f2eacd39fd564c9a151e790439f5666a9c2c
 	//10110000 -> 10110000
@@ -402,11 +551,42 @@ func TestRicLeo(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	newTxn = db.NewTransaction(true)
+	smtTxRoot, txRoot, err := MakePersistentTxRoot(newTxn, txHshLst) // generating the smt root
+	log.Printf("The transaction Root persisted: %x\n", txRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transactionIncluded, err := hex.DecodeString("77338383edde4a7477f32549672ce24ff2800d7b61bf71cac09fab6e9b008495")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := smtTxRoot.MerkleProofCompressed(newTxn, transactionIncluded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateMerkleProof(
+		included,
+		proofHeight,
+		transactionIncluded,
+		proofKey,
+		proofVal,
+		bitmap,
+		auditPath,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	////////// Block 2 /////////////
 	// this is consuming utxo generated on block 1
 	log.Println("Block 2:")
-	tx2 := makeTransfer(t, signer, signer2, 1, deposits[1])
+	tx2 := makeTransfer(t, signer, signer2, 1, txs[1].Vout[0])
 	txHash2, err := tx2.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = PersistentTxHash(newTxn, tx2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -422,12 +602,18 @@ func TestRicLeo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// err = db.Update(getAllStateMerkleProofs(hndlr, []*objs.Tx{tx2}))
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	err = db.Update(getAllStateMerkleProofs(hndlr, []*objs.Tx{tx2}))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	chain, err = GenerateBlock(chain, stateRoot, [][]byte{txHash2})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, txRoot2, err := MakePersistentTxRoot(db.NewTransaction(true), [][]byte{txHash2}) // generating the smt root
+	log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
 	if err != nil {
 		t.Fatal(err)
 	}
