@@ -420,7 +420,7 @@ func (f *TxnQueueDetail) requestWait(ctx context.Context, req *Request) *Respons
 		select {
 		case resp, ok := <-req.respch:
 			if !ok {
-				f.logger.Errorf("response channel closed")
+				f.logger.Error("response channel closed")
 			} else if resp != nil {
 				if resp.err != nil {
 					f.logger.Infof("response error: %v", resp.err.Error())

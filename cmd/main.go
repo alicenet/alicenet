@@ -102,6 +102,7 @@ func main() {
 			{"ethereum.registryAddress", "", "", &config.Configuration.Ethereum.RegistryAddress},
 			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
 			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
+			{"monitor.timeout", "", "", &config.Configuration.Monitor.Timeout},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},

@@ -61,7 +61,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 	}
 
-	logger.Debugf("# Participants:%v Data:%+v", len(state.Participants), state.Participants)
+	logger.Infof("# Participants:%v Data:%+v", len(state.Participants), state.Participants)
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 	if err != nil {

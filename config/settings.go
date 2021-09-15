@@ -47,6 +47,7 @@ type ethereumConfig struct {
 type monitorConfig struct {
 	BatchSize int
 	Interval  time.Duration
+	Timeout   time.Duration
 }
 
 type transportConfig struct {

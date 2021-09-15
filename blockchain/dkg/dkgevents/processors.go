@@ -47,7 +47,11 @@ func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Entry, st
 		return err
 	}
 
-	logger.Debugf("KeyShareSubmission: %+v", event)
+	logger.WithFields(logrus.Fields{
+		"Issuer":     event.Issuer.Hex(),
+		"KeyShareG1": event.KeyShareG1,
+		"KeyShareG2": event.KeyShareG2,
+	}).Info("Received key shares")
 
 	state.EthDKG.KeyShareG1s[event.Issuer] = event.KeyShareG1
 	state.EthDKG.KeyShareG1CorrectnessProofs[event.Issuer] = event.KeyShareG1CorrectnessProof
@@ -65,7 +69,11 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, sta
 		return err
 	}
 
-	logger.Debugf("ShareDistribution: %+v", event)
+	logger.WithFields(logrus.Fields{
+		"Issuer":          event.Issuer.Hex(),
+		"Index":           event.Index,
+		"EncryptedShares": event.EncryptedShares,
+	}).Info("Received share distribution")
 
 	state.EthDKG.Commitments[event.Issuer] = event.Commitments
 	state.EthDKG.EncryptedShares[event.Issuer] = event.EncryptedShares

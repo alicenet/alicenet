@@ -294,9 +294,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
-	oneHour := 1 * time.Hour // TODO:ANTHONY - SHOULD THIS BE MOVED TO CONFIG?
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, oneHour, uint64(batchSize))
+	monitorTimeout := config.Configuration.Monitor.Timeout
+	mon, err := monitor.NewMonitor(monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize))
 	if err != nil {
 		panic(err)
 	}

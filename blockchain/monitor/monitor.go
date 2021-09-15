@@ -14,6 +14,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -92,6 +93,15 @@ func NewMonitor(db *db.Database,
 		return nil, err
 	}
 
+	wg := sync.WaitGroup{}
+
+	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
+		ctx, cf := context.WithTimeout(context.Background(), timeout)
+		defer cf()
+
+		return PersistSnapshot(ctx, &wg, eth, logger, bh)
+	})
+
 	schedule := NewSequentialSchedule(tr, adminHandler)
 	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
 	state := objects.NewMonitorState(dkgState, schedule)
@@ -109,7 +119,7 @@ func NewMonitor(db *db.Database,
 		cancelChan:     make(chan bool, 1),
 		statusChan:     make(chan string, 1),
 		state:          state,
-		wg:             sync.WaitGroup{},
+		wg:             wg,
 		batchSize:      batchSize,
 	}, nil
 
@@ -202,7 +212,8 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorS
 func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
 
-	logger.WithField("Method", "MonitorTick").Debugf("Tick state %p", monitorState)
+	logger = logger.WithField("Method", "MonitorTick")
+	logger.Debugf("State %+p", monitorState)
 
 	c := eth.Contracts()
 	schedule := monitorState.Schedule
@@ -227,6 +238,11 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	monitorState.CommunicationFailures = 0
 	monitorState.PeerCount = peerCount
 	monitorState.InSync = inSync
+
+	synchronized := monitorState.HighestBlockProcessed == monitorState.HighestBlockFinalized
+	adminHandler.SetSynchronized(synchronized)
+
+	logger = logger.WithField("Synchronized", synchronized)
 
 	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
 		return nil
@@ -309,6 +325,24 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	// Only after batch is processed do we update monitor state
 	monitorState.HighestBlockFinalized = finalized
 	monitorState.HighestBlockProcessed = processed
+
+	return nil
+}
+
+// PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
+func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader) error {
+
+	task := tasks.NewSnapshotTask(eth.GetDefaultAccount())
+	task.BlockHeader = bh
+
+	err := task.Initialize(ctx, logger, eth)
+	if err != nil {
+		logger.Error("Failed to initialize snapshot task: %v", err)
+		return nil
+	}
+
+	wg.Add(1)
+	tasks.StartTask(logger, wg, eth, task)
 
 	return nil
 }
