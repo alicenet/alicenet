@@ -1,6 +1,7 @@
 package monitor_test
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -8,8 +9,10 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/pborman/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -219,9 +222,7 @@ func TestFailRetrieve(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
-	acct := accounts.Account{}
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewAdminPlaceHolder(state)
+	task := &adminTaskMock{}
 	m := &objects.TypeRegistry{}
 	m.RegisterInstanceType(&monitor.Block{})
 	m.RegisterInstanceType(task)
@@ -252,4 +253,28 @@ func TestMarshal(t *testing.T) {
 	// Confirm task survived marshalling
 	_, err = s.Retrieve(taskID)
 	assert.Nil(t, err)
+}
+
+type adminTaskMock struct {
+}
+
+func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	return nil
+}
+func (ph *adminTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	return nil
+}
+
+func (ph *adminTaskMock) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	return nil
+}
+
+func (ph *adminTaskMock) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+	return false
+}
+
+func (ph *adminTaskMock) DoDone(logger *logrus.Entry) {
+}
+
+func (ph *adminTaskMock) SetAdminHandler(adminHandler *admin.Handlers) {
 }
