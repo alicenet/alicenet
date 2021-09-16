@@ -7,7 +7,6 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/logging"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -129,7 +128,6 @@ func (ss *SequentialSchedule) MarshalJSON() ([]byte, error) {
 	}
 
 	raw, err := json.Marshal(&ws)
-	logging.GetLogger("test").Infof("RaW:%v", string(raw))
 
 	return raw, err
 }
@@ -146,7 +144,6 @@ func (ss *SequentialSchedule) UnmarshalJSON(raw []byte) error {
 
 	ss.Ranges = make(map[string]*Block)
 	for k, v := range aa.Ranges {
-		logging.GetLogger("test").Infof("Ranges k:%v v:%v", k, v)
 		t, err := ss.marshaller.UnwrapInstance(v.WrappedTask)
 		if err != nil {
 			return err

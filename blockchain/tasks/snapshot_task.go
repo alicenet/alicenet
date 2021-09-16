@@ -61,7 +61,7 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
-		logger.Warnf("Failed to generate transaction options: ", err)
+		logger.Warnf("Failed to generate transaction options: %v", err)
 		return nil
 	}
 

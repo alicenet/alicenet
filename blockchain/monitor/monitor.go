@@ -214,7 +214,7 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
 
 	logger = logger.WithField("Method", "MonitorTick")
-	logger.Debugf("State %+p", monitorState)
+	logger.Debugf("State %+v", monitorState)
 
 	c := eth.Contracts()
 	schedule := monitorState.Schedule
@@ -343,7 +343,7 @@ func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Eth
 
 	err := task.Initialize(ctx, logger, eth)
 	if err != nil {
-		logger.Error("Failed to initialize snapshot task: %v", err)
+		logger.Errorf("Failed to initialize snapshot task: %v", err)
 		return nil
 	}
 
