@@ -315,7 +315,6 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 				"TaskID":   uuid.String(),
 				"TaskName": taskName})
 
-			wg.Add(1)
 			tasks.StartTask(log, wg, eth, task)
 
 			schedule.Remove(uuid)
@@ -347,7 +346,6 @@ func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Eth
 		return nil
 	}
 
-	wg.Add(1)
 	tasks.StartTask(logger, wg, eth, task)
 
 	return nil
