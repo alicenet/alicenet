@@ -37,13 +37,11 @@ func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth 
 
 // DoWork is the first attempt at distributing shares via ethdkg
 func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
 func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
@@ -71,10 +69,9 @@ func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth
 
 // DoDone creates a log entry saying task is complete
 func (t *DisputeTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.WithField("Success", t.Success).Info("Dispute phase done")
 	t.State.Dispute = t.Success
 }

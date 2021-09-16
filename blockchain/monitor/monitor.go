@@ -99,6 +99,7 @@ func NewMonitor(db *db.Database,
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 
+		logger.Info("Entering snapshot callback")
 		return PersistSnapshot(ctx, &wg, eth, logger, bh)
 	})
 
@@ -307,7 +308,12 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		uuid, err := schedule.Find(currentBlock)
 		if err == nil {
 			task, _ := schedule.Retrieve(uuid)
-			log := logEntry.WithField("TaskID", uuid.String())
+
+			taskName, _ := objects.GetNameType(task)
+
+			log := logEntry.WithFields(logrus.Fields{
+				"TaskID":   uuid.String(),
+				"TaskName": taskName})
 
 			wg.Add(1)
 			tasks.StartTask(log, wg, eth, task)

@@ -171,7 +171,7 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 
 	epoch, err := c.Validators().Epoch(callOpts)
 	if err != nil {
-		logger.Warnf("Could find current epoch: %v", err)
+		logger.Warnf("Failed to find current epoch: %v", err)
 	}
 
 	logger.Info(strings.Repeat("-", 80))

@@ -285,17 +285,3 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
-
-// func SetupEventMap(em *objects.EventMap) error {
-// 	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
-// 		return err
-// 	}
-// 	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
-// 		return err
-// 	}
-// 	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen", dkgevents.ProcessOpenRegistration); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }

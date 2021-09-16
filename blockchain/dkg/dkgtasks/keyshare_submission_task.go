@@ -32,6 +32,7 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 	defer t.State.Unlock()
 
 	if !t.State.Dispute {
+		logger.Error("Dispute phase did not complete successfully")
 		return objects.ErrCanNotContinue
 	}
 

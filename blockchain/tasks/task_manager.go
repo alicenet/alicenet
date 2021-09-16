@@ -216,33 +216,41 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 		var count int
 		var err error
 
-		err = task.Initialize(ctx, logger.WithField("Method", "Initialize"), eth)
-		logger.Debugf("Initialize ... error %v", err)
+		initializationLogger := logger.WithField("Method", "Initialize")
+		err = task.Initialize(ctx, initializationLogger, eth)
+		initializationLogger.Debugf("Error: %v", err)
 		for err != nil && count < retryCount {
 			if err == objects.ErrCanNotContinue {
-				logger.Error("can not continue", err)
+				initializationLogger.Error("Can not continue")
 				return
 			}
 			time.Sleep(retryDelay)
-			err = task.Initialize(ctx, logger.WithField("Method", "Initialize"), eth)
+			err = task.Initialize(ctx, initializationLogger, eth)
 			count++
 		}
 		if err != nil {
-			logger.Errorf("Failed to initialize task: %v", err)
+			initializationLogger.Errorf("Failed to initialize task: %v", err)
 			return
 		}
 
 		count = 0
-		err = task.DoWork(ctx, logger.WithField("Method", "DoWork"), eth)
+
+		workLogger := logger.WithField("Method", "DoWork")
+		err = task.DoWork(ctx, workLogger, eth)
+		workLogger.Debugf("Error: %v", err)
+
+		retryLogger := logger.WithField("Method", "DoRetry")
+
 		for err != nil && count < retryCount && task.ShouldRetry(ctx, logger.WithField("Method", "ShouldRetry"), eth) {
 			if err == objects.ErrCanNotContinue {
-				logger.Error("can not continue", err)
+				logger.Error("Can not continue")
 				return
 			}
 			time.Sleep(retryDelay)
-			err = task.DoRetry(ctx, logger.WithField("Method", "DoRetry"), eth)
 			count++
+			err = task.DoRetry(ctx, retryLogger.WithField("RetryCount", count), eth)
 		}
+
 		if err != nil {
 			logger.Error("Failed to execute task", err)
 			return

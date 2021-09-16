@@ -24,23 +24,6 @@ type InstanceWrapper struct {
 	RawInstance []byte
 }
 
-func (registry *TypeRegistry) RegisterType(t reflect.Type) {
-	registry.Lock()
-	defer registry.Unlock()
-
-	registry.Do(func() {
-		registry.a = make(map[reflect.Type]string)
-		registry.b = make(map[string]reflect.Type)
-	})
-
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	registry.a[t] = t.String()
-	registry.b[t.String()] = t
-}
-
 func (registry *TypeRegistry) RegisterInstanceType(t interface{}) {
 	registry.Lock()
 	defer registry.Unlock()
@@ -50,13 +33,10 @@ func (registry *TypeRegistry) RegisterInstanceType(t interface{}) {
 		registry.b = make(map[string]reflect.Type)
 	})
 
-	tipe := reflect.TypeOf(t)
-	if tipe.Kind() == reflect.Ptr {
-		tipe = tipe.Elem()
-	}
+	name, tipe := GetNameType(t)
 
-	registry.a[tipe] = tipe.String()
-	registry.b[tipe.String()] = tipe
+	registry.a[tipe] = name
+	registry.b[name] = tipe
 }
 
 func (registry *TypeRegistry) lookupName(tipe reflect.Type) (string, bool) {
@@ -111,4 +91,13 @@ func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interfac
 	}
 
 	return val.Interface(), nil
+}
+
+func GetNameType(t interface{}) (string, reflect.Type) {
+	tipe := reflect.TypeOf(t)
+	if tipe.Kind() == reflect.Ptr {
+		tipe = tipe.Elem()
+	}
+
+	return tipe.String(), tipe
 }

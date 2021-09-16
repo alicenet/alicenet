@@ -111,7 +111,8 @@ func (s *SequentialSchedule) Remove(taskId uuid.UUID) error {
 
 func (s *SequentialSchedule) Status(logger *logrus.Entry) {
 	for _, block := range s.Ranges {
-		logger.Infof("Task scheduled in %p between %v and %v with type %v", s, block.Start, block.End, block.Task)
+		name, _ := objects.GetNameType(block.Task)
+		logger.Infof("Schedule %p Task %v Range %v and %v", s, name, block.Start, block.End)
 	}
 }
 
