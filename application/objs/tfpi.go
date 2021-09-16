@@ -1,6 +1,8 @@
 package objs
 
 import (
+	"fmt"
+
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/tfpreimage"
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -125,4 +127,8 @@ func (b *TFPreImage) PreHash() ([]byte, error) {
 	hsh := crypto.Hasher(msg)
 	b.preHash = hsh
 	return utils.CopySlice(b.preHash), nil
+}
+
+func (b *TFPreImage) String() string {
+	return fmt.Sprintf("&{ ChainID: %v, TXOutIdx: %v, Fee: %v, preHash: %v }", b.ChainID, b.TXOutIdx, b.Fee.String(), b.preHash)
 }

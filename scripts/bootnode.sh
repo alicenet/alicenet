@@ -1,2 +1,5 @@
 #!/bin/sh
-./madnet --config ./assets/config/bootnode.toml bootnode
+
+CONFIG=${1:-./assets/config/bootnode.toml}
+
+./madnet --config "$CONFIG" bootnode

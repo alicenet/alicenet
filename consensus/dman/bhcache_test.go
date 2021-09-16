@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 )
 
@@ -14,10 +15,10 @@ func goodBH() *objs.BlockHeader {
 			ChainID:    1,
 			Height:     1,
 			TxCount:    0,
-			PrevBlock:  make([]byte, 32),
+			PrevBlock:  make([]byte, constants.HashLen),
 			TxRoot:     crypto.Hasher([]byte{}),
-			StateRoot:  make([]byte, 32),
-			HeaderRoot: make([]byte, 32),
+			StateRoot:  make([]byte, constants.HashLen),
+			HeaderRoot: make([]byte, constants.HashLen),
 		},
 		TxHshLst: [][]byte{},
 		SigGroup: make([]byte, 192),
@@ -31,10 +32,10 @@ func badBH() *objs.BlockHeader {
 			ChainID:    1,
 			Height:     1,
 			TxCount:    1,
-			PrevBlock:  make([]byte, 32),
-			TxRoot:     make([]byte, 32),
-			StateRoot:  make([]byte, 32),
-			HeaderRoot: make([]byte, 32),
+			PrevBlock:  make([]byte, constants.HashLen),
+			TxRoot:     make([]byte, constants.HashLen),
+			StateRoot:  make([]byte, constants.HashLen),
+			HeaderRoot: make([]byte, constants.HashLen),
 		},
 		TxHshLst: [][]byte{},
 		SigGroup: nil,

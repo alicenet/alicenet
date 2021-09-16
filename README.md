@@ -46,6 +46,9 @@ RPC="http://127.0.0.1:8888/v1/"
 This is required for the tests to run.
 
 ## Setup Test Environment
+
+### Local execution
+
 In order to initialize a chain with all validators
 online and a valid group key, we use the `snapshot.zip` file
 and then proceed from a valid snapshot of the chain.
@@ -85,6 +88,14 @@ Open five additional terminals and execute the validator scripts
 The first 4 validators (validator0 -- validator3) mine transactions.
 validator4 sends transactions to the other validators.
 
+The validators load their configuration from `assets/config`, and use the following ports for P2P communication:
+
+- `validator0`: 4242
+- `validator1`: 4243
+- `validator2`: 4244
+- `validator3`: 4245
+- `validator4`: 5343
+
 Deposits are required in order to submit DataStores.
 Run the following at least 4 times in order to deposit enough funds
 to inject datastores.
@@ -97,6 +108,18 @@ so submitting these deposits are required for the
 tests to be successful.
 
 At this point, the testnet should now be ready to run the standard tests.
+
+
+### With Docker Compose
+
+A local test cluster can be started with Docker Compose. Open a new terminal and run:
+```
+docker-compose up
+```
+
+This will build the docker images for `geth` and `madnet`, and start geth, the bootnode and validators.
+The five validators are performing the same task as with the local execution and mount their configuration
+from `assets/config`. They do bind the P2P poers on the bost machine.
 
 
 ## Test Sequences

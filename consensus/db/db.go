@@ -1253,7 +1253,7 @@ func (db *Database) GetPendingHdrNodeKeysIter(txn *badger.Txn) *PendingHdrNodeIt
 	it := txn.NewIterator(opts)
 	seek := []byte{}
 	seek = append(seek, utils.CopySlice(prefix)...)
-	seek = append(seek, make([]byte, 32)...)
+	seek = append(seek, make([]byte, constants.HashLen)...)
 	it.Seek(seek)
 	return &PendingHdrNodeIter{it: it, prefixLen: len(prefix)}
 }
@@ -1416,7 +1416,7 @@ func (db *Database) GetPendingNodeKeysIter(txn *badger.Txn) *PendingNodeIter {
 	it := txn.NewIterator(opts)
 	seek := []byte{}
 	seek = append(seek, utils.CopySlice(prefix)...)
-	seek = append(seek, make([]byte, 32)...)
+	seek = append(seek, make([]byte, constants.HashLen)...)
 	it.Seek(seek)
 	return &PendingNodeIter{it: it, prefixLen: len(prefix)}
 }
@@ -1574,7 +1574,7 @@ func (db *Database) GetPendingLeafKeysIter(txn *badger.Txn) *PendingLeafIter {
 	it := txn.NewIterator(opts)
 	seek := []byte{}
 	seek = append(seek, utils.CopySlice(prefix)...)
-	seek = append(seek, make([]byte, 32)...)
+	seek = append(seek, make([]byte, constants.HashLen)...)
 	it.Seek(seek)
 	return &PendingLeafIter{it: it, prefixLen: len(prefix)}
 }
@@ -1795,7 +1795,7 @@ func (db *Database) GetPendingHdrLeafKeysIter(txn *badger.Txn) *PendingHdrLeafIt
 	it := txn.NewIterator(opts)
 	seek := []byte{}
 	seek = append(seek, utils.CopySlice(prefix)...)
-	seek = append(seek, make([]byte, 32)...)
+	seek = append(seek, make([]byte, constants.HashLen)...)
 	it.Seek(seek)
 	return &PendingHdrLeafIter{it: it, prefixLen: len(prefix)}
 }

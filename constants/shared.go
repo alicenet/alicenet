@@ -12,9 +12,6 @@ const (
 
 	// MaxUint64 is 2^64-1
 	MaxUint64 uint64 = 18446744073709551615
-
-	// OneBillion is 1e9 as an integer
-	OneBillion = 1000000000
 )
 
 // CurveSpec specifies the particular elliptic curve we are dealing with
