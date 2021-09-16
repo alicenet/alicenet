@@ -28,6 +28,7 @@ upnp=false
 [monitor]
 batchSize = 1000
 interval = "7s"
+timeout = "1h"
 
 [ethereum]
 defaultAccount = "0x9AC1c9afBAec85278679fF75Ef109217f26b1417"

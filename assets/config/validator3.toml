@@ -27,6 +27,7 @@ peerLimitMin = 3
 [monitor]
 batchSize = 1000
 interval = "7s"
+timeout = "1h"
 
 [ethereum]
 defaultAccount = "0x16564cF3e880d9F5d09909F51b922941EbBbC24d"
