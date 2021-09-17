@@ -72,6 +72,7 @@ const (
 	LoggerBadger    = "badger"
 	LoggerPeerMan   = "peerMan"
 	LoggerLocalRPC  = "localRPC"
+	LoggerIPC       = "ipc"
 	LoggerDMan      = "dman"
 	LoggerPeer      = "peer"
 	LoggerYamux     = "yamux"
