@@ -29,12 +29,15 @@ func newDepositHandler() *Handler {
 
 func testingOwner() *objs.Owner {
 	signer := &crypto.BNSigner{}
-	signer.SetPrivk([]byte("secret"))
+	err := signer.SetPrivk([]byte("secret"))
+	if err != nil {
+		panic(err)
+	}
 	pubk, _ := signer.Pubkey()
 	acct := crypto.GetAccount(pubk)
 	owner := &objs.Owner{}
 	curveSpec := constants.CurveSecp256k1
-	err := owner.New(acct, curveSpec)
+	err = owner.New(acct, curveSpec)
 	if err != nil {
 		panic(err)
 	}

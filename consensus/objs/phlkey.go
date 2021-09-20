@@ -1,8 +1,9 @@
 package objs
 
 import (
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 // PendingHdrLeafKey ...
@@ -17,22 +18,22 @@ func (b *PendingHdrLeafKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
-	if len(data) != 34 {
+	if len(data) != constants.HashLen+2 {
 		return errorz.ErrInvalid{}.New("Invalid data for PendingHdrLeafKey unmarshalling")
 	}
-	b.Prefix = gUtils.CopySlice(data[0:2])
-	b.Key = gUtils.CopySlice(data[2:])
+	b.Prefix = utils.CopySlice(data[0:2])
+	b.Key = utils.CopySlice(data[2:])
 	return nil
 }
 
 // MarshalBinary takes the PendingHdrLeafKey object and returns the canonical
 // byte slice
 func (b *PendingHdrLeafKey) MarshalBinary() ([]byte, error) {
-	if b == nil || len(b.Prefix) != 2 || len(b.Key) != 32 {
+	if b == nil || len(b.Prefix) != 2 || len(b.Key) != constants.HashLen {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	key = append(key, gUtils.CopySlice(b.Prefix)...)
-	key = append(key, gUtils.CopySlice(b.Key)...)
+	key = append(key, utils.CopySlice(b.Prefix)...)
+	key = append(key, utils.CopySlice(b.Key)...)
 	return key, nil
 }

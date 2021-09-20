@@ -5,8 +5,7 @@ import (
 	"encoding/hex"
 
 	"github.com/MadBase/MadNet/errorz"
-
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 //# index historic by by groupKey|height|round|vAddr
@@ -26,7 +25,7 @@ func (b *RoundStateCurrentKey) MarshalBinary() ([]byte, error) {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	key := []byte{}
-	Prefix := gUtils.CopySlice(b.Prefix)
+	Prefix := utils.CopySlice(b.Prefix)
 	GroupKey := make([]byte, hex.EncodedLen(len(b.GroupKey)))
 	VAddr := make([]byte, hex.EncodedLen(len(b.VAddr)))
 	_ = hex.Encode(GroupKey, b.GroupKey)

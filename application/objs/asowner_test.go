@@ -54,6 +54,7 @@ func TestASOwnerSig(t *testing.T) {
 		Owner:    owner,
 		IssuedAt: iat,
 		Exp:      exp,
+		Fee:      new(uint256.Uint256).SetZero(),
 	}
 	asp2 := &ASPreImage{}
 	aspBytes, err := asp.MarshalBinary()

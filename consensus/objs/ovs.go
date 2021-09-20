@@ -3,11 +3,9 @@ package objs
 import (
 	"time"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/ovstate"
-	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/errorz"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -132,24 +130,20 @@ func (b *OwnValidatingState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnValidatin
 	return bh, nil
 }
 
-func (b *OwnValidatingState) PTOExpired() bool {
-	rs := b.RoundStarted
-	return rs+int64(constants.ProposalStepTO)/constants.OneBillion < time.Now().Unix()
+func (b *OwnValidatingState) PTOExpired(proposalStepTO time.Duration) bool {
+	return time.Unix(b.RoundStarted, 0).Add(proposalStepTO).Before(time.Now())
 }
 
-func (b *OwnValidatingState) PVTOExpired() bool {
-	rs := b.PreVoteStepStarted
-	return rs+int64(constants.PreVoteStepTO)/constants.OneBillion < time.Now().Unix()
+func (b *OwnValidatingState) PVTOExpired(preVoteStepTO time.Duration) bool {
+	return time.Unix(b.PreVoteStepStarted, 0).Add(preVoteStepTO).Before(time.Now())
 }
 
-func (b *OwnValidatingState) PCTOExpired() bool {
-	rs := b.PreCommitStepStarted
-	return rs+int64(constants.PreCommitStepTO)/constants.OneBillion < time.Now().Unix()
+func (b *OwnValidatingState) PCTOExpired(preCommitStepTO time.Duration) bool {
+	return time.Unix(b.PreCommitStepStarted, 0).Add(preCommitStepTO).Before(time.Now())
 }
 
-func (b *OwnValidatingState) DBRNRExpired() bool {
-	rs := b.PreCommitStepStarted
-	return rs+int64(constants.DBRNRTO)/constants.OneBillion < time.Now().Unix()
+func (b *OwnValidatingState) DBRNRExpired(dbrnrTO time.Duration) bool {
+	return time.Unix(b.PreCommitStepStarted, 0).Add(dbrnrTO).Before(time.Now())
 }
 
 func (b *OwnValidatingState) SetRoundStarted() {

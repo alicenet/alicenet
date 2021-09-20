@@ -2,6 +2,7 @@ package lstate
 
 import (
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -21,7 +22,7 @@ func (ce *Engine) castNewProposalValue(txn *badger.Txn, rs *RoundStates) error {
 		return err
 	}
 	if stateRoot == nil {
-		stateRoot = make([]byte, 32)
+		stateRoot = make([]byte, constants.HashLen)
 	}
 	p := &objs.Proposal{
 		PClaims: &objs.PClaims{

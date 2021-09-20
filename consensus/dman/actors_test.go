@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
@@ -51,14 +52,14 @@ func (t *testingTransaction) setHashForTest(h []byte) *testingTransaction {
 
 func (t *testingTransaction) TxHash() ([]byte, error) {
 	if t.hash == nil {
-		return make([]byte, 32), nil
+		return make([]byte, constants.HashLen), nil
 	}
 	return t.hash, nil
 }
 
 func (t *testingTransaction) MarshalBinary() ([]byte, error) {
 	if t.hash == nil {
-		return make([]byte, 32), nil
+		return make([]byte, constants.HashLen), nil
 	}
 	return t.hash, nil
 }
@@ -241,11 +242,11 @@ func TestRootActor_download(t *testing.T) {
 		},
 		{
 			"GoodPendingTx",
-			args{b: NewTxDownloadRequest(make([]byte, 32), PendingTxRequest, 1, 1)},
+			args{b: NewTxDownloadRequest(make([]byte, constants.HashLen), PendingTxRequest, 1, 1)},
 			[]testingProxyCall{pendingTxCall, unmarshalTxCall, unmarshalTxCall},
-			append([][]interface{}{}, []interface{}{[][]byte{make([]byte, 32)}, nil}, []interface{}{&testingTransaction{}, nil}, []interface{}{&testingTransaction{}, nil}),
+			append([][]interface{}{}, []interface{}{[][]byte{make([]byte, constants.HashLen)}, nil}, []interface{}{&testingTransaction{}, nil}, []interface{}{&testingTransaction{}, nil}),
 			func(ra *RootActor) error {
-				if !ra.txc.Contains(make([]byte, 32)) {
+				if !ra.txc.Contains(make([]byte, constants.HashLen)) {
 					return errors.New("missing one in it")
 				}
 				return nil
@@ -253,11 +254,11 @@ func TestRootActor_download(t *testing.T) {
 		},
 		{
 			"GoodMinedTx",
-			args{b: NewTxDownloadRequest(make([]byte, 32), MinedTxRequest, 1, 1)},
+			args{b: NewTxDownloadRequest(make([]byte, constants.HashLen), MinedTxRequest, 1, 1)},
 			[]testingProxyCall{minedTxCall, unmarshalTxCall, unmarshalTxCall},
-			append([][]interface{}{}, []interface{}{[][]byte{make([]byte, 32)}, nil}, []interface{}{&testingTransaction{}, nil}, []interface{}{&testingTransaction{}, nil}),
+			append([][]interface{}{}, []interface{}{[][]byte{make([]byte, constants.HashLen)}, nil}, []interface{}{&testingTransaction{}, nil}, []interface{}{&testingTransaction{}, nil}),
 			func(ra *RootActor) error {
-				if !ra.txc.Contains(make([]byte, 32)) {
+				if !ra.txc.Contains(make([]byte, constants.HashLen)) {
 					return errors.New("missing one in it")
 				}
 				return nil
@@ -302,7 +303,10 @@ func makeGoodBlock(t *testing.T) []*objs.BlockHeader {
 		t.Fatal(err)
 	}
 	gk := crypto.BNGroupSigner{}
-	gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	err = gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig, err := gk.Sign(bhsh)
 	if err != nil {
 		t.Fatal(err)

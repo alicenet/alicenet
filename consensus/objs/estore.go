@@ -6,12 +6,11 @@ import (
 	"crypto/rand"
 	"io"
 
-	"github.com/MadBase/MadNet/errorz"
-
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/estore"
+	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -41,10 +40,10 @@ func (b *EncryptedStore) UnmarshalCapn(bh mdefs.EncryptedStore) error {
 	if err != nil {
 		return err
 	}
-	b.Name = gUtils.CopySlice(bh.Name())
-	b.cypherText = gUtils.CopySlice(bh.CypherText())
-	b.nonce = gUtils.CopySlice(bh.Nonce())
-	b.Kid = gUtils.CopySlice(bh.Kid())
+	b.Name = utils.CopySlice(bh.Name())
+	b.cypherText = utils.CopySlice(bh.CypherText())
+	b.nonce = utils.CopySlice(bh.Nonce())
+	b.Kid = utils.CopySlice(bh.Kid())
 	return nil
 }
 
@@ -85,7 +84,7 @@ func (b *EncryptedStore) MarshalCapn(seg *capnp.Segment) (mdefs.EncryptedStore, 
 		}
 		bh = tmp
 	}
-	name := gUtils.CopySlice(b.Name)
+	name := utils.CopySlice(b.Name)
 	err := bh.SetName(name)
 	if err != nil {
 		return mdefs.EncryptedStore{}, err

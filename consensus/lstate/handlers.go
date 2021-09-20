@@ -4,18 +4,16 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
-	"github.com/sirupsen/logrus"
-
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/dman"
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/logging"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 type Handlers struct {
@@ -347,7 +345,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			if err != nil {
 				return err
 			}
-			GroupKey = gUtils.CopySlice(vSet.GroupKey)
+			GroupKey = utils.CopySlice(vSet.GroupKey)
 		}
 		vSet, err := mb.database.GetValidatorSet(txn, height)
 		if err != nil {
@@ -391,7 +389,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 		}
 		for _, cs := range CoSigners {
-			if !vSet.IsValidTuple(gUtils.CopySlice(cs), GroupKey) {
+			if !vSet.IsValidTuple(utils.CopySlice(cs), GroupKey) {
 				return errorz.ErrInvalid{}.New("bad co signer")
 			}
 		}

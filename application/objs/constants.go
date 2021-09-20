@@ -18,6 +18,8 @@ const (
 	DataStoreSVA
 )
 
+// SignerRole is the defined type utilized for designation for signers
+// in AtomicSwap objects
 type SignerRole uint8
 
 const (

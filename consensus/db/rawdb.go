@@ -34,11 +34,11 @@ type rawDataBase struct {
 	logger *logrus.Logger
 }
 
-func (db *rawDataBase) View(fn TxnFunc) error {
+func (db *rawDataBase) View(fn func(txn *badger.Txn) error) error {
 	return db.db.View(fn)
 }
 
-func (db *rawDataBase) Update(fn TxnFunc) error {
+func (db *rawDataBase) Update(fn func(txn *badger.Txn) error) error {
 	txn := db.db.NewTransaction(true)
 	defer txn.Discard()
 	if err := fn(txn); err != nil {

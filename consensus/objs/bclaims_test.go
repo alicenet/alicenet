@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/utils"
 )
 
 func generateChain(length int) ([]*BClaims, [][][]byte, error) {
@@ -127,5 +128,126 @@ func bclaimsEqual(t *testing.T, bclaims, bclaims2 *BClaims) {
 	}
 	if !bytes.Equal(bclaims.HeaderRoot, bclaims2.HeaderRoot) {
 		t.Fatal("fail")
+	}
+}
+
+func TestBClaimsMarshal(t *testing.T) {
+	bh := &BlockHeader{}
+	_, err := bh.BClaims.MarshalBinary()
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+
+	bclaims := &BClaims{}
+	_, err = bclaims.MarshalBinary()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	bclaims = &BClaims{
+		ChainID: 1,
+	}
+	_, err = bclaims.MarshalBinary()
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	bclaims = &BClaims{
+		ChainID: 1,
+		Height:  1,
+		TxCount: 0,
+	}
+	data, err := bclaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bc2 := &BClaims{}
+	err = bc2.UnmarshalBinary(data)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+
+	bclaims = &BClaims{
+		ChainID:   1,
+		Height:    1,
+		TxCount:   0,
+		PrevBlock: crypto.Hasher([]byte("Genesis")),
+	}
+	data, err = bclaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = bc2.UnmarshalBinary(data)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+
+	bclaims = &BClaims{
+		ChainID:   1,
+		Height:    1,
+		TxCount:   0,
+		PrevBlock: crypto.Hasher([]byte("Genesis")),
+		TxRoot:    crypto.Hasher([]byte("")),
+	}
+	data, err = bclaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = bc2.UnmarshalBinary(data)
+	if err == nil {
+		t.Fatal("Should have raised error (5)")
+	}
+
+	bclaims = &BClaims{
+		ChainID:   1,
+		Height:    1,
+		TxCount:   0,
+		PrevBlock: crypto.Hasher([]byte("Genesis")),
+		TxRoot:    crypto.Hasher([]byte("")),
+		StateRoot: crypto.Hasher([]byte("")),
+	}
+	data, err = bclaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = bc2.UnmarshalBinary(data)
+	if err == nil {
+		t.Fatal("Should have raised error (6)")
+	}
+
+	bclaims = &BClaims{
+		ChainID:    223,
+		Height:     225,
+		TxCount:    0,
+		PrevBlock:  crypto.Hasher([]byte("Genesis")),
+		TxRoot:     crypto.Hasher([]byte("")),
+		StateRoot:  crypto.Hasher([]byte("")),
+		HeaderRoot: crypto.Hasher([]byte("")),
+	}
+	data, err = bclaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = bc2.UnmarshalBinary(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Take valid marshaled data and raise an error for invalid ChainID
+	dataBad1 := utils.CopySlice(data)
+	dataBad1[8] = 0
+	bc3 := &BClaims{}
+	err = bc3.UnmarshalBinary(dataBad1)
+	if err == nil {
+		t.Fatal("Should have raised error (7)")
+	}
+
+	// Take valid marshaled data and raise an error for invalid Height
+	dataBad2 := utils.CopySlice(data)
+	dataBad2[12] = 0
+	bc4 := &BClaims{}
+	err = bc4.UnmarshalBinary(dataBad2)
+	if err == nil {
+		t.Fatal("Should have raised error (8)")
 	}
 }

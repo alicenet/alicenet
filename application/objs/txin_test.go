@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/utils"
 )
 
 func TestTXInGood(t *testing.T) {
@@ -160,6 +161,16 @@ func TestTXInTxHash(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
+
+	txHashTrue := make([]byte, constants.HashLen)
+	txIn.TXInLinker.TxHash = utils.CopySlice(txHashTrue)
+	txHash, err := txIn.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(txHash, txHashTrue) {
+		t.Fatal("TxHashes do not match")
+	}
 }
 
 func TestTXInSetTxHash(t *testing.T) {
@@ -170,16 +181,21 @@ func TestTXInSetTxHash(t *testing.T) {
 		t.Fatal("Should raise an error (1)")
 	}
 
-	txHash := make([]byte, constants.HashLen)
-	err = txIn.SetTxHash(txHash)
+	txIn.TXInLinker = &TXInLinker{}
+	err = txIn.SetTxHash(txHashBad)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
 
-	txIn.TXInLinker = &TXInLinker{}
+	txHash := make([]byte, constants.HashLen)
 	err = txIn.SetTxHash(txHash)
 	if err == nil {
 		t.Fatal("Should raise an error (3)")
+	}
+
+	err = txIn.SetTxHash(txHash)
+	if err == nil {
+		t.Fatal("Should raise an error (4)")
 	}
 }
 

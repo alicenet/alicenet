@@ -11,12 +11,13 @@ import (
 
 // Constants defined in application.capnp.
 var (
-	DefaultDSPreImage   = DSPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[0:112]).Struct()}
-	DefaultDSLinker     = DSLinker{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[112:248]).Struct()}
-	DefaultVSPreImage   = VSPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[248:320]).Struct()}
-	DefaultASPreImage   = ASPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[320:400]).Struct()}
-	DefaultTXInPreImage = TXInPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[400:440]).Struct()}
-	DefaultTXInLinker   = TXInLinker{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[440:504]).Struct()}
+	DefaultDSPreImage   = DSPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[0:144]).Struct()}
+	DefaultDSLinker     = DSLinker{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[144:312]).Struct()}
+	DefaultVSPreImage   = VSPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[312:416]).Struct()}
+	DefaultASPreImage   = ASPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[416:528]).Struct()}
+	DefaultTFPreImage   = TFPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[528:584]).Struct()}
+	DefaultTXInPreImage = TXInPreImage{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[584:624]).Struct()}
+	DefaultTXInLinker   = TXInLinker{Struct: capnp.MustUnmarshalRootPtr(x_b99093b7d2518300[624:688]).Struct()}
 )
 
 func init() {
@@ -25,6 +26,7 @@ func init() {
 	DefaultDSLinker.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
 	DefaultVSPreImage.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
 	DefaultASPreImage.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
+	DefaultTFPreImage.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
 	DefaultTXInPreImage.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
 	DefaultTXInLinker.Segment().Message().ReadLimiter().Reset((1 << 64) - 1)
 }
@@ -35,12 +37,12 @@ type DSPreImage struct{ capnp.Struct }
 const DSPreImage_TypeID = 0xd4eb3c212b8dbb26
 
 func NewDSPreImage(s *capnp.Segment) (DSPreImage, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 48, PointerCount: 3})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 80, PointerCount: 3})
 	return DSPreImage{st}, err
 }
 
 func NewRootDSPreImage(s *capnp.Segment) (DSPreImage, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 48, PointerCount: 3})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 80, PointerCount: 3})
 	return DSPreImage{st}, err
 }
 
@@ -190,12 +192,76 @@ func (s DSPreImage) SetDeposit7(v uint32) {
 	s.Struct.SetUint32(40, v)
 }
 
+func (s DSPreImage) Fee0() uint32 {
+	return s.Struct.Uint32(44)
+}
+
+func (s DSPreImage) SetFee0(v uint32) {
+	s.Struct.SetUint32(44, v)
+}
+
+func (s DSPreImage) Fee1() uint32 {
+	return s.Struct.Uint32(48)
+}
+
+func (s DSPreImage) SetFee1(v uint32) {
+	s.Struct.SetUint32(48, v)
+}
+
+func (s DSPreImage) Fee2() uint32 {
+	return s.Struct.Uint32(52)
+}
+
+func (s DSPreImage) SetFee2(v uint32) {
+	s.Struct.SetUint32(52, v)
+}
+
+func (s DSPreImage) Fee3() uint32 {
+	return s.Struct.Uint32(56)
+}
+
+func (s DSPreImage) SetFee3(v uint32) {
+	s.Struct.SetUint32(56, v)
+}
+
+func (s DSPreImage) Fee4() uint32 {
+	return s.Struct.Uint32(60)
+}
+
+func (s DSPreImage) SetFee4(v uint32) {
+	s.Struct.SetUint32(60, v)
+}
+
+func (s DSPreImage) Fee5() uint32 {
+	return s.Struct.Uint32(64)
+}
+
+func (s DSPreImage) SetFee5(v uint32) {
+	s.Struct.SetUint32(64, v)
+}
+
+func (s DSPreImage) Fee6() uint32 {
+	return s.Struct.Uint32(68)
+}
+
+func (s DSPreImage) SetFee6(v uint32) {
+	s.Struct.SetUint32(68, v)
+}
+
+func (s DSPreImage) Fee7() uint32 {
+	return s.Struct.Uint32(72)
+}
+
+func (s DSPreImage) SetFee7(v uint32) {
+	s.Struct.SetUint32(72, v)
+}
+
 // DSPreImage_List is a list of DSPreImage.
 type DSPreImage_List struct{ capnp.List }
 
 // NewDSPreImage creates a new list of DSPreImage.
 func NewDSPreImage_List(s *capnp.Segment, sz int32) (DSPreImage_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 48, PointerCount: 3}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 80, PointerCount: 3}, sz)
 	return DSPreImage_List{l}, err
 }
 
@@ -246,7 +312,7 @@ func (s DSLinker) DSPreImage() DSPreImage {
 		s.NewDSPreImage()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[504:616])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[688:832])
 	return DSPreImage{Struct: ss}
 }
 
@@ -313,7 +379,7 @@ func (p DSLinker_Promise) Struct() (DSLinker, error) {
 }
 
 func (p DSLinker_Promise) DSPreImage() DSPreImage_Promise {
-	return DSPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[616:728])}
+	return DSPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[832:976])}
 }
 
 type DataStore struct{ capnp.Struct }
@@ -346,7 +412,7 @@ func (s DataStore) DSLinker() DSLinker {
 		s.NewDSLinker()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[728:864])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[976:1144])
 	return DSLinker{Struct: ss}
 }
 
@@ -413,7 +479,7 @@ func (p DataStore_Promise) Struct() (DataStore, error) {
 }
 
 func (p DataStore_Promise) DSLinker() DSLinker_Promise {
-	return DSLinker_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[864:1000])}
+	return DSLinker_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1144:1312])}
 }
 
 type VSPreImage struct{ capnp.Struct }
@@ -422,12 +488,12 @@ type VSPreImage struct{ capnp.Struct }
 const VSPreImage_TypeID = 0xf8c203f305398e1b
 
 func NewVSPreImage(s *capnp.Segment) (VSPreImage, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 40, PointerCount: 1})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 72, PointerCount: 1})
 	return VSPreImage{st}, err
 }
 
 func NewRootVSPreImage(s *capnp.Segment) (VSPreImage, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 40, PointerCount: 1})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 72, PointerCount: 1})
 	return VSPreImage{st}, err
 }
 
@@ -537,12 +603,76 @@ func (s VSPreImage) SetValue7(v uint32) {
 	s.Struct.SetUint32(36, v)
 }
 
+func (s VSPreImage) Fee0() uint32 {
+	return s.Struct.Uint32(40)
+}
+
+func (s VSPreImage) SetFee0(v uint32) {
+	s.Struct.SetUint32(40, v)
+}
+
+func (s VSPreImage) Fee1() uint32 {
+	return s.Struct.Uint32(44)
+}
+
+func (s VSPreImage) SetFee1(v uint32) {
+	s.Struct.SetUint32(44, v)
+}
+
+func (s VSPreImage) Fee2() uint32 {
+	return s.Struct.Uint32(48)
+}
+
+func (s VSPreImage) SetFee2(v uint32) {
+	s.Struct.SetUint32(48, v)
+}
+
+func (s VSPreImage) Fee3() uint32 {
+	return s.Struct.Uint32(52)
+}
+
+func (s VSPreImage) SetFee3(v uint32) {
+	s.Struct.SetUint32(52, v)
+}
+
+func (s VSPreImage) Fee4() uint32 {
+	return s.Struct.Uint32(56)
+}
+
+func (s VSPreImage) SetFee4(v uint32) {
+	s.Struct.SetUint32(56, v)
+}
+
+func (s VSPreImage) Fee5() uint32 {
+	return s.Struct.Uint32(60)
+}
+
+func (s VSPreImage) SetFee5(v uint32) {
+	s.Struct.SetUint32(60, v)
+}
+
+func (s VSPreImage) Fee6() uint32 {
+	return s.Struct.Uint32(64)
+}
+
+func (s VSPreImage) SetFee6(v uint32) {
+	s.Struct.SetUint32(64, v)
+}
+
+func (s VSPreImage) Fee7() uint32 {
+	return s.Struct.Uint32(68)
+}
+
+func (s VSPreImage) SetFee7(v uint32) {
+	s.Struct.SetUint32(68, v)
+}
+
 // VSPreImage_List is a list of VSPreImage.
 type VSPreImage_List struct{ capnp.List }
 
 // NewVSPreImage creates a new list of VSPreImage.
 func NewVSPreImage_List(s *capnp.Segment, sz int32) (VSPreImage_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 40, PointerCount: 1}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 72, PointerCount: 1}, sz)
 	return VSPreImage_List{l}, err
 }
 
@@ -593,7 +723,7 @@ func (s ValueStore) VSPreImage() VSPreImage {
 		s.NewVSPreImage()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[1000:1072])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[1312:1416])
 	return VSPreImage{Struct: ss}
 }
 
@@ -660,7 +790,7 @@ func (p ValueStore_Promise) Struct() (ValueStore, error) {
 }
 
 func (p ValueStore_Promise) VSPreImage() VSPreImage_Promise {
-	return VSPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1072:1144])}
+	return VSPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1416:1520])}
 }
 
 type ASPreImage struct{ capnp.Struct }
@@ -669,12 +799,12 @@ type ASPreImage struct{ capnp.Struct }
 const ASPreImage_TypeID = 0xa6bc62ab6b339789
 
 func NewASPreImage(s *capnp.Segment) (ASPreImage, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 48, PointerCount: 1})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 80, PointerCount: 1})
 	return ASPreImage{st}, err
 }
 
 func NewRootASPreImage(s *capnp.Segment) (ASPreImage, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 48, PointerCount: 1})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 80, PointerCount: 1})
 	return ASPreImage{st}, err
 }
 
@@ -800,12 +930,76 @@ func (s ASPreImage) SetValue7(v uint32) {
 	s.Struct.SetUint32(44, v)
 }
 
+func (s ASPreImage) Fee0() uint32 {
+	return s.Struct.Uint32(48)
+}
+
+func (s ASPreImage) SetFee0(v uint32) {
+	s.Struct.SetUint32(48, v)
+}
+
+func (s ASPreImage) Fee1() uint32 {
+	return s.Struct.Uint32(52)
+}
+
+func (s ASPreImage) SetFee1(v uint32) {
+	s.Struct.SetUint32(52, v)
+}
+
+func (s ASPreImage) Fee2() uint32 {
+	return s.Struct.Uint32(56)
+}
+
+func (s ASPreImage) SetFee2(v uint32) {
+	s.Struct.SetUint32(56, v)
+}
+
+func (s ASPreImage) Fee3() uint32 {
+	return s.Struct.Uint32(60)
+}
+
+func (s ASPreImage) SetFee3(v uint32) {
+	s.Struct.SetUint32(60, v)
+}
+
+func (s ASPreImage) Fee4() uint32 {
+	return s.Struct.Uint32(64)
+}
+
+func (s ASPreImage) SetFee4(v uint32) {
+	s.Struct.SetUint32(64, v)
+}
+
+func (s ASPreImage) Fee5() uint32 {
+	return s.Struct.Uint32(68)
+}
+
+func (s ASPreImage) SetFee5(v uint32) {
+	s.Struct.SetUint32(68, v)
+}
+
+func (s ASPreImage) Fee6() uint32 {
+	return s.Struct.Uint32(72)
+}
+
+func (s ASPreImage) SetFee6(v uint32) {
+	s.Struct.SetUint32(72, v)
+}
+
+func (s ASPreImage) Fee7() uint32 {
+	return s.Struct.Uint32(76)
+}
+
+func (s ASPreImage) SetFee7(v uint32) {
+	s.Struct.SetUint32(76, v)
+}
+
 // ASPreImage_List is a list of ASPreImage.
 type ASPreImage_List struct{ capnp.List }
 
 // NewASPreImage creates a new list of ASPreImage.
 func NewASPreImage_List(s *capnp.Segment, sz int32) (ASPreImage_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 48, PointerCount: 1}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 80, PointerCount: 1}, sz)
 	return ASPreImage_List{l}, err
 }
 
@@ -856,7 +1050,7 @@ func (s AtomicSwap) ASPreImage() ASPreImage {
 		s.NewASPreImage()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[1144:1224])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[1520:1632])
 	return ASPreImage{Struct: ss}
 }
 
@@ -923,7 +1117,238 @@ func (p AtomicSwap_Promise) Struct() (AtomicSwap, error) {
 }
 
 func (p AtomicSwap_Promise) ASPreImage() ASPreImage_Promise {
-	return ASPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1224:1304])}
+	return ASPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1632:1744])}
+}
+
+type TFPreImage struct{ capnp.Struct }
+
+// TFPreImage_TypeID is the unique identifier for the type TFPreImage.
+const TFPreImage_TypeID = 0x828d564f51f7af4e
+
+func NewTFPreImage(s *capnp.Segment) (TFPreImage, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 40, PointerCount: 0})
+	return TFPreImage{st}, err
+}
+
+func NewRootTFPreImage(s *capnp.Segment) (TFPreImage, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 40, PointerCount: 0})
+	return TFPreImage{st}, err
+}
+
+func ReadRootTFPreImage(msg *capnp.Message) (TFPreImage, error) {
+	root, err := msg.RootPtr()
+	return TFPreImage{root.Struct()}, err
+}
+
+func (s TFPreImage) String() string {
+	str, _ := text.Marshal(0x828d564f51f7af4e, s.Struct)
+	return str
+}
+
+func (s TFPreImage) ChainID() uint32 {
+	return s.Struct.Uint32(0)
+}
+
+func (s TFPreImage) SetChainID(v uint32) {
+	s.Struct.SetUint32(0, v)
+}
+
+func (s TFPreImage) TXOutIdx() uint32 {
+	return s.Struct.Uint32(4)
+}
+
+func (s TFPreImage) SetTXOutIdx(v uint32) {
+	s.Struct.SetUint32(4, v)
+}
+
+func (s TFPreImage) Fee0() uint32 {
+	return s.Struct.Uint32(8)
+}
+
+func (s TFPreImage) SetFee0(v uint32) {
+	s.Struct.SetUint32(8, v)
+}
+
+func (s TFPreImage) Fee1() uint32 {
+	return s.Struct.Uint32(12)
+}
+
+func (s TFPreImage) SetFee1(v uint32) {
+	s.Struct.SetUint32(12, v)
+}
+
+func (s TFPreImage) Fee2() uint32 {
+	return s.Struct.Uint32(16)
+}
+
+func (s TFPreImage) SetFee2(v uint32) {
+	s.Struct.SetUint32(16, v)
+}
+
+func (s TFPreImage) Fee3() uint32 {
+	return s.Struct.Uint32(20)
+}
+
+func (s TFPreImage) SetFee3(v uint32) {
+	s.Struct.SetUint32(20, v)
+}
+
+func (s TFPreImage) Fee4() uint32 {
+	return s.Struct.Uint32(24)
+}
+
+func (s TFPreImage) SetFee4(v uint32) {
+	s.Struct.SetUint32(24, v)
+}
+
+func (s TFPreImage) Fee5() uint32 {
+	return s.Struct.Uint32(28)
+}
+
+func (s TFPreImage) SetFee5(v uint32) {
+	s.Struct.SetUint32(28, v)
+}
+
+func (s TFPreImage) Fee6() uint32 {
+	return s.Struct.Uint32(32)
+}
+
+func (s TFPreImage) SetFee6(v uint32) {
+	s.Struct.SetUint32(32, v)
+}
+
+func (s TFPreImage) Fee7() uint32 {
+	return s.Struct.Uint32(36)
+}
+
+func (s TFPreImage) SetFee7(v uint32) {
+	s.Struct.SetUint32(36, v)
+}
+
+// TFPreImage_List is a list of TFPreImage.
+type TFPreImage_List struct{ capnp.List }
+
+// NewTFPreImage creates a new list of TFPreImage.
+func NewTFPreImage_List(s *capnp.Segment, sz int32) (TFPreImage_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 40, PointerCount: 0}, sz)
+	return TFPreImage_List{l}, err
+}
+
+func (s TFPreImage_List) At(i int) TFPreImage { return TFPreImage{s.List.Struct(i)} }
+
+func (s TFPreImage_List) Set(i int, v TFPreImage) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s TFPreImage_List) String() string {
+	str, _ := text.MarshalList(0x828d564f51f7af4e, s.List)
+	return str
+}
+
+// TFPreImage_Promise is a wrapper for a TFPreImage promised by a client call.
+type TFPreImage_Promise struct{ *capnp.Pipeline }
+
+func (p TFPreImage_Promise) Struct() (TFPreImage, error) {
+	s, err := p.Pipeline.Struct()
+	return TFPreImage{s}, err
+}
+
+type TxFee struct{ capnp.Struct }
+
+// TxFee_TypeID is the unique identifier for the type TxFee.
+const TxFee_TypeID = 0x89c736f29fb5bda4
+
+func NewTxFee(s *capnp.Segment) (TxFee, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return TxFee{st}, err
+}
+
+func NewRootTxFee(s *capnp.Segment) (TxFee, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return TxFee{st}, err
+}
+
+func ReadRootTxFee(msg *capnp.Message) (TxFee, error) {
+	root, err := msg.RootPtr()
+	return TxFee{root.Struct()}, err
+}
+
+func (s TxFee) String() string {
+	str, _ := text.Marshal(0x89c736f29fb5bda4, s.Struct)
+	return str
+}
+
+func (s TxFee) TFPreImage() TFPreImage {
+	if !s.HasTFPreImage() {
+		s.NewTFPreImage()
+	}
+	p, _ := s.Struct.Ptr(0)
+	ss, _ := p.StructDefault(x_b99093b7d2518300[1744:1800])
+	return TFPreImage{Struct: ss}
+}
+
+func (s TxFee) HasTFPreImage() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s TxFee) SetTFPreImage(v TFPreImage) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewTFPreImage sets the tFPreImage field to a newly
+// allocated TFPreImage struct, preferring placement in s's segment.
+func (s TxFee) NewTFPreImage() (TFPreImage, error) {
+	ss, err := NewTFPreImage(s.Struct.Segment())
+	if err != nil {
+		return TFPreImage{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+func (s TxFee) TxHash() []byte {
+	p, _ := s.Struct.Ptr(1)
+	return []byte(p.DataDefault([]byte{0x0}))
+}
+
+func (s TxFee) HasTxHash() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s TxFee) SetTxHash(v []byte) error {
+	if v == nil {
+		v = []byte{}
+	}
+	return s.Struct.SetData(1, v)
+}
+
+// TxFee_List is a list of TxFee.
+type TxFee_List struct{ capnp.List }
+
+// NewTxFee creates a new list of TxFee.
+func NewTxFee_List(s *capnp.Segment, sz int32) (TxFee_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return TxFee_List{l}, err
+}
+
+func (s TxFee_List) At(i int) TxFee { return TxFee{s.List.Struct(i)} }
+
+func (s TxFee_List) Set(i int, v TxFee) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s TxFee_List) String() string {
+	str, _ := text.MarshalList(0x89c736f29fb5bda4, s.List)
+	return str
+}
+
+// TxFee_Promise is a wrapper for a TxFee promised by a client call.
+type TxFee_Promise struct{ *capnp.Pipeline }
+
+func (p TxFee_Promise) Struct() (TxFee, error) {
+	s, err := p.Pipeline.Struct()
+	return TxFee{s}, err
+}
+
+func (p TxFee_Promise) TFPreImage() TFPreImage_Promise {
+	return TFPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1800:1856])}
 }
 
 type TXInPreImage struct{ capnp.Struct }
@@ -1040,7 +1465,7 @@ func (s TXInLinker) TXInPreImage() TXInPreImage {
 		s.NewTXInPreImage()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[1304:1344])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[1856:1896])
 	return TXInPreImage{Struct: ss}
 }
 
@@ -1107,7 +1532,7 @@ func (p TXInLinker_Promise) Struct() (TXInLinker, error) {
 }
 
 func (p TXInLinker_Promise) TXInPreImage() TXInPreImage_Promise {
-	return TXInPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1344:1384])}
+	return TXInPreImage_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1896:1936])}
 }
 
 type TXIn struct{ capnp.Struct }
@@ -1140,7 +1565,7 @@ func (s TXIn) TXInLinker() TXInLinker {
 		s.NewTXInLinker()
 	}
 	p, _ := s.Struct.Ptr(0)
-	ss, _ := p.StructDefault(x_b99093b7d2518300[1384:1448])
+	ss, _ := p.StructDefault(x_b99093b7d2518300[1936:2000])
 	return TXInLinker{Struct: ss}
 }
 
@@ -1207,7 +1632,7 @@ func (p TXIn_Promise) Struct() (TXIn, error) {
 }
 
 func (p TXIn_Promise) TXInLinker() TXInLinker_Promise {
-	return TXInLinker_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[1448:1512])}
+	return TXInLinker_Promise{Pipeline: p.Pipeline.GetPipelineDefault(0, x_b99093b7d2518300[2000:2064])}
 }
 
 type TXOut struct{ capnp.Struct }
@@ -1217,10 +1642,11 @@ const (
 	TXOut_Which_dataStore  TXOut_Which = 0
 	TXOut_Which_valueStore TXOut_Which = 1
 	TXOut_Which_atomicSwap TXOut_Which = 2
+	TXOut_Which_txFee      TXOut_Which = 3
 )
 
 func (w TXOut_Which) String() string {
-	const s = "dataStorevalueStoreatomicSwap"
+	const s = "dataStorevalueStoreatomicSwaptxFee"
 	switch w {
 	case TXOut_Which_dataStore:
 		return s[0:9]
@@ -1228,6 +1654,8 @@ func (w TXOut_Which) String() string {
 		return s[9:19]
 	case TXOut_Which_atomicSwap:
 		return s[19:29]
+	case TXOut_Which_txFee:
+		return s[29:34]
 
 	}
 	return "TXOut_Which(" + strconv.FormatUint(uint64(w), 10) + ")"
@@ -1364,6 +1792,41 @@ func (s TXOut) NewAtomicSwap() (AtomicSwap, error) {
 	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
 	return ss, err
 }
+func (s TXOut) TxFee() (TxFee, error) {
+	if s.Struct.Uint16(0) != 3 {
+		panic("Which() != txFee")
+	}
+	p, err := s.Struct.Ptr(0)
+	if err != nil {
+		return TxFee{}, err
+	}
+	return TxFee{Struct: p.Struct()}, err
+}
+
+func (s TXOut) HasTxFee() bool {
+	if s.Struct.Uint16(0) != 3 {
+		return false
+	}
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s TXOut) SetTxFee(v TxFee) error {
+	s.Struct.SetUint16(0, 3)
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewTxFee sets the txFee field to a newly
+// allocated TxFee struct, preferring placement in s's segment.
+func (s TXOut) NewTxFee() (TxFee, error) {
+	s.Struct.SetUint16(0, 3)
+	ss, err := NewTxFee(s.Struct.Segment())
+	if err != nil {
+		return TxFee{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
 
 // TXOut_List is a list of TXOut.
 type TXOut_List struct{ capnp.List }
@@ -1403,6 +1866,10 @@ func (p TXOut_Promise) AtomicSwap() AtomicSwap_Promise {
 	return AtomicSwap_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
 }
 
+func (p TXOut_Promise) TxFee() TxFee_Promise {
+	return TxFee_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
 type Tx struct{ capnp.Struct }
 
 // Tx_TypeID is the unique identifier for the type Tx.
@@ -1433,7 +1900,7 @@ func (s Tx) Vin() (TXIn_List, error) {
 	if err != nil {
 		return TXIn_List{}, err
 	}
-	l, err := p.ListDefault(x_b99093b7d2518300[1512:1536])
+	l, err := p.ListDefault(x_b99093b7d2518300[2064:2088])
 	return TXIn_List{List: l}, err
 }
 
@@ -1462,7 +1929,7 @@ func (s Tx) Vout() (TXOut_List, error) {
 	if err != nil {
 		return TXOut_List{}, err
 	}
-	l, err := p.ListDefault(x_b99093b7d2518300[1536:1560])
+	l, err := p.ListDefault(x_b99093b7d2518300[2088:2112])
 	return TXOut_List{List: l}, err
 }
 
@@ -1512,119 +1979,157 @@ func (p Tx_Promise) Struct() (Tx, error) {
 	return Tx{s}, err
 }
 
-const schema_b99093b7d2518300 = "x\xda\xbc\x97kl\x1cW\x15\xc7\xcf\x99;3\xeb]" +
-	"?w\xef\x0a\x90\x10Jk%\x08\x17\x83\xe2Wb\"" +
-	"\x1b\xdb\xedZ\xf2V\x8e\xb2\xd3\xd9\x16S\xb9R\x07\xef" +
-	"\x10o\x9d}\xb0\x9e\x8d7\x88\xaaAi\xa4VrB" +
-	"\xa2\xa6\xd4\x91\xd2\x92\xa8\xb4J\xa9x\x04Z\xd1\xb4A" +
-	"\xa2\x11\x05W*R\x83ZAQK\x05\x82\xa2\x1a!" +
-	"@|A@3\xe8\x9c\xd9\xd7\xec\xaec#!\xa4\xfd" +
-	"\xb0\xf7\xb7g\xef\xfd\xdfs\xcf\xfd\x9f\x99\xdds\xda\xa4" +
-	"2\xa0\xed\xd5\x01\x8c\x19MwK\x91\xdf<\xd9\xb77" +
-	"\x7f\x12\xc2\x11\xf5\xfa1\xe3\x17?|\xe4\xd4e\xc0!" +
-	"\x14\xbd(\xc3\"\x00`v\x08\x81\xe6G\x84\x82\x00\xee" +
-	"\xfa{K\xf7\x1a\xe7\xd6NC8\x82\x95hM\x09\x00" +
-	"\xc8>\xf1k9B\xf1r@\xac\x00\xba\xfd\x1f\x1b\xfd" +
-	"\xd2\xfa\xf0\xea\xa3\xcd\x91\xaf\x88\x0dy\x8d#\x7f\xce\x91" +
-	"\x9f\xbd\xef@?>\xe9>\xd6\x1c9\xae~KN\xab" +
-	"\xf4mJ\xa5\xc8\xd5\xb1\xf7\x1e\x1f~\xe4Ck\x0dZ" +
-	"_Q{Q\xbeIq\xe6\xeb\xaa@\xf3m\x95\xb5\xde" +
-	"\xb44\xfa\xb7\x17\xde\xbdm\xady\xde\x0f\xd4\xdf\xc9\xa0" +
-	"F\xdf4\x8d\xe6\xbd\xedg\xff\xfe\xfe\xd7\x06\x07\xce7" +
-	"G>\xa3m\xc8\xe79\xf2\x12G\xde\x92\xba\xfe\xec\xe4" +
-	"\xe7\x8e\x9doP0\xa0GPN\xe9\xa4`L\x17h" +
-	"\xce\xe8\xac\xe0\xcc\xf4\xf8/\x8f\xfdu\xf8\xe9\x86\xe8\xa2" +
-	"\xde\x8b\xf28G\x1f\xa5\xe8U/\xfa\xe1\xc7\x86\x96\x9e" +
-	"\xfd\xc2\x95\xa7\xc1\x88\xa0^\x95\x81\xb4\xf8Y}C>" +
-	"E\x7f\x18\xba\xa0\xbf\xab\x00\xba\xef\xf7\xedy\xe2\xa7'" +
-	"\x8f|\xa7a\xe6\xc7\x83\x83(\xbf\x1d\xa4\x99/\x06\x05" +
-	"\x9a\xcf\x05y\xe6s?\x88\xcd\xbf\xf3G\xedR\xf3\xfe" +
-	".\x05_\x94\x97)^>\x1f\xa4\xfd}\xe3\xc5?|" +
-	"\xfd/\xbb\x94\x97H\x03\xfa5\x8c\x84\xfe)\xa7B|" +
-	",\xa1\xef\x02\xba\xe6\x8f.\xec\xb9j\xbf\xfcj\xf3\xa4" +
-	"\xbf\x0dm\xc8?s\xe4\xfb!\x9a\xf4\xe3/\x9d\xf8\xe4" +
-	"\xcdc\x7fz\xc3\xbf1\xae\x80L\xfb\x86<\xd2N\x1b" +
-	"+\xb6\x7fX\x00\xba\x1f=\xf9\x19\xed\xef\xe2\xea?(" +
-	"V\xf3\x0b\xb8\xd6\xb5!\xdf\xe9\xa2\xd8\xb7\xbar\x94\x84" +
-	"\x9d\x85\xf1\xa7^\xdb\x15\xfb\x97O\xec4\x06\x04\x80\xfc" +
-	"|\xf8\xaa\xb4\xc2\xf4\xb7{\xc2\xa4\xf6\xe67\xaf\x9c\xda" +
-	"\xbf\xfe\x84\xdbX\xe6\x11*\xf3\x08\x97y\x84\xca<\xc2" +
-	"\x09\xb3\xf2\xf9C\xe9\x05\xcb\x11\xe9\\\xf6\xd3\x0bV>" +
-	"\x9b\xdf\x97\xb2\xbfh\x15\x0f9Sf\xa2`\xc73\x01" +
-	"\xeb\xa0\x9d@\xc4\x9e\xda\xa9\x01b\x0f@BG\xd0\xc2" +
-	"\x18\xaa\x9bD\xa9M\x123g\xd3\xd9%a\x17\x12\x88" +
-	"F\x9bP\x01TD\x0c\xf7\xdd\x0d`|B\xa01\xac" +
-	"`\x181\x8a\x04\xad}\x00\xc6\xbc@cQA7\xe5" +
-	"-k\x818hcO-\xa3\x95E\x05h\xe1`\xc8" +
-	"\xfb\x802\xe1\x94f\xac\xe5E\xec\x04\x05;\x016\x95" +
-	"\x93\x9c\x8bgg\xd3\xdd\xd9\xa5&A\xf7\xb5\x104N" +
-	"\x82F\x05\x1a1\x05]g.\x9e%I\xd0\x9d\xb1X" +
-	"R\xb5r\xca\x92\x10\xcb\x0b\xdfP\x0cV\xc4t\xe7\xf7" +
-	"%K\x0d\"z\x01\x8c\x9d\x02\x8d\xc9:\x11S\xb7\x00" +
-	"\x18c\x02\x8d9\x05\x03\x87\xd3Y\xec\x02L\x08:\x88" +
-	"j\x91\x03b\x17\xad\x13\x98T\xba\x0f\xe7\x8aN-\xa4" +
-	"Z0\xd5\x90\x04\xe2\x0d\x0e;\xd6x\xd8[\xe4\xbd\xe5" +
-	"\x91[\x8ee:\x81\\\xc1n\xd8\xdd\xed-R\x9c\xb9" +
-	"\x03\xc08$\xd0(\xf1\x99S\xb1\xd8\x05\x00\xc0\x9e\x9a" +
-	"\xf3zKO*\x86\xaa\x8b\xf0@\xa8^\x80p\x97\xd3" +
-	"\x07\xb3\x96S,\x00\xda[\x9e\xfe]\xd6\xa1\xa2mv" +
-	";\xcd\xd2Z\x95\xe3~:\xfd\x19\x81FRA\xf7\xb0" +
-	"\xbf\x1c\xab\x97\xb6\x9c\x16\x0dA\xdd\xfa\xec[\xe5\x9bw" +
-	"\x8c\x05/\xdb\xdb\xdb\xf2\xe6\xd3\xdd\xd5x|\x9b\xeal" +
-	"\x95\x1e\xef\xa6sySz\x86+\xe9\x91\xf7\xe0\xad\x00" +
-	"\xe6\x1c\x0a4S\xa8`X\xf32$-\x1c\x040\xe7" +
-	"\x89/\x12G%\x8a\x0a\xa2\xb4\xf1v\x003E<O" +
-	"@\x89\xa2@\x94\x19\x0e_$\xecP\xb8\x10QT\x11" +
-	"e\x91\xc3\x1d\xe2G\x89\xabj\x145Dy?\xf6\x02" +
-	"\x98%\xe2\x0f\x12\xd7\xb5(\xea\x88\xf2\xab\xb8\x0f\xc0\xfc" +
-	"\x0a\xf1\x87\x88\x07\xf4(\x06\x10\xe5q\xe6G\x89\xaf\x12" +
-	"o\x0bD\xb1\x0dQ>\xcc\xfcA\xe2\xa7\x88\x07\xdb\xa2" +
-	"\x18D\x94'\x98?D\xfc\x0c\xf1P0\x8a!Dy" +
-	"\x9a\xf9*\xf15\xe2\xed\xa1(\xb6#\xcaG\x99\x9f\"" +
-	"~\x8exG{\x14;\x10\xe5Y\xe6g\x88\x9fG\x05" +
-	"\x1fXX\xb4\xd2\xd9x\x0c\xdb@\xc16\xc0\x1d\x87\xa9" +
-	"\xec*#\xd7\x99;Pt\xe2\xa9\x12\x15y%\"\xb7" +
-	"\x92\xb5\x0b\xfe\x9aI//\x17\xed\xd4\x94S\x17\x16\xb0" +
-	"K\xf9\xca\xf7\x09\x9et\xc0?\x1c\xf4\x0f\x87\xfc\xc3a" +
-	"\xffp\xc4?\xdc\xe3\x1f\xee\xad\xea\xdd\xbc\xda\x92\x9e#" +
-	"\xee\x88g\xaa\xf5\xb6\xa9'6\xfb\xdf\x84\xe7\xc6\xdb\xb8" +
-	"\x88\xf1;\xea.\xa2\xc3\x0e\x9e]\x02a\x17\xb0\xa7\xf6" +
-	"\xd0U\xbb1\x88\xe1\xce\x90\xb7,\xfeW\xf6\xe0\xedg" +
-	"\xc2\xae\xec\xc7\xe8\xa8\xea\x9a\xbe\x15\xc0\x98\x14h\xcc\xd6" +
-	"\xeb*\xd4t\x95K?l|\x19\xc0H\x084\xe6\x9b" +
-	"\x0b\xc1]\xc8e\x97\x8b\x19;\x05;\x92\xa5x\xaa\xd4" +
-	"\xcc'\x92\xdbkcSN.\x93^\xe86W\xac\xfc" +
-	"6\xf2g\x90\x91\xcdz\x1d\xc4\xb5\xfcF\xb6i3\xdf" +
-	"nG\x8d\xf9Mc\xb4j\x1aG\xd84\xaa\xb7\xba," +
-	"F\xde\xcf&P\xbb\xd4\x0az\x9eq\x9cM\xa0vI" +
-	"\xf5\xb2i\x9c\xe0ij\x97T\xa0g\x1a\xa7\x99\xd7." +
-	"\xa9*<\xd38\xcb\xf3\xac\x11\xff&{\x95\xe2\x99\xc6" +
-	"\x05^\xf7\x1c\xf1\x8bl\x1a\xaag\x1a\xcfp\xfcE\xe2" +
-	"\xcf\xb1ih\x9ei\\b\xfe=\xe2W\xd84t\xcf" +
-	"4.3\x7f\x81\xf8O\xd84\x02\x9ei\xbc\xcc\xfc\xc7" +
-	"\xc4_c\xd3h\xf3L\xe3U\xe6\xeb\xc4\xdf`\xd3\x08" +
-	"z\xa6q\x8d\xf9\xeb\xc4\xdf&\xde\x19\x8ab'\xa2|" +
-	"\x8b\xf9\xaf\x88\xff\xbe\x95\x99\xa4\xb3)\xbb\xb4\xa5U<" +
-	"\x90\xb2\xf3\xb9\xe5\xb4S\x1d\x17\xac\x15\xea\xcb\xfe?n" +
-	"\xd3\x8a\xcas\x0d\xd4\x85U\xd8`\x0b6\xd4\x82\x0d\xb7" +
-	"`#-\xd8\x9e\x16lo=k\xd5\xd5\xfd\x15\xd8_" +
-	"\xad\xc0]\\\"7Q*\xfb+\xa5C\xbc\x8fKa" +
-	"'\xf1\xdd\xf5m\xebS\x9c\xfa~\xe2\xa3umk\x84" +
-	"\xc3w\x13\x1e\xabT\x1aU\xe08\xdb\xfe(\xf1\x18W" +
-	"Z\xb9mM1\x1f#>S\xdf\xb6\xa6\x99O\x12\x9f" +
-	"\xado[q\xe61\xe2\x89\xfa\xb6\xb5\x9f\xf9\x0c\xf1d" +
-	"}\xdb2\x98\xcf\x12\x9f\xabo[w2O\x10\x9f\xff" +
-	"_\xb5\xa1\xff\x7f\x9b\xf1\xf9\xf1\x81\xa2\x03e#\xeep" +
-	"]\x95\x9a\xc945\x83\x98@#\xa1`'^w\xa3" +
-	"\xdcb\xf6\xdf]\xb3\xb8N\xe5\x037\x8a\x0a@\xf8N" +
-	"\xa2I\x81\xc6\xbd\xf4p\xc9\x8f\xa59\xee\x04=\xb5W" +
-	"e\xf6=tY\x8d\xe9\xe4@\x14\xe8\xe7\xea\xfbq\xf9" +
-	"g\x8b\x0d\xd7\\\x01a\xe5\xb1\xa7\xf6&X\xf9\xf9\x86" +
-	"=r6\x9d\x0dx/\x1c[7\xac\xff\x04\x00\x00\xff" +
-	"\xffD\x0b\xa4\xe4"
+const schema_b99093b7d2518300 = "x\xda\xdc\x98kl\x14\xd7\x15\xc7\xef\x99\xbb\xbb\xb3\xbb" +
+	"x\xbd\xb3\xbe\x83Ey\x08\xb0Le\xa8i\xb1\xbd6" +
+	"\x06\xe1\xdaNl\xc4F\xa6x2\x1bj*\x90\xd8\xb2" +
+	"\x13\xbc\xc1^/\xebYX*P\xa0\x04\x09$\xa0\xa0" +
+	"\x90\x86H$\x10\xe5\xa1\xa6i\x9b\xa6\x0f5\x0f\"\x15" +
+	"\x946 \x81\x14*P\xa0*mZ5\x89\xe2~H" +
+	"\x1f\x1f\xfa\xa2Lu\xce\xec\xee\xcc>\x00W\xaa\x14)" +
+	"\x92?\xec\xfd\xf9\xcc\x9ds\xe6\xde\xfb?\xff\x99e\x1f" +
+	"\xcb}R\x9b\xb7WfL\x8b{}\xd6W^\xf9\xbb" +
+	"\xb6n\xfd\x91o2\xad\x01\xbc\xb7\xf7k\xbf\xfa\xd9\xe3" +
+	"\xc7^\xf7\xc8\x8c\x89\x03|J\x1c\xe72c\x1dG\xf8" +
+	"r\x89\x81\xf5\xfc[?=\xfd\xd7\xaew\x0e\xb1H\x03" +
+	"\x14#\xbd\x12\x86^\xf6\x9e\x17\xd7\xbc\xf8\xeb\x8aw'" +
+	"\x03+\xdf\xf0\xdb\xe7\x16/\xcf\x1ce\x91\x06O1\x92" +
+	"AG\xcc\xd7\x04b\x83OfL\x8f\xfb8\xe8\x9b}" +
+	"\x120f]\xf8p\xdbf\xed\xd4\xc9\xe3\xd5\xf3\xee\xf3" +
+	"\xfdZ\x1c\xc1xq\xc8\x87\xf3\xb6\xce\xeb\xde~!z" +
+	"\xf8\x89\xea\xc8\xa5\xf2\x94X!\xe3\xafN\x19#\xbf\xfc" +
+	"\xc8\xbaVx\xcez\xb2:\xf2\x05\xf9\xbb\xe2\xfb\x14\xf9" +
+	"\x12E\x1e^\xf5\xe1\xd3\xd1\xc7\x1bOV\xe4\xba\xd4\xdf" +
+	"\x04\xa2\xc7\x8f\xb9v\xfb9\xe8\x03~\xcau\xc1\xb6\xee" +
+	"\xbf\xbc\xf6\xbb\xfbOV\xcf\x9b\xf3\xffA\xec\xc3x\xb1" +
+	"\xc7\x8f\xf3\xde\xff\xce\xad\x1f}\xab\xbd\xedLud[" +
+	"`J\xf4\x04\xf0\xd7\x8a\x00F.I\xde~\xb9\xef\xab" +
+	"\xfb\xcfTdp1\xd0\x00\xe2\x06\xc6\xe9W\x03\x1c\xf4" +
+	"\xf7\x03\x94\xc1\x89\xc1\x9e\xf7\xf6\xff9\xfabE\xf4\xbc" +
+	"`\x13\x88\xa5A\x8cn\x09r\xd0\xa3A\x8a>\xf4d" +
+	"\xc7\xb6\x97\xbf~\xf6E\\\xde`)\x0d\xc0\x9bk\xc1" +
+	")\xb1\x09/\xe8\xd8\x10<\xeda`}\xbc\xb8\xeb\x99" +
+	"_\x1e\xdd\xf5\x83\x8a\x99;\xc3\xed \x06\xc38s_" +
+	"\x98\x83>\x14\xa6\x99O\xfdx`\xe3\xcd\x8f\xbc\xafV" +
+	"\xd7\x17\x0b\xbf!4\x8c\x17k\xc3X\xdf\xe97>\xf8" +
+	"\xf6'\x8b\xa471\x07(\xcf\xe1r\xf8_\xe2\x06\x85" +
+	"^\x0b\xbf\xc2\xc0\xd2\xdfz\xb6\xeb\xbcq\xeeb\xf5\xa4" +
+	"\xbb\x94)q@\xa1M\xa1\xe0\xa4\x9f\x7f\xf3\xc8\x17\x16" +
+	"\xae\xfa\xd3\xd5\xf2\xc2p\xbb\x8a\x99\x91)\xb10\x82\x85" +
+	"\xcd\x8b\xbc\x87\x85\xdd\x8a|\xf2\xcf\xa7\x07z\xaeU\x14" +
+	"\xb6\xa1\xb1\x09D\xaa\x11\x0bK6r\xd03\x8dT\xd8" +
+	"\x9c\xa3+\xbc\x7f\xe3\xe7\xff\x813\x07\xca\xd3\xcd5N" +
+	"\x89}xA\xc7\x9e\xc6/\xe1\xcc\xcd\xd9\x9e\x17.-" +
+	"\x1a\xf8wYi\x83 {\x18\x137g\x9f\x17\x1f\xcc" +
+	"\xc6\xcb~?\xfb#\x06\xd6\xc2kg\x8f\xad\xbd\xf0\x8c" +
+	"U\x91\xc5\xb99M \xae\xcc\xc1,.\xcd\xe1\xa0_" +
+	"\x9fCY$2\x99\xb1\xd4\x96\x84)\xa5&\xd2_\xdc" +
+	"\x92\xc8\xa43+\xe3\xab\x87\xb3F,<\x9e\xd8j\x0c" +
+	"\x03h-\xdc\xc3\x98\x07\x00D\x00\xeecL\xf7\x00\x07" +
+	"]\x01\x09\"\x00* \x0f\xc1\x03\x8c\xe9u\xc8g!" +
+	"\x97$\x15$\x001\x13\x960\xa6+\xc8\xe7\"\xe7\\" +
+	"\x05\x0e >G\x1c\x7f\xeb\x0b\x90{<*x\x00\xc4" +
+	"<\xe2\xb3\x907#\xf7zU\xf0\x02\x88\x85\xc4\xe7\"" +
+	"oA\xee\xf3\xa9\xe0\x03\x10\x8b\x88/@\xde\x8a\\\x96" +
+	"U\x90\x01\xc4b\xe2\xcd\xc8\x97!\xf7\xfbU\xf0\x03\x88" +
+	"\xa5\xc4[\x90G\x91\x07\x02*\x04\x00D\x1b\xf1V\xe4" +
+	"\xdd \xc1\xa3[F\x13\xa9tl\x00\xfcL\x02?\x03" +
+	"\xcb\x1cY\x973c\xc9<c\xac\xc8\xc2\x0f\x1b\xc62" +
+	"\xf7\xa0\xcd=hw\x0f:\xdc\x83\xa8{\xd0\xe9\x1et" +
+	"\xb9\x07\xcbK\xf7\xae\xb5>\xf9\xd5\x86\xc1pi\xfc\xc5" +
+	"\xa5\x89,\xfe\x1acZ\x0b\x07-\xea\xacKdp%" +
+	"cZ\x1f\x07mH\x02\xcb\xa4U\x1dO0\xbe\xd5\x00" +
+	"\xc5\xd1c\x06\xa00\xa6x\x99\xa7\xd7\xcc\xafIL\x8e" +
+	"B\x88I\x10b,\x02A\xd7\xfe\xe0\xce\xfd\x93\xc6\xc3" +
+	"\x89\xdc\x98\xd9\xaf\xd3\x84\xb2\xbdM@q4\xc0\x9er" +
+	"8\x08,P>\x89\xab\x88\x01}(\x95\xde\xc6\x8d\xec" +
+	"4\xea\xd8\x8eu\x8cq\xd0\xf2\x12XI\xbd\xac\x8e\xd2" +
+	"\xf9,\xde\x94\xb3@$\x10\xb4\xff\x98t\xd7\x9a\xdc\xcf" +
+	"t$\x96\x1eJ\x85\xd3\xdb\xaa\x12z\xa4FB=\x98" +
+	"P7\x07m\x00\x1f\xecH,\x8d)1:1\xa08" +
+	":TH\x09\xa0p\xe3\xbb&\x03\xc5d\xc2\xb8\xc2\x15" +
+	"I41\xa65s\xd0\xfa\\I\xf4/aL[\xc5" +
+	"A\x1b\x91@\xde\x91JC=\x83a\x8e\x0bQ\x92L" +
+	"\x06P\x8f\xf7\x91\xfb\xa4\xf0\x8e\x89\x9c\xe9\x84\x94\x04\xa5" +
+	"\x142\x0cp\x97\xc5\x1e\xa8\\\xec{<\xf7\x9aK\x9e" +
+	"0\x13\xba)Od\x8d\x8a\xea\x1e\xa8\xf1\x88\xf7<\xc8" +
+	"\x98\xb6\x9b\x83v\x90\xd6\x1c7\x8b\x91\xc5\x03\xa88}" +
+	"\xdc\xbeu\x9f\xa4y\x82<\xd2\x1ft'\xc0\xad\xc9\xd4" +
+	"\xd6t\xc2\xcce\x19\x18\xf7\\\xfd\xf5\x89\xb1\x9c\xa1\x87" +
+	"\xcd\xea\xd4jm\xc7M\xb8\xfa#\x1c\xb4\xa4\x04\xd6\x8e" +
+	"\xf2\xedX\x12\xf5\xc2c\x09\x00\xf3\xdf{\xedk=o" +
+	"\xaa\x18\xb2\xf6\xd3\x9e^\xc9w\x9en}\xe5\xf2\xdd1" +
+	"\xcfZ\x8f\xc7>\xe9\xa5\x86\x10/5\x84\x1e\x09\x1bB" +
+	"\xb7\x84\xbeEB\xc1.4\x84~\xa9\x9d1}\x15\xf2" +
+	"5\xc8\xa1\xd0\x10\x06%l\x14\x03\xc8\x87%\x09\x10c" +
+	"?XK\xe1k\x10\xc7\xa5B\x9f\xc0~\xf0\x10\x85\xc7" +
+	"\x91o\x96\x0a}\x02\xfb\xc1&\xa9\x891}\x04y\x12" +
+	"\xb9\xcfk\xf7\x83\x84\xb4\x921}#\xf2Q\xe4\xb2\xcf" +
+	"\xee\x07\x06\xf1\xcd\xc8\xc7\x90\xfbe\xbb\x1f\xa4\x88'\x91" +
+	"g\x90\x07\xfcv?\x18'>\x8a\xdcD\x1e\x0c\xa8\x10" +
+	"\x04\x10\xdb\x89\x8f!\xcf#\x9f\x11Ta\x06\x80\xc8\x11" +
+	"\xcf \xdf\x8d\xbcn\x86\x0au\x00b\x17q\x13\xf9^" +
+	"\xe4\xa1:\x15B\x00b\x8f\x84\xfd&\x8f\xfc1\xe4\xf5" +
+	"!\x15\xea\x01\xc4>\xe2\xbb\x91\x1fD\x1e\xaeW!\x0c" +
+	" \x0e\x10\xdf\x8b\xfc0r%\xac\x82\x02 \x0e\x11\x7f" +
+	"\x0c\xf91\xe4\x11E\xc5]*\x8e\x10?\x88\xfc\x04\xf2" +
+	"\x86\x88\x0a\x0d\x00\xe28\xf1\xc3\xc8O\"\x17\x0d*\x08" +
+	"\x00\xf1\x04\xf1c\xc8O!W\x85\x8a\x0b)\x9e\"~" +
+	"\x02\xf9\x19\xa9\xba/\xce\xdf\x81\xc7\xe6n]r\xfe\xc4" +
+	"\xce\xb4\x91-\xdf\xf3\xa9\xc9\xc9\x9c\x91\xec7]a\xb2" +
+	"\x91\xcf\x14\x7f\xf7\xd2\xa4m\xe5\xc3\xf6\xf2aG\xf90" +
+	"Z>\xec,\x1fv\x95\x0f\x97\x7fj\x1d\xbc\xfaT\xc6" +
+	"\xed\xce1?6^:\x97w\xec\x1d\xd5}\xa2\xd7\xee" +
+	"Z\xd3\x10\xac\x18j\xe9\x1a\x0eZ\xbc\xd0\xaeP[\x18" +
+	"7\xb2\xa08\xaf:\x8e\xb2\x00DBA\xfb\xb6\xf0?" +
+	"\xc9\xa8]O\xafQ\xacG\xab+\xe55x\x9fcE" +
+	"\x9c\xbc\xb2N^\x05\x89\x88h\xdf`L\x1b\xe6\xa0m" +
+	"\xaca\xc4\xb6L\xa4's\xe3F\x92\xcd\x8f\xe7c\xc9" +
+	"|5\xef\x8dO\xaf\xdd\xf7\x9b\x13\xe3\xa9-a}g" +
+	"\"3\x8d\xe7\x97@\xc1\xdf\xc8A\x1b\x95\xc0J\x94\x0b" +
+	"\xfe\x1dM\xcft\x9d\xc7@\xb9\xb8\x8e\x94\xc4u\x03\x89" +
+	"kI\xfd\x8af{\x13\x89\xa5#~\x12\xd8\xdaj\x90" +
+	"X:b\xe6+\x88\xeb8M\xe3\x88\x19\x07[\\\xb7" +
+	"\x13w\xc4\xcc\xc3mq\xddE\xf38\xe2\xe4\x95lq" +
+	"\xddG\xf7u\xc4I\xf6\xd8\xe2z\x88\xe2\x1d\xb1\xf1{" +
+	"mq=N\xdc\x11\x95\x80\xcf\x16\xd7\xa7\x88\x9fD\xfe" +
+	"<\x89\xabl\x8b\xeb\xb3\xc4\xcf \xff\x1e\x89\xab\xdf\x16" +
+	"\xd7\x97\x88\x7f\x07\xf9OH\\\x03\xb6\xb8\xbeJ\xfc\x87" +
+	"\xc8\xcf\x92\xb8\x06mq}\x9d\xf8k\xc8\xdf&q\x9d" +
+	"a\x8b\xeb9\x12\xb3\xb3\xc8/\x90\xb8\xd6\xd9\xe2\xfa\x0b" +
+	"\xe2?G~\x89\xc45d\x8b\xebE\xe2o#\x7f\x97" +
+	"\xc4\xb5\xde\x16\xd7\xcb\xc4/ \xbfJ\xe2\x1a\xb6\xc5\xf5" +
+	"\x0a\xf1K\xc8\xaf\x93\xb8*\xb6\xb8^#\xfe.\xf2\xdf" +
+	"\x90\xb8Flq\xbdA\xfc*\xf2\xf7\x91\xcflPa" +
+	"&\x80\xb8I\xfc:\xf2?\xd6\x12\xddT:i\xe4\xef" +
+	")\xa9\x8f&\x8d\xcc\xc4d\xca,\x8d\xb3\x89\x9d\xe8\xbf" +
+	"\xca/\x9c\xa6d\x17\xe6js\x85\x15Y{\x0d\xd6Q" +
+	"\x83Ek\xb0\xce\x1a\xac\xab\x06[\xfei\xbew\xd5P" +
+	"\xed\xd5\x15^\xaa\xc6\xabTM\x93Y~\xd0\x87J\x07" +
+	"\xdd\x8b'\xf1A\\\xf0\xba\xe2\x01\xa5\xb7m:p\x1e" +
+	"\xe4\x8a\xdbD\x85h\x83\xd7!\x9f\xe52Q3)\\" +
+	"A<\xb7x\x9e\xe9\xa5\x9aL\xc8,\xe4\xcdt\x9e\x0b" +
+	"&j!\xf1\xb9\xc8[\xdc&j\x11\xf1\x05\xc8[\xdd" +
+	"&j1\xf1f\xe4\xcb\xdc&j)\xf1\x16\xe4Q\xb7" +
+	"\x89j#\xde\x8a\xbc\xdbm\xa2:\x89/C\xbe\xcam" +
+	"\xa2V\xd0\xbe\x8f\"\xefs\x9b\xa8\x1e\xe2\x8e\xc7,\x9a" +
+	"\xa8~\xe2\x8e\xc7,\x9a\xa8A\xe2}\xc8\x87\xdc&*" +
+	"F\xbc\xe4=K&j-q\xc7|\x16M\x94F|" +
+	"\x08\xf9\x88\xdbD=D|\x18\xf9\xc6\xff\x97)\xfa\xec" +
+	"\x9a\x9e2w\xb0.g\xd2g\x0b\x85{\xea,\xcb\x83" +
+	"\xd6&\x81\xd6d3\x07mL\x82\x10\xdc\xb6T2<" +
+	")\xec\xc2\xa3\x1c4S\x82\x90\xf4\x1fK\x05\x89\xb1\xc8" +
+	"v\xa4\x19\x0e\xdan\x09B\xfc\x96\xa5\x02g,\xb2\xab" +
+	"\x9d1\xcd\xe4\xa0\xed\xc5\x17Ez\xc5\x9c \xb7\xa28" +
+	"\x1fQ\xe9`\x82E\xcfB7'\x18\xcf\xe2\xbfK_" +
+	"N\x0b\xffN\x90)\xd0w2\x9e\xc8\x80\xe2|#\xb4" +
+	"\xff=\xdf\xcc\xaf6\xf0\xb2\xd2\xe7\xe9\xe2ew\xf5w" +
+	"C\xa9\xb4l\x7fT\xb8\xb7\xd9\xfao\x00\x00\x00\xff\xff" +
+	"Z\xbe\x9cC"
 
 func init() {
 	schemas.Register(schema_b99093b7d2518300,
+		0x828d564f51f7af4e,
+		0x89c736f29fb5bda4,
 		0x8e703729a3de1278,
 		0x91989c51606be6c8,
 		0x958c34c871381d2c,
@@ -1640,14 +2145,19 @@ func init() {
 		0xbb0225ef96e5ba9f,
 		0xc9c165c236a1bd53,
 		0xd4eb3c212b8dbb26,
+		0xd53d449df9ef11fc,
 		0xf8c203f305398e1b,
 		0xfb4425cca53d7224,
 		0xff9ec84d90bcd521)
 }
 
 var x_b99093b7d2518300 = []byte{
-	0, 0, 0, 0, 13, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 3, 0,
+	0, 0, 0, 0, 17, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 3, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1660,10 +2170,14 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 16, 0, 0, 0,
+	0, 0, 0, 0, 20, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 2, 0,
-	4, 0, 0, 0, 6, 0, 3, 0,
-	49, 0, 0, 0, 10, 0, 0, 0,
+	4, 0, 0, 0, 10, 0, 3, 0,
+	65, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1677,8 +2191,12 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 8, 0, 0, 0,
-	0, 0, 0, 0, 5, 0, 1, 0,
+	0, 0, 0, 0, 12, 0, 0, 0,
+	0, 0, 0, 0, 9, 0, 1, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1686,8 +2204,12 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	1, 0, 0, 0, 10, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 9, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 1, 0,
+	0, 0, 0, 0, 13, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 1, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1695,6 +2217,13 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	1, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 6, 0, 0, 0,
+	0, 0, 0, 0, 5, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 4, 0, 0, 0,
 	0, 0, 0, 0, 1, 0, 1, 0,
@@ -1709,22 +2238,12 @@ var x_b99093b7d2518300 = []byte{
 	1, 0, 0, 0, 10, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 13, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 3, 0,
+	0, 0, 0, 0, 17, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 3, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	9, 0, 0, 0, 10, 0, 0, 0,
-	9, 0, 0, 0, 10, 0, 0, 0,
-	9, 0, 0, 0, 10, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 13, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 3, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1737,10 +2256,32 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 16, 0, 0, 0,
+	0, 0, 0, 0, 17, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 3, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	9, 0, 0, 0, 10, 0, 0, 0,
+	9, 0, 0, 0, 10, 0, 0, 0,
+	9, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 20, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 2, 0,
-	4, 0, 0, 0, 6, 0, 3, 0,
-	49, 0, 0, 0, 10, 0, 0, 0,
+	4, 0, 0, 0, 10, 0, 3, 0,
+	65, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1754,10 +2295,14 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 16, 0, 0, 0,
+	0, 0, 0, 0, 20, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 2, 0,
-	4, 0, 0, 0, 6, 0, 3, 0,
-	49, 0, 0, 0, 10, 0, 0, 0,
+	4, 0, 0, 0, 10, 0, 3, 0,
+	65, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1771,26 +2316,11 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 8, 0, 0, 0,
-	0, 0, 0, 0, 5, 0, 1, 0,
+	0, 0, 0, 0, 12, 0, 0, 0,
+	0, 0, 0, 0, 9, 0, 1, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	1, 0, 0, 0, 10, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 8, 0, 0, 0,
-	0, 0, 0, 0, 5, 0, 1, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	1, 0, 0, 0, 10, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 9, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 1, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1799,8 +2329,11 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	1, 0, 0, 0, 10, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 9, 0, 0, 0,
-	0, 0, 0, 0, 6, 0, 1, 0,
+	0, 0, 0, 0, 12, 0, 0, 0,
+	0, 0, 0, 0, 9, 0, 1, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1808,6 +2341,48 @@ var x_b99093b7d2518300 = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	1, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 13, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 1, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	1, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 13, 0, 0, 0,
+	0, 0, 0, 0, 10, 0, 1, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	1, 0, 0, 0, 10, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 6, 0, 0, 0,
+	0, 0, 0, 0, 5, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 6, 0, 0, 0,
+	0, 0, 0, 0, 5, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 4, 0, 0, 0,
 	0, 0, 0, 0, 1, 0, 1, 0,

@@ -4,6 +4,7 @@ import (
 	"github.com/MadBase/MadNet/application/objs/atomicswap"
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/uint256"
+	"github.com/MadBase/MadNet/application/wrapper"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/errorz"
@@ -142,10 +143,35 @@ func (b *AtomicSwap) SetTxHash(txHash []byte) error {
 
 // Value returns the Value of the object
 func (b *AtomicSwap) Value() (*uint256.Uint256, error) {
-	if b == nil || b.ASPreImage == nil || b.ASPreImage.Value == nil {
+	if b == nil || b.ASPreImage == nil || b.ASPreImage.Value == nil || b.ASPreImage.Value.IsZero() {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.ASPreImage.Value.Clone(), nil
+}
+
+// Fee returns the Fee of the object
+func (b *AtomicSwap) Fee() (*uint256.Uint256, error) {
+	if b == nil || b.ASPreImage == nil || b.ASPreImage.Fee == nil {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.ASPreImage.Fee.Clone(), nil
+}
+
+// ValuePlusFee returns the Value of the object with the associated fee
+func (b *AtomicSwap) ValuePlusFee() (*uint256.Uint256, error) {
+	value, err := b.Value()
+	if err != nil {
+		return nil, err
+	}
+	fee, err := b.Fee()
+	if err != nil {
+		return nil, err
+	}
+	total, err := new(uint256.Uint256).Add(value, fee)
+	if err != nil {
+		return nil, err
+	}
+	return total, nil
 }
 
 // Owner returns the AtomicSwapOwner object of the AtomicSwap
@@ -203,6 +229,22 @@ func (b *AtomicSwap) IsExpired(currentHeight uint32) (bool, error) {
 		return true, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.ASPreImage.IsExpired(currentHeight)
+}
+
+// ValidateFee validates the fee of the object at the time of creation
+func (b *AtomicSwap) ValidateFee(storage *wrapper.Storage) error {
+	fee, err := b.Fee()
+	if err != nil {
+		return err
+	}
+	feeTrue, err := storage.GetAtomicSwapFee()
+	if err != nil {
+		return err
+	}
+	if fee.Cmp(feeTrue) != 0 {
+		return errorz.ErrInvalid{}.New("invalid fee")
+	}
+	return nil
 }
 
 // ValidateSignature validates the signature of the TXIn against the atomic swap

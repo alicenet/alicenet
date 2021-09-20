@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/application/pendingtx"
 	"github.com/MadBase/MadNet/application/utxohandler"
+	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/consensus/appmock"
 	consensusdb "github.com/MadBase/MadNet/consensus/db"
@@ -36,8 +38,9 @@ type Application struct {
 }
 
 // Init initializes Application ...
-func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *deposit.Handler) error {
+func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *deposit.Handler, storageInterface dynamics.StorageGetter) error {
 	a.logger = logging.GetLogger(constants.LoggerApp)
+	storage := wrapper.NewStorage(storageInterface)
 	uHdlr := utxohandler.NewUTXOHandler(conDB.DB())
 	pHdlr := pendingtx.NewPendingTxHandler(memDB)
 	pHdlr.UTXOHandler = uHdlr
@@ -50,6 +53,7 @@ func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *d
 		dHdlr:   dph,
 		uHdlr:   uHdlr,
 		cdb:     conDB,
+		storage: storage,
 	}
 	a.txHandler.dHdlr.IsSpent = a.txHandler.uHdlr.TrieContains
 	// initialize the application with a random key.
@@ -97,16 +101,7 @@ func (a *Application) convertIfaceToTx(txs []interfaces.Transaction) ([]*objs.Tx
 		if !ok {
 			return nil, false
 		}
-		ttbytes, err := tt.MarshalBinary()
-		if err != nil {
-			return nil, false
-		}
-		ttout := &objs.Tx{}
-		err = ttout.UnmarshalBinary(ttbytes)
-		if err != nil {
-			return nil, false
-		}
-		out[i] = ttout
+		out[i] = tt
 	}
 	return out, true
 }
@@ -151,7 +146,7 @@ func (a *Application) IsValid(txn *badger.Txn, chainID uint32, height uint32, st
 		utils.DebugTrace(a.logger, err)
 		return false, err
 	}
-	if err := txs.Validate(height, vout); err != nil {
+	if err := txs.Validate(height, vout, a.txHandler.storage); err != nil {
 		utils.DebugTrace(a.logger, err)
 		return false, err
 	}
@@ -221,7 +216,11 @@ func (a *Application) SetMiningKey(privKey []byte, curveSpec constants.CurveSpec
 	switch curveSpec {
 	case constants.CurveBN256Eth:
 		signer := &crypto.BNSigner{}
-		signer.SetPrivk(privKey)
+		err := signer.SetPrivk(privKey)
+		if err != nil {
+			utils.DebugTrace(a.logger, err)
+			return err
+		}
 		pubk, err := signer.Pubkey()
 		if err != nil {
 			utils.DebugTrace(a.logger, err)

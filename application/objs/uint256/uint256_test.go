@@ -469,6 +469,46 @@ func TestUint256FromBigInt(t *testing.T) {
 	}
 }
 
+func TestUint256ToBigInt(t *testing.T) {
+	u := &Uint256{}
+	_, err := u.ToBigInt()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	u.SetZero()
+	b, err := u.ToBigInt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Sign() != 0 {
+		t.Fatal("b should be 0")
+	}
+
+	bigOne := new(big.Int).SetUint64(1)
+	u.SetOne()
+	b, err = u.ToBigInt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Cmp(bigOne) != 0 {
+		t.Fatal("b should be 1")
+	}
+
+	big25519 := new(big.Int).SetUint64(25519)
+	_, err = u.FromUint64(25519)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err = u.ToBigInt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Cmp(big25519) != 0 {
+		t.Fatal("b should be 25519")
+	}
+}
+
 func TestUint256FromUint64(t *testing.T) {
 	obj := &testObj{}
 	_, err := obj.Value.FromUint64(0)
@@ -2479,6 +2519,18 @@ func TestUint256Zero(t *testing.T) {
 	uTrue := new(Uint256).SetZero()
 	if !u.Eq(uTrue) {
 		t.Fatal("Zero() fails")
+	}
+}
+
+func TestUint256IsZero(t *testing.T) {
+	u := Zero()
+	if !u.IsZero() {
+		t.Fatal("IsZero() should return true")
+	}
+
+	u = One()
+	if u.IsZero() {
+		t.Fatal("IsZero() should return false")
 	}
 }
 

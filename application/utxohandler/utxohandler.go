@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/application/utxohandler/utxotrie"
+	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
@@ -132,7 +133,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		for j := 0; j < len(utxos); j++ {
 			refUTXOs = append(refUTXOs, utxos[j])
 		}
-		if err := tx.ValidateEqualVinVout(refUTXOs, currentHeight); err != nil {
+		if err := tx.ValidateEqualVinVout(currentHeight, refUTXOs); err != nil {
 			utils.DebugTrace(ut.logger, err)
 			return nil, err
 		}
@@ -420,22 +421,22 @@ func (ut *UTXOHandler) GetData(txn *badger.Txn, owner *objs.Owner, dataIdx []byt
 // GetExpiredForProposal returns a list of UTXOs, the IDs of those UTXOs, and
 // the total byte count of the returned UTXOs. This is used to collect expired
 // dataStores for deletion.
-func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Context, chainID, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32) (*objs.Tx, error) {
-	utxoIDs, _ := ut.expIndex.GetExpiredObjects(txn, utils.Epoch(height), maxBytes)
+func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Context, chainID, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32, storage *wrapper.Storage) (*objs.Tx, uint32, error) {
+	utxoIDs, remaingBytes := ut.expIndex.GetExpiredObjects(txn, utils.Epoch(height), maxBytes, constants.MaxTxVectorLength)
 	utxos := []*objs.TXOut{}
 	var utxoID []byte
 	for i := 0; i < len(utxoIDs); i++ {
 		utxoID = utils.CopySlice(utxoIDs[i])
 		select {
 		case <-ctx.Done():
-			return nil, nil
+			return nil, maxBytes, nil
 		default:
 			// this prevents a node from losing a turn to propose due to taking too long
 		}
 		missing, err := ut.trie.Contains(txn, [][]byte{utils.CopySlice(utxoID)})
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		if len(missing) > 0 {
 			continue
@@ -443,7 +444,7 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 		utxo, err := ut.getInternal(txn, utils.CopySlice(utxoID))
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		utxos = append(utxos, utxo)
 		if len(utxos) == constants.MaxTxVectorLength {
@@ -455,30 +456,30 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 		txIns, err := utxos.MakeTxIn()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		value, err := utxos.RemainingValue(height)
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		pubk, err := signer.Pubkey()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		account := crypto.GetAccount(pubk)
-		vsf := &objs.ValueStore{}
-		err = vsf.New(chainID, value, account, curveSpec, make([]byte, constants.HashLen))
+		vs := &objs.ValueStore{}
+		err = vs.New(chainID, value, uint256.Zero(), account, curveSpec, make([]byte, constants.HashLen))
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		utxo := &objs.TXOut{}
-		err = utxo.NewValueStore(vsf)
+		err = utxo.NewValueStore(vs)
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		tx := &objs.Tx{
 			Vin:  txIns,
@@ -487,23 +488,23 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 		err = tx.SetTxHash()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
-			return nil, err
+			return nil, 0, err
 		}
 		for i := 0; i < len(utxos); i++ {
 			ds, err := utxos[i].DataStore()
 			if err != nil {
 				utils.DebugTrace(ut.logger, err)
-				return nil, err
+				return nil, 0, err
 			}
 			err = ds.Sign(txIns[i], signer)
 			if err != nil {
 				utils.DebugTrace(ut.logger, err)
-				return nil, err
+				return nil, 0, err
 			}
 		}
-		return tx, nil
+		return tx, remaingBytes, nil
 	}
-	return nil, nil
+	return nil, maxBytes, nil
 }
 
 // GetValueForOwner allows a list of utxoIDs to be returned that are equal or

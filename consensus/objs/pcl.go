@@ -2,7 +2,7 @@ package objs
 
 import (
 	"github.com/MadBase/MadNet/crypto"
-	gUtils "github.com/MadBase/MadNet/utils"
+	"github.com/MadBase/MadNet/utils"
 )
 
 type PreCommitList []*PreCommit
@@ -20,7 +20,7 @@ func (pcl PreCommitList) MakeNextHeight(secpSigner *crypto.Secp256k1Signer, bnSi
 	}
 	sigs := [][]byte{}
 	for _, pc := range pcl {
-		s := gUtils.CopySlice(pc.Signature)
+		s := utils.CopySlice(pc.Signature)
 		sigs = append(sigs, s)
 	}
 	nh := &NextHeight{
