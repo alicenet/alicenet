@@ -235,10 +235,12 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 	}
 
 	srpc.logger.Debugf("HandleLocalStateGetValueForOwner: %v", req)
-	minValue := &uint256.Uint256{}
-	err := minValue.UnmarshalString(req.Minvalue)
-	if err != nil {
-		return nil, err
+	minValue := uint256.Max()
+	if req.Minvalue != "" {
+		err := minValue.UnmarshalString(req.Minvalue)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	accountH := req.Account

@@ -436,3 +436,9 @@ func Two() *Uint256 {
 	_, _ = u.FromUint64(2)
 	return u
 }
+
+// Max returns the maximum value
+func Max() *Uint256 {
+	const uint64max uint64 = 1<<64 - 1
+	return &Uint256{val: &uint256.Int{uint64max, uint64max, uint64max, uint64max}}
+}
