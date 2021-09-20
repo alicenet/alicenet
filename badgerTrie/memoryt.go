@@ -16,7 +16,3 @@ func (mt *MemoryTrie) Update(keys, values [][]byte) ([]byte, error) {
 	mt.smt.Discard()
 	return roothash, nil
 }
-
-func (mt *MemoryTrie) GetSMT() *SMT {
-	return mt.smt
-}

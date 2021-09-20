@@ -12,10 +12,8 @@ func generateChain(length int) ([]*BClaims, [][][]byte, error) {
 	chain := []*BClaims{}
 	txHashes := [][][]byte{}
 	txhash := crypto.Hasher([]byte(strconv.Itoa(1)))
-	//log.Printf("txhash: %x\n", txhash)
 	txHshLst := [][]byte{txhash}
 	txRoot, err := MakeTxRoot(txHshLst)
-	//log.Printf("txRoot (0): %x\n", txRoot)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +36,6 @@ func generateChain(length int) ([]*BClaims, [][][]byte, error) {
 		txhash := crypto.Hasher([]byte(strconv.Itoa(i)))
 		txHshLst := [][]byte{txhash}
 		txRoot, err := MakeTxRoot(txHshLst)
-		//log.Printf("txRoot (%d): %x\n", i, txRoot)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -46,14 +46,6 @@ func TestProposal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	//rcertBin, err := rcert.RClaims.MarshalBinary()
-	//log.Printf("rcertBin: %b", rcertBin)
-	//log.Printf("rcertBin: %x", rcertBin)
-
-	//rcertCap, err := rcert.RClaims.MarshalCapn(nil)
-	//log.Printf("rcertCap: %v", rcertCap.)
-
 	pclms := &PClaims{
 		BClaims: bclaimsList[1],
 		RCert:   rcert,
