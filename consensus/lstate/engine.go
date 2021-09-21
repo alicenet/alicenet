@@ -158,7 +158,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 			return err
 		}
 		// Load storage
-		err = ce.storage.LoadStorage(txn, utils.Epoch(roundState.OwnState.SyncToBH.BClaims.Height))
+		err = ce.storage.LoadStorage(txn, utils.Epoch(roundState.OwnState.SyncToBH.BClaims.Height+1))
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -512,7 +512,7 @@ func (ce *Engine) Sync() (bool, error) {
 			}
 			return nil
 		}
-		err = ce.storage.LoadStorage(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height))
+		err = ce.storage.LoadStorage(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height+1))
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
