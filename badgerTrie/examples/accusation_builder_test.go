@@ -24,6 +24,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
+// Create deposits (valueStore) to be spend to create UTXOs
 func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
 	pubkey, err := s.Pubkey()
 	if err != nil {
@@ -41,6 +42,7 @@ func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint
 	return vs
 }
 
+// Create transactions consuming deposits
 func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 	txIn, err := v.MakeTxIn()
 	if err != nil {
@@ -65,6 +67,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 			ChainID:  chainID,
 			Value:    value,
 			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(pubkey)},
+			Fee:      new(uint256.Uint256).SetZero(),
 			TXOutIdx: 0,
 		},
 		TxHash: make([]byte, 32),
@@ -86,7 +89,8 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 	return tx
 }
 
-// MakePersistentTxRoot creates a txRootHsh from a list of transaction hashes
+// Creates a persistent TxRoot Merkle Trie from a list of transactions. This
+// function is necessary since this Trie only lives on memory normally.
 func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte, error) {
 	if len(txHashes) == 0 {
 		return nil, crypto.Hasher([]byte{}), nil
@@ -110,7 +114,8 @@ func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte
 	return smt, rootHash, nil
 }
 
-// TxHash calculates the TxHash of the transaction
+// Creates a persistent TxHash Merkle Trie from a transaction. This function is
+// necessary since this Trie only lives on memory normally.
 func PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
 	if b == nil {
 		return nil, nil, errorz.ErrInvalid{}.New("tx not initialized in txHash")
@@ -163,12 +168,14 @@ func PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
 	return smt, utils.CopySlice(rootHash), nil
 }
 
+// Create a new UTXO spending a previous UTXO
 func createNewUTXO(chainID uint32, value *uint256.Uint256, senderPubkey []byte, txHash []byte, txOutIdx uint32) (*objs.TXOut, error) {
 	newValueStoreSender := &objs.ValueStore{
 		VSPreImage: &objs.VSPreImage{
 			ChainID:  chainID,
 			Value:    value,
 			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(senderPubkey)},
+			Fee:      new(uint256.Uint256).SetZero(),
 			TXOutIdx: txOutIdx,
 		},
 		TxHash: txHash,
@@ -182,6 +189,7 @@ func createNewUTXO(chainID uint32, value *uint256.Uint256, senderPubkey []byte, 
 	return newUTXO, nil
 }
 
+// Creates a transaction transfering money from signer 1 to signer2
 func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transferAmount uint64, v *objs.TXOut) *objs.Tx {
 	txIn, err := v.MakeTxIn()
 	if err != nil {
@@ -224,6 +232,7 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 			ChainID:  chainID,
 			Value:    value,
 			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(senderPubkey)},
+			Fee:      new(uint256.Uint256).SetZero(),
 			TXOutIdx: 0,
 		},
 		TxHash: make([]byte, 32),
@@ -235,6 +244,7 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 			ChainID:  chainID,
 			Value:    value2,
 			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(receiverPubkey)},
+			Fee:      new(uint256.Uint256).SetZero(),
 			TXOutIdx: 1,
 		},
 		TxHash: make([]byte, 32),
@@ -262,6 +272,8 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	return tx
 }
 
+// Generate a block (bclaims) and append it to the chain (list of linked
+// BClaims). This function is used to build the blockchain used by the tests.
 func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte) ([]*cobjs.BClaims, error) {
 	var prevBlock []byte
 	var headerRoot []byte
@@ -308,6 +320,7 @@ func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte) 
 	return chain, nil
 }
 
+// Test the deserialization of the Merkle Proof strucs from the binary blob
 func testMerkleProofDeserialization(mpbytes []byte, mproof *db.MerkleProof) error {
 	mp1 := &db.MerkleProof{}
 	err := mp1.UnmarshalBinary(mpbytes)
@@ -340,6 +353,7 @@ func testMerkleProofDeserialization(mpbytes []byte, mproof *db.MerkleProof) erro
 	return nil
 }
 
+// Get all Merkle Proofs (inclusion) from all transactions inserted in a block
 func getAllStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx) func(txn *badger.Txn) error {
 	fn := func(txn *badger.Txn) error {
 		stateTrie, err := hndlr.GetTrie().GetCurrentTrie(txn)
@@ -403,6 +417,7 @@ func getAllStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx) func(txn *
 	return fn
 }
 
+// Get the proof of Inclusion or Exclusion of a certain UTXOID in the state Trie.
 func getStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx, utxoID []byte) func(txn *badger.Txn) error {
 	fn := func(txn *badger.Txn) error {
 		stateTrie, err := hndlr.GetTrie().GetCurrentTrie(txn)
@@ -434,6 +449,7 @@ func getStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx, utxoID []byte
 	return fn
 }
 
+// Create a Merkle Proof struct from the data returned by the MerkleProofCompressed methods.
 func CreateMerkleProof(included bool, proofHeight int, key []byte, proofKey []byte, proofVal []byte, bitmap []byte, auditPath [][]byte) (*db.MerkleProof, error) {
 	mproof := &db.MerkleProof{
 		Included:   included,
@@ -467,6 +483,7 @@ func CreateMerkleProof(included bool, proofHeight int, key []byte, proofKey []by
 	return mproof, nil
 }
 
+// Main Test function to generate the accusations
 func TestGenerateAccusations(t *testing.T) {
 	////////////////// Database setup ////////////////
 	log.Println("Starting the generation of accusation test objects")
