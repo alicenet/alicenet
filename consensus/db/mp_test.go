@@ -7,12 +7,13 @@ import (
 
 func TestMerkleProof(t *testing.T) {
 	mp0 := &MerkleProof{
-		Included:  true,
-		KeyHeight: 256,
-		Key:       []byte("Key.HashHashHashHashHashHashHash"),
-		Value:     []byte("Val.HashHashHashHashHashHashHash"),
-		Bitmap:    []byte("btmp"),
-		Path:      [][]byte{[]byte("PathHashHashHashHashHashHashHash"), []byte("PathHashHashHashHashHashHashHash"), []byte("PathHashHashHashHashHashHashHash")},
+		Included:   true,
+		KeyHeight:  256,
+		Key:        []byte("Key.HashHashHashHashHashHashHash"),
+		ProofKey:   []byte("PKey.HashHashHashHashHashHashHas"),
+		ProofValue: []byte("Val.HashHashHashHashHashHashHash"),
+		Bitmap:     []byte("btmp"),
+		Path:       [][]byte{[]byte("PathHashHashHashHashHashHashHash"), []byte("PathHashHashHashHashHashHashHash"), []byte("PathHashHashHashHashHashHashHash")},
 	}
 	mp0bin, err := mp0.MarshalBinary()
 	if err != nil {
@@ -32,8 +33,11 @@ func TestMerkleProof(t *testing.T) {
 	if !bytes.Equal(mp1.Key, mp0.Key) {
 		t.Fatalf("bad Key: %x", mp1.Key)
 	}
-	if !bytes.Equal(mp1.Value, mp0.Value) {
-		t.Fatalf("bad Next: %x", mp1.Value)
+	if !bytes.Equal(mp1.ProofKey, mp0.ProofKey) {
+		t.Fatalf("bad ProofKey: %x", mp1.ProofKey)
+	}
+	if !bytes.Equal(mp1.ProofValue, mp0.ProofValue) {
+		t.Fatalf("bad Next: %x", mp1.ProofValue)
 	}
 	if !bytes.Equal(mp1.Bitmap, mp0.Bitmap) {
 		t.Fatalf("bad Bitmap: %x", mp1.Bitmap)

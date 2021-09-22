@@ -39,15 +39,11 @@ func (s *SMT) MerkleProofR(txn *badger.Txn, key, root []byte) ([][]byte, bool, [
 // MerkleProofCompressedR returns a compressed merkle proof in the given trie
 func (s *SMT) MerkleProofCompressedR(txn *badger.Txn, key, root []byte) ([]byte, [][]byte, int, bool, []byte, []byte, error) {
 	return s.merkleProofCompressed(txn, key, root)
-	//bm, mp, h, enc, _, pv, err := s.merkleProofCompressed(txn, key, root)
-	//return bm, mp, h, enc, key, pv, err
 }
 
 // MerkleProofCompressed returns a compressed merkle proof
 func (s *SMT) MerkleProofCompressed(txn *badger.Txn, key []byte) ([]byte, [][]byte, int, bool, []byte, []byte, error) {
-	return s.merkleProofCompressed(txn, key, s.Root) //todo this is broken in library
-	// bm, mp, h, enc, _, pv, err := s.merkleProofCompressed(txn, key, s.Root) //todo this is broken in library
-	// return bm, mp, h, enc, key, pv, err
+	return s.merkleProofCompressed(txn, key, s.Root)
 }
 
 func (s *SMT) merkleProofCompressed(txn *badger.Txn, key, root []byte) ([]byte, [][]byte, int, bool, []byte, []byte, error) {
