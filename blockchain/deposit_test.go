@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -13,7 +13,7 @@ import (
 
 type DepositTestSuite struct {
 	suite.Suite
-	eth      blockchain.Ethereum
+	eth      interfaces.Ethereum
 	callOpts *bind.CallOpts
 	txnOpts  *bind.TransactOpts
 }
@@ -39,7 +39,7 @@ func (s *DepositTestSuite) SetupTest() {
 
 	// Deployer starts with tokens, so has to transfer
 	txnOpts, _ := eth.GetTransactionOpts(ctx, testAcct)
-	_, err = c.UtilityToken.Transfer(txnOpts, testAcct.Address, InitialAllowance)
+	_, err = c.UtilityToken().Transfer(txnOpts, testAcct.Address, InitialAllowance)
 	assert.Nil(t, err)
 	eth.Commit()
 
@@ -58,20 +58,20 @@ func (s *DepositTestSuite) TestDepositEvent() {
 	eth := s.eth
 	c := eth.Contracts()
 
-	bal, _ := c.UtilityToken.BalanceOf(s.callOpts, eth.GetDefaultAccount().Address)
+	bal, _ := c.UtilityToken().BalanceOf(s.callOpts, eth.GetDefaultAccount().Address)
 	t.Logf("utility token balance of %v is %v", eth.GetDefaultAccount().Address.Hex(), bal)
 
 	bal, _ = eth.GetBalance(eth.GetDefaultAccount().Address)
 	t.Logf("ether balance of %v is %v", eth.GetDefaultAccount().Address.Hex(), bal)
 
 	// Approve deposit contract to withdrawh.GetDefaultAccount())
-	txn, err := c.UtilityToken.Approve(s.txnOpts, c.DepositAddress, big.NewInt(10000))
-	assert.Nilf(t, err, "Approve failed by %v to %v", eth.GetDefaultAccount().Address.Hex(), c.DepositAddress.Hex())
+	txn, err := c.UtilityToken().Approve(s.txnOpts, c.DepositAddress(), big.NewInt(10000))
+	assert.Nilf(t, err, "Approve failed by %v to %v", eth.GetDefaultAccount().Address.Hex(), c.DepositAddress().Hex())
 	assert.NotNil(t, txn, "Approve failed: transaction is nil")
 	s.eth.Commit()
 
 	// Tell deposit contract to withdraw
-	txn, err = c.Deposit.Deposit(s.txnOpts, big.NewInt(1000))
+	txn, err = c.Deposit().Deposit(s.txnOpts, big.NewInt(1000))
 	assert.Nil(t, err, "Deposit failed")
 	assert.NotNilf(t, txn, "Deposit failed: transaction is nil")
 	s.eth.Commit()

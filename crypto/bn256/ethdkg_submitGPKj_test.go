@@ -137,7 +137,7 @@ func TestSubmitGPKjSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -690,7 +690,7 @@ func TestSubmitGPKjFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1176,7 +1176,7 @@ func TestSubmitGPKjFailResubmit(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1698,7 +1698,7 @@ func TestSubmitGPKjFailOffCurveSignature(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2166,7 +2166,7 @@ func TestSubmitGPKjFailInvalidSignature(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}

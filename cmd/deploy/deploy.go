@@ -7,17 +7,18 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang-collections/go-datastructures/queue"
 	"github.com/spf13/cobra"
 )
 
+const MIGRATION_GRP = 973
+
 var RequiredWei = big.NewInt(8_000_000_000_000)
 
-// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
+// Command is the cobra.Command specifically for running deploying contracts
 var Command = cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys required smart contracts to Ethereum",
@@ -80,7 +81,7 @@ func deployNode(cmd *cobra.Command, args []string) {
 
 }
 
-func testMigrations(eth blockchain.Ethereum) error {
+func testMigrations(eth interfaces.Ethereum) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
@@ -95,7 +96,7 @@ func testMigrations(eth blockchain.Ethereum) error {
 	}
 
 	// Try staking first
-	migrateStaking, err := bindings.NewMigrateStakingFacet(c.ValidatorsAddress, client)
+	migrateStaking, err := bindings.NewMigrateStakingFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("binding migrateStaking failed: %v", err)
 		return err
@@ -106,11 +107,11 @@ func testMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("setting stake balances failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 	logger.Infof("setting balances for %v. Gas = %v", account.Address.Hex(), txn.Gas())
 
 	// Try snapshoting
-	migrateSnapshots, err := bindings.NewMigrateSnapshotsFacet(c.ValidatorsAddress, client)
+	migrateSnapshots, err := bindings.NewMigrateSnapshotsFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("binding migrateSnapshots failed: %v", err)
 		return err
@@ -124,22 +125,22 @@ func testMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("creating snapshot failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 	logger.Infof("creating snapshot Gas = %v", txn.Gas())
 
-	txn, err = c.Snapshots.SetEpoch(txnOpts, big.NewInt(2))
+	txn, err = c.Snapshots().SetEpoch(txnOpts, big.NewInt(2))
 	if err != nil {
 		logger.Errorf("setting epoch failed: %v", err)
 		return err
 	}
-	eth.WaitForReceipt(ctx, txn)
+	eth.Queue().QueueAndWait(ctx, txn)
 
 	// Try Participants
 
 	return nil
 }
 
-func deployMigrations(eth blockchain.Ethereum) error {
+func deployMigrations(eth interfaces.Ethereum) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
@@ -154,30 +155,8 @@ func deployMigrations(eth blockchain.Ethereum) error {
 		return err
 	}
 
-	txnQueue := queue.New(10)
-	q := func(tx *types.Transaction) {
-		if tx != nil {
-			logger.Debugf("Queueing transaction %v", tx.Hash().String())
-			txnQueue.Put(tx)
-		} else {
-			logger.Warn("Ignoring nil transaction")
-		}
-	}
-
-	flushQ := func(queue *queue.Queue) {
-		logger.Debugf("waiting for txns...")
-		for txns, err := queue.Get(1); !queue.Empty(); txns, err = queue.Get(1) {
-			if err != nil {
-				logger.Errorf("failure: %v", err)
-			}
-			tx := txns[0].(*types.Transaction)
-			logger.Debugf("waiting for txn: %v", tx.Hash().String())
-			eth.WaitForReceipt(ctx, tx)
-		}
-	}
-
 	//
-	var txn *types.Transaction
+	logger.Infof("Deploying migrations...")
 
 	// Deploy all the migration contracts
 	migrateStakingAddr, txn, _, err := bindings.DeployMigrateStakingFacet(txnOpts, client)
@@ -185,7 +164,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateStakingAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateStakingAddr = \"0x%0.40x\" gas = %v", migrateStakingAddr, txn.Gas())
 
 	migrateSnapshotsAddr, txn, _, err := bindings.DeployMigrateSnapshotsFacet(txnOpts, client)
@@ -193,7 +172,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateSnapshotsAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateSnapshotsAddr = \"0x%0.40x\" gas = %v", migrateSnapshotsAddr, txn.Gas())
 
 	migrateParticipantsAddr, txn, _, err := bindings.DeployMigrateParticipantsFacet(txnOpts, client)
@@ -201,7 +180,7 @@ func deployMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateParticipantsAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateParticipantsAddr = \"0x%0.40x\" gas = %v", migrateParticipantsAddr, txn.Gas())
 
 	migrateEthDKGAddr, txn, _, err := bindings.DeployMigrateETHDKG(txnOpts, client)
@@ -209,32 +188,34 @@ func deployMigrations(eth blockchain.Ethereum) error {
 		logger.Errorf("Failed to deploy migrateEthDKGAddr...")
 		return err
 	}
-	q(txn)
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, txn)
 	logger.Infof("Deploy migrateEthDKGAddr = \"0x%0.40x\" gas = %v", migrateEthDKGAddr, txn.Gas())
 
 	// Wire validators migration contracts
-	validatorUpdater, err := bindings.NewDiamondUpdateFacet(c.ValidatorsAddress, client)
+	validatorUpdater, err := bindings.NewDiamondUpdateFacet(c.ValidatorsAddress(), client)
 	if err != nil {
 		logger.Errorf("failed to bind diamond updater to validators: %v", err)
 		return err
 	}
 	vu := &blockchain.Updater{Updater: validatorUpdater, TxnOpts: txnOpts, Logger: logger}
-	q(vu.Add("setBalancesFor(address,uint256,uint256,uint256)", migrateStakingAddr))
-	q(vu.Add("snapshot(uint256,bytes,bytes)", migrateSnapshotsAddr))
 
-	q(vu.Add("addValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
-	q(vu.Add("removeValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
+	//
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("setBalancesFor(address,uint256,uint256,uint256)", migrateStakingAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("snapshot(uint256,bytes,bytes)", migrateSnapshotsAddr))
+
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("addValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, vu.Add("removeValidatorImmediate(address,uint256[2])", migrateParticipantsAddr))
 
 	// Wire EthDKG migration contract
-	ethdkgUpdater, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress, client)
+	ethdkgUpdater, err := bindings.NewDiamondUpdateFacet(c.EthdkgAddress(), client)
 	if err != nil {
 		logger.Errorf("failed to bind diamond updater to ethdkg: %v", err)
 		return err
 	}
 	eu := &blockchain.Updater{Updater: ethdkgUpdater, TxnOpts: txnOpts, Logger: logger}
-	q(eu.Add("migrate(uint256,uint32,uint32,uint256[4],address[],uint256[4][])", migrateEthDKGAddr))
+	eth.Queue().QueueGroupTransaction(ctx, MIGRATION_GRP, eu.Add("migrate(uint256,uint32,uint32,uint256[4],address[],uint256[4][])", migrateEthDKGAddr))
 
-	flushQ(txnQueue)
+	eth.Queue().WaitGroupTransactions(ctx, MIGRATION_GRP)
 
 	return nil
 }

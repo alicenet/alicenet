@@ -144,7 +144,7 @@ func TestSuccessfulAccusation(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -769,7 +769,7 @@ func TestSuccessfulAccusation(t *testing.T) {
 	assert.Nilf(t, err, "Error in GPKj accusation function call: %v", err)
 	sim.Commit()
 
-	receiptGA, err := sim.WaitForReceipt(context.Background(), txnGA)
+	receiptGA, err := sim.Queue().QueueAndWait(context.Background(), txnGA)
 	assert.Nilf(t, err, "TransactionReceipt failed... %v", err)
 	assert.NotNilf(t, receiptGA, "Could not retrieve transaction receipt: %v", receiptGA)
 	assert.Equal(t, uint64(1), receiptGA.Status, "Receipt status shows transaction failed")
@@ -864,7 +864,7 @@ func TestSuccessfulAccusation(t *testing.T) {
 
 	sim.Commit()
 
-	receipt, err := sim.WaitForReceipt(context.Background(), txn)
+	receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 	assert.Nilf(t, err, "TransactionReceipt failed... %v", err)
 	assert.NotNil(t, receipt, "Could not retrieve transaction receipt")
 	assert.Equal(t, uint64(1), receipt.Status, "Receipt status shows transaction failed")
@@ -1153,7 +1153,7 @@ func TestGroupAccusationGPKjSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1990,7 +1990,7 @@ func TestGroupAccusationGPKjFailWrongBlock(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2754,7 +2754,7 @@ func TestGroupAccusationGPKjFailTooFewHonestIndices(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -3518,7 +3518,7 @@ func TestGroupAccusationGPKjFailIndices(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -4281,7 +4281,7 @@ func TestGroupAccusationGPKjFailInvalidInvArray(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -5045,7 +5045,7 @@ func TestGroupAccusationGPKjFailInvalidHonestIndices(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -5800,7 +5800,7 @@ func TestGroupAccusationGPKjFailInvalidDishonest(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}

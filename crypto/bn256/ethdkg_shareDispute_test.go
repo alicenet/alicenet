@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/stretchr/testify/assert"
 )
 
 // Here we test everything by proceeding normally to the key share
@@ -139,7 +140,7 @@ func TestProceedToKeySubmissionPhase(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -354,7 +355,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -579,10 +580,12 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 		combinedBytes[len(shareBytes)+k] = commitmentBytes[k]
 	}
 	shareCommitmentHash := crypto.Hasher(combinedBytes)
+	t.Logf("initial issuer:%x", issuer)
 	issuerHash, err := c.ShareDistributionHashes(&bind.CallOpts{}, issuer)
 	if err != nil {
 		t.Fatal("Error raised when obtaining share distribution hash")
 	}
+	t.Logf("initial issuerHash:%x", issuerHash)
 	validHash := bytes.Equal(shareCommitmentHash, issuerHash[:])
 	if !validHash {
 		t.Fatal("Our computed commitment hash does not match submitted one")
@@ -595,12 +598,15 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 	}
 
 	// In above code, already confirmed that shared secret is invalid
-
-	_, err = c.SubmitDispute(txOpts, issuer, issuerListIdxBig, disputerListIdxBig, encSharesDispFromIss, commitmentsDispFromIss, sharedSecretBig, sharedSecretProof)
+	tx, err := c.SubmitDispute(txOpts, issuer, issuerListIdxBig, disputerListIdxBig, encSharesDispFromIss, commitmentsDispFromIss, sharedSecretBig, sharedSecretProof)
 	if err != nil {
 		t.Fatal("c.SubmitDispute should not have raised an error for c.SubmitDispute")
 	}
 	sim.Commit()
+
+	rcpt, err := sim.Queue().QueueAndWait(context.Background(), tx)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(1), rcpt.Status)
 
 	// Confirm shares are valid by looking at hash output
 	for ell := 0; ell < n; ell++ {
@@ -609,6 +615,7 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 			continue
 		}
 		auth := authArray[ell]
+		t.Logf("auth.From:%x", auth.From.Hash().Hex())
 		// Check distribution hash
 		authHash, err := c.ShareDistributionHashes(&bind.CallOpts{}, auth.From)
 		if err != nil {
@@ -629,10 +636,12 @@ func TestSubmitDisputeSuccess(t *testing.T) {
 	}
 
 	// Confirm issuer's hash was zeroed
+	t.Logf("issuer:%x", issuer)
 	issuerHash, err = c.ShareDistributionHashes(&bind.CallOpts{}, issuer)
 	if err != nil {
 		t.Fatal("Error raised when obtaining share distribution hash")
 	}
+	t.Logf("issuerHash:%x", issuerHash)
 	zeroBytes := make([]byte, 32)
 	emptyHash := bytes.Equal(zeroBytes, issuerHash[:])
 	if !emptyHash {
@@ -804,7 +813,7 @@ func TestSubmitDisputeFailBlockNumber(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1232,7 +1241,7 @@ func TestSubmitDisputeFailAddresses(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -1661,7 +1670,7 @@ func TestSubmitDisputeFailHashValue(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2090,7 +2099,7 @@ func TestSubmitDisputeFailDLEQProof(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -2497,7 +2506,7 @@ func TestSubmitDisputeFailValidShare(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}

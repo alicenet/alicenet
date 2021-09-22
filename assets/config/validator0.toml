@@ -1,5 +1,4 @@
-#logging = "localRPC=info,gossipbus=info,utils=info,services=info,ethereum=info,main=warn,validator=info,monitor=info,deploy=info,consensus=info,peerMan=info,muxHandler=info,p2pmux=info,app=error,transport=info,dman=info,status=info,db=info,yamux=error,badger=error,monitor_bus=error"
-logging = "consensus=trace"
+logging = "ethereum=debug"
 
 [chain]
 id = 42
@@ -29,6 +28,7 @@ upnp=false
 [monitor]
 batchSize = 1000
 interval = "7s"
+timeout = "1h"
 
 [ethereum]
 defaultAccount = "0x9AC1c9afBAec85278679fF75Ef109217f26b1417"

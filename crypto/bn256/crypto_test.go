@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/crypto/bn256/solidity"
+	"github.com/MadBase/bridge/bindings"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
@@ -16,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func SolidityContractSetup(t *testing.T, users int) (*solidity.Solidity, *backends.SimulatedBackend, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
+func SolidityContractSetup(t *testing.T, users int) (*bindings.Crypto, *backends.SimulatedBackend, []*ecdsa.PrivateKey, []*bind.TransactOpts) {
 	if users < 1 {
 		t.Fatal("Must have at least 1 user for contract setup")
 	}
@@ -27,13 +28,14 @@ func SolidityContractSetup(t *testing.T, users int) (*solidity.Solidity, *backen
 	authArray := make([]*bind.TransactOpts, users)
 	for k := 0; k < users; k++ {
 		key, _ := crypto.GenerateKey()
-		auth := bind.NewKeyedTransactor(key)
+		auth, err := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+		assert.Nil(t, err)
 		genAlloc[auth.From] = core.GenesisAccount{Balance: big.NewInt(9223372036854775807)}
 		keyArray[k] = key
 		authArray[k] = auth
 	}
 	sim := backends.NewSimulatedBackend(genAlloc, gasLimit) // Deploy a token contract on the simulated blockchain
-	_, _, c, err := solidity.DeploySolidity(authArray[0], sim)
+	_, _, c, err := bindings.DeployCrypto(authArray[0], sim)
 	sim.Commit()
 	if err != nil {
 		log.Fatalf("Failed to deploy new token contract: %v", err)

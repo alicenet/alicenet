@@ -1,4 +1,4 @@
-logging = "utils=debug,register=debug,unregister=debug,ethereum=debug,main=warn"
+logging = "main=info,ethereum=debug"
 
 [chain]
 id = 42

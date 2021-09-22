@@ -2,108 +2,117 @@ package tasks
 
 import (
 	"context"
-	"math/big"
+	"errors"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum
 type SnapshotTask struct {
-	sync.Mutex
+	sync.RWMutex
 	acct        accounts.Account
-	epoch       *big.Int
-	eth         blockchain.Ethereum
-	logger      *logrus.Logger
+	BlockHeader *objs.BlockHeader
 	rawBclaims  []byte
 	rawSigGroup []byte
 }
 
-// NewSnapshotTask creates a new task
-func NewSnapshotTask(logger *logrus.Logger, eth blockchain.Ethereum, acct accounts.Account, epoch *big.Int, rawBclaims []byte, rawSigGroup []byte) *SnapshotTask {
+func NewSnapshotTask(account accounts.Account) *SnapshotTask {
 	return &SnapshotTask{
-		acct:        acct,
-		epoch:       epoch,
-		eth:         eth,
-		logger:      logger,
-		rawBclaims:  rawBclaims,
-		rawSigGroup: rawSigGroup,
+		acct: account,
 	}
 }
 
-// DoWork is the first attempt at distributing shares via ethdkg
-func (t *SnapshotTask) DoWork(ctx context.Context) bool {
-	t.logger.Info("DoWork() ...")
-	return t.doTask(ctx)
-}
+func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-// DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *SnapshotTask) DoRetry(ctx context.Context) bool {
-	t.logger.Info("DoRetry() ...")
-	return t.doTask(ctx)
-}
+	if t.BlockHeader == nil {
+		return errors.New("BlockHeader must be assigned before initializing")
+	}
 
-func (t *SnapshotTask) doTask(ctx context.Context) bool {
+	rawBClaims, err := t.BlockHeader.BClaims.MarshalBinary()
+	if err != nil {
+		logger.Errorf("Unable to marshal block header: %v", err)
+		return err
+	}
 
 	t.Lock()
 	defer t.Unlock()
 
-	c := t.eth.Contracts()
+	t.rawBclaims = rawBClaims
+	t.rawSigGroup = t.BlockHeader.SigGroup
 
-	// Do the mechanics
-	txnOpts, err := t.eth.GetTransactionOpts(ctx, t.eth.GetDefaultAccount())
+	return nil
+}
+func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	return t.doTask(ctx, logger, eth)
+}
+
+func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	return t.doTask(ctx, logger, eth)
+}
+
+func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.RLock()
+	defer t.RUnlock()
+
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
 	if err != nil {
-		t.logger.Errorf("Could not create transaction for snapshot: %v", err)
-		return false
+		logger.Warnf("Failed to generate transaction options: %v", err)
+		return nil
 	}
 
-	txn, err := c.Validators.Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
+	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
 	if err != nil {
-		t.logger.Errorf("Failed to take snapshot: %v", err)
-		return false
+		logger.Warnf("Snapshot failed: %v", err)
+		return nil
+	} else {
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		if err != nil {
+			logger.Warnf("Snapshot failed to retreive receipt: %v", err)
+			return nil
+		}
+
+		if rcpt.Status != 1 {
+			logger.Warnf("Snapshot receipt status != 1")
+			return nil
+		}
+
+		logger.Info("Snapshot succeeded")
 	}
 
-	receipt, err := t.eth.WaitForReceipt(ctx, txn)
+	return nil
+}
+
+func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+
+	t.RLock()
+	defer t.RUnlock()
+
+	opts := eth.GetCallOpts(ctx, t.acct)
+
+	epoch, err := eth.Contracts().Snapshots().Epoch(opts)
 	if err != nil {
-		t.logger.Errorf("Failed to retrieve snapshot receipt: %v", err)
-		return false
+		logger.Errorf("Failed to determine current epoch: %v", err)
+		return true
 	}
 
-	if receipt == nil {
-		t.logger.Error("missing snapshot receipt")
-		return false
+	height, err := eth.Contracts().Snapshots().GetMadHeightFromSnapshot(opts, epoch)
+	if err != nil {
+		logger.Errorf("Failed to determine height: %v", err)
+		return true
 	}
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		t.logger.Errorf("snapshot status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
+	if t.BlockHeader.BClaims.Height != 0 && t.BlockHeader.BClaims.Height < height {
 		return false
 	}
 
 	return true
 }
 
-// ShouldRetry checks if it makes sense to try again
-func (t *SnapshotTask) ShouldRetry(ctx context.Context) bool {
-	t.Lock()
-	defer t.Unlock()
-
-	c := t.eth.Contracts()
-
-	callOpts := t.eth.GetCallOpts(ctx, t.acct)
-	height, err := c.Validators.GetHeightFromSnapshot(callOpts, t.epoch)
-	if err != nil {
-		return true
-	}
-
-	t.logger.Infof("height of epoch %v: %v", t.epoch, height)
-
-	return false // TODO check to see if snapshot exists
-}
-
-// DoDone creates a log entry saying task is complete
-func (t *SnapshotTask) DoDone() {
-	t.logger.Infof("done")
+func (*SnapshotTask) DoDone(logger *logrus.Entry) {
 }

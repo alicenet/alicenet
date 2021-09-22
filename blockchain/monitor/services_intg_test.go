@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type ServicesSuite struct {
 	suite.Suite
-	eth blockchain.Ethereum
+	eth interfaces.Ethereum
 }
 
 func (s *ServicesSuite) SetupTest() {
@@ -23,6 +24,7 @@ func (s *ServicesSuite) SetupTest() {
 		"../../assets/test/keys",
 		"../../assets/test/passcodes.txt",
 		3,
+		2*time.Second,
 		5*time.Second,
 		0,
 		big.NewInt(9223372036854775807),

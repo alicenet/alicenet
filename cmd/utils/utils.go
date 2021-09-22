@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,6 +66,13 @@ var UnregisterCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
+//
+var UpdateValueCommand = cobra.Command{
+	Use:   "updatevalue",
+	Short: "Dynamically updates a value",
+	Long:  "",
+	Run:   utilsNode}
+
 // DepositCommand is the command that triggers a token deposit for the caller
 var DepositCommand = cobra.Command{
 	Use:   "deposit",
@@ -72,7 +80,7 @@ var DepositCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Logger) (blockchain.Ethereum, error) {
+func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
 	eth, err := blockchain.NewEthereumEndpoint(
 		config.Configuration.Ethereum.Endpoint,
@@ -90,13 +98,16 @@ func setupEthereum(logger *logrus.Logger) (blockchain.Ethereum, error) {
 
 	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
 
-	err = eth.Contracts().LookupContracts(registryAddress)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = eth.Contracts().LookupContracts(ctx, registryAddress)
 
 	return eth, err
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
+func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 
 	acct := eth.GetDefaultAccount()
 	err := eth.UnlockAccount(acct)
@@ -118,58 +129,59 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 	}
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.TODO(), acct)
-	stakingTokenBalance, err := c.StakingToken.BalanceOf(callOpts, acct.Address)
+	callOpts := eth.GetCallOpts(context.Background(), acct)
+	stakingTokenBalance, err := c.StakingToken().BalanceOf(callOpts, acct.Address)
 	if err != nil {
-		logger.Warnf("Failed to check staking token (%v) balance account %v: %v", c.StakingTokenAddress.Hex(), acct.Address.Hex(), err)
+		logger.Warnf("Failed to check staking token (%v) balance account %v: %v", c.StakingTokenAddress().Hex(), acct.Address.Hex(), err)
 		return
 	}
 
-	utilityTokenBalance, err := c.UtilityToken.BalanceOf(callOpts, acct.Address)
+	utilityTokenBalance, err := c.UtilityToken().BalanceOf(callOpts, acct.Address)
 	if err != nil {
-		logger.Warnf("Failed to check utility token (%v) balance account %v: %v", c.UtilityTokenAddress.Hex(), acct.Address.Hex(), err)
+		logger.Warnf("Failed to check utility token (%v) balance account %v: %v", c.UtilityTokenAddress().Hex(), acct.Address.Hex(), err)
 		return
 	}
 
-	logger.Infof("Validators() address is %v", c.ValidatorsAddress.Hex())
-	isValidator, err := c.Validators.IsValidator(callOpts, acct.Address)
+	logger.Infof("Validators() address is %v", c.ValidatorsAddress().Hex())
+	isValidator, err := c.Validators().IsValidator(callOpts, acct.Address)
 	if err != nil {
 		logger.Warnf("Failed checking whether %v is a validator: %v", acct.Address.Hex(), err)
 		return
 	}
 
-	rewardBalance, err := c.Staking.BalanceReward(callOpts)
+	rewardBalance, err := c.Staking().BalanceReward(callOpts)
 	if err != nil {
 		logger.Warnf("Failed to check balance: %v", err)
 	}
 
-	unlockedRewardBalance, err := c.Staking.BalanceUnlockedReward(callOpts)
+	unlockedRewardBalance, err := c.Staking().BalanceUnlockedReward(callOpts)
 	if err != nil {
 		logger.Warnf("Failed to check balance: %v", err)
 	}
 
-	stakeBalance, err := c.Staking.BalanceStake(callOpts)
+	stakeBalance, err := c.Staking().BalanceStake(callOpts)
 	if err != nil {
 		logger.Warnf("Failed to check balance: %v", err)
 	}
 
-	unlockedBalance, err := c.Staking.BalanceUnlocked(callOpts)
+	unlockedBalance, err := c.Staking().BalanceUnlocked(callOpts)
 	if err != nil {
 		logger.Warnf("Failed to check balance: %v", err)
 	}
 
-	epoch, err := c.Validators.Epoch(callOpts)
+	epoch, err := c.Validators().Epoch(callOpts)
 	if err != nil {
-		logger.Warnf("Could find current epoch: %v", err)
+		logger.Warnf("Failed to find current epoch: %v", err)
 	}
 
 	logger.Info(strings.Repeat("-", 80))
-	logger.Infof("      Crypto contract: %v", c.CryptoAddress.Hex())
-	logger.Infof("     Deposit contract: %v", c.DepositAddress.Hex())
-	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress.Hex())
-	logger.Infof("*   Registry contract: %v", c.RegistryAddress.Hex())
-	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress.Hex())
-	logger.Infof("  Validators contract: %v", c.ValidatorsAddress.Hex())
+	logger.Infof("      Crypto contract: %v", c.CryptoAddress().Hex())
+	logger.Infof("     Deposit contract: %v", c.DepositAddress().Hex())
+	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress().Hex())
+	logger.Infof("*   Registry contract: %v", c.RegistryAddress().Hex())
+	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress().Hex())
+	logger.Infof("    Governor contract: %v", c.GovernorAddress().Hex())
+	logger.Infof("  Validators contract: %v", c.ValidatorsAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
 	logger.Infof("              Public key: 0x%x", crypto.FromECDSAPub(&keys.PrivateKey.PublicKey))
@@ -186,10 +198,8 @@ func LogStatus(logger *logrus.Logger, eth blockchain.Ethereum) {
 }
 
 func utilsNode(cmd *cobra.Command, args []string) {
-	logLevel := logging.GetLogger("utils").Level
 
-	logger := logging.GetLogger(cmd.Use)
-	logger.SetLevel(logLevel)
+	logger := logging.GetLogger("utils").WithField("Component", cmd.Use)
 
 	// Utils wide setup
 	eth, err := setupEthereum(logger)
@@ -224,6 +234,8 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		exitCode = unregister(logger, eth, cmd, args)
 	case "utils":
 		exitCode = 0
+	case "updatevalue":
+		exitCode = updatevalue(logger, eth, cmd, args)
 	case "transfertokens":
 		exitCode = transfertokens(logger, eth, cmd, args)
 	case "deposit":
@@ -236,7 +248,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
@@ -251,12 +263,12 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 
 	// Contract orchestration
 	// Approve tokens for staking
-	txn, err := c.StakingToken.Approve(txnOpts, c.ValidatorsAddress, big.NewInt(1_000_000))
+	txn, err := c.StakingToken().Approve(txnOpts, c.ValidatorsAddress(), big.NewInt(1_000_000))
 	if err != nil {
 		logger.Errorf("StakingToken.Approve() failed: %v", err)
 		return 1
 	}
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("StakingToken.Approve() failed: %v", err)
 		return 1
@@ -266,12 +278,12 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 	}
 
 	// Lock tokens as stake
-	txn, err = c.Staking.LockStake(txnOpts, big.NewInt(1_000_000))
+	txn, err = c.Staking().LockStake(txnOpts, big.NewInt(1_000_000))
 	if err != nil {
 		logger.Errorf("Staking.LockStake() failed: %v", err)
 		return 1
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("Staking.LockStake() failed: %v", err)
 		return 1
@@ -281,11 +293,11 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 	}
 
 	// Actually join validator pool
-	txn, err = c.Validators.AddValidator(txnOpts, acct.Address, madNetID)
+	txn, err = c.Validators().AddValidator(txnOpts, acct.Address, madNetID)
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
@@ -296,7 +308,7 @@ func register(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command
 	return 0
 }
 
-func unregister(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
@@ -309,7 +321,7 @@ func unregister(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Comma
 	}
 
 	// Contract orchestration
-	txn, err := c.Validators.RemoveValidator(txnOpts, acct.Address, madNetID)
+	txn, err := c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
 	if err != nil {
 		logger.Errorf("Account %v could not leave validators pool: %v", acct.Address.Hex(), err)
 		return 1
@@ -319,7 +331,7 @@ func unregister(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Comma
 	return 0
 }
 
-func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// Arguments are 1) who is being approved, and 2) amount being approved
 	if len(args) != 2 {
@@ -341,7 +353,7 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
 
-	txnOpts, err := eth.GetTransactionOpts(context.TODO(), acct)
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
 		logger.Errorf("Can not build transaction options: %v", err)
 		return 1
@@ -349,7 +361,7 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 
 	action := func() bool {
 
-		txn, err := c.StakingToken.Approve(txnOpts, toAddress, amount)
+		txn, err := c.StakingToken().Approve(txnOpts, toAddress, amount)
 		if err != nil && err.Error() == "replacement transaction underpriced" {
 			return true
 		}
@@ -359,7 +371,7 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 			return false
 		}
 
-		rcpt, err := eth.WaitForReceipt(context.Background(), txn)
+		rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			logger.Infof("waiting for receipt failed: %v", err)
 			return true
@@ -381,7 +393,59 @@ func approvetokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 	return 0
 }
 
-func deposittokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func updatevalue(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+
+	acct := eth.GetDefaultAccount()
+
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
+	if err != nil {
+		logger.Errorf("txnopts failed: %v", err)
+		return 1
+	}
+
+	epoch, valid := new(big.Int).SetString(args[0], 10)
+	if !valid {
+		logger.Errorf("Could not set epoch using: %v", args[0])
+		return 1
+	}
+
+	key, valid := new(big.Int).SetString(args[1], 10)
+	if !valid {
+		logger.Errorf("Could not determine key using: %v", args[1])
+		return 1
+	}
+
+	value := blockchain.StringToBytes32(args[2])
+
+	logger = logger.WithFields(logrus.Fields{
+		"Epoch": epoch,
+		"Key":   key,
+		"Value": value,
+	})
+
+	txn, err := eth.Contracts().Governor().UpdateValue(txnOpts, epoch, key, value)
+	if err != nil {
+		logger.Errorf("Could not call updateValue: %v", err)
+		return 1
+	}
+
+	rcpt, err := eth.Queue().QueueAndWait(context.Background(), txn)
+	if err != nil {
+		logger.Errorf("Could not retrieve receipt: %v", err)
+		return 1
+	}
+
+	if rcpt.Status != 1 {
+		logger.Error("Transaction failed")
+		return 1
+	}
+
+	logger.Info("Value updated")
+
+	return 0
+}
+
+func deposittokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
@@ -393,24 +457,24 @@ func deposittokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 		return 1
 	}
 	// approve
-	txn, err := c.UtilityToken.Approve(txnOpts, c.DepositAddress, amount)
+	txn, err := c.UtilityToken().Approve(txnOpts, c.DepositAddress(), amount)
 	if err != nil {
 		logger.Errorf("approval failed: %v", err)
 		return 1
 	}
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("approval receipt failed: %v", err)
 		return 1
 	}
 	logger.Infof("approval receipt status: %v", rcpt.Status)
 	// deposit
-	txn, err = c.Deposit.Deposit(txnOpts, amount)
+	txn, err = c.Deposit().Deposit(txnOpts, amount)
 	if err != nil {
 		logger.Errorf("deposit failed: %v", err)
 		return 1
 	}
-	rcpt, err = eth.WaitForReceipt(ctx, txn)
+	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Errorf("deposit receipt failed: %v", err)
 		return 1
@@ -419,7 +483,7 @@ func deposittokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Co
 	return 0
 }
 
-func transfertokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func transfertokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// Arguments are 1) src of tokens, and 2) amount to transfer
 	if len(args) != 2 {
@@ -441,13 +505,13 @@ func transfertokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.C
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
 
-	txnOpts, err := eth.GetTransactionOpts(context.TODO(), acct)
+	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
 		logger.Errorf("Can not build transaction options: %v", err)
 	}
 
 	// Contract orchestration
-	_, err = c.StakingToken.TransferFrom(txnOpts, fromAddress, acct.Address, amount)
+	_, err = c.StakingToken().TransferFrom(txnOpts, fromAddress, acct.Address, amount)
 	if err != nil {
 		logger.Errorf("Could not transfer %v tokens from %v to %v: %v", amount, fromAddressString, acct.Address.Hex(), err)
 	}
@@ -456,7 +520,7 @@ func transfertokens(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.C
 	return 0
 }
 
-func sendwei(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
@@ -481,7 +545,7 @@ func sendwei(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command,
 	return 0
 }
 
-func ethdkg(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, args []string) int {
+func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
@@ -496,13 +560,13 @@ func ethdkg(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, 
 	}
 
 	//
-	txn, err := c.Ethdkg.InitializeState(txnOpts)
+	txn, err := c.Ethdkg().InitializeState(txnOpts)
 	if err != nil {
 		logger.Errorf("Could not initialize ethdkg: %v", err)
 		return 1
 	}
 
-	rcpt, err := eth.WaitForReceipt(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
 		logger.Error("Failed looking for transaction events.")
 		return 1
@@ -514,7 +578,7 @@ func ethdkg(logger *logrus.Logger, eth blockchain.Ethereum, cmd *cobra.Command, 
 
 	for _, log := range logs {
 		if log.Topics[0].Hex() == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
-			event, err := c.Ethdkg.ParseRegistrationOpen(*log)
+			event, err := c.Ethdkg().ParseRegistrationOpen(*log)
 			logger.Infof("Distributed key generation has begun...\nDkgStarts:%v\nRegistrationEnds:%v\nShareDistributionEnds:%v\nDisputeEnds:%v\nKeyShareSubmissionEnds:%v\nMpkSubmissionEnds:%v\nGpkjSubmissionEnds:%v\nGpkjDisputeEnds:%v\nDkgComplete:%v",
 				event.DkgStarts,
 				event.RegistrationEnds,

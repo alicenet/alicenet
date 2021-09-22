@@ -46,6 +46,7 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 				loggerName := settingComponent[0]
 				loggerLevel := strings.ToLower(settingComponent[1])
 
+				logger.Infof("Setting log level for '%v' to '%v'", loggerName, loggerLevel)
 				lgr := logging.GetLogger(loggerName)
 
 				switch loggerLevel {
@@ -101,6 +102,7 @@ func main() {
 			{"ethereum.registryAddress", "", "", &config.Configuration.Ethereum.RegistryAddress},
 			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
 			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
+			{"monitor.timeout", "", "", &config.Configuration.Monitor.Timeout},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -119,12 +121,13 @@ func main() {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},
 
 		&utils.ApproveTokensCommand:  {},
+		&utils.DepositCommand:        {},
 		&utils.EthdkgCommand:         {},
 		&utils.RegisterCommand:       {},
 		&utils.SendWeiCommand:        {},
 		&utils.TransferTokensCommand: {},
 		&utils.UnregisterCommand:     {},
-		&utils.DepositCommand:        {},
+		&utils.UpdateValueCommand:    {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
@@ -148,6 +151,7 @@ func main() {
 		&utils.ApproveTokensCommand:  &utils.Command,
 		&utils.EthdkgCommand:         &utils.Command,
 		&utils.RegisterCommand:       &utils.Command,
+		&utils.UpdateValueCommand:    &utils.Command,
 		&utils.SendWeiCommand:        &utils.Command,
 		&utils.TransferTokensCommand: &utils.Command,
 		&utils.UnregisterCommand:     &utils.Command,

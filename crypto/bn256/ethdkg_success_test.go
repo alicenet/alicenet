@@ -140,7 +140,7 @@ func TestSuccessfulCompletion(t *testing.T) {
 			t.Fatal("Unexpected error arose in DistributeShares submission")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -335,7 +335,7 @@ func TestSuccessfulCompletion(t *testing.T) {
 			t.Fatal("Unexpected error occurred when submitting key shares")
 		}
 		sim.Commit()
-		receipt, err := sim.WaitForReceipt(context.Background(), txn)
+		receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 		if err != nil {
 			t.Fatal("Unexpected error in TransactionReceipt")
 		}
@@ -675,7 +675,7 @@ func TestSuccessfulCompletion(t *testing.T) {
 
 	sim.Commit()
 
-	receipt, err := sim.WaitForReceipt(context.Background(), txn)
+	receipt, err := sim.Queue().QueueAndWait(context.Background(), txn)
 	assert.Nilf(t, err, "TransactionReceipt failed... %v", err)
 	assert.NotNilf(t, receipt, "Could not retrieve transaction receipt: %v", receipt)
 

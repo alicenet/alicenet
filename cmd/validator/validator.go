@@ -14,6 +14,7 @@ import (
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/config"
@@ -32,7 +33,6 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
 	"github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/rbus"
 	"github.com/MadBase/MadNet/status"
 	mnutils "github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -49,7 +49,7 @@ var Command = cobra.Command{
 	Long:  "Runs a MadNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (blockchain.Ethereum, *keystore.Key, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keystore.Key, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
 	eth, err := blockchain.NewEthereumEndpoint(
@@ -75,11 +75,20 @@ func initEthereumConnection(logger *logrus.Logger) (blockchain.Ethereum, *keysto
 	// Find all the contracts
 
 	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
-	if err := eth.Contracts().LookupContracts(registryAddress); err != nil {
+	if err := eth.Contracts().LookupContracts(context.Background(), registryAddress); err != nil {
 		logger.Fatalf("Can't find contract registry: %v", err)
 		panic(err)
 	}
-	utils.LogStatus(logger, eth)
+	utils.LogStatus(logger.WithField("Component", "validator"), eth)
+
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
+			eth.Queue().Status(ctx)
+			cf()
+		}
+	}()
 
 	// Load accounts
 	acct := eth.GetDefaultAccount()
@@ -211,9 +220,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
 
-	// wrap raw badgerdbs in custom db type to gain proper abstractions
-	monitorDb := monitor.NewDatabaseFromExisting(rawMonitorDb)
 	consDB := &db.Database{}
+	monDB := &db.Database{}
 
 	// app maintains the UTXO set of the MadNet blockchain (module is separate from consensus e.d.)
 	app := &application.Application{}
@@ -284,17 +292,14 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
-	// Setup Request Bus
-	svcs := monitor.NewServices(eth, consDB, appDepositHandler, consAdminHandlers, batchSize, chainID)
-	monitorBus, err := monitor.NewBus(rbus.NewRBus(), svcs)
+	// Setup monitor
+	monDB.Init(rawMonitorDb)
+	monitorInterval := config.Configuration.Monitor.Interval
+	monitorTimeout := config.Configuration.Monitor.Timeout
+	mon, err := monitor.NewMonitor(monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize))
 	if err != nil {
 		panic(err)
 	}
-
-	// Setup monitor
-	oneHour := 1 * time.Hour // TODO:ANTHONY - SHOULD THIS BE MOVED TO CONFIG?
-	monitorInterval := config.Configuration.Monitor.Interval
-	mon := monitor.NewMonitor(monitorDb, monitorBus, monitorInterval, oneHour)
 
 	var tDB, mDB *badger.DB = nil, nil
 	if config.Configuration.Chain.TransactionDbInMemory {
@@ -320,14 +325,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	monitorCancelChan, err := mon.StartEventLoop()
+	err = mon.Start()
 	if err != nil {
 		panic(err)
 	}
-	defer func() { monitorCancelChan <- true }()
-
-	monitorBus.StartLoop()
-	defer monitorBus.StopLoop()
+	defer mon.Close()
 
 	go peerManager.Start()
 	defer peerManager.Close()
@@ -376,3 +378,14 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	}
 	os.Exit(1)
 }
+
+// func registerTasks() {
+// tasks.RegisterTask(&dkgtasks.CompletionTask{})
+// tasks.RegisterTask(&dkgtasks.DisputeTask{})
+// tasks.RegisterTask(&dkgtasks.GPKJDisputeTask{})
+// tasks.RegisterTask(&dkgtasks.GPKSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.KeyshareSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.MPKSubmissionTask{})
+// tasks.RegisterTask(&dkgtasks.RegisterTask{})
+// tasks.RegisterTask(&dkgtasks.ShareDistributionTask{})
+// }
