@@ -31,14 +31,9 @@ type write struct {
 	errorchan chan error
 }
 
-type Address struct {
-	IP   [4]byte
-	Port uint16
-}
-
 type PeersUpdate struct {
-	Add    []Address
-	Delete []Address
+	Add    []string
+	Delete []string
 }
 
 func NewServer(address string) *Server {
@@ -115,6 +110,7 @@ func (s *Server) startWriter() {
 				continue
 			}
 
+			s.logger.Trace("Starting write...")
 			s.conn.SetWriteDeadline(time.Now().Add(time.Second))
 			_, err = s.conn.Write(b)
 
