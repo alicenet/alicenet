@@ -110,7 +110,6 @@ func (s *Server) startWriter() {
 				continue
 			}
 
-			s.logger.Trace("Starting write...")
 			s.conn.SetWriteDeadline(time.Now().Add(time.Second))
 			_, err = s.conn.Write(b)
 
