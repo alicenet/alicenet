@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -136,6 +137,10 @@ func (s *Server) startWriter() {
 }
 
 func (s *Server) Start() error {
+	if !config.Configuration.Firewalld.Enabled {
+		return nil
+	}
+
 	s.logger.Info("server started")
 	os.Remove(s.address)
 
@@ -203,6 +208,10 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Push(u PeersUpdate) (ret error) {
+	if !config.Configuration.Firewalld.Enabled {
+		return nil
+	}
+
 	if s.conn == nil {
 		return ErrNoConnection
 	}

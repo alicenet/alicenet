@@ -8,6 +8,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -29,8 +30,6 @@ type Response struct {
 	} `json:"error,omitempty"`
 }
 
-const socketFile = "/tmp/foobar"
-
 var Command = cobra.Command{
 	Use:   "firewalld",
 	Short: "Continously updates a given gcp firewall in the background",
@@ -47,11 +46,11 @@ func FirewallDaemon(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger(constants.LoggerFirewalld)
 
 	for {
-		startConnection(logger, prefix)
+		startConnection(logger, config.Configuration.Firewalld.SocketFile, prefix)
 	}
 }
 
-func startConnection(logger *logrus.Logger, rulePrefix string) {
+func startConnection(logger *logrus.Logger, socketFile string, rulePrefix string) {
 	l, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socketFile, Net: "unix"})
 	if err != nil {
 		logger.Info("Connection failed (retry in 5s..):", err)

@@ -116,7 +116,10 @@ func main() {
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
 			{"transport.firewallMode", "", "", &config.Configuration.Transport.FirewallMode},
-			{"transport.firewallHost", "", "", &config.Configuration.Transport.FirewallHost}},
+			{"transport.firewallHost", "", "", &config.Configuration.Transport.FirewallHost},
+			{"firewalld.enabled", "", "", &config.Configuration.Firewalld.Enabled},
+			{"firewalld.socketFile", "", "", &config.Configuration.Firewalld.SocketFile},
+		},
 
 		&utils.Command: {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},

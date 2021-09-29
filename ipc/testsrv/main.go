@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	s := ipc.NewServer("/tmp/foobar")
+	s := ipc.NewServer("/tmp/madnet_firewalld")
 
 	go func() {
 		err := s.Start()

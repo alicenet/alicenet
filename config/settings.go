@@ -83,6 +83,11 @@ type validatorConfig struct {
 	SymmetricKey    string
 }
 
+type firewalldConfig struct {
+	Enabled    bool
+	SocketFile string
+}
+
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string
@@ -92,6 +97,7 @@ type configuration struct {
 	Transport             transportConfig
 	Utils                 utilsConfig
 	Validator             validatorConfig
+	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
 }
