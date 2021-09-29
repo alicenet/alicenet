@@ -32,8 +32,8 @@ type write struct {
 }
 
 type PeersUpdate struct {
-	Add    []string
-	Delete []string
+	Addrs []string
+	Seq   uint
 }
 
 func NewServer(address string) *Server {
