@@ -87,4 +87,4 @@ var ValidLoggers []string = []string{"madnet", "consensus", "transport", "app", 
 	"gossipbus", "badger", "peerMan", "localRPC", "dman", "peer", "yamux",
 	"ethereum", "main", "deploy", "utils", "monitor", "dkg",
 	"services", "settings", "validator", "muxHandler", "bootnode", "p2pmux",
-	"status", "test", "ipc"}
+	"status", "test", "ipc", "firewalld"}

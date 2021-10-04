@@ -1,4 +1,4 @@
-package firewalld
+package lib
 
 type AddressSet map[string]bool
 
@@ -8,6 +8,17 @@ func NewAddresSet(addrs []string) AddressSet {
 		ret[addr] = true
 	}
 	return ret
+}
+
+func (s AddressSet) String() string {
+	ret := "["
+	for addr := range s {
+		if len(ret) > 1 {
+			ret += ", "
+		}
+		ret += addr
+	}
+	return ret + "]"
 }
 
 func (s AddressSet) Has(addr string) bool {

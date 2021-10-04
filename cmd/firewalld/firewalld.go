@@ -1,13 +1,13 @@
 package firewalld
 
 import (
-	"fmt"
-
 	"encoding/json"
 	"io"
 	"net"
 	"time"
 
+	"github.com/MadBase/MadNet/cmd/firewalld/gcloud"
+	"github.com/MadBase/MadNet/cmd/firewalld/lib"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
@@ -32,28 +32,47 @@ type Response struct {
 
 var Command = cobra.Command{
 	Use:   "firewalld",
-	Short: "Continously updates a given gcp firewall in the background",
-	Long:  "Continously updates a given gcp firewall using values received over IPC from main MadNet process",
-	Run:   FirewallDaemon}
+	Short: "Continously updates a given firewall in the background",
+	Long:  "Continously updates a given firewall using values received over IPC from main MadNet process",
+	Run:   FirewallDaemon,
+}
+
+var implementations = map[string]lib.ImplementationConstructor{
+	"gcloud": gcloud.NewImplementation,
+}
 
 func FirewallDaemon(cmd *cobra.Command, args []string) {
-	instanceId, err := getInstanceId()
-	if err != nil {
-		panic(fmt.Errorf("Could not retrieve instanceId: %v", err))
+	if len(args) == 0 {
+		panic("must provide firewall implementation parameter")
 	}
 
-	prefix := getRulePrefix(instanceId)
+	implementationStr := args[0]
+	constructor := implementations[implementationStr]
+	if constructor == nil {
+		panic("invalid firewall implementation paramater")
+	}
+
+	socketFile := config.Configuration.Firewalld.SocketFile
+	if socketFile == "" {
+		panic("must have config option firewalld.socketfile set")
+	}
+
 	logger := logging.GetLogger(constants.LoggerFirewalld)
 
+	im, err := constructor(logger)
+	if err != nil {
+		panic(err)
+	}
+
 	for {
-		startConnection(logger, config.Configuration.Firewalld.SocketFile, prefix)
+		startConnection(logger, socketFile, im)
 	}
 }
 
-func startConnection(logger *logrus.Logger, socketFile string, rulePrefix string) {
+func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementation) {
 	l, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socketFile, Net: "unix"})
 	if err != nil {
-		logger.Info("Connection failed (retry in 5s..):", err)
+		logger.Info("Connection failed (retry in 5s..): ", err)
 		time.Sleep(5 * time.Second)
 		return
 	}
@@ -66,7 +85,7 @@ func startConnection(logger *logrus.Logger, socketFile string, rulePrefix string
 	logger.Info("Connected!")
 
 	_, err = l.Write([]byte(`{"jsonrpc":"2.0","id":"sub","method":"subscribe"}`))
-	logger.Info("Subscription requested!")
+	logger.Debug("Subscription requested!")
 
 	if err != nil {
 		panic(err)
@@ -78,29 +97,57 @@ func startConnection(logger *logrus.Logger, socketFile string, rulePrefix string
 		err := dec.Decode(&r)
 
 		if err == io.EOF {
-			logger.Info("Received EOF!")
+			logger.Debug("Received EOF!")
 			break
 		}
 		if err != nil {
-			logger.Info("Error during receive: ", err, r)
+			logger.Error("Error during receive: ", err, r)
 			break
 		}
 		if r.Error != nil {
-			logger.Info("Error object returned", r.Error)
+			logger.Error("Error object returned: ", r.Error)
 			continue
 		}
 		if r.Id != "sub" {
-			logger.Info("Message with unknown id:", r.Id, ", skipping...")
+			logger.Warn("Message with unknown id: ", r.Id, ", skipping...")
 			continue
 		}
 
 		var result SubscriptionResult
 		err = json.Unmarshal(r.Result, &result)
 		if err != nil {
-			logger.Info("Error unmarshalling result", err)
+			logger.Error("Error unmarshalling result: ", err)
 			continue
 		}
 
-		logger.Info("done updating rules", updateRules(logger, rulePrefix, NewAddresSet(result.Addrs)))
+		currentAddrs, err := im.GetAllowedAddresses()
+		if err != nil {
+			logger.Error("Failed to get firewall: ", err)
+			break
+		}
+		desiredAddrs := lib.NewAddresSet(result.Addrs)
+
+		toDelete := lib.AddressSet{}
+		for a := range currentAddrs {
+			if !desiredAddrs.Has(a) {
+				toDelete.Add(a)
+			}
+		}
+
+		toAdd := lib.AddressSet{}
+		for a := range desiredAddrs {
+			if !currentAddrs.Has(a) {
+				toAdd.Add(a)
+			}
+		}
+
+		logger.Debugf("Updating firewall, adding %v, deleting %v...", toAdd, toDelete)
+		err = im.UpdateAllowedAddresses(toAdd, toDelete)
+		if err != nil {
+			logger.Error("Failed to update firewall", err)
+			break
+		}
+
+		logger.Info("Updated firewall successfully!")
 	}
 }
