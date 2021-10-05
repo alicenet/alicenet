@@ -16,7 +16,7 @@ import (
 )
 
 func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	db *db.Database, depositHandler interfaces.DepositHandler) error {
+	cdb *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
@@ -35,7 +35,7 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		"Amount":    event.Amount,
 	}).Info("Deposit received")
 
-	return db.Update(func(txn *badger.Txn) error {
+	return cdb.Update(func(txn *badger.Txn) error {
 		depositNonce := event.DepositID.Bytes()
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}

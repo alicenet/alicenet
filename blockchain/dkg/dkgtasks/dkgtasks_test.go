@@ -159,7 +159,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 	events := objects.NewEventMap()
 
-	monitor.SetupEventMap(events, nil, adminHandler, nil)
+	monitor.SetupEventMap(events, nil, nil, adminHandler, nil)
 
 	var done bool
 

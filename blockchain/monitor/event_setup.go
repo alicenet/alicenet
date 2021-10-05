@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SetupEventMap(em *objects.EventMap, db *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, db *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
 	// DKG event processors
 	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen",
@@ -29,7 +29,7 @@ func SetupEventMap(em *objects.EventMap, db *db.Database, adminHandler interface
 	// Events to pass through to side chain
 	if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived",
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessDepositReceived(eth, logger, state, log, db, depositHandler)
+			return monevents.ProcessDepositReceived(eth, logger, state, log, cdb, depositHandler)
 		}); err != nil {
 		return err
 	}

@@ -43,6 +43,7 @@ type monitor struct {
 	eth            interfaces.Ethereum
 	eventMap       *objects.EventMap
 	db             Database
+	cdb            *db.Database
 	tickInterval   time.Duration
 	timeout        time.Duration
 	logger         *logrus.Entry
@@ -55,7 +56,8 @@ type monitor struct {
 }
 
 // NewMonitor creates a new Monitor
-func NewMonitor(db *db.Database,
+func NewMonitor(cdb *db.Database,
+	db *db.Database,
 	adminHandler interfaces.AdminHandler,
 	depositHandler interfaces.DepositHandler,
 	eth interfaces.Ethereum,
@@ -88,7 +90,7 @@ func NewMonitor(db *db.Database,
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, db, adminHandler, depositHandler)
+	err := SetupEventMap(eventMap, cdb, db, adminHandler, depositHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +114,7 @@ func NewMonitor(db *db.Database,
 		depositHandler: depositHandler,
 		eth:            eth,
 		eventMap:       eventMap,
+		cdb:            cdb,
 		db:             monitorDB,
 		typeRegistry:   tr,
 		logger:         logger,

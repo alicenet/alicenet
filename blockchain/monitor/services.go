@@ -27,7 +27,7 @@ type Services struct {
 }
 
 // NewServices creates a new Services struct
-func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler, ah interfaces.AdminHandler, batchSize int) *Services {
+func NewServices(eth interfaces.Ethereum, cdb *db.Database, db *db.Database, dph *deposit.Handler, ah interfaces.AdminHandler, batchSize int) *Services {
 
 	c := eth.Contracts()
 
@@ -51,7 +51,7 @@ func NewServices(eth interfaces.Ethereum, db *db.Database, dph *deposit.Handler,
 	}
 
 	// Register handlers for known events, if this failed we really can't continue
-	if err := SetupEventMap(svcs.eventMap, svcs.consensusDb, ah, dph); err != nil {
+	if err := SetupEventMap(svcs.eventMap, cdb, svcs.consensusDb, ah, dph); err != nil {
 		panic(err)
 	}
 
