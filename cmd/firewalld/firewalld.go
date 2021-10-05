@@ -2,6 +2,7 @@ package firewalld
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -29,6 +30,8 @@ type Response struct {
 		data    interface{}
 	} `json:"error,omitempty"`
 }
+
+var ErrNoConn = fmt.Errorf("no conn")
 
 var Command = cobra.Command{
 	Use:   "firewalld",
@@ -65,16 +68,19 @@ func FirewallDaemon(cmd *cobra.Command, args []string) {
 	}
 
 	for {
-		startConnection(logger, socketFile, im)
+		err := startConnection(logger, socketFile, im)
+		if err == ErrNoConn {
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
-func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementation) {
+func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementation) error {
 	l, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socketFile, Net: "unix"})
 	if err != nil {
 		logger.Info("Connection failed (retry in 5s..): ", err)
-		time.Sleep(5 * time.Second)
-		return
+		fmt.Println(err)
+		return ErrNoConn
 	}
 
 	defer func() {
@@ -98,11 +104,11 @@ func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementa
 
 		if err == io.EOF {
 			logger.Debug("Received EOF!")
-			break
+			return io.EOF
 		}
 		if err != nil {
 			logger.Error("Error during receive: ", err, r)
-			break
+			return err
 		}
 		if r.Error != nil {
 			logger.Error("Error object returned: ", r.Error)
@@ -123,7 +129,7 @@ func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementa
 		currentAddrs, err := im.GetAllowedAddresses()
 		if err != nil {
 			logger.Error("Failed to get firewall: ", err)
-			break
+			return err
 		}
 		desiredAddrs := lib.NewAddresSet(result.Addrs)
 
@@ -145,7 +151,7 @@ func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementa
 		err = im.UpdateAllowedAddresses(toAdd, toDelete)
 		if err != nil {
 			logger.Error("Failed to update firewall", err)
-			break
+			return err
 		}
 
 		logger.Info("Updated firewall successfully!")
