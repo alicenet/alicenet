@@ -70,6 +70,7 @@ func FirewallDaemon(cmd *cobra.Command, args []string) {
 	for {
 		err := startConnection(logger, socketFile, im)
 		if err == ErrNoConn {
+			logger.Info("Connection failed (retry in 5s..): ", err)
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -78,8 +79,6 @@ func FirewallDaemon(cmd *cobra.Command, args []string) {
 func startConnection(logger *logrus.Logger, socketFile string, im lib.Implementation) error {
 	l, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socketFile, Net: "unix"})
 	if err != nil {
-		logger.Info("Connection failed (retry in 5s..): ", err)
-		fmt.Println(err)
 		return ErrNoConn
 	}
 

@@ -1,12 +1,12 @@
 package gcloud
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/MadBase/MadNet/cmd/firewalld/lib"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -68,7 +68,7 @@ func TestGetAllowedAddressesInvalid(t *testing.T) {
 }
 
 func TestGetAllowedAddressesError(t *testing.T) {
-	m := newMockCmder([]byte(""), errors.Errorf("Nope"))
+	m := newMockCmder([]byte(""), fmt.Errorf("Nope"))
 	c := &Implementation{"testprefix-", m.RunCmd, logger}
 	_, err := c.GetAllowedAddresses()
 
@@ -108,7 +108,7 @@ func TestUpdateAllowedAddresses(t *testing.T) {
 }
 
 func TestUpdateAllowedAddressesError(t *testing.T) {
-	m := newMockCmder([]byte(""), errors.Errorf("oh noes!"))
+	m := newMockCmder([]byte(""), fmt.Errorf("oh noes!"))
 	c := &Implementation{"testprefix-", m.RunCmd, logger}
 
 	err := c.UpdateAllowedAddresses(

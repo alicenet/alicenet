@@ -1,11 +1,10 @@
 package gcloud
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 func getRulePrefix() (string, error) {
@@ -38,13 +37,13 @@ func createRuleName(rulePrefix string, ip string, port string) string {
 
 func splitRuleName(rulePrefix string, ruleName string) (string, error) {
 	if !strings.HasPrefix(ruleName, rulePrefix) {
-		return "", errors.Errorf("rule %v does not have prefix %v", ruleName, rulePrefix)
+		return "", fmt.Errorf("rule %v does not have prefix %v", ruleName, rulePrefix)
 	}
 	address := ruleName[len(rulePrefix)+1:]
 
 	addressParts := strings.SplitN(address, "--", 2)
 	if len(addressParts) != 2 {
-		return "", errors.Errorf("rule %v does not have --", ruleName)
+		return "", fmt.Errorf("rule %v does not have --", ruleName)
 	}
 
 	return strings.ReplaceAll(addressParts[0], "-", ".") + ":" + addressParts[1], nil

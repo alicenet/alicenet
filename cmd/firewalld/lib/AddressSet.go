@@ -32,3 +32,15 @@ func (s AddressSet) Add(addr string) {
 func (s AddressSet) Delete(addr string) {
 	delete(s, addr)
 }
+
+func (s AddressSet) Equal(ss AddressSet) bool {
+	if len(s) != len(ss) {
+		return false
+	}
+	for i := range s {
+		if !ss[i] {
+			return false
+		}
+	}
+	return true
+}

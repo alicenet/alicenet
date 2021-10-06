@@ -190,7 +190,7 @@ func (s *Server) Start() error {
 
 				case *net.OpError:
 					if !s.closed {
-						s.logger.Errorf("connection error", v.Unwrap())
+						s.logger.Errorf("connection error %v", v.Unwrap())
 					} else {
 						s.logger.Info("server closed")
 					}
