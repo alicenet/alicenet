@@ -83,9 +83,39 @@ type validatorConfig struct {
 	SymmetricKey    string
 }
 
+type loggingConfig struct {
+	Madnet     string
+	Consensus  string
+	Transport  string
+	App        string
+	Db         string
+	Gossipbus  string
+	Badger     string
+	PeerMan    string
+	LocalRPC   string
+	Dman       string
+	Peer       string
+	Yamux      string
+	Ethereum   string
+	Main       string
+	Deploy     string
+	Utils      string
+	Monitor    string
+	Dkg        string
+	Services   string
+	Settings   string
+	Validator  string
+	MuxHandler string
+	Bootnode   string
+	P2pmux     string
+	Status     string
+	Test       string
+}
+
 type configuration struct {
 	ConfigurationFileName string
-	LoggingLevels         string
+	LoggingLevels         string // backwards compatibility
+	Logging               loggingConfig
 	Deploy                deployConfig
 	Ethereum              ethereumConfig
 	Monitor               monitorConfig

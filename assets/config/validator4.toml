@@ -1,4 +1,5 @@
-#logging = "localRPC=info,gossipbus=info,utils=info,services=info,ethereum=info,main=warn,validator=info,monitor=info,deploy=info,consensus=debug,peerMan=info,muxHandler=info,p2pmux=info,app=info,transport=info,dman=info,status=info,db=info,yamux=error,badger=error,monitor_bus=error"
+[loglevel]
+ethereum = "info"
 
 [chain]
 id = 42
