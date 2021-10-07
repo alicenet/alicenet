@@ -134,9 +134,7 @@ func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context,
 	}
 
 	srpc.logger.Debugf("HandleLocalStateGetPendingTransaction: %v", req)
-	if len(req.TxHash) != 64 {
-		return nil, fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
-	}
+
 	var height uint32
 	var tx *objs.Tx
 	err := srpc.database.View(func(txn *badger.Txn) error {
@@ -148,6 +146,9 @@ func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context,
 		txHash, err := ReverseTranslateByte(req.TxHash)
 		if err != nil {
 			return err
+		}
+		if len(txHash) != 32 {
+			return fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
 		}
 		txi, missing, err := srpc.AppHandler.PendingTxGet(txn, height, [][]byte{txHash})
 		if err != nil {
@@ -244,14 +245,14 @@ func (srpc *Handlers) HandleLocalStateGetValueForOwner(ctx context.Context, req 
 	}
 
 	accountH := req.Account
-	if len(accountH) != 40 {
-		return nil, fmt.Errorf("invalid length (%v) for Account:%s", len(req.Account), req.Account)
-	}
+
 	account, err := ReverseTranslateByte(accountH)
 	if err != nil {
 		return nil, err
 	}
-
+	if len(account) != 20 {
+		return nil, fmt.Errorf("invalid length (%v) for Account:%s", len(req.Account), req.Account)
+	}
 	var utxoIDs [][]byte
 	var value *uint256.Uint256
 	var paginationToken *objs.PaginationToken
@@ -421,20 +422,21 @@ func (srpc *Handlers) HandleLocalStateGetData(ctx context.Context, req *pb.GetDa
 
 	var data []byte
 	srpc.logger.Debugf("HandleLocalStateGetData: %v", req)
-	if len(req.Account) != 40 {
-		return nil, fmt.Errorf("invalid length (%v) for Account:%s", len(req.Account), req.Account)
-	}
-	if len(req.Index) != 64 {
-		return nil, fmt.Errorf("invalid length (%v) for Index:%s", len(req.Index), req.Index)
-	}
+
 	err := srpc.database.View(func(txn *badger.Txn) error {
 		account, err := ReverseTranslateByte(req.Account)
 		if err != nil {
 			return err
 		}
+		if len(account) != 20 {
+			return fmt.Errorf("invalid length (%v) for Account:%s", len(req.Account), req.Account)
+		}
 		index, err := ReverseTranslateByte(req.Index)
 		if err != nil {
 			return err
+		}
+		if len(index) != 32 {
+			return fmt.Errorf("invalid length (%v) for Index:%s", len(req.Index), req.Index)
 		}
 		tmp, err := srpc.AppHandler.UTXOGetData(txn, constants.CurveSpec(req.CurveSpec), account, index)
 		if err != nil {
@@ -446,10 +448,8 @@ func (srpc *Handlers) HandleLocalStateGetData(ctx context.Context, req *pb.GetDa
 	if err != nil {
 		return nil, err
 	}
-	d, err := ForwardTranslateByte(data)
-	if err != nil {
-		return nil, err
-	}
+	d := ForwardTranslateByte(data)
+
 	result := &pb.GetDataResponse{Rawdata: d}
 	return result, nil
 }
@@ -462,25 +462,27 @@ func (srpc *Handlers) HandleLocalStateIterateNameSpace(ctx context.Context, req 
 
 	result := []*pb.IterateNameSpaceResponse_Result{}
 	srpc.logger.Debugf("HandleLocalStateIterateNameSpace: %v", req)
-	if len(req.Account) != 40 {
-		return nil, fmt.Errorf("invalid length (%v) for account:%s", len(req.Account), req.Account)
-	}
+
 	if req.Number > 256 {
 		return nil, fmt.Errorf("number is not allowed to be greater than 256; got %v", req.Number)
 	}
-	if len(req.StartIndex) > 0 {
-		if len(req.StartIndex) != 64 {
-			return nil, fmt.Errorf("StartIndex must be empty or valid; invalid length (%v) for StartIndex:%s", len(req.StartIndex), req.StartIndex)
-		}
-	}
+
 	err := srpc.database.View(func(txn *badger.Txn) error {
 		a, err := ReverseTranslateByte(req.Account)
 		if err != nil {
 			return err
 		}
+		if len(a) != 20 {
+			return fmt.Errorf("invalid length (%v) for account:%s", len(req.Account), req.Account)
+		}
 		si, err := ReverseTranslateByte(req.StartIndex)
 		if err != nil {
 			return err
+		}
+		if len(si) > 0 {
+			if len(si) != 32 {
+				return fmt.Errorf("StartIndex must be empty or valid; invalid length (%v) for StartIndex:%s", len(req.StartIndex), req.StartIndex)
+			}
 		}
 		n := req.Number
 		if n > 256 {
@@ -505,14 +507,10 @@ func (srpc *Handlers) HandleLocalStateIterateNameSpace(ctx context.Context, req 
 			return err
 		}
 		for i := 0; i < len(tmp); i++ {
-			tmpUTXOID, err := ForwardTranslateByte(tmp[i].UTXOID)
-			if err != nil {
-				return err
-			}
-			tmpIndex, err := ForwardTranslateByte(tmp[i].Index)
-			if err != nil {
-				return err
-			}
+			tmpUTXOID := ForwardTranslateByte(tmp[i].UTXOID)
+
+			tmpIndex := ForwardTranslateByte(tmp[i].Index)
+
 			itm := &pb.IterateNameSpaceResponse_Result{
 				UTXOID: tmpUTXOID,
 				Index:  tmpIndex,
@@ -544,6 +542,7 @@ func (srpc *Handlers) HandleLocalStateGetUTXO(ctx context.Context, req *pb.UTXOR
 	if err != nil {
 		return nil, err
 	}
+
 	var utxos []*objs.TXOut
 	err = srpc.database.View(func(txn *badger.Txn) error {
 		tmp, err := srpc.AppHandler.UTXOGet(txn, d)
@@ -575,12 +574,12 @@ func (srpc *Handlers) HandleLocalStateGetMinedTransaction(ctx context.Context, r
 	}
 
 	srpc.logger.Debugf("HandleLocalStateGetMinedTransaction: %v", req)
-	if len(req.TxHash) != 64 {
-		return nil, fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
-	}
 	d, err := ReverseTranslateByte(req.TxHash)
 	if err != nil {
 		return nil, err
+	}
+	if len(d) != 32 {
+		return nil, fmt.Errorf("invalid length for TxHash: %v", len(req.TxHash))
 	}
 	var tx *objs.Tx
 	err = srpc.database.View(func(txn *badger.Txn) error {
@@ -617,13 +616,14 @@ func (srpc *Handlers) HandleLocalStateGetTxBlockNumber(ctx context.Context, req 
 
 	var height uint32
 	srpc.logger.Debugf("HandleLocalStateGetTxBlockNumber: %v", req)
-	if len(req.TxHash) != 64 {
-		return nil, fmt.Errorf("invalid length (%v) for TxHash:%s", len(req.TxHash), req.TxHash)
-	}
+
 	err := srpc.database.View(func(txn *badger.Txn) error {
 		d, err := ReverseTranslateByte(req.TxHash)
 		if err != nil {
 			return err
+		}
+		if len(d) != 32 {
+			return fmt.Errorf("invalid length (%v) for TxHash:%s", len(req.TxHash), req.TxHash)
 		}
 		tmp, err := srpc.AppHandler.GetHeightForTx(txn, d)
 		if err != nil {
