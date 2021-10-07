@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/ipc"
 )
 
 func main() {
+	config.Configuration.Firewalld.Enabled = true
 	s := ipc.NewServer("/tmp/madnet_firewalld")
 
 	go func() {
