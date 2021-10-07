@@ -14,7 +14,18 @@ type Implementation struct {
 }
 
 func NewImplementation(logger *logrus.Logger) (lib.Implementation, error) {
-	prefix, err := getRulePrefix()
+	instanceId, err := getInstanceId()
+	if err != nil {
+		return nil, err
+	}
+	prefix := createRulePrefix(instanceId)
+
+	zone, err := getZone()
+	if err != nil {
+		return nil, err
+	}
+	// add unique tag to self (command is noop if tag already exists)
+	_, err = lib.RunCmd("gcloud", "-q", "compute", "instances", "add-tags", instanceId, "--zone", zone, "--tags", prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +34,7 @@ func NewImplementation(logger *logrus.Logger) (lib.Implementation, error) {
 }
 
 func (im *Implementation) GetAllowedAddresses() (lib.AddressSet, error) {
-	res, err := im.runCmd("gcloud", "compute", "firewall-rules", "list", "--filter", "name~"+im.rulePrefix, "--format", "value(name)")
+	res, err := im.runCmd("gcloud", "-q", "compute", "firewall-rules", "list", "--filter", "name~"+im.rulePrefix, "--format", "value(name)")
 	if err != nil {
 		return nil, lib.ErrCmd{Msg: "could not find rules", Outputs: []error{err}}
 	}
@@ -73,7 +84,7 @@ func (im *Implementation) UpdateAllowedAddresses(toAdd lib.AddressSet, toDelete 
 
 func (im *Implementation) addRule(addr string) error {
 	addrParts := strings.SplitN(addr, ":", 2)
-	cmd := []string{"gcloud", "compute", "firewall-rules", "create", createRuleName(im.rulePrefix, addrParts[0], addrParts[1]), "--source-ranges", addrParts[0], "--allow", "tcp:" + addrParts[1]}
+	cmd := []string{"gcloud", "-q", "compute", "firewall-rules", "create", createRuleName(im.rulePrefix, addrParts[0], addrParts[1]), "--target-tags", im.rulePrefix, "--source-ranges", addrParts[0], "--allow", "tcp:" + addrParts[1]}
 	im.logger.Tracef("Running command: %v", cmd)
 	_, err := im.runCmd(cmd...)
 	return err
@@ -81,7 +92,7 @@ func (im *Implementation) addRule(addr string) error {
 
 func (im *Implementation) deleteRule(addr string) error {
 	addrParts := strings.SplitN(addr, ":", 2)
-	cmd := []string{"gcloud", "compute", "firewall-rules", "delete", createRuleName(im.rulePrefix, addrParts[0], addrParts[1])}
+	cmd := []string{"gcloud", "-q", "compute", "firewall-rules", "delete", createRuleName(im.rulePrefix, addrParts[0], addrParts[1])}
 	im.logger.Tracef("Running command: %v", cmd)
 	_, err := im.runCmd(cmd...)
 	return err

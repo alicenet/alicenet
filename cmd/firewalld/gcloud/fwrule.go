@@ -2,37 +2,15 @@ package gcloud
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 )
 
-func getRulePrefix() (string, error) {
-	client := &http.Client{}
-
-	req, err := http.NewRequest("GET", "http://metadata.google.internal/computeMetadata/v1/instance/id", nil)
-	if err != nil {
-		return "", nil
-	}
-
-	req.Header.Add("Metadata-Flavor", `Google`)
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", nil
-	}
-	defer resp.Body.Close()
-
-	res, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", nil
-	}
-
-	instanceId := string(res)
-	return "firewalld-" + instanceId + "-", nil
+func createRulePrefix(instanceId string) string {
+	return "firewalld-" + instanceId
 }
 
 func createRuleName(rulePrefix string, ip string, port string) string {
-	return rulePrefix + strings.ReplaceAll(ip, ".", "-") + "--" + port
+	return rulePrefix + "-" + strings.ReplaceAll(ip, ".", "-") + "--" + port
 }
 
 func splitRuleName(rulePrefix string, ruleName string) (string, error) {

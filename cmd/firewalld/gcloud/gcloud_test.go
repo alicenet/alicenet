@@ -42,24 +42,24 @@ func (m *mockCmder) Called(c ...string) bool {
 var logger, _ = test.NewNullLogger()
 
 func TestGetAllowedAddresses(t *testing.T) {
-	m := newMockCmder([]byte("testprefix-12-23-34-45--5678\ntestprefix-11-22-33-44--5555\n"), nil)
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	m := newMockCmder([]byte("firewalld-12345-12-23-34-45--5678\nfirewalld-12345-11-22-33-44--5555\n"), nil)
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	b, err := c.GetAllowedAddresses()
 
 	if err != nil {
 		t.Fatal("GetAllowedAddresses returned error ", err)
 	}
-	if len(b) != 2 || !b["2.23.34.45:5678"] || !b["1.22.33.44:5555"] {
+	if len(b) != 2 || !b["12.23.34.45:5678"] || !b["11.22.33.44:5555"] {
 		t.Fatal("GetAllowedAddresses returned incorrect results ", b)
 	}
-	if len(m.in) != 1 || !m.Called("gcloud", "compute", "firewall-rules", "list", "--filter", "name~testprefix-", "--format", "value(name)") {
+	if len(m.in) != 1 || !m.Called("gcloud", "-q", "compute", "firewall-rules", "list", "--filter", "name~firewalld-12345", "--format", "value(name)") {
 		t.Fatalf("Command run was not the expected command: %v", m.in)
 	}
 }
 
 func TestGetAllowedAddressesInvalid(t *testing.T) {
-	m := newMockCmder([]byte("testttttprefix-12-23-34-45--5678\ntestprefix-11-22-33-44--5555\n"), nil)
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	m := newMockCmder([]byte("firewalld-111112345-12-23-34-45--5678\firewalld-12345-11-22-33-44--5555\n"), nil)
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	_, err := c.GetAllowedAddresses()
 
 	if err == nil {
@@ -69,7 +69,7 @@ func TestGetAllowedAddressesInvalid(t *testing.T) {
 
 func TestGetAllowedAddressesError(t *testing.T) {
 	m := newMockCmder([]byte(""), fmt.Errorf("Nope"))
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	_, err := c.GetAllowedAddresses()
 
 	if err == nil {
@@ -79,7 +79,7 @@ func TestGetAllowedAddressesError(t *testing.T) {
 
 func TestGetAllowedAddressesEmpty(t *testing.T) {
 	m := newMockCmder([]byte(""), nil)
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	_, err := c.GetAllowedAddresses()
 
 	if err != nil {
@@ -89,7 +89,7 @@ func TestGetAllowedAddressesEmpty(t *testing.T) {
 
 func TestUpdateAllowedAddresses(t *testing.T) {
 	m := newMockCmder([]byte(""), nil)
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 
 	err := c.UpdateAllowedAddresses(
 		lib.NewAddresSet([]string{"11.22.33.44:5678", "22.33.44.55:6789"}),
@@ -100,16 +100,16 @@ func TestUpdateAllowedAddresses(t *testing.T) {
 		t.Fatal("Should not throw error", err)
 	}
 	if len(m.in) != 3 ||
-		!m.Called("gcloud", "compute", "firewall-rules", "create", "testprefix-11-22-33-44--5678", "--source-ranges", "11.22.33.44", "--allow", "tcp:5678") ||
-		!m.Called("gcloud", "compute", "firewall-rules", "create", "testprefix-22-33-44-55--6789", "--source-ranges", "22.33.44.55", "--allow", "tcp:6789") ||
-		!m.Called("gcloud", "compute", "firewall-rules", "delete", "testprefix-33-44-55-66--7890") {
+		!m.Called("gcloud", "-q", "compute", "firewall-rules", "create", "firewalld-12345-11-22-33-44--5678", "--target-tags", "firewalld-12345", "--source-ranges", "11.22.33.44", "--allow", "tcp:5678") ||
+		!m.Called("gcloud", "-q", "compute", "firewall-rules", "create", "firewalld-12345-22-33-44-55--6789", "--target-tags", "firewalld-12345", "--source-ranges", "22.33.44.55", "--allow", "tcp:6789") ||
+		!m.Called("gcloud", "-q", "compute", "firewall-rules", "delete", "firewalld-12345-33-44-55-66--7890") {
 		t.Fatalf("Commands run were not the expected commands: %v", m.in)
 	}
 }
 
 func TestUpdateAllowedAddressesError(t *testing.T) {
 	m := newMockCmder([]byte(""), fmt.Errorf("oh noes!"))
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 
 	err := c.UpdateAllowedAddresses(
 		lib.NewAddresSet([]string{"11.22.33.44:5678", "22.33.44.55:6789"}),
@@ -123,7 +123,7 @@ func TestUpdateAllowedAddressesError(t *testing.T) {
 
 func TestUpdateAllowedAddressesEmpty(t *testing.T) {
 	m := newMockCmder([]byte(""), nil)
-	c := &Implementation{"testprefix-", m.RunCmd, logger}
+	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 
 	err := c.UpdateAllowedAddresses(
 		lib.AddressSet{},
