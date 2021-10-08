@@ -1,4 +1,5 @@
-logging = "ethereum=debug"
+[loglevel]
+ethereum = "info"
 
 [chain]
 id = 42
@@ -15,7 +16,7 @@ cacheSize = 20
 
 [transport]
 originLimit = 50
-privateKey = "aaaaaaaaaaaaaaacaaaaaaaaaaaaaaaa"
+privateKey = "aaaaaaaaaaaaaaacaaaaaaaaaaaaaaaa" #0x
 bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
 p2pListeningAddress = "0.0.0.0:4343"
 discoveryListeningAddress = "0.0.0.0:4444"

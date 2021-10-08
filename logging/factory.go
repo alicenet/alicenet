@@ -66,7 +66,7 @@ func (ld *loggerDetails) init() {
 //GetLogger either returns an existing logger for package specified or creates a new one
 func GetLogger(name string) *logrus.Logger {
 	loggers.init()
-	logger, exists := loggers.loggers[name]
+	logger, exists := loggers.loggers[strings.ToLower(name)]
 	if !exists {
 		panic(fmt.Sprintf("Invalid logger requested: %v", name))
 	}
