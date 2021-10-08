@@ -10,6 +10,7 @@ import (
 
 	"github.com/MadBase/MadNet/cmd/bootnode"
 	"github.com/MadBase/MadNet/cmd/deploy"
+	"github.com/MadBase/MadNet/cmd/firewalld"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/cmd/validator"
 	"github.com/MadBase/MadNet/config"
@@ -151,7 +152,10 @@ func main() {
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
 			{"transport.firewallMode", "", "", &config.Configuration.Transport.FirewallMode},
-			{"transport.firewallHost", "", "", &config.Configuration.Transport.FirewallHost}},
+			{"transport.firewallHost", "", "", &config.Configuration.Transport.FirewallHost},
+			{"firewalld.enabled", "", "", &config.Configuration.Firewalld.Enabled},
+			{"firewalld.socketFile", "", "", &config.Configuration.Firewalld.SocketFile},
+		},
 
 		&utils.Command: {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},
@@ -169,6 +173,8 @@ func main() {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
 			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
 
+		&firewalld.Command: {},
+
 		&validator.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
@@ -180,6 +186,7 @@ func main() {
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
+		&firewalld.Command:           &rootCommand,
 		&bootnode.Command:            &rootCommand,
 		&validator.Command:           &rootCommand,
 		&deploy.Command:              &rootCommand,

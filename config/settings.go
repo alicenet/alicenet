@@ -112,6 +112,11 @@ type loggingConfig struct {
 	Test       string
 }
 
+type firewalldConfig struct {
+	Enabled    bool
+	SocketFile string
+}
+
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
@@ -122,6 +127,7 @@ type configuration struct {
 	Transport             transportConfig
 	Utils                 utilsConfig
 	Validator             validatorConfig
+	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
 }

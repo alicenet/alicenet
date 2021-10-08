@@ -55,3 +55,7 @@ status = true
 rewardAccount = "0x9AC1c9afBAec85278679fF75Ef109217f26b1417"
 rewardCurveSpec = 1
 symmetricKey = "someSuperFancySecretThatWillBeHashed"
+
+[firewalld]
+enabled = false
+socketFile = "/tmp/madnet_firewalld"
