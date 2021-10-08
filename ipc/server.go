@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -31,14 +32,9 @@ type write struct {
 	errorchan chan error
 }
 
-type Address struct {
-	IP   [4]byte
-	Port uint16
-}
-
 type PeersUpdate struct {
-	Add    []Address
-	Delete []Address
+	Addrs []string
+	Seq   uint
 }
 
 func NewServer(address string) *Server {
@@ -141,6 +137,10 @@ func (s *Server) startWriter() {
 }
 
 func (s *Server) Start() error {
+	if !config.Configuration.Firewalld.Enabled {
+		return nil
+	}
+
 	s.logger.Info("server started")
 	os.Remove(s.address)
 
@@ -190,7 +190,7 @@ func (s *Server) Start() error {
 
 				case *net.OpError:
 					if !s.closed {
-						s.logger.Errorf("connection error", v.Unwrap())
+						s.logger.Errorf("connection error %v", v.Unwrap())
 					} else {
 						s.logger.Info("server closed")
 					}
@@ -208,6 +208,10 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Push(u PeersUpdate) (ret error) {
+	if !config.Configuration.Firewalld.Enabled {
+		return nil
+	}
+
 	if s.conn == nil {
 		return ErrNoConnection
 	}

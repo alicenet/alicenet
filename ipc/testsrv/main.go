@@ -4,37 +4,39 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/ipc"
 )
 
 func main() {
-	s := ipc.NewServer("/tmp/foobar")
+	config.Configuration.Firewalld.Enabled = true
+	s := ipc.NewServer("/tmp/madnet_firewalld")
 
-	exited := false
 	go func() {
-		time.Sleep(time.Second * 20)
-		s.Close()
-		fmt.Println("called close")
-		exited = true
+		err := s.Start()
+		if err != nil {
+			panic(err)
+		}
 	}()
 
-	err := s.Start()
-	if err != nil {
-		panic(err)
+	var updates [][]string = [][]string{
+		{"11.22.33.44:55"},
+		{"11.22.33.44:55", "22.33.44.55:66"},
+		{"11.22.33.44:55", "22.33.44.55:66", "33.44.55.66:77"},
+		{"22.33.44.55:66", "33.44.55.66:77"},
+		{"33.44.55.66:77"},
+		{"33.44.55.66:77", "44.55.66.77:88"},
+		{"33.44.55.66:77", "44.55.66.77:88", "55.66.77.88:99"},
+		{"44.55.66.77:88", "55.66.77.88:99"},
+		{"55.66.77.88:99"},
 	}
-	time.Sleep(time.Second * 2)
 
-	var i uint64 = 0
-	for {
-		time.Sleep(time.Second)
-		err := s.Push(ipc.PeersUpdate{Add: []ipc.Address{{IP: [...]byte{byte(i), byte(i), byte(i), byte(i)}, Port: uint16(i)}}, Delete: []ipc.Address{}})
+	for i, v := range updates {
+		time.Sleep(time.Second * 15)
+		err := s.Push(ipc.PeersUpdate{Addrs: v, Seq: uint(i)})
 		if err != nil {
 			fmt.Printf("push err: %T %v\n", err, err)
-			if exited {
-				break
-			}
 		}
-		i++
 	}
 
 }

@@ -70,6 +70,7 @@ const (
 	LoggerPeerMan   = "peerMan"
 	LoggerLocalRPC  = "localRPC"
 	LoggerIPC       = "ipc"
+	LoggerFirewalld = "firewalld"
 	LoggerDMan      = "dman"
 	LoggerPeer      = "peer"
 	LoggerYamux     = "yamux"
@@ -86,4 +87,4 @@ var ValidLoggers []string = []string{"madnet", "consensus", "transport", "app", 
 	"gossipbus", "badger", "peerman", "localrpc", "dman", "peer", "yamux",
 	"ethereum", "main", "deploy", "utils", "monitor", "dkg",
 	"services", "settings", "validator", "muxhandler", "bootnode", "p2pmux",
-	"status", "test"}
+	"status", "test", "ipc", "firewalld"}
