@@ -205,10 +205,8 @@ func (lrpc *Client) GetValueForOwner(ctx context.Context, curveSpec constants.Cu
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	o, err := ForwardTranslateByte(account)
-	if err != nil {
-		return nil, nil, err
-	}
+	o := ForwardTranslateByte(account)
+
 	minValueString, err := minValue.MarshalString()
 	if err != nil {
 		return nil, nil, err
@@ -272,10 +270,8 @@ func (lrpc *Client) GetMinedTransaction(ctx context.Context, txHash []byte) (*ao
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	txHash2, err := ForwardTranslateByte(txHash)
-	if err != nil {
-		return nil, err
-	}
+	txHash2 := ForwardTranslateByte(txHash)
+
 	request := &pb.MinedTransactionRequest{TxHash: txHash2}
 	resp, err := lrpc.client.GetMinedTransaction(subCtx, request)
 	if err != nil {
@@ -298,10 +294,8 @@ func (lrpc *Client) GetPendingTransaction(ctx context.Context, txHash []byte) (*
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	txHash2, err := ForwardTranslateByte(txHash)
-	if err != nil {
-		return nil, err
-	}
+	txHash2 := ForwardTranslateByte(txHash)
+
 	request := &pb.PendingTransactionRequest{TxHash: txHash2}
 	resp, err := lrpc.client.GetPendingTransaction(subCtx, request)
 	if err != nil {
@@ -323,14 +317,10 @@ func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, 
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	o, err := ForwardTranslateByte(account)
-	if err != nil {
-		return nil, err
-	}
-	i, err := ForwardTranslateByte(index)
-	if err != nil {
-		return nil, err
-	}
+	o := ForwardTranslateByte(account)
+
+	i := ForwardTranslateByte(index)
+
 	request := &pb.GetDataRequest{Account: o, CurveSpec: uint32(curveSpec), Index: i}
 	resp, err := lrpc.client.GetData(subCtx, request)
 	if err != nil {
@@ -356,14 +346,10 @@ func (lrpc *Client) PaginateDataStoreUTXOByOwner(ctx context.Context, curveSpec 
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	o, err := ForwardTranslateByte(account)
-	if err != nil {
-		return nil, err
-	}
-	i, err := ForwardTranslateByte(startIndex)
-	if err != nil {
-		return nil, err
-	}
+	o := ForwardTranslateByte(account)
+
+	i := ForwardTranslateByte(startIndex)
+
 	request := &pb.IterateNameSpaceRequest{Account: o, CurveSpec: uint32(curveSpec), StartIndex: i, Number: uint32(num)}
 	resp, err := lrpc.client.IterateNameSpace(subCtx, request)
 	if err != nil {
@@ -397,10 +383,8 @@ func (lrpc *Client) GetBlockHeightForTx(ctx context.Context, txHash []byte) (uin
 	subCtx, cleanup := lrpc.contextGuard(ctx)
 	defer cleanup()
 
-	txh, err := ForwardTranslateByte(txHash)
-	if err != nil {
-		return 0, err
-	}
+	txh := ForwardTranslateByte(txHash)
+
 	request := &pb.TxBlockNumberRequest{TxHash: txh}
 	resp, err := lrpc.client.GetTxBlockNumber(subCtx, request)
 	if err != nil {

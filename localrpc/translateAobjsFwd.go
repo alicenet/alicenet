@@ -36,10 +36,8 @@ func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 		if err != nil {
 			return nil, err
 		}
-		newOwner, err := ForwardTranslateByte(ownerBytes)
-		if err != nil {
-			return nil, err
-		}
+		newOwner := ForwardTranslateByte(ownerBytes)
+
 		t.Signature = newOwner
 	}
 	return t, nil
@@ -51,10 +49,7 @@ func ForwardTranslateValueStore(f *from.ValueStore) (*to.ValueStore, error) {
 		return nil, errors.New("valueStore object should not be nil")
 	}
 
-	newTxHash, err := ForwardTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
+	newTxHash := ForwardTranslateByte(f.TxHash)
 
 	t.TxHash = newTxHash
 	if f.VSPreImage != nil {
@@ -80,10 +75,8 @@ func ForwardTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 		if err != nil {
 			return nil, err
 		}
-		newOwner, err := ForwardTranslateByte(ownerBytes)
-		if err != nil {
-			return nil, err
-		}
+		newOwner := ForwardTranslateByte(ownerBytes)
+
 		t.Owner = newOwner
 	}
 
@@ -119,10 +112,8 @@ func ForwardTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 		if err != nil {
 			return nil, err
 		}
-		newOwner, err := ForwardTranslateByte(ownerBytes)
-		if err != nil {
-			return nil, err
-		}
+		newOwner := ForwardTranslateByte(ownerBytes)
+
 		t.Owner = newOwner
 	}
 	t.TXOutIdx = f.TXOutIdx
@@ -150,10 +141,8 @@ func ForwardTranslateTXInLinker(f *from.TXInLinker) (*to.TXInLinker, error) {
 		}
 		t.TXInPreImage = newTXInPreImage
 	}
-	newTxHash, err := ForwardTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
+	newTxHash := ForwardTranslateByte(f.TxHash)
+
 	t.TxHash = newTxHash
 	return t, nil
 }
@@ -254,10 +243,8 @@ func ForwardTranslateAtomicSwap(f *from.AtomicSwap) (*to.AtomicSwap, error) {
 		}
 		t.ASPreImage = newASPreImage
 	}
-	newTxHash, err := ForwardTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
+	newTxHash := ForwardTranslateByte(f.TxHash)
+
 	t.TxHash = newTxHash
 	return t, nil
 }
@@ -281,10 +268,7 @@ func ForwardTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 		return nil, err
 	}
 
-	newIndex, err := ForwardTranslateByte(f.Index)
-	if err != nil {
-		return nil, err
-	}
+	newIndex := ForwardTranslateByte(f.Index)
 
 	t.Index = newIndex
 	t.IssuedAt = f.IssuedAt
@@ -294,17 +278,12 @@ func ForwardTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 		if err != nil {
 			return nil, err
 		}
-		newOwner, err := ForwardTranslateByte(ownerBytes)
-		if err != nil {
-			return nil, err
-		}
+		newOwner := ForwardTranslateByte(ownerBytes)
+
 		t.Owner = newOwner
 	}
 
-	newRawData, err := ForwardTranslateByte(f.RawData)
-	if err != nil {
-		return nil, err
-	}
+	newRawData := ForwardTranslateByte(f.RawData)
 
 	t.RawData = newRawData
 	t.TXOutIdx = f.TXOutIdx
@@ -319,10 +298,7 @@ func ForwardTranslateTXInPreImage(f *from.TXInPreImage) (*to.TXInPreImage, error
 
 	t.ChainID = f.ChainID
 
-	newConsumedTxHash, err := ForwardTranslateByte(f.ConsumedTxHash)
-	if err != nil {
-		return nil, err
-	}
+	newConsumedTxHash := ForwardTranslateByte(f.ConsumedTxHash)
 
 	t.ConsumedTxHash = newConsumedTxHash
 	t.ConsumedTxIdx = f.ConsumedTxIdx
@@ -343,10 +319,7 @@ func ForwardTranslateDSLinker(f *from.DSLinker) (*to.DSLinker, error) {
 		t.DSPreImage = newDSPreImage
 	}
 
-	newTxHash, err := ForwardTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
+	newTxHash := ForwardTranslateByte(f.TxHash)
 
 	t.TxHash = newTxHash
 	return t, nil
@@ -358,10 +331,7 @@ func ForwardTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 		return nil, errors.New("object of type TXIn should not be nil")
 	}
 
-	newSignature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	newSignature := ForwardTranslateByte(f.Signature)
 
 	t.Signature = newSignature
 
@@ -381,10 +351,7 @@ func ForwardTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
 		return nil, errors.New("txFee object should not be nil")
 	}
 
-	newTxHash, err := ForwardTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
+	newTxHash := ForwardTranslateByte(f.TxHash)
 
 	t.TxHash = newTxHash
 

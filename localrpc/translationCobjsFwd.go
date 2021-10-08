@@ -23,10 +23,8 @@ func ForwardTranslateBlockHeader(f *from.BlockHeader) (*to.BlockHeader, error) {
 		t.BClaims = BClaims
 	}
 
-	SigGroup, err := ForwardTranslateByte(f.SigGroup)
-	if err != nil {
-		return nil, err
-	}
+	SigGroup := ForwardTranslateByte(f.SigGroup)
+
 	t.SigGroup = SigGroup
 
 	TxHshLst, err := ForwardTranslateByteSlice(f.TxHshLst)
@@ -59,10 +57,8 @@ func ForwardTranslateNRClaimsNRClaims(f *from.NRClaims) (*to.NRClaims, error) {
 		t.RClaims = RClaims
 	}
 
-	SigShare, err := ForwardTranslateByte(f.SigShare)
-	if err != nil {
-		return nil, err
-	}
+	SigShare := ForwardTranslateByte(f.SigShare)
+
 	t.SigShare = SigShare
 	return t, nil
 }
@@ -81,10 +77,8 @@ func ForwardTranslatePreVoteNil(f *from.PreVoteNil) (*to.PreVoteNil, error) {
 		t.RCert = RCert
 	}
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 	return t, nil
 }
@@ -109,10 +103,8 @@ func ForwardTranslateNextHeight(f *from.NextHeight) (*to.NextHeight, error) {
 	}
 	t.PreCommits = PreCommits
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 	return t, nil
 }
@@ -131,10 +123,8 @@ func ForwardTranslateRCert(f *from.RCert) (*to.RCert, error) {
 		t.RClaims = RClaims
 	}
 
-	SigGroup, err := ForwardTranslateByte(f.SigGroup)
-	if err != nil {
-		return nil, err
-	}
+	SigGroup := ForwardTranslateByte(f.SigGroup)
+
 	t.SigGroup = SigGroup
 	return t, nil
 }
@@ -153,10 +143,8 @@ func ForwardTranslateNextRound(f *from.NextRound) (*to.NextRound, error) {
 		t.NRClaims = NRClaims
 	}
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 	return t, nil
 }
@@ -175,10 +163,8 @@ func ForwardTranslateProposal(f *from.Proposal) (*to.Proposal, error) {
 		t.PClaims = PClaims
 	}
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 
 	TxHshLst, err := ForwardTranslateByteSlice(f.TxHshLst)
@@ -209,10 +195,8 @@ func ForwardTranslatePreCommit(f *from.PreCommit) (*to.PreCommit, error) {
 		t.Proposal = Proposal
 	}
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 	return t, nil
 }
@@ -231,10 +215,8 @@ func ForwardTranslatePreVote(f *from.PreVote) (*to.PreVote, error) {
 		t.Proposal = Proposal
 	}
 
-	Signature, err := ForwardTranslateByte(f.Signature)
-	if err != nil {
-		return nil, err
-	}
+	Signature := ForwardTranslateByte(f.Signature)
+
 	t.Signature = Signature
 	return t, nil
 }
@@ -247,32 +229,24 @@ func ForwardTranslateBClaims(f *from.BClaims) (*to.BClaims, error) {
 
 	t.ChainID = f.ChainID
 
-	HeaderRoot, err := ForwardTranslateByte(f.HeaderRoot)
-	if err != nil {
-		return nil, err
-	}
+	HeaderRoot := ForwardTranslateByte(f.HeaderRoot)
+
 	t.HeaderRoot = HeaderRoot
 
 	t.Height = f.Height
 
-	PrevBlock, err := ForwardTranslateByte(f.PrevBlock)
-	if err != nil {
-		return nil, err
-	}
+	PrevBlock := ForwardTranslateByte(f.PrevBlock)
+
 	t.PrevBlock = PrevBlock
 
-	StateRoot, err := ForwardTranslateByte(f.StateRoot)
-	if err != nil {
-		return nil, err
-	}
+	StateRoot := ForwardTranslateByte(f.StateRoot)
+
 	t.StateRoot = StateRoot
 
 	t.TxCount = f.TxCount
 
-	TxRoot, err := ForwardTranslateByte(f.TxRoot)
-	if err != nil {
-		return nil, err
-	}
+	TxRoot := ForwardTranslateByte(f.TxRoot)
+
 	t.TxRoot = TxRoot
 	return t, nil
 }
@@ -291,10 +265,8 @@ func ForwardTranslateNHClaimsNHClaims(f *from.NHClaims) (*to.NHClaims, error) {
 		t.Proposal = Proposal
 	}
 
-	SigShare, err := ForwardTranslateByte(f.SigShare)
-	if err != nil {
-		return nil, err
-	}
+	SigShare := ForwardTranslateByte(f.SigShare)
+
 	t.SigShare = SigShare
 	return t, nil
 }
@@ -332,18 +304,16 @@ func ForwardTranslateRClaims(f *from.RClaims) (*to.RClaims, error) {
 	t.ChainID = f.ChainID
 	t.Height = f.Height
 
-	PrevBlock, err := ForwardTranslateByte(f.PrevBlock)
-	if err != nil {
-		return nil, err
-	}
+	PrevBlock := ForwardTranslateByte(f.PrevBlock)
+
 	t.PrevBlock = PrevBlock
 
 	t.Round = f.Round
 	return t, nil
 }
 
-func ForwardTranslateByte(in []byte) (string, error) {
-	return hex.EncodeToString(in), nil
+func ForwardTranslateByte(in []byte) string {
+	return utils.EncodeHexString(in)
 }
 
 func ForwardTranslateByteSlice(in [][]byte) ([]string, error) {

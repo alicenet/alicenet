@@ -5,6 +5,7 @@ import (
 
 	to "github.com/MadBase/MadNet/consensus/objs"
 	from "github.com/MadBase/MadNet/proto"
+	"github.com/MadBase/MadNet/utils"
 )
 
 func ReverseTranslateBlockHeader(f *from.BlockHeader) (*to.BlockHeader, error) {
@@ -290,7 +291,7 @@ func ReverseTranslateRClaims(f *from.RClaims) (*to.RClaims, error) {
 }
 
 func ReverseTranslateByte(in string) ([]byte, error) {
-	return hex.DecodeString(in)
+	return utils.DecodeHexString(in)
 }
 
 func ReverseTranslateByteSlice(in []string) ([][]byte, error) {
