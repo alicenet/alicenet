@@ -3,6 +3,7 @@ package admin
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
+	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -44,10 +46,11 @@ type Handlers struct {
 	appHandler  appmock.Application
 	storage     dynamics.StorageGetter
 	ReceiveLock chan interfaces.Lockable
+	ipcServer   *ipc.Server
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte, storage dynamics.StorageGetter) {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte, storage dynamics.StorageGetter, ipcs *ipc.Server) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -61,6 +64,7 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.ethAcct = crypto.GetAccount(ethPubk)
 	ah.ReceiveLock = make(chan interfaces.Lockable)
 	ah.storage = storage
+	ah.ipcServer = ipcs
 }
 
 // Close shuts down all workers
@@ -91,6 +95,17 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	defer mutex.Unlock()
 	// ah.logger.Error("!!! OPEN addval TXN")
 	// defer func() { ah.logger.Error("!!! CLOSE addval TXN") }()
+
+	addrs := make([]string, len(v.Validators))
+	for i := range v.Validators {
+		n := fmt.Sprintf("%v", i)
+		addrs[i] = n + "." + n + "." + n + "." + n + ":" + n
+	}
+	err := ah.ipcServer.Push(ipc.PeersUpdate{Addrs: addrs, Seq: 0 /* sequence number here, if desired, ipc package can be changed to add it automatically */})
+	if err != nil {
+		return err
+	}
+
 	return ah.database.Update(func(txn *badger.Txn) error {
 		// build round states
 		bh, err := ah.database.GetLastSnapshot(txn)
