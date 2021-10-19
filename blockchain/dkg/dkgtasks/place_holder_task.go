@@ -16,7 +16,7 @@ func NewPlaceHolder(state *objects.DkgState) *PlaceHolder {
 	return &PlaceHolder{state: state}
 }
 
-func (ph *PlaceHolder) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (ph *PlaceHolder) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	logger.Infof("ph dowork")
 	return nil
 }

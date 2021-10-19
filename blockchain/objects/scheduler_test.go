@@ -257,7 +257,7 @@ func TestMarshal(t *testing.T) {
 type adminTaskMock struct {
 }
 
-func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	return nil
 }
 func (ph *adminTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
