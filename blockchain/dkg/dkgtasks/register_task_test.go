@@ -102,7 +102,7 @@ func TestRegisterTask(t *testing.T) {
 
 	log := logger.WithField("TaskID", "foo")
 
-	err = task.Initialize(ctx, log, eth)
+	err = task.Initialize(ctx, log, eth, state)
 	assert.Nil(t, err)
 
 	err = task.DoWork(ctx, log, eth)

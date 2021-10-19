@@ -621,6 +621,7 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		logger.Errorf("Failed to update ethdkg contract references: %v", err)
 		return nil, common.Address{}, err
 	}
+
 	eth.commit()
 
 	rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
@@ -630,6 +631,23 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	} else if rcpt != nil {
 		logger.Infof("ethdkg update status: %v", rcpt.Status)
 	}
+
+	// If we want to change the phase length, this is how:
+	//  tx, err = c.ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(40))
+	//	if err != nil {
+	//		logger.Errorf("Failed to update ethdkg phase length references: %v", err)
+	//		return nil, common.Address{}, err
+	//	}
+
+	// eth.commit()
+
+	// rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
+	// if err != nil {
+	//		logger.Errorf("Failed to get receipt for ethdkg update: %v", err)
+	//		return nil, common.Address{}, err
+	//	} else if rcpt != nil {
+	//		logger.Infof("ethdkg update status: %v", rcpt.Status)
+	//	}
 
 	return c.registry, c.registryAddress, nil
 }

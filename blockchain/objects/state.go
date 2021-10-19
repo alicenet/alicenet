@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -16,19 +15,19 @@ type MonitorState struct {
 	sync.RWMutex           `json:"-"`
 	Version                uint8                   `json:"version"`
 	CommunicationFailures  uint32                  `json:"communicationFailtures"`
-	EthereumInSync         bool                    `json:"ethereumInSync"`
+	EthereumInSync         bool                    `json:"-"`
 	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
 	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
 	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
 	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
-	InSync                 bool                    `json:"inSync"`
+	EndpointInSync         bool                    `json:"-"`
 	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
 	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
 	PeerCount              uint32                  `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
+	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSet"`
 	Validators             map[uint32][]Validator  `json:"validators"`
-	Schedule               interfaces.Schedule     `json:"schedule"`
-	EthDKG                 *DkgState               `json:"ethDKG"`
+	Schedule               *SequentialSchedule     `json:"schedule"`
+	EthDKG                 *DkgState               `json:"dkgState"`
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in
@@ -48,7 +47,7 @@ const (
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {
 	ValidatorCount        uint8
-	GroupKey              [4]big.Int
+	GroupKey              [4]*big.Int
 	NotBeforeMadNetHeight uint32
 }
 
@@ -56,7 +55,7 @@ type ValidatorSet struct {
 type Validator struct {
 	Account   common.Address
 	Index     uint8
-	SharedKey [4]big.Int
+	SharedKey [4]*big.Int
 }
 
 // Share is temporary storage of shares coming from validators
@@ -66,7 +65,7 @@ type Share struct {
 	EncryptedShares []*big.Int
 }
 
-func NewMonitorState(dkgState *DkgState, schedule interfaces.Schedule) *MonitorState {
+func NewMonitorState(dkgState *DkgState, schedule *SequentialSchedule) *MonitorState {
 	return &MonitorState{
 		EthDKG:        dkgState,
 		Schedule:      schedule,
@@ -87,7 +86,8 @@ func (s *MonitorState) String() string {
 	return string(str)
 }
 
-// Clone builds a deep copy of a state
+// Clone builds a deep copy of a small portion of state
+// TODO Make this create a complete clone of state
 func (s *MonitorState) Clone() *MonitorState {
 	ns := NewMonitorState(s.EthDKG, s.Schedule)
 
@@ -97,7 +97,7 @@ func (s *MonitorState) Clone() *MonitorState {
 	ns.HighestBlockProcessed = s.HighestBlockProcessed
 	ns.HighestEpochProcessed = s.HighestEpochProcessed
 	ns.HighestEpochSeen = s.HighestEpochSeen
-	ns.InSync = s.InSync
+	ns.EndpointInSync = s.EndpointInSync
 	ns.LatestDepositProcessed = s.LatestDepositProcessed
 	ns.LatestDepositSeen = s.LatestDepositSeen
 	ns.PeerCount = s.PeerCount
@@ -139,8 +139,8 @@ func (s *MonitorState) Diff(o *MonitorState) string {
 		d = append(d, fmt.Sprintf("HighestEpochSeen: %v -> %v", s.HighestEpochSeen, o.HighestEpochSeen))
 	}
 
-	if s.InSync != o.InSync {
-		d = append(d, fmt.Sprintf("InSync: %v -> %v", s.InSync, o.InSync))
+	if s.EndpointInSync != o.EndpointInSync {
+		d = append(d, fmt.Sprintf("EndpointInSync: %v -> %v", s.EndpointInSync, o.EndpointInSync))
 	}
 
 	if s.LatestDepositProcessed != o.LatestDepositProcessed {

@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -24,13 +25,22 @@ func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	}
 }
 
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+
+	dkgState, validState := state.(*objects.DkgState)
+	if !validState {
+		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+	}
+
+	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+
 	if !t.State.GPKJGroupAccusation {
-		return objects.ErrCanNotContinue
+		return fmt.Errorf("%w because gpkj dispute phase not successful", objects.ErrCanNotContinue)
 	}
 
 	return nil
@@ -101,10 +111,10 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 
 // DoDone creates a log entry saying task is complete
 func (t *CompletionTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.WithField("Success", t.Success).Infof("done")
 
 	t.State.Complete = t.Success
 }

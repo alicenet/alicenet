@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -26,24 +27,31 @@ func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	}
 }
 
-func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+
+	dkgState, validState := state.(*objects.DkgState)
+	if !validState {
+		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+	}
+
+	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+
 	if !t.State.KeyShareSubmission {
-		return objects.ErrCanNotContinue
+		return fmt.Errorf("%w because key share submission not successful", objects.ErrCanNotContinue)
 	}
 
-	state := t.State
+	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
+	g2KeyShares := make([][4]*big.Int, t.State.NumberOfValidators)
 
-	g1KeyShares := make([][2]*big.Int, state.NumberOfValidators)
-	g2KeyShares := make([][4]*big.Int, state.NumberOfValidators)
-
-	for idx, participant := range state.Participants {
+	for idx, participant := range t.State.Participants {
 		// Bringing these in from state but could directly query contract
-		g1KeyShares[idx] = state.KeyShareG1s[participant.Address]
-		g2KeyShares[idx] = state.KeyShareG2s[participant.Address]
+		g1KeyShares[idx] = t.State.KeyShareG1s[participant.Address]
+		g2KeyShares[idx] = t.State.KeyShareG2s[participant.Address]
 
 		logger.Debugf("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
 
@@ -61,7 +69,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 	}
 
-	logger.Infof("# Participants:%v Data:%+v", len(state.Participants), state.Participants)
+	logger.Infof("# Participants:%v Data:%+v", len(t.State.Participants), t.State.Participants)
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 	if err != nil {
@@ -69,7 +77,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	}
 
 	// Master public key is all we generate here so save it
-	state.MasterPublicKey = mpk
+	t.State.MasterPublicKey = mpk
 
 	return nil
 }
@@ -137,10 +145,10 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 // DoDone creates a log entry saying task is complete
 func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.WithField("Success", t.Success).Infof("done")
 
 	t.State.MPKSubmission = t.Success
 }

@@ -26,7 +26,7 @@ func NewSnapshotTask(account accounts.Account) *SnapshotTask {
 	}
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, _ interface{}) error {
 
 	if t.BlockHeader == nil {
 		return errors.New("BlockHeader must be assigned before initializing")

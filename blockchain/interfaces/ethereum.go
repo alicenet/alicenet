@@ -151,20 +151,12 @@ type Task interface {
 	DoDone(*logrus.Entry)
 	DoRetry(context.Context, *logrus.Entry, Ethereum) error
 	DoWork(context.Context, *logrus.Entry, Ethereum) error
-	Initialize(context.Context, *logrus.Entry, Ethereum) error
+	Initialize(context.Context, *logrus.Entry, Ethereum, interface{}) error
 	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
 }
 
 type AdminClient interface {
 	SetAdminHandler(AdminHandler)
-}
-
-// TaskHandler required functionality of a task
-type TaskHandler interface {
-	Cancel()
-	Start()
-	Complete() bool
-	Successful() bool
 }
 
 // Schedule simple interface to a block based schedule

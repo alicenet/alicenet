@@ -1,8 +1,8 @@
 package monitor
 
 import (
-	"bytes"
-	"encoding/gob"
+	"encoding/json"
+	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -49,23 +49,21 @@ func (mon *monitorDB) FindState() (*objects.MonitorState, error) {
 
 	state := &objects.MonitorState{}
 
-	fn := func(txn *badger.Txn) error {
-		data, err := utils.GetValue(txn, stateKey)
+	if err := mon.database.View(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", stateKey)
+		mon.logger.WithField("Key", keyLabel).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, stateKey)
 		if err != nil {
 			return err
 		}
 
-		buf := bytes.NewBuffer(data)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(state)
+		err = json.Unmarshal(rawData, state)
 		if err != nil {
 			return err
 		}
+
 		return nil
-	}
-
-	err := mon.database.View(fn)
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -74,17 +72,29 @@ func (mon *monitorDB) FindState() (*objects.MonitorState, error) {
 
 func (mon *monitorDB) UpdateState(state *objects.MonitorState) error {
 
-	buf := &bytes.Buffer{}
-
-	enc := gob.NewEncoder(buf)
-	err := enc.Encode(state)
+	rawData, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
 
-	fn := func(txn *badger.Txn) error {
-		return utils.SetValue(txn, stateKey, buf.Bytes())
+	err = mon.database.Update(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", stateKey)
+		mon.logger.WithField("Key", keyLabel).Infof("Saving state")
+		if err := utils.SetValue(txn, stateKey, rawData); err != nil {
+			mon.logger.Error("Failed to set Value")
+			return err
+		}
+
+		if err := mon.database.Sync(); err != nil {
+			mon.logger.Error("Failed to set sync")
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
-	return mon.database.Update(fn)
+	return nil
 }

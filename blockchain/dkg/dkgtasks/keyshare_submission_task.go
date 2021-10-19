@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -26,14 +27,20 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 }
 
 // This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
-func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+
+	dkgState, validState := state.(*objects.DkgState)
+	if !validState {
+		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+	}
+
+	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	if !t.State.Dispute {
-		logger.Error("Dispute phase did not complete successfully")
-		return objects.ErrCanNotContinue
+		return fmt.Errorf("%w because dispute phase not successful", objects.ErrCanNotContinue)
 	}
 
 	// Generate the key shares
@@ -146,10 +153,10 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 
 // DoDone creates a log entry saying task is complete
 func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.WithField("Success", t.Success).Infof("done")
 
 	t.State.KeyShareSubmission = t.Success
 }

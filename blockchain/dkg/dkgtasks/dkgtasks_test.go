@@ -151,7 +151,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 	defer cancel()
 
 	dkgState := objects.NewDkgState(validatorAcct)
-	schedule := monitor.NewSequentialSchedule(tr, adminHandler)
+	schedule := objects.NewSequentialSchedule(tr, adminHandler)
 
 	monitorState := objects.NewMonitorState(dkgState, schedule)
 	monitorState.HighestBlockProcessed = 0

@@ -92,7 +92,7 @@ func (b *Behind) Loop() {
 
 			go b.process(req, handler)
 
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			// No request, so let's do some work
 			b.collectReceipts()
 		}
@@ -101,7 +101,7 @@ func (b *Behind) Loop() {
 }
 
 func (b *Behind) collectReceipts() {
-	ctx, cf := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cf := context.WithTimeout(context.Background(), 1*time.Hour)
 	defer cf()
 
 	b.Lock()
@@ -344,18 +344,17 @@ func (f *TxnQueueDetail) StartLoop() {
 }
 
 func (f *TxnQueueDetail) QueueTransaction(ctx context.Context, txn *types.Transaction) {
-	txn.Data()
-	f.logger.Debug("queue...")
+	f.logger.WithField("Txn", string(txn.Hash().Bytes())).Debug("Queueing")
 	req := &Request{name: "queue", txn: txn} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
-	f.logger.Debug("...done queueing")
 }
 
 func (f *TxnQueueDetail) QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction) {
-	f.logger.Debug("queue...")
+	f.logger.WithFields(logrus.Fields{
+		"Txn":   string(txn.Hash().Bytes()),
+		"Group": grp}).Debug("Queueing for group")
 	req := &Request{name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
-	f.logger.Debug("...done queueing")
 }
 
 func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
@@ -364,10 +363,10 @@ func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transactio
 }
 
 func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
-	f.logger.Debug("waiting...")
+
+	f.logger.WithField("Txn", string(txn.Hash().Bytes())).Debug("Waiting")
 	req := &Request{name: "wait", txn: txn, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
-	f.logger.Debug("...done waiting")
 
 	if resp.err != nil {
 		return nil, resp.err
@@ -377,10 +376,9 @@ func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transac
 }
 
 func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error) {
-	f.logger.Debug("waiting...")
+	f.logger.WithField("Group", grp).Debug("Waiting")
 	req := &Request{name: "wait", group: grp, respch: make(chan *Response)}
 	resp := f.requestWait(ctx, req)
-	f.logger.Debug("...done waiting")
 
 	if resp.err != nil {
 		return nil, resp.err

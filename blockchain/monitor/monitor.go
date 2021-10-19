@@ -2,7 +2,9 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strings"
 	"sync"
@@ -16,6 +18,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -33,24 +36,24 @@ var (
 type Monitor interface {
 	Start() error
 	Close()
-	// Start(accounts.Account) (chan<- bool, error)
 	GetStatus() <-chan string
 }
 
 type monitor struct {
+	sync.RWMutex
 	adminHandler   interfaces.AdminHandler
 	depositHandler interfaces.DepositHandler
 	eth            interfaces.Ethereum
 	eventMap       *objects.EventMap
-	db             Database
+	db             *db.Database
 	cdb            *db.Database
 	tickInterval   time.Duration
 	timeout        time.Duration
 	logger         *logrus.Entry
 	cancelChan     chan bool
 	statusChan     chan string
-	typeRegistry   *objects.TypeRegistry
-	state          *objects.MonitorState
+	TypeRegistry   *objects.TypeRegistry
+	State          *objects.MonitorState
 	wg             sync.WaitGroup
 	batchSize      uint64
 }
@@ -63,7 +66,7 @@ func NewMonitor(cdb *db.Database,
 	eth interfaces.Ethereum,
 	tickInterval time.Duration,
 	timeout time.Duration,
-	batchSize uint64) (Monitor, error) {
+	batchSize uint64) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -71,8 +74,6 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	rand.Seed(time.Now().UnixNano())
-
-	monitorDB := NewDatabase(db)
 
 	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
@@ -105,9 +106,9 @@ func NewMonitor(cdb *db.Database,
 		return PersistSnapshot(ctx, &wg, eth, logger, bh)
 	})
 
-	schedule := NewSequentialSchedule(tr, adminHandler)
+	schedule := objects.NewSequentialSchedule(tr, adminHandler)
 	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
-	state := objects.NewMonitorState(dkgState, schedule)
+	State := objects.NewMonitorState(dkgState, schedule)
 
 	return &monitor{
 		adminHandler:   adminHandler,
@@ -115,18 +116,79 @@ func NewMonitor(cdb *db.Database,
 		eth:            eth,
 		eventMap:       eventMap,
 		cdb:            cdb,
-		db:             monitorDB,
-		typeRegistry:   tr,
+		db:             db,
+		TypeRegistry:   tr,
 		logger:         logger,
 		tickInterval:   tickInterval,
 		timeout:        timeout,
 		cancelChan:     make(chan bool, 1),
 		statusChan:     make(chan string, 1),
-		state:          state,
+		State:          State,
 		wg:             wg,
 		batchSize:      batchSize,
 	}, nil
 
+}
+
+func (mon *monitor) LoadState() error {
+
+	mon.Lock()
+	defer mon.Unlock()
+
+	if err := mon.db.View(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", stateKey)
+		mon.logger.WithField("Key", keyLabel).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, stateKey)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, mon)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (mon *monitor) PersistState() error {
+
+	mon.RLock()
+	defer mon.RUnlock()
+
+	rawData, err := json.Marshal(mon)
+	if err != nil {
+		return err
+	}
+
+	//mon.logger.WithField("StateLocation", fmt.Sprintf("%p", mon.State)).Infof("Persisting state: %v", string(rawData))
+
+	err = mon.db.Update(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", stateKey)
+		mon.logger.WithField("Key", keyLabel).Infof("Saving state")
+		if err := utils.SetValue(txn, stateKey, rawData); err != nil {
+			mon.logger.Error("Failed to set Value")
+			return err
+		}
+
+		if err := mon.db.Sync(); err != nil {
+			mon.logger.Error("Failed to set sync")
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (mon *monitor) GetStatus() <-chan string {
@@ -142,49 +204,66 @@ func (mon *monitor) Start() error {
 
 	logger := mon.logger
 
-	// Load or create initial state
+	// Load or create initial State
 	logger.Info(strings.Repeat("-", 80))
-	initialState, err := mon.db.FindState()
+	startingBlock := config.Configuration.Ethereum.StartingBlock
+	err := mon.LoadState()
 	if err != nil {
-		logger.Warnf("could not find previous state: %v", err)
+		logger.Warnf("could not find previous State: %v", err)
 		if err != badger.ErrKeyNotFound {
 			return err
 		}
 
-		logger.Info("Setting initial state to defaults...")
-		startingBlock := config.Configuration.Ethereum.StartingBlock
-		schedule := NewSequentialSchedule(mon.typeRegistry, mon.adminHandler)
-		dkgState := objects.NewDkgState(mon.eth.GetDefaultAccount())
+		logger.Info("Setting initial State to defaults...")
 
-		initialState = objects.NewMonitorState(dkgState, schedule)
-		initialState.HighestBlockFinalized = uint64(startingBlock)
-		initialState.HighestBlockProcessed = uint64(startingBlock)
+		mon.State.HighestBlockFinalized = startingBlock
+		mon.State.HighestBlockProcessed = startingBlock
 	}
 
-	// initialState.HighestBlockProcessed = uint64(config.Configuration.Ethereum.StartingBlock)
-	// initialState.HighestBlockFinalized = uint64(config.Configuration.Ethereum.StartingBlock)
+	if startingBlock > mon.State.HighestBlockProcessed {
+		logger.WithFields(logrus.Fields{
+			"StartingBlock":         startingBlock,
+			"HighestBlockProcessed": mon.State.HighestBlockProcessed}).
+			Info("Overriding highest block processed due to config")
+		mon.State.HighestBlockProcessed = startingBlock
+	}
 
-	initialState.InSync = false
-	logger.Info("Current state:")
-	logger.Infof("...Ethereum in sync: %v", initialState.EthereumInSync)
-	logger.Infof("...Highest block finalized: %v", initialState.HighestBlockFinalized)
-	logger.Infof("...Highest block processed: %v", initialState.HighestBlockProcessed)
+	if startingBlock > mon.State.HighestBlockFinalized {
+		logger.WithFields(logrus.Fields{
+			"StartingBlock":         startingBlock,
+			"HighestBlockFinalized": mon.State.HighestBlockFinalized}).
+			Info("Overriding highest block finalized due to config")
+		mon.State.HighestBlockFinalized = startingBlock
+	}
+
+	mon.State.EndpointInSync = false
+	logger.Info("Current State:")
+	logger.Infof("...Ethereum in sync: %v", mon.State.EthereumInSync)
+	logger.Infof("...Highest block finalized: %v", mon.State.HighestBlockFinalized)
+	logger.Infof("...Highest block processed: %v", mon.State.HighestBlockProcessed)
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
+	logger.Info(strings.Repeat("-", 80))
+	logger.Infof("Current Tasks: %v", len(mon.State.Schedule.Ranges))
+	for id, block := range mon.State.Schedule.Ranges {
+		taskName, _ := objects.GetNameType(block.Task)
+		logger.Infof("...ID: %v Name: %v Between: %v and %v", id, taskName, block.Start, block.End)
+	}
 	logger.Info(strings.Repeat("-", 80))
 
 	mon.cancelChan = make(chan bool)
 	mon.wg.Add(1)
-	go mon.eventLoop(&mon.wg, logger, initialState, mon.cancelChan)
+	go mon.eventLoop(&mon.wg, logger, mon.cancelChan)
 
 	return nil
 }
 
-func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorState *objects.MonitorState, cancelChan <-chan bool) error {
+func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelChan <-chan bool) error {
 
 	defer wg.Done()
 
 	done := false
 	for !done {
+
 		select {
 		case done = <-cancelChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
@@ -194,13 +273,17 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorS
 			ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
 			defer cf()
 
-			oldMonitorState := monitorState.Clone()
+			oldMonitorState := mon.State.Clone()
 
-			if err := MonitorTick(ctx, wg, mon.eth, monitorState, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
+			if err := MonitorTick(ctx, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
-			diff := oldMonitorState.Diff(monitorState)
+			if err := mon.PersistState(); err != nil {
+				logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
+			}
+
+			diff := oldMonitorState.Diff(mon.State)
 
 			select {
 			case mon.statusChan <- diff:
@@ -212,15 +295,34 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, monitorS
 	return nil
 }
 
-// MonitorTick using existing monitorState and incrementally updates it based on current state of Ethereum endpoint
+func (m *monitor) MarshalJSON() ([]byte, error) {
+	rawData, err := json.Marshal(m.State)
+
+	if err != nil {
+		fmt.Errorf("Could not marshal state: %v", err)
+	}
+
+	return rawData, err
+}
+
+func (m *monitor) UnmarshalJSON(raw []byte) error {
+	err := json.Unmarshal(raw, m.State)
+	if err != nil && m.State.Schedule != nil {
+		m.State.Schedule.Initialize(m.TypeRegistry, m.adminHandler)
+	}
+	return err
+}
+
+// MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
 
-	logger = logger.WithField("Method", "MonitorTick")
-	logger.Debugf("State %+v", monitorState)
+	logger = logger.WithFields(logrus.Fields{
+		"Method":         "MonitorTick",
+		"EndpointInSync": monitorState.EndpointInSync,
+		"EthereumInSync": monitorState.EthereumInSync})
 
 	c := eth.Contracts()
-	schedule := monitorState.Schedule
 
 	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
 
@@ -234,19 +336,11 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 			Warn("EndpointInSync() Failed")
 
 		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
-			monitorState.InSync = false
+			monitorState.EndpointInSync = false
 			adminHandler.SetSynchronized(false)
 		}
 		return nil
 	}
-	monitorState.CommunicationFailures = 0
-	monitorState.PeerCount = peerCount
-	monitorState.InSync = inSync
-
-	synchronized := monitorState.HighestBlockProcessed == monitorState.HighestBlockFinalized
-	adminHandler.SetSynchronized(synchronized)
-
-	logger = logger.WithField("Synchronized", synchronized)
 
 	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
 		return nil
@@ -257,6 +351,11 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 	if err != nil {
 		return err
 	}
+
+	monitorState.CommunicationFailures = 0
+	monitorState.PeerCount = peerCount
+	monitorState.EndpointInSync = inSync
+	monitorState.HighestBlockFinalized = finalized
 
 	// 3. Grab up to the next _batch size_ unprocessed block(s)
 	processed := monitorState.HighestBlockProcessed
@@ -308,9 +407,9 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 
 		// Check if any tasks are scheduled
 		logEntry.Debug("Looking for scheduled task")
-		uuid, err := schedule.Find(currentBlock)
+		uuid, err := monitorState.Schedule.Find(currentBlock)
 		if err == nil {
-			task, _ := schedule.Retrieve(uuid)
+			task, _ := monitorState.Schedule.Retrieve(uuid)
 
 			taskName, _ := objects.GetNameType(task)
 
@@ -318,10 +417,10 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 				"TaskID":   uuid.String(),
 				"TaskName": taskName})
 
-			tasks.StartTask(log, wg, eth, task)
+			tasks.StartTask(log, wg, eth, task, monitorState.EthDKG)
 
-			schedule.Remove(uuid)
-		} else if err == ErrNothingScheduled {
+			monitorState.Schedule.Remove(uuid)
+		} else if err == objects.ErrNothingScheduled {
 			logEntry.Debug("No tasks scheduled")
 		} else {
 			logEntry.Warnf("Error retrieving scheduled task: %v", err)
@@ -330,9 +429,12 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		processed = currentBlock
 	}
 
-	// Only after batch is processed do we update monitor state
-	monitorState.HighestBlockFinalized = finalized
+	// Only after batch is processed do we update monitor State
 	monitorState.HighestBlockProcessed = processed
+
+	// If we caught up processing, let consensus engine know we're synchronized
+	synchronized := monitorState.HighestBlockProcessed == monitorState.HighestBlockFinalized
+	adminHandler.SetSynchronized(synchronized)
 
 	return nil
 }
@@ -343,19 +445,13 @@ func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Eth
 	task := tasks.NewSnapshotTask(eth.GetDefaultAccount())
 	task.BlockHeader = bh
 
-	err := task.Initialize(ctx, logger, eth)
-	if err != nil {
-		logger.Errorf("Failed to initialize snapshot task: %v", err)
-		return nil
-	}
-
-	tasks.StartTask(logger, wg, eth, task)
+	tasks.StartTask(logger, wg, eth, task, nil)
 
 	return nil
 }
 
 // EndpointInSync Checks if our endpoint is good to use
-// -- This function is different. Because we need to be aware of errors, state is always updated
+// -- This function is different. Because we need to be aware of errors, State is always updated
 func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) (bool, uint32, error) {
 
 	// Default to assuming everything is awful

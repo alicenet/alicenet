@@ -230,6 +230,8 @@ func main() {
 					cFlags.StringArrayVarP(strArrayPtr, o.name, o.short, defaultStringArray, o.usage)
 				} else if intPtr, ok := o.value.(*int); ok {
 					cFlags.IntVarP(intPtr, o.name, o.short, 0, o.usage)
+				} else if uint64Ptr, ok := o.value.(*uint64); ok {
+					cFlags.Uint64VarP(uint64Ptr, o.name, o.short, 0, o.usage)
 				} else if boolPtr, ok := o.value.(*bool); ok {
 					cFlags.BoolVarP(boolPtr, o.name, o.short, false, o.usage)
 				} else {

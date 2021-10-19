@@ -39,7 +39,7 @@ type ethereumConfig struct {
 	RegistryAddress      string
 	RetryCount           int
 	RetryDelay           time.Duration
-	StartingBlock        int
+	StartingBlock        uint64
 	TestEther            string
 	Timeout              time.Duration
 }

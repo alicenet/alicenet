@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -88,33 +87,6 @@ func NewDkgState(account accounts.Account) *DkgState {
 		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
 		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
 	}
-}
-
-func (state *DkgState) PopulateSchedule(event *bindings.ETHDKGRegistrationOpen) {
-
-	state.RegistrationStart = event.DkgStarts.Uint64()
-	state.RegistrationEnd = event.RegistrationEnds.Uint64()
-
-	state.ShareDistributionStart = state.RegistrationEnd + 1
-	state.ShareDistributionEnd = event.ShareDistributionEnds.Uint64()
-
-	state.DisputeStart = state.ShareDistributionEnd + 1
-	state.DisputeEnd = event.DisputeEnds.Uint64()
-
-	state.KeyShareSubmissionStart = state.DisputeEnd + 1
-	state.KeyShareSubmissionEnd = event.KeyShareSubmissionEnds.Uint64()
-
-	state.MPKSubmissionStart = state.KeyShareSubmissionEnd + 1
-	state.MPKSubmissionEnd = event.MpkSubmissionEnds.Uint64()
-
-	state.GPKJSubmissionStart = state.MPKSubmissionEnd + 1
-	state.GPKJSubmissionEnd = event.GpkjSubmissionEnds.Uint64()
-
-	state.GPKJGroupAccusationStart = state.GPKJSubmissionEnd + 1
-	state.GPKJGroupAccusationEnd = event.GpkjDisputeEnds.Uint64()
-
-	state.CompleteStart = state.GPKJGroupAccusationEnd + 1
-	state.CompleteEnd = event.DkgComplete.Uint64()
 }
 
 // Participant contains what we know about other participants, i.e. public information

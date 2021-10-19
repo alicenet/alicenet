@@ -31,10 +31,10 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 	vs := state.ValidatorSets[epoch]
 	vs.NotBeforeMadNetHeight = event.MadHeight
 	vs.ValidatorCount = event.ValidatorCount
-	vs.GroupKey[0] = *event.GroupKey0
-	vs.GroupKey[1] = *event.GroupKey1
-	vs.GroupKey[2] = *event.GroupKey2
-	vs.GroupKey[3] = *event.GroupKey3
+	vs.GroupKey[0] = event.GroupKey0
+	vs.GroupKey[1] = event.GroupKey1
+	vs.GroupKey[2] = event.GroupKey2
+	vs.GroupKey[3] = event.GroupKey3
 
 	updatedState.ValidatorSets[epoch] = vs
 
@@ -64,7 +64,7 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 	v := objects.Validator{
 		Account:   event.Account,
 		Index:     index,
-		SharedKey: [4]big.Int{*event.Share0, *event.Share1, *event.Share2, *event.Share3},
+		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 	if len(state.Validators) < int(index+1) {
 		newValList := make([]objects.Validator, int(index+1))
@@ -73,8 +73,8 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 	}
 	state.Validators[epoch][index] = v
 	ptrGroupShare := [4]*big.Int{
-		&v.SharedKey[0], &v.SharedKey[1],
-		&v.SharedKey[2], &v.SharedKey[3]}
+		v.SharedKey[0], v.SharedKey[1],
+		v.SharedKey[2], v.SharedKey[3]}
 	groupShare, err := bn256.MarshalG2Big(ptrGroupShare)
 	if err != nil {
 		logger.Errorf("Failed to marshal groupShare: %v", err)
@@ -123,7 +123,7 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 
 	if receivedCount == expectedCount {
 		// Start by building the ValidatorSet
-		ptrGroupKey := [4]*big.Int{&validatorSet.GroupKey[0], &validatorSet.GroupKey[1], &validatorSet.GroupKey[2], &validatorSet.GroupKey[3]}
+		ptrGroupKey := [4]*big.Int{validatorSet.GroupKey[0], validatorSet.GroupKey[1], validatorSet.GroupKey[2], validatorSet.GroupKey[3]}
 		groupKey, err := bn256.MarshalG2Big(ptrGroupKey)
 		if err != nil {
 			logger.Errorf("Failed to marshal groupKey: %v", err)
@@ -136,8 +136,8 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 		// Loop over the Validators
 		for _, validator := range validators {
 			ptrGroupShare := [4]*big.Int{
-				&validator.SharedKey[0], &validator.SharedKey[1],
-				&validator.SharedKey[2], &validator.SharedKey[3]}
+				validator.SharedKey[0], validator.SharedKey[1],
+				validator.SharedKey[2], validator.SharedKey[3]}
 			groupShare, err := bn256.MarshalG2Big(ptrGroupShare)
 			if err != nil {
 				logger.Errorf("Failed to marshal groupShare: %v", err)

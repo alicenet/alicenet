@@ -7,8 +7,8 @@ stateDB = "~/validator3/"
 stateDBInMemory = false
 transactionDB = ""
 transactionDBInMemory = true
-monitorDB = ""
-monitorDBInMemory = true
+monitorDB = "~/validator3mon/"
+monitorDBInMemory = false
 
 [bootnode]
 listeningAddress = "0.0.0.0:4245"

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+rm -rf ~/validator?/state
+rm -rf ~/validator?/mon
+
 if [ -z "$ENDPOINT" ]; then
     ./madnet --config ./assets/config/validator0.toml validator > validator0.log 2>&1 &
     ./madnet --config ./assets/config/validator1.toml validator > validator1.log 2>&1 &

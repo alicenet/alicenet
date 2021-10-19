@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -26,13 +27,22 @@ func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	}
 }
 
-func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+
+	dkgState, validState := state.(*objects.DkgState)
+	if !validState {
+		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+	}
+
+	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+
 	if !t.State.GPKJSubmission {
-		return objects.ErrCanNotContinue
+		return fmt.Errorf("%w because gpk submission phase not successful", objects.ErrCanNotContinue)
 	}
 
 	var (
@@ -173,10 +183,10 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 
 // DoDone creates a log entry saying task is complete
 func (t *GPKJDisputeTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.WithField("Success", t.Success).Infof("done")
 
 	t.State.GPKJGroupAccusation = t.Success
 }

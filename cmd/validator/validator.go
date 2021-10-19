@@ -176,12 +176,8 @@ func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handle
 	return localStateServer
 }
 
-func initDatabase(ctx *context.Context, path string, inMemory bool) *badger.DB {
-	db, err := mnutils.OpenBadger(
-		(*ctx).Done(),
-		path,
-		inMemory,
-	)
+func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
+	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
 		panic(err)
 	}
@@ -205,15 +201,15 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	eth, keys, publicKey := initEthereumConnection(logger)
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
-	rawConsensusDb := initDatabase(&nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
+	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
 	defer rawConsensusDb.Close()
 
 	// Initialize transaction pool db: contains transcations that have not been mined (and thus are to be gossiped)
-	rawTxPoolDb := initDatabase(&nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
+	rawTxPoolDb := initDatabase(nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
 	defer rawTxPoolDb.Close()
 
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
-	rawMonitorDb := initDatabase(&nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
+	rawMonitorDb := initDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
 	defer rawMonitorDb.Close()
 
 	/////////////////////////////////////////////////////////////////////////////

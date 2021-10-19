@@ -2,13 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -30,13 +30,22 @@ func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.Admin
 	}
 }
 
-func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+
+	dkgState, validState := state.(*objects.DkgState)
+	if !validState {
+		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+	}
+
+	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+
 	if !t.State.MPKSubmission {
-		return objects.ErrCanNotContinue
+		return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
 	}
 
 	// TODO Guard
@@ -73,8 +82,7 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
 	err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
 	if err != nil {
-		logger.Errorf("Error adding private key: %v", err)
-		return objects.ErrCanNotContinue // TODO this is seriously bad, any better actions possible?
+		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err) // TODO this is seriously bad, any better actions possible?
 	}
 
 	return nil
@@ -136,14 +144,14 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 // DoDone creates a log entry saying task is complete
 func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
-	logger.Infof("done")
-
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.WithField("Success", t.Success).Infof("done")
 
 	t.State.GPKJSubmission = t.Success
 }
 
-func (t *GPKSubmissionTask) SetAdminHandler(adminHandler *admin.Handlers) {
+func (t *GPKSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
 }
