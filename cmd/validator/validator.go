@@ -166,6 +166,7 @@ func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handle
 	localStateDispatch.RegisterLocalStateSendTransaction(localStateHandler)
 	localStateDispatch.RegisterLocalStateGetValueForOwner(localStateHandler)
 	localStateDispatch.RegisterLocalStateGetUTXO(localStateHandler)
+	localStateDispatch.RegisterLocalStateGetTransactionStatus(localStateHandler)
 	localStateDispatch.RegisterLocalStateGetMinedTransaction(localStateHandler)
 	localStateDispatch.RegisterLocalStateGetPendingTransaction(localStateHandler)
 	localStateDispatch.RegisterLocalStateGetRoundStateForValidator(localStateHandler)

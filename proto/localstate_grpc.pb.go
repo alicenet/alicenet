@@ -31,6 +31,8 @@ type LocalStateClient interface {
 	GetBlockHeader(ctx context.Context, in *BlockHeaderRequest, opts ...grpc.CallOption) (*BlockHeaderResponse, error)
 	// Get a raw UTXO by TxHash and index or by UTXOID
 	GetUTXO(ctx context.Context, in *UTXORequest, opts ...grpc.CallOption) (*UTXOResponse, error)
+	// Get transaction status by hash
+	GetTransactionStatus(ctx context.Context, in *TransactionStatusRequest, opts ...grpc.CallOption) (*TransactionStatusResponse, error)
 	// Get a pending transaction by hash
 	GetPendingTransaction(ctx context.Context, in *PendingTransactionRequest, opts ...grpc.CallOption) (*PendingTransactionResponse, error)
 	// Get the round state object for a specified round for a specified validator
@@ -107,6 +109,15 @@ func (c *localStateClient) GetBlockHeader(ctx context.Context, in *BlockHeaderRe
 func (c *localStateClient) GetUTXO(ctx context.Context, in *UTXORequest, opts ...grpc.CallOption) (*UTXOResponse, error) {
 	out := new(UTXOResponse)
 	err := c.cc.Invoke(ctx, "/proto.LocalState/GetUTXO", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localStateClient) GetTransactionStatus(ctx context.Context, in *TransactionStatusRequest, opts ...grpc.CallOption) (*TransactionStatusResponse, error) {
+	out := new(TransactionStatusResponse)
+	err := c.cc.Invoke(ctx, "/proto.LocalState/GetTransactionStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +222,8 @@ type LocalStateServer interface {
 	GetBlockHeader(context.Context, *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	// Get a raw UTXO by TxHash and index or by UTXOID
 	GetUTXO(context.Context, *UTXORequest) (*UTXOResponse, error)
+	// Get transaction status by hash
+	GetTransactionStatus(context.Context, *TransactionStatusRequest) (*TransactionStatusResponse, error)
 	// Get a pending transaction by hash
 	GetPendingTransaction(context.Context, *PendingTransactionRequest) (*PendingTransactionResponse, error)
 	// Get the round state object for a specified round for a specified validator
@@ -252,6 +265,9 @@ func (UnimplementedLocalStateServer) GetBlockHeader(context.Context, *BlockHeade
 }
 func (UnimplementedLocalStateServer) GetUTXO(context.Context, *UTXORequest) (*UTXOResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUTXO not implemented")
+}
+func (UnimplementedLocalStateServer) GetTransactionStatus(context.Context, *TransactionStatusRequest) (*TransactionStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTransactionStatus not implemented")
 }
 func (UnimplementedLocalStateServer) GetPendingTransaction(context.Context, *PendingTransactionRequest) (*PendingTransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPendingTransaction not implemented")
@@ -396,6 +412,24 @@ func _LocalState_GetUTXO_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalStateServer).GetUTXO(ctx, req.(*UTXORequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalState_GetTransactionStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransactionStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalStateServer).GetTransactionStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.LocalState/GetTransactionStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalStateServer).GetTransactionStatus(ctx, req.(*TransactionStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -592,6 +626,10 @@ var LocalState_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUTXO",
 			Handler:    _LocalState_GetUTXO_Handler,
+		},
+		{
+			MethodName: "GetTransactionStatus",
+			Handler:    _LocalState_GetTransactionStatus_Handler,
 		},
 		{
 			MethodName: "GetPendingTransaction",

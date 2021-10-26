@@ -307,6 +307,39 @@
         ]
       }
     },
+    "/v1/get-transaction-status": {
+      "post": {
+        "summary": "Get transaction status by hash",
+        "operationId": "LocalState_GetTransactionStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoTransactionStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTransactionStatusRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LocalState"
+        ]
+      }
+    },
     "/v1/get-tx-block-number": {
       "post": {
         "summary": "Get the current block number",
@@ -890,6 +923,23 @@
         }
       }
     },
+    "protoTFPreImage": {
+      "type": "object",
+      "properties": {
+        "ChainID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "TXOutIdx": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Fee": {
+          "type": "string"
+        }
+      },
+      "title": "Protobuf message implementation for struct TFPreImage"
+    },
     "protoTXIn": {
       "type": "object",
       "properties": {
@@ -942,6 +992,9 @@
         },
         "DataStore": {
           "$ref": "#/definitions/protoDataStore"
+        },
+        "TxFee": {
+          "$ref": "#/definitions/protoTxFee"
         }
       },
       "title": "Protobuf message implementation for struct TXOut"
@@ -959,6 +1012,28 @@
       "properties": {
         "TxHash": {
           "type": "string"
+        }
+      }
+    },
+    "protoTransactionStatusRequest": {
+      "type": "object",
+      "properties": {
+        "TxHash": {
+          "type": "string"
+        },
+        "full": {
+          "type": "boolean"
+        }
+      }
+    },
+    "protoTransactionStatusResponse": {
+      "type": "object",
+      "properties": {
+        "isMined": {
+          "type": "boolean"
+        },
+        "Tx": {
+          "$ref": "#/definitions/protoTx"
         }
       }
     },
@@ -999,6 +1074,18 @@
           "format": "int64"
         }
       }
+    },
+    "protoTxFee": {
+      "type": "object",
+      "properties": {
+        "TFPreImage": {
+          "$ref": "#/definitions/protoTFPreImage"
+        },
+        "TxHash": {
+          "type": "string"
+        }
+      },
+      "title": "Protobuf message implementation for struct TxFee"
     },
     "protoUTXORequest": {
       "type": "object",

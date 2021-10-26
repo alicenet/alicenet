@@ -56,6 +56,14 @@ type LocalStateGetUTXOHandler interface {
 	HandleLocalStateGetUTXO(context.Context, *UTXORequest) (*UTXOResponse, error)
 }
 
+// LocalStateGetTransactionStatusHandler is an interface class that only contains
+// the method HandleLocalStateGetTransactionStatus
+// The class that implements this method MUST handle the RPC call for
+// the method GetTransactionStatus of the RPC service LocalState
+type LocalStateGetTransactionStatusHandler interface {
+	HandleLocalStateGetTransactionStatus(context.Context, *TransactionStatusRequest) (*TransactionStatusResponse, error)
+}
+
 // LocalStateGetPendingTransactionHandler is an interface class that only contains
 // the method HandleLocalStateGetPendingTransaction
 // The class that implements this method MUST handle the RPC call for
@@ -182,6 +190,14 @@ type LocalStateDispatch struct {
 	// method GetUTXO on service LocalState to block until the
 	// method has been registered.
 	waitChanLocalStateGetUTXO chan struct{}
+
+	//	handlerLocalStateGetTransactionStatus is the registered handler for the
+	//  GetTransactionStatus RPC method of service LocalState
+	handlerLocalStateGetTransactionStatus LocalStateGetTransactionStatusHandler
+	// waitChanLocalStateGetTransactionStatus will cause a caller of the RPC
+	// method GetTransactionStatus on service LocalState to block until the
+	// method has been registered.
+	waitChanLocalStateGetTransactionStatus chan struct{}
 
 	//	handlerLocalStateGetPendingTransaction is the registered handler for the
 	//  GetPendingTransaction RPC method of service LocalState
@@ -421,6 +437,34 @@ func (d *LocalStateDispatch) LocalStateGetUTXO(ctx context.Context, r *UTXOReque
 	case <-d.waitChanLocalStateGetUTXO:
 		// return the invoked methods response
 		return d.handlerLocalStateGetUTXO.HandleLocalStateGetUTXO(ctx, r)
+	}
+}
+
+// RegisterLocalStateGetTransactionStatus will register the object 't' as the service
+// handler for the RPC method GetTransactionStatus from service LocalState
+func (d *LocalStateDispatch) RegisterLocalStateGetTransactionStatus(t LocalStateGetTransactionStatusHandler) {
+	d.Lock()
+	defer d.Unlock()
+	// double registration is not allowed
+	if d.handlerLocalStateGetTransactionStatus != nil {
+		panic("double registration of LocalStateGetTransactionStatus")
+	}
+	// register the service handler
+	d.handlerLocalStateGetTransactionStatus = t
+	// close the wait channel to signal that the method is ready to use
+	close(d.waitChanLocalStateGetTransactionStatus)
+}
+
+// LocalStateGetTransactionStatus will invoke the handler for the RPC method
+// GetTransactionStatus from service LocalState
+func (d *LocalStateDispatch) LocalStateGetTransactionStatus(ctx context.Context, r *TransactionStatusRequest) (*TransactionStatusResponse, error) {
+	// wait for registration to complete or context to be canceled
+	select {
+	case <-ctx.Done():
+		return nil, errors.New("context canceled")
+	case <-d.waitChanLocalStateGetTransactionStatus:
+		// return the invoked methods response
+		return d.handlerLocalStateGetTransactionStatus.HandleLocalStateGetTransactionStatus(ctx, r)
 	}
 }
 
@@ -699,6 +743,9 @@ func NewLocalStateDispatch() *LocalStateDispatch {
 		// initialize the wait channel for method GetUTXO on service LocalState
 		waitChanLocalStateGetUTXO: make(chan struct{}),
 
+		// initialize the wait channel for method GetTransactionStatus on service LocalState
+		waitChanLocalStateGetTransactionStatus: make(chan struct{}),
+
 		// initialize the wait channel for method GetPendingTransaction on service LocalState
 		waitChanLocalStateGetPendingTransaction: make(chan struct{}),
 
@@ -769,6 +816,12 @@ func (s *GeneratedLocalStateServer) GetBlockHeader(ctx context.Context, r *Block
 // using the LocalStateDispatch handler.
 func (s *GeneratedLocalStateServer) GetUTXO(ctx context.Context, r *UTXORequest) (*UTXOResponse, error) {
 	return s.dispatch.LocalStateGetUTXO(ctx, r)
+}
+
+// GetTransactionStatus will invoke the method GetTransactionStatus on the RPC service LocalState
+// using the LocalStateDispatch handler.
+func (s *GeneratedLocalStateServer) GetTransactionStatus(ctx context.Context, r *TransactionStatusRequest) (*TransactionStatusResponse, error) {
+	return s.dispatch.LocalStateGetTransactionStatus(ctx, r)
 }
 
 // GetPendingTransaction will invoke the method GetPendingTransaction on the RPC service LocalState

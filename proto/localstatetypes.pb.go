@@ -371,6 +371,116 @@ func (x *MinedTransactionResponse) GetTx() *Tx {
 	return nil
 }
 
+type TransactionStatusRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TxHash string `protobuf:"bytes,1,opt,name=TxHash,proto3" json:"TxHash,omitempty"` // 32 bytes
+	Full   bool   `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
+}
+
+func (x *TransactionStatusRequest) Reset() {
+	*x = TransactionStatusRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_localstatetypes_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransactionStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransactionStatusRequest) ProtoMessage() {}
+
+func (x *TransactionStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_localstatetypes_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransactionStatusRequest.ProtoReflect.Descriptor instead.
+func (*TransactionStatusRequest) Descriptor() ([]byte, []int) {
+	return file_localstatetypes_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *TransactionStatusRequest) GetTxHash() string {
+	if x != nil {
+		return x.TxHash
+	}
+	return ""
+}
+
+func (x *TransactionStatusRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
+}
+
+type TransactionStatusResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	IsMined bool `protobuf:"varint,1,opt,name=isMined,proto3" json:"isMined,omitempty"`
+	Tx      *Tx  `protobuf:"bytes,2,opt,name=Tx,proto3" json:"Tx,omitempty"`
+}
+
+func (x *TransactionStatusResponse) Reset() {
+	*x = TransactionStatusResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_localstatetypes_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransactionStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransactionStatusResponse) ProtoMessage() {}
+
+func (x *TransactionStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_localstatetypes_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransactionStatusResponse.ProtoReflect.Descriptor instead.
+func (*TransactionStatusResponse) Descriptor() ([]byte, []int) {
+	return file_localstatetypes_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *TransactionStatusResponse) GetIsMined() bool {
+	if x != nil {
+		return x.IsMined
+	}
+	return false
+}
+
+func (x *TransactionStatusResponse) GetTx() *Tx {
+	if x != nil {
+		return x.Tx
+	}
+	return nil
+}
+
 type BlockHeaderRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -382,7 +492,7 @@ type BlockHeaderRequest struct {
 func (x *BlockHeaderRequest) Reset() {
 	*x = BlockHeaderRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[6]
+		mi := &file_localstatetypes_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -395,7 +505,7 @@ func (x *BlockHeaderRequest) String() string {
 func (*BlockHeaderRequest) ProtoMessage() {}
 
 func (x *BlockHeaderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[6]
+	mi := &file_localstatetypes_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,7 +518,7 @@ func (x *BlockHeaderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockHeaderRequest.ProtoReflect.Descriptor instead.
 func (*BlockHeaderRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{6}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BlockHeaderRequest) GetHeight() uint32 {
@@ -429,7 +539,7 @@ type BlockHeaderResponse struct {
 func (x *BlockHeaderResponse) Reset() {
 	*x = BlockHeaderResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[7]
+		mi := &file_localstatetypes_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -442,7 +552,7 @@ func (x *BlockHeaderResponse) String() string {
 func (*BlockHeaderResponse) ProtoMessage() {}
 
 func (x *BlockHeaderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[7]
+	mi := &file_localstatetypes_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +565,7 @@ func (x *BlockHeaderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockHeaderResponse.ProtoReflect.Descriptor instead.
 func (*BlockHeaderResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{7}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BlockHeaderResponse) GetBlockHeader() *BlockHeader {
@@ -476,7 +586,7 @@ type UTXORequest struct {
 func (x *UTXORequest) Reset() {
 	*x = UTXORequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[8]
+		mi := &file_localstatetypes_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -489,7 +599,7 @@ func (x *UTXORequest) String() string {
 func (*UTXORequest) ProtoMessage() {}
 
 func (x *UTXORequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[8]
+	mi := &file_localstatetypes_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -502,7 +612,7 @@ func (x *UTXORequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UTXORequest.ProtoReflect.Descriptor instead.
 func (*UTXORequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{8}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UTXORequest) GetUTXOIDs() []string {
@@ -523,7 +633,7 @@ type UTXOResponse struct {
 func (x *UTXOResponse) Reset() {
 	*x = UTXOResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[9]
+		mi := &file_localstatetypes_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -536,7 +646,7 @@ func (x *UTXOResponse) String() string {
 func (*UTXOResponse) ProtoMessage() {}
 
 func (x *UTXOResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[9]
+	mi := &file_localstatetypes_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +659,7 @@ func (x *UTXOResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UTXOResponse.ProtoReflect.Descriptor instead.
 func (*UTXOResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{9}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UTXOResponse) GetUTXOs() []*TXOut {
@@ -570,7 +680,7 @@ type PendingTransactionRequest struct {
 func (x *PendingTransactionRequest) Reset() {
 	*x = PendingTransactionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[10]
+		mi := &file_localstatetypes_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -583,7 +693,7 @@ func (x *PendingTransactionRequest) String() string {
 func (*PendingTransactionRequest) ProtoMessage() {}
 
 func (x *PendingTransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[10]
+	mi := &file_localstatetypes_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -596,7 +706,7 @@ func (x *PendingTransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingTransactionRequest.ProtoReflect.Descriptor instead.
 func (*PendingTransactionRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{10}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PendingTransactionRequest) GetTxHash() string {
@@ -617,7 +727,7 @@ type PendingTransactionResponse struct {
 func (x *PendingTransactionResponse) Reset() {
 	*x = PendingTransactionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[11]
+		mi := &file_localstatetypes_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -630,7 +740,7 @@ func (x *PendingTransactionResponse) String() string {
 func (*PendingTransactionResponse) ProtoMessage() {}
 
 func (x *PendingTransactionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[11]
+	mi := &file_localstatetypes_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -643,7 +753,7 @@ func (x *PendingTransactionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingTransactionResponse.ProtoReflect.Descriptor instead.
 func (*PendingTransactionResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{11}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PendingTransactionResponse) GetTx() *Tx {
@@ -662,7 +772,7 @@ type BlockNumberRequest struct {
 func (x *BlockNumberRequest) Reset() {
 	*x = BlockNumberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[12]
+		mi := &file_localstatetypes_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -675,7 +785,7 @@ func (x *BlockNumberRequest) String() string {
 func (*BlockNumberRequest) ProtoMessage() {}
 
 func (x *BlockNumberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[12]
+	mi := &file_localstatetypes_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -688,7 +798,7 @@ func (x *BlockNumberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockNumberRequest.ProtoReflect.Descriptor instead.
 func (*BlockNumberRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{12}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{14}
 }
 
 type BlockNumberResponse struct {
@@ -702,7 +812,7 @@ type BlockNumberResponse struct {
 func (x *BlockNumberResponse) Reset() {
 	*x = BlockNumberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[13]
+		mi := &file_localstatetypes_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -715,7 +825,7 @@ func (x *BlockNumberResponse) String() string {
 func (*BlockNumberResponse) ProtoMessage() {}
 
 func (x *BlockNumberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[13]
+	mi := &file_localstatetypes_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -728,7 +838,7 @@ func (x *BlockNumberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockNumberResponse.ProtoReflect.Descriptor instead.
 func (*BlockNumberResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{13}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *BlockNumberResponse) GetBlockHeight() uint32 {
@@ -747,7 +857,7 @@ type ChainIDRequest struct {
 func (x *ChainIDRequest) Reset() {
 	*x = ChainIDRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[14]
+		mi := &file_localstatetypes_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -760,7 +870,7 @@ func (x *ChainIDRequest) String() string {
 func (*ChainIDRequest) ProtoMessage() {}
 
 func (x *ChainIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[14]
+	mi := &file_localstatetypes_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +883,7 @@ func (x *ChainIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChainIDRequest.ProtoReflect.Descriptor instead.
 func (*ChainIDRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{14}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{16}
 }
 
 type ChainIDResponse struct {
@@ -787,7 +897,7 @@ type ChainIDResponse struct {
 func (x *ChainIDResponse) Reset() {
 	*x = ChainIDResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[15]
+		mi := &file_localstatetypes_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -800,7 +910,7 @@ func (x *ChainIDResponse) String() string {
 func (*ChainIDResponse) ProtoMessage() {}
 
 func (x *ChainIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[15]
+	mi := &file_localstatetypes_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -813,7 +923,7 @@ func (x *ChainIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChainIDResponse.ProtoReflect.Descriptor instead.
 func (*ChainIDResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{15}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ChainIDResponse) GetChainID() uint32 {
@@ -834,7 +944,7 @@ type TransactionData struct {
 func (x *TransactionData) Reset() {
 	*x = TransactionData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[16]
+		mi := &file_localstatetypes_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -847,7 +957,7 @@ func (x *TransactionData) String() string {
 func (*TransactionData) ProtoMessage() {}
 
 func (x *TransactionData) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[16]
+	mi := &file_localstatetypes_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -860,7 +970,7 @@ func (x *TransactionData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionData.ProtoReflect.Descriptor instead.
 func (*TransactionData) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{16}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TransactionData) GetTx() *Tx {
@@ -881,7 +991,7 @@ type TransactionDetails struct {
 func (x *TransactionDetails) Reset() {
 	*x = TransactionDetails{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[17]
+		mi := &file_localstatetypes_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -894,7 +1004,7 @@ func (x *TransactionDetails) String() string {
 func (*TransactionDetails) ProtoMessage() {}
 
 func (x *TransactionDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[17]
+	mi := &file_localstatetypes_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -907,7 +1017,7 @@ func (x *TransactionDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionDetails.ProtoReflect.Descriptor instead.
 func (*TransactionDetails) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{17}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *TransactionDetails) GetTxHash() string {
@@ -926,7 +1036,7 @@ type EpochNumberRequest struct {
 func (x *EpochNumberRequest) Reset() {
 	*x = EpochNumberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[18]
+		mi := &file_localstatetypes_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -939,7 +1049,7 @@ func (x *EpochNumberRequest) String() string {
 func (*EpochNumberRequest) ProtoMessage() {}
 
 func (x *EpochNumberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[18]
+	mi := &file_localstatetypes_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -952,7 +1062,7 @@ func (x *EpochNumberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EpochNumberRequest.ProtoReflect.Descriptor instead.
 func (*EpochNumberRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{18}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{20}
 }
 
 type EpochNumberResponse struct {
@@ -966,7 +1076,7 @@ type EpochNumberResponse struct {
 func (x *EpochNumberResponse) Reset() {
 	*x = EpochNumberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[19]
+		mi := &file_localstatetypes_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -979,7 +1089,7 @@ func (x *EpochNumberResponse) String() string {
 func (*EpochNumberResponse) ProtoMessage() {}
 
 func (x *EpochNumberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[19]
+	mi := &file_localstatetypes_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +1102,7 @@ func (x *EpochNumberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EpochNumberResponse.ProtoReflect.Descriptor instead.
 func (*EpochNumberResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{19}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *EpochNumberResponse) GetEpoch() uint32 {
@@ -1016,7 +1126,7 @@ type IterateNameSpaceRequest struct {
 func (x *IterateNameSpaceRequest) Reset() {
 	*x = IterateNameSpaceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[20]
+		mi := &file_localstatetypes_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1029,7 +1139,7 @@ func (x *IterateNameSpaceRequest) String() string {
 func (*IterateNameSpaceRequest) ProtoMessage() {}
 
 func (x *IterateNameSpaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[20]
+	mi := &file_localstatetypes_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1042,7 +1152,7 @@ func (x *IterateNameSpaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IterateNameSpaceRequest.ProtoReflect.Descriptor instead.
 func (*IterateNameSpaceRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{20}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *IterateNameSpaceRequest) GetCurveSpec() uint32 {
@@ -1084,7 +1194,7 @@ type IterateNameSpaceResponse struct {
 func (x *IterateNameSpaceResponse) Reset() {
 	*x = IterateNameSpaceResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[21]
+		mi := &file_localstatetypes_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1097,7 +1207,7 @@ func (x *IterateNameSpaceResponse) String() string {
 func (*IterateNameSpaceResponse) ProtoMessage() {}
 
 func (x *IterateNameSpaceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[21]
+	mi := &file_localstatetypes_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1110,7 +1220,7 @@ func (x *IterateNameSpaceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IterateNameSpaceResponse.ProtoReflect.Descriptor instead.
 func (*IterateNameSpaceResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{21}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *IterateNameSpaceResponse) GetResults() []*IterateNameSpaceResponse_Result {
@@ -1131,7 +1241,7 @@ type TxBlockNumberRequest struct {
 func (x *TxBlockNumberRequest) Reset() {
 	*x = TxBlockNumberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[22]
+		mi := &file_localstatetypes_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1144,7 +1254,7 @@ func (x *TxBlockNumberRequest) String() string {
 func (*TxBlockNumberRequest) ProtoMessage() {}
 
 func (x *TxBlockNumberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[22]
+	mi := &file_localstatetypes_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1267,7 @@ func (x *TxBlockNumberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TxBlockNumberRequest.ProtoReflect.Descriptor instead.
 func (*TxBlockNumberRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{22}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *TxBlockNumberRequest) GetTxHash() string {
@@ -1178,7 +1288,7 @@ type TxBlockNumberResponse struct {
 func (x *TxBlockNumberResponse) Reset() {
 	*x = TxBlockNumberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[23]
+		mi := &file_localstatetypes_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1191,7 +1301,7 @@ func (x *TxBlockNumberResponse) String() string {
 func (*TxBlockNumberResponse) ProtoMessage() {}
 
 func (x *TxBlockNumberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[23]
+	mi := &file_localstatetypes_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1204,7 +1314,7 @@ func (x *TxBlockNumberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TxBlockNumberResponse.ProtoReflect.Descriptor instead.
 func (*TxBlockNumberResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{23}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *TxBlockNumberResponse) GetBlockHeight() uint32 {
@@ -1225,7 +1335,7 @@ type ValidatorSetRequest struct {
 func (x *ValidatorSetRequest) Reset() {
 	*x = ValidatorSetRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[24]
+		mi := &file_localstatetypes_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1238,7 +1348,7 @@ func (x *ValidatorSetRequest) String() string {
 func (*ValidatorSetRequest) ProtoMessage() {}
 
 func (x *ValidatorSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[24]
+	mi := &file_localstatetypes_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1251,7 +1361,7 @@ func (x *ValidatorSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorSetRequest.ProtoReflect.Descriptor instead.
 func (*ValidatorSetRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{24}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ValidatorSetRequest) GetHeight() uint32 {
@@ -1272,7 +1382,7 @@ type ValidatorSetResponse struct {
 func (x *ValidatorSetResponse) Reset() {
 	*x = ValidatorSetResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[25]
+		mi := &file_localstatetypes_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1285,7 +1395,7 @@ func (x *ValidatorSetResponse) String() string {
 func (*ValidatorSetResponse) ProtoMessage() {}
 
 func (x *ValidatorSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[25]
+	mi := &file_localstatetypes_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1298,7 +1408,7 @@ func (x *ValidatorSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorSetResponse.ProtoReflect.Descriptor instead.
 func (*ValidatorSetResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{25}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ValidatorSetResponse) GetValidatorSet() string {
@@ -1321,7 +1431,7 @@ type RoundStateForValidatorRequest struct {
 func (x *RoundStateForValidatorRequest) Reset() {
 	*x = RoundStateForValidatorRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[26]
+		mi := &file_localstatetypes_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1334,7 +1444,7 @@ func (x *RoundStateForValidatorRequest) String() string {
 func (*RoundStateForValidatorRequest) ProtoMessage() {}
 
 func (x *RoundStateForValidatorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[26]
+	mi := &file_localstatetypes_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1347,7 +1457,7 @@ func (x *RoundStateForValidatorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundStateForValidatorRequest.ProtoReflect.Descriptor instead.
 func (*RoundStateForValidatorRequest) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{26}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RoundStateForValidatorRequest) GetVAddr() string {
@@ -1382,7 +1492,7 @@ type RoundStateForValidatorResponse struct {
 func (x *RoundStateForValidatorResponse) Reset() {
 	*x = RoundStateForValidatorResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[27]
+		mi := &file_localstatetypes_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1395,7 +1505,7 @@ func (x *RoundStateForValidatorResponse) String() string {
 func (*RoundStateForValidatorResponse) ProtoMessage() {}
 
 func (x *RoundStateForValidatorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[27]
+	mi := &file_localstatetypes_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1408,7 +1518,7 @@ func (x *RoundStateForValidatorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundStateForValidatorResponse.ProtoReflect.Descriptor instead.
 func (*RoundStateForValidatorResponse) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{27}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *RoundStateForValidatorResponse) GetRoundState() []byte {
@@ -1565,7 +1675,7 @@ func (x *IterateNameSpaceResponse_Result) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IterateNameSpaceResponse_Result.ProtoReflect.Descriptor instead.
 func (*IterateNameSpaceResponse_Result) Descriptor() ([]byte, []int) {
-	return file_localstatetypes_proto_rawDescGZIP(), []int{21, 0}
+	return file_localstatetypes_proto_rawDescGZIP(), []int{23, 0}
 }
 
 func (x *IterateNameSpaceResponse_Result) GetUTXOID() string {
@@ -1862,7 +1972,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockHeaderRequest); i {
+			switch v := v.(*TransactionStatusRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1874,7 +1984,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockHeaderResponse); i {
+			switch v := v.(*TransactionStatusResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1886,7 +1996,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UTXORequest); i {
+			switch v := v.(*BlockHeaderRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1898,7 +2008,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UTXOResponse); i {
+			switch v := v.(*BlockHeaderResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1910,7 +2020,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PendingTransactionRequest); i {
+			switch v := v.(*UTXORequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1922,7 +2032,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PendingTransactionResponse); i {
+			switch v := v.(*UTXOResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1934,7 +2044,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockNumberRequest); i {
+			switch v := v.(*PendingTransactionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1946,7 +2056,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockNumberResponse); i {
+			switch v := v.(*PendingTransactionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1958,7 +2068,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChainIDRequest); i {
+			switch v := v.(*BlockNumberRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1970,7 +2080,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChainIDResponse); i {
+			switch v := v.(*BlockNumberResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1982,7 +2092,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TransactionData); i {
+			switch v := v.(*ChainIDRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1994,7 +2104,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TransactionDetails); i {
+			switch v := v.(*ChainIDResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2006,7 +2116,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EpochNumberRequest); i {
+			switch v := v.(*TransactionData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2018,7 +2128,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EpochNumberResponse); i {
+			switch v := v.(*TransactionDetails); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2030,7 +2140,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IterateNameSpaceRequest); i {
+			switch v := v.(*EpochNumberRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2042,7 +2152,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IterateNameSpaceResponse); i {
+			switch v := v.(*EpochNumberResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2054,7 +2164,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TxBlockNumberRequest); i {
+			switch v := v.(*IterateNameSpaceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2066,7 +2176,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TxBlockNumberResponse); i {
+			switch v := v.(*IterateNameSpaceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2078,7 +2188,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValidatorSetRequest); i {
+			switch v := v.(*TxBlockNumberRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2090,7 +2200,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValidatorSetResponse); i {
+			switch v := v.(*TxBlockNumberResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2102,7 +2212,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RoundStateForValidatorRequest); i {
+			switch v := v.(*ValidatorSetRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2114,7 +2224,7 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RoundStateForValidatorResponse); i {
+			switch v := v.(*ValidatorSetResponse); i {
 			case 0:
 				return &v.state
 			case 1:
