@@ -29,6 +29,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	mncrypto "github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/dynamics"
+	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/localrpc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
@@ -260,6 +261,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	localStateServer := initLocalStateServer(localStateHandler)
 	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
 
+	ipcServer := ipc.NewServer(config.Configuration.Firewalld.SocketFile)
+
 	// Initialize the consensus engine signer
 	if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
 		panic(err)
@@ -285,7 +288,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consLSHandler.Init(consDB, consDlManager)
 	consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
-	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
+	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
 	// Setup monitor
@@ -326,6 +329,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 	defer mon.Close()
+
+	go ipcServer.Start()
+	defer ipcServer.Close()
 
 	go peerManager.Start()
 	defer peerManager.Close()
