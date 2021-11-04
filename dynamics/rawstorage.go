@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// TODO: RACE ON READ OF MsgTimeout FROM SYNCHRONIZER.SETUPLOOPS AND FROM RAWSTORAGE.START
+
 // RawStorage is the struct which stores dynamic values;
 // these values may change from epoch to epoch
 type RawStorage struct {

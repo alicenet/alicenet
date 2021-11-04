@@ -2,6 +2,7 @@ package monevents
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
@@ -10,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/errorz"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -35,7 +37,7 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		"Amount":    event.Amount,
 	}).Info("Deposit received")
 
-	return cdb.Update(func(txn *badger.Txn) error {
+	err = cdb.Update(func(txn *badger.Txn) error {
 		depositNonce := event.DepositID.Bytes()
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}
@@ -46,6 +48,14 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		}
 		return depositHandler.Add(txn, chainID, depositNonce, event.Amount, owner)
 	})
+
+	if err != nil {
+		e := errorz.ErrInvalid{}.New("")
+		if !errors.As(err, &e) {
+			return err
+		}
+	}
+	return nil
 }
 
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract

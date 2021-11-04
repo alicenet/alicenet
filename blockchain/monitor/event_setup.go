@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, db *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
 	// DKG event processors
 	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen",

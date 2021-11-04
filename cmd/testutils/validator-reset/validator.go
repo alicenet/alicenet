@@ -20,7 +20,7 @@ func main() {
 	ctx := context.Background()
 	nodeCtx, cf := context.WithCancel(ctx)
 	defer cf()
-	logger := logging.GetLogger("null")
+	logger := logging.GetLogger("test")
 	stateDb := openBadger(nodeCtx, logger, *path, false)
 	//monitorDb := monitor.NewDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
 	prefixList := [][]byte{
@@ -47,6 +47,18 @@ func main() {
 		[]byte("av"),
 		[]byte("aw"),
 		[]byte("ax"),
+		[]byte("ay"),
+		[]byte("az"),
+		[]byte("a1"),
+		[]byte("a2"),
+		[]byte("a3"),
+		[]byte("a4"),
+		[]byte("a5"),
+		[]byte("Ay"),
+		[]byte("Az"),
+		[]byte("A1"),
+		[]byte("A2"),
+		[]byte("A3"),
 		[]byte("na"),
 		[]byte("nb"),
 		[]byte("nc"),
@@ -73,7 +85,8 @@ func main() {
 		[]byte("n4"),
 		[]byte("n5"),
 		[]byte("n6"),
-		[]byte("n7")}
+		[]byte("n7"),
+	}
 
 	for _, pf := range prefixList {
 		if err := stateDb.DropPrefix(utils.CopySlice(pf)); err != nil {

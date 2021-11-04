@@ -29,7 +29,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
-		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
 	}
 
 	t.State = dkgState

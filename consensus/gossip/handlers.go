@@ -2,6 +2,7 @@ package gossip
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MadBase/MadNet/constants"
@@ -482,7 +483,7 @@ func (mb *Handlers) HandleP2PGossipBlockHeader(ctx context.Context, msg *pb.Goss
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := mb.shandlers.PreValidate(obj); err != nil {
-		utils.DebugTrace(mb.logger, err)
+		utils.DebugTrace(mb.logger, fmt.Errorf("BlockHeight:%d | SigGroup:%x | %q", obj.BClaims.Height, obj.SigGroup, err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	mutex, ok := mb.getLock(ctx)

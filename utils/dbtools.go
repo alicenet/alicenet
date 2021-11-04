@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"bytes"
+
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -15,6 +17,26 @@ func GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
 
 // SetValue sets the value for key in the database that is safe for use.
 func SetValue(txn *badger.Txn, key []byte, value []byte) error {
+	item, err := txn.Get(key)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		return txn.Set(key, value)
+	}
+	dup := false
+	err = item.Value(func(val []byte) error {
+		if bytes.Equal(val, value) {
+			dup = true
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if dup {
+		return nil
+	}
 	return txn.Set(key, value)
 }
 

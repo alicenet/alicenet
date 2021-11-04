@@ -115,7 +115,9 @@ func ReverseTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if len(f.Fee) == 0 {
+		f.Fee = "0"
+	}
 	t.Fee = &uint256.Uint256{}
 	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
@@ -247,7 +249,9 @@ func ReverseTranslateDSPreImage(f *from.DSPreImage) (*to.DSPreImage, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if len(f.Fee) == 0 {
+		f.Fee = "0"
+	}
 	t.Fee = &uint256.Uint256{}
 	err = t.Fee.UnmarshalString(f.Fee)
 	if err != nil {
@@ -359,7 +363,9 @@ func ReverseTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
 	t := &to.TFPreImage{}
 	t.ChainID = f.ChainID
 	t.TXOutIdx = f.TXOutIdx
-
+	if len(f.Fee) == 0 {
+		f.Fee = "0"
+	}
 	t.Fee = &uint256.Uint256{}
 	err := t.Fee.UnmarshalString(f.Fee)
 	if err != nil {

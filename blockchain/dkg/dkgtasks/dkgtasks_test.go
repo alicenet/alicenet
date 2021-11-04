@@ -159,12 +159,12 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 	events := objects.NewEventMap()
 
-	monitor.SetupEventMap(events, nil, nil, adminHandler, nil)
+	monitor.SetupEventMap(events, nil, adminHandler, nil)
 
 	var done bool
 
 	for !done {
-		err := monitor.MonitorTick(ctx, wg, eth, monitorState, logger, events, adminHandler, 10)
+		err := monitor.MonitorTick(ctx, cancel, wg, eth, monitorState, logger, events, adminHandler, 10)
 		assert.Nil(t, err)
 
 		time.Sleep(time.Second)

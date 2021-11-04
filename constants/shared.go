@@ -1,5 +1,7 @@
 package constants
 
+import "time"
+
 const (
 	// EpochLength is the number of blocks in an epoch for MadNet
 	EpochLength uint32 = 1024
@@ -80,6 +82,7 @@ const (
 // Badger VLog GC ratio
 const (
 	BadgerDiscardRatio = 0.5
+	MonDBGCFreq        = time.Duration(600)
 )
 
 // TODO Find a way to store this list that feels right

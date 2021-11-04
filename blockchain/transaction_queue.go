@@ -23,6 +23,9 @@ var (
 
 //
 type Request struct {
+	// add context to request so that external party may cancel request
+	// for receipts etc to prevent memory leaks
+	ctx    context.Context
 	name   string
 	txn    *types.Transaction
 	group  int
@@ -50,7 +53,10 @@ type TransactionProfile struct {
 // Behind is the struct used while monitoring Ethereum transactions
 type Behind struct {
 	sync.Mutex
-	waitingTxns    []common.Hash                                  // Just a list of transactions whose receipts we're looking for
+	// it is for more efficent and easier to get state correct on waiting txs with
+	// a map instead of array - this does come at the expense of deterministic
+	// ordering while polling for receipts, but this is insignificant at this time
+	waitingTxns    map[common.Hash]context.Context                // Just a MAP of transactions whose receipts we're looking for
 	readyTxns      map[common.Hash]*types.Receipt                 // All the transaction -> receipt pairs we know of
 	selectors      map[common.Hash]interfaces.FuncSelector        // Maps a transaction to it's function selector
 	groups         map[int][]common.Hash                          // A group is just an ID and a list of transactions
@@ -65,6 +71,11 @@ type Behind struct {
 func (b *Behind) Loop() {
 
 	done := false
+	// initialize the time.After at this point to ensure it is run
+	// once every 1s - previous logic had the chance of never being
+	// handled if we are polling for information at a frequency that is
+	// greater than 1s
+	starvationPrevention := time.After(time.Second)
 	for !done {
 		select {
 		case req, ok := <-b.reqch:
@@ -92,91 +103,99 @@ func (b *Behind) Loop() {
 
 			go b.process(req, handler)
 
-		case <-time.After(100 * time.Millisecond):
-			// No request, so let's do some work
+		case <-starvationPrevention:
+			// so let's do some work
 			b.collectReceipts()
+			starvationPrevention = time.After(time.Second)
 		}
 	}
 	b.logger.Debug("finished")
 }
 
 func (b *Behind) collectReceipts() {
-	ctx, cf := context.WithTimeout(context.Background(), 1*time.Hour)
-	defer cf()
-
 	b.Lock()
 	defer b.Unlock()
 
-	n := len(b.waitingTxns)
-	if n < 1 {
-		return
-	}
+	// this was set to one hour in an earlier version. This had
+	// the potential to starve other services waiting for the lock.
+	// Since this will be performed approx every 1 second,
+	// there is no need to wait more than what is the worst possible read
+	// speed that would allow the node to remain in sync if a significant
+	// number of requests took this long - 6 seconds is pretty long
+	// delay, but we only expect this to take 250 Milliseconds per request
+	// in a normal setting. Hence the acutal runtime is likely very short.
+	ctx, cf := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cf()
 
-	// loop over transactions in need of receipts while building new list
-	remainingTxns := make([]common.Hash, 0, n)
-	for _, txn := range b.waitingTxns {
-		rcpt, err := b.client.TransactionReceipt(ctx, txn)
-		if err == geth.NotFound || (err == nil && rcpt == nil) {
-			b.logger.Debugf("receipt not found: %v", txn.Hex())
-		} else if err != nil {
-			b.logger.Errorf("error getting receipt: %v", txn)
-		} else if rcpt != nil {
-			b.readyTxns[txn] = rcpt
-
-			var profile TransactionProfile
-			var selector [4]byte
-			var sig string
-			var present bool
-
-			if selector, present = b.selectors[txn]; present {
-				profile = b.aggregates[selector]
-				sig = b.knownSelectors.Signature(selector)
-			} else {
-				profile = TransactionProfile{}
-			}
-
-			// Update transaction profile
-			profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
-			if profile.MaximumGas < rcpt.GasUsed {
-				profile.MaximumGas = rcpt.GasUsed
-			}
-			if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
-				profile.MinimumGas = rcpt.GasUsed
-			}
-			profile.TotalCount++
-			profile.TotalGas += rcpt.GasUsed
-			if rcpt.Status == uint64(1) {
-				profile.TotalSuccess++
-			}
-
-			b.aggregates[selector] = profile
-			logEntry := b.logger.WithField("Transaction", rcpt.TxHash.Hex()).
-				WithField("Function", sig).
-				WithField("Selector", fmt.Sprintf("%x", selector)).
-				WithField("Successful", rcpt.Status == 1)
-
-			// This is hideous but useful when troubleshooting with simulator
-			if b.logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
-				fullTxn, _, err := b.client.TransactionByHash(ctx, txn)
-				if err == nil {
-					signer := types.NewEIP155Signer(big.NewInt(1337))
-					msg, err := fullTxn.AsMessage(signer, nil)
-					if err == nil {
-						logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
+	for txn, txnCtx := range b.waitingTxns {
+		func(txn common.Hash) {
+			select {
+			case <-txnCtx.Done():
+				// the go-routine who wanted this information has stopped caring. This
+				// most likely indicates a failure, and cancellation of polling
+				// prevents a memory leak
+				delete(b.waitingTxns, txn)
+			default:
+				// context is good on the tx level object, so check for receipt
+				rcpt, err := b.client.TransactionReceipt(ctx, txn)
+				if err != nil {
+					if err != geth.NotFound {
+						//TODO: EXCEPTIONAL CASE - RETURN?
+						b.logger.Errorf("error getting receipt: %v: %v", txn, err)
 					}
+					b.logger.Debugf("receipt not found: %v", txn.Hex())
+					return
+				}
+				b.readyTxns[txn] = rcpt
+
+				var profile TransactionProfile
+				var selector [4]byte
+				var sig string
+				var present bool
+
+				if selector, present = b.selectors[txn]; present {
+					profile = b.aggregates[selector]
+					sig = b.knownSelectors.Signature(selector)
+				} else {
+					profile = TransactionProfile{}
+				}
+
+				// Update transaction profile
+				profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
+				if profile.MaximumGas < rcpt.GasUsed {
+					profile.MaximumGas = rcpt.GasUsed
+				}
+				if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
+					profile.MinimumGas = rcpt.GasUsed
+				}
+				profile.TotalCount++
+				profile.TotalGas += rcpt.GasUsed
+				if rcpt.Status == uint64(1) {
+					profile.TotalSuccess++
+				}
+
+				b.aggregates[selector] = profile
+				logEntry := b.logger.WithField("Transaction", rcpt.TxHash.Hex()).
+					WithField("Function", sig).
+					WithField("Selector", fmt.Sprintf("%x", selector)).
+					WithField("Successful", rcpt.Status == 1)
+
+				// This is hideous but useful when troubleshooting with simulator
+				if b.logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
+					fullTxn, _, err := b.client.TransactionByHash(ctx, txn)
+					if err == nil {
+						signer := types.NewEIP155Signer(big.NewInt(1337))
+						msg, err := fullTxn.AsMessage(signer, nil)
+						if err == nil {
+							logEntry = logEntry.WithField("From", msg.From().Hash().Hex())
+						}
+					}
+					logEntry.Debugf("Receipt collected")
+					delete(b.waitingTxns, txn)
 				}
 			}
-
-			logEntry.Debugf("Receipt collected")
-		}
-
-		if _, present := b.readyTxns[txn]; !present {
-			remainingTxns = append(remainingTxns, txn)
-		}
+		}(txn)
 	}
-
-	b.logger.Debugf("started with %v txns, %v are remaining", len(b.waitingTxns), len(remainingTxns))
-	b.waitingTxns = remainingTxns
 }
 
 func (b *Behind) process(req *Request, handler func(req *Request) *Response) {
@@ -188,7 +207,7 @@ func (b *Behind) process(req *Request, handler func(req *Request) *Response) {
 	b.logger.Debugf("response channel present: %v", req.respch != nil)
 	if req.respch != nil {
 		req.respch <- resp
-		close(req.respch)
+		// close(req.respch) no need to close
 	}
 	b.logger.Debug("...done processing request")
 }
@@ -209,7 +228,7 @@ func (b *Behind) queue(req *Request) *Response {
 		WithField("Selector", fmt.Sprintf("%x", selector))
 
 	b.selectors[txnHash] = selector
-	b.waitingTxns = append(b.waitingTxns, txnHash)
+	b.waitingTxns[txnHash] = req.ctx
 
 	if _, present := b.groups[req.group]; !present {
 		b.groups[req.group] = make([]common.Hash, 0, 10)
@@ -251,7 +270,16 @@ func (b *Behind) status(req *Request) *Response {
 
 func (b *Behind) wait(req *Request) *Response {
 
-	ctx, cf := context.WithTimeout(context.Background(), b.timeout)
+	// ensure the request has a valid context
+	if req.ctx == nil {
+		req.ctx = context.Background()
+	}
+
+	// derive the context from a parent context that comes from caller
+	// the default behavior is to wait a VERY long time to prevent
+	// tx re-submission, but for a certain class of actions this is
+	// not valid behavior. This is most import during EthDKG
+	ctx, cf := context.WithTimeout(req.ctx, b.timeout)
 	defer cf()
 
 	resp := &Response{message: "status check"}
@@ -266,7 +294,7 @@ func (b *Behind) wait(req *Request) *Response {
 			txn := req.txn.Hash()
 			if rcpt, present := b.readyTxns[txn]; present {
 				resp.rcpt = rcpt
-				// delete(b.readyTxns, txn) // TODO Add an explicit purge/cleanup
+				delete(b.readyTxns, txn)
 				done = true
 			} else {
 				b.logger.Debugf("rcpt not ready yet for %v", txn.Hex())
@@ -284,9 +312,9 @@ func (b *Behind) wait(req *Request) *Response {
 				resp.rcpts = make([]*types.Receipt, 0, len(b.groups[req.group]))
 				for _, txn := range b.groups[req.group] {
 					resp.rcpts = append(resp.rcpts, b.readyTxns[txn])
-					// delete(b.readyTxns, txn) // TODO Add an explicit purge/cleanup
+					delete(b.readyTxns, txn)
 				}
-				// delete(b.groups, req.group) // TODO Add an explicit purge/cleanup
+				delete(b.groups, req.group)
 				done = true
 			}
 		}
@@ -323,7 +351,7 @@ func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap, to tim
 		reqch:          reqch,
 		client:         client,
 		logger:         logging.GetLogger("ethereum").WithField("Component", "behind"),
-		waitingTxns:    make([]common.Hash, 0, 20),
+		waitingTxns:    make(map[common.Hash]context.Context),
 		readyTxns:      make(map[common.Hash]*types.Receipt),
 		selectors:      make(map[common.Hash]interfaces.FuncSelector),
 		aggregates:     make(map[interfaces.FuncSelector]TransactionProfile),
@@ -334,8 +362,8 @@ func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap, to tim
 	q := &TxnQueueDetail{
 		reqch:   reqch,
 		backend: b,
-		logger:  logging.GetLogger("ethereum").WithField("Component", "infront")}
-
+		logger:  logging.GetLogger("ethereum").WithField("Component", "infront"),
+	}
 	return q
 }
 
@@ -345,7 +373,7 @@ func (f *TxnQueueDetail) StartLoop() {
 
 func (f *TxnQueueDetail) QueueTransaction(ctx context.Context, txn *types.Transaction) {
 	f.logger.WithField("Txn", string(txn.Hash().Bytes())).Debug("Queueing")
-	req := &Request{name: "queue", txn: txn} // no response channel because I don't want to wait
+	req := &Request{ctx: ctx, name: "queue", txn: txn} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
 }
 
@@ -353,7 +381,7 @@ func (f *TxnQueueDetail) QueueGroupTransaction(ctx context.Context, grp int, txn
 	f.logger.WithFields(logrus.Fields{
 		"Txn":   string(txn.Hash().Bytes()),
 		"Group": grp}).Debug("Queueing for group")
-	req := &Request{name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
+	req := &Request{ctx: ctx, name: "queue", txn: txn, group: grp} // no response channel because I don't want to wait
 	f.requestWait(ctx, req)
 }
 
@@ -365,7 +393,7 @@ func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transactio
 func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
 
 	f.logger.WithField("Txn", string(txn.Hash().Bytes())).Debug("Waiting")
-	req := &Request{name: "wait", txn: txn, respch: make(chan *Response)}
+	req := &Request{ctx: ctx, name: "wait", txn: txn, respch: make(chan *Response, 1)}
 	resp := f.requestWait(ctx, req)
 
 	if resp.err != nil {
@@ -377,7 +405,7 @@ func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txn *types.Transac
 
 func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error) {
 	f.logger.WithField("Group", grp).Debug("Waiting")
-	req := &Request{name: "wait", group: grp, respch: make(chan *Response)}
+	req := &Request{ctx: ctx, name: "wait", group: grp, respch: make(chan *Response, 1)}
 	resp := f.requestWait(ctx, req)
 
 	if resp.err != nil {
@@ -388,7 +416,7 @@ func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, grp int) ([]
 }
 
 func (f *TxnQueueDetail) Status(ctx context.Context) error {
-	req := &Request{name: "status"}
+	req := &Request{ctx: ctx, name: "status"}
 	logger := f.logger.WithField("Command", req.name)
 	logger.Debug("waiting...")
 	f.requestWait(ctx, req)

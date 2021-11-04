@@ -418,7 +418,7 @@ func (s *Synchronizer) adminInteruptLoop() {
 func (s *Synchronizer) setupLoops() {
 	stateLoopInSyncConfig := newLoopConfig().
 		withName("StateLoop-InSync").
-		withInitialDelay(9*s.storage.GetMsgTimeout()).
+		withInitialDelay(9*constants.MsgTimeout).
 		withFn2(s.stateHandler.UpdateLocalState, s.madSyncDone.set).
 		withFreq(200 * time.Millisecond).
 		withDelayOnConditionFailure(200 * time.Millisecond).
@@ -465,7 +465,7 @@ func (s *Synchronizer) setupLoops() {
 
 	reGossipLoopConfig := newLoopConfig().
 		withName("ReGossipLoop").
-		withInitialDelay(9 * s.storage.GetMsgTimeout()).
+		withInitialDelay(9 * constants.MsgTimeout).
 		withFn(s.gossipClient.ReGossip).
 		withFreq(9 * s.storage.GetMsgTimeout()).
 		withDelayOnConditionFailure(s.storage.GetMsgTimeout()).
@@ -501,25 +501,6 @@ func (s *Synchronizer) setupLoops() {
 	s.wg.Add(1)
 	go s.loop(cdbgcLoopConfig)
 
-	if s.mdb != nil { // prevent cleanup on in memory by setting to nil
-		mdbgcLoopConfig := newLoopConfig().
-			withName("MDB-GCLoop").
-			withFn(
-				func() error {
-					s.mdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					s.mdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					return nil
-				}).
-			withFreq(30 * time.Second).
-			withDelayOnConditionFailure(17 * time.Second).
-			withLockFreeCondition(s.isNotClosing).
-			withLockFreeCondition(s.initialized.isSet).
-			withLock().
-			withLockedCondition(s.isNotClosing)
-		s.wg.Add(1)
-		go s.loop(mdbgcLoopConfig)
-	}
-
 	if s.tdb != nil { // prevent cleanup on in memory by setting to nil
 		tdbgcLoopConfig := newLoopConfig().
 			withName("TDB-GCLoop").
@@ -529,10 +510,9 @@ func (s *Synchronizer) setupLoops() {
 					s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
 					return nil
 				}).
-			withFreq(30 * time.Second).
-			withDelayOnConditionFailure(17 * time.Second).
+			withFreq(600 * time.Second).
+			withDelayOnConditionFailure(600 * time.Second).
 			withLockFreeCondition(s.isNotClosing).
-			withLockFreeCondition(s.initialized.isSet).
 			withLock().
 			withLockedCondition(s.isNotClosing)
 		s.wg.Add(1)

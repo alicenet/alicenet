@@ -244,7 +244,8 @@ func (db *Database) GetValidatorSet(txn *badger.Txn, height uint32) (*objs.Valid
 	prefix := db.makeValidatorSetIterKey()
 	seek := []byte{}
 	seek = append(seek, prefix...)
-	seek = append(seek, []byte{255, 255, 255, 255, 255}...)
+	heightBytes := utils.MarshalUint32(height + 1)
+	seek = append(seek, heightBytes...)
 	opts := badger.DefaultIteratorOptions
 	opts.Reverse = true
 	opts.Prefix = prefix

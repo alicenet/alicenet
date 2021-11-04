@@ -32,7 +32,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
-		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
 	}
 
 	t.State = dkgState
@@ -153,6 +153,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Check to see if we are already registered
+	// TODO SILENT FAILURE!
 	ethdkg := eth.Contracts().Ethdkg()
 	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 	if err != nil {

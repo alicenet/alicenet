@@ -740,6 +740,17 @@ func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 		}
 		// store new pending keys to db
 		for j := 0; j < len(pendingBatch); j++ {
+			nk, err := newNodeKey(utils.CopySlice(pendingBatch[j]))
+			if err != nil {
+				utils.DebugTrace(ssm.logger, err)
+				return err
+			}
+			if ssm.hdrNodeCache.contains(nk) {
+				continue
+			}
+			if ssm.hdrNodeDLs.Contains(nk) {
+				continue
+			}
 			ok, err := ssm.database.ContainsSnapShotHdrNode(txn, utils.CopySlice(pendingBatch[j]))
 			if err != nil {
 				return err
@@ -753,6 +764,7 @@ func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 			}
 		}
 		for j := 0; j < len(lvs); j++ {
+			// TODO: Handle this error
 			nk, _ := newNodeKey(lvs[j].Key)
 			if ssm.hdrLeafDLs.Contains(nk) {
 				continue
