@@ -122,7 +122,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		vs, err := ce.database.GetValidatorSet(txn, height)
+		vs, err := ce.database.GetValidatorSet(txn, height+1)
 		if err != nil {
 			return err
 		}

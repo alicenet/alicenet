@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -17,10 +16,12 @@ import (
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,7 +55,7 @@ type monitor struct {
 	statusChan     chan string
 	TypeRegistry   *objects.TypeRegistry
 	State          *objects.MonitorState
-	wg             sync.WaitGroup
+	wg             *sync.WaitGroup
 	batchSize      uint64
 }
 
@@ -73,8 +74,6 @@ func NewMonitor(cdb *db.Database,
 		"Timeout":  timeout.String(),
 	})
 
-	rand.Seed(time.Now().UnixNano())
-
 	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
 	//    in advance.
@@ -91,19 +90,19 @@ func NewMonitor(cdb *db.Database,
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, db, adminHandler, depositHandler)
+	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler)
 	if err != nil {
 		return nil, err
 	}
 
-	wg := sync.WaitGroup{}
+	wg := new(sync.WaitGroup)
 
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(ctx, &wg, eth, logger, bh)
+		return PersistSnapshot(ctx, wg, eth, logger, bh)
 	})
 
 	schedule := objects.NewSequentialSchedule(tr, adminHandler)
@@ -136,18 +135,17 @@ func (mon *monitor) LoadState() error {
 	defer mon.Unlock()
 
 	if err := mon.db.View(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", stateKey)
+		keyLabel := fmt.Sprintf("%x", getStateKey())
 		mon.logger.WithField("Key", keyLabel).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, stateKey)
+		rawData, err := utils.GetValue(txn, getStateKey())
 		if err != nil {
 			return err
 		}
-
+		// TODO: Cleanup loaded obj, this is a memory / storage leak
 		err = json.Unmarshal(rawData, mon)
 		if err != nil {
 			return err
 		}
-
 		return nil
 	}); err != nil {
 		return err
@@ -159,32 +157,29 @@ func (mon *monitor) LoadState() error {
 
 func (mon *monitor) PersistState() error {
 
-	mon.RLock()
-	defer mon.RUnlock()
+	mon.Lock()
+	defer mon.Unlock()
 
 	rawData, err := json.Marshal(mon)
 	if err != nil {
 		return err
 	}
 
-	//mon.logger.WithField("StateLocation", fmt.Sprintf("%p", mon.State)).Infof("Persisting state: %v", string(rawData))
-
 	err = mon.db.Update(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", stateKey)
+		keyLabel := fmt.Sprintf("%x", getStateKey())
 		mon.logger.WithField("Key", keyLabel).Infof("Saving state")
-		if err := utils.SetValue(txn, stateKey, rawData); err != nil {
+		if err := utils.SetValue(txn, getStateKey(), rawData); err != nil {
 			mon.logger.Error("Failed to set Value")
 			return err
 		}
-
-		if err := mon.db.Sync(); err != nil {
-			mon.logger.Error("Failed to set sync")
-			return err
-		}
-
 		return nil
 	})
 	if err != nil {
+		return err
+	}
+
+	if err := mon.db.Sync(); err != nil {
+		mon.logger.Error("Failed to set sync")
 		return err
 	}
 
@@ -252,38 +247,46 @@ func (mon *monitor) Start() error {
 
 	mon.cancelChan = make(chan bool)
 	mon.wg.Add(1)
-	go mon.eventLoop(&mon.wg, logger, mon.cancelChan)
-
+	go mon.eventLoop(mon.wg, logger, mon.cancelChan)
 	return nil
 }
 
 func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelChan <-chan bool) error {
 
 	defer wg.Done()
-
-	done := false
-	for !done {
-
+	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
+	for {
+		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
+		tock := mon.tickInterval
+		bmax := max(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
+		bmin := min(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
+		if !(bmax-bmin < mon.batchSize) {
+			tock = time.Millisecond * 100
+		}
 		select {
-		case done = <-cancelChan:
+		case <-gcTimer:
+			mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio)
+			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
+		case <-cancelChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
-		case tick := <-time.After(mon.tickInterval):
+			cf()
+			return nil
+		case tick := <-time.After(tock):
 			mon.logger.WithTime(tick).Debug("Tick")
-
-			ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
-			defer cf()
 
 			oldMonitorState := mon.State.Clone()
 
-			if err := MonitorTick(ctx, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
+			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
-			if err := mon.PersistState(); err != nil {
-				logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
-			}
+			diff, shouldWrite := oldMonitorState.Diff(mon.State)
 
-			diff := oldMonitorState.Diff(mon.State)
+			if shouldWrite {
+				if err := mon.PersistState(); err != nil {
+					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
+				}
+			}
 
 			select {
 			case mon.statusChan <- diff:
@@ -291,8 +294,6 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 			}
 		}
 	}
-
-	return nil
 }
 
 func (m *monitor) MarshalJSON() ([]byte, error) {
@@ -307,27 +308,39 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 
 func (m *monitor) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, m.State)
-	if err != nil && m.State.Schedule != nil {
-		m.State.Schedule.Initialize(m.TypeRegistry, m.adminHandler)
+	if err != nil {
+		if m.State.Schedule != nil {
+			m.State.Schedule.Initialize(m.TypeRegistry, m.adminHandler)
+			// TODO: VERIFY ALL TASKS SHOULD NOT BE RE-STARTED HERE
+			return nil
+		}
 	}
 	return err
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
-func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
+func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64) error {
 
+	defer cf()
 	logger = logger.WithFields(logrus.Fields{
 		"Method":         "MonitorTick",
 		"EndpointInSync": monitorState.EndpointInSync,
 		"EthereumInSync": monitorState.EthereumInSync})
 
 	c := eth.Contracts()
-
 	addresses := []common.Address{c.ValidatorsAddress(), c.DepositAddress(), c.EthdkgAddress(), c.GovernorAddress()}
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
+	ethInSyncBefore := monitorState.EthereumInSync
+	monitorState.EndpointInSync = inSync
+	bmax := max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
+	bmin := min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
+	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync
+	if ethInSyncBefore != monitorState.EthereumInSync {
+		adminHandler.SetSynchronized(monitorState.EthereumInSync)
+	}
 	if err != nil {
 		monitorState.CommunicationFailures++
 
@@ -337,7 +350,6 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 
 		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
 			monitorState.EndpointInSync = false
-			adminHandler.SetSynchronized(false)
 		}
 		return nil
 	}
@@ -371,14 +383,22 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		lastBlock = processed + batchSize
 	}
 
-	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
+	logsList, err := getLogsConcurrentWithSort(ctx, addresses, eth, processed, lastBlock)
+	if err != nil {
+		return err
+	}
+	// set the current block inital value
+	// this value is incremented at head of
+	// each loop iteration, so it is initialized
+	// as one less than the expected value at this
+	// point
+	currentBlock := processed
 
+	for i := 0; i < len(logsList); i++ {
+		currentBlock++
 		logEntry := logger.WithField("Block", currentBlock)
 
-		logs, err := eth.GetEvents(ctx, currentBlock, currentBlock, addresses)
-		if err != nil {
-			return err
-		}
+		logs := logsList[i]
 
 		// Check all the logs for an event we want to process
 		for _, log := range logs {
@@ -425,17 +445,11 @@ func MonitorTick(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereu
 		} else {
 			logEntry.Warnf("Error retrieving scheduled task: %v", err)
 		}
-
 		processed = currentBlock
 	}
 
 	// Only after batch is processed do we update monitor State
 	monitorState.HighestBlockProcessed = processed
-
-	// If we caught up processing, let consensus engine know we're synchronized
-	synchronized := monitorState.HighestBlockProcessed == monitorState.HighestBlockFinalized
-	adminHandler.SetSynchronized(synchronized)
-
 	return nil
 }
 
@@ -470,8 +484,6 @@ func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus
 			progress.CurrentBlock, progress.HighestBlock)
 	}
 
-	inSync = !syncing
-
 	peerCount64, err := eth.GetPeerCount(ctx)
 	if err != nil {
 		return inSync, peerCount, err
@@ -479,9 +491,127 @@ func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus
 	peerCount = uint32(peerCount64)
 
 	// TODO Remove direct reference to config. Specific values should be passed in.
-	if inSync && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+	if !syncing && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
 		inSync = true
 	}
 
 	return inSync, peerCount, err
+}
+
+// TODO: Remove from request hot path use memory cache
+// persist worker group across execution iterations
+type logWork struct {
+	isLast    bool
+	ctx       context.Context
+	block     uint64
+	addresses []common.Address
+	logs      []types.Log
+	err       error
+}
+
+type eventSorter struct {
+	*sync.Mutex
+	wg      *sync.WaitGroup
+	pending chan *logWork
+	done    map[uint64]*logWork
+	eth     interfaces.Ethereum
+}
+
+func (es *eventSorter) Start(num uint64) {
+	for i := uint64(0); i < num; i++ {
+		es.wg.Add(1)
+		go es.wrkr()
+	}
+	es.wg.Wait()
+}
+
+func (es *eventSorter) wrkr() {
+	defer es.wg.Done()
+	for {
+		wrk, ok := <-es.pending
+		if !ok {
+			return
+		}
+		if wrk.isLast {
+			close(es.pending)
+			return
+		}
+		func() {
+			for i := 0; i < 10; i++ {
+				select {
+				case <-wrk.ctx.Done():
+					wrk.err = wrk.ctx.Err()
+					es.Lock()
+					es.done[wrk.block] = wrk
+					es.Unlock()
+					return
+				default:
+					logs, err := es.eth.GetEvents(wrk.ctx, wrk.block, wrk.block, wrk.addresses)
+					if err == nil {
+						wrk.logs = logs
+						wrk.err = nil
+						es.Lock()
+						es.done[wrk.block] = wrk
+						es.Unlock()
+						return
+					}
+					select {
+					case <-time.After(10 * time.Duration(i) * time.Millisecond):
+						// continue trying
+					case <-wrk.ctx.Done():
+						wrk.err = wrk.ctx.Err()
+						es.Lock()
+						es.done[wrk.block] = wrk
+						es.Unlock()
+						return
+					}
+				}
+			}
+			wrk.err = errors.New("timeouts exhausted")
+			es.Lock()
+			es.done[wrk.block] = wrk
+		}()
+	}
+}
+
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth interfaces.Ethereum, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+	numworkers := max(min((max(lastBlock, processed)-min(lastBlock, processed))/4, 128), 1)
+	wc := make(chan *logWork, 3+numworkers)
+	go func() {
+		for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
+			blk := currentBlock
+			wc <- &logWork{false, ctx, blk, addresses, nil, nil}
+		}
+		wc <- &logWork{true, nil, 0, nil, nil, nil}
+	}()
+
+	es := &eventSorter{new(sync.Mutex), new(sync.WaitGroup), wc, make(map[uint64]*logWork), eth}
+	es.Start(numworkers)
+
+	la := [][]types.Log{}
+	for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
+		if es.done[currentBlock].err != nil {
+			return la, nil
+		}
+		logsO, ok := es.done[currentBlock]
+		if !ok {
+			return la, nil
+		}
+		la = append(la, logsO.logs)
+	}
+	return la, nil
+}
+
+func max(a uint64, b uint64) uint64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a uint64, b uint64) uint64 {
+	if a > b {
+		return b
+	}
+	return a
 }

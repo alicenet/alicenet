@@ -510,7 +510,7 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 
 	block, err := eth.client.BlockByNumber(ctx, nil)
 	if err != nil && block == nil {
-		return nil, errors.New("beats me")
+		return nil, fmt.Errorf("Could not get block number: %w", err)
 	}
 
 	eth.logger.Infof("Previous BaseFee:%v GasUsed:%v GasLimit:%v",
@@ -521,13 +521,23 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 	gasLimit := uint64(21000)
 	eth.logger.Infof("gasLimit:%v SuggestGasPrice(): %v", gasLimit, gasPrice.String())
 
-	baseFee := big.NewInt(block.BaseFee().Int64())
+	baseFee := block.BaseFee()
+
+	bmi64 := int64(100)
+	bm := new(big.Int).SetInt64(bmi64)
+	bf := new(big.Int).Set(baseFee)
+	baseFee2x := new(big.Int).Mul(bm, bf)
+	tipCap, err := eth.client.SuggestGasTipCap(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get suggested gas tip cap: %w", err)
+	}
+	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
 	txRough := &types.DynamicFeeTx{}
 	txRough.ChainID = eth.chainID
 	txRough.To = &to
-	txRough.GasFeeCap = baseFee
-	txRough.GasTipCap = big.NewInt(1)
+	txRough.GasFeeCap = new(big.Int).Set(feeCap)
+	txRough.GasTipCap = new(big.Int).Set(tipCap)
 	txRough.Gas = gasLimit
 	txRough.Nonce = nonce
 	txRough.Value = wei

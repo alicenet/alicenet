@@ -18,7 +18,6 @@ import (
 type Services struct {
 	logger            *logrus.Logger
 	eth               interfaces.Ethereum
-	consensusDb       *db.Database
 	dph               *deposit.Handler
 	ah                interfaces.AdminHandler
 	contractAddresses []common.Address
@@ -41,7 +40,6 @@ func NewServices(eth interfaces.Ethereum, cdb *db.Database, db *db.Database, dph
 	svcs := &Services{
 		ah:                ah,
 		batchSize:         batchSize,
-		consensusDb:       db,
 		contractAddresses: contractAddresses,
 		dph:               dph,
 		eth:               eth,
@@ -51,7 +49,7 @@ func NewServices(eth interfaces.Ethereum, cdb *db.Database, db *db.Database, dph
 	}
 
 	// Register handlers for known events, if this failed we really can't continue
-	if err := SetupEventMap(svcs.eventMap, cdb, svcs.consensusDb, ah, dph); err != nil {
+	if err := SetupEventMap(svcs.eventMap, cdb, ah, dph); err != nil {
 		panic(err)
 	}
 

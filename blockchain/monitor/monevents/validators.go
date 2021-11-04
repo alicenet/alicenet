@@ -1,6 +1,7 @@
 package monevents
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"strings"
@@ -36,6 +37,15 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 	vs.GroupKey[2] = event.GroupKey2
 	vs.GroupKey[3] = event.GroupKey3
 
+	validatorSet, present := updatedState.ValidatorSets[epoch]
+	if present {
+		vs0b := validatorSet.GroupKey[0].Bytes()
+		vs1b := vs.GroupKey[0].Bytes()
+		if !bytes.Equal(vs0b, vs1b) {
+			delete(updatedState.ValidatorSets, epoch)
+			delete(updatedState.Validators, epoch)
+		}
+	}
 	updatedState.ValidatorSets[epoch] = vs
 
 	err = checkValidatorSet(updatedState, epoch, logger, adminHandler)
@@ -66,7 +76,7 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 		Index:     index,
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
-	if len(state.Validators) < int(index+1) {
+	if len(state.Validators[epoch]) < int(index+1) {
 		newValList := make([]objects.Validator, int(index+1))
 		copy(newValList, state.Validators[epoch])
 		state.Validators[epoch] = newValList

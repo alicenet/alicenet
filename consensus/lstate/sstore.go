@@ -141,7 +141,7 @@ func (ss *Store) GetDropData(txn *badger.Txn) (isValidator bool, isSync bool, ch
 	chainID = ownState.SyncToBH.BClaims.ChainID
 	height = ownState.SyncToBH.BClaims.Height
 	isSync = ownState.IsSync()
-	vs, err := ss.database.GetValidatorSet(txn, ownState.SyncToBH.BClaims.Height)
+	vs, err := ss.database.GetValidatorSet(txn, ownState.SyncToBH.BClaims.Height+1)
 	if err != nil {
 		return isValidator, isSync, chainID, height, round, err
 	}

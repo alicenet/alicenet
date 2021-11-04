@@ -333,7 +333,7 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 		isValidator := false
 		var syncToBH, maxBHSeen *objs.BlockHeader
 		err = ah.database.View(func(txn *badger.Txn) error {
-			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height)
+			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height+1)
 			if err != nil {
 				return err
 			}

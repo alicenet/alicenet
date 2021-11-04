@@ -17,9 +17,9 @@ var (
 )
 
 type Block struct {
-	Start uint64
-	End   uint64
-	Task  interfaces.Task
+	Start uint64          `json:"start"`
+	End   uint64          `json:"end"`
+	Task  interfaces.Task `json:"-"`
 }
 
 type innerBlock struct {

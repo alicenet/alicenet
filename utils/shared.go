@@ -90,19 +90,19 @@ func OpenBadger(closeChan <-chan struct{}, directoryName string, inMemory bool) 
 		<-closeChan
 		thisDB.Close()
 	}()
-	if err := thisDB.Flatten(4); err != nil {
-		return nil, err
-	}
-	if !inMemory {
-		for {
-			if err := thisDB.RunValueLogGC(constants.BadgerDiscardRatio / 2); err != nil {
-				if err == badger.ErrNoRewrite {
-					break
-				}
-				return nil, err
-			}
-		}
-	}
+	// if err := thisDB.Flatten(4); err != nil {
+	// 	return nil, err
+	// }
+	// if !inMemory {
+	// 	for {
+	// 		if err := thisDB.RunValueLogGC(constants.BadgerDiscardRatio); err != nil {
+	// 			if err == badger.ErrNoRewrite {
+	// 				break
+	// 			}
+	// 			return nil, err
+	// 		}
+	// 	}
+	// }
 	return thisDB, nil
 }
 

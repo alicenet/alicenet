@@ -12,19 +12,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"encoding/gob"
-
-// 	"github.com/MadBase/MadNet/blockchain/objects"
-// 	"github.com/MadBase/MadNet/logging"
-// 	"github.com/MadBase/MadNet/utils"
-// 	"github.com/dgraph-io/badger/v2"
-// 	"github.com/sirupsen/logrus"
-// )
-
-var stateKey = []byte("monitorStateKey")
+func getStateKey() []byte {
+	return []byte("monitorStateKey")
+}
 
 // Database describes required functionality for monitor persistence
 type Database interface {
@@ -50,18 +40,16 @@ func (mon *monitorDB) FindState() (*objects.MonitorState, error) {
 	state := &objects.MonitorState{}
 
 	if err := mon.database.View(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", stateKey)
+		keyLabel := fmt.Sprintf("%x", getStateKey())
 		mon.logger.WithField("Key", keyLabel).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, stateKey)
+		rawData, err := utils.GetValue(txn, getStateKey())
 		if err != nil {
 			return err
 		}
-
 		err = json.Unmarshal(rawData, state)
 		if err != nil {
 			return err
 		}
-
 		return nil
 	}); err != nil {
 		return nil, err
@@ -78,21 +66,20 @@ func (mon *monitorDB) UpdateState(state *objects.MonitorState) error {
 	}
 
 	err = mon.database.Update(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", stateKey)
+		keyLabel := fmt.Sprintf("%x", getStateKey())
 		mon.logger.WithField("Key", keyLabel).Infof("Saving state")
-		if err := utils.SetValue(txn, stateKey, rawData); err != nil {
+		if err := utils.SetValue(txn, getStateKey(), rawData); err != nil {
 			mon.logger.Error("Failed to set Value")
 			return err
 		}
-
-		if err := mon.database.Sync(); err != nil {
-			mon.logger.Error("Failed to set sync")
-			return err
-		}
-
 		return nil
 	})
 	if err != nil {
+		return err
+	}
+
+	if err := mon.database.Sync(); err != nil {
+		mon.logger.Error("Failed to set sync")
 		return err
 	}
 

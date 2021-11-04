@@ -192,10 +192,12 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 	err := mb.database.View(func(txn *badger.Txn) error {
 		os, err := mb.database.GetOwnState(txn)
 		if err != nil {
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		rs, err := mb.database.GetCurrentRoundState(txn, os.VAddr)
 		if err != nil {
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		cid := rs.RCert.RClaims.ChainID
@@ -324,6 +326,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			CoSigners = obj.Signers
 			round = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Round
 		case *objs.BlockHeader:
+			height = obj.BClaims.Height
 			if err := obj.ValidateSignatures(mb.bnVal); err != nil {
 				return err
 			}
@@ -333,7 +336,10 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
 			round = 1
+		default:
+			panic("Unknown type")
 		}
+
 		if height == 1 {
 			return errorz.ErrInvalid{}.New("No Height 1 message is valid except for initial block")
 		}
@@ -343,12 +349,14 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 		if height == 2 && round == 1 && len(GroupKey) == 0 {
 			vSet, err := mb.database.GetValidatorSet(txn, height)
 			if err != nil {
+				utils.DebugTrace(mb.logger, err)
 				return err
 			}
 			GroupKey = utils.CopySlice(vSet.GroupKey)
 		}
 		vSet, err := mb.database.GetValidatorSet(txn, height)
 		if err != nil {
+			utils.DebugTrace(mb.logger, err)
 			return err
 		}
 		if !bytes.Equal(GroupKey, vSet.GroupKey) {

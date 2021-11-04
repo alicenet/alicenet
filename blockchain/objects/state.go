@@ -10,6 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// CRITICAL TODO: MONITOR STATE MUST BE SPLIT UP INTO DIFFERENT OBJECTS OR
+// MAPPINGS MUST BE PRUNED AFTER SOME DELAY. THIS DELAY MAY BE ON THE SCALE OF
+// 5 EPOCHS AS A VERY CONSERVATIVE NUMBER AFTER WHICH DATA MUST HAVE BEEN FLUSHED
+// TO STATE DATABASE FOR VALIDATORS AND SNAPSHOTS AFTER THIS INTERVAL.
+
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
@@ -24,10 +29,10 @@ type MonitorState struct {
 	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
 	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
 	PeerCount              uint32                  `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSet"`
+	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
 	Validators             map[uint32][]Validator  `json:"validators"`
 	Schedule               *SequentialSchedule     `json:"schedule"`
-	EthDKG                 *DkgState               `json:"dkgState"`
+	EthDKG                 *DkgState               `json:"ethDKG"`
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in
@@ -46,16 +51,16 @@ const (
 
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {
-	ValidatorCount        uint8
-	GroupKey              [4]*big.Int
-	NotBeforeMadNetHeight uint32
+	ValidatorCount        uint8       `json:"validator_count"`
+	GroupKey              [4]*big.Int `json:"group_key"`
+	NotBeforeMadNetHeight uint32      `json:"not_before_mad_net_height"`
 }
 
 // Validator contains information about a Validator
 type Validator struct {
-	Account   common.Address
-	Index     uint8
-	SharedKey [4]*big.Int
+	Account   common.Address `json:"account"`
+	Index     uint8          `json:"index"`
+	SharedKey [4]*big.Int    `json:"shared_key"`
 }
 
 // Share is temporary storage of shares coming from validators
@@ -106,7 +111,7 @@ func (s *MonitorState) Clone() *MonitorState {
 }
 
 // Diff builds a textual description between states
-func (s *MonitorState) Diff(o *MonitorState) string {
+func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -114,7 +119,7 @@ func (s *MonitorState) Diff(o *MonitorState) string {
 	defer o.RUnlock()
 
 	d := []string{}
-
+	shouldWrite := false
 	if s.CommunicationFailures != o.CommunicationFailures {
 		d = append(d, fmt.Sprintf("CommunicationFailures: %v -> %v", s.CommunicationFailures, o.CommunicationFailures))
 	}
@@ -128,14 +133,26 @@ func (s *MonitorState) Diff(o *MonitorState) string {
 	}
 
 	if s.HighestBlockProcessed != o.HighestBlockProcessed {
+		// if we are syncing Ethereum blocks,
+		// only write intermittent state diffs on blocks
+		// with no other changes of concern
+		if !s.EthereumInSync {
+			if s.HighestBlockProcessed%256 == 0 {
+				shouldWrite = true
+			}
+		} else {
+			shouldWrite = true
+		}
 		d = append(d, fmt.Sprintf("HighestBlockProcessed: %v -> %v", s.HighestBlockProcessed, o.HighestBlockProcessed))
 	}
 
 	if s.HighestEpochProcessed != o.HighestEpochProcessed {
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("HighestEpochProcessed: %v -> %v", s.HighestEpochProcessed, o.HighestEpochProcessed))
 	}
 
 	if s.HighestEpochSeen != o.HighestEpochSeen {
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("HighestEpochSeen: %v -> %v", s.HighestEpochSeen, o.HighestEpochSeen))
 	}
 
@@ -144,12 +161,14 @@ func (s *MonitorState) Diff(o *MonitorState) string {
 	}
 
 	if s.LatestDepositProcessed != o.LatestDepositProcessed {
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("LatestDepositProcessed: %v -> %v", s.LatestDepositProcessed, o.LatestDepositProcessed))
 	}
 
 	if s.LatestDepositSeen != o.LatestDepositSeen {
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("LatestDepositSeen: %v -> %v", s.LatestDepositSeen, o.LatestDepositSeen))
 	}
 
-	return strings.Join(d, ", ")
+	return strings.Join(d, ", "), shouldWrite
 }

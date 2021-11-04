@@ -31,7 +31,7 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
-		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
 	}
 
 	t.State = dkgState

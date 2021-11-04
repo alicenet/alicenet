@@ -29,7 +29,7 @@ func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth 
 
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
-		return fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue)
+		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
 	}
 
 	t.State = dkgState
