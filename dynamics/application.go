@@ -8,14 +8,14 @@ func bigFromBase10(s string) *big.Int {
 }
 
 // atomicSwapFee is the initial fee for the AtomicSwap object.
-var atomicSwapFee = bigFromBase10("1000000")
+var atomicSwapFee = bigFromBase10("1")
 
 // dataStoreEpochFee is the initial fee for the DataStore object;
 // this fee is the fee per epoch.
-var dataStoreEpochFee = bigFromBase10("1000001")
+var dataStoreEpochFee = bigFromBase10("2")
 
 // valueStoreFee is the initial fee for the ValueStore object.
-var valueStoreFee = bigFromBase10("1000002")
+var valueStoreFee = bigFromBase10("3")
 
 // minTxFee is the initial minimum transaction fee for a Tx object.
-var minTxFee = bigFromBase10("1000003")
+var minTxFee = bigFromBase10("4")
