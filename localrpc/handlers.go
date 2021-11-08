@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/MadBase/MadNet/application"
@@ -648,16 +649,44 @@ func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRe
 
 	sg := srpc.Storage
 	txFee := sg.GetMinTxFee()
-	vsFee := sg.GetValueStoreFee()
-	dsFee := sg.GetDataStoreEpochFee()
-	asFee := sg.GetAtomicSwapFee()
+	txfs, err := bigIntToString(txFee)
+	if err != nil {
+		return nil, err
+	}
 
+	vsFee := sg.GetValueStoreFee()
+	vsfs, err := bigIntToString(vsFee)
+	if err != nil {
+		return nil, err
+	}
+	dsFee := sg.GetDataStoreEpochFee()
+	dsfs, err := bigIntToString(dsFee)
+	if err != nil {
+		return nil, err
+	}
+	asFee := sg.GetAtomicSwapFee()
+	asfs, err := bigIntToString(asFee)
+	if err != nil {
+		return nil, err
+	}
 	result := &pb.FeeResponse{
-		MinTxFee:      txFee.String(),
-		ValueStoreFee: vsFee.String(),
-		DataStoreFee:  dsFee.String(),
-		AtomicSwapFee: asFee.String(),
+		MinTxFee:      txfs,
+		ValueStoreFee: vsfs,
+		DataStoreFee:  dsfs,
+		AtomicSwapFee: asfs,
 	}
 
 	return result, nil
+}
+
+func bigIntToString(b *big.Int) (string, error) {
+	bu, err := new(uint256.Uint256).FromBigInt(b)
+	if err != nil {
+		return "", err
+	}
+	bs, err := bu.MarshalString()
+	if err != nil {
+		return "", err
+	}
+	return bs, nil
 }
