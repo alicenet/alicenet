@@ -12,10 +12,10 @@ var atomicSwapFee = bigFromBase10("1000000")
 
 // dataStoreEpochFee is the initial fee for the DataStore object;
 // this fee is the fee per epoch.
-var dataStoreEpochFee = bigFromBase10("1000000")
+var dataStoreEpochFee = bigFromBase10("1000001")
 
 // valueStoreFee is the initial fee for the ValueStore object.
-var valueStoreFee = bigFromBase10("1000000")
+var valueStoreFee = bigFromBase10("1000002")
 
 // minTxFee is the initial minimum transaction fee for a Tx object.
-var minTxFee = bigFromBase10("1000000")
+var minTxFee = bigFromBase10("1000003")
