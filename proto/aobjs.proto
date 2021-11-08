@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/MadBase/MadNet/proto";
+option go_package = "/;proto";
 
 // Protobuf message implementation for struct Tx
 message Tx {

@@ -120,6 +120,14 @@ type LocalStateGetTxBlockNumberHandler interface {
 	HandleLocalStateGetTxBlockNumber(context.Context, *TxBlockNumberRequest) (*TxBlockNumberResponse, error)
 }
 
+// LocalStateGetFeesHandler is an interface class that only contains
+// the method HandleLocalStateGetFees
+// The class that implements this method MUST handle the RPC call for
+// the method GetFees of the RPC service LocalState
+type LocalStateGetFeesHandler interface {
+	HandleLocalStateGetFees(context.Context, *FeeRequest) (*FeeResponse, error)
+}
+
 // LocalStateDispatch allows handlers to be registered for all RPC methods
 // using the Register<Service><Name> methods.
 // After registration, the LocalStateDispatch struct will dispatch calls
@@ -238,6 +246,14 @@ type LocalStateDispatch struct {
 	// method GetTxBlockNumber on service LocalState to block until the
 	// method has been registered.
 	waitChanLocalStateGetTxBlockNumber chan struct{}
+
+	//	handlerLocalStateGetFees is the registered handler for the
+	//  GetFees RPC method of service LocalState
+	handlerLocalStateGetFees LocalStateGetFeesHandler
+	// waitChanLocalStateGetFees will cause a caller of the RPC
+	// method GetFees on service LocalState to block until the
+	// method has been registered.
+	waitChanLocalStateGetFees chan struct{}
 }
 
 // RegisterLocalStateGetData will register the object 't' as the service
@@ -632,6 +648,34 @@ func (d *LocalStateDispatch) LocalStateGetTxBlockNumber(ctx context.Context, r *
 	}
 }
 
+// RegisterLocalStateGetFees will register the object 't' as the service
+// handler for the RPC method GetFees from service LocalState
+func (d *LocalStateDispatch) RegisterLocalStateGetFees(t LocalStateGetFeesHandler) {
+	d.Lock()
+	defer d.Unlock()
+	// double registration is not allowed
+	if d.handlerLocalStateGetFees != nil {
+		panic("double registration of LocalStateGetFees")
+	}
+	// register the service handler
+	d.handlerLocalStateGetFees = t
+	// close the wait channel to signal that the method is ready to use
+	close(d.waitChanLocalStateGetFees)
+}
+
+// LocalStateGetFees will invoke the handler for the RPC method
+// GetFees from service LocalState
+func (d *LocalStateDispatch) LocalStateGetFees(ctx context.Context, r *FeeRequest) (*FeeResponse, error) {
+	// wait for registration to complete or context to be canceled
+	select {
+	case <-ctx.Done():
+		return nil, errors.New("context canceled")
+	case <-d.waitChanLocalStateGetFees:
+		// return the invoked methods response
+		return d.handlerLocalStateGetFees.HandleLocalStateGetFees(ctx, r)
+	}
+}
+
 // NewLocalStateDispatch will construct a new LocalStateDispatcher with all fields properly
 // initialized.
 func NewLocalStateDispatch() *LocalStateDispatch {
@@ -678,6 +722,9 @@ func NewLocalStateDispatch() *LocalStateDispatch {
 
 		// initialize the wait channel for method GetTxBlockNumber on service LocalState
 		waitChanLocalStateGetTxBlockNumber: make(chan struct{}),
+
+		// initialize the wait channel for method GetFees on service LocalState
+		waitChanLocalStateGetFees: make(chan struct{}),
 	}
 }
 
@@ -770,6 +817,12 @@ func (s *GeneratedLocalStateServer) GetEpochNumber(ctx context.Context, r *Epoch
 // using the LocalStateDispatch handler.
 func (s *GeneratedLocalStateServer) GetTxBlockNumber(ctx context.Context, r *TxBlockNumberRequest) (*TxBlockNumberResponse, error) {
 	return s.dispatch.LocalStateGetTxBlockNumber(ctx, r)
+}
+
+// GetFees will invoke the method GetFees on the RPC service LocalState
+// using the LocalStateDispatch handler.
+func (s *GeneratedLocalStateServer) GetFees(ctx context.Context, r *FeeRequest) (*FeeResponse, error) {
+	return s.dispatch.LocalStateGetFees(ctx, r)
 }
 
 // NewGeneratedLocalStateServer constructs a new server for the service.

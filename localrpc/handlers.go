@@ -15,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/logging"
 	pb "github.com/MadBase/MadNet/proto"
 	"github.com/MadBase/MadNet/utils"
@@ -61,8 +62,8 @@ type Handlers struct {
 
 	AppHandler *application.Application
 	GossipBus  *gossip.Handlers
-
-	logger *logrus.Logger
+	Storage    dynamics.StorageGetter
+	logger     *logrus.Logger
 
 	ethAcct []byte
 	EthPubk []byte
@@ -72,7 +73,7 @@ type Handlers struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool) {
+func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	srpc.cancelCtx = cf
@@ -81,6 +82,7 @@ func (srpc *Handlers) Init(database *db.Database, app *application.Application, 
 	srpc.database = database
 	srpc.AppHandler = app
 	srpc.GossipBus = gh
+	srpc.Storage = storage
 	srpc.EthPubk = pubk
 	srpc.sstore = &lstate.Store{}
 	srpc.sstore.Init(database)
@@ -636,5 +638,26 @@ func (srpc *Handlers) HandleLocalStateGetTxBlockNumber(ctx context.Context, req 
 		return nil, err
 	}
 	result := &pb.TxBlockNumberResponse{BlockHeight: height}
+	return result, nil
+}
+
+func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRequest) (*pb.FeeResponse, error) {
+	if err := srpc.notReady(); err != nil {
+		return nil, err
+	}
+
+	sg := srpc.Storage
+	txFee := sg.GetMinTxFee()
+	vsFee := sg.GetValueStoreFee()
+	dsFee := sg.GetDataStoreEpochFee()
+	asFee := sg.GetAtomicSwapFee()
+
+	result := &pb.FeeResponse{
+		MinTxFee:      txFee.String(),
+		ValueStoreFee: vsFee.String(),
+		DataStoreFee:  dsFee.String(),
+		AtomicSwapFee: asFee.String(),
+	}
+
 	return result, nil
 }

@@ -48,6 +48,7 @@ type LocalStateClient interface {
 	GetEpochNumber(ctx context.Context, in *EpochNumberRequest, opts ...grpc.CallOption) (*EpochNumberResponse, error)
 	// Get the current block number
 	GetTxBlockNumber(ctx context.Context, in *TxBlockNumberRequest, opts ...grpc.CallOption) (*TxBlockNumberResponse, error)
+	GetFees(ctx context.Context, in *FeeRequest, opts ...grpc.CallOption) (*FeeResponse, error)
 }
 
 type localStateClient struct {
@@ -184,6 +185,15 @@ func (c *localStateClient) GetTxBlockNumber(ctx context.Context, in *TxBlockNumb
 	return out, nil
 }
 
+func (c *localStateClient) GetFees(ctx context.Context, in *FeeRequest, opts ...grpc.CallOption) (*FeeResponse, error) {
+	out := new(FeeResponse)
+	err := c.cc.Invoke(ctx, "/proto.LocalState/GetFees", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalStateServer is the server API for LocalState service.
 // All implementations should embed UnimplementedLocalStateServer
 // for forward compatibility
@@ -218,6 +228,7 @@ type LocalStateServer interface {
 	GetEpochNumber(context.Context, *EpochNumberRequest) (*EpochNumberResponse, error)
 	// Get the current block number
 	GetTxBlockNumber(context.Context, *TxBlockNumberRequest) (*TxBlockNumberResponse, error)
+	GetFees(context.Context, *FeeRequest) (*FeeResponse, error)
 }
 
 // UnimplementedLocalStateServer should be embedded to have forward compatible implementations.
@@ -265,6 +276,9 @@ func (UnimplementedLocalStateServer) GetEpochNumber(context.Context, *EpochNumbe
 }
 func (UnimplementedLocalStateServer) GetTxBlockNumber(context.Context, *TxBlockNumberRequest) (*TxBlockNumberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTxBlockNumber not implemented")
+}
+func (UnimplementedLocalStateServer) GetFees(context.Context, *FeeRequest) (*FeeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFees not implemented")
 }
 
 // UnsafeLocalStateServer may be embedded to opt out of forward compatibility for this service.
@@ -530,6 +544,24 @@ func _LocalState_GetTxBlockNumber_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalState_GetFees_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalStateServer).GetFees(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.LocalState/GetFees",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalStateServer).GetFees(ctx, req.(*FeeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalState_ServiceDesc is the grpc.ServiceDesc for LocalState service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -592,6 +624,10 @@ var LocalState_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTxBlockNumber",
 			Handler:    _LocalState_GetTxBlockNumber_Handler,
+		},
+		{
+			MethodName: "GetFees",
+			Handler:    _LocalState_GetFees_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

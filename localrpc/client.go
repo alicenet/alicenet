@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -391,4 +392,28 @@ func (lrpc *Client) GetBlockHeightForTx(ctx context.Context, txHash []byte) (uin
 		return 0, err
 	}
 	return resp.BlockHeight, nil
+}
+
+// TODO: Not tested and may not work
+func (lrpc *Client) GetTxFees(ctx context.Context) ([]string, error) {
+	if err := lrpc.entrancyGuard(); err != nil {
+		return nil, err
+	}
+	defer lrpc.wg.Done()
+	subCtx, cleanup := lrpc.contextGuard(ctx)
+	defer cleanup()
+
+	request := &pb.FeeRequest{}
+	response, err := lrpc.client.GetFees(subCtx, request)
+	if err != nil {
+		return nil, err
+	}
+	resp := []string{}
+
+	r := reflect.ValueOf(response)
+	for i := 0; i < r.NumField(); i++ {
+		field := r.Field(i)
+		resp[i] = field.Elem().String()
+	}
+	return resp, nil
 }
