@@ -107,17 +107,25 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	}
 
 	return ah.database.Update(func(txn *badger.Txn) error {
-		// build round states
-		bh, err := ah.database.GetLastSnapshot(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
+		bh := new(objs.BlockHeader)
+		if v.NotBefore%constants.EpochLength == 0 {
+			// build round states
+			bh, err = ah.database.GetLastSnapshot(txn)
+			if err != nil {
+				if err != badger.ErrKeyNotFound {
+					utils.DebugTrace(ah.logger, err)
+					return err
+				}
+			}
+		} else {
+			bh, err = ah.database.GetCommittedBlockHeader(txn, v.NotBefore)
+			if err != nil {
 				utils.DebugTrace(ah.logger, err)
 				return err
 			}
 		}
-
 		cbh1Found := true
-		_, err = ah.database.GetCommittedBlockHeader(txn, 1)
+		_, err = ah.database.GetCommittedBlockHeader(txn, 2)
 		if err != nil {
 			if err != badger.ErrKeyNotFound {
 				utils.DebugTrace(ah.logger, err)
@@ -196,9 +204,10 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		if rcert.RClaims.Height == 1 {
 			rcert.RClaims.Height = 2
 		}
+		isValidator := -1
 		for i := 0; i < len(v.Validators); i++ {
 			val := v.Validators[i]
-			_, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
+			rs, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
 					rs := &objs.RoundState{
@@ -217,8 +226,14 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 					utils.DebugTrace(ah.logger, err)
 					return err
 				}
+			} else {
+				if bytes.Equal(rs.VAddr, ah.ethAcct) {
+					ah.logger.Error("Is Validator!")
+					isValidator = i
+				}
 			}
 		}
+
 		_, err = ah.database.GetCurrentRoundState(txn, ah.ethAcct)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
@@ -239,6 +254,21 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				return err
 			}
 		}
+		if isValidator > 0 {
+			rs := &objs.RoundState{
+				GroupKey:   utils.CopySlice(v.GroupKey),
+				GroupShare: utils.CopySlice(v.Validators[isValidator].GroupShare),
+				GroupIdx:   uint8(isValidator),
+				RCert:      rcert,
+			}
+			err = ah.database.SetCurrentRoundState(txn, rs)
+			if err != nil {
+				utils.DebugTrace(ah.logger, err)
+				return err
+			}
+
+		}
+
 		if v.NotBefore == 0 {
 			v.NotBefore = 1
 		}

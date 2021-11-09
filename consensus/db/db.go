@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"sync"
 
@@ -130,6 +131,25 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
+	vs, err := db.GetValidatorSet(txn, result.RCert.RClaims.Height)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
+		vIdx := -1
+		for i:=0; i< len(vs.Validators); i++ {
+			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
+				vIdx = i
+				break
+			}
+		}
+		if vIdx >= 0 {
+			result.GroupIdx = uint8(vIdx)
+			result.GroupKey = vs.GroupKey
+			result.GroupShare = vs.Validators[vIdx].GroupShare
+		}
+	}
 	return result, nil
 }
 
@@ -228,7 +248,7 @@ func (db *Database) makeValidatorSetIterKey() []byte {
 }
 
 func (db *Database) SetValidatorSet(txn *badger.Txn, v *objs.ValidatorSet) error {
-	key, err := db.makeValidatorSetKey(v.NotBefore)
+	key, err := db.makeValidatorSetKey(v.NotBefore + 1)
 	if err != nil {
 		return err
 	}
@@ -623,6 +643,23 @@ func (db *Database) GetOwnState(txn *badger.Txn) (*objs.OwnState, error) {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
+	vs, err := db.GetValidatorSet(txn, result.SyncToBH.BClaims.Height+1)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
+		vIdx := -1
+		for i:=0; i< len(vs.Validators); i++ {
+			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
+				vIdx = i
+				break
+			}
+		}
+		if vIdx >= 0 {
+			result.GroupKey = vs.GroupKey
+		}
+	}
 	return result, nil
 }
 
@@ -651,6 +688,12 @@ func (db *Database) GetOwnValidatingState(txn *badger.Txn) (*objs.OwnValidatingS
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
+	os, err := db.GetOwnState(txn)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	result.GroupKey = os.GroupKey
 	return result, nil
 }
 

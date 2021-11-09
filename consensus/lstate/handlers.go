@@ -354,15 +354,32 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			GroupKey = utils.CopySlice(vSet.GroupKey)
 		}
-		vSet, err := mb.database.GetValidatorSet(txn, height)
-		if err != nil {
-			utils.DebugTrace(mb.logger, err)
-			return err
+		vSet := new(objs.ValidatorSet)
+		if round == 1 && height > 2 {
+			vSet, err = mb.database.GetValidatorSet(txn, height -1)
+			if err != nil {
+				utils.DebugTrace(mb.logger, err)
+				return err
+			}
+		} else {
+			vSet, err = mb.database.GetValidatorSet(txn, height)
+			if err != nil {
+				utils.DebugTrace(mb.logger, err)
+				return err
+			}
 		}
 		if !bytes.Equal(GroupKey, vSet.GroupKey) {
 			return errorz.ErrInvalid{}.New("group key mismatch in state handlers")
 		}
+		vSet, err = mb.database.GetValidatorSet(txn, height)
+		if err != nil {
+				utils.DebugTrace(mb.logger, err)
+				return err
+		}
 		if Voter != nil && GroupShare != nil {
+			if height > 2 && round == 1 {
+				GroupKey = vSet.GroupKey
+			}
 			if !vSet.IsValidTriplet(Voter, GroupShare, GroupKey) {
 				correctgk := GroupShare
 				vl := [][]byte{}
