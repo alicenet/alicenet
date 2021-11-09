@@ -115,7 +115,18 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				return err
 			}
 		}
-		if bh == nil {
+
+		cbh1Found := true
+		_, err = ah.database.GetCommittedBlockHeader(txn, 1)
+		if err != nil {
+			if err != badger.ErrKeyNotFound {
+				utils.DebugTrace(ah.logger, err)
+				return err
+			}
+			cbh1Found = false
+		}
+
+		if bh == nil && !cbh1Found {
 			stateRoot, err := ah.appHandler.ApplyState(txn, ah.chainID, 1, nil)
 			if err != nil {
 				utils.DebugTrace(ah.logger, err)
@@ -228,17 +239,20 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				return err
 			}
 		}
-		if rcert.RClaims.Height <= 2 {
+		if v.NotBefore == 0 {
+			v.NotBefore = 1
+		}
+		/* if rcert.RClaims.Height <= 2 {
 			v.NotBefore = 1
 		} else {
 			v.NotBefore = rcert.RClaims.Height
-		}
+		} */
 		err = ah.database.SetValidatorSet(txn, v)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
-		err = ah.database.SetSafeToProceed(txn, rcert.RClaims.Height, true)
+		err = ah.database.SetSafeToProceed(txn, v.NotBefore, true)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
