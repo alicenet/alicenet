@@ -697,3 +697,113 @@ func TestGetLastCommittedBHFSOne(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func getValidatorSet(t *testing.T, height uint32, seed string) (*objs.ValidatorSet, error) {
+	groupSigner := &crypto.BNGroupSigner{}
+	err := groupSigner.SetPrivk(crypto.Hasher([]byte(seed)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	groupKey, _ := groupSigner.PubkeyShare()
+
+	bnSigner := &crypto.BNGroupSigner{}
+	err = bnSigner.SetPrivk(crypto.Hasher([]byte(seed + "2")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	vkey0 := crypto.Hasher([]byte("s0"))[12:]
+	gShare0 := crypto.Hasher([]byte("g0"))
+	val0 := &objs.Validator{
+		VAddr:      vkey0,
+		GroupShare: gShare0,
+	}
+	vkey1 := crypto.Hasher([]byte("s1"))[12:]
+	gShare1 := crypto.Hasher([]byte("g1"))
+	val1 := &objs.Validator{
+		VAddr:      vkey1,
+		GroupShare: gShare1,
+	}
+	vkey2 := crypto.Hasher([]byte("s2"))[12:]
+	gShare2 := crypto.Hasher([]byte("g2"))
+	val2 := &objs.Validator{
+		VAddr:      vkey2,
+		GroupShare: gShare2,
+	}
+	vkey3 := crypto.Hasher([]byte("s3"))[12:]
+	gShare3 := crypto.Hasher([]byte("g3"))
+	val3 := &objs.Validator{
+		VAddr:      vkey3,
+		GroupShare: gShare3,
+	}
+
+	notBefore := uint32(height)
+	vSet := &objs.ValidatorSet{
+		Validators: []*objs.Validator{val0, val1, val2, val3},
+		GroupKey:   groupKey,
+		NotBefore:  notBefore,
+	}
+	return vSet, nil
+}
+
+func TestValidatorSet2(t *testing.T) {
+	tbd, db, p := newDB(t)
+	_ = p
+	_ = db
+	defer tbd.Close()
+	badgerD := tbd.db
+	err := badgerD.Update(func(txn *badger.Txn) error {
+		vSet1, err := getValidatorSet(t, 1, "v1")
+		if err != nil {
+			t.Fatal("Error in Vset")
+		}
+		vSet2, err := getValidatorSet(t, 15, "v15")
+		if err != nil {
+			t.Fatal("Error in Vset")
+		}
+		err = db.SetValidatorSet(txn, vSet1, vSet1.NotBefore)
+		if err != nil {
+			t.Fatal("Error in SetValidatorSet1")
+		}
+		err = db.SetValidatorSet(txn, vSet2, vSet2.NotBefore)
+		if err != nil {
+			t.Fatal("Error in SetValidatorSet2")
+		}
+
+		hList := []uint32{12, 13, 14, 15, 16, 17}
+		rList := []*objs.ValidatorSet{vSet1, vSet1, vSet1, vSet2, vSet2, vSet2}
+		for index, h := range hList {
+			r := rList[index]
+			vs, err := db.GetValidatorSet(txn, h)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ok, err := compareObject(r, vs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !ok {
+				t.Fatalf("VSet %x doesn't match db entry for height: %d", r.GroupKey, h)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+type mb interface {
+	MarshalBinary() ([]byte, error)
+}
+
+func compareObject(a mb, b mb) (bool, error) {
+	aBin, err := a.MarshalBinary()
+	if err != nil {
+		return false, err
+	}
+	bBin, err := b.MarshalBinary()
+	if err != nil {
+		return false, err
+	}
+	return bytes.Equal(aBin, bBin), nil
+}

@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/MadBase/MadNet/constants/dbprefix"
@@ -264,23 +265,44 @@ func (db *Database) GetValidatorSet(txn *badger.Txn, height uint32) (*objs.Valid
 	prefix := db.makeValidatorSetIterKey()
 	seek := []byte{}
 	seek = append(seek, prefix...)
-	heightBytes := utils.MarshalUint32(height + 1)
+	heightBytes := utils.MarshalUint32(height + 256)
 	seek = append(seek, heightBytes...)
 	opts := badger.DefaultIteratorOptions
 	opts.Reverse = true
 	opts.Prefix = prefix
 	opts.PrefetchValues = false
 	var lastkey []byte
-	func() {
+	err := func() error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		it.Seek(seek)
-		if it.Valid() {
+		for it.Seek(seek); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
-			k := item.KeyCopy(nil)
-			lastkey = k
+			v, err := item.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			vs := &objs.ValidatorSet{}
+			err = vs.UnmarshalBinary(v)
+			if err != nil {
+				return err
+			}
+			if height >= 4 {
+				height = height + 3
+			}
+			if vs.NotBefore >= height {
+				fmt.Printf("vsNotBefore: %d for height: %d", vs.NotBefore, height)
+				k := item.KeyCopy(nil)
+				lastkey = k
+				if vs.NotBefore == height {
+					return nil
+				}
+			}
 		}
+		return nil
 	}()
+	if err != nil {
+		return nil, err
+	}
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}
