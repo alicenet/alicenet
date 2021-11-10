@@ -392,7 +392,7 @@ func TestValidatorSet(t *testing.T) {
 			t.Fatal("Error when marshalling vSet!")
 		}
 
-		err = db.SetValidatorSet(txn, vSet)
+		err = db.SetValidatorSet(txn, vSet, vSet.NotBefore)
 		if err != nil {
 			t.Fatal("Error in SetValidatorSet")
 		}

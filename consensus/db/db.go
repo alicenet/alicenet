@@ -138,7 +138,7 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 	}
 	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
 		vIdx := -1
-		for i:=0; i< len(vs.Validators); i++ {
+		for i := 0; i < len(vs.Validators); i++ {
 			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
 				vIdx = i
 				break
@@ -247,8 +247,8 @@ func (db *Database) makeValidatorSetIterKey() []byte {
 	return dbprefix.PrefixValidatorSet()
 }
 
-func (db *Database) SetValidatorSet(txn *badger.Txn, v *objs.ValidatorSet) error {
-	key, err := db.makeValidatorSetKey(v.NotBefore + 1)
+func (db *Database) SetValidatorSet(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
+	key, err := db.makeValidatorSetKey(height)
 	if err != nil {
 		return err
 	}
@@ -650,7 +650,7 @@ func (db *Database) GetOwnState(txn *badger.Txn) (*objs.OwnState, error) {
 	}
 	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
 		vIdx := -1
-		for i:=0; i< len(vs.Validators); i++ {
+		for i := 0; i < len(vs.Validators); i++ {
 			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
 				vIdx = i
 				break

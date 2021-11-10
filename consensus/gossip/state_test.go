@@ -60,7 +60,7 @@ func TestState(t *testing.T) {
 	_ = bh
 	err = DB.Update(func(txn *badger.Txn) error {
 		vs := makeValidatorSet(1, groupk, secpSigners, bnSigners)
-		err := database.SetValidatorSet(txn, vs)
+		err := database.SetValidatorSet(txn, vs, height)
 		if err != nil {
 			return err
 		}
