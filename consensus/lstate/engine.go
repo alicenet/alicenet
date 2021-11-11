@@ -126,6 +126,17 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
+		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, height+1)
+		if err != nil {
+			return err
+		}
+		if ok && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
+			if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
+				return err
+			}
+			isSync = true
+			return nil
+		}
 		if !bytes.Equal(vs.GroupKey, ownState.GroupKey) {
 			ownState.GroupKey = vs.GroupKey
 			err = ce.database.SetOwnState(txn, ownState)
@@ -504,6 +515,29 @@ func (ce *Engine) Sync() (bool, error) {
 	// if yes exit
 	syncDone := false
 	err := ce.database.Update(func(txn *badger.Txn) error {
+		ownState, err := ce.database.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		height, _ := objs.ExtractHR(ownState.SyncToBH)
+		err = ce.dm.FlushCacheToDisk(txn, height)
+		if err != nil {
+			return err
+		}
+		vs, err := ce.database.GetValidatorSet(txn, height+1)
+		if err != nil {
+			return err
+		}
+		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, height+1)
+		if err != nil {
+			return err
+		}
+		if ok && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
+			if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
+				return err
+			}
+			return nil
+		}
 		rs, err := ce.sstore.LoadLocalState(txn)
 		if err != nil {
 			if err != badger.ErrKeyNotFound {

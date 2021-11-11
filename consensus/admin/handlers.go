@@ -116,51 +116,77 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 			return ah.database.SetValidatorSet(txn, v, v.NotBefore)
 			// do we need safe to proceed here?
 		}
-		// new validator set case
 
-		// apply to a height in the future
-		// don't erase current validator set until the specified height
-		// the current validator set round state
-
-		// only run for groupkey equals all zeros
-		// delete broadcast?
-		// should we do?
-		// own validator state and own state?
-		bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
+		ownState, err := ah.database.GetOwnState(txn)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
-		rcert, err := bh.GetRCert()
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
+		if ownState.SyncToBH.BClaims.Height+2 < ownState.MaxBHSeen.BClaims.Height {
+			return ah.database.SetValidatorSetPostApplication(txn, v, v.NotBefore)
 		}
-		isValidator, err := ah.initValidatorsRoundState(txn, v, rcert)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		// If we are not a validator we need to start our Round State
-		if !isValidator {
-			err = ah.initOwnRoundState(txn, v, rcert)
-			if err != nil {
-				utils.DebugTrace(ah.logger, err)
-				return err
-			}
-		}
-		err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		err = ah.database.SetSafeToProceed(txn, v.NotBefore, true)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		return nil
+		return ah.AddValidatorSetEdgecase(txn, v)
 	})
+}
+
+func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
+	// new validator set case
+
+	// v.Notbefore = 300
+	// we are on height 35, ETHDKG will finish h:85
+
+	// apply to a height in the future
+	// don't erase current validator set until the specified height
+	// the current validator set round state
+
+	// only run for groupkey equals all zeros
+	// delete broadcast?
+	// should we do?
+	// own validator state and own state?
+
+	// 1st case, call initialize from arbitrary height to stop consensus. Once consensus is stopped, call initializeEthDKG. "worked" but we have to make sure that the phaseLength is enough so the validators can join.
+	// 2st case,  call initialize from arbitrary height + initializeEthDKG with enough time
+	// 3st case, call initialize from arbitrary height + initializeEthDKG far away in the future
+	// Where is the logic to change validators between epochs?
+	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
+	// todo: solve this: bh will be nil, and we not going to register the new validators?
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	rcert, err := bh.GetRCert()
+	// Setting the new group key on RCert
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	// add the new groupKey to the rcert
+	//rcert.GroupKey = utils.CopySlice(v.GroupKey)
+	// todo: how do we set initValidatorRoundState for v.notBefore, not the current height
+	isValidator, err := ah.initValidatorsRoundState(txn, v, rcert)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	// If we are not a validator we need to start our Round State
+	if !isValidator {
+		err = ah.initOwnRoundState(txn, v, rcert)
+		if err != nil {
+			utils.DebugTrace(ah.logger, err)
+			return err
+		}
+	}
+	err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	err = ah.database.SetSafeToProceed(txn, v.NotBefore, true)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	return nil
 }
 
 // AddSnapshot stores a snapshot to the database
@@ -425,9 +451,6 @@ func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 }
 
 func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet) error {
-	if v.NotBefore%constants.EpochLength != 0 {
-		return nil
-	}
 	bh, err := ah.database.GetLastSnapshot(txn)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -541,57 +564,58 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 }
 
 func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) error {
-	_, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
-	if err != nil {
-		if err == badger.ErrKeyNotFound {
-			rs := &objs.RoundState{
-				VAddr:      ah.ethAcct,
-				GroupKey:   v.GroupKey,
-				GroupShare: make([]byte, constants.CurveBN256EthPubkeyLen),
-				GroupIdx:   0,
-				RCert:      rcert,
-			}
-			err = ah.database.SetCurrentRoundState(txn, rs)
-			if err != nil {
-				utils.DebugTrace(ah.logger, err)
-				return err
-			}
-		} else {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
+	// rs, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
+	// if err != nil {
+	// if err == badger.ErrKeyNotFound {
+	rs := &objs.RoundState{
+		VAddr:      ah.ethAcct,
+		GroupKey:   v.GroupKey,
+		GroupShare: make([]byte, constants.CurveBN256EthPubkeyLen),
+		GroupIdx:   0,
+		RCert:      rcert,
 	}
+	err := ah.database.SetCurrentRoundState(txn, rs)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	// } else {
+	// 	utils.DebugTrace(ah.logger, err)
+	// 	return err
+	// }
+	// }
 	return nil
 }
 
 func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) (bool, error) {
+	// what would happen if we trigger the arbitrary height far away in the future
 	isValidator := false
 	for i := 0; i < len(v.Validators); i++ {
 		val := v.Validators[i]
-		rs, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
-		if err != nil {
-			if err == badger.ErrKeyNotFound {
-				rs := &objs.RoundState{
-					VAddr:      utils.CopySlice(val.VAddr),
-					GroupKey:   utils.CopySlice(v.GroupKey),
-					GroupShare: utils.CopySlice(val.GroupShare),
-					GroupIdx:   uint8(i),
-					RCert:      rcert,
-				}
-				err = ah.database.SetCurrentRoundState(txn, rs)
-				if err != nil {
-					utils.DebugTrace(ah.logger, err)
-					return false, err
-				}
-			} else {
-				utils.DebugTrace(ah.logger, err)
-				return false, err
-			}
-		} else {
-			if bytes.Equal(rs.VAddr, ah.ethAcct) {
-				isValidator = true
-			}
+		// rs, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
+		// if err != nil {
+		// if err == badger.ErrKeyNotFound {
+		rs := &objs.RoundState{
+			VAddr:      utils.CopySlice(val.VAddr),
+			GroupKey:   utils.CopySlice(v.GroupKey),
+			GroupShare: utils.CopySlice(val.GroupShare),
+			GroupIdx:   uint8(i),
+			RCert:      rcert,
 		}
+		err := ah.database.SetCurrentRoundState(txn, rs)
+		if err != nil {
+			utils.DebugTrace(ah.logger, err)
+			return false, err
+		}
+		// } else {
+		// 	utils.DebugTrace(ah.logger, err)
+		// 	return false, err
+		// }
+		// } else {
+		if bytes.Equal(rs.VAddr, ah.ethAcct) {
+			isValidator = true
+		}
+		// }
 	}
 	return isValidator, nil
 }

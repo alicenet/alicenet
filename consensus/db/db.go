@@ -131,6 +131,7 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
+	// // hot patch: revert later?
 	// vs, err := db.GetValidatorSet(txn, result.RCert.RClaims.Height)
 	// if err != nil {
 	// 	utils.DebugTrace(db.logger, err)
@@ -229,6 +230,47 @@ func (db *Database) DeleteBeforeHistoricRoundState(txn *badger.Txn, height uint3
 		}
 	}
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (db *Database) makeValidatorSetKeyPostApplication(notBefore uint32) ([]byte, error) {
+	key := &objs.ValidatorSetKey{
+		Prefix:    dbprefix.PrefixValidatorSetPostApplication(),
+		NotBefore: notBefore,
+	}
+	return key.MarshalBinary()
+}
+
+func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
+	key, err := db.makeValidatorSetKey(height)
+	if err != nil {
+		return err
+	}
+	err = db.RawDB.SetValidatorSet(txn, key, v)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	return nil
+}
+
+func (db *Database) GetValidatorSetPostApplication(txn *badger.Txn, height uint32) (*objs.ValidatorSet, bool, error) {
+	key, err := db.makeValidatorSetKey(height)
+	if err != nil {
+		return nil, false, err
+	}
+	vs, err := db.RawDB.GetValidatorSet(txn, key)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			utils.DebugTrace(db.logger, err)
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+	return vs, true, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

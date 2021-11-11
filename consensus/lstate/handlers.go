@@ -354,44 +354,56 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			GroupKey = utils.CopySlice(vSet.GroupKey)
 		}
-		// vSet := new(objs.ValidatorSet)
-		// if round == 1 && height > 2 {
-		// 	vSet, err = mb.database.GetValidatorSet(txn, height -1)
-		// 	if err != nil {
-		// 		utils.DebugTrace(mb.logger, err)
-		// 		return err
-		// 	}
-		// } else {
-		// 	vSet, err = mb.database.GetValidatorSet(txn, height)
-		// 	if err != nil {
-		// 		utils.DebugTrace(mb.logger, err)
-		// 		return err
-		// 	}
-		// }
-
+		// hot patch
+		vSetGroupKey := []byte{}
+		if round == 1 && height > 2 {
+			vSetTemp, err := mb.database.GetValidatorSet(txn, height-1)
+			if err != nil {
+				utils.DebugTrace(mb.logger, err)
+				return err
+			}
+			vSetGroupKey = utils.CopySlice(vSetTemp.GroupKey)
+		} else {
+			vSetTemp, err := mb.database.GetValidatorSet(txn, height)
+			if err != nil {
+				utils.DebugTrace(mb.logger, err)
+				return err
+			}
+			vSetGroupKey = utils.CopySlice(vSetTemp.GroupKey)
+		}
+		/////////////////
 		vSet, err := mb.database.GetValidatorSet(txn, height)
 		if err != nil {
 			utils.DebugTrace(mb.logger, err)
 			return err
 		}
-		if !bytes.Equal(GroupKey, vSet.GroupKey) {
+		if !bytes.Equal(GroupKey, vSetGroupKey) {
+			mb.logger.Errorf("rc.SigGroup: %x\n rc.RClaims.Height:%d\n rc.RClaims.Round:%d\n", GroupKey, height, round)
 			return errorz.ErrInvalid{}.New("group key mismatch in state handlers")
 		}
+
 		if Voter != nil && GroupShare != nil {
-			// if height > 2 && round == 1 {
-			// 	GroupKey = vSet.GroupKey
-			// }
-			if !vSet.IsValidTriplet(Voter, GroupShare, GroupKey) {
+			groupKeyTemp := utils.CopySlice(GroupKey)
+			if round == 1 {
+				groupKeyTemp = utils.CopySlice(vSet.GroupKey)
+			}
+			if !vSet.IsValidTriplet(Voter, GroupShare, groupKeyTemp) {
 				correctgk := GroupShare
 				vl := [][]byte{}
 				for _, vobj := range vSet.Validators {
 					vl = append(vl, vobj.GroupShare)
 				}
+				correctShare, ok := vSet.ValidatorGroupShareMap[string(Voter)]
+				mb.logger.Errorf("Correct Share: %v\n Ok: %v", correctShare, ok)
 				return errorz.ErrInvalid{}.New(fmt.Sprintf("invalid triplet in state handlers: \nvoter:%x \nGroupShare:%x\n%x\n%x\n%x\n%x", Voter, correctgk, vl[0], vl[1], vl[2], vl[3]))
 			}
 		}
 		if Voter != nil && GroupShare == nil {
-			if !vSet.IsValidTuple(Voter, GroupKey) {
+			groupKeyTemp := utils.CopySlice(GroupKey)
+			if round == 1 {
+				groupKeyTemp = utils.CopySlice(vSet.GroupKey)
+			}
+			if !vSet.IsValidTuple(Voter, groupKeyTemp) {
 				correctgk := vSet.GroupKey
 				vl := [][]byte{}
 				for _, vobj := range vSet.Validators {
@@ -401,7 +413,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 		}
 		if Proposer != nil {
-			if !vSet.IsValidTuple(Proposer, GroupKey) {
+			groupKeyTemp := utils.CopySlice(GroupKey)
+			if round == 1 {
+				groupKeyTemp = utils.CopySlice(vSet.GroupKey)
+			}
+			if !vSet.IsValidTuple(Proposer, groupKeyTemp) {
 				return errorz.ErrInvalid{}.New("invalid proposer in state handlers")
 			}
 			rcert := objs.ExtractRCert(v)
