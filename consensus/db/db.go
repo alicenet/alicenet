@@ -3,7 +3,6 @@ package db
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/MadBase/MadNet/constants/dbprefix"
@@ -132,25 +131,25 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
-	vs, err := db.GetValidatorSet(txn, result.RCert.RClaims.Height)
-	if err != nil {
-		utils.DebugTrace(db.logger, err)
-		return nil, err
-	}
-	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
-		vIdx := -1
-		for i := 0; i < len(vs.Validators); i++ {
-			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
-				vIdx = i
-				break
-			}
-		}
-		if vIdx >= 0 {
-			result.GroupIdx = uint8(vIdx)
-			result.GroupKey = vs.GroupKey
-			result.GroupShare = vs.Validators[vIdx].GroupShare
-		}
-	}
+	// vs, err := db.GetValidatorSet(txn, result.RCert.RClaims.Height)
+	// if err != nil {
+	// 	utils.DebugTrace(db.logger, err)
+	// 	return nil, err
+	// }
+	// if !bytes.Equal(result.GroupKey, vs.GroupKey) {
+	// 	vIdx := -1
+	// 	for i := 0; i < len(vs.Validators); i++ {
+	// 		if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
+	// 			vIdx = i
+	// 			break
+	// 		}
+	// 	}
+	// 	if vIdx >= 0 {
+	// 		result.GroupIdx = uint8(vIdx)
+	// 		result.GroupKey = vs.GroupKey
+	// 		result.GroupShare = vs.Validators[vIdx].GroupShare
+	// 	}
+	// }
 	return result, nil
 }
 
@@ -265,44 +264,23 @@ func (db *Database) GetValidatorSet(txn *badger.Txn, height uint32) (*objs.Valid
 	prefix := db.makeValidatorSetIterKey()
 	seek := []byte{}
 	seek = append(seek, prefix...)
-	heightBytes := utils.MarshalUint32(height + 256)
+	heightBytes := utils.MarshalUint32(height)
 	seek = append(seek, heightBytes...)
 	opts := badger.DefaultIteratorOptions
 	opts.Reverse = true
 	opts.Prefix = prefix
 	opts.PrefetchValues = false
 	var lastkey []byte
-	err := func() error {
+	func() {
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		for it.Seek(seek); it.ValidForPrefix(prefix); it.Next() {
+		it.Seek(seek)
+		if it.Valid() {
 			item := it.Item()
-			v, err := item.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
-			vs := &objs.ValidatorSet{}
-			err = vs.UnmarshalBinary(v)
-			if err != nil {
-				return err
-			}
-			if height >= 4 {
-				height = height + 3
-			}
-			if vs.NotBefore >= height {
-				fmt.Printf("vsNotBefore: %d for height: %d", vs.NotBefore, height)
-				k := item.KeyCopy(nil)
-				lastkey = k
-				if vs.NotBefore == height {
-					return nil
-				}
-			}
+			k := item.KeyCopy(nil)
+			lastkey = k
 		}
-		return nil
 	}()
-	if err != nil {
-		return nil, err
-	}
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}

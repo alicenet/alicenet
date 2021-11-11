@@ -113,7 +113,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		}
 		// reset case
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
-			return ah.database.SetValidatorSet(txn, v, v.NotBefore-1)
+			return ah.database.SetValidatorSet(txn, v, v.NotBefore)
 			// do we need safe to proceed here?
 		}
 		// new validator set case
@@ -149,20 +149,6 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				return err
 			}
 		}
-		// if isValidator > 0 {
-		// 	rs := &objs.RoundState{
-		// 		VAddr:      v.Validators[isValidator].VAddr,
-		// 		GroupKey:   utils.CopySlice(v.GroupKey),
-		// 		GroupShare: utils.CopySlice(v.Validators[isValidator].GroupShare),
-		// 		GroupIdx:   uint8(isValidator),
-		// 		RCert:      rcert,
-		// 	}
-		// 	err = ah.database.SetCurrentRoundState(txn, rs)
-		// 	if err != nil {
-		// 		utils.DebugTrace(ah.logger, err)
-		// 		return err
-		// 	}
-		// }
 		err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
