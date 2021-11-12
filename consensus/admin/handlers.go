@@ -114,7 +114,6 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		// reset case
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
 			return ah.database.SetValidatorSet(txn, v, v.NotBefore)
-			// do we need safe to proceed here?
 		}
 
 		ownState, err := ah.database.GetOwnState(txn)
@@ -130,10 +129,6 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 }
 
 func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
-	// new validator set case
-
-	// v.Notbefore = 300
-	// we are on height 35, ETHDKG will finish h:85
 
 	// apply to a height in the future
 	// don't erase current validator set until the specified height
@@ -141,28 +136,22 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 
 	// only run for groupkey equals all zeros
 	// delete broadcast?
-	// should we do?
 	// own validator state and own state?
 
-	// 1st case, call initialize from arbitrary height to stop consensus. Once consensus is stopped, call initializeEthDKG. "worked" but we have to make sure that the phaseLength is enough so the validators can join.
-	// 2st case,  call initialize from arbitrary height + initializeEthDKG with enough time
-	// 3st case, call initialize from arbitrary height + initializeEthDKG far away in the future
-	// Where is the logic to change validators between epochs?
-	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
-	// todo: solve this: bh will be nil, and we not going to register the new validators?
+	// It had a negative 1
+	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore)
 	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
+		if err != badger.ErrKeyNotFound {
+			utils.DebugTrace(ah.logger, err)
+			return err
+		}
+		return ah.database.SetValidatorSetPostApplication(txn, v, v.NotBefore)
 	}
 	rcert, err := bh.GetRCert()
-	// Setting the new group key on RCert
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err
 	}
-	// add the new groupKey to the rcert
-	//rcert.GroupKey = utils.CopySlice(v.GroupKey)
-	// todo: how do we set initValidatorRoundState for v.notBefore, not the current height
 	isValidator, err := ah.initValidatorsRoundState(txn, v, rcert)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)

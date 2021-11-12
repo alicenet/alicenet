@@ -226,6 +226,12 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
 			round = obj.PClaims.RCert.RClaims.Round
+
+			if err := mb.ProposalValidation(txn, GroupKey, Proposer, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.PreVote:
 			height = obj.Proposal.PClaims.RCert.RClaims.Height
 			if height < h {
@@ -243,6 +249,12 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			//GroupShare = nil
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
+
+			if err := mb.VoteValidation(txn, GroupKey, Voter, Proposer, nil, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.PreVoteNil:
 			height = obj.RCert.RClaims.Height
 			if height < h {
@@ -260,6 +272,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			//GroupShare = nil
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
+			if err := mb.VoteNilValidation(txn, GroupKey, Voter, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.PreCommit:
 			height = obj.Proposal.PClaims.RCert.RClaims.Height
 			if height < h {
@@ -277,6 +294,12 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			//GroupShare = nil
 			GroupKey = obj.GroupKey
 			CoSigners = obj.Signers
+
+			if err := mb.VoteValidation(txn, GroupKey, Voter, Proposer, CoSigners, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.PreCommitNil:
 			height = obj.RCert.RClaims.Height
 			if height < h {
@@ -294,6 +317,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			//GroupShare = nil
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
+			if err := mb.VoteNilValidation(txn, GroupKey, Voter, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.NextRound:
 			height = obj.NRClaims.RCert.RClaims.Height
 			if height < h {
@@ -311,6 +339,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			GroupShare = obj.GroupShare
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
+			if err := mb.VoteNextValidation(txn, GroupKey, GroupShare, Voter, Proposer, nil, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.NextHeight:
 			height = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Height
 			if height < h {
@@ -325,6 +358,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			GroupKey = obj.GroupKey
 			CoSigners = obj.Signers
 			round = obj.NHClaims.Proposal.PClaims.RCert.RClaims.Round
+			if err := mb.VoteNextValidation(txn, GroupKey, GroupShare, Voter, Proposer, CoSigners, mb.subOneNoZero(height), height, round); err != nil {
+				return err
+			}
+			return nil
+
 		case *objs.BlockHeader:
 			height = obj.BClaims.Height
 			if err := obj.ValidateSignatures(mb.bnVal); err != nil {
@@ -336,16 +374,25 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			GroupKey = obj.GroupKey
 			//CoSigners = nil
 			round = 1
+			if err := mb.BlockHeaderValidation(txn, GroupKey, height, height+1, round); err != nil {
+				return err
+			}
+			return nil
+
 		default:
 			panic("Unknown type")
 		}
-
+	})
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return err
+	}
+	return nil
+	/*
 		if height == 1 {
 			return errorz.ErrInvalid{}.New("No Height 1 message is valid except for initial block")
 		}
-		// Do something in height 2 round 1 when GroupKey is not set; we set it
-		// to the value in ValidatorSet. This may not be best, as it now
-		// automatically passes those portions of the test.
+		// TODO: evaluate removal based on database initialization
 		if height == 2 && round == 1 && len(GroupKey) == 0 {
 			vSet, err := mb.database.GetValidatorSet(txn, height)
 			if err != nil {
@@ -436,10 +483,180 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 		}
 		return nil
-	})
+	*/
+}
+
+func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey []byte, proposer []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
+	// PROPOSAL	TRUE	 	FALSE	FALSE		TRUE		N+1	    N	            N+1
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
 	if err != nil {
-		utils.DebugTrace(mb.logger, err)
 		return err
 	}
+	groupKeyTemp, err := mb.getGroupKey(txn, groupKey, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	if !vSet.IsValidTuple(proposer, groupKeyTemp) {
+		return errorz.ErrInvalid{}.New("invalid proposer in state handlers")
+	}
+	if rNumber == constants.DEADBLOCKROUND {
+		return nil
+	}
+	height := mb.normalizeHeight(bHeight, rHeight, rNumber)
+	pidx := objs.GetProposerIdx(len(vSet.Validators), height, rNumber)
+	valObj := vSet.Validators[pidx]
+	vAddr := valObj.VAddr
+	if !bytes.Equal(proposer, vAddr) {
+		return errorz.ErrInvalid{}.New("bad proposer")
+	}
 	return nil
+}
+
+func (mb *Handlers) VoteValidation(txn *badger.Txn, groupKey []byte, voter []byte, proposer []byte, coSigners [][]byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+	// OBJECTS		GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
+	// PREVOTE		TRUE		TRUE	FALSE		TRUE		N+1		N				N+1
+	// PRECOMMIT	TRUE		TRUE	FALSE		TRUE		N+1		N				N+1
+	if proposer != nil {
+		if err := mb.ProposalValidation(txn, groupKey, proposer, bHeight, rHeight, rNumber); err != nil {
+			return err
+		}
+	}
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	groupKeyTemp, err := mb.getGroupKey(txn, groupKey, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	if !vSet.IsValidTuple(voter, groupKeyTemp) {
+		correctgk := vSet.GroupKey
+		vl := [][]byte{}
+		for _, vobj := range vSet.Validators {
+			vl = append(vl, vobj.VAddr)
+		}
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("invalid tuple in state handlers: \nvoter:%x \nGroupKey:%x\ncorrectgk:%x\n%x\n%x\n%x\n%x", voter, groupKey, correctgk, vl[0], vl[1], vl[2], vl[3]))
+	}
+	for _, cs := range coSigners {
+		if !vSet.IsValidTuple(utils.CopySlice(cs), groupKeyTemp) {
+			return errorz.ErrInvalid{}.New("bad co signer")
+		}
+	}
+	return nil
+}
+
+func (mb *Handlers) VoteNilValidation(txn *badger.Txn, groupKey []byte, voter []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+	// OBJECTS		GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
+	// PREVOTENIL	TRUE		TRUE	FALSE		FALSE		N+1		N				N+1
+	// PRECOMMITNIL	TRUE		TRUE	FALSE		FALSE		N+1		N				N+1
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	groupKeyTemp, err := mb.getGroupKey(txn, groupKey, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	if !vSet.IsValidTuple(voter, groupKeyTemp) {
+		correctgk := vSet.GroupKey
+		vl := [][]byte{}
+		for _, vobj := range vSet.Validators {
+			vl = append(vl, vobj.VAddr)
+		}
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("invalid tuple in state handlers: \nvoter:%x \nGroupKey:%x\ncorrectgk:%x\n%x\n%x\n%x\n%x", voter, groupKey, correctgk, vl[0], vl[1], vl[2], vl[3]))
+	}
+	return nil
+}
+
+func (mb *Handlers) VoteNextValidation(txn *badger.Txn, groupKey []byte, groupShare []byte, voter []byte, proposer []byte, coSigners [][]byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET	ROUND>1VSET
+	// NROUND	TRUE		TRUE	TRUE		FALSE		N+1		N			N+1
+	// NHEIGHT	TRUE		TRUE	TRUE		TRUE		N+1		N			N+1
+	if proposer != nil {
+		if err := mb.ProposalValidation(txn, groupKey, proposer, bHeight, rHeight, rNumber); err != nil {
+			return err
+		}
+	}
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	groupKeyTemp, err := mb.getGroupKey(txn, groupKey, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	if !vSet.IsValidTriplet(voter, groupShare, groupKeyTemp) {
+		correctgk := groupShare
+		vl := [][]byte{}
+		for _, vobj := range vSet.Validators {
+			vl = append(vl, vobj.GroupShare)
+		}
+		correctShare, ok := vSet.ValidatorGroupShareMap[string(voter)]
+		mb.logger.Errorf("Correct Share: %v\n Ok: %v", correctShare, ok)
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("invalid triplet in state handlers: \nvoter:%x \nGroupShare:%x\n%x\n%x\n%x\n%x", voter, correctgk, vl[0], vl[1], vl[2], vl[3]))
+	}
+	for _, cs := range coSigners {
+		if !vSet.IsValidTuple(utils.CopySlice(cs), groupKeyTemp) {
+			return errorz.ErrInvalid{}.New("bad co signer")
+		}
+	}
+	return nil
+}
+
+func (mb *Handlers) BlockHeaderValidation(txn *badger.Txn, groupKey []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET	ROUND>1VSET
+	// BH		TRUE		FALSE	FALSE		FALSE		N		N			N+1
+	groupKeyTemp, err := mb.getGroupKey(txn, groupKey, bHeight, rHeight, rNumber)
+	if err != nil {
+		return err
+	}
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
+	if !bytes.Equal(groupKeyTemp, vSet.GroupKey) {
+		return errorz.ErrInvalid{}.New("group key mismatch in state handlers")
+	}
+	return nil
+}
+
+func (mb *Handlers) getValidatorSet(txn *badger.Txn, bHeight uint32, rHeight uint32, rNumber uint32) (*objs.ValidatorSet, error) {
+	height := mb.normalizeHeight(bHeight, rHeight, rNumber)
+	vSetTemp, err := mb.database.GetValidatorSet(txn, height)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, err
+	}
+	return vSetTemp, nil
+}
+
+func (mb *Handlers) getGroupKey(txn *badger.Txn, groupKey []byte, bHeight uint32, rHeight uint32, rNumber uint32) ([]byte, error) {
+	vSet, err := mb.getValidatorSet(txn, bHeight, rHeight, rNumber)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, err
+	}
+	if rNumber == 1 {
+		return utils.CopySlice(vSet.GroupKey), nil
+	}
+	return utils.CopySlice(groupKey), nil
+}
+
+func (mb *Handlers) normalizeHeight(bHeight uint32, rHeight uint32, rNumber uint32) uint32 {
+	height := uint32(0)
+	if bHeight <= 2 {
+		height = bHeight
+	} else {
+		if rNumber == 1 {
+			height = bHeight
+		} else {
+			height = rHeight
+		}
+	}
+	return height
+}
+
+func (mb *Handlers) subOneNoZero(height uint32) uint32 {
+	if height <= 1 {
+		return 1
+	}
+	return height - 1
 }
