@@ -1,5 +1,6 @@
 [loglevel]
 ethereum = "info"
+consensus = "debug"
 
 [chain]
 id = 42
@@ -38,7 +39,7 @@ keystore = "assets/test/keys"
 timeout = "1h"
 passcodes = "assets/test/passcodes.txt"
 testEther = "f000000000000000000"
-finalityDelay = 2
+finalityDelay = 1
 retryCount = 3
 retryDelay = "5s"
 startingBlock = 1

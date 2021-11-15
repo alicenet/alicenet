@@ -194,6 +194,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 			if err != nil {
 				return err
 			}
+			// todo: should this set before the error case?
 			isSync = ok
 		}
 		err = ce.sstore.WriteState(txn, roundState)

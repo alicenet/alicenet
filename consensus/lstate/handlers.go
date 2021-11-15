@@ -393,7 +393,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			return errorz.ErrInvalid{}.New("No Height 1 message is valid except for initial block")
 		}
 		// TODO: evaluate removal based on database initialization
-		if height == 2 && round == 1 && len(GroupKey) == 0 {
+			if height == 2 && round == 1 && len(GroupKey) == 0 {
 			vSet, err := mb.database.GetValidatorSet(txn, height)
 			if err != nil {
 				utils.DebugTrace(mb.logger, err)
@@ -503,8 +503,8 @@ func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey []byte, propose
 	if rNumber == constants.DEADBLOCKROUND {
 		return nil
 	}
-	height := mb.normalizeHeight(bHeight, rHeight, rNumber)
-	pidx := objs.GetProposerIdx(len(vSet.Validators), height, rNumber)
+	//height := mb.normalizeHeight(bHeight, rHeight, rNumber)
+	pidx := objs.GetProposerIdx(len(vSet.Validators), rHeight, rNumber)
 	valObj := vSet.Validators[pidx]
 	vAddr := valObj.VAddr
 	if !bytes.Equal(proposer, vAddr) {

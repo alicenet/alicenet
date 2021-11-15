@@ -107,7 +107,24 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	}
 
 	return ah.database.Update(func(txn *badger.Txn) error {
+		{
+			height := uint32(1)
+			if v.NotBefore >= 1 {
+				height = v.NotBefore
+			}
 
+			vSet, err := ah.database.GetValidatorSet(txn, height)
+			if err != nil {
+				if err != badger.ErrKeyNotFound {
+					utils.DebugTrace(ah.logger, err)
+					return err
+				}
+				// do nothing
+			}
+			if vSet != nil && bytes.Equal(v.GroupKey, vSet.GroupKey) {
+				return nil
+			}
+		}
 		if v.NotBefore%constants.EpochLength == 0 {
 			return ah.epochBoundaryValidator(txn, v)
 		}
