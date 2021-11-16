@@ -588,9 +588,9 @@ func TestUTXOChainID(t *testing.T) {
 	}
 }
 
-func TestUTXOTXOutIdx(t *testing.T) {
+func TestUTXOTxOutIdx(t *testing.T) {
 	utxo := &TXOut{}
-	_, err := utxo.TXOutIdx()
+	_, err := utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
@@ -600,7 +600,7 @@ func TestUTXOTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.TXOutIdx()
+	_, err = utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
@@ -610,7 +610,7 @@ func TestUTXOTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.TXOutIdx()
+	_, err = utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (3)")
 	}
@@ -620,7 +620,7 @@ func TestUTXOTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.TXOutIdx()
+	_, err = utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (4)")
 	}
@@ -630,16 +630,16 @@ func TestUTXOTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.TXOutIdx()
+	_, err = utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (5)")
 	}
 }
 
-func TestUTXOSetTXOutIdx(t *testing.T) {
+func TestUTXOSetTxOutIdx(t *testing.T) {
 	idx := uint32(0)
 	utxo := &TXOut{}
-	err := utxo.SetTXOutIdx(idx)
+	err := utxo.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
@@ -649,7 +649,7 @@ func TestUTXOSetTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = utxo.SetTXOutIdx(idx)
+	err = utxo.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
@@ -659,7 +659,7 @@ func TestUTXOSetTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = utxo.SetTXOutIdx(idx)
+	err = utxo.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (3)")
 	}
@@ -669,7 +669,7 @@ func TestUTXOSetTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = utxo.SetTXOutIdx(idx)
+	err = utxo.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (4)")
 	}
@@ -679,7 +679,7 @@ func TestUTXOSetTXOutIdx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = utxo.SetTXOutIdx(idx)
+	err = utxo.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (5)")
 	}

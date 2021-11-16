@@ -132,16 +132,16 @@ func (b *TxFee) UTXOID() ([]byte, error) {
 	return utils.CopySlice(b.utxoID), nil
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *TxFee) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *TxFee) TxOutIdx() (uint32, error) {
 	if b == nil || b.TFPreImage == nil {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.TFPreImage.TXOutIdx, nil
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *TxFee) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *TxFee) SetTxOutIdx(idx uint32) error {
 	if b == nil || b.TFPreImage == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}

@@ -791,7 +791,7 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID []byte, pr
 		if err != nil {
 			return err
 		}
-		utxoIdxOut, err := utxo.TXOutIdx()
+		utxoIdxOut, err := utxo.TxOutIdx()
 		if err != nil {
 			return err
 		}

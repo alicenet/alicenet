@@ -239,26 +239,26 @@ func TestTxFeePreHash(t *testing.T) {
 	}
 }
 
-func TestTxFeeTXOutIdx(t *testing.T) {
+func TestTxFeeTxOutIdx(t *testing.T) {
 	utxo := &TXOut{}
-	_, err := utxo.txFee.TXOutIdx()
+	_, err := utxo.txFee.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should raise an error (1)")
 	}
 	tf := &TxFee{}
-	_, err = tf.TXOutIdx()
+	_, err = tf.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
 	tf.TFPreImage = &TFPreImage{}
 	txOutIdx := uint32(17)
 	tf.TFPreImage.TXOutIdx = txOutIdx
-	out, err := tf.TXOutIdx()
+	out, err := tf.TxOutIdx()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if out != txOutIdx {
-		t.Fatal("TXOutIdxes do not match")
+		t.Fatal("TxOutIndices do not match")
 	}
 }
 
@@ -310,29 +310,29 @@ func TestTxFeeUTXOID(t *testing.T) {
 	}
 }
 
-func TestTxFeeSetTXOutIdx(t *testing.T) {
+func TestTxFeeSetTxOutIdx(t *testing.T) {
 	idx := uint32(0)
 	utxo := &TXOut{}
-	err := utxo.txFee.SetTXOutIdx(idx)
+	err := utxo.txFee.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should raise an error (1)")
 	}
 	tf := &TxFee{}
-	err = tf.SetTXOutIdx(idx)
+	err = tf.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
 	tf.TFPreImage = &TFPreImage{}
-	err = tf.SetTXOutIdx(idx)
+	err = tf.SetTxOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := tf.TXOutIdx()
+	out, err := tf.TxOutIdx()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if out != idx {
-		t.Fatal("TXOutIdxes do not match")
+		t.Fatal("TXOutIndices do not match")
 	}
 }
 

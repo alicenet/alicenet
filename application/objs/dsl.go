@@ -152,16 +152,16 @@ func (b *DSLinker) UTXOID() ([]byte, error) {
 	return MakeUTXOID(b.TxHash, b.DSPreImage.TXOutIdx), nil
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *DSLinker) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *DSLinker) TxOutIdx() (uint32, error) {
 	if b == nil || b.DSPreImage == nil {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.DSPreImage.TXOutIdx, nil
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *DSLinker) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *DSLinker) SetTxOutIdx(idx uint32) error {
 	if b == nil || b.DSPreImage == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}

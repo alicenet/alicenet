@@ -387,43 +387,43 @@ func (b *TXOut) ChainID() (uint32, error) {
 	}
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *TXOut) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *TXOut) TxOutIdx() (uint32, error) {
 	switch {
 	case b.HasDataStore():
 		obj, _ := b.DataStore()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	case b.HasTxFee():
 		obj, _ := b.TxFee()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	default:
-		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in TXOutIdx")
+		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in TxOutIdx")
 	}
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *TXOut) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *TXOut) SetTxOutIdx(idx uint32) error {
 	switch {
 	case b.HasDataStore():
 		obj, _ := b.DataStore()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	case b.HasTxFee():
 		obj, _ := b.TxFee()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	default:
-		return errorz.ErrInvalid{}.New("TXOut type not defined in SetTXOutIdx")
+		return errorz.ErrInvalid{}.New("TXOut type not defined in SetTxOutIdx")
 	}
 }
 

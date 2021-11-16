@@ -45,7 +45,7 @@ func (vout Vout) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) 
 // SetTxOutIdx sets the TxOutIdx of each utxo
 func (vout Vout) SetTxOutIdx() error {
 	for i := 0; i < len(vout); i++ {
-		err := vout[i].SetTXOutIdx(uint32(i))
+		err := vout[i].SetTxOutIdx(uint32(i))
 		if err != nil {
 			return err
 		}
@@ -62,30 +62,33 @@ func (vout Vout) ValidateTxOutIdx() error {
 		switch {
 		case utxo.HasDataStore():
 			ds, _ := utxo.DataStore()
-			dsTxOutIdx, err := ds.TXOutIdx()
+			dsTxOutIdx, err := ds.TxOutIdx()
 			if err != nil {
 				return err
 			}
 			txOutIdx = dsTxOutIdx
 		case utxo.HasValueStore():
 			vs, _ := utxo.ValueStore()
-			vsTxOutIdx, err := vs.TXOutIdx()
+			vsTxOutIdx, err := vs.TxOutIdx()
 			if err != nil {
 				return err
 			}
 			txOutIdx = vsTxOutIdx
 		case utxo.HasAtomicSwap():
 			as, _ := utxo.AtomicSwap()
-			asTxOutIdx, err := as.TXOutIdx()
+			asTxOutIdx, err := as.TxOutIdx()
 			if err != nil {
 				return err
 			}
 			txOutIdx = asTxOutIdx
 		case utxo.HasTxFee():
 			tf, _ := utxo.TxFee()
-			tfTxOutIdx, err := tf.TXOutIdx()
+			tfTxOutIdx, err := tf.TxOutIdx()
 			if err != nil {
 				return err
+			}
+			if tfTxOutIdx != 0 {
+				return errorz.ErrInvalid{}.New("bad txOutIdx: TxOutIdx for TxFee *must* be 0")
 			}
 			txOutIdx = tfTxOutIdx
 		default:
@@ -117,10 +120,44 @@ func (vout Vout) UTXOID() ([][]byte, error) {
 	return ids, nil
 }
 
+// UTXOIDNoTxFees returns the list of UTXOIDs from each TXOut in Vout;
+// does not include TxFees.
+func (vout Vout) UTXOIDNoTxFees() ([][]byte, error) {
+	ids := [][]byte{}
+	for i := 0; i < len(vout); i++ {
+		if vout[i].HasTxFee() {
+			continue
+		}
+		id, err := vout[i].UTXOID()
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
 // PreHash returns the list of PreHashs from each TXOut in Vout
 func (vout Vout) PreHash() ([][]byte, error) {
 	phs := [][]byte{}
 	for i := 0; i < len(vout); i++ {
+		ph, err := vout[i].PreHash()
+		if err != nil {
+			return nil, err
+		}
+		phs = append(phs, ph)
+	}
+	return phs, nil
+}
+
+// PreHashNoTxFees returns the list of PreHashs from each TXOut in Vout;
+// does not include TxFees.
+func (vout Vout) PreHashNoTxFees() ([][]byte, error) {
+	phs := [][]byte{}
+	for i := 0; i < len(vout); i++ {
+		if vout[i].HasTxFee() {
+			continue
+		}
 		ph, err := vout[i].PreHash()
 		if err != nil {
 			return nil, err

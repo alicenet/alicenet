@@ -1587,7 +1587,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	numEpochs := uint32(3)
 	utxo1 := makeDSWithValueFee(t, ownerSigner, 0, rawData1, index1, iat, numEpochs, dsFee)
 	idx := uint32(0)
-	err = utxo1.SetTXOutIdx(idx)
+	err = utxo1.SetTxOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1605,7 +1605,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	rawData2 := make([]byte, 2)
 	utxo2 := makeDSWithValueFee(t, ownerSigner, 0, rawData2, index2, iat, numEpochs, dsFee)
 	idx = uint32(1)
-	err = utxo2.SetTXOutIdx(idx)
+	err = utxo2.SetTxOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1623,7 +1623,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	rawData3 := make([]byte, 3)
 	utxo3 := makeDSWithValueFee(t, ownerSigner, 0, rawData3, index3, iat, numEpochs, dsFee)
 	idx = uint32(2)
-	err = utxo3.SetTXOutIdx(idx)
+	err = utxo3.SetTxOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
 	}

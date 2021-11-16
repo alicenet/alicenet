@@ -139,20 +139,20 @@ func (b *DataStore) UTXOID() ([]byte, error) {
 	return b.DSLinker.UTXOID()
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *DataStore) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *DataStore) TxOutIdx() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
-	return b.DSLinker.TXOutIdx()
+	return b.DSLinker.TxOutIdx()
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *DataStore) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *DataStore) SetTxOutIdx(idx uint32) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
-	return b.DSLinker.SetTXOutIdx(idx)
+	return b.DSLinker.SetTxOutIdx(idx)
 }
 
 // TxHash returns the TxHash of the object
@@ -402,7 +402,7 @@ func (b *DataStore) MakeTxIn() (*TXIn, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
-	txOutIdx, err := b.TXOutIdx()
+	txOutIdx, err := b.TxOutIdx()
 	if err != nil {
 		return nil, err
 	}

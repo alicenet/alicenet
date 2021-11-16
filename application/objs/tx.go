@@ -357,12 +357,30 @@ func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 	return b.Vout.UTXOID()
 }
 
+// GeneratedUTXOIDNoTxFees returns the list of UTXOIDs from Vout;
+// does not include TxFees.
+func (b *Tx) GeneratedUTXOIDNoTxFees() ([][]byte, error) {
+	if b == nil || len(b.Vout) == 0 {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.Vout.UTXOIDNoTxFees()
+}
+
 // GeneratedPreHash returns the list of PreHashs from Vout
 func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 	if b == nil || len(b.Vout) == 0 {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.Vout.PreHash()
+}
+
+// GeneratedPreHashNoTxFees returns the list of PreHashs from Vout;
+// does not include TxFees
+func (b *Tx) GeneratedPreHashNoTxFees() ([][]byte, error) {
+	if b == nil || len(b.Vout) == 0 {
+		return nil, errorz.ErrInvalid{}.New("not initialized")
+	}
+	return b.Vout.PreHashNoTxFees()
 }
 
 // ValidateSignature validates the signatures of the objects
