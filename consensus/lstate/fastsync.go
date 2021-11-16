@@ -1231,7 +1231,7 @@ func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
 			return
 		case <-ssm.closeChan:
 			return
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(1000 * time.Millisecond):
 			return
 		case w := <-ssm.workChan:
 			w()
