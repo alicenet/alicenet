@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bytes"
 	"context"
 	"sync"
 
@@ -685,23 +684,6 @@ func (db *Database) GetOwnState(txn *badger.Txn) (*objs.OwnState, error) {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
-	vs, err := db.GetValidatorSet(txn, result.SyncToBH.BClaims.Height+1)
-	if err != nil {
-		utils.DebugTrace(db.logger, err)
-		return nil, err
-	}
-	if !bytes.Equal(result.GroupKey, vs.GroupKey) {
-		vIdx := -1
-		for i := 0; i < len(vs.Validators); i++ {
-			if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
-				vIdx = i
-				break
-			}
-		}
-		if vIdx >= 0 {
-			result.GroupKey = vs.GroupKey
-		}
-	}
 	return result, nil
 }
 
@@ -730,12 +712,6 @@ func (db *Database) GetOwnValidatingState(txn *badger.Txn) (*objs.OwnValidatingS
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
-	os, err := db.GetOwnState(txn)
-	if err != nil {
-		utils.DebugTrace(db.logger, err)
-		return nil, err
-	}
-	result.GroupKey = os.GroupKey
 	return result, nil
 }
 

@@ -29,10 +29,6 @@ func makeTx(h []byte) interfaces.Transaction {
 }
 
 func Test_txCache_Get(t *testing.T) {
-	type args struct {
-		txHsh []byte
-	}
-
 	txc := makeCache()
 	tx := makeTx(nil)
 	h, _ := tx.TxHash()

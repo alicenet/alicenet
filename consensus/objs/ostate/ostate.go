@@ -44,9 +44,9 @@ func Validate(p mdefs.OwnState) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("ownstate capn obj is not valid")
 	}
-	if !p.HasVAddr() {
-		return errorz.ErrInvalid{}.New("ownstate capn obj does not have VAddr")
-	}
+	// if !p.HasVAddr() {
+	// 	return errorz.ErrInvalid{}.New("ownstate capn obj does not have VAddr")
+	// }
 	if !p.HasSyncToBH() {
 		return errorz.ErrInvalid{}.New("ownstate capn obj does not have SyncToBH")
 	}

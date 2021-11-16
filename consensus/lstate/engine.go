@@ -108,7 +108,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 
 // UpdateLocalState updates the local state of the consensus engine
 func (ce *Engine) UpdateLocalState() (bool, error) {
-	var isSync bool
+	isSync := true
 	updateLocalState := true
 	// ce.logger.Error("!!! OPEN UpdateLocalState TXN")
 	// defer func() { ce.logger.Error("!!! CLOSE UpdateLocalState TXN") }()
@@ -117,62 +117,45 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		height, _ := objs.ExtractHR(ownState.SyncToBH)
-		err = ce.dm.FlushCacheToDisk(txn, height)
-		if err != nil {
-			return err
-		}
-		vs, err := ce.database.GetValidatorSet(txn, height+1)
-		if err != nil {
-			return err
-		}
-		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, height+1)
-		if err != nil {
-			return err
-		}
-		if ok && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
-			if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
-				return err
-			}
-			isSync = true
-			return nil
-		}
-		if !bytes.Equal(vs.GroupKey, ownState.GroupKey) {
-			ownState.GroupKey = vs.GroupKey
-			err = ce.database.SetOwnState(txn, ownState)
-			if err != nil {
-				return err
-			}
-		}
 		ownValidatingState, err := ce.database.GetOwnValidatingState(txn)
 		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
+			return err
 		}
-		if ownValidatingState == nil {
-			ownValidatingState = &objs.OwnValidatingState{}
+		bHeight := ownState.SyncToBH.BClaims.Height
+		rHeight := ownState.SyncToBH.BClaims.Height + 1
+		err = ce.dm.FlushCacheToDisk(txn, bHeight)
+		if err != nil {
+			return err
 		}
-		if !bytes.Equal(ownValidatingState.VAddr, ownState.VAddr) || !bytes.Equal(ownValidatingState.GroupKey, ownState.GroupKey) {
-			ovs := &objs.OwnValidatingState{
-				VAddr:    ownState.VAddr,
-				GroupKey: ownState.GroupKey,
-			}
-			ovs.SetRoundStarted()
-			err := ce.database.SetOwnValidatingState(txn, ovs)
-			if err != nil {
-				return err
-			}
+		err = ce.dm.FlushCacheToDisk(txn, rHeight)
+		if err != nil {
+			return err
+		}
+		// Load storage
+		err = ce.storage.LoadStorage(txn, utils.Epoch(rHeight))
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		vs, err := ce.database.GetValidatorSet(txn, rHeight)
+		if err != nil {
+			return err
+		}
+		ok, err := ce.updateLoadedObjects(txn, vs, ownState, ownValidatingState)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			isSync = true
+			return nil
 		}
 		roundState, err := ce.sstore.LoadLocalState(txn)
 		if err != nil {
 			return err
 		}
-		// Load storage
-		err = ce.storage.LoadStorage(txn, utils.Epoch(roundState.OwnState.SyncToBH.BClaims.Height+1))
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return err
+		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height {
+			isSync = false
+			updateLocalState = false
 		}
 		if roundState.OwnState.SyncToBH.BClaims.Height%constants.EpochLength == 0 {
 			safe, err := ce.database.GetSafeToProceed(txn, roundState.OwnState.SyncToBH.BClaims.Height)
@@ -185,24 +168,19 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				updateLocalState = false
 			}
 		}
-		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height {
-			isSync = false
-			updateLocalState = false
-		}
 		if updateLocalState {
 			ok, err := ce.updateLocalStateInternal(txn, roundState)
+			isSync = ok
 			if err != nil {
 				return err
 			}
-			// todo: should this set before the error case?
-			isSync = ok
+			err = ce.sstore.WriteState(txn, roundState)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
 		}
-		err = ce.sstore.WriteState(txn, roundState)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return err
-		}
-		if err := ce.dm.CleanCache(txn, height); err != nil {
+		if err := ce.dm.CleanCache(txn, bHeight); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
@@ -334,9 +312,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	}
 
 	// Below this line node must be a validator to proceed
-	if err := ce.loadValidationKey(rs); err != nil {
-		return false, err
-	}
 
 	// if we have voted for the next round in round preceding the
 	// dead block round, goto do next round step
@@ -643,43 +618,68 @@ func (ce *Engine) Sync() (bool, error) {
 	return syncDone, nil
 }
 
-func (ce *Engine) loadValidationKey(rs *RoundStates) error {
-	if rs.IsCurrentValidator() {
-		if !bytes.Equal(rs.ValidatorSet.GroupKey, rs.OwnValidatingState.GroupKey) || ce.bnSigner == nil {
-			for _, v := range rs.ValidatorSet.Validators {
-				if bytes.Equal(v.VAddr, rs.OwnState.VAddr) {
-					name := make([]byte, len(v.GroupShare))
-					copy(name[:], v.GroupShare)
-					pk, err := ce.AdminBus.GetPrivK(name)
-					if err != nil {
-						utils.DebugTrace(ce.logger, err)
-						return nil
-					}
-					signer := &crypto.BNGroupSigner{}
-					err = signer.SetPrivk(pk)
-					if err != nil {
-						utils.DebugTrace(ce.logger, err)
-						return nil
-					}
-					err = signer.SetGroupPubk(rs.ValidatorSet.GroupKey)
-					if err != nil {
-						utils.DebugTrace(ce.logger, err)
-						return err
-					}
-					ce.bnSigner = signer
-					pubk, err := ce.bnSigner.PubkeyShare()
-					if err != nil {
-						return err
-					}
-					if !bytes.Equal(name, pubk) {
-						utils.DebugTrace(ce.logger, err)
-						return err
-					}
-					break
+func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ownState *objs.OwnState, ownValidatingState *objs.OwnValidatingState) (bool, error) {
+	ok := true
+	vspa, okpa, err := ce.database.GetValidatorSetPostApplication(txn, ownState.SyncToBH.BClaims.Height+1)
+	if err != nil {
+		return false, err
+	}
+	if okpa && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
+		if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
+			return false, err
+		}
+		ok = false
+	}
+	if !bytes.Equal(ce.ethAcct, ownState.VAddr) {
+		ownState.VAddr = utils.CopySlice(ce.ethAcct)
+		ok = false
+	}
+	for _, v := range vs.Validators {
+		if bytes.Equal(v.VAddr, ownState.VAddr) {
+			if !bytes.Equal(vs.GroupKey, ownState.GroupKey) || ce.bnSigner == nil {
+				ok = false
+				groupShare := utils.CopySlice((v.GroupShare))
+				pk, err := ce.AdminBus.GetPrivK(groupShare)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, nil
+				}
+				signer := &crypto.BNGroupSigner{}
+				err = signer.SetPrivk(pk)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, nil
+				}
+				err = signer.SetGroupPubk(vs.GroupKey)
+				if err != nil {
+					utils.DebugTrace(ce.logger, err)
+					return false, err
+				}
+				ce.bnSigner = signer
+				pubk, err := ce.bnSigner.PubkeyShare()
+				if err != nil {
+					return false, err
+				}
+				if !bytes.Equal(groupShare, pubk) {
+					panic("pubkey mismatch!")
 				}
 			}
-			rs.OwnValidatingState.GroupKey = rs.ValidatorSet.GroupKey
 		}
 	}
-	return nil
+	if !bytes.Equal(vs.GroupKey, ownState.GroupKey) {
+		ownState.GroupKey = vs.GroupKey
+		ok = false
+	}
+	if !ok {
+		ownValidatingState.SetRoundStarted()
+		err = ce.database.SetOwnValidatingState(txn, ownValidatingState)
+		if err != nil {
+			return false, err
+		}
+		err = ce.database.SetOwnState(txn, ownState)
+		if err != nil {
+			return false, err
+		}
+	}
+	return ok, nil
 }

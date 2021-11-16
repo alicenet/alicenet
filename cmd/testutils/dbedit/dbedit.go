@@ -115,8 +115,8 @@ func resetRs(db *db.Database, txn *badger.Txn, height uint32) {
 
 func ovsFn(ovs *objs.OwnValidatingState) *objs.OwnValidatingState {
 	ovsin := &objs.OwnValidatingState{
-		VAddr:                ovs.VAddr,
-		GroupKey:             ovs.GroupKey,
+		// VAddr:                ovs.VAddr,
+		// GroupKey:             ovs.GroupKey,
 		RoundStarted:         ovs.RoundStarted,
 		PreVoteStepStarted:   ovs.PreVoteStepStarted,
 		PreCommitStepStarted: ovs.PreCommitStepStarted,

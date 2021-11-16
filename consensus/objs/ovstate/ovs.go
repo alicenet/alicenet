@@ -42,11 +42,11 @@ func Validate(p mdefs.OwnValidatingState) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("ovs capn obj is not valid")
 	}
-	if !p.HasVAddr() {
-		return errorz.ErrInvalid{}.New("ovs capn obj does not have VAddr")
-	}
-	if !p.HasGroupKey() {
-		return errorz.ErrInvalid{}.New("ovs capn obj does not have GroupKey")
-	}
+	// if !p.HasVAddr() {
+	// 	return errorz.ErrInvalid{}.New("ovs capn obj does not have VAddr")
+	// }
+	// if !p.HasGroupKey() {
+	// 	return errorz.ErrInvalid{}.New("ovs capn obj does not have GroupKey")
+	// }
 	return nil
 }

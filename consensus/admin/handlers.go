@@ -3,7 +3,6 @@ package admin
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -93,19 +92,6 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	// ah.logger.Error("!!! OPEN addval TXN")
-	// defer func() { ah.logger.Error("!!! CLOSE addval TXN") }()
-
-	addrs := make([]string, len(v.Validators))
-	for i := range v.Validators {
-		n := fmt.Sprintf("%v", i)
-		addrs[i] = n + "." + n + "." + n + "." + n + ":" + n
-	}
-	err := ah.ipcServer.Push(ipc.PeersUpdate{Addrs: addrs, Seq: 0 /* sequence number here, if desired, ipc package can be changed to add it automatically */})
-	if err != nil {
-		return err
-	}
-
 	return ah.database.Update(func(txn *badger.Txn) error {
 		{
 			height := uint32(1)
@@ -125,6 +111,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				return nil
 			}
 		}
+		// epoch case
 		if v.NotBefore%constants.EpochLength == 0 {
 			return ah.epochBoundaryValidator(txn, v)
 		}
@@ -132,15 +119,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
 			return ah.database.SetValidatorSet(txn, v, v.NotBefore)
 		}
-
-		ownState, err := ah.database.GetOwnState(txn)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		if ownState.SyncToBH.BClaims.Height+2 < ownState.MaxBHSeen.BClaims.Height {
-			return ah.database.SetValidatorSetPostApplication(txn, v, v.NotBefore)
-		}
+		// set from reset case
 		return ah.AddValidatorSetEdgecase(txn, v)
 	})
 }
@@ -281,7 +260,7 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 		isValidator := false
 		var syncToBH, maxBHSeen *objs.BlockHeader
 		err = ah.database.View(func(txn *badger.Txn) error {
-			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height+1)
+			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height)
 			if err != nil {
 				return err
 			}
@@ -438,7 +417,7 @@ func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 					return nil
 				})
 				if err != nil {
-					utils.DebugTrace(ah.logger, err)
+					// utils.DebugTrace(ah.logger, err)
 					return false, nil
 				}
 				ah.Lock()
@@ -465,75 +444,16 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 		}
 	}
 	if bh == nil {
-		stateRoot, err := ah.appHandler.ApplyState(txn, ah.chainID, 1, nil)
+		bh, err = ah.initDB(txn, v)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
-		txRoot, err := objs.MakeTxRoot([][]byte{})
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		vlst := [][]byte{}
-		for i := 0; i < len(v.Validators); i++ {
-			val := v.Validators[i]
-			vlst = append(vlst, crypto.Hasher(val.VAddr))
-		}
-		prevBlock, err := objs.MakeTxRoot(vlst)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		bh = &objs.BlockHeader{
-			BClaims: &objs.BClaims{
-				ChainID:    ah.chainID,
-				Height:     1,
-				PrevBlock:  prevBlock,
-				StateRoot:  stateRoot,
-				HeaderRoot: make([]byte, constants.HashLen),
-				TxRoot:     txRoot,
-			},
-			SigGroup: make([]byte, constants.CurveBN256EthSigLen),
-			TxHshLst: [][]byte{},
-		}
-		if err := ah.database.SetSnapshotBlockHeader(txn, bh); err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		if err := ah.database.SetCommittedBlockHeader(txn, bh); err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		ownState := &objs.OwnState{
-			VAddr:             ah.ethAcct,
-			SyncToBH:          bh,
-			MaxBHSeen:         bh,
-			CanonicalSnapShot: bh,
-			PendingSnapShot:   bh,
-		}
-		if err := ah.database.SetOwnState(txn, ownState); err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-		ownValidatingState := &objs.OwnValidatingState{
-			VAddr:    ah.ethAcct,
-			GroupKey: v.GroupKey,
-		}
-		ownValidatingState.SetRoundStarted()
-		if err := ah.database.SetOwnValidatingState(txn, ownValidatingState); err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-
 	}
 	rcert, err := bh.GetRCert()
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err
-	}
-	if rcert.RClaims.Height == 1 {
-		rcert.RClaims.Height = 2
 	}
 	isValidator, err := ah.initValidatorsRoundState(txn, v, rcert)
 	if err != nil {
@@ -548,14 +468,15 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 			return err
 		}
 	}
-	if v.NotBefore == 0 {
+
+	// fix zero epoch event in chain
+	switch v.NotBefore {
+	case 0:
 		v.NotBefore = 1
-	}
-	if rcert.RClaims.Height <= 2 {
-		v.NotBefore = 1
-	} else {
+	default:
 		v.NotBefore = rcert.RClaims.Height
 	}
+
 	err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
@@ -570,26 +491,27 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 }
 
 func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) error {
-	// rs, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
-	// if err != nil {
-	// if err == badger.ErrKeyNotFound {
-	rs := &objs.RoundState{
-		VAddr:      ah.ethAcct,
-		GroupKey:   v.GroupKey,
-		GroupShare: make([]byte, constants.CurveBN256EthPubkeyLen),
-		GroupIdx:   0,
-		RCert:      rcert,
+	rs, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		rs = new(objs.RoundState)
 	}
-	err := ah.database.SetCurrentRoundState(txn, rs)
+	if !bytes.Equal(rs.GroupKey, v.GroupKey) {
+		rs = &objs.RoundState{
+			VAddr:      ah.ethAcct,
+			GroupKey:   v.GroupKey,
+			GroupShare: make([]byte, constants.CurveBN256EthPubkeyLen),
+			GroupIdx:   0,
+			RCert:      rcert,
+		}
+	}
+	err = ah.database.SetCurrentRoundState(txn, rs)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err
 	}
-	// } else {
-	// 	utils.DebugTrace(ah.logger, err)
-	// 	return err
-	// }
-	// }
 	return nil
 }
 
@@ -624,4 +546,65 @@ func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorS
 		// }
 	}
 	return isValidator, nil
+}
+
+func (ah *Handlers) initDB(txn *badger.Txn, v *objs.ValidatorSet) (*objs.BlockHeader, error) {
+	stateRoot, err := ah.appHandler.ApplyState(txn, ah.chainID, 1, nil)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	txRoot, err := objs.MakeTxRoot([][]byte{})
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	vlst := [][]byte{}
+	for i := 0; i < len(v.Validators); i++ {
+		val := v.Validators[i]
+		vlst = append(vlst, crypto.Hasher(val.VAddr))
+	}
+	prevBlock, err := objs.MakeTxRoot(vlst)
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	bh := &objs.BlockHeader{
+		BClaims: &objs.BClaims{
+			ChainID:    ah.chainID,
+			Height:     1,
+			PrevBlock:  prevBlock,
+			StateRoot:  stateRoot,
+			HeaderRoot: make([]byte, constants.HashLen),
+			TxRoot:     txRoot,
+		},
+		SigGroup: make([]byte, constants.CurveBN256EthSigLen),
+		TxHshLst: [][]byte{},
+	}
+	if err := ah.database.SetSnapshotBlockHeader(txn, bh); err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	if err := ah.database.SetCommittedBlockHeader(txn, bh); err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	ownState := &objs.OwnState{
+		VAddr:             ah.ethAcct,
+		SyncToBH:          bh,
+		MaxBHSeen:         bh,
+		CanonicalSnapShot: bh,
+		PendingSnapShot:   bh,
+	}
+	if err := ah.database.SetOwnState(txn, ownState); err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	ownValidatingState := new(objs.OwnValidatingState)
+	ownValidatingState.SetRoundStarted()
+	if err := ah.database.SetOwnValidatingState(txn, ownValidatingState); err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return nil, err
+	}
+	return bh, nil
 }
