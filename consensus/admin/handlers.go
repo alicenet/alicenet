@@ -117,7 +117,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		}
 		// reset case
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
-			return ah.database.SetValidatorSet(txn, v, v.NotBefore)
+			return ah.database.SetValidatorSet(txn, v)
 		}
 		// set from reset case
 		return ah.AddValidatorSetEdgecase(txn, v)
@@ -161,7 +161,7 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 			return err
 		}
 	}
-	err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
+	err = ah.database.SetValidatorSet(txn, v)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err
@@ -417,7 +417,6 @@ func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 					return nil
 				})
 				if err != nil {
-					// utils.DebugTrace(ah.logger, err)
 					return false, nil
 				}
 				ah.Lock()
@@ -477,7 +476,7 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 		v.NotBefore = rcert.RClaims.Height
 	}
 
-	err = ah.database.SetValidatorSet(txn, v, v.NotBefore)
+	err = ah.database.SetValidatorSet(txn, v)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err

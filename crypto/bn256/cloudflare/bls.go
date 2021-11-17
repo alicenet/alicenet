@@ -2,8 +2,6 @@ package cloudflare
 
 import (
 	"math/big"
-
-	"github.com/MadBase/MadNet/logging"
 )
 
 // Sign generates a signature based on the message, private key, and
@@ -226,6 +224,7 @@ func AggregateMarshalledSignatures(marshalledSigs [][]byte, listOfPubKsMarsh [][
 			return nil, err
 		}
 	}
+
 	indices, err := makeIndicesArray(pubKs, orderedPubKs)
 	if err != nil {
 		return nil, err
@@ -254,12 +253,6 @@ func makeIndicesArray(pubKs []*G2, orderedPubKs []*G2) ([]int, error) {
 		if foundInt {
 			continue
 		} else {
-			for i := 0; i < len(pubKs); i++ {
-				logging.GetLogger("consensus").Errorf("pubKs %d:%x", i, pubKs[i].Marshal())
-			}
-			for i := 0; i < len(orderedPubKs); i++ {
-				logging.GetLogger("consensus").Errorf("Ordered pubKs %d:%x", i, orderedPubKs[i].Marshal())
-			}
 			return nil, ErrMissingIndex
 		}
 	}

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-for addr in `cat <<EOF 
+for addr in `cat <<EOF
 0x9AC1c9afBAec85278679fF75Ef109217f26b1417
 0x615695C4a4D6a60830e5fca4901FbA099DF26271
 0x63a6627b79813A7A43829490C4cE409254f64177
@@ -13,3 +13,4 @@ EOF`; do
 done
 
 wait
+sleep 5

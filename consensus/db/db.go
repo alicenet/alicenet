@@ -18,7 +18,7 @@ import (
 // Database is an abstraction of the header trie and the object storage
 type Database struct {
 	sync.Mutex
-	RawDB  *rawDataBase
+	rawDB  *rawDataBase
 	trie   *headerTrie
 	logger *logrus.Logger
 }
@@ -27,40 +27,40 @@ type Database struct {
 func (db *Database) Init(DB *badger.DB) {
 	logger := logging.GetLogger(constants.LoggerDB)
 	db.logger = logger
-	db.RawDB = &rawDataBase{db: DB, logger: logger}
+	db.rawDB = &rawDataBase{db: DB, logger: logger}
 	hdrTrie := &headerTrie{}
 	hdrTrie.init()
 	db.trie = hdrTrie
 }
 
 func (db *Database) DB() *badger.DB {
-	return db.RawDB.db
+	return db.rawDB.db
 }
 
 func (db *Database) View(fn func(txn *badger.Txn) error) error {
-	return db.RawDB.View(fn)
+	return db.rawDB.View(fn)
 }
 
 func (db *Database) Update(fn func(txn *badger.Txn) error) error {
 	db.Lock()
 	defer db.Unlock()
-	return db.RawDB.Update(fn)
+	return db.rawDB.Update(fn)
 }
 
 func (db *Database) Sync() error {
-	return db.RawDB.Sync()
+	return db.rawDB.Sync()
 }
 
 func (db *Database) GarbageCollect() error {
-	return db.RawDB.GarbageCollect()
+	return db.rawDB.GarbageCollect()
 }
 
 func (db *Database) SetValue(txn *badger.Txn, key, value []byte) error {
-	return db.RawDB.SetValue(txn, key, value)
+	return db.rawDB.SetValue(txn, key, value)
 }
 
 func (db *Database) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
-	return db.RawDB.getValue(txn, key)
+	return db.rawDB.getValue(txn, key)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ func (db *Database) makeEncryptedStoreKey(name []byte) []byte {
 
 func (db *Database) SetEncryptedStore(txn *badger.Txn, v *objs.EncryptedStore) error {
 	key := db.makeEncryptedStoreKey(v.Name)
-	err := db.RawDB.SetEncryptedStore(txn, key, v)
+	err := db.rawDB.SetEncryptedStore(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -88,7 +88,7 @@ func (db *Database) SetEncryptedStore(txn *badger.Txn, v *objs.EncryptedStore) e
 
 func (db *Database) GetEncryptedStore(txn *badger.Txn, name []byte) (*objs.EncryptedStore, error) {
 	key := db.makeEncryptedStoreKey(name)
-	result, err := db.RawDB.GetEncryptedStore(txn, key)
+	result, err := db.rawDB.GetEncryptedStore(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -114,7 +114,7 @@ func (db *Database) SetCurrentRoundState(txn *badger.Txn, v *objs.RoundState) er
 	if err != nil {
 		return err
 	}
-	if err := db.RawDB.SetRoundState(txn, key, v); err != nil {
+	if err := db.rawDB.SetRoundState(txn, key, v); err != nil {
 		return err
 	}
 	return db.SetHistoricRoundState(txn, v)
@@ -125,31 +125,11 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.GetRoundState(txn, key)
+	result, err := db.rawDB.GetRoundState(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
-	// // hot patch: revert later?
-	// vs, err := db.GetValidatorSet(txn, result.RCert.RClaims.Height)
-	// if err != nil {
-	// 	utils.DebugTrace(db.logger, err)
-	// 	return nil, err
-	// }
-	// if !bytes.Equal(result.GroupKey, vs.GroupKey) {
-	// 	vIdx := -1
-	// 	for i := 0; i < len(vs.Validators); i++ {
-	// 		if bytes.Equal(vs.Validators[i].VAddr, result.VAddr) {
-	// 			vIdx = i
-	// 			break
-	// 		}
-	// 	}
-	// 	if vIdx >= 0 {
-	// 		result.GroupIdx = uint8(vIdx)
-	// 		result.GroupKey = vs.GroupKey
-	// 		result.GroupShare = vs.Validators[vIdx].GroupShare
-	// 	}
-	// }
 	return result, nil
 }
 
@@ -181,7 +161,7 @@ func (db *Database) SetHistoricRoundState(txn *badger.Txn, v *objs.RoundState) e
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetRoundState(txn, key, v)
+	err = db.rawDB.SetRoundState(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -194,7 +174,7 @@ func (db *Database) GetHistoricRoundState(txn *badger.Txn, vaddr []byte, height 
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.GetRoundState(txn, key)
+	result, err := db.rawDB.GetRoundState(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -248,7 +228,7 @@ func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.Vali
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValidatorSet(txn, key, v)
+	err = db.rawDB.SetValidatorSet(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -261,7 +241,7 @@ func (db *Database) GetValidatorSetPostApplication(txn *badger.Txn, height uint3
 	if err != nil {
 		return nil, false, err
 	}
-	vs, err := db.RawDB.GetValidatorSet(txn, key)
+	vs, err := db.rawDB.GetValidatorSet(txn, key)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			utils.DebugTrace(db.logger, err)
@@ -288,12 +268,12 @@ func (db *Database) makeValidatorSetIterKey() []byte {
 	return dbprefix.PrefixValidatorSet()
 }
 
-func (db *Database) SetValidatorSet(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
-	key, err := db.makeValidatorSetKey(height)
+func (db *Database) SetValidatorSet(txn *badger.Txn, v *objs.ValidatorSet) error {
+	key, err := db.makeValidatorSetKey(v.NotBefore)
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValidatorSet(txn, key, v)
+	err = db.rawDB.SetValidatorSet(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -325,7 +305,7 @@ func (db *Database) GetValidatorSet(txn *badger.Txn, height uint32) (*objs.Valid
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}
-	result, err := db.RawDB.GetValidatorSet(txn, lastkey)
+	result, err := db.rawDB.GetValidatorSet(txn, lastkey)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -377,7 +357,7 @@ func (db *Database) GetHeaderTrieRoot(txn *badger.Txn, height uint32) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	rt, err := db.RawDB.getValue(txn, key)
+	rt, err := db.rawDB.getValue(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +383,7 @@ func (db *Database) UpdateHeaderTrieRootFastSync(txn *badger.Txn, v *objs.BlockH
 
 func (db *Database) finalizeSnapShotHdrRoot(txn *badger.Txn, root []byte, height uint32) error {
 	headerRootKey := db.makeCurrentHeaderRootKey()
-	err := db.RawDB.SetValue(txn, headerRootKey, root)
+	err := db.rawDB.SetValue(txn, headerRootKey, root)
 	if err != nil {
 		return err
 	}
@@ -411,7 +391,7 @@ func (db *Database) finalizeSnapShotHdrRoot(txn *badger.Txn, root []byte, height
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValue(txn, historicTrieKey, root)
+	err = db.rawDB.SetValue(txn, historicTrieKey, root)
 	if err != nil {
 		return err
 	}
@@ -424,7 +404,7 @@ func (db *Database) SetCommittedBlockHeader(txn *badger.Txn, v *objs.BlockHeader
 		return err
 	}
 	headerRootKey := db.makeCurrentHeaderRootKey()
-	err = db.RawDB.SetValue(txn, headerRootKey, headerRoot)
+	err = db.rawDB.SetValue(txn, headerRootKey, headerRoot)
 	if err != nil {
 		return err
 	}
@@ -432,7 +412,7 @@ func (db *Database) SetCommittedBlockHeader(txn *badger.Txn, v *objs.BlockHeader
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValue(txn, historicTrieKey, headerRoot)
+	err = db.rawDB.SetValue(txn, historicTrieKey, headerRoot)
 	if err != nil {
 		return err
 	}
@@ -444,7 +424,7 @@ func (db *Database) SetCommittedBlockHeaderFastSync(txn *badger.Txn, v *objs.Blo
 }
 
 func (db *Database) CountCommittedBlockHeaders(txn *badger.Txn) (int, error) {
-	return db.RawDB.getCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount())
+	return db.rawDB.getCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount())
 }
 
 func (db *Database) setCommittedBlockHeaderInternal(txn *badger.Txn, v *objs.BlockHeader) error {
@@ -457,7 +437,7 @@ func (db *Database) setCommittedBlockHeaderInternal(txn *badger.Txn, v *objs.Blo
 		if err != badger.ErrKeyNotFound {
 			return err
 		}
-		if err := db.RawDB.incrementCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount()); err != nil {
+		if err := db.rawDB.incrementCounter(txn, dbprefix.PrefixCommittedBlockHeaderCount()); err != nil {
 			return err
 		}
 	}
@@ -470,11 +450,11 @@ func (db *Database) setCommittedBlockHeaderInternal(txn *badger.Txn, v *objs.Blo
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValue(txn, indKey, key)
+	err = db.rawDB.SetValue(txn, indKey, key)
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetBlockHeader(txn, key, v)
+	err = db.rawDB.SetBlockHeader(txn, key, v)
 	if err != nil {
 		return err
 	}
@@ -502,7 +482,7 @@ func (db *Database) setCommittedBlockHeaderInternal(txn *badger.Txn, v *objs.Blo
 
 func (db *Database) GetHeaderRootForProposal(txn *badger.Txn) ([]byte, error) {
 	key := db.makeCurrentHeaderRootKey()
-	result, err := db.RawDB.getValue(txn, key)
+	result, err := db.rawDB.getValue(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -519,7 +499,7 @@ func (db *Database) DeleteCommittedBlockHeader(txn *badger.Txn, height uint32) e
 	if err != nil {
 		return err
 	}
-	v, err := db.RawDB.GetBlockHeader(txn, key)
+	v, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
 		return err
 	}
@@ -540,7 +520,7 @@ func (db *Database) DeleteCommittedBlockHeader(txn *badger.Txn, height uint32) e
 		return err
 	}
 	headerRootKey := db.makeCurrentHeaderRootKey()
-	err = db.RawDB.SetValue(txn, headerRootKey, headerRoot)
+	err = db.rawDB.SetValue(txn, headerRootKey, headerRoot)
 	if err != nil {
 		return err
 	}
@@ -548,7 +528,7 @@ func (db *Database) DeleteCommittedBlockHeader(txn *badger.Txn, height uint32) e
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetValue(txn, historicTrieKey, headerRoot)
+	err = db.rawDB.SetValue(txn, historicTrieKey, headerRoot)
 	if err != nil {
 		return err
 	}
@@ -590,7 +570,7 @@ func (db *Database) GetCommittedBlockHeader(txn *badger.Txn, height uint32) (*ob
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.GetBlockHeader(txn, key)
+	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -603,7 +583,7 @@ func (db *Database) GetCommittedBlockHeaderRaw(txn *badger.Txn, height uint32) (
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.getValue(txn, key)
+	result, err := db.rawDB.getValue(txn, key)
 	if err != nil {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -616,11 +596,11 @@ func (db *Database) GetCommittedBlockHeaderByHash(txn *badger.Txn, hash []byte) 
 	if err != nil {
 		return nil, err
 	}
-	key, err := db.RawDB.getValue(txn, indKey)
+	key, err := db.rawDB.getValue(txn, indKey)
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.GetBlockHeader(txn, key)
+	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -651,7 +631,7 @@ func (db *Database) GetMostRecentCommittedBlockHeaderFastSync(txn *badger.Txn) (
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}
-	result, err := db.RawDB.GetBlockHeader(txn, lastkey)
+	result, err := db.rawDB.GetBlockHeader(txn, lastkey)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -669,7 +649,7 @@ func (db *Database) makeOwnStateKey() []byte {
 
 func (db *Database) SetOwnState(txn *badger.Txn, v *objs.OwnState) error {
 	key := db.makeOwnStateKey()
-	err := db.RawDB.SetOwnState(txn, key, v)
+	err := db.rawDB.SetOwnState(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -679,7 +659,7 @@ func (db *Database) SetOwnState(txn *badger.Txn, v *objs.OwnState) error {
 
 func (db *Database) GetOwnState(txn *badger.Txn) (*objs.OwnState, error) {
 	key := db.makeOwnStateKey()
-	result, err := db.RawDB.GetOwnState(txn, key)
+	result, err := db.rawDB.GetOwnState(txn, key)
 	if err != nil {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -697,7 +677,7 @@ func (db *Database) makeOwnValidatingStateKey() []byte {
 
 func (db *Database) SetOwnValidatingState(txn *badger.Txn, v *objs.OwnValidatingState) error {
 	key := db.makeOwnValidatingStateKey()
-	err := db.RawDB.SetOwnValidatingState(txn, key, v)
+	err := db.rawDB.SetOwnValidatingState(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -707,7 +687,7 @@ func (db *Database) SetOwnValidatingState(txn *badger.Txn, v *objs.OwnValidating
 
 func (db *Database) GetOwnValidatingState(txn *badger.Txn) (*objs.OwnValidatingState, error) {
 	key := db.makeOwnValidatingStateKey()
-	result, err := db.RawDB.GetOwnValidatingState(txn, key)
+	result, err := db.rawDB.GetOwnValidatingState(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -728,7 +708,7 @@ func (db *Database) SetBroadcastBlockHeader(txn *badger.Txn, v *objs.BlockHeader
 		return nil
 	}
 	key := db.makeBroadcastBlockHeaderKey()
-	err := db.RawDB.SetBlockHeader(txn, key, v)
+	err := db.rawDB.SetBlockHeader(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -738,7 +718,7 @@ func (db *Database) SetBroadcastBlockHeader(txn *badger.Txn, v *objs.BlockHeader
 
 func (db *Database) GetBroadcastBlockHeader(txn *badger.Txn) (*objs.BlockHeader, error) {
 	key := db.makeBroadcastBlockHeaderKey()
-	result, err := db.RawDB.GetBlockHeader(txn, key)
+	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -746,7 +726,7 @@ func (db *Database) GetBroadcastBlockHeader(txn *badger.Txn) (*objs.BlockHeader,
 }
 
 func (db *Database) SubscribeBroadcastBlockHeader(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastBlockHeader(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastBlockHeader(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -759,7 +739,7 @@ func (db *Database) makeBroadcastRCertKey() []byte {
 
 func (db *Database) SetBroadcastRCert(txn *badger.Txn, v *objs.RCert) error {
 	key := db.makeBroadcastRCertKey()
-	err := db.RawDB.SetRCert(txn, key, v)
+	err := db.rawDB.SetRCert(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -769,7 +749,7 @@ func (db *Database) SetBroadcastRCert(txn *badger.Txn, v *objs.RCert) error {
 
 func (db *Database) GetBroadcastRCert(txn *badger.Txn) (*objs.RCert, error) {
 	key := db.makeBroadcastRCertKey()
-	result, err := db.RawDB.GetRCert(txn, key)
+	result, err := db.rawDB.GetRCert(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -777,7 +757,7 @@ func (db *Database) GetBroadcastRCert(txn *badger.Txn) (*objs.RCert, error) {
 }
 
 func (db *Database) SubscribeBroadcastRCert(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastRCert(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastRCert(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -794,7 +774,7 @@ func (db *Database) SetBroadcastTransaction(txn *badger.Txn, v []byte) error {
 }
 
 func (db *Database) SubscribeBroadcastTransaction(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastTransaction(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastTransaction(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -807,7 +787,7 @@ func (db *Database) makeBroadcastProposalKey() []byte {
 
 func (db *Database) SetBroadcastProposal(txn *badger.Txn, v *objs.Proposal) error {
 	key := db.makeBroadcastProposalKey()
-	err := db.RawDB.SetProposal(txn, key, v)
+	err := db.rawDB.SetProposal(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -817,7 +797,7 @@ func (db *Database) SetBroadcastProposal(txn *badger.Txn, v *objs.Proposal) erro
 
 func (db *Database) GetBroadcastProposal(txn *badger.Txn) (*objs.Proposal, error) {
 	key := db.makeBroadcastProposalKey()
-	result, err := db.RawDB.GetProposal(txn, key)
+	result, err := db.rawDB.GetProposal(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -825,7 +805,7 @@ func (db *Database) GetBroadcastProposal(txn *badger.Txn) (*objs.Proposal, error
 }
 
 func (db *Database) SubscribeBroadcastProposal(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastProposal(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastProposal(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -838,7 +818,7 @@ func (db *Database) makeBroadcastPreVoteKey() []byte {
 
 func (db *Database) SetBroadcastPreVote(txn *badger.Txn, v *objs.PreVote) error {
 	key := db.makeBroadcastPreVoteKey()
-	err := db.RawDB.SetPreVote(txn, key, v)
+	err := db.rawDB.SetPreVote(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -848,7 +828,7 @@ func (db *Database) SetBroadcastPreVote(txn *badger.Txn, v *objs.PreVote) error 
 
 func (db *Database) GetBroadcastPreVote(txn *badger.Txn) (*objs.PreVote, error) {
 	key := db.makeBroadcastPreVoteKey()
-	result, err := db.RawDB.GetPreVote(txn, key)
+	result, err := db.rawDB.GetPreVote(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -856,7 +836,7 @@ func (db *Database) GetBroadcastPreVote(txn *badger.Txn) (*objs.PreVote, error) 
 }
 
 func (db *Database) SubscribeBroadcastPreVote(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreVote(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreVote(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -869,7 +849,7 @@ func (db *Database) makeBroadcastPreVoteNilKey() []byte {
 
 func (db *Database) SetBroadcastPreVoteNil(txn *badger.Txn, v *objs.PreVoteNil) error {
 	key := db.makeBroadcastPreVoteNilKey()
-	err := db.RawDB.SetPreVoteNil(txn, key, v)
+	err := db.rawDB.SetPreVoteNil(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -879,7 +859,7 @@ func (db *Database) SetBroadcastPreVoteNil(txn *badger.Txn, v *objs.PreVoteNil) 
 
 func (db *Database) GetBroadcastPreVoteNil(txn *badger.Txn) (*objs.PreVoteNil, error) {
 	key := db.makeBroadcastPreVoteNilKey()
-	result, err := db.RawDB.GetPreVoteNil(txn, key)
+	result, err := db.rawDB.GetPreVoteNil(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -887,7 +867,7 @@ func (db *Database) GetBroadcastPreVoteNil(txn *badger.Txn) (*objs.PreVoteNil, e
 }
 
 func (db *Database) SubscribeBroadcastPreVoteNil(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreVoteNil(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreVoteNil(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -900,7 +880,7 @@ func (db *Database) makeBroadcastPreCommitKey() []byte {
 
 func (db *Database) SetBroadcastPreCommit(txn *badger.Txn, v *objs.PreCommit) error {
 	key := db.makeBroadcastPreCommitKey()
-	err := db.RawDB.SetPreCommit(txn, key, v)
+	err := db.rawDB.SetPreCommit(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -910,7 +890,7 @@ func (db *Database) SetBroadcastPreCommit(txn *badger.Txn, v *objs.PreCommit) er
 
 func (db *Database) GetBroadcastPreCommit(txn *badger.Txn) (*objs.PreCommit, error) {
 	key := db.makeBroadcastPreCommitKey()
-	result, err := db.RawDB.GetPreCommit(txn, key)
+	result, err := db.rawDB.GetPreCommit(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -918,7 +898,7 @@ func (db *Database) GetBroadcastPreCommit(txn *badger.Txn) (*objs.PreCommit, err
 }
 
 func (db *Database) SubscribeBroadcastPreCommit(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreCommit(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreCommit(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -931,7 +911,7 @@ func (db *Database) makeBroadcastPreCommitNilKey() []byte {
 
 func (db *Database) SetBroadcastPreCommitNil(txn *badger.Txn, v *objs.PreCommitNil) error {
 	key := db.makeBroadcastPreCommitNilKey()
-	err := db.RawDB.SetPreCommitNil(txn, key, v)
+	err := db.rawDB.SetPreCommitNil(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -941,7 +921,7 @@ func (db *Database) SetBroadcastPreCommitNil(txn *badger.Txn, v *objs.PreCommitN
 
 func (db *Database) GetBroadcastPreCommitNil(txn *badger.Txn) (*objs.PreCommitNil, error) {
 	key := db.makeBroadcastPreCommitNilKey()
-	result, err := db.RawDB.GetPreCommitNil(txn, key)
+	result, err := db.rawDB.GetPreCommitNil(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -949,7 +929,7 @@ func (db *Database) GetBroadcastPreCommitNil(txn *badger.Txn) (*objs.PreCommitNi
 }
 
 func (db *Database) SubscribeBroadcastPreCommitNil(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreCommitNil(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastPreCommitNil(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -962,7 +942,7 @@ func (db *Database) makeBroadcastNextHeightKey() []byte {
 
 func (db *Database) SetBroadcastNextHeight(txn *badger.Txn, v *objs.NextHeight) error {
 	key := db.makeBroadcastNextHeightKey()
-	err := db.RawDB.SetNextHeight(txn, key, v)
+	err := db.rawDB.SetNextHeight(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -972,7 +952,7 @@ func (db *Database) SetBroadcastNextHeight(txn *badger.Txn, v *objs.NextHeight) 
 
 func (db *Database) GetBroadcastNextHeight(txn *badger.Txn) (*objs.NextHeight, error) {
 	key := db.makeBroadcastNextHeightKey()
-	result, err := db.RawDB.GetNextHeight(txn, key)
+	result, err := db.rawDB.GetNextHeight(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -980,7 +960,7 @@ func (db *Database) GetBroadcastNextHeight(txn *badger.Txn) (*objs.NextHeight, e
 }
 
 func (db *Database) SubscribeBroadcastNextHeight(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastNextHeight(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastNextHeight(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -993,7 +973,7 @@ func (db *Database) makeBroadcastNextRoundKey() []byte {
 
 func (db *Database) SetBroadcastNextRound(txn *badger.Txn, v *objs.NextRound) error {
 	key := db.makeBroadcastNextRoundKey()
-	err := db.RawDB.SetNextRound(txn, key, v)
+	err := db.rawDB.SetNextRound(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -1003,7 +983,7 @@ func (db *Database) SetBroadcastNextRound(txn *badger.Txn, v *objs.NextRound) er
 
 func (db *Database) GetBroadcastNextRound(txn *badger.Txn) (*objs.NextRound, error) {
 	key := db.makeBroadcastNextRoundKey()
-	result, err := db.RawDB.GetNextRound(txn, key)
+	result, err := db.rawDB.GetNextRound(txn, key)
 	if err != nil {
 		return nil, err
 	}
@@ -1011,7 +991,7 @@ func (db *Database) GetBroadcastNextRound(txn *badger.Txn) (*objs.NextRound, err
 }
 
 func (db *Database) SubscribeBroadcastNextRound(ctx context.Context, cb func([]byte) error) {
-	db.RawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastNextRound(), cb)
+	db.rawDB.subscribeToPrefix(ctx, dbprefix.PrefixBroadcastNextRound(), cb)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1037,7 +1017,7 @@ func (db *Database) SetSnapshotBlockHeader(txn *badger.Txn, v *objs.BlockHeader)
 	if err != nil {
 		return err
 	}
-	err = db.RawDB.SetBlockHeader(txn, key, v)
+	err = db.rawDB.SetBlockHeader(txn, key, v)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -1050,7 +1030,7 @@ func (db *Database) GetSnapshotBlockHeader(txn *badger.Txn, height uint32) (*obj
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.RawDB.GetBlockHeader(txn, key)
+	result, err := db.rawDB.GetBlockHeader(txn, key)
 	if err != nil {
 		// utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -1081,7 +1061,7 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	if lastkey == nil {
 		return nil, badger.ErrKeyNotFound
 	}
-	result, err := db.RawDB.GetBlockHeader(txn, lastkey)
+	result, err := db.rawDB.GetBlockHeader(txn, lastkey)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -1125,7 +1105,7 @@ func (db *Database) GetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte
 	if err != nil {
 		return nil, err
 	}
-	return db.RawDB.getValue(txn, key)
+	return db.rawDB.getValue(txn, key)
 }
 
 func (db *Database) TxCacheDropBefore(txn *badger.Txn, beforeHeight uint32, maxKeys int) error {
@@ -1210,19 +1190,19 @@ func (db *Database) makePendingHdrNodeKey(nodeKey []byte) ([]byte, error) {
 }
 
 func (db *Database) incrementPendingHdrNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
 }
 
 func (db *Database) decrementPendingHdrNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
 }
 
 func (db *Database) zeroPendingHdrNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
 }
 
 func (db *Database) CountPendingHdrNodeKeys(txn *badger.Txn) (int, error) {
-	return db.RawDB.getCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingHdrNodeKeyCount())
 }
 
 func (db *Database) makePendingHdrNodeKeyIterKey() []byte {
@@ -1231,7 +1211,7 @@ func (db *Database) makePendingHdrNodeKeyIterKey() []byte {
 }
 
 func (db *Database) DropPendingHdrNodeKeys(txn *badger.Txn) error {
-	if err := db.RawDB.DropPrefix(db.makePendingHdrNodeKeyIterKey()); err != nil {
+	if err := db.rawDB.DropPrefix(db.makePendingHdrNodeKeyIterKey()); err != nil {
 		return err
 	}
 	if err := db.zeroPendingHdrNodeKeyCount(txn); err != nil {
@@ -1378,7 +1358,7 @@ func (db *Database) makePendingNodeKeyIterKey() []byte {
 }
 
 func (db *Database) DropPendingNodeKeys(txn *badger.Txn) error {
-	if err := db.RawDB.DropPrefix(db.makePendingNodeKeyIterKey()); err != nil {
+	if err := db.rawDB.DropPrefix(db.makePendingNodeKeyIterKey()); err != nil {
 		return err
 	}
 	if err := db.zeroPendingNodeKeyCount(txn); err != nil {
@@ -1453,19 +1433,19 @@ func (db *Database) DeletePendingNodeKey(txn *badger.Txn, nodeKey []byte) error 
 }
 
 func (db *Database) incrementPendingNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.incrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) decrementPendingNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.decrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) zeroPendingNodeKeyCount(txn *badger.Txn) error {
-	return db.RawDB.zeroCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) CountPendingNodeKeys(txn *badger.Txn) (int, error) {
-	return db.RawDB.getCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingNodeKeyCount())
 }
 
 func (db *Database) GetPendingNodeKeysIter(txn *badger.Txn) *PendingNodeIter {
@@ -1541,23 +1521,23 @@ func (db *Database) makePendingLeafKeyIterKey() []byte {
 }
 
 func (db *Database) incrementPendingLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.incrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
 }
 
 func (db *Database) decrementPendingLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.decrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
 }
 
 func (db *Database) zeroPendingLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.zeroCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
 }
 
 func (db *Database) CountPendingLeafKeys(txn *badger.Txn) (int, error) {
-	return db.RawDB.getCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingLeafKeyCount())
 }
 
 func (db *Database) DropPendingLeafKeys(txn *badger.Txn) error {
-	if err := db.RawDB.DropPrefix(db.makePendingLeafKeyIterKey()); err != nil {
+	if err := db.rawDB.DropPrefix(db.makePendingLeafKeyIterKey()); err != nil {
 		return err
 	}
 	if err := db.zeroPendingLeafKeyCount(txn); err != nil {
@@ -1698,7 +1678,7 @@ func (db *Database) GetSafeToProceed(txn *badger.Txn, height uint32) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	v, err := db.RawDB.getValue(txn, k)
+	v, err := db.rawDB.getValue(txn, k)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			return false, err
@@ -1761,23 +1741,23 @@ func (db *Database) makePendingHdrLeafKeyIterKey() []byte {
 }
 
 func (db *Database) incrementPendingHdrLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+	return db.rawDB.incrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
 }
 
 func (db *Database) decrementPendingHdrLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+	return db.rawDB.decrementCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
 }
 
 func (db *Database) zeroPendingHdrLeafKeyCount(txn *badger.Txn) error {
-	return db.RawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+	return db.rawDB.zeroCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
 }
 
 func (db *Database) CountPendingHdrLeafKeys(txn *badger.Txn) (int, error) {
-	return db.RawDB.getCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
+	return db.rawDB.getCounter(txn, dbprefix.PrefixPendingHdrLeafKeyCount())
 }
 
 func (db *Database) DropPendingHdrLeafKeys(txn *badger.Txn) error {
-	if err := db.RawDB.DropPrefix(db.makePendingHdrLeafKeyIterKey()); err != nil {
+	if err := db.rawDB.DropPrefix(db.makePendingHdrLeafKeyIterKey()); err != nil {
 		return err
 	}
 	if err := db.zeroPendingHdrLeafKeyCount(txn); err != nil {

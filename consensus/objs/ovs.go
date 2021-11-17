@@ -11,8 +11,6 @@ import (
 
 // OwnValidatingState ...
 type OwnValidatingState struct {
-	// VAddr []byte
-	// GroupKey             []byte
 	RoundStarted         int64
 	PreVoteStepStarted   int64
 	PreCommitStepStarted int64
@@ -37,8 +35,6 @@ func (b *OwnValidatingState) UnmarshalCapn(bh mdefs.OwnValidatingState) error {
 	if err != nil {
 		return err
 	}
-	// b.VAddr = bh.VAddr()
-	// b.GroupKey = bh.GroupKey()
 	b.RoundStarted = bh.RoundStarted()
 	b.PreVoteStepStarted = bh.PreVoteStepStarted()
 	b.PreCommitStepStarted = bh.PreCommitStepStarted()
@@ -96,14 +92,6 @@ func (b *OwnValidatingState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnValidatin
 		}
 		bh = tmp
 	}
-	// err := bh.SetVAddr(b.VAddr)
-	// if err != nil {
-	// 	return mdefs.OwnValidatingState{}, err
-	// }
-	// err = bh.SetGroupKey(b.GroupKey)
-	// if err != nil {
-	// 	return mdefs.OwnValidatingState{}, err
-	// }
 	bh.SetRoundStarted(b.RoundStarted)
 	bh.SetPreVoteStepStarted(b.PreVoteStepStarted)
 	bh.SetPreCommitStepStarted(b.PreCommitStepStarted)

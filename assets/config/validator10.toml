@@ -1,0 +1,62 @@
+[loglevel]
+ethereum = "info"
+consensus = "debug"
+
+[chain]
+id = 42
+stateDB = "~/validator10/"
+stateDBInMemory = false
+transactionDB = ""
+transactionDBInMemory = true
+monitorDB = ""
+monitorDBInMemory = true
+
+[bootnode]
+listeningAddress = "0.0.0.0:4242"
+cacheSize = 20
+
+[transport]
+originLimit = 50
+privateKey = "acaaaaaaaaaaaaacaaaaaaaaaaaaaaaa" #0x
+bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
+p2pListeningAddress = "0.0.0.0:5349"
+discoveryListeningAddress = "0.0.0.0:5450"
+localStateListeningAddress = "0.0.0.0:8894"
+peerLimitMax = 24
+peerLimitMin = 2
+upnp=false
+
+
+[monitor]
+batchSize = 1000
+interval = "7s"
+timeout = "1h"
+
+[ethereum]
+defaultAccount = "0xeba70dc631ea59a2201ee0b3213dca1549ffab48"
+endpoint = "http://localhost:8545"
+endpointPeers = 0
+keystore = "assets/test/keys"
+timeout = "1h"
+passcodes = "assets/test/passcodes.txt"
+testEther = "f000000000000000000"
+finalityDelay = 1
+retryCount = 3
+retryDelay = "5s"
+startingBlock = 1
+registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+
+[edge]
+ethTimeout = "5s"
+
+[utils]
+status = true
+
+[validator]
+rewardAccount = "0xeba70dc631ea59a2201ee0b3213dca1549ffab48"
+rewardCurveSpec = 1
+symmetricKey = "someSuperFancySecretThatWillBeHashed"
+
+[firewalld]
+enabled = false
+socketFile = "/tmp/madnet_firewalld"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,13 @@ var ApproveTokensCommand = cobra.Command{
 // EthdkgCommand is the command that triggers a fresh start of the ETHDKG process
 var EthdkgCommand = cobra.Command{
 	Use:   "ethdkg",
+	Short: "",
+	Long:  "",
+	Run:   utilsNode}
+
+// ArbitraryEthdkgCommand is the command that triggers ETHDKG process at arbitrary height
+var ArbitraryEthdkgCommand = cobra.Command{
+	Use:   "arbitraryethdkg",
 	Short: "",
 	Long:  "",
 	Run:   utilsNode}
@@ -218,7 +226,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		logger.Errorf("Can not unlock account %v: %v", acct.Address.Hex(), err)
 	}
-
 	// Route command
 	var exitCode int
 	switch cmd.Use {
@@ -226,6 +233,8 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		exitCode = approvetokens(logger, eth, cmd, args)
 	case "ethdkg":
 		exitCode = ethdkg(logger, eth, cmd, args)
+	case "arbitraryethdkg":
+		exitCode = arbitraryethdkg(logger, eth, cmd, args)
 	case "register":
 		exitCode = register(logger, eth, cmd, args)
 	case "sendwei":
@@ -244,7 +253,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		logger.Errorf("Could not find handler for %v", cmd.Use)
 		exitCode = 1
 	}
-
 	os.Exit(exitCode)
 }
 
@@ -305,6 +313,7 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 		logger.Errorf("Validators.AddValidator() failed")
 	}
 
+	logger.Infof("Registered the address %x", acct.Address.Hex())
 	return 0
 }
 
@@ -327,7 +336,7 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 		return 1
 	}
 	logger.Infof("Left validators pool: %q", txn)
-
+	logger.Infof("Unregistered the address %x", acct.Address.Hex())
 	return 0
 }
 
@@ -381,7 +390,6 @@ func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 			logger.Infof("approval receipt success")
 			return true
 		}
-
 		return false
 	}
 
@@ -389,6 +397,7 @@ func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 		logger.Infof("retrying...")
 		time.Sleep(time.Second)
 	}
+	logger.Infof("Approved amount %d to address %x", amount, toAddress)
 
 	return 0
 }
@@ -514,6 +523,7 @@ func transfertokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Co
 	_, err = c.StakingToken().TransferFrom(txnOpts, fromAddress, acct.Address, amount)
 	if err != nil {
 		logger.Errorf("Could not transfer %v tokens from %v to %v: %v", amount, fromAddressString, acct.Address.Hex(), err)
+		return 1
 	}
 	logger.Infof("Transfered %v tokens from %v to %v", amount, fromAddressString, acct.Address.Hex())
 
@@ -594,6 +604,51 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 			}
 		}
 	}
+
+	return 0
+}
+
+func arbitraryethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+	if len(args) < 1 {
+		logger.Errorf("Arguments must include: madHeight")
+		return 1
+	}
+
+	var madHeight uint32
+	madHeight64, err := strconv.ParseUint(args[0], 10, 32)
+	if err != nil {
+		logger.Errorf("madHeight is invalid: %v! The height should be less than max(uint32)", madHeight64)
+		return 1
+	}
+
+	madHeight = uint32(madHeight64)
+
+	// More ethereum setup
+	acct := eth.GetDefaultAccount()
+	c := eth.Contracts()
+
+	ctx := context.Background()
+
+	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
+	if err != nil {
+		logger.Errorf("Can not build transaction options: %v", err)
+		return 1
+	}
+
+	//
+	txn, err := c.Ethdkg().InitializeEthDKGFromArbitraryMadHeight(txnOpts, madHeight)
+	if err != nil {
+		logger.Errorf("Could not initialize arbitrary ethdkg: %v", err)
+		return 1
+	}
+
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
+	if err != nil {
+		logger.Error("Failed looking for transaction events.")
+		return 1
+	}
+
+	logger.Infof("Started arbitrary EthDKG at height %v", madHeight)
 
 	return 0
 }

@@ -483,12 +483,6 @@ func (ssm *SnapShotManager) Init(database *db.Database, storage dynamics.Storage
 	go ssm.loggingDelayer()
 }
 
-// func (ssm *SnapShotManager) close() {
-// 	ssm.closeOnce.Do(func() {
-// 		close(ssm.closeChan)
-// 	})
-// }
-
 func (ssm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
 	if ssm.finalizeFastSyncChan == nil {
 		ssm.finalizeOnce = sync.Once{}
