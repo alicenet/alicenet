@@ -825,6 +825,58 @@ func TestUTXOSetTxHash(t *testing.T) {
 	}
 }
 
+func TestUTXOIsExpired(t *testing.T) {
+	currentHeight := uint32(1)
+	utxo := &TXOut{}
+	_, err := utxo.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	as := &AtomicSwap{}
+	err = utxo.NewAtomicSwap(as)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = utxo.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	ds := &DataStore{}
+	err = utxo.NewDataStore(ds)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = utxo.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+
+	vs := &ValueStore{}
+	err = utxo.NewValueStore(vs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expired, err := utxo.IsExpired(currentHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if expired {
+		t.Fatal("ValueStore should not be expired")
+	}
+
+	tf := &TxFee{}
+	err = utxo.NewTxFee(tf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = utxo.IsExpired(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+}
+
 func TestUTXORemainingValue(t *testing.T) {
 	utxo := &TXOut{}
 	currentHeight := uint32(0)
