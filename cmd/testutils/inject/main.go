@@ -328,7 +328,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		newValueStore := &aobjs.ValueStore{
 			VSPreImage: &aobjs.VSPreImage{
 				ChainID:  chainID,
-				Value:    uint256.One(),
+				Value:    value.Clone(),
 				Owner:    newOwner,
 				TXOutIdx: 0,
 				Fee:      vsFee.Clone(),
