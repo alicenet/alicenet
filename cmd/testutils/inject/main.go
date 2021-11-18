@@ -278,9 +278,31 @@ func (f *funder) getCurveSpec(s aobjs.Signer) constants.CurveSpec {
 }
 
 func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consumedValue *uint256.Uint256, consumedUtxos aobjs.Vout, recipients []*worker) (*aobjs.Tx, error) {
+	feesString, err := f.client.GetTxFees(f.ctx)
+	if err != nil {
+		panic(err)
+	}
+	if len(feesString) != 4 {
+		panic("invalid fee response")
+	}
+	minTxFee := new(uint256.Uint256)
+	vsFee := new(uint256.Uint256)
+	//dsEpochFee := new(uint256.Uint256)
+	//asFee := new(uint256.Uint256)
+	err = minTxFee.UnmarshalString(feesString[0])
+	if err != nil {
+		panic(err)
+	}
+	err = vsFee.UnmarshalString(feesString[1])
+	if err != nil {
+		panic(err)
+	}
+	//err = dsEpochFee.UnmarshalString(feesString[2])
+	//err = asFee.UnmarshalString(feesString[3])
 	tx := &aobjs.Tx{
 		Vin:  aobjs.Vin{},
 		Vout: aobjs.Vout{},
+		Fee:  minTxFee.Clone(),
 	}
 	chainID := uint32(42)
 	for _, utxo := range consumedUtxos {
@@ -309,7 +331,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 				Value:    uint256.One(),
 				Owner:    newOwner,
 				TXOutIdx: 0,
-				Fee:      new(uint256.Uint256).SetZero(),
+				Fee:      vsFee.Clone(),
 			},
 			TxHash: make([]byte, constants.HashLen),
 		}
@@ -318,7 +340,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	if consumedValue.Gt(valueOut) {
-		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
+		diff, err := new(uint256.Uint256).Sub(consumedValue, valueOut)
 		if err != nil {
 			panic(err)
 		}
@@ -331,7 +353,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 				Value:    diff,
 				Owner:    newOwner,
 				TXOutIdx: 0,
-				Fee:      new(uint256.Uint256).SetZero(),
+				Fee:      vsFee.Clone(),
 			},
 			TxHash: make([]byte, constants.HashLen),
 		}
