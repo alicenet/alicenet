@@ -320,7 +320,8 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		}
 		tx.Vin = append(tx.Vin, txIn)
 	}
-	valueOut := uint256.Zero()
+	// We include txFee here!
+	valueOut := minTxFee.Clone()
 	for _, r := range recipients {
 		value := uint256.One()
 		newOwner := &aobjs.ValueStoreOwner{}
