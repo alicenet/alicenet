@@ -454,7 +454,7 @@ func TestTx(t *testing.T) {
 	t.Logf("Sig: %x", tx.Vin[0].Signature)
 }
 
-func TestTxMarshalGood(t *testing.T) {
+func TestTxMarshalGood1(t *testing.T) {
 	tx := &Tx{}
 
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -486,6 +486,64 @@ func TestTxMarshalGood(t *testing.T) {
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
 	tx.Fee = uint256.Zero()
+
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txb, err := tx.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx2 := &Tx{}
+	err = tx2.UnmarshalBinary(txb)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTxMarshalGood2(t *testing.T) {
+	tx := &Tx{}
+
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	value64 := uint64(10000)
+	value, err := new(uint256.Uint256).FromUint64(value64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fee64 := uint64(1)
+	vsfee, err := new(uint256.Uint256).FromUint64(fee64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utxo1 := makeVSWithValueFee(t, ownerSigner, 1, value, vsfee)
+	txin1, err := utxo1.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = utxo1.valueStore.Sign(txin1, ownerSigner)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txfee := uint256.Two()
+	newValue, err := new(uint256.Uint256).Sub(value, vsfee)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = newValue.Sub(newValue, txfee)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, vsfee)
+	tx.Vin = []*TXIn{txin1}
+	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = txfee
 
 	err = tx.SetTxHash()
 	if err != nil {
