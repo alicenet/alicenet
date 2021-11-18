@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"reflect"
+	"regexp"
 	"sync"
 	"time"
 
@@ -410,10 +410,13 @@ func (lrpc *Client) GetTxFees(ctx context.Context) ([]string, error) {
 	}
 	resp := []string{}
 
-	r := reflect.ValueOf(response)
-	for i := 0; i < r.NumField(); i++ {
-		field := r.Field(i)
-		resp[i] = field.Elem().String()
+	re := regexp.MustCompile(`"[^"]+"`)
+	newStrs := re.FindAllString(response.String(), -1)
+	for _, s := range newStrs {
+		s = s[1:]
+		s = s[:len(s)-1]
+		resp = append(resp, s)
 	}
+
 	return resp, nil
 }
