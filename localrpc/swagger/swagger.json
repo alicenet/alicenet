@@ -890,23 +890,6 @@
         }
       }
     },
-    "protoTFPreImage": {
-      "type": "object",
-      "properties": {
-        "ChainID": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "TXOutIdx": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "Fee": {
-          "type": "string"
-        }
-      },
-      "title": "Protobuf message implementation for struct TFPreImage"
-    },
     "protoTXIn": {
       "type": "object",
       "properties": {
@@ -959,9 +942,6 @@
         },
         "DataStore": {
           "$ref": "#/definitions/protoDataStore"
-        },
-        "TxFee": {
-          "$ref": "#/definitions/protoTxFee"
         }
       },
       "title": "Protobuf message implementation for struct TXOut"
@@ -996,6 +976,9 @@
           "items": {
             "$ref": "#/definitions/protoTXOut"
           }
+        },
+        "Fee": {
+          "type": "string"
         }
       },
       "title": "Protobuf message implementation for struct Tx"
@@ -1016,18 +999,6 @@
           "format": "int64"
         }
       }
-    },
-    "protoTxFee": {
-      "type": "object",
-      "properties": {
-        "TFPreImage": {
-          "$ref": "#/definitions/protoTFPreImage"
-        },
-        "TxHash": {
-          "type": "string"
-        }
-      },
-      "title": "Protobuf message implementation for struct TxFee"
     },
     "protoUTXORequest": {
       "type": "object",

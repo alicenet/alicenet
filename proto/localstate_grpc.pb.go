@@ -11,6 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // LocalStateClient is the client API for LocalState service.
@@ -288,7 +289,7 @@ type UnsafeLocalStateServer interface {
 }
 
 func RegisterLocalStateServer(s grpc.ServiceRegistrar, srv LocalStateServer) {
-	s.RegisterService(&_LocalState_serviceDesc, srv)
+	s.RegisterService(&LocalState_ServiceDesc, srv)
 }
 
 func _LocalState_GetData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -561,7 +562,10 @@ func _LocalState_GetFees_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-var _LocalState_serviceDesc = grpc.ServiceDesc{
+// LocalState_ServiceDesc is the grpc.ServiceDesc for LocalState service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var LocalState_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.LocalState",
 	HandlerType: (*LocalStateServer)(nil),
 	Methods: []grpc.MethodDesc{

@@ -11,6 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // P2PClient is the client API for P2P service.
@@ -284,7 +285,7 @@ type UnsafeP2PServer interface {
 }
 
 func RegisterP2PServer(s grpc.ServiceRegistrar, srv P2PServer) {
-	s.RegisterService(&_P2P_serviceDesc, srv)
+	s.RegisterService(&P2P_ServiceDesc, srv)
 }
 
 func _P2P_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -593,7 +594,10 @@ func _P2P_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-var _P2P_serviceDesc = grpc.ServiceDesc{
+// P2P_ServiceDesc is the grpc.ServiceDesc for P2P service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var P2P_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.P2P",
 	HandlerType: (*P2PServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -717,7 +721,7 @@ type UnsafeP2PDiscoveryServer interface {
 }
 
 func RegisterP2PDiscoveryServer(s grpc.ServiceRegistrar, srv P2PDiscoveryServer) {
-	s.RegisterService(&_P2PDiscovery_serviceDesc, srv)
+	s.RegisterService(&P2PDiscovery_ServiceDesc, srv)
 }
 
 func _P2PDiscovery_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -738,7 +742,10 @@ func _P2PDiscovery_GetPeers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-var _P2PDiscovery_serviceDesc = grpc.ServiceDesc{
+// P2PDiscovery_ServiceDesc is the grpc.ServiceDesc for P2PDiscovery service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var P2PDiscovery_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.P2PDiscovery",
 	HandlerType: (*P2PDiscoveryServer)(nil),
 	Methods: []grpc.MethodDesc{
