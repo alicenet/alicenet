@@ -8,6 +8,7 @@ option go_package = "/;proto";
 message Tx {
 	repeated TXIn Vin = 1;
 	repeated TXOut Vout = 2;
+	string Fee = 3;
 }
 
 // Protobuf message implementation for struct TXOut
@@ -16,7 +17,6 @@ message TXOut {
   AtomicSwap AtomicSwap = 1;
   ValueStore ValueStore = 2;
   DataStore DataStore = 3;
-  TxFee TxFee = 4;
   }
 }
 
@@ -102,19 +102,4 @@ message DSPreImage {
 	uint32 TXOutIdx = 6;
 	string Owner = 7;
 	string Fee = 8;
-}
-
-
-// Protobuf message implementation for struct TxFee
-message TxFee {
-	TFPreImage TFPreImage = 1;
-	string TxHash = 2;
-}
-
-
-// Protobuf message implementation for struct TFPreImage
-message TFPreImage {
-	uint32 ChainID = 1;
-	uint32 TXOutIdx = 2;
-	string Fee = 3;
 }

@@ -183,39 +183,11 @@ func (txv TxVec) GeneratedPreHash() ([][]byte, error) {
 	return gen, nil
 }
 
-// GeneratedPreHashNoTxFees returns list of PreHashs for Tx in txv;
-// does not include TxFees
-func (txv TxVec) GeneratedPreHashNoTxFees() ([][]byte, error) {
-	gen := [][]byte{}
-	for i := 0; i < len(txv); i++ {
-		c, err := txv[i].GeneratedPreHashNoTxFees()
-		if err != nil {
-			return nil, err
-		}
-		gen = append(gen, c...)
-	}
-	return gen, nil
-}
-
 // GeneratedUTXOID returns list of UTXOIDs for Tx in txv
 func (txv TxVec) GeneratedUTXOID() ([][]byte, error) {
 	gen := [][]byte{}
 	for i := 0; i < len(txv); i++ {
 		c, err := txv[i].GeneratedUTXOID()
-		if err != nil {
-			return nil, err
-		}
-		gen = append(gen, c...)
-	}
-	return gen, nil
-}
-
-// GeneratedUTXOIDNoTxFees returns list of UTXOIDs for Tx in txv;
-// does not include TxFee objects.
-func (txv TxVec) GeneratedUTXOIDNoTxFees() ([][]byte, error) {
-	gen := [][]byte{}
-	for i := 0; i < len(txv); i++ {
-		c, err := txv[i].GeneratedUTXOIDNoTxFees()
 		if err != nil {
 			return nil, err
 		}

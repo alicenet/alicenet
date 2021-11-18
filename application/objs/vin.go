@@ -46,6 +46,9 @@ func (vin Vin) IsCleanupVin(currentHeight uint32, refUTXOs Vout) bool {
 	if len(vin) == 0 {
 		return false
 	}
+	if len(vin) != len(refUTXOs) {
+		return false
+	}
 	// Must ensure that all Vin objects are expired datastores.
 	for i := 0; i < len(refUTXOs); i++ {
 		utxo := refUTXOs[i]

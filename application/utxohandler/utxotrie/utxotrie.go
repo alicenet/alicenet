@@ -287,12 +287,12 @@ func (ut *UTXOTrie) add(txn *badger.Txn, txs objs.TxVec, current *trie.SMT, fn f
 			delkeys = append(delkeys, aa[i])
 		}
 	}
-	cc, err := txs.GeneratedUTXOIDNoTxFees()
+	cc, err := txs.GeneratedUTXOID()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
 		return nil, err
 	}
-	dd, err := txs.GeneratedPreHashNoTxFees()
+	dd, err := txs.GeneratedPreHash()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
 		return nil, err

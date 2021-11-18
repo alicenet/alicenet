@@ -81,16 +81,6 @@ func (vout Vout) ValidateTxOutIdx() error {
 				return err
 			}
 			txOutIdx = asTxOutIdx
-		case utxo.HasTxFee():
-			tf, _ := utxo.TxFee()
-			tfTxOutIdx, err := tf.TxOutIdx()
-			if err != nil {
-				return err
-			}
-			if tfTxOutIdx != 0 {
-				return errorz.ErrInvalid{}.New("bad txOutIdx: TxOutIdx for TxFee *must* be 0")
-			}
-			txOutIdx = tfTxOutIdx
 		default:
 			return errorz.ErrInvalid{}.New("bad txOutIdx: Invalid Type")
 		}
@@ -120,44 +110,10 @@ func (vout Vout) UTXOID() ([][]byte, error) {
 	return ids, nil
 }
 
-// UTXOIDNoTxFees returns the list of UTXOIDs from each TXOut in Vout;
-// does not include TxFees.
-func (vout Vout) UTXOIDNoTxFees() ([][]byte, error) {
-	ids := [][]byte{}
-	for i := 0; i < len(vout); i++ {
-		if vout[i].HasTxFee() {
-			continue
-		}
-		id, err := vout[i].UTXOID()
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
-}
-
 // PreHash returns the list of PreHashs from each TXOut in Vout
 func (vout Vout) PreHash() ([][]byte, error) {
 	phs := [][]byte{}
 	for i := 0; i < len(vout); i++ {
-		ph, err := vout[i].PreHash()
-		if err != nil {
-			return nil, err
-		}
-		phs = append(phs, ph)
-	}
-	return phs, nil
-}
-
-// PreHashNoTxFees returns the list of PreHashs from each TXOut in Vout;
-// does not include TxFees.
-func (vout Vout) PreHashNoTxFees() ([][]byte, error) {
-	phs := [][]byte{}
-	for i := 0; i < len(vout); i++ {
-		if vout[i].HasTxFee() {
-			continue
-		}
 		ph, err := vout[i].PreHash()
 		if err != nil {
 			return nil, err
@@ -176,41 +132,6 @@ func (vout Vout) ValidateFees(storage *wrapper.Storage) error {
 		}
 	}
 	return nil
-}
-
-// ValidateTxFee validates the transaction fee in Vout
-//
-// There can be at most one TxFee UTXO object in Vout.
-// There can be zero TxFee UTXO objects if MinTxFee is zero.
-func (vout Vout) ValidateTxFee(storage *wrapper.Storage) error {
-	maxNumTxFees := 1
-	minTxFee, err := storage.GetMinTxFee()
-	if err != nil {
-		return err
-	}
-	numTxFees := 0
-	totalTxFee := new(uint256.Uint256)
-	for i := 0; i < len(vout); i++ {
-		if vout[i].HasTxFee() {
-			numTxFees++
-			if numTxFees > maxNumTxFees {
-				return errorz.ErrInvalid{}.New("invalid Vout: more than 1 TxFee object")
-			}
-			txFee, err := vout[i].TxFee()
-			if err != nil {
-				return err
-			}
-			fee, err := txFee.Fee()
-			if err != nil {
-				return err
-			}
-			totalTxFee.Add(totalTxFee, fee)
-		}
-	}
-	if totalTxFee.Gte(minTxFee) {
-		return nil
-	}
-	return errorz.ErrInvalid{}.New("invalid Vout: totalTxFee < minTxFee")
 }
 
 // ValidatePreSignature validates the PreSignature from each TXOut in Vout

@@ -217,6 +217,7 @@ func TestTx(t *testing.T) {
 	tx := &Tx{
 		Vin:  txInputs,
 		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
 	}
 	err = tx.SetTxHash()
 	if err != nil {
@@ -408,6 +409,7 @@ func TestTx(t *testing.T) {
 	tx = &Tx{
 		Vin:  Vin{txin},
 		Vout: Vout{utxo},
+		Fee:  uint256.Zero(),
 	}
 
 	err = tx.SetTxHash()
@@ -450,7 +452,6 @@ func TestTx(t *testing.T) {
 	t.Logf("ChainID: %x", tx.Vin[0].TXInLinker.TXInPreImage.ChainID)
 	t.Logf("TxHash: %x", tx.Vin[0].TXInLinker.TxHash)
 	t.Logf("Sig: %x", tx.Vin[0].Signature)
-
 }
 
 func TestTxMarshalGood(t *testing.T) {
@@ -484,6 +485,7 @@ func TestTxMarshalGood(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	err = tx.SetTxHash()
 	if err != nil {
@@ -524,6 +526,7 @@ func TestTxMarshalBad2(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	_, err := tx.MarshalBinary()
 	if err == nil {
@@ -539,6 +542,7 @@ func TestTxMarshalBad2(t *testing.T) {
 	tx = &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	_, err = tx.MarshalBinary()
 	if err == nil {
@@ -560,6 +564,7 @@ func TestTxValidateChainIDBad2(t *testing.T) {
 	tx := &Tx{
 		Vin:  Vin{&TXIn{}},
 		Vout: Vout{&TXOut{}},
+		Fee:  uint256.Zero(),
 	}
 	err := tx.ValidateChainID(chainID)
 	if err == nil {
@@ -605,6 +610,7 @@ func TestTxValidateIssuedAtForMiningGood(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	currentHeight := uint32(1)
 	err = tx.ValidateIssuedAtForMining(currentHeight)
@@ -651,6 +657,7 @@ func TestTxEpochOfExpirationForMiningGood(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	height, err := tx.EpochOfExpirationForMining()
 	if err != nil {
@@ -701,6 +708,7 @@ func TestTxValidateUniqueGood(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	_, err = tx.ValidateUnique(nil)
 	if err != nil {
@@ -751,6 +759,7 @@ func TestTxValidateUniqueBad2(t *testing.T) {
 	utxo2 := &TXOut{}
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	_, err = tx.ValidateUnique(nil)
 	if err == nil {
@@ -789,6 +798,7 @@ func TestTxValidateUniqueBad3(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1, txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	_, err = tx.ValidateUnique(nil)
 	if err == nil {
@@ -827,6 +837,7 @@ func TestTxValidateUniqueBad4(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2, utxo2}
+	tx.Fee = uint256.Zero()
 
 	_, err = tx.ValidateUnique(nil)
 	if err == nil {
@@ -1045,6 +1056,7 @@ func TestTxValidateFeesGood1(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	err = tx.ValidateFees(0, nil, storage)
 	if err != nil {
@@ -1053,6 +1065,80 @@ func TestTxValidateFeesGood1(t *testing.T) {
 }
 
 func TestTxValidateFeesGood2(t *testing.T) {
+	// Is valid CleanupTx; Validate the fees
+	msg := makeMockStorageGetter()
+	msg.SetMinTxFee(big.NewInt(1))
+	storage := makeStorage(msg)
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	fee := uint256.Zero()
+	index := make([]byte, constants.HashLen)
+	index[0] = 1
+	rawData := make([]byte, 1)
+	iat := uint32(1)
+	numEpochs := uint32(1)
+	utxo1 := makeDSWithValueFee(t, ownerSigner, 0, rawData, index, iat, numEpochs, fee)
+	txin1, err := utxo1.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Compute remainingValue to have correct ValueStore
+	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
+	remainingValue, err := utxo1.RemainingValue(currentHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 1, remainingValue, fee)
+
+	vin := []*TXIn{txin1}
+	refUTXOs := []*TXOut{utxo1}
+	vout := []*TXOut{utxo2}
+	tx := &Tx{
+		Vin:  vin,
+		Vout: vout,
+		Fee:  uint256.Zero(),
+	}
+	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
+	if !cleanup {
+		t.Fatal("Should be valid CleanupTx")
+	}
+	err = tx.ValidateFees(currentHeight, refUTXOs, storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTxValidateFeesBad1(t *testing.T) {
+	msg := makeMockStorageGetter()
+	storage := makeStorage(msg)
+
+	tx := &Tx{}
+	err := tx.ValidateFees(0, nil, storage)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxValidateFeesBad2(t *testing.T) {
+	txin := &TXIn{}
+	utxo := &TXOut{}
+	tx := &Tx{
+		Vin:  []*TXIn{txin},
+		Vout: []*TXOut{utxo},
+		Fee:  uint256.Zero(),
+	}
+	err := tx.ValidateFees(0, nil, nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+// TODO: look at this more!
+func TestTxValidateFeesBad3(t *testing.T) {
 	tx := &Tx{}
 
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -1079,80 +1165,13 @@ func TestTxValidateFeesGood2(t *testing.T) {
 	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
 	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	msg := makeMockStorageGetter()
 	minTxFee := big.NewInt(1)
 	msg.SetMinTxFee(minTxFee)
 	storage := makeStorage(msg)
-	err = tx.ValidateFees(0, nil, storage)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestTxValidateFeesBad1(t *testing.T) {
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
-
-	tx := &Tx{}
-	err := tx.ValidateFees(0, nil, storage)
-	if err == nil {
-		t.Fatal("Should have raised error")
-	}
-}
-
-func TestTxValidateFeesBad2(t *testing.T) {
-	txin := &TXIn{}
-	utxo := &TXOut{}
-	tx := &Tx{
-		Vin:  []*TXIn{txin},
-		Vout: []*TXOut{utxo},
-	}
-	err := tx.ValidateFees(0, nil, nil)
-	if err == nil {
-		t.Fatal("Should have raised error")
-	}
-}
-
-func TestTxValidateFeesBad3(t *testing.T) {
-	tx := &Tx{}
-
-	ownerSigner := &crypto.Secp256k1Signer{}
-	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
-		t.Fatal(err)
-	}
-
-	value64 := uint64(10000)
-	value, err := new(uint256.Uint256).FromUint64(value64)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fee64 := uint64(0)
-	fee, err := new(uint256.Uint256).FromUint64(fee64)
-	if err != nil {
-		t.Fatal(err)
-	}
-	utxo1 := makeVSWithValueFee(t, ownerSigner, 1, value, fee)
-	txin1, err := utxo1.MakeTxIn()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	txf1 := &TxFee{}
-	chainID := uint32(1)
-	txf1.New(chainID, value)
-	utxo1.NewTxFee(txf1)
-	txf2 := &TxFee{}
-	txf2.New(chainID, fee)
-	utxo2 := &TXOut{}
-	utxo2.NewTxFee(txf2)
-
-	tx.Vin = []*TXIn{txin1}
-	tx.Vout = []*TXOut{utxo1, utxo2}
-
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
-	err = tx.ValidateFees(0, nil, storage)
+	err = tx.ValidateFees(0, Vout{utxo1}, storage)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -1182,16 +1201,14 @@ func TestTxValidateFeesBad4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	txf1 := &TxFee{}
-	chainID := uint32(1)
-	zero := new(uint256.Uint256)
-	txf1.New(chainID, zero)
-	utxo1.NewTxFee(txf1)
-
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
-	tx.Vout = []*TXOut{utxo1}
+	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
 	msg := makeMockStorageGetter()
+	minTxFee := big.NewInt(1)
+	msg.SetMinTxFee(minTxFee)
 	storage := makeStorage(msg)
 	err = tx.ValidateFees(0, nil, storage)
 	if err == nil {
@@ -1200,6 +1217,7 @@ func TestTxValidateFeesBad4(t *testing.T) {
 }
 
 func TestTxValidateFeesBad5(t *testing.T) {
+	// Raise an error for invalid storage call
 	tx := &Tx{}
 
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -1223,27 +1241,19 @@ func TestTxValidateFeesBad5(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	txf1 := &TxFee{}
-	chainID := uint32(1)
-	one := uint256.One()
-	txf1.New(chainID, one)
-	utxo1.NewTxFee(txf1)
-
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 2, value, fee)
 	tx.Vin = []*TXIn{txin1}
-	tx.Vout = []*TXOut{utxo1}
+	tx.Vout = []*TXOut{utxo2}
+	tx.Fee = uint256.Zero()
 
-	msg := makeMockStorageGetter()
-	minFeeBig := big.NewInt(2)
-	msg.SetMinTxFee(minFeeBig)
-	storage := makeStorage(msg)
-	err = tx.ValidateFees(0, nil, storage)
+	err = tx.ValidateFees(0, nil, nil)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
 }
 
 func TestTxIsCleanupTxBad1(t *testing.T) {
-	// Invalid Tx
+	// Invalid Tx; fails because no Fee
 	tx := &Tx{}
 	currentHeight := uint32(0)
 	refUTXOs := Vout{}
@@ -1282,6 +1292,7 @@ func TestTxIsCleanupTxBad2(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: Vout{},
+		Fee:  uint256.Zero(),
 	}
 	currentHeight := uint32(1)
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
@@ -1291,39 +1302,6 @@ func TestTxIsCleanupTxBad2(t *testing.T) {
 }
 
 func TestTxIsCleanupTxBad3(t *testing.T) {
-	ownerSigner := &crypto.Secp256k1Signer{}
-	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
-		t.Fatal(err)
-	}
-
-	index := make([]byte, constants.HashLen)
-	index[0] = 1
-
-	fee := uint256.Zero()
-	rawData := make([]byte, 1)
-	iat := uint32(1)
-	numEpochs := uint32(1)
-	utxo1 := makeDSWithValueFee(t, ownerSigner, 0, rawData, index, iat, numEpochs, fee)
-	txin1, err := utxo1.MakeTxIn()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Invalid Vin; DataStore not expired
-	vin := []*TXIn{txin1}
-	refUTXOs := []*TXOut{utxo1}
-	tx := &Tx{
-		Vin:  vin,
-		Vout: Vout{},
-	}
-	currentHeight := uint32(1)
-	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
-	if cleanup {
-		t.Fatal("Should not be CleanupTx")
-	}
-}
-
-func TestTxIsCleanupTxBad4(t *testing.T) {
 	// Must have valid Vin and invalid Vout (not present)
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -1348,6 +1326,7 @@ func TestTxIsCleanupTxBad4(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: Vout{},
+		Fee:  uint256.Zero(),
 	}
 	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
@@ -1356,7 +1335,7 @@ func TestTxIsCleanupTxBad4(t *testing.T) {
 	}
 }
 
-func TestTxIsCleanupTxBad5(t *testing.T) {
+func TestTxIsCleanupTxBad4(t *testing.T) {
 	// Must have valid Vin and invalid Vout (incorrect utxo type)
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -1386,6 +1365,7 @@ func TestTxIsCleanupTxBad5(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
@@ -1394,7 +1374,7 @@ func TestTxIsCleanupTxBad5(t *testing.T) {
 	}
 }
 
-func TestTxIsCleanupTxBad6(t *testing.T) {
+func TestTxIsCleanupTxBad5(t *testing.T) {
 	// Must have valid Vin and invalid Vout (bad ValueStore)
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -1424,6 +1404,7 @@ func TestTxIsCleanupTxBad6(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
@@ -1432,8 +1413,8 @@ func TestTxIsCleanupTxBad6(t *testing.T) {
 	}
 }
 
-func TestTxIsCleanupTxBad7(t *testing.T) {
-	// Must have valid Vin and invalid Vout (bad ValueStore)
+func TestTxIsCleanupTxBad6(t *testing.T) {
+	// Must have valid Vin and valid Vout; nonzero Fee
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
 		t.Fatal(err)
@@ -1452,9 +1433,13 @@ func TestTxIsCleanupTxBad7(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	value := uint256.One()
-	vsFee := uint256.One()
-	utxo2 := makeVSWithValueFee(t, ownerSigner, 0, value, vsFee)
+	// Compute remainingValue to have correct ValueStore
+	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
+	remainingValue, err := utxo1.RemainingValue(currentHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 1, remainingValue, fee)
 
 	vin := []*TXIn{txin1}
 	refUTXOs := []*TXOut{utxo1}
@@ -1462,8 +1447,54 @@ func TestTxIsCleanupTxBad7(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.One(),
 	}
+	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
+	if cleanup {
+		t.Fatal("Should not be CleanupTx")
+	}
+}
+
+func TestTxIsCleanupTxBad7(t *testing.T) {
+	// Must have valid Vin and valid Vout; nonzero Fee
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	index := make([]byte, constants.HashLen)
+	index[0] = 1
+
+	fee := uint256.Zero()
+	rawData := make([]byte, 1)
+	iat := uint32(1)
+	numEpochs := uint32(1)
+	utxo1 := makeDSWithValueFee(t, ownerSigner, 0, rawData, index, iat, numEpochs, fee)
+	txin1, err := utxo1.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Compute remainingValue to have correct ValueStore
 	currentHeight := constants.EpochLength*(iat+numEpochs) + 1
+	remainingValue, err := utxo1.RemainingValue(currentHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newValue, err := new(uint256.Uint256).Add(remainingValue, uint256.One())
+	if err != nil {
+		t.Fatal(err)
+	}
+	utxo2 := makeVSWithValueFee(t, ownerSigner, 1, newValue, fee)
+
+	vin := []*TXIn{txin1}
+	refUTXOs := []*TXOut{utxo1}
+	vout := Vout{utxo2}
+	tx := &Tx{
+		Vin:  vin,
+		Vout: vout,
+		Fee:  uint256.Zero(),
+	}
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
 	if cleanup {
 		t.Fatal("Should not be CleanupTx")
@@ -1502,6 +1533,7 @@ func TestTxIsCleanupTxGood1(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
 	if !cleanup {
@@ -1550,6 +1582,7 @@ func TestTxIsCleanupTxGood2(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	cleanup := tx.IsCleanupTx(currentHeight, refUTXOs)
 	if !cleanup {
@@ -1651,6 +1684,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	tx := &Tx{
 		Vin:  vin,
 		Vout: vout,
+		Fee:  uint256.Zero(),
 	}
 	err = tx.SetTxHash()
 	if err != nil {
@@ -1696,6 +1730,7 @@ func TestTxValidateEqualVinVoutBad2(t *testing.T) {
 	tx := &Tx{
 		Vin:  Vin{txin},
 		Vout: Vout{utxo},
+		Fee:  uint256.Zero(),
 	}
 	err := tx.ValidateEqualVinVout(currentHeight, refUTXOs)
 	if err == nil {
@@ -1726,6 +1761,7 @@ func TestTxValidateEqualVinVoutBad3(t *testing.T) {
 	tx := &Tx{
 		Vin:  Vin{txin},
 		Vout: Vout{utxo},
+		Fee:  uint256.Zero(),
 	}
 	err = tx.ValidateEqualVinVout(currentHeight, nil)
 	if err == nil {

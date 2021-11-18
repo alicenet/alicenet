@@ -281,8 +281,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 
 // ApplyState will update the state trie with the given proposal data.
 // Consumed UTXOs will be deleted from the trie.
-// New UTXOs will be added to the trie;
-// this does not include TxFee objects because they are burned.
+// New UTXOs will be added to the trie.
 // Consumed deposits will be added to the trie.
 func (ut *UTXOHandler) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32) ([]byte, error) {
 	if len(txs) == 0 {
@@ -642,9 +641,6 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 		}
 	case utxo.HasAtomicSwap():
 		panic("UTXOHandler.addOne has not been implemented for AtomicSwap objects")
-	case utxo.HasTxFee():
-		// We do not add TxFee objects to database
-		return nil
 	default:
 		panic("utxo type not defined in UTXOHandler.addOne")
 	}
@@ -766,9 +762,6 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 		}
 	case utxo.HasAtomicSwap():
 		panic("UTXOHandler.addOneFastSync has not been implemented for AtomicSwap objects")
-	case utxo.HasTxFee():
-		// We do not add TxFee objects to database
-		return nil
 	default:
 		panic("utxo type not defined in UTXOHandler.addOneFastSync")
 	}
