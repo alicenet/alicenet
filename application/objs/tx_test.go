@@ -505,12 +505,7 @@ func TestTxMarshalGood(t *testing.T) {
 
 func TestTxMarshalBad1(t *testing.T) {
 	tx := &Tx{}
-	txb, err := tx.MarshalBinary()
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := &Tx{}
-	err = tx2.UnmarshalBinary(txb)
+	_, err := tx.MarshalBinary()
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}

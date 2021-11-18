@@ -42,7 +42,7 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 // MarshalBinary takes the Tx object and returns the canonical
 // byte slice
 func (b *Tx) MarshalBinary() ([]byte, error) {
-	if b == nil {
+	if b == nil || b.Fee == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	if len(b.Vin) > constants.MaxTxVectorLength {
@@ -168,6 +168,18 @@ func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	if err := bc.SetVout(vout); err != nil {
 		return bc, err
 	}
+	u32array, err := b.Fee.ToUint32Array()
+	if err != nil {
+		return bc, err
+	}
+	bc.SetFee0(u32array[0])
+	bc.SetFee1(u32array[1])
+	bc.SetFee2(u32array[2])
+	bc.SetFee3(u32array[3])
+	bc.SetFee4(u32array[4])
+	bc.SetFee5(u32array[5])
+	bc.SetFee6(u32array[6])
+	bc.SetFee7(u32array[7])
 	return bc, nil
 }
 
