@@ -322,7 +322,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	}
 	valueOut := uint256.Zero()
 	for _, r := range recipients {
-		valueOut.Add(valueOut, uint256.One())
+		value := uint256.One()
 		newOwner := &aobjs.ValueStoreOwner{}
 		newOwner.New(r.acct, f.getCurveSpec(r.signer))
 		newValueStore := &aobjs.ValueStore{
@@ -335,6 +335,12 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 			},
 			TxHash: make([]byte, constants.HashLen),
 		}
+		valuePlusFee := &uint256.Uint256{}
+		_, err := valuePlusFee.Add(value, vsFee)
+		if err != nil {
+			panic(err)
+		}
+		valueOut.Add(valueOut, valuePlusFee)
 		newUTXO := &aobjs.TXOut{}
 		newUTXO.NewValueStore(newValueStore)
 		tx.Vout = append(tx.Vout, newUTXO)
