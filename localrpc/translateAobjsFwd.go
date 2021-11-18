@@ -215,6 +215,12 @@ func ForwardTranslateTx(f *from.Tx) (*to.Tx, error) {
 		}
 		t.Vout = append(t.Vout, newVout)
 	}
+
+	var err error
+	t.Fee, err = f.Fee.MarshalString()
+	if err != nil {
+		return nil, err
+	}
 	return t, nil
 }
 

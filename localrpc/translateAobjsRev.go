@@ -162,6 +162,16 @@ func ReverseTranslateTx(f *from.Tx) (*to.Tx, error) {
 		}
 		t.Vout = append(t.Vout, newVout)
 	}
+
+	if len(f.Fee) == 0 {
+		f.Fee = "0"
+	}
+	t.Fee = &uint256.Uint256{}
+	err := t.Fee.UnmarshalString(f.Fee)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
