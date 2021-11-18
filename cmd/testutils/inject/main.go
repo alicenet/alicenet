@@ -351,22 +351,30 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		if err != nil {
 			panic(err)
 		}
-		newOwner := &aobjs.ValueStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newValueStore := &aobjs.ValueStore{
-			VSPreImage: &aobjs.VSPreImage{
-				ChainID: chainID,
-				//Value:    consumedValue - valueOut,
-				Value:    diff,
-				Owner:    newOwner,
-				TXOutIdx: 0,
-				Fee:      vsFee.Clone(),
-			},
-			TxHash: make([]byte, constants.HashLen),
+		/*
+			// Previous code; keep because we may need it
+			newOwner := &aobjs.ValueStoreOwner{}
+			newOwner.New(ownerAcct, f.getCurveSpec(signer))
+			newValueStore := &aobjs.ValueStore{
+				VSPreImage: &aobjs.VSPreImage{
+					ChainID: chainID,
+					//Value:    consumedValue - valueOut,
+					Value:    diff,
+					Owner:    newOwner,
+					TXOutIdx: 0,
+					Fee:      vsFee.Clone(),
+				},
+				TxHash: make([]byte, constants.HashLen),
+			}
+			newUTXO := &aobjs.TXOut{}
+			newUTXO.NewValueStore(newValueStore)
+			tx.Vout = append(tx.Vout, newUTXO)
+		*/
+		// Add difference to TxFee
+		_, err = tx.Fee.Add(tx.Fee, diff)
+		if err != nil {
+			panic(err)
 		}
-		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
-		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	tx.SetTxHash()
 	for idx, consumedUtxo := range consumedUtxos {
