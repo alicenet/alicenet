@@ -417,7 +417,7 @@ func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	if b.IsCleanupTx(currentHeight, refUTXOs) {
-		// Tx is a valid Cleanup Tx, so we do not worry about fees
+		// Tx is a valid Cleanup Tx, so we do not worry about fees.
 		return nil
 	}
 	if err := b.Vout.ValidateFees(storage); err != nil {
@@ -608,7 +608,11 @@ func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs V
 	return set, nil
 }
 
-// PreValidatePending ...
+// PreValidatePending performs the initial check of a transaction
+// before it is added to the pending transaction pool.
+// This includes all of the basic validation logic that *all* transactions
+// must minimally pass to be valid.
+// Other important validation logic is included in PostValidatePending.
 func (b *Tx) PreValidatePending(chainID uint32) error {
 	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("empty input or output vector in tx")
@@ -632,7 +636,8 @@ func (b *Tx) PreValidatePending(chainID uint32) error {
 	return nil
 }
 
-// PostValidatePending ...
+// PostValidatePending performs the validation logic which occurs before
+// adding the transaction to the pending transaction pool.
 func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
 	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
@@ -641,11 +646,11 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, stora
 	if err != nil {
 		return err
 	}
-	err = b.ValidateSignature(currentHeight, consumedUTXOs)
+	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
 	if err != nil {
 		return err
 	}
-	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
+	err = b.ValidateSignature(currentHeight, consumedUTXOs)
 	if err != nil {
 		return err
 	}

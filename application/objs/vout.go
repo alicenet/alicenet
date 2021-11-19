@@ -173,7 +173,7 @@ func (vout Vout) MakeTxIn() (Vin, error) {
 }
 
 // IsCleanupVout ensures we have a valid Vout object in Cleanup Tx.
-// In this case, Vout must be only one ValueStore.
+// In this case, Vout must be only one ValueStore with no fee.
 func (vout Vout) IsCleanupVout() bool {
 	if len(vout) != 1 {
 		return false
