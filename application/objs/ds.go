@@ -316,7 +316,7 @@ func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
 		return err
 	}
 	if fee.Cmp(feeTrue) != 0 {
-		return errorz.ErrInvalid{}.New("invalid fee")
+		return errorz.ErrInvalid{}.New("DataStore; invalid fee")
 	}
 	return nil
 }

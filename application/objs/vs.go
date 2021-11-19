@@ -305,7 +305,7 @@ func (b *ValueStore) ValidateFee(storage *wrapper.Storage) error {
 	}
 	if b.IsDeposit() {
 		if !fee.IsZero() {
-			return errorz.ErrInvalid{}.New("vs: invalid fee; deposits should have fee equal zero")
+			return errorz.ErrInvalid{}.New("ValueStore: invalid fee; deposits should have fee equal zero")
 		}
 		return nil
 	}
@@ -314,7 +314,7 @@ func (b *ValueStore) ValidateFee(storage *wrapper.Storage) error {
 		return err
 	}
 	if fee.Cmp(feeTrue) != 0 {
-		return errorz.ErrInvalid{}.New("vs: invalid fee")
+		return errorz.ErrInvalid{}.New("ValueStore: invalid fee")
 	}
 	return nil
 }

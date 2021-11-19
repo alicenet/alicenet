@@ -429,7 +429,7 @@ func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.
 		return err
 	}
 	if b.Fee.Lt(minTxFee) {
-		return errorz.ErrInvalid{}.New("Fee below minTxFee")
+		return errorz.ErrInvalid{}.New("Tx; Fee below minTxFee")
 	}
 	return nil
 }

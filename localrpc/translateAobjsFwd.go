@@ -7,16 +7,6 @@ import (
 	to "github.com/MadBase/MadNet/proto"
 )
 
-// TODO: ForwardTranslateTXOut and ReverseTranslateTXOut need to be updated
-//		 to include TxFee option in switch case. There is no option at this
-//		 point.
-//
-//		 The challenge is that there is nothing in particular that should
-//		 require this information to be fully transmitted, as anyone is
-//		 able to make a related TxFee object. This is because Tx objects
-//		 will eventually be transmitted and will *include* TxFee objects.
-//		 How this is specified as compactly as possible should be investigated.
-
 func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 	t := &to.DataStore{}
 	if f == nil {
