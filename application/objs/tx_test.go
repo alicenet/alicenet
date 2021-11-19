@@ -1753,7 +1753,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tx.PostValidatePending(currentHeight, refUTXOs)
+	err = tx.PostValidatePending(currentHeight, refUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}

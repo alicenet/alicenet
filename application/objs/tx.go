@@ -633,7 +633,7 @@ func (b *Tx) PreValidatePending(chainID uint32) error {
 }
 
 // PostValidatePending ...
-func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error {
+func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
 	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
@@ -642,6 +642,10 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error
 		return err
 	}
 	err = b.ValidateSignature(currentHeight, consumedUTXOs)
+	if err != nil {
+		return err
+	}
+	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
 	if err != nil {
 		return err
 	}
