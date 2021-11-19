@@ -95,14 +95,14 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 	}
 
 	epoch := event.Epoch
-	ethDkgStarted := event.StartingETHDKG
+	validatorsChanged := event.ValidatorsChanged
 
 	logger.WithFields(logrus.Fields{
-		"ChainID":        event.ChainId,
-		"Epoch":          epoch,
-		"Height":         event.Height,
-		"Validator":      event.Validator.Hex(),
-		"StartingEthDKG": event.StartingETHDKG}).Infof("Snapshot taken")
+		"ChainID":           event.ChainId,
+		"Epoch":             epoch,
+		"Height":            event.Height,
+		"Validator":         event.Validator.Hex(),
+		"ValidatorsChanged": event.ValidatorsChanged}).Infof("Snapshot taken")
 
 	// Retrieve snapshot information from contract
 	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
@@ -131,7 +131,7 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 	header.SigGroup = rawSignature
 
 	// send the reconstituted header to a handler
-	err = adminHandler.AddSnapshot(header, ethDkgStarted)
+	err = adminHandler.AddSnapshot(header, validatorsChanged)
 	if err != nil {
 		return err
 	}

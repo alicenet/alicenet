@@ -224,7 +224,7 @@ func (db *Database) makeValidatorSetKeyPostApplication(notBefore uint32) ([]byte
 }
 
 func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
-	key, err := db.makeValidatorSetKey(height)
+	key, err := db.makeValidatorSetKeyPostApplication(height)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.Vali
 }
 
 func (db *Database) GetValidatorSetPostApplication(txn *badger.Txn, height uint32) (*objs.ValidatorSet, bool, error) {
-	key, err := db.makeValidatorSetKey(height)
+	key, err := db.makeValidatorSetKeyPostApplication(height)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1661,6 +1661,9 @@ func (pni *PendingLeafIter) Close() {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (db *Database) SetSafeToProceed(txn *badger.Txn, height uint32, isSafe bool) error {
+	if height%constants.EpochLength != 1 {
+		panic("The height must be mod 1 epoch length")
+	}
 	key := &objs.SafeToProceedKey{Prefix: dbprefix.PrefixSafeToProceed(), Height: height}
 	k, err := key.MarshalBinary()
 	if err != nil {
@@ -1673,6 +1676,9 @@ func (db *Database) SetSafeToProceed(txn *badger.Txn, height uint32, isSafe bool
 }
 
 func (db *Database) GetSafeToProceed(txn *badger.Txn, height uint32) (bool, error) {
+	if height%constants.EpochLength != 1 {
+		panic("The height must be mod 1 epoch length")
+	}
 	key := &objs.SafeToProceedKey{Prefix: dbprefix.PrefixSafeToProceed(), Height: height}
 	k, err := key.MarshalBinary()
 	if err != nil {

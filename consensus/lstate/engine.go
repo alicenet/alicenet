@@ -157,8 +157,8 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 			isSync = false
 			updateLocalState = false
 		}
-		if roundState.OwnState.SyncToBH.BClaims.Height%constants.EpochLength == 0 {
-			safe, err := ce.database.GetSafeToProceed(txn, roundState.OwnState.SyncToBH.BClaims.Height)
+		if bHeight%constants.EpochLength == 0 {
+			safe, err := ce.database.GetSafeToProceed(txn, rHeight)
 			if err != nil {
 				utils.DebugTrace(ce.logger, err)
 				return err
@@ -624,21 +624,31 @@ func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ow
 	if err != nil {
 		return false, err
 	}
+	validatorSet := vs
 	if okpa && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
 		if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
 			return false, err
 		}
 		ok = false
+		// We have to update the validator set after addvalidatorSetEdgeCase
+		validatorSet, err = ce.database.GetValidatorSet(txn, ownState.SyncToBH.BClaims.Height+1)
+		if err != nil {
+			return false, err
+		}
 	}
 	if !bytes.Equal(ce.ethAcct, ownState.VAddr) {
 		ownState.VAddr = utils.CopySlice(ce.ethAcct)
 		ok = false
 	}
-	for _, v := range vs.Validators {
+	for _, v := range validatorSet.Validators {
 		if bytes.Equal(v.VAddr, ownState.VAddr) {
-			if !bytes.Equal(vs.GroupKey, ownState.GroupKey) || ce.bnSigner == nil {
+			if !bytes.Equal(validatorSet.GroupKey, ownState.GroupKey) || ce.bnSigner == nil {
 				ok = false
 				groupShare := utils.CopySlice((v.GroupShare))
+				// todo: error 'key not found' when val0 is reset (must become
+				// non-validator, stop val0 script, delete its directory, start
+				// val0 script again). the error will stop if we restart val0
+				// script.
 				pk, err := ce.AdminBus.GetPrivK(groupShare)
 				if err != nil {
 					utils.DebugTrace(ce.logger, err)
@@ -650,7 +660,7 @@ func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ow
 					utils.DebugTrace(ce.logger, err)
 					return false, nil
 				}
-				err = signer.SetGroupPubk(vs.GroupKey)
+				err = signer.SetGroupPubk(validatorSet.GroupKey)
 				if err != nil {
 					utils.DebugTrace(ce.logger, err)
 					return false, err
@@ -666,8 +676,8 @@ func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ow
 			}
 		}
 	}
-	if !bytes.Equal(vs.GroupKey, ownState.GroupKey) {
-		ownState.GroupKey = vs.GroupKey
+	if !bytes.Equal(validatorSet.GroupKey, ownState.GroupKey) {
+		ownState.GroupKey = validatorSet.GroupKey
 		ok = false
 	}
 	if !ok {

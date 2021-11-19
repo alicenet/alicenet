@@ -46,9 +46,6 @@ func (ss *Store) LoadState(txn *badger.Txn, rcert *objs.RCert) (*RoundStates, er
 	if err != nil {
 		return nil, err
 	}
-	if rs.round == 0 {
-		rs.round = rstate.RCert.RClaims.Round
-	}
 	rs.PeerStateMap[string(ownState.VAddr)] = rstate
 	groupKey := rs.ValidatorSet.GroupKey
 	for idx := 0; idx < len(rs.ValidatorSet.Validators); idx++ {

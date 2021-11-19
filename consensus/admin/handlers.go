@@ -115,7 +115,8 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		if v.NotBefore%constants.EpochLength == 0 {
 			return ah.epochBoundaryValidator(txn, v)
 		}
-		// reset case
+		// reset case (we received from ethereum an event with group key fields
+		// all zeros).
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
 			return ah.database.SetValidatorSet(txn, v)
 		}
@@ -135,12 +136,14 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 	// own validator state and own state?
 
 	// It had a negative 1
-	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore)
+	// todo: apparently the postApplication setup is never passing this part
+	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
+		ah.logger.Errorf("Returning earlier")
 		return ah.database.SetValidatorSetPostApplication(txn, v, v.NotBefore)
 	}
 	rcert, err := bh.GetRCert()
@@ -161,12 +164,8 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 			return err
 		}
 	}
+	ah.logger.Errorf("Set validator set")
 	err = ah.database.SetValidatorSet(txn, v)
-	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
-	}
-	err = ah.database.SetSafeToProceed(txn, v.NotBefore, true)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
 		return err
@@ -175,7 +174,7 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 }
 
 // AddSnapshot stores a snapshot to the database
-func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, startingEthDKG bool) error {
+func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) error {
 	mutex, ok := ah.getLock()
 	if !ok {
 		return nil
@@ -185,13 +184,14 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, startingEthDKG bool) error
 	// ah.logger.Error("!!! OPEN AddSnapshot TXN")
 	// defer func() { ah.logger.Error("!!! CLOSE AddSnapshot TXN") }()
 	return ah.database.Update(func(txn *badger.Txn) error {
-		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height)
+		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
 		if !safeToProceed {
-			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height, !startingEthDKG); err != nil {
+			// set that it's safe to proceed to the next block
+			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, !validatorsChanged); err != nil {
 				utils.DebugTrace(ah.logger, err)
 				return err
 			}
@@ -497,6 +497,8 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 		}
 		rs = new(objs.RoundState)
 	}
+	// odd, you are creating a Round state but you are not a validator
+	// If you are not a validator, should you have a round state?
 	if !bytes.Equal(rs.GroupKey, v.GroupKey) {
 		rs = &objs.RoundState{
 			VAddr:      ah.ethAcct,
@@ -515,13 +517,9 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 }
 
 func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) (bool, error) {
-	// what would happen if we trigger the arbitrary height far away in the future
 	isValidator := false
 	for i := 0; i < len(v.Validators); i++ {
 		val := v.Validators[i]
-		// rs, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
-		// if err != nil {
-		// if err == badger.ErrKeyNotFound {
 		rs := &objs.RoundState{
 			VAddr:      utils.CopySlice(val.VAddr),
 			GroupKey:   utils.CopySlice(v.GroupKey),
@@ -534,15 +532,9 @@ func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorS
 			utils.DebugTrace(ah.logger, err)
 			return false, err
 		}
-		// } else {
-		// 	utils.DebugTrace(ah.logger, err)
-		// 	return false, err
-		// }
-		// } else {
 		if bytes.Equal(rs.VAddr, ah.ethAcct) {
 			isValidator = true
 		}
-		// }
 	}
 	return isValidator, nil
 }

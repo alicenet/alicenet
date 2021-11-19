@@ -12,7 +12,7 @@ monitorDB = ""
 monitorDBInMemory = true
 
 [bootnode]
-listeningAddress = "0.0.0.0:4242"
+listeningAddress = "0.0.0.0:4251"
 cacheSize = 20
 
 [transport]

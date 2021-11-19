@@ -535,8 +535,16 @@ func (mb *Handlers) BlockHeaderValidation(txn *badger.Txn, groupKey []byte, bHei
 		utils.DebugTrace(mb.logger, err)
 		return err
 	}
+	vspa, ok, err := mb.database.GetValidatorSetPostApplication(txn, vSet.NotBefore)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return err
+	}
+	if ok {
+		vSet = vspa
+	}
 	if !bytes.Equal(groupKey, vSet.GroupKey) {
-		return errorz.ErrInvalid{}.New("group key mismatch in state handlers")
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("group key mismatch in state handlers: Height: %d GroupKey: %x\nVsetGroupKey:%x", bHeight, groupKey, vSet.GroupKey))
 	}
 	return nil
 }

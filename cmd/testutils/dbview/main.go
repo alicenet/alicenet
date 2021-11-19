@@ -55,6 +55,12 @@ func main() {
 			}
 			fmt.Printf("GroupKey\n    %x\n", vs.GroupKey)
 			fmt.Printf("NotBefore\n    %v\n", vs.NotBefore)
+		case "GetLastSnapshot":
+			bh, err := db.GetLastSnapshot(txn)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("Snapshot Block Header %x", bh)
 		case "BlockHeader":
 			hb, ok := new(big.Int).SetString(*height, 10)
 			if !ok {

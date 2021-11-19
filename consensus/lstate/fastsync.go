@@ -26,7 +26,7 @@ import (
 
 const chanBuffering int = int(constants.EpochLength)
 const maxNumber int = chanBuffering
-const minWorkers = 1
+const minWorkers = 4
 const maxRetryCount = 6
 const backOffAmount = 1
 const backOffJitter = float64(.1)
@@ -487,9 +487,12 @@ func (ssm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *
 	if ssm.finalizeFastSyncChan == nil {
 		ssm.finalizeOnce = sync.Once{}
 		ssm.finalizeFastSyncChan = make(chan struct{})
+		ssm.Lock()
 		for i := 0; i < minWorkers; i++ {
+			ssm.numWorkers++
 			go ssm.worker(ssm.finalizeFastSyncChan)
 		}
+		ssm.Unlock()
 	}
 	ssm.tailSyncHeight = snapShotBlockHeader.BClaims.Height
 	if err := ssm.database.SetCommittedBlockHeaderFastSync(txn, snapShotBlockHeader); err != nil {
@@ -1211,9 +1214,6 @@ func (ssm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) 
 }
 
 func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
-	ssm.Lock()
-	ssm.numWorkers++
-	ssm.Unlock()
 	defer func() {
 		ssm.Lock()
 		ssm.numWorkers--
@@ -1225,8 +1225,13 @@ func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
 			return
 		case <-ssm.closeChan:
 			return
-		case <-time.After(1000 * time.Millisecond):
-			return
+		case <-time.After(1 * time.Second):
+			ssm.Lock()
+			if ssm.numWorkers > minWorkers {
+				ssm.Unlock()
+				return
+			}
+			ssm.Unlock()
 		case w := <-ssm.workChan:
 			w()
 		}
@@ -1234,22 +1239,28 @@ func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
 }
 
 func (ssm *SnapShotManager) sendWork(w func()) {
-	select {
-	case <-ssm.closeChan:
-		return
-	case ssm.workChan <- w:
-		return
-	default:
-		ssm.Lock()
-		if ssm.numWorkers < maxNumber {
-			go ssm.worker(ssm.finalizeFastSyncChan)
-		}
-		ssm.Unlock()
+	for {
 		select {
 		case <-ssm.closeChan:
 			return
 		case ssm.workChan <- w:
 			return
+		default:
+			ssm.Lock()
+			if ssm.numWorkers < maxNumber {
+				ssm.numWorkers++
+				go ssm.worker(ssm.finalizeFastSyncChan)
+				ssm.Unlock()
+			} else {
+				ssm.Unlock()
+				select {
+				case <-ssm.closeChan:
+					return
+				case ssm.workChan <- w:
+					return
+				}
+			}
+
 		}
 	}
 }

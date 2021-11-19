@@ -3,6 +3,7 @@ package dman
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
@@ -213,7 +214,7 @@ func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen
 		return nil, nil, false, errorz.ErrInvalid{}.New(err.Error())
 	}
 	if !bytes.Equal(bhCache.GroupKey, validatorSet.GroupKey) {
-		return nil, nil, false, errorz.ErrInvalid{}.New("group key does not match expected")
+		return nil, nil, false, errorz.ErrInvalid{}.New(fmt.Sprintf("group key does not match expected: Height: %d bhCache.GroupKey: %x\nvalidatorSet.GroupKey:%x", bhCache.BClaims.Height, bhCache.GroupKey, validatorSet.GroupKey))
 	}
 	if err := dm.database.SetCommittedBlockHeader(txn, bhCache); err != nil {
 		return nil, nil, false, err
