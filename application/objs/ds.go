@@ -241,7 +241,10 @@ func (b *DataStore) Value() (*uint256.Uint256, error) {
 	return b.DSLinker.Value()
 }
 
-// Fee returns the fee stored in the object at the time of creation
+// Fee returns the fee stored in the object at the time of creation.
+// This is the total fee associated with the DataStore object.
+// Thus, we have
+//			Fee == perEpochFee*(numEpochs + 2)
 func (b *DataStore) Fee() (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
@@ -301,12 +304,12 @@ func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
 	if err != nil {
 		return err
 	}
-	perEpochFee, err := storage.GetDataStoreEpochFee()
+	dataSize := uint32(len(b.DSLinker.DSPreImage.RawData))
+	numEpochs32, err := NumEpochsEquation(dataSize, value)
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(len(b.DSLinker.DSPreImage.RawData))
-	numEpochs32, err := NumEpochsEquation(dataSize, value)
+	perEpochFee, err := storage.GetDataStoreEpochFee()
 	if err != nil {
 		return err
 	}
