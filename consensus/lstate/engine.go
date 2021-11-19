@@ -504,7 +504,7 @@ func (ce *Engine) Sync() (bool, error) {
 		if err != nil {
 			return err
 		}
-		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, height+1)
+		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, vs.NotBefore)
 		if err != nil {
 			return err
 		}
@@ -620,7 +620,7 @@ func (ce *Engine) Sync() (bool, error) {
 
 func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ownState *objs.OwnState, ownValidatingState *objs.OwnValidatingState) (bool, error) {
 	ok := true
-	vspa, okpa, err := ce.database.GetValidatorSetPostApplication(txn, ownState.SyncToBH.BClaims.Height+1)
+	vspa, okpa, err := ce.database.GetValidatorSetPostApplication(txn, vs.NotBefore)
 	if err != nil {
 		return false, err
 	}
