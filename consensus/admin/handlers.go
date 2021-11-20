@@ -107,7 +107,14 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				}
 				// do nothing
 			}
-			if vSet != nil && bytes.Equal(v.GroupKey, vSet.GroupKey) {
+			bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
+			if err != nil {
+				if err != badger.ErrKeyNotFound {
+					utils.DebugTrace(ah.logger, err)
+					return err
+				}
+			}
+			if bh != nil && vSet != nil && bytes.Equal(v.GroupKey, vSet.GroupKey) {
 				return nil
 			}
 		}
@@ -497,9 +504,7 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 		}
 		rs = new(objs.RoundState)
 	}
-	// odd, you are creating a Round state but you are not a validator
-	// If you are not a validator, should you have a round state?
-	if !bytes.Equal(rs.GroupKey, v.GroupKey) {
+	if !bytes.Equal(rs.GroupKey, v.GroupKey) && v.NotBefore >= rcert.RClaims.Height {
 		rs = &objs.RoundState{
 			VAddr:      ah.ethAcct,
 			GroupKey:   v.GroupKey,
@@ -520,14 +525,25 @@ func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorS
 	isValidator := false
 	for i := 0; i < len(v.Validators); i++ {
 		val := v.Validators[i]
-		rs := &objs.RoundState{
+		rs, err := ah.database.GetCurrentRoundState(txn, val.VAddr)
+		if err != nil {
+			if err != badger.ErrKeyNotFound {
+				utils.DebugTrace(ah.logger, err)
+				return false, err
+			}
+		}
+		rcertTemp := rcert
+		if rs != nil && rs.RCert.RClaims.Height > rcert.RClaims.Height {
+			rcertTemp = rs.RCert
+		}
+		rs = &objs.RoundState{
 			VAddr:      utils.CopySlice(val.VAddr),
 			GroupKey:   utils.CopySlice(v.GroupKey),
 			GroupShare: utils.CopySlice(val.GroupShare),
 			GroupIdx:   uint8(i),
-			RCert:      rcert,
+			RCert:      rcertTemp,
 		}
-		err := ah.database.SetCurrentRoundState(txn, rs)
+		err = ah.database.SetCurrentRoundState(txn, rs)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return false, err

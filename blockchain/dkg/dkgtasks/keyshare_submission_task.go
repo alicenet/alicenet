@@ -86,7 +86,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	}
 
 	// Submit Keyshares
-	logger.Infof("submitting key shares: %v %p %p %p",
+	logger.Infof("submitting key shares: %v %v %v %v",
 		me.Address,
 		t.State.KeyShareG1s[me.Address],
 		t.State.KeyShareG1CorrectnessProofs[me.Address],
