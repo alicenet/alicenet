@@ -107,7 +107,11 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				}
 				// do nothing
 			}
-			bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
+			bhHeight := v.NotBefore - 1
+			if v.NotBefore == 0 {
+				bhHeight = 1
+			}
+			bh, err := ah.database.GetCommittedBlockHeader(txn, bhHeight)
 			if err != nil {
 				if err != badger.ErrKeyNotFound {
 					utils.DebugTrace(ah.logger, err)
@@ -449,7 +453,7 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 			return err
 		}
 	}
-	if bh == nil {
+	if bh == nil || v.NotBefore == 0 {
 		bh, err = ah.initDB(txn, v)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
@@ -502,9 +506,8 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 		if err != badger.ErrKeyNotFound {
 			return err
 		}
-		rs = new(objs.RoundState)
 	}
-	if !bytes.Equal(rs.GroupKey, v.GroupKey) && v.NotBefore >= rcert.RClaims.Height {
+	if (rs == nil) || (!bytes.Equal(rs.GroupKey, v.GroupKey) && v.NotBefore >= rcert.RClaims.Height) {
 		rs = &objs.RoundState{
 			VAddr:      ah.ethAcct,
 			GroupKey:   v.GroupKey,

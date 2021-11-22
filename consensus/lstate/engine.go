@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/appmock"
@@ -46,7 +47,8 @@ type Engine struct {
 
 	storage dynamics.StorageGetter
 
-	dm *dman.DMan
+	dm           *dman.DMan
+	notSafeTimer time.Time
 }
 
 // Init will initialize the Consensus Engine and all sub modules
@@ -164,6 +166,8 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				return err
 			}
 			if !safe {
+				bh, _ := ce.database.GetCommittedBlockHeader(txn, ownState.SyncToBH.BClaims.Height)
+				ce.database.SetCommittedBlockHeader(txn, bh)
 				utils.DebugTrace(ce.logger, nil, "not safe")
 				updateLocalState = false
 			}
@@ -493,23 +497,28 @@ func (ce *Engine) Sync() (bool, error) {
 	err := ce.database.Update(func(txn *badger.Txn) error {
 		ownState, err := ce.database.GetOwnState(txn)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		height, _ := objs.ExtractHR(ownState.SyncToBH)
 		err = ce.dm.FlushCacheToDisk(txn, height)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		vs, err := ce.database.GetValidatorSet(txn, height+1)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		vspa, ok, err := ce.database.GetValidatorSetPostApplication(txn, vs.NotBefore)
 		if err != nil {
+			utils.DebugTrace(ce.logger, err)
 			return err
 		}
 		if ok && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
 			if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
+				utils.DebugTrace(ce.logger, err)
 				return err
 			}
 			return nil
