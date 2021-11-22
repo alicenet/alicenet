@@ -3,7 +3,11 @@ package blockchain
 import (
 	"bytes"
 	"context"
+	"errors"
 	"math/big"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/MadBase/MadNet/constants"
@@ -40,8 +44,14 @@ type ContractDetails struct {
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
 func (c *ContractDetails) LookupContracts(ctx context.Context, registryAddress common.Address) error {
+	signals := make(chan os.Signal)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	for {
-		time.Sleep(1 * time.Second)
+		select {
+		case <-signals:
+			return errors.New("GoodBye from lookup contracts!")
+		case <-time.After(1 * time.Second):
+		}
 
 		eth := c.eth
 		logger := eth.logger
