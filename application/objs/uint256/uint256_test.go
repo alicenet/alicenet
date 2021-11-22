@@ -65,7 +65,7 @@ func TestUint256UnmarshalBinary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !u.Eq(Zero()) {
+	if !u.IsZero() {
 		t.Fatal("Should equal 0")
 	}
 
@@ -165,8 +165,17 @@ func TestUint256UnmarshalString(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !u.Eq(Zero()) {
-		t.Fatal("Incorrect value")
+	if !u.IsZero() {
+		t.Fatal("Incorrect value (1)")
+	}
+
+	zeroString2 := "0"
+	err = u.UnmarshalString(zeroString2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u.IsZero() {
+		t.Fatal("Incorrect value (2)")
 	}
 
 	tooLargeString := "00000000000000000000000000000000000000000000000000000000000000000" // 65 chars
@@ -410,7 +419,7 @@ func TestUint256Clone(t *testing.T) {
 
 	a := &Uint256{}
 	b := a.Clone()
-	if !a.Eq(Zero()) || !b.Eq(Zero()) {
+	if !a.IsZero() || !b.IsZero() {
 		t.Fatal("Both should be zero")
 	}
 }

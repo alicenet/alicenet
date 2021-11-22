@@ -192,6 +192,7 @@ func (rs *RawStorage) UpdateValue(update Updater) error {
 // standardParameters initializes RawStorage with the standard (original)
 // parameters for the system.
 func (rs *RawStorage) standardParameters() {
+	// Consensus initial parameters
 	rs.MaxBytes = maxBytes
 	rs.MaxProposalSize = maxProposalSize
 	rs.ProposalStepTimeout = proposalStepTO
@@ -201,6 +202,12 @@ func (rs *RawStorage) standardParameters() {
 	rs.DownloadTimeout = downloadTO
 	rs.SrvrMsgTimeout = srvrMsgTimeout
 	rs.MsgTimeout = msgTimeout
+
+	// Application initial parameters
+	rs.AtomicSwapFee = new(big.Int).Set(atomicSwapFee)
+	rs.DataStoreEpochFee = new(big.Int).Set(dataStoreEpochFee)
+	rs.ValueStoreFee = new(big.Int).Set(valueStoreFee)
+	rs.MinTxFee = new(big.Int).Set(minTxFee)
 }
 
 // GetMaxBytes returns the maximum allowed bytes

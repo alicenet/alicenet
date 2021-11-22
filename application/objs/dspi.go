@@ -255,7 +255,10 @@ func (b *DSPreImage) EpochOfExpiration() (uint32, error) {
 	return eoe, nil
 }
 
-// ValidateDeposit validates the deposit
+// ValidateDeposit validates the deposit.
+// Validating the Fee portion of DSPreImage does *not* happen here,
+// as these values may change each epoch.
+// Furthermore, the Fee is validated elsewhere.
 func (b *DSPreImage) ValidateDeposit() error {
 	if b == nil || b.Deposit == nil || b.Deposit.IsZero() || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
@@ -333,36 +336,6 @@ func RewardDepositEquation(depositOrig *uint256.Uint256, dataSize32 uint32, epoc
 		return nil, err
 	}
 	return remainder, nil
-	// We now proceed to show there are no integer overflows.
-	// In particular, we have
-	//
-	//			tmp >= 0	and		remainder <= deposit.
-	//
-	// In fact, we know more. Set
-	//
-	//				N = numEpochs and n = epochDiff.
-	//
-	// The above checks ensure
-	//
-	//					0 <= n <= N.
-	//
-	// Then
-	//
-	//					tmp == deposit - currentDeposit
-	//						== (N - n)*(dataSize + BaseDatasizeConst)
-	//						== (N - n)*epochCost
-	//						>= 0
-	//
-	// The last line follows because we have N >= n.
-	// This implies
-	//
-	//			remainder == tmp + 2*epochCost
-	//					  == (N - n + 2)*epochCost
-	//					  <= (N + 2)*epochCost
-	//					  == deposit.
-	//
-	// Thus, we are bounded and will not overflow. Furthermore, this shows
-	// that remainder is always an integer multiple of epochCost, as expected.
 }
 
 // BaseDepositEquation specifies a required deposit for a certain amount of
@@ -371,23 +344,15 @@ func RewardDepositEquation(depositOrig *uint256.Uint256, dataSize32 uint32, epoc
 // The simple equation is
 //
 //		deposit = (dataSize + BaseDatasizeConst) * (2 + numEpochs)
-//
-// We have additional checks to ensure there is no integer overflow.
-// This will never happen for valid deposits, but we protect against it.
 func BaseDepositEquation(dataSize32 uint32, numEpochs32 uint32) (*uint256.Uint256, error) {
 	if dataSize32 > constants.MaxDataStoreSize {
 		// dataSize is too large so we do not perform any checks
 		return nil, errorz.ErrInvalid{}.New("Error in BaseDepositEquation: dataSize is too large")
 	}
 	dataSize, _ := new(uint256.Uint256).FromUint64(uint64(dataSize32))
-	//					tmp1 < 2^31
 	epochCost, _ := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
-	// We have
-	//					tmp2 < 2^33
 	numEpochs, _ := new(uint256.Uint256).FromUint64(uint64(numEpochs32))
 	totalEpochs, _ := new(uint256.Uint256).Add(uint256.Two(), numEpochs)
-	// The above ensures no overflow occurs in the following multiplication, as
-	//					deposit == tmp1*tmp2 < 2^64
 	depositUint256, _ := new(uint256.Uint256).Mul(epochCost, totalEpochs)
 	return depositUint256, nil
 }
@@ -403,15 +368,6 @@ func NumEpochsEquation(dataSize32 uint32, deposit *uint256.Uint256) (uint32, err
 	if dataSize32 > constants.MaxDataStoreSize {
 		return 0, errorz.ErrInvalid{}.New("Error in NumEpochsEquation: dataSize is too large")
 	}
-	// The previous check and other constant restrictions ensure
-	//
-	//			dataSize + BaseDatasizeConst < 2^32;
-	//
-	// that is, it does not overflow.
-	//
-	// Unsigned integer arithmetic ensures
-	//
-	//				tmp >= 0
 	dataSize, _ := new(uint256.Uint256).FromUint64(uint64(dataSize32))
 	totalDataSize, _ := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
 	tmp, err := new(uint256.Uint256).Div(deposit, totalDataSize)

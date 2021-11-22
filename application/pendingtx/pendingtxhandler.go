@@ -229,6 +229,7 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 	if len(txs) > 0 {
 		byteCount += constants.HashLen
 	}
+	dropKeys := [][]byte{}
 	err := pt.db.View(func(txn *badger.Txn) error {
 		it, prefix := pt.indexer.GetOrderedIter(txn)
 		err := func() error {
@@ -257,7 +258,10 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 				ok, err := pt.checkTx(txnState, tx, currentHeight)
 				if err != nil {
 					utils.DebugTrace(pt.logger, err)
-					return err
+					if len(dropKeys) < 1000 {
+						dropKeys = append(dropKeys, utils.CopySlice(txHash))
+					}
+					continue
 				}
 				if !ok {
 					continue
@@ -315,6 +319,21 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 		utils.DebugTrace(pt.logger, err)
 		return nil, 0, err
 	}
+
+	err = pt.db.Update(func(txn *badger.Txn) error {
+		for i := 0; i < len(dropKeys); i++ {
+			err := pt.deleteOneInternal(txn, dropKeys[i], false)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		return nil, 0, err
+	}
+
 	out := []*objs.Tx{}
 	for i := 0; i < len(txs); i++ {
 		if txs[i] != nil {

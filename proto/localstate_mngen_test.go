@@ -958,3 +958,71 @@ func TestLocalStateGetTxBlockNumberCancel(t *testing.T) {
 	cancelErr := <-errChan
 	assert.EqualError(t, cancelErr, "context canceled", "the error returned must be a context canceled error")
 }
+
+type testLocalStateGetFeesHandler struct{}
+
+func (th *testLocalStateGetFeesHandler) HandleLocalStateGetFees(context.Context, *FeeRequest) (*FeeResponse, error) {
+	return &FeeResponse{}, nil
+}
+
+func TestLocalStateGetFees(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Setup the handler for the TestService
+	h := &testLocalStateGetFeesHandler{}
+
+	// Register the handler with the dispatch class
+	d.RegisterLocalStateGetFees(h)
+
+	// Create the server and pass in the dispatch class
+	srvr := GeneratedLocalStateServer{
+		dispatch: d,
+	}
+
+	// Test calling the method TestCall
+	_, err := srvr.GetFees(context.Background(), &FeeRequest{})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDoubleregistrationLocalStateGetFees(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Setup the handler for the TestService
+	h := &testLocalStateGetFeesHandler{}
+
+	// Register the handler with the dispatch class
+	d.RegisterLocalStateGetFees(h)
+
+	fn := func() {
+		d.RegisterLocalStateGetFees(h)
+	}
+	assert.Panics(t, fn, "double registration must panic")
+}
+
+func TestLocalStateGetFeesCancel(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Create the server and pass in the dispatch class
+	srvr := GeneratedLocalStateServer{
+		dispatch: d,
+	}
+
+	// Test calling the method TestCall
+	errChan := make(chan error)
+	defer close(errChan)
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	fn := func() {
+		_, err := srvr.GetFees(cancelCtx, &FeeRequest{})
+		errChan <- err
+	}
+	go fn()
+	cancelFunc()
+	cancelErr := <-errChan
+	assert.EqualError(t, cancelErr, "context canceled", "the error returned must be a context canceled error")
+}

@@ -12,7 +12,7 @@ import (
 	bindata "github.com/MadBase/MadNet/localrpc/swagger-bindata"
 	pb "github.com/MadBase/MadNet/proto"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"

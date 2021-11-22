@@ -131,7 +131,7 @@ func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height u
 			utils.DebugTrace(tm.logger, err)
 			return nil, nil, err
 		}
-		if err := tx.PostValidatePending(height, consumedUTXOs); err != nil {
+		if err := tx.PostValidatePending(height, consumedUTXOs, tm.storage); err != nil {
 			utils.DebugTrace(tm.logger, err)
 			return nil, nil, err
 		}
@@ -222,7 +222,7 @@ func (tm *txHandler) PendingTxAdd(txn *badger.Txn, chainID uint32, height uint32
 		utils.DebugTrace(tm.logger, err)
 		return err
 	}
-	if err := txs.PostValidatePending(height, consumedUTXOs); err != nil {
+	if err := txs.PostValidatePending(height, consumedUTXOs, tm.storage); err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return err
 	}
