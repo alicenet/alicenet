@@ -119,12 +119,34 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
+		bHeight := ownState.SyncToBH.BClaims.Height
+		rHeight := ownState.SyncToBH.BClaims.Height + 1
+		if bHeight%constants.EpochLength == 0 {
+			safe, err := ce.database.GetSafeToProceed(txn, rHeight)
+			if err != nil {
+				utils.DebugTrace(ce.logger, err)
+				return err
+			}
+			if !safe {
+				bh, _ := ce.database.GetCommittedBlockHeader(txn, bHeight)
+				ce.database.SetCommittedBlockHeader(txn, bh)
+				utils.DebugTrace(ce.logger, nil, "not safe")
+				updateLocalState = false
+			} else {
+				// if it's safe to proceed, we update ownState with the latest
+				// data
+				ownState, err := ce.database.GetOwnState(txn)
+				if err != nil {
+					return err
+				}
+				bHeight = ownState.SyncToBH.BClaims.Height
+				rHeight = ownState.SyncToBH.BClaims.Height + 1
+			}
+		}
 		ownValidatingState, err := ce.database.GetOwnValidatingState(txn)
 		if err != nil {
 			return err
 		}
-		bHeight := ownState.SyncToBH.BClaims.Height
-		rHeight := ownState.SyncToBH.BClaims.Height + 1
 		err = ce.dm.FlushCacheToDisk(txn, bHeight)
 		if err != nil {
 			return err
@@ -158,19 +180,6 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height {
 			isSync = false
 			updateLocalState = false
-		}
-		if bHeight%constants.EpochLength == 0 {
-			safe, err := ce.database.GetSafeToProceed(txn, rHeight)
-			if err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return err
-			}
-			if !safe {
-				bh, _ := ce.database.GetCommittedBlockHeader(txn, ownState.SyncToBH.BClaims.Height)
-				ce.database.SetCommittedBlockHeader(txn, bh)
-				utils.DebugTrace(ce.logger, nil, "not safe")
-				updateLocalState = false
-			}
 		}
 		if updateLocalState {
 			ok, err := ce.updateLocalStateInternal(txn, roundState)
@@ -545,9 +554,9 @@ func (ce *Engine) Sync() (bool, error) {
 			if rs.OwnState.SyncToBH.BClaims.Height <= rs.OwnState.MaxBHSeen.BClaims.Height-constants.EpochLength*2 {
 				// Guard against the short first epoch causing errors in the sync logic
 				// by escaping early and just waiting for the MaxBHSeen to increase.
-				if rs.OwnState.MaxBHSeen.BClaims.Height%constants.EpochLength == 0 {
-					return nil
-				}
+				// if rs.OwnState.MaxBHSeen.BClaims.Height%constants.EpochLength == 0 {
+				// 	return nil
+				// }
 				epochOfMaxBHSeen := utils.Epoch(rs.OwnState.MaxBHSeen.BClaims.Height)
 				canonicalEpoch := epochOfMaxBHSeen - 2
 				canonicalSnapShotHeight := canonicalEpoch * constants.EpochLength

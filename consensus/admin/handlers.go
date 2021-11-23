@@ -446,7 +446,7 @@ func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 }
 
 func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet) error {
-	bh, err := ah.database.GetLastSnapshot(txn)
+	bh, err := ah.database.GetSnapshotByHeight(txn, v.NotBefore)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			utils.DebugTrace(ah.logger, err)

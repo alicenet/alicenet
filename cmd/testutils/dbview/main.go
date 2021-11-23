@@ -61,6 +61,18 @@ func main() {
 				panic(err)
 			}
 			fmt.Println("Snapshot Block Header %x", bh)
+		case "GetSnapshotByHeight":
+			hb, ok := new(big.Int).SetString(*height, 10)
+			if !ok {
+				panic("bad height")
+			}
+			h64 := hb.Int64()
+			h := uint32(h64)
+			bh, err := db.GetSnapshotByHeight(txn, h)
+			if err != nil {
+				panic(err)
+			}
+			printBH(bh)
 		case "BlockHeader":
 			hb, ok := new(big.Int).SetString(*height, 10)
 			if !ok {

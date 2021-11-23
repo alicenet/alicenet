@@ -1069,6 +1069,38 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	return result, nil
 }
 
+func (db *Database) GetSnapshotByHeight(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
+	prefix := db.makeSnapshotBlockHeaderIterKey()
+	seek := []byte{}
+	seek = append(seek, prefix...)
+	heightBytes := utils.MarshalUint32(height)
+	seek = append(seek, heightBytes...)
+	opts := badger.DefaultIteratorOptions
+	opts.Reverse = true
+	opts.Prefix = prefix
+	opts.PrefetchValues = false
+	var lastkey []byte
+	func() {
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		it.Seek(seek)
+		if it.Valid() {
+			item := it.Item()
+			k := item.KeyCopy(nil)
+			lastkey = k
+		}
+	}()
+	if lastkey == nil {
+		return nil, badger.ErrKeyNotFound
+	}
+	result, err := db.rawDB.GetBlockHeader(txn, lastkey)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	return result, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
