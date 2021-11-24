@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cat <<EOF | while read addr; do ./madnet --config ./assets/config/validator0.toml --ethereum.defaultAccount $addr utils unregister; done
+cat <<EOF | while read addr; do ./madnet --config ./assets/config/owner.toml --ethereum.defaultAccount $addr utils unregister; done
 0xde2328ce51aab2087bc60b46e00f4ce587c7a8a9
 0x44a9ce0afd70ccae70b8ab5b6772e5ed8d695ea7
 0x7fae97e8ef6abc96456b60bd6e97523e4c6fc9a2

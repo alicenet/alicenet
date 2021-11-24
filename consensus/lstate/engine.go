@@ -551,12 +551,7 @@ func (ce *Engine) Sync() (bool, error) {
 			return nil
 		}
 		if rs.OwnState.MaxBHSeen.BClaims.Height > constants.EpochLength*2 {
-			if rs.OwnState.SyncToBH.BClaims.Height <= rs.OwnState.MaxBHSeen.BClaims.Height-constants.EpochLength*2 {
-				// Guard against the short first epoch causing errors in the sync logic
-				// by escaping early and just waiting for the MaxBHSeen to increase.
-				// if rs.OwnState.MaxBHSeen.BClaims.Height%constants.EpochLength == 0 {
-				// 	return nil
-				// }
+			if rs.OwnState.SyncToBH.BClaims.Height < rs.OwnState.MaxBHSeen.BClaims.Height-constants.EpochLength*2 {
 				epochOfMaxBHSeen := utils.Epoch(rs.OwnState.MaxBHSeen.BClaims.Height)
 				canonicalEpoch := epochOfMaxBHSeen - 2
 				canonicalSnapShotHeight := canonicalEpoch * constants.EpochLength
