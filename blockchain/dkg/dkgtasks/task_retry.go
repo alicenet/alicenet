@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -31,11 +32,14 @@ func GeneralTaskShouldRetry(ctx context.Context, acct accounts.Account, logger *
 
 // FormatPublicKey formats the public key suitably for logging
 func FormatPublicKey(publicKey [2]*big.Int) string {
-
-	pk0 := publicKey[0].Text(16)[0:3]
-	pk1 := publicKey[1].Text(16)
-	pk1 = pk1[len(pk1)-3:]
-
+	pk0BytesRaw := publicKey[0].Bytes()
+	pk1BytesRaw := publicKey[1].Bytes()
+	pk0Bytes := utils.ForceSliceToLength(pk0BytesRaw, 32)
+	pk1Bytes := utils.ForceSliceToLength(pk1BytesRaw, 32)
+	pk0Hex := utils.EncodeHexString(pk0Bytes)
+	pk1Hex := utils.EncodeHexString(pk1Bytes)
+	pk0 := pk0Hex[0:3]
+	pk1 := pk1Hex[len(pk1Hex)-3:]
 	return fmt.Sprintf("0x%v...%v", pk0, pk1)
 }
 

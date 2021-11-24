@@ -17,13 +17,16 @@ var (
 	// twist). This should never happen.
 	ErrInvalidPoint = errors.New("hashToG1/HashToG2: hash point not on curve")
 
+	// ErrInvalid occurs when something generic is invalid.
+	ErrInvalid = errors.New("invalid data")
+
 	// ErrInvalidSharedSecret means that the secret shared by this participant
 	// is invalid; this implies this participant performed a malicious action.
 	ErrInvalidSharedSecret = errors.New("compareSharedSecret: Failed shared secret")
 
-	// ErrInvalidThreshold occurs when threshold is less than 1, which
+	// ErrInvalidThreshold occurs when threshold is less than 2, which
 	// is not possible.
-	ErrInvalidThreshold = errors.New("threshold < 1; not possible")
+	ErrInvalidThreshold = errors.New("threshold < 2; not possible")
 
 	// ErrInvalidSignatureLength occurs when marshalled signature is not
 	// 6*32 bytes in length.

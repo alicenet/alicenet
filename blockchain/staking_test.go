@@ -23,7 +23,7 @@ var InitialAllowance = big.NewInt(1000000000000000000)
 func (s *StakingTestSuite) SetupTest() {
 	t := s.T()
 	var err error
-	s.eth, err = setupEthereum(t)
+	s.eth, err = setupEthereum(t, 4)
 	assert.Nil(t, err)
 	eth := s.eth
 	c := s.eth.Contracts()

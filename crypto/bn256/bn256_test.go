@@ -85,6 +85,13 @@ func TestMarshalBigInt(t *testing.T) {
 	}
 }
 
+func TestMarshalBigIntBad(t *testing.T) {
+	_, err := MarshalBigInt(nil)
+	if err == nil {
+		t.Fatal("Should raise an error")
+	}
+}
+
 func TestMarshalG1(t *testing.T) {
 	// True definitions and standard tests
 	g1Gen := new(cloudflare.G1).ScalarBaseMult(big.NewInt(1))
@@ -139,18 +146,51 @@ func TestMarshalG1(t *testing.T) {
 	}
 }
 
+func TestMarshalG1Bad(t *testing.T) {
+	bad0 := [2]*big.Int{}
+	_, err := MarshalG1Big(bad0)
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+
+	bad1 := [2]*big.Int{nil, nil}
+	_, err = MarshalG1Big(bad1)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	big1 := big.NewInt(1)
+	bad2 := [2]*big.Int{big1, nil}
+	_, err = MarshalG1Big(bad2)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	bad3 := [2]*big.Int{nil, big1}
+	_, err = MarshalG1Big(bad3)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+}
+
 func TestG1ToBigArray(t *testing.T) {
 	// True definitions and standard tests
 	g1Gen := new(cloudflare.G1).ScalarBaseMult(big.NewInt(1))
 	g1GenBTrue := [2]*big.Int{big.NewInt(1), big.NewInt(2)}
-	g1GenB := G1ToBigIntArray(g1Gen)
+	g1GenB, err := G1ToBigIntArray(g1Gen)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if (g1GenB[0].Cmp(g1GenBTrue[0]) != 0) || (g1GenB[1].Cmp(g1GenBTrue[1]) != 0) {
 		t.Fatal("G1ToBigArray failed for curveGen")
 	}
 
 	g1Inf := new(cloudflare.G1).ScalarBaseMult(cloudflare.Order)
 	g1InfBTrue := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
-	g1InfB := G1ToBigIntArray(g1Inf)
+	g1InfB, err := G1ToBigIntArray(g1Inf)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if (g1InfB[0].Cmp(g1InfBTrue[0]) != 0) || (g1InfB[1].Cmp(g1InfBTrue[1]) != 0) {
 		t.Fatal("G1ToBigArray failed for Infinity")
 	}
@@ -162,11 +202,21 @@ func TestG1ToBigArray(t *testing.T) {
 	xArb, _ := new(big.Int).SetString("298773868438273703498850243504184491106691330065064935169702410332558258242", 10)
 	yArb, _ := new(big.Int).SetString("277967159421498597465334996757796866882824842668492009308772372720306380794", 10)
 	g1ArbBTrue := [2]*big.Int{xArb, yArb}
-	g1ArbB := G1ToBigIntArray(g1Arb)
+	g1ArbB, err := G1ToBigIntArray(g1Arb)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if (g1ArbB[0].Cmp(g1ArbBTrue[0]) != 0) || (g1ArbB[1].Cmp(g1ArbBTrue[1]) != 0) {
 		t.Fatal("G1ToBigArray failed for g1Arb")
 	}
 
+}
+
+func TestG1ToBigArrayBad(t *testing.T) {
+	_, err := G1ToBigIntArray(nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
 }
 
 func TestBigIntArrayToG1(t *testing.T) {
@@ -221,6 +271,17 @@ func TestBigIntArrayToG1(t *testing.T) {
 	}
 }
 
+func TestBigIntArrayToG1Bad(t *testing.T) {
+	_, err := BigIntArrayToG1([2]*big.Int{})
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+	_, err = BigIntArrayToG1([2]*big.Int{nil, nil})
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+}
+
 func TestBigIntArraySliceToG1(t *testing.T) {
 	g1InfBig := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	g1InfTrue := new(cloudflare.G1).ScalarBaseMult(cloudflare.Order)
@@ -272,16 +333,29 @@ func TestG2ToBigArray(t *testing.T) {
 	g2GenYI, _ := new(big.Int).SetString("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10)
 	g2GenY, _ := new(big.Int).SetString("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10)
 	g2GenBTrue := [4]*big.Int{g2GenXI, g2GenX, g2GenYI, g2GenY}
-	g2GenB := G2ToBigIntArray(g2Gen)
+	g2GenB, err := G2ToBigIntArray(g2Gen)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if (g2GenB[0].Cmp(g2GenBTrue[0]) != 0) || (g2GenB[1].Cmp(g2GenBTrue[1]) != 0) || (g2GenB[2].Cmp(g2GenBTrue[2]) != 0) || (g2GenB[3].Cmp(g2GenBTrue[3]) != 0) {
 		t.Fatal("G2ToBigArray failed for twistGen")
 	}
 
 	g2Inf := new(cloudflare.G2).ScalarBaseMult(cloudflare.Order)
 	g2InfBTrue := [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
-	g2InfB := G2ToBigIntArray(g2Inf)
+	g2InfB, err := G2ToBigIntArray(g2Inf)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if (g2InfB[0].Cmp(g2InfBTrue[0]) != 0) || (g2InfB[1].Cmp(g2InfBTrue[1]) != 0) || (g2InfB[2].Cmp(g2InfBTrue[2]) != 0) || (g2InfB[3].Cmp(g2InfBTrue[3]) != 0) {
 		t.Fatal("G2ToBigArray failed for Infinity")
+	}
+}
+
+func TestG2ToBigArrayBad(t *testing.T) {
+	_, err := G2ToBigIntArray(nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
 }
 
@@ -340,6 +414,45 @@ func TestMarshalG2(t *testing.T) {
 	}
 }
 
+func TestMarshalG2Bad(t *testing.T) {
+	bad0 := [4]*big.Int{}
+	_, err := MarshalG2Big(bad0)
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+
+	bad1 := [4]*big.Int{nil, nil, nil, nil}
+	_, err = MarshalG2Big(bad1)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	big1 := big.NewInt(1)
+	bad2 := [4]*big.Int{nil, big1, big1, big1}
+	_, err = MarshalG2Big(bad2)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	bad3 := [4]*big.Int{big1, nil, big1, big1}
+	_, err = MarshalG2Big(bad3)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+
+	bad4 := [4]*big.Int{big1, big1, nil, big1}
+	_, err = MarshalG2Big(bad4)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+
+	bad5 := [4]*big.Int{big1, big1, big1, nil}
+	_, err = MarshalG2Big(bad5)
+	if err == nil {
+		t.Fatal("Should have raised error (5)")
+	}
+}
+
 func TestBigIntArrayToG2(t *testing.T) {
 	g2InfBig := [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
 	g2InfTrue := new(cloudflare.G2).ScalarBaseMult(cloudflare.Order)
@@ -381,6 +494,17 @@ func TestBigIntArrayToG2(t *testing.T) {
 	}
 }
 
+func TestBigIntArrayToG2Bad(t *testing.T) {
+	_, err := BigIntArrayToG2([4]*big.Int{})
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+	_, err = BigIntArrayToG2([4]*big.Int{nil, nil, nil, nil})
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+}
+
 func TestMarshalBigIntSlice(t *testing.T) {
 	bigSlice := []*big.Int{big.NewInt(1), big.NewInt(2), big.NewInt(3)}
 	_, err := MarshalBigIntSlice(bigSlice)
@@ -393,6 +517,21 @@ func TestMarshalBigIntSlice(t *testing.T) {
 	_, err = MarshalBigIntSlice(bigSliceBad)
 	if err != ErrNotUint256 {
 		t.Fatal("ErrNotUint256 should have occurred")
+	}
+
+	res, err := MarshalBigIntSlice([]*big.Int{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 0 {
+		t.Fatal("incorrect result")
+	}
+}
+
+func TestMarshalBigIntSliceBad(t *testing.T) {
+	_, err := MarshalBigIntSlice([]*big.Int{nil})
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
 }
 
@@ -418,4 +557,22 @@ func TestMarshalG1BigSlice(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised an error due to invalid g1Big (too large)")
 	}
+}
+
+func TestMarshalG1BigSliceBad(t *testing.T) {
+	g1BigInf := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
+	g1BigGen := [2]*big.Int{big.NewInt(1), big.NewInt(2)}
+	g1BigBad0 := [2]*big.Int{}
+	g1BigSlice0 := [][2]*big.Int{g1BigGen, g1BigInf, g1BigBad0}
+	_, err := MarshalG1BigSlice(g1BigSlice0)
+	if err == nil {
+		t.Fatal("Should have raised error (0)")
+	}
+	g1BigBad1 := [2]*big.Int{nil, nil}
+	g1BigSlice1 := [][2]*big.Int{g1BigGen, g1BigInf, g1BigBad1}
+	_, err = MarshalG1BigSlice(g1BigSlice1)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
 }

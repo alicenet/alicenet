@@ -13,7 +13,7 @@ func TestAccuse(t *testing.T) {
 }
 
 func TestRegistration(t *testing.T) {
-	eth, err := setupEthereum(t)
+	eth, err := setupEthereum(t, 4)
 	if err != nil {
 		t.Fatal(err)
 	}

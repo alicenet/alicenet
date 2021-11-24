@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DisputeTask stores the data required to dispute shares
+// KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
@@ -26,9 +26,10 @@ func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask 
 	}
 }
 
-// This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
+// Initialize prepares for work to be done in KeyShareSubmission phase.
+// Here, the G1 key share, G1 proof, and G2 key share are constructed
+// and stored for submission.
 func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -61,13 +62,13 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 	return nil
 }
 
-// DoWork is the first attempt at registering with ethdkg
+// DoWork is the first attempt at the performing the KeyShareSubmission phase
 func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-// DoRetry is all subsequent attempts at registering with ethdkg
+// DoRetry is all subsequent attempts at the performing the KeyShareSubmission phase
 func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)

@@ -27,8 +27,10 @@ func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	}
 }
 
+// Initialize begins the setup phase for ShareDistribution.
+// We construct our commitments and encrypted shares before
+// submitting them to the associated smart contract.
 func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -61,12 +63,11 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	}
 
 	numParticipants := len(participants)
-	threshold, _ := math.ThresholdForUserCount(numParticipants)
+	threshold := math.ThresholdForUserCount(numParticipants)
 
 	// Generate shares
 	encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-		t.State.TransportPrivateKey, t.State.TransportPublicKey,
-		participants, threshold)
+		t.State.TransportPrivateKey, participants)
 	if err != nil {
 		logger.Errorf("Failed to generate shares: %v", err)
 		return err
@@ -96,7 +97,6 @@ func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entr
 }
 
 func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
 	// Setup
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -142,7 +142,6 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 
 // ShouldRetry checks if it makes sense to try again
 func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

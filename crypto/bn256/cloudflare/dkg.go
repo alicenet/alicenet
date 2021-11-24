@@ -19,7 +19,7 @@ func GeneratePrivatePublicKeys(r io.Reader) (*big.Int, *G1, error) {
 // This private polynomial is part of the Verifiable Secret Sharing protocol
 // in the distributed key generation protocol.
 func ConstructPrivatePolyCoefs(r io.Reader, threshold int) ([]*big.Int, error) {
-	if threshold < 1 {
+	if threshold < 2 {
 		return nil, ErrInvalidThreshold
 	}
 	privCoefs := make([]*big.Int, threshold+1)
@@ -223,7 +223,19 @@ func GenerateDecryptedShares(privK *big.Int, encryptedArray []*big.Int, pubKs []
 // CompareSharedSecret determines if shared secret is valid, returning nil
 // if true and raising an error otherwise; pubCoefs are from participant i
 // for participant j (who is calling this function).
-func CompareSharedSecret(secret *big.Int, j int, pubCoefs []*G1) error {
+func CompareSharedSecret(secret *big.Int, j int, pubCoefs []*G1) (bool, error) {
+	if secret == nil {
+		return false, ErrInvalidSharedSecret
+	}
+	if j <= 0 {
+		return false, ErrInvalid
+	}
+	for idx := 0; idx < len(pubCoefs); idx++ {
+		if pubCoefs[idx] == nil {
+			return false, ErrInvalidPoint
+		}
+	}
+
 	res := &G1{}
 	res.Set(pubCoefs[0])
 
@@ -240,9 +252,9 @@ func CompareSharedSecret(secret *big.Int, j int, pubCoefs []*G1) error {
 	g1Secret := &G1{}
 	g1Secret.ScalarBaseMult(secret)
 	if !g1Secret.IsEqual(res) {
-		return ErrInvalidSharedSecret
+		return false, nil
 	}
-	return nil
+	return true, nil
 }
 
 // GenerateGroupSecretKeyPortion generates the portion of the group secret key
