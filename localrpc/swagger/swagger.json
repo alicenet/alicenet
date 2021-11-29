@@ -176,6 +176,38 @@
         ]
       }
     },
+    "/v1/get-fees": {
+      "post": {
+        "operationId": "LocalState_GetFees",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoFeeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoFeeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LocalState"
+        ]
+      }
+    },
     "/v1/get-mined-transaction": {
       "post": {
         "summary": "Get a mined transaction by hash",
@@ -510,6 +542,9 @@
         },
         "Owner": {
           "type": "string"
+        },
+        "Fee": {
+          "type": "string"
         }
       },
       "title": "Protobuf message implementation for struct ASPreImage"
@@ -653,6 +688,9 @@
         },
         "Owner": {
           "type": "string"
+        },
+        "Fee": {
+          "type": "string"
         }
       },
       "title": "Protobuf message implementation for struct DSPreImage"
@@ -678,6 +716,26 @@
         "Epoch": {
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "protoFeeRequest": {
+      "type": "object"
+    },
+    "protoFeeResponse": {
+      "type": "object",
+      "properties": {
+        "MinTxFee": {
+          "type": "string"
+        },
+        "ValueStoreFee": {
+          "type": "string"
+        },
+        "DataStoreFee": {
+          "type": "string"
+        },
+        "AtomicSwapFee": {
+          "type": "string"
         }
       }
     },
@@ -918,6 +976,9 @@
           "items": {
             "$ref": "#/definitions/protoTXOut"
           }
+        },
+        "Fee": {
+          "type": "string"
         }
       },
       "title": "Protobuf message implementation for struct Tx"
@@ -976,6 +1037,9 @@
           "format": "int64"
         },
         "Owner": {
+          "type": "string"
+        },
+        "Fee": {
           "type": "string"
         }
       },

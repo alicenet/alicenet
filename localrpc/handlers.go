@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/MadBase/MadNet/application"
@@ -15,6 +16,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/logging"
 	pb "github.com/MadBase/MadNet/proto"
 	"github.com/MadBase/MadNet/utils"
@@ -61,8 +63,8 @@ type Handlers struct {
 
 	AppHandler *application.Application
 	GossipBus  *gossip.Handlers
-
-	logger *logrus.Logger
+	Storage    dynamics.StorageGetter
+	logger     *logrus.Logger
 
 	ethAcct []byte
 	EthPubk []byte
@@ -72,7 +74,7 @@ type Handlers struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool) {
+func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	srpc.cancelCtx = cf
@@ -81,6 +83,7 @@ func (srpc *Handlers) Init(database *db.Database, app *application.Application, 
 	srpc.database = database
 	srpc.AppHandler = app
 	srpc.GossipBus = gh
+	srpc.Storage = storage
 	srpc.EthPubk = pubk
 	srpc.sstore = &lstate.Store{}
 	srpc.sstore.Init(database)
@@ -637,4 +640,53 @@ func (srpc *Handlers) HandleLocalStateGetTxBlockNumber(ctx context.Context, req 
 	}
 	result := &pb.TxBlockNumberResponse{BlockHeight: height}
 	return result, nil
+}
+
+func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRequest) (*pb.FeeResponse, error) {
+	if err := srpc.notReady(); err != nil {
+		return nil, err
+	}
+
+	sg := srpc.Storage
+	txFee := sg.GetMinTxFee()
+	txfs, err := bigIntToString(txFee)
+	if err != nil {
+		return nil, err
+	}
+
+	vsFee := sg.GetValueStoreFee()
+	vsfs, err := bigIntToString(vsFee)
+	if err != nil {
+		return nil, err
+	}
+	dsFee := sg.GetDataStoreEpochFee()
+	dsfs, err := bigIntToString(dsFee)
+	if err != nil {
+		return nil, err
+	}
+	asFee := sg.GetAtomicSwapFee()
+	asfs, err := bigIntToString(asFee)
+	if err != nil {
+		return nil, err
+	}
+	result := &pb.FeeResponse{
+		MinTxFee:      txfs,
+		ValueStoreFee: vsfs,
+		DataStoreFee:  dsfs,
+		AtomicSwapFee: asfs,
+	}
+
+	return result, nil
+}
+
+func bigIntToString(b *big.Int) (string, error) {
+	bu, err := new(uint256.Uint256).FromBigInt(b)
+	if err != nil {
+		return "", err
+	}
+	bs, err := bu.MarshalString()
+	if err != nil {
+		return "", err
+	}
+	return bs, nil
 }

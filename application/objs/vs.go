@@ -173,16 +173,16 @@ func (b *ValueStore) UTXOID() ([]byte, error) {
 	return utils.CopySlice(b.utxoID), nil
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *ValueStore) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *ValueStore) TxOutIdx() (uint32, error) {
 	if b == nil || b.VSPreImage == nil {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.VSPreImage.TXOutIdx, nil
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *ValueStore) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *ValueStore) SetTxOutIdx(idx uint32) error {
 	if b == nil || b.VSPreImage == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
@@ -305,7 +305,7 @@ func (b *ValueStore) ValidateFee(storage *wrapper.Storage) error {
 	}
 	if b.IsDeposit() {
 		if !fee.IsZero() {
-			return errorz.ErrInvalid{}.New("vs: invalid fee; deposits should have fee equal zero")
+			return errorz.ErrInvalid{}.New("ValueStore: invalid fee; deposits should have fee equal zero")
 		}
 		return nil
 	}
@@ -314,7 +314,7 @@ func (b *ValueStore) ValidateFee(storage *wrapper.Storage) error {
 		return err
 	}
 	if fee.Cmp(feeTrue) != 0 {
-		return errorz.ErrInvalid{}.New("vs: invalid fee")
+		return errorz.ErrInvalid{}.New("ValueStore: invalid fee")
 	}
 	return nil
 }
@@ -338,7 +338,7 @@ func (b *ValueStore) ValidateSignature(txIn *TXIn) error {
 
 // MakeTxIn constructs a TXIn object for the current object
 func (b *ValueStore) MakeTxIn() (*TXIn, error) {
-	txOutIdx, err := b.TXOutIdx()
+	txOutIdx, err := b.TxOutIdx()
 	if err != nil {
 		return nil, err
 	}

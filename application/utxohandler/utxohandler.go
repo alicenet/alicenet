@@ -29,7 +29,7 @@ import (
 // A DS CAN ONLY BE WRITTEN IF
 //    THE OWNER INDEX DOES NOT ALREADY EXIST OR IS CONSUMED DURING THE INPUTS
 //    THE OWNER INDEX IS A UNIQUE OUTPUT IN THE BATCH OF TXS
-//TODO SET UP PRUNING
+// TODO SET UP PRUNING
 
 // NewUTXOHandler constructs a new UTXOHandler
 func NewUTXOHandler(dB *badger.DB) *UTXOHandler {
@@ -586,12 +586,13 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 		utils.DebugTrace(ut.logger, err)
 		return errorz.ErrInvalid{}.New("utxoID conflict")
 	}
-	owner, err := utxo.GenericOwner()
-	if err != nil {
-		utils.DebugTrace(ut.logger, err)
-		return err
-	}
-	if utxo.HasDataStore() {
+	switch {
+	case utxo.HasDataStore():
+		owner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
 		ds, err := utxo.DataStore()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
@@ -622,7 +623,12 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	} else {
+	case utxo.HasValueStore():
+		owner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
 		value, err := utxo.Value()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
@@ -633,6 +639,10 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
+	case utxo.HasAtomicSwap():
+		panic("UTXOHandler.addOne has not been implemented for AtomicSwap objects")
+	default:
+		panic("utxo type not defined in UTXOHandler.addOne")
 	}
 	key := ut.makeUTXOKey(utxoID)
 	if err := db.SetUTXO(txn, key, utxo); err != nil {
@@ -697,12 +707,13 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 		utils.DebugTrace(ut.logger, err)
 		return err
 	}
-	owner, err := utxo.GenericOwner()
-	if err != nil {
-		utils.DebugTrace(ut.logger, err)
-		return err
-	}
-	if utxo.HasDataStore() {
+	switch {
+	case utxo.HasDataStore():
+		owner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
 		ds, err := utxo.DataStore()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
@@ -733,7 +744,12 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	} else {
+	case utxo.HasValueStore():
+		owner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
 		value, err := utxo.Value()
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
@@ -744,6 +760,10 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
+	case utxo.HasAtomicSwap():
+		panic("UTXOHandler.addOneFastSync has not been implemented for AtomicSwap objects")
+	default:
+		panic("utxo type not defined in UTXOHandler.addOneFastSync")
 	}
 	key := ut.makeUTXOKey(utxoID)
 	if err := db.SetUTXO(txn, key, utxo); err != nil {
@@ -791,7 +811,7 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID []byte, pr
 		if err != nil {
 			return err
 		}
-		utxoIdxOut, err := utxo.TXOutIdx()
+		utxoIdxOut, err := utxo.TxOutIdx()
 		if err != nil {
 			return err
 		}

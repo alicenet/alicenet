@@ -1418,6 +1418,115 @@ func (x *RoundStateForValidatorResponse) GetRoundState() []byte {
 	return nil
 }
 
+type FeeRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *FeeRequest) Reset() {
+	*x = FeeRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_localstatetypes_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FeeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FeeRequest) ProtoMessage() {}
+
+func (x *FeeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_localstatetypes_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FeeRequest.ProtoReflect.Descriptor instead.
+func (*FeeRequest) Descriptor() ([]byte, []int) {
+	return file_localstatetypes_proto_rawDescGZIP(), []int{28}
+}
+
+type FeeResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	MinTxFee      string `protobuf:"bytes,1,opt,name=MinTxFee,proto3" json:"MinTxFee,omitempty"`
+	ValueStoreFee string `protobuf:"bytes,2,opt,name=ValueStoreFee,proto3" json:"ValueStoreFee,omitempty"`
+	DataStoreFee  string `protobuf:"bytes,3,opt,name=DataStoreFee,proto3" json:"DataStoreFee,omitempty"`
+	AtomicSwapFee string `protobuf:"bytes,4,opt,name=AtomicSwapFee,proto3" json:"AtomicSwapFee,omitempty"`
+}
+
+func (x *FeeResponse) Reset() {
+	*x = FeeResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_localstatetypes_proto_msgTypes[29]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FeeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FeeResponse) ProtoMessage() {}
+
+func (x *FeeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_localstatetypes_proto_msgTypes[29]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FeeResponse.ProtoReflect.Descriptor instead.
+func (*FeeResponse) Descriptor() ([]byte, []int) {
+	return file_localstatetypes_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *FeeResponse) GetMinTxFee() string {
+	if x != nil {
+		return x.MinTxFee
+	}
+	return ""
+}
+
+func (x *FeeResponse) GetValueStoreFee() string {
+	if x != nil {
+		return x.ValueStoreFee
+	}
+	return ""
+}
+
+func (x *FeeResponse) GetDataStoreFee() string {
+	if x != nil {
+		return x.DataStoreFee
+	}
+	return ""
+}
+
+func (x *FeeResponse) GetAtomicSwapFee() string {
+	if x != nil {
+		return x.AtomicSwapFee
+	}
+	return ""
+}
+
 type IterateNameSpaceResponse_Result struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1430,7 +1539,7 @@ type IterateNameSpaceResponse_Result struct {
 func (x *IterateNameSpaceResponse_Result) Reset() {
 	*x = IterateNameSpaceResponse_Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_localstatetypes_proto_msgTypes[28]
+		mi := &file_localstatetypes_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1443,7 +1552,7 @@ func (x *IterateNameSpaceResponse_Result) String() string {
 func (*IterateNameSpaceResponse_Result) ProtoMessage() {}
 
 func (x *IterateNameSpaceResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_localstatetypes_proto_msgTypes[28]
+	mi := &file_localstatetypes_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1594,8 +1703,19 @@ var file_localstatetypes_proto_rawDesc = []byte{
 	0x1e, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x46, 0x6f, 0x72, 0x56, 0x61,
 	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
 	0x1e, 0x0a, 0x0a, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x0c, 0x52, 0x0a, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x01, 0x28, 0x0c, 0x52, 0x0a, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22,
+	0x0c, 0x0a, 0x0a, 0x46, 0x65, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x99, 0x01,
+	0x0a, 0x0b, 0x46, 0x65, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a, 0x0a,
+	0x08, 0x4d, 0x69, 0x6e, 0x54, 0x78, 0x46, 0x65, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x4d, 0x69, 0x6e, 0x54, 0x78, 0x46, 0x65, 0x65, 0x12, 0x24, 0x0a, 0x0d, 0x56, 0x61, 0x6c,
+	0x75, 0x65, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x46, 0x65, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0d, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x46, 0x65, 0x65, 0x12,
+	0x22, 0x0a, 0x0c, 0x44, 0x61, 0x74, 0x61, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x46, 0x65, 0x65, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x44, 0x61, 0x74, 0x61, 0x53, 0x74, 0x6f, 0x72, 0x65,
+	0x46, 0x65, 0x65, 0x12, 0x24, 0x0a, 0x0d, 0x41, 0x74, 0x6f, 0x6d, 0x69, 0x63, 0x53, 0x77, 0x61,
+	0x70, 0x46, 0x65, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x41, 0x74, 0x6f, 0x6d,
+	0x69, 0x63, 0x53, 0x77, 0x61, 0x70, 0x46, 0x65, 0x65, 0x42, 0x09, 0x5a, 0x07, 0x2f, 0x3b, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1610,7 +1730,7 @@ func file_localstatetypes_proto_rawDescGZIP() []byte {
 	return file_localstatetypes_proto_rawDescData
 }
 
-var file_localstatetypes_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_localstatetypes_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_localstatetypes_proto_goTypes = []interface{}{
 	(*GetDataRequest)(nil),                  // 0: proto.GetDataRequest
 	(*GetDataResponse)(nil),                 // 1: proto.GetDataResponse
@@ -1640,18 +1760,20 @@ var file_localstatetypes_proto_goTypes = []interface{}{
 	(*ValidatorSetResponse)(nil),            // 25: proto.ValidatorSetResponse
 	(*RoundStateForValidatorRequest)(nil),   // 26: proto.RoundStateForValidatorRequest
 	(*RoundStateForValidatorResponse)(nil),  // 27: proto.RoundStateForValidatorResponse
-	(*IterateNameSpaceResponse_Result)(nil), // 28: proto.IterateNameSpaceResponse.Result
-	(*Tx)(nil),                              // 29: proto.Tx
-	(*BlockHeader)(nil),                     // 30: proto.BlockHeader
-	(*TXOut)(nil),                           // 31: proto.TXOut
+	(*FeeRequest)(nil),                      // 28: proto.FeeRequest
+	(*FeeResponse)(nil),                     // 29: proto.FeeResponse
+	(*IterateNameSpaceResponse_Result)(nil), // 30: proto.IterateNameSpaceResponse.Result
+	(*Tx)(nil),                              // 31: proto.Tx
+	(*BlockHeader)(nil),                     // 32: proto.BlockHeader
+	(*TXOut)(nil),                           // 33: proto.TXOut
 }
 var file_localstatetypes_proto_depIdxs = []int32{
-	29, // 0: proto.MinedTransactionResponse.Tx:type_name -> proto.Tx
-	30, // 1: proto.BlockHeaderResponse.BlockHeader:type_name -> proto.BlockHeader
-	31, // 2: proto.UTXOResponse.UTXOs:type_name -> proto.TXOut
-	29, // 3: proto.PendingTransactionResponse.Tx:type_name -> proto.Tx
-	29, // 4: proto.TransactionData.Tx:type_name -> proto.Tx
-	28, // 5: proto.IterateNameSpaceResponse.Results:type_name -> proto.IterateNameSpaceResponse.Result
+	31, // 0: proto.MinedTransactionResponse.Tx:type_name -> proto.Tx
+	32, // 1: proto.BlockHeaderResponse.BlockHeader:type_name -> proto.BlockHeader
+	33, // 2: proto.UTXOResponse.UTXOs:type_name -> proto.TXOut
+	31, // 3: proto.PendingTransactionResponse.Tx:type_name -> proto.Tx
+	31, // 4: proto.TransactionData.Tx:type_name -> proto.Tx
+	30, // 5: proto.IterateNameSpaceResponse.Results:type_name -> proto.IterateNameSpaceResponse.Result
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
@@ -2004,6 +2126,30 @@ func file_localstatetypes_proto_init() {
 			}
 		}
 		file_localstatetypes_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FeeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_localstatetypes_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FeeResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_localstatetypes_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IterateNameSpaceResponse_Result); i {
 			case 0:
 				return &v.state
@@ -2022,7 +2168,7 @@ func file_localstatetypes_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_localstatetypes_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

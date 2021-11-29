@@ -112,16 +112,16 @@ func (b *AtomicSwap) UTXOID() ([]byte, error) {
 	return utils.CopySlice(b.utxoID), nil
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *AtomicSwap) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *AtomicSwap) TxOutIdx() (uint32, error) {
 	if b == nil || b.ASPreImage == nil {
 		return 0, errorz.ErrInvalid{}.New("not initialized")
 	}
 	return b.ASPreImage.TXOutIdx, nil
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *AtomicSwap) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *AtomicSwap) SetTxOutIdx(idx uint32) error {
 	if b == nil || b.ASPreImage == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
@@ -242,7 +242,7 @@ func (b *AtomicSwap) ValidateFee(storage *wrapper.Storage) error {
 		return err
 	}
 	if fee.Cmp(feeTrue) != 0 {
-		return errorz.ErrInvalid{}.New("invalid fee")
+		return errorz.ErrInvalid{}.New("invalid AtomicSwap fee")
 	}
 	return nil
 }
@@ -307,7 +307,7 @@ func (b *AtomicSwap) SignAsAlternate(txIn *TXIn, signer *crypto.Secp256k1Signer,
 
 // MakeTxIn constructs a TXIn object for the current object
 func (b *AtomicSwap) MakeTxIn() (*TXIn, error) {
-	txOutIdx, err := b.TXOutIdx()
+	txOutIdx, err := b.TxOutIdx()
 	if err != nil {
 		return nil, err
 	}

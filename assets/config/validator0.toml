@@ -1,6 +1,7 @@
 [loglevel]
 ethereum = "info"
 
+
 [chain]
 id = 42
 stateDB = "~/validator0/"

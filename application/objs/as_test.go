@@ -224,7 +224,7 @@ func TestAtomicSwapBad2(t *testing.T) {
 	if exp != asExp {
 		t.Fatal("as.Exp does not agree")
 	}
-	txOutIdx, err := as.TXOutIdx()
+	txOutIdx, err := as.TxOutIdx()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,37 +436,37 @@ func TestAtomicSwapUTXOID(t *testing.T) {
 	}
 }
 
-func TestAtomicSwapTXOutIdx(t *testing.T) {
+func TestAtomicSwapTxOutIdx(t *testing.T) {
 	// todo remove after AS holding logic implemented
 	return
 	utxo := &TXOut{}
-	_, err := utxo.atomicSwap.TXOutIdx()
+	_, err := utxo.atomicSwap.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
 	as := &AtomicSwap{}
-	_, err = as.TXOutIdx()
+	_, err = as.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
 }
 
-func TestAtomicSwapSetTXOutIdx(t *testing.T) {
+func TestAtomicSwapSetTxOutIdx(t *testing.T) {
 	// todo remove after AS holding logic implemented
 	return
 	idx := uint32(0)
 	utxo := &TXOut{}
-	err := utxo.atomicSwap.SetTXOutIdx(idx)
+	err := utxo.atomicSwap.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
 	as := &AtomicSwap{}
-	err = as.SetTXOutIdx(idx)
+	err = as.SetTxOutIdx(idx)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
 	as.ASPreImage = &ASPreImage{}
-	err = as.SetTXOutIdx(idx)
+	err = as.SetTxOutIdx(idx)
 	if err != nil {
 		t.Fatal(err)
 	}

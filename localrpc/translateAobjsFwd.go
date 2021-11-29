@@ -7,16 +7,6 @@ import (
 	to "github.com/MadBase/MadNet/proto"
 )
 
-// TODO: ForwardTranslateTXOut and ReverseTranslateTXOut need to be updated
-//		 to include TxFee option in switch case. There is no option at this
-//		 point.
-//
-//		 The challenge is that there is nothing in particular that should
-//		 require this information to be fully transmitted, as anyone is
-//		 able to make a related TxFee object. This is because Tx objects
-//		 will eventually be transmitted and will *include* TxFee objects.
-//		 How this is specified as compactly as possible should be investigated.
-
 func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
 	t := &to.DataStore{}
 	if f == nil {
@@ -189,18 +179,6 @@ func ForwardTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		tt := &to.TXOut_DataStore{DataStore: newObj}
 		t := &to.TXOut{Utxo: tt}
 		return t, nil
-	case f.HasTxFee():
-		obj, err := f.TxFee()
-		if err != nil {
-			return nil, err
-		}
-		newObj, err := ForwardTranslateTxFee(obj)
-		if err != nil {
-			return nil, err
-		}
-		tt := &to.TXOut_TxFee{TxFee: newObj}
-		t := &to.TXOut{Utxo: tt}
-		return t, nil
 	default:
 		return nil, errors.New("no txout in forward translate")
 	}
@@ -226,6 +204,12 @@ func ForwardTranslateTx(f *from.Tx) (*to.Tx, error) {
 			return nil, err
 		}
 		t.Vout = append(t.Vout, newVout)
+	}
+
+	var err error
+	t.Fee, err = f.Fee.MarshalString()
+	if err != nil {
+		return nil, err
 	}
 	return t, nil
 }
@@ -341,43 +325,6 @@ func ForwardTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 			return nil, err
 		}
 		t.TXInLinker = newTXInLinker
-	}
-	return t, nil
-}
-
-func ForwardTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
-	t := &to.TxFee{}
-	if f == nil {
-		return nil, errors.New("txFee object should not be nil")
-	}
-
-	newTxHash := ForwardTranslateByte(f.TxHash)
-
-	t.TxHash = newTxHash
-
-	if f.TFPreImage != nil {
-		newTFPreImage, err := ForwardTranslateTFPreImage(f.TFPreImage)
-		if err != nil {
-			return nil, err
-		}
-		t.TFPreImage = newTFPreImage
-	}
-	return t, nil
-}
-
-func ForwardTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
-	t := &to.TFPreImage{}
-	if f == nil {
-		return nil, errors.New("object of type TFPreImage should not be nil")
-	}
-
-	t.ChainID = f.ChainID
-	t.TXOutIdx = f.TXOutIdx
-
-	var err error
-	t.Fee, err = f.Fee.MarshalString()
-	if err != nil {
-		return nil, err
 	}
 	return t, nil
 }

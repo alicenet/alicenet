@@ -267,9 +267,9 @@ func (txv TxVec) PreValidatePending(chainID uint32) error {
 }
 
 // PostValidatePending ...
-func (txv TxVec) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error {
+func (txv TxVec) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
 	for i := 0; i < len(txv); i++ {
-		if err := txv[i].PostValidatePending(currentHeight, consumedUTXOs); err != nil {
+		if err := txv[i].PostValidatePending(currentHeight, consumedUTXOs, storage); err != nil {
 			return err
 		}
 	}

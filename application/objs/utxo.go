@@ -16,12 +16,10 @@ type TXOut struct {
 	dataStore  *DataStore
 	valueStore *ValueStore
 	atomicSwap *AtomicSwap
-	txFee      *TxFee
 	// not part of serialized object below this line
 	hasDataStore  bool
 	hasValueStore bool
 	hasAtomicSwap bool
-	hasTxFee      bool
 }
 
 // CreateValueStore makes a new ValueStore
@@ -49,11 +47,9 @@ func (b *TXOut) NewDataStore(v *DataStore) error {
 	b.hasDataStore = true
 	b.hasValueStore = false
 	b.hasAtomicSwap = false
-	b.hasTxFee = false
 	b.dataStore = v
 	b.atomicSwap = nil
 	b.valueStore = nil
-	b.txFee = nil
 	return nil
 }
 
@@ -62,11 +58,9 @@ func (b *TXOut) NewValueStore(v *ValueStore) error {
 	b.hasDataStore = false
 	b.hasValueStore = true
 	b.hasAtomicSwap = false
-	b.hasTxFee = false
 	b.dataStore = nil
 	b.valueStore = v
 	b.atomicSwap = nil
-	b.txFee = nil
 	return nil
 }
 
@@ -75,24 +69,9 @@ func (b *TXOut) NewAtomicSwap(v *AtomicSwap) error {
 	b.hasDataStore = false
 	b.hasValueStore = false
 	b.hasAtomicSwap = true
-	b.hasTxFee = false
 	b.dataStore = nil
 	b.valueStore = nil
 	b.atomicSwap = v
-	b.txFee = nil
-	return nil
-}
-
-// NewTxFee makes a TXOut object which with the specified TxFee
-func (b *TXOut) NewTxFee(v *TxFee) error {
-	b.hasDataStore = false
-	b.hasValueStore = false
-	b.hasAtomicSwap = false
-	b.hasTxFee = true
-	b.dataStore = nil
-	b.valueStore = nil
-	b.atomicSwap = nil
-	b.txFee = v
 	return nil
 }
 
@@ -120,14 +99,6 @@ func (b *TXOut) HasAtomicSwap() bool {
 	return b.hasAtomicSwap
 }
 
-// HasTxFee specifies if the TXOut object has a TxFee
-func (b *TXOut) HasTxFee() bool {
-	if b == nil {
-		return false
-	}
-	return b.hasTxFee
-}
-
 // DataStore returns the DataStore of the TXOut object if it exists
 func (b *TXOut) DataStore() (*DataStore, error) {
 	if b.HasDataStore() {
@@ -150,14 +121,6 @@ func (b *TXOut) AtomicSwap() (*AtomicSwap, error) {
 		return b.atomicSwap, nil
 	}
 	return nil, errorz.ErrInvalid{}.New("object does not have an AtomicSwap")
-}
-
-// TxFee returns the TxFee of the TXOut object if it exists
-func (b *TXOut) TxFee() (*TxFee, error) {
-	if b.HasTxFee() {
-		return b.txFee, nil
-	}
-	return nil, errorz.ErrInvalid{}.New("object does not have a TxFee")
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
@@ -202,8 +165,6 @@ func (b *TXOut) UnmarshalCapn(bc mdefs.TXOut) error {
 		b.hasValueStore = false
 		b.atomicSwap = nil
 		b.hasAtomicSwap = false
-		b.txFee = nil
-		b.hasTxFee = false
 	case bc.HasValueStore():
 		cObj, err := bc.ValueStore()
 		if err != nil {
@@ -220,8 +181,6 @@ func (b *TXOut) UnmarshalCapn(bc mdefs.TXOut) error {
 		b.hasValueStore = true
 		b.atomicSwap = nil
 		b.hasAtomicSwap = false
-		b.txFee = nil
-		b.hasTxFee = false
 	case bc.HasAtomicSwap():
 		cObj, err := bc.AtomicSwap()
 		if err != nil {
@@ -238,26 +197,6 @@ func (b *TXOut) UnmarshalCapn(bc mdefs.TXOut) error {
 		b.hasValueStore = false
 		b.atomicSwap = obj
 		b.hasAtomicSwap = true
-		b.txFee = nil
-		b.hasTxFee = false
-	case bc.HasTxFee():
-		cObj, err := bc.TxFee()
-		if err != nil {
-			return err
-		}
-		obj := &TxFee{}
-		err = obj.UnmarshalCapn(cObj)
-		if err != nil {
-			return err
-		}
-		b.dataStore = nil
-		b.hasDataStore = false
-		b.valueStore = nil
-		b.hasValueStore = false
-		b.atomicSwap = nil
-		b.hasAtomicSwap = false
-		b.txFee = obj
-		b.hasTxFee = true
 	default:
 		return errorz.ErrInvalid{}.New("TXOut type not defined in UnmarshalCapn")
 	}
@@ -313,14 +252,6 @@ func (b *TXOut) MarshalCapn(seg *capnp.Segment) (mdefs.TXOut, error) {
 		if err := bc.SetAtomicSwap(as); err != nil {
 			return bc, err
 		}
-	case b.hasTxFee:
-		tf, err := b.txFee.MarshalCapn(seg)
-		if err != nil {
-			return bc, err
-		}
-		if err := bc.SetTxFee(tf); err != nil {
-			return bc, err
-		}
 	default:
 		return mdefs.TXOut{}, errorz.ErrInvalid{}.New("TXOut type not defined in MarshalCapn")
 	}
@@ -339,9 +270,6 @@ func (b *TXOut) PreHash() ([]byte, error) {
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
 		return obj.PreHash()
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
-		return obj.PreHash()
 	default:
 		return nil, errorz.ErrInvalid{}.New("TXOut type not defined in PreHash")
 	}
@@ -358,9 +286,6 @@ func (b *TXOut) UTXOID() ([]byte, error) {
 		return obj.UTXOID()
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.UTXOID()
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
 		return obj.UTXOID()
 	default:
 		return nil, errorz.ErrInvalid{}.New("TXOut type not defined in UTXOID")
@@ -379,51 +304,42 @@ func (b *TXOut) ChainID() (uint32, error) {
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
 		return obj.ChainID()
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
-		return obj.ChainID()
 	default:
 		return 0, errorz.ErrInvalid{}.New("TXOut type not defined for ChainID")
 	}
 }
 
-// TXOutIdx returns the TXOutIdx of the object
-func (b *TXOut) TXOutIdx() (uint32, error) {
+// TxOutIdx returns the TxOutIdx of the object
+func (b *TXOut) TxOutIdx() (uint32, error) {
 	switch {
 	case b.HasDataStore():
 		obj, _ := b.DataStore()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.TXOutIdx()
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
-		return obj.TXOutIdx()
+		return obj.TxOutIdx()
 	default:
-		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in TXOutIdx")
+		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in TxOutIdx")
 	}
 }
 
-// SetTXOutIdx sets the TXOutIdx of the object
-func (b *TXOut) SetTXOutIdx(idx uint32) error {
+// SetTxOutIdx sets the TxOutIdx of the object
+func (b *TXOut) SetTxOutIdx(idx uint32) error {
 	switch {
 	case b.HasDataStore():
 		obj, _ := b.DataStore()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.SetTXOutIdx(idx)
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
-		return obj.SetTXOutIdx(idx)
+		return obj.SetTxOutIdx(idx)
 	default:
-		return errorz.ErrInvalid{}.New("TXOut type not defined in SetTXOutIdx")
+		return errorz.ErrInvalid{}.New("TXOut type not defined in SetTxOutIdx")
 	}
 }
 
@@ -449,12 +365,6 @@ func (b *TXOut) TxHash() ([]byte, error) {
 			return nil, errorz.ErrInvalid{}.New("not initialized")
 		}
 		return utils.CopySlice(obj.TxHash), nil
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
-		if obj == nil || len(obj.TxHash) != constants.HashLen {
-			return nil, errorz.ErrInvalid{}.New("not initialized")
-		}
-		return utils.CopySlice(obj.TxHash), nil
 	default:
 		return nil, errorz.ErrInvalid{}.New("TXOut type not defined in TxHash")
 	}
@@ -471,9 +381,6 @@ func (b *TXOut) SetTxHash(txHash []byte) error {
 		return obj.SetTxHash(utils.CopySlice(txHash))
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
-		return obj.SetTxHash(utils.CopySlice(txHash))
-	case b.HasTxFee():
-		obj, _ := b.TxFee()
 		return obj.SetTxHash(utils.CopySlice(txHash))
 	default:
 		return errorz.ErrInvalid{}.New("TXOut type not defined in SetTxHash")
@@ -559,11 +466,6 @@ func (b *TXOut) ValuePlusFee() (*uint256.Uint256, error) {
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
 		return obj.ValuePlusFee()
-	case b.HasTxFee():
-		// We return the fee because ValuePlusFee is called to calculate
-		// the total value out of the Tx; this must include TxFee.
-		obj, _ := b.TxFee()
-		return obj.Fee()
 	default:
 		return nil, errorz.ErrInvalid{}.New("TXOut type not defined in ValuePlusFee")
 	}
@@ -581,11 +483,6 @@ func (b *TXOut) ValidateFee(storage *wrapper.Storage) error {
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
 		return obj.ValidateFee(storage)
-	case b.HasTxFee():
-		// We cannot validate the total transaction fee here because
-		// we must look at the *entire* Tx object to ensure at most one TxFee
-		// UTXO is present
-		return nil
 	default:
 		return errorz.ErrInvalid{}.New("TXOut type not defined in ValidateFee")
 	}
@@ -600,8 +497,6 @@ func (b *TXOut) ValidatePreSignature() error {
 	case b.HasValueStore():
 		return nil
 	case b.HasAtomicSwap():
-		return nil
-	case b.HasTxFee():
 		return nil
 	default:
 		return errorz.ErrInvalid{}.New("TXOut type not defined in ValidatePreSignature")
@@ -620,8 +515,6 @@ func (b *TXOut) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 	case b.HasAtomicSwap():
 		obj, _ := b.AtomicSwap()
 		return obj.ValidateSignature(currentHeight, txIn)
-	case b.HasTxFee():
-		return nil
 	default:
 		return errorz.ErrInvalid{}.New("TXOut type not defined in ValidateSignature")
 	}
@@ -646,8 +539,6 @@ func (b *TXOut) MustBeMinedBeforeHeight() (uint32, error) {
 			return 0, err
 		}
 		return (iat * constants.EpochLength) - 1, nil
-	case b.HasTxFee():
-		return constants.MaxUint32, nil
 	default:
 		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in MustBeMinedBeforeHeight")
 	}
@@ -672,8 +563,6 @@ func (b *TXOut) CannotBeMinedBeforeHeight() (uint32, error) {
 			return 0, err
 		}
 		return (iat-1)*constants.EpochLength + 1, nil
-	case b.HasTxFee():
-		return 1, nil
 	default:
 		return 0, errorz.ErrInvalid{}.New("TXOut type not defined in MustBeMinedBeforeHeight")
 	}

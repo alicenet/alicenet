@@ -162,6 +162,16 @@ func ReverseTranslateTx(f *from.Tx) (*to.Tx, error) {
 		}
 		t.Vout = append(t.Vout, newVout)
 	}
+
+	if len(f.Fee) == 0 {
+		f.Fee = "0"
+	}
+	t.Fee = &uint256.Uint256{}
+	err := t.Fee.UnmarshalString(f.Fee)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -198,17 +208,6 @@ func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 		}
 
 		err = t.NewDataStore(obj)
-		if err != nil {
-			return nil, err
-		}
-	case *from.TXOut_TxFee:
-		ff := f.GetTxFee()
-		obj, err := ReverseTranslateTxFee(ff)
-		if err != nil {
-			return nil, err
-		}
-
-		err = t.NewTxFee(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -337,39 +336,6 @@ func ReverseTranslateTXIn(f *from.TXIn) (*to.TXIn, error) {
 			return nil, err
 		}
 		t.TXInLinker = newTXInLinker
-	}
-	return t, nil
-}
-
-func ReverseTranslateTxFee(f *from.TxFee) (*to.TxFee, error) {
-	t := &to.TxFee{}
-	newTxHash, err := ReverseTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
-	t.TxHash = newTxHash
-
-	if f.TFPreImage != nil {
-		newTFPreImage, err := ReverseTranslateTFPreImage(f.TFPreImage)
-		if err != nil {
-			return nil, err
-		}
-		t.TFPreImage = newTFPreImage
-	}
-	return t, nil
-}
-
-func ReverseTranslateTFPreImage(f *from.TFPreImage) (*to.TFPreImage, error) {
-	t := &to.TFPreImage{}
-	t.ChainID = f.ChainID
-	t.TXOutIdx = f.TXOutIdx
-	if len(f.Fee) == 0 {
-		f.Fee = "0"
-	}
-	t.Fee = &uint256.Uint256{}
-	err := t.Fee.UnmarshalString(f.Fee)
-	if err != nil {
-		return nil, err
 	}
 	return t, nil
 }

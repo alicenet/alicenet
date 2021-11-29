@@ -8,6 +8,7 @@ import (
 
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
 	"github.com/MadBase/MadNet/application/objs/tx"
+	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/constants"
@@ -23,6 +24,7 @@ var _ interfaces.Transaction = (*Tx)(nil)
 type Tx struct {
 	Vin  Vin
 	Vout Vout
+	Fee  *uint256.Uint256
 	// not part of serialized object below this line
 	txHash []byte
 }
@@ -40,7 +42,7 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 // MarshalBinary takes the Tx object and returns the canonical
 // byte slice
 func (b *Tx) MarshalBinary() ([]byte, error) {
-	if b == nil {
+	if b == nil || b.Fee == nil {
 		return nil, errorz.ErrInvalid{}.New("not initialized")
 	}
 	if len(b.Vin) > constants.MaxTxVectorLength {
@@ -90,6 +92,21 @@ func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 	}
 	b.Vin = invec
 	b.Vout = outvec
+	u32array := [8]uint32{}
+	u32array[0] = bc.Fee0()
+	u32array[1] = bc.Fee1()
+	u32array[2] = bc.Fee2()
+	u32array[3] = bc.Fee3()
+	u32array[4] = bc.Fee4()
+	u32array[5] = bc.Fee5()
+	u32array[6] = bc.Fee6()
+	u32array[7] = bc.Fee7()
+	fObj := &uint256.Uint256{}
+	err = fObj.FromUint32Array(u32array)
+	if err != nil {
+		return err
+	}
+	b.Fee = fObj
 	return nil
 }
 
@@ -151,6 +168,18 @@ func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	if err := bc.SetVout(vout); err != nil {
 		return bc, err
 	}
+	u32array, err := b.Fee.ToUint32Array()
+	if err != nil {
+		return bc, err
+	}
+	bc.SetFee0(u32array[0])
+	bc.SetFee1(u32array[1])
+	bc.SetFee2(u32array[2])
+	bc.SetFee3(u32array[3])
+	bc.SetFee4(u32array[4])
+	bc.SetFee5(u32array[5])
+	bc.SetFee6(u32array[6])
+	bc.SetFee7(u32array[7])
 	return bc, nil
 }
 
@@ -384,32 +413,33 @@ func (b *Tx) ValidatePreSignature() error {
 // ValidateFees validates the fees of the object.
 // currentHeight and refUTXOs are needed to verify if we have a cleanup tx.
 func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.Storage) error {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	if b.IsCleanupTx(currentHeight, refUTXOs) {
-		// Tx is a valid Cleanup Tx, so we do not worry about fees
+		// Tx is a valid Cleanup Tx, so we do not worry about fees.
 		return nil
 	}
 	if err := b.Vout.ValidateFees(storage); err != nil {
 		return err
 	}
-	if err := b.Vout.ValidateTxFee(storage); err != nil {
+	// Ensure Fee is above minimum
+	minTxFee, err := storage.GetMinTxFee()
+	if err != nil {
 		return err
+	}
+	if b.Fee.Lt(minTxFee) {
+		return errorz.ErrInvalid{}.New("Tx; Fee below minTxFee")
 	}
 	return nil
 }
 
 // ValidateEqualVinVout checks the following
 // calc sum on inputs from utxos and currentHeight
-// sum inputs must equal sum outputs
+// sum inputs must equal sum outputs plus fee
 func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
-	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 {
+	if b == nil || len(b.Vout) == 0 || len(b.Vin) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
-	}
-	valueOut, err := b.Vout.ValuePlusFee()
-	if err != nil {
-		return err
 	}
 	minBH, err := b.CannotBeMinedUntil()
 	if err != nil {
@@ -425,10 +455,18 @@ func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
 	if err != nil {
 		return err
 	}
-	if valueOut.Cmp(valueIn) == 0 {
+	valueOut, err := b.Vout.ValuePlusFee()
+	if err != nil {
+		return err
+	}
+	valueOutPlusFee, err := new(uint256.Uint256).Add(valueOut, b.Fee)
+	if err != nil {
+		return err
+	}
+	if valueOutPlusFee.Cmp(valueIn) == 0 {
 		return nil
 	}
-	return errorz.ErrInvalid{}.New(fmt.Sprintf("input value does not match output value: IN:%v  vs  OUT:%v", valueIn, valueOut))
+	return errorz.ErrInvalid{}.New(fmt.Sprintf("input value does not match output value: IN:%v  vs  OUT+Fee:%v", valueIn, valueOutPlusFee))
 }
 
 // ValidateChainID validates that all elements have the correct ChainID
@@ -541,7 +579,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 
 // Validate ...
 func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) (map[string]bool, error) {
-	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 {
+	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return nil, errorz.ErrInvalid{}.New("empty input or output vector in tx")
 	}
 	if err := b.Vout.ValidateTxOutIdx(); err != nil {
@@ -559,20 +597,24 @@ func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs V
 	if err != nil {
 		return nil, err
 	}
-	err = b.ValidateTxHash()
+	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
 	if err != nil {
 		return nil, err
 	}
-	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
+	err = b.ValidateTxHash()
 	if err != nil {
 		return nil, err
 	}
 	return set, nil
 }
 
-// PreValidatePending ...
+// PreValidatePending performs the initial check of a transaction
+// before it is added to the pending transaction pool.
+// This includes all of the basic validation logic that *all* transactions
+// must minimally pass to be valid.
+// Other important validation logic is included in PostValidatePending.
 func (b *Tx) PreValidatePending(chainID uint32) error {
-	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 {
+	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("empty input or output vector in tx")
 	}
 	err := b.ValidateChainID(chainID)
@@ -594,12 +636,17 @@ func (b *Tx) PreValidatePending(chainID uint32) error {
 	return nil
 }
 
-// PostValidatePending ...
-func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error {
-	if b == nil {
+// PostValidatePending performs the validation logic which occurs before
+// adding the transaction to the pending transaction pool.
+func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
+	if b == nil || len(b.Vin) == 0 || len(b.Vout) == 0 || b.Fee == nil {
 		return errorz.ErrInvalid{}.New("not initialized")
 	}
 	err := b.ValidateEqualVinVout(currentHeight, consumedUTXOs)
+	if err != nil {
+		return err
+	}
+	err = b.ValidateFees(currentHeight, consumedUTXOs, storage)
 	if err != nil {
 		return err
 	}
@@ -615,7 +662,7 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout) error
 // or ValueStoreFee. The CleaupTx must consist of *expired* DataStores
 // with value equal to that in the only ValueStore in Vout.
 func (b *Tx) IsCleanupTx(currentHeight uint32, refUTXOs Vout) bool {
-	if b == nil {
+	if b == nil || b.Fee == nil {
 		return false
 	}
 	// Confirm Vin
@@ -626,6 +673,14 @@ func (b *Tx) IsCleanupTx(currentHeight uint32, refUTXOs Vout) bool {
 	// Confirm Vout
 	cleanupVout := b.Vout.IsCleanupVout()
 	if !cleanupVout {
+		return false
+	}
+	// Confirm Fee is zero
+	if !b.Fee.IsZero() {
+		return false
+	}
+	// Confirm inputs equal outputs
+	if err := b.ValidateEqualVinVout(currentHeight, refUTXOs); err != nil {
 		return false
 	}
 	return true

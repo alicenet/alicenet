@@ -5,7 +5,7 @@ package proto;
 
 import "aobjs.proto";
 import "cobjs.proto";
-//option go_package = "github.com/MadBase/MadNet/proto";
+option go_package = "/;proto";
 
 
 message GetDataRequest {
@@ -129,4 +129,13 @@ message RoundStateForValidatorRequest {
 }
 message RoundStateForValidatorResponse {
     bytes RoundState = 1; // ignore for now
+}
+message FeeRequest {
+}
+
+message FeeResponse {
+string MinTxFee = 1;
+string ValueStoreFee = 2;
+string DataStoreFee = 3;
+string AtomicSwapFee = 4;
 }
