@@ -13,8 +13,14 @@ const numBytes = 32
 // ErrNotUint256 occurs when we work with a uint with more than 256 bits
 var ErrNotUint256 = errors.New("big.Ints are not at most 256-bit unsigned integers")
 
+// ErrInvalidData occurs data is invalid
+var ErrInvalidData = errors.New("invalid data")
+
 // MarshalBigInt converts a 256-bit uint into a byte slice.
 func MarshalBigInt(x *big.Int) ([]byte, error) {
+	if x == nil {
+		return nil, ErrInvalidData
+	}
 	xBytes := x.Bytes()
 	xBytesLen := len(xBytes)
 	if xBytesLen > numBytes {
@@ -35,6 +41,9 @@ func MarshalG1Big(hashPoint [2]*big.Int) ([]byte, error) {
 	hashMarsh := make([]byte, 2*numBytes)
 	x := hashPoint[0]
 	y := hashPoint[1]
+	if x == nil || y == nil {
+		return nil, ErrInvalidData
+	}
 	if x.Cmp(bigZero) == 0 {
 		return hashMarsh, nil
 	}
@@ -65,6 +74,9 @@ func MarshalG2Big(hashPoint [4]*big.Int) ([]byte, error) {
 	x := hashPoint[1]
 	yi := hashPoint[2]
 	y := hashPoint[3]
+	if x == nil || xi == nil || y == nil || yi == nil {
+		return nil, ErrInvalidData
+	}
 	if xi.Cmp(bigZero) == 0 {
 		return hashMarsh, nil
 	}
@@ -100,12 +112,15 @@ func MarshalG2Big(hashPoint [4]*big.Int) ([]byte, error) {
 }
 
 // G1ToBigIntArray converts cloudflare.G2 into big.Int array for testing purposes.
-func G1ToBigIntArray(g1 *cloudflare.G1) [2]*big.Int {
+func G1ToBigIntArray(g1 *cloudflare.G1) ([2]*big.Int, error) {
+	if g1 == nil {
+		return [2]*big.Int{}, ErrInvalidData
+	}
 	g1Bytes := g1.Marshal()
 	g1X := new(big.Int).SetBytes(g1Bytes[:numBytes])
 	g1Y := new(big.Int).SetBytes(g1Bytes[numBytes : 2*numBytes])
 	g1BigInt := [2]*big.Int{g1X, g1Y}
-	return g1BigInt
+	return g1BigInt, nil
 }
 
 // BigIntArrayToG1 converts Ethereum big.Int G1 arrays into cloudflare.G1
@@ -155,14 +170,17 @@ func BigIntArraySliceToG1(g1BigIntArray [][2]*big.Int) ([]*cloudflare.G1, error)
 }
 
 // G2ToBigIntArray converts cloudflare.G2 into big.Int array for testing purposes.
-func G2ToBigIntArray(g2 *cloudflare.G2) [4]*big.Int {
+func G2ToBigIntArray(g2 *cloudflare.G2) ([4]*big.Int, error) {
+	if g2 == nil {
+		return [4]*big.Int{}, ErrInvalidData
+	}
 	g2Bytes := g2.Marshal()
 	g2XI := new(big.Int).SetBytes(g2Bytes[:numBytes])
 	g2X := new(big.Int).SetBytes(g2Bytes[numBytes : 2*numBytes])
 	g2YI := new(big.Int).SetBytes(g2Bytes[2*numBytes : 3*numBytes])
 	g2Y := new(big.Int).SetBytes(g2Bytes[3*numBytes : 4*numBytes])
 	g2BigInt := [4]*big.Int{g2XI, g2X, g2YI, g2Y}
-	return g2BigInt
+	return g2BigInt, nil
 }
 
 // MarshalBigIntSlice returns a byte slice for encoding that we will use to

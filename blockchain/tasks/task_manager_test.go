@@ -106,6 +106,10 @@ func (eth *mockEthereum) UnlockAccount(accounts.Account) error {
 	return nil
 }
 
+func (eth *mockEthereum) UnlockAccountWithPasscode(accounts.Account, string) error {
+	return nil
+}
+
 func (eth *mockEthereum) TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
 	return nil, nil
 }
@@ -157,6 +161,10 @@ func (eth *mockEthereum) GetTimeoutContext() (context.Context, context.CancelFun
 }
 func (eth *mockEthereum) GetValidators(context.Context) ([]common.Address, error) {
 	return nil, nil
+}
+
+func (eth *mockEthereum) GetKnownAccounts() []accounts.Account {
+	return []accounts.Account{}
 }
 
 func (eth *mockEthereum) KnownSelectors() interfaces.SelectorMap {

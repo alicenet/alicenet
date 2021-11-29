@@ -25,6 +25,7 @@ func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	}
 }
 
+// Initialize prepares for work to be done in the Completion phase
 func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	dkgState, validState := state.(*objects.DkgState)

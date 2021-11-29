@@ -27,7 +27,10 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 	}
 }
 
-// This is not exported and does not lock so can only be called from within task. Return value indicates whether task has been initialized.
+// Initialize begins the setup phase for Register.
+// We construct our TransportPrivateKey and TransportPublicKey
+// which will be used in the ShareDistribution phase for secure communication.
+// These keys are *not* used otherwise.
 func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	dkgState, validState := state.(*objects.DkgState)
@@ -43,10 +46,8 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 	if err != nil {
 		return err
 	}
-
 	t.State.TransportPrivateKey = priv
 	t.State.TransportPublicKey = pub
-
 	return nil
 }
 
@@ -61,7 +62,6 @@ func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth in
 }
 
 func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -112,7 +112,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	}
 
 	t.Success = true
-
 	return nil
 }
 
@@ -121,7 +120,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

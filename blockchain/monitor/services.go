@@ -1,19 +1,6 @@
 package monitor
 
-import (
-	"context"
-	"time"
-
-	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-)
-
+/*
 // Services just a bundle of requirements common for monitoring functionality
 type Services struct {
 	logger            *logrus.Logger
@@ -127,3 +114,4 @@ func (svcs *Services) PersistSnapshot(blockHeader *objs.BlockHeader) error {
 
 	return nil
 }
+*/

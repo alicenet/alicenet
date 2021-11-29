@@ -15,7 +15,6 @@ import (
 
 // RetrieveParticipants retrieves participant details from ETHDKG contract
 func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (objects.ParticipantList, int, error) {
-
 	c := eth.Contracts()
 	myIndex := math.MaxInt32
 
@@ -27,9 +26,8 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 	n := int(bigN.Uint64())
 
 	// Now we retrieve participant details
-	participants := make(objects.ParticipantList, int(n))
+	participants := make(objects.ParticipantList, n)
 	for idx := 0; idx < n; idx++ {
-
 		// First retrieve the address
 		addr, err := c.Ethdkg().Addresses(callOpts, big.NewInt(int64(idx)))
 		if err != nil {
@@ -47,13 +45,15 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 			return nil, myIndex, objects.ErrCanNotContinue
 		}
 
+		// Make corresponding Participant object
 		participant := &objects.Participant{}
 		participant.Address = addr
 		participant.PublicKey = publicKey
-		participant.Index = idx
+		participant.Index = idx + 1
 
+		// Set own index
 		if callOpts.From == addr {
-			myIndex = idx
+			myIndex = idx + 1
 		}
 
 		participants[idx] = participant
@@ -62,6 +62,7 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 	return participants, myIndex, nil
 }
 
+// RetrieveSignature retrieves participant's signature from ETHDKG contract
 func RetrieveSignature(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([2]*big.Int, error) {
 	var err error
 	var sigBig [2]*big.Int
@@ -81,6 +82,7 @@ func RetrieveSignature(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr co
 	return sigBig, nil
 }
 
+// RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
 func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([4]*big.Int, error) {
 	var err error
 	var gpkjBig [4]*big.Int
@@ -110,6 +112,7 @@ func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, ad
 	return gpkjBig, nil
 }
 
+// IntsToBigInts converts an array of ints to an array of big ints
 func IntsToBigInts(ints []int) []*big.Int {
 	bi := make([]*big.Int, len(ints))
 	for idx, num := range ints {
@@ -118,6 +121,7 @@ func IntsToBigInts(ints []int) []*big.Int {
 	return bi
 }
 
+// LogReturnErrorf returns a formatted error for logger
 func LogReturnErrorf(logger *logrus.Entry, mess string, args ...interface{}) error {
 	message := fmt.Sprintf(mess, args...)
 	logger.Error(message)
