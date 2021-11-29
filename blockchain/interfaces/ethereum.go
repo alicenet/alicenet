@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,10 +29,8 @@ type Ethereum interface {
 	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
 
-	LoadAccounts(string)
-	LoadPasscodes(string) error
-
 	UnlockAccount(accounts.Account) error
+	UnlockAccountWithPasscode(accounts.Account, string) error
 
 	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
 
@@ -46,6 +44,7 @@ type Ethereum interface {
 	GetEndpoint() string
 	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
 	GetFinalizedHeight(context.Context) (uint64, error)
+	GetKnownAccounts() []accounts.Account
 	GetPeerCount(context.Context) (uint64, error)
 	GetSnapshot() ([]byte, error)
 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)

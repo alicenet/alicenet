@@ -2,6 +2,7 @@ package dkgtasks_test
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math"
 	"math/big"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -17,7 +19,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -55,27 +56,27 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
 
-func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interfaces.Ethereum {
+func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
-		"../../../assets/test/keys",
-		"../../../assets/test/passcodes.txt",
+		privateKeys,
 		6,
 		1*time.Second,
 		5*time.Second,
 		0,
-		big.NewInt(math.MaxInt64),
-		accountAddresses...)
+		big.NewInt(math.MaxInt64))
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
 	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
 
 	// Mine a block once a second
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			eth.Commit()
-		}
-	}()
+	if blockInterval > 1*time.Millisecond {
+		go func() {
+			for {
+				time.Sleep(blockInterval)
+				eth.Commit()
+			}
+		}()
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -93,10 +94,18 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 	// For each address passed set them up as a validator
 	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
 	assert.Nil(t, err, "Failed to create txn opts")
-	for idx := 1; idx < len(accountAddresses); idx++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+
+	accountList := eth.GetKnownAccounts()
+	for idx, acct := range accountList {
+		//	for idx := 1; idx < len(accountAddresses); idx++ {
+		// acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+		//assert.Nil(t, err)
+		err = eth.UnlockAccount(acct)
 		assert.Nil(t, err)
-		eth.UnlockAccount(acct)
+
+		eth.Commit()
+
+		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
 
 		// 1. Give 'acct' tokens
 		txn, err := c.StakingToken().Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
@@ -123,7 +132,10 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 
 		txn, err = c.Validators().AddValidator(o, acct.Address, validatorId)
 		assert.Nilf(t, err, "Failed on register %v", idx)
+		assert.NotNil(t, txn)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+		t.Logf("Finished loop %v of %v", idx+1, len(accountList))
+		eth.Commit()
 	}
 
 	// Wait for all transactions for all accounts to complete
@@ -140,7 +152,6 @@ func connectSimulatorEndpoint(t *testing.T, accountAddresses []string) interface
 }
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
-
 	defer wg.Done()
 
 	logger := logging.GetLogger("validator").
@@ -178,6 +189,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 			"Complete":              dkgState.Complete,
 			"CompleteEnd":           dkgState.CompleteEnd,
 			"HighestBlockProcessed": monitorState.HighestBlockProcessed,
+			"HighestBlockFinalized": monitorState.HighestBlockFinalized,
 			"Done":                  done,
 		}).Info("Completion check")
 		dkgState.RUnlock()
@@ -188,30 +200,51 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 	assert.True(t, dkgState.Complete)
 }
 
-func TestDkgSuccess(t *testing.T) {
+func SetupTasks(tr *objects.TypeRegistry) {
+	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+}
 
-	var accountAddresses []string = []string{
-		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F", "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
-		"0x63a6627b79813A7A43829490C4cE409254f64177", "0x16564cf3e880d9f5d09909f51b922941ebbbc24d"}
+func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
+	height, err := eth.GetFinalizedHeight(context.Background())
+	assert.Nil(t, err)
 
+	distance := target - height
+
+	for i := uint64(0); i < distance; i++ {
+		eth.Commit()
+	}
+}
+
+func IgnoreTestDkgSuccess(t *testing.T) {
 	for _, logger := range logging.GetKnownLoggers() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	eth := connectSimulatorEndpoint(t, accountAddresses)
+	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(5)
+
+	t.Logf("dkgStates:%v", dkgStates)
+	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
+
+	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
 
+	accountList := eth.GetKnownAccounts()
 	var ownerAccount accounts.Account
 
-	for idx := range accountAddresses {
-		a, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-		assert.Nil(t, err)
-		err = eth.UnlockAccount(a)
+	for idx, account := range accountList {
+		err := eth.UnlockAccount(account)
 		assert.Nil(t, err)
 
 		if idx == 0 {
-			ownerAccount = a
+			ownerAccount = account
 		}
 	}
 
@@ -227,19 +260,17 @@ func TestDkgSuccess(t *testing.T) {
 	// Start validators running
 	wg := sync.WaitGroup{}
 	tr := &objects.TypeRegistry{}
-	adminHandlers := make([]*adminHandlerMock, 0)
+	adminHandlers := make([]*adminHandlerMock, len(accountList))
 	SetupTasks(tr)
-	for i := 0; i < 5; i++ {
-		acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[i+1]))
-		assert.Nil(t, err)
-
-		adminHandlers = append(adminHandlers, new(adminHandlerMock))
+	//	for i := 1; i < len(accountList); i++ {
+	for i, account := range accountList {
+		adminHandlers[i] = new(adminHandlerMock)
 		wg.Add(1)
-		go validator(t, i, eth, acct, adminHandlers[i], &wg, tr)
+		go validator(t, i, eth, account, adminHandlers[i], &wg, tr)
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(4))
+	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(10))
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 
@@ -259,29 +290,4 @@ func TestDkgSuccess(t *testing.T) {
 
 	// Wait for validators to complete
 	wg.Wait()
-}
-
-func TestFoo(t *testing.T) {
-	m := make(map[string]int)
-	assert.Equal(t, 0, len(m))
-
-	m["a"] = 5
-	assert.Equal(t, 1, len(m))
-
-	m["b"] = 3
-	assert.Equal(t, 2, len(m))
-
-	t.Logf("m:%p", m)
-}
-
-func SetupTasks(tr *objects.TypeRegistry) {
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }

@@ -12,14 +12,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DisputeTask stores the data required to dispute shares
+// MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
 }
 
-// NewDisputeTask creates a new task
+// NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
@@ -27,8 +27,10 @@ func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	}
 }
 
+// Initialize prepares for work to be done in MPKSubmission phase.
+// Here we load all key shares and construct the master public key
+// to submit in DoWork.
 func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -48,6 +50,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
 	g2KeyShares := make([][4]*big.Int, t.State.NumberOfValidators)
 
+	validMPK := true
 	for idx, participant := range t.State.Participants {
 		// Bringing these in from state but could directly query contract
 		g1KeyShares[idx] = t.State.KeyShareG1s[participant.Address]
@@ -58,22 +61,27 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		for i := range g1KeyShares[idx] {
 			if g1KeyShares[idx][i] == nil {
 				logger.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+				validMPK = false
 			}
 		}
 
 		for i := range g2KeyShares[idx] {
 			if g2KeyShares[idx][i] == nil {
 				logger.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+				validMPK = false
 			}
 		}
-
 	}
 
 	logger.Infof("# Participants:%v Data:%+v", len(t.State.Participants), t.State.Participants)
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
-	if err != nil {
+	if err != nil && validMPK {
 		return dkg.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
+	}
+
+	if !validMPK {
+		mpk = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
 	}
 
 	// Master public key is all we generate here so save it
@@ -82,13 +90,13 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	return nil
 }
 
-// DoWork is the first attempt at registering with ethdkg
+// DoWork is the first attempt at submitting the mpk
 func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-// DoRetry is all subsequent attempts at registering with ethdkg
+// DoRetry is all subsequent attempts at submitting the mpk
 func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
@@ -134,7 +142,6 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

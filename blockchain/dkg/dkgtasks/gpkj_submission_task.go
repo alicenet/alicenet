@@ -21,7 +21,7 @@ type GPKSubmissionTask struct {
 	adminHandler            interfaces.AdminHandler
 }
 
-// NewGPKSubmissionTask creates a background task that attempts to register with ETHDKG
+// NewGPKSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.AdminHandler) *GPKSubmissionTask {
 	return &GPKSubmissionTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
@@ -30,8 +30,10 @@ func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.Admin
 	}
 }
 
+// Initialize prepares for work to be done in GPKSubmission phase.
+// Here, we construct our gpkj and associated signature.
+// We will submit them in DoWork.
 func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -55,20 +57,20 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		return dkg.LogReturnErrorf(logger, "Could not retrieve initial message: %v", err)
 	}
 
-	encryptedShares := make([][]*big.Int, t.State.NumberOfValidators)
+	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
 	for idx, participant := range t.State.Participants {
 		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
 		pes, present := t.State.EncryptedShares[participant.Address]
 		if present && idx >= 0 && idx < t.State.NumberOfValidators {
-			encryptedShares[idx] = pes
+			encryptedShares = append(encryptedShares, pes)
 		} else {
 			logger.Errorf("Encrypted share state broken for %v", idx)
 		}
 	}
 
 	groupPrivateKey, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage,
-		t.State.TransportPrivateKey, t.State.TransportPublicKey, t.State.PrivateCoefficients,
-		encryptedShares, t.State.Index, t.State.Participants, t.State.ValidatorThreshold)
+		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
+		encryptedShares, t.State.Index, t.State.Participants)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
@@ -88,12 +90,12 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	return nil
 }
 
-// DoWork is the first attempt at registering with ethdkg
+// DoWork is the first attempt at submitting gpkj and signature.
 func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-// DoRetry is all subsequent attempts at registering with ethdkg
+// DoRetry is all subsequent attempts at submitting gpkj and signature.
 func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
@@ -152,6 +154,7 @@ func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.GPKJSubmission = t.Success
 }
 
+// SetAdminHandler sets the task adminHandler
 func (t *GPKSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
 }

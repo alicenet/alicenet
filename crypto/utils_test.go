@@ -45,4 +45,19 @@ func TestCalcThreshold(t *testing.T) {
 	if threshold != 4 {
 		t.Fatal("We should have t == 4!")
 	}
+	n = 7
+	threshold = CalcThreshold(n)
+	if threshold != 4 {
+		t.Fatal("We should have t == 4!")
+	}
+	n = 8
+	threshold = CalcThreshold(n)
+	if threshold != 5 {
+		t.Fatal("We should have t == 5!")
+	}
+	n = 9
+	threshold = CalcThreshold(n)
+	if threshold != 6 {
+		t.Fatal("We should have t == 6!")
+	}
 }

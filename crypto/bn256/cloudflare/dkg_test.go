@@ -68,26 +68,53 @@ func TestCompareSharedSecret(t *testing.T) {
 	true3 := big.NewInt(3176) // 3176 == 314 + 159*3 + 265*3^2
 
 	j := 1
-	err1 := CompareSharedSecret(true1, j, truePubCoefs)
+	valid1, err1 := CompareSharedSecret(true1, j, truePubCoefs)
 	if err1 != nil {
-		t.Fatal("CompareSharedSecret failed to return nil for j = 1")
+		t.Fatal("CompareSharedSecret raised an error for j = 1")
+	}
+	if !valid1 {
+		t.Fatal("CompareSharedSecret failed to return valid for j = 1")
 	}
 
 	j = 2
-	err2 := CompareSharedSecret(true2, j, truePubCoefs)
+	valid2, err2 := CompareSharedSecret(true2, j, truePubCoefs)
 	if err2 != nil {
-		t.Fatal("CompareSharedSecret failed to return nil for j = 2")
+		t.Fatal("CompareSharedSecret raised an error for j = 2")
+	}
+	if !valid2 {
+		t.Fatal("CompareSharedSecret failed to return valid for j = 2")
 	}
 
 	j = 3
-	err3 := CompareSharedSecret(true3, j, truePubCoefs)
+	valid3, err3 := CompareSharedSecret(true3, j, truePubCoefs)
 	if err3 != nil {
-		t.Fatal("CompareSharedSecret failed to return nil for j = 3")
+		t.Fatal("CompareSharedSecret raised an error for j = 3")
+	}
+	if !valid3 {
+		t.Fatal("CompareSharedSecret failed to return valid for j = 3")
 	}
 
-	errBad := CompareSharedSecret(true1, j, truePubCoefs)
-	if errBad == nil {
-		t.Fatal("CompareSharedSecret failed to return error for bad comparison")
+	validBad, errBad := CompareSharedSecret(true1, j, truePubCoefs)
+	if errBad != nil {
+		t.Fatal("CompareSharedSecret failed to return nil for bad comparison")
+	}
+	if validBad {
+		t.Fatal("CompareSharedSecret failed to return false for bad comparison")
+	}
+
+	_, errBad2 := CompareSharedSecret(true1, 0, truePubCoefs)
+	if errBad2 == nil {
+		t.Fatal("Should have raised error")
+	}
+
+	_, err := CompareSharedSecret(nil, j, truePubCoefs)
+	if err == nil {
+		t.Fatal("Should have raised error for invalid secret")
+	}
+
+	_, err = CompareSharedSecret(true1, j, []*G1{nil})
+	if err == nil {
+		t.Fatal("Should have raised error for invalid public coefficients")
 	}
 
 	cG := returnCurveGen()

@@ -20,7 +20,7 @@ type DepositTestSuite struct {
 
 func (s *DepositTestSuite) SetupTest() {
 	t := s.T()
-	eth, err := setupEthereum(t)
+	eth, err := setupEthereum(t, 4)
 	assert.Nil(t, err)
 	c := eth.Contracts()
 

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bufio"
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,6 +42,7 @@ type EthereumDetails struct {
 	keystore       *keystore.KeyStore
 	finalityDelay  uint64
 	accounts       map[common.Address]accounts.Account
+	accountIndex   map[common.Address]int
 	coinbase       common.Address
 	defaultAccount accounts.Account
 	keys           map[common.Address]*keystore.Key
@@ -60,51 +63,64 @@ type EthereumDetails struct {
 
 //NewEthereumSimulator returns a simulator for testing
 func NewEthereumSimulator(
-	pathKeystore string,
-	pathPasscodes string,
+	privateKeys []*ecdsa.PrivateKey,
 	retryCount int,
 	retryDelay time.Duration,
 	timeout time.Duration,
 	finalityDelay int,
-	wei *big.Int,
-	addresses ...string) (*EthereumDetails, error) {
+	wei *big.Int) (*EthereumDetails, error) {
 	logger := logging.GetLogger("ethereum")
 
-	if len(addresses) < 1 {
-		return nil, errors.New("at least 1 account address required")
+	if len(privateKeys) < 1 {
+		return nil, errors.New("at least 1 private key")
 	}
 
-	defaultAccount := addresses[0]
+	pathKeystore, err := ioutil.TempDir("", "simulator-keystore-")
+	if err != nil {
+		return nil, err
+	}
+
+	eth := &EthereumDetails{}
+	eth.accounts = make(map[common.Address]accounts.Account)
+	eth.accountIndex = make(map[common.Address]int)
+	eth.contracts = &ContractDetails{eth: eth}
+	eth.finalityDelay = uint64(finalityDelay)
+	eth.keystore = keystore.NewKeyStore(pathKeystore, keystore.StandardScryptN, keystore.StandardScryptP)
+	eth.keys = make(map[common.Address]*keystore.Key)
+	eth.logger = logger
+	eth.passcodes = make(map[common.Address]string)
+	eth.retryCount = retryCount
+	eth.retryDelay = retryDelay
+	eth.timeout = timeout
+	eth.selectors = NewKnownSelectors()
+
+	for idx, privateKey := range privateKeys {
+		account, err := eth.keystore.ImportECDSA(privateKey, "abc123")
+		if err != nil {
+			return nil, err
+		}
+
+		eth.accounts[account.Address] = account
+		eth.accountIndex[account.Address] = idx
+		eth.passcodes[account.Address] = "abc123"
+
+		logger.Debugf("Account address:%v", account.Address.String())
+
+		keyID, err := uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+
+		eth.keys[account.Address] = &keystore.Key{Address: account.Address, PrivateKey: privateKey, Id: keyID}
+
+		if idx == 0 {
+			eth.defaultAccount = account
+		}
+	}
 
 	genAlloc := make(core.GenesisAlloc)
-	for _, address := range addresses {
-		addr := common.HexToAddress(address)
-		genAlloc[addr] = core.GenesisAccount{Balance: wei}
-	}
-
-	eth := &EthereumDetails{
-		logger:        logger,
-		accounts:      make(map[common.Address]accounts.Account),
-		keys:          make(map[common.Address]*keystore.Key),
-		passcodes:     make(map[common.Address]string),
-		retryCount:    retryCount,
-		retryDelay:    retryDelay,
-		timeout:       timeout,
-		finalityDelay: uint64(finalityDelay),
-		selectors:     NewKnownSelectors()}
-	eth.contracts = &ContractDetails{eth: eth}
-
-	eth.LoadAccounts(pathKeystore)
-	err := eth.LoadPasscodes(pathPasscodes)
-	if err != nil {
-		logger.Errorf("Error in NewEthereumSimulator at eth.LoadPasscodes: %v", err)
-		return nil, err
-	}
-
-	eth.defaultAccount, err = eth.GetAccount(common.HexToAddress(defaultAccount))
-	if err != nil {
-		logger.Errorf("Can't find user to set as default %v: %v", defaultAccount, err)
-		return nil, err
+	for address := range eth.accounts {
+		genAlloc[address] = core.GenesisAccount{Balance: wei}
 	}
 
 	gasLimit := uint64(150000000)
@@ -122,6 +138,7 @@ func NewEthereumSimulator(
 	}
 
 	eth.close = func() error {
+		os.RemoveAll(pathKeystore)
 		return sim.Close()
 	}
 
@@ -160,8 +177,8 @@ func NewEthereumEndpoint(
 	eth.contracts = &ContractDetails{eth: eth}
 
 	// Load accounts + passcodes
-	eth.LoadAccounts(pathKeystore)
-	err := eth.LoadPasscodes(pathPasscodes)
+	eth.loadAccounts(pathKeystore)
+	err := eth.loadPasscodes(pathPasscodes)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at eth.LoadPasscodes: %v", err)
 		return nil, err
@@ -274,29 +291,34 @@ func (eth *EthereumDetails) ChainID() *big.Int {
 }
 
 //LoadAccounts Scans the directory specified and loads all the accounts found
-func (eth *EthereumDetails) LoadAccounts(directoryPath string) {
+func (eth *EthereumDetails) loadAccounts(directoryPath string) {
 	logger := eth.logger
 
 	logger.Infof("LoadAccounts(\"%v\")...", directoryPath)
 	ks := keystore.NewKeyStore(directoryPath, keystore.StandardScryptN, keystore.StandardScryptP)
 	accts := make(map[common.Address]accounts.Account, 10)
+	acctIndex := make(map[common.Address]int, 10)
 
+	var index int
 	for _, wallet := range ks.Wallets() {
 		for _, account := range wallet.Accounts() {
 			logger.Infof("... found account %v", account.Address.Hex())
 			accts[account.Address] = account
+			acctIndex[account.Address] = index
+			index++
 		}
 	}
 
 	eth.accounts = accts
+	eth.accountIndex = acctIndex
 	eth.keystore = ks
 }
 
 // LoadPasscodes loads the specified passcode file
-func (eth *EthereumDetails) LoadPasscodes(filePath string) error {
+func (eth *EthereumDetails) loadPasscodes(filePath string) error {
 	logger := eth.logger
 
-	logger.Infof("LoadPasscodes(\"%v\")...", filePath)
+	logger.Infof("loadPasscodes(\"%v\")...", filePath)
 	passcodes := make(map[common.Address]string)
 
 	file, err := os.Open(filePath)
@@ -326,8 +348,14 @@ func (eth *EthereumDetails) LoadPasscodes(filePath string) error {
 	return nil
 }
 
-// UnlockAccount unlocks the previously loaded account using the previously loaded passcode
+func (eth *EthereumDetails) UnlockAccountWithPasscode(acct accounts.Account, passcode string) error {
+	return eth.keystore.Unlock(acct, passcode)
+}
+
+// UnlockAccount unlocks the previously loaded account using the previously loaded passcodes
 func (eth *EthereumDetails) UnlockAccount(acct accounts.Account) error {
+
+	eth.logger.Infof("Unlocking account address:%v", acct.Address.String())
 
 	passcode, passcodeFound := eth.passcodes[acct.Address]
 	if !passcodeFound {
@@ -406,6 +434,16 @@ func (eth *EthereumDetails) GetBalance(addr common.Address) (*big.Int, error) {
 
 func (eth *EthereumDetails) GetEndpoint() string {
 	return eth.endpoint
+}
+
+func (eth *EthereumDetails) GetKnownAccounts() []accounts.Account {
+	accounts := make([]accounts.Account, len(eth.accounts))
+
+	for address, accountIndex := range eth.accountIndex {
+		accounts[accountIndex] = eth.accounts[address]
+	}
+
+	return accounts
 }
 
 func (eth *EthereumDetails) GetTimeoutContext() (context.Context, context.CancelFunc) {

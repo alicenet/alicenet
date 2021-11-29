@@ -62,12 +62,16 @@ func TestSnapshot(t *testing.T) {
 	publicKeyG2, signatureG1, err := cloudflare.UnmarshalSignature(rawSigGroup)
 	assert.Nil(t, err)
 
-	publicKey := bn256.G2ToBigIntArray(publicKeyG2)
+	publicKey, err := bn256.G2ToBigIntArray(publicKeyG2)
+	assert.Nil(t, err)
+
 	for idx := 0; idx < 4; idx++ {
 		t.Logf("publicKey[%d]: %x", idx, publicKey[idx])
 	}
 
-	signature := bn256.G1ToBigIntArray(signatureG1)
+	signature, err := bn256.G1ToBigIntArray(signatureG1)
+	assert.Nil(t, err)
+
 	for idx := 0; idx < 2; idx++ {
 		t.Logf("signature[%d]: %x", idx, signature[idx])
 	}
@@ -82,7 +86,7 @@ func TestSnapshot(t *testing.T) {
 	assert.True(t, ok)
 
 	// Check validity with Crypto
-	eth, err := setupEthereum(t)
+	eth, err := setupEthereum(t, 4)
 	assert.Nil(t, err)
 
 	c := eth.Contracts()
@@ -246,7 +250,7 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	// Check validity with Crypto
 	assert.Nil(t, err)
 
-	eth, err := setupEthereum(t)
+	eth, err := setupEthereum(t, 5)
 	assert.Nil(t, err)
 	c := eth.Contracts()
 	ctx := context.TODO()
@@ -256,8 +260,11 @@ func processBlockHeader(t *testing.T, rawBlockHeader []byte) {
 	assert.Nil(t, err)
 
 	// Convert from G1/G2 into []*big.Int's
-	publicKey := bn256.G2ToBigIntArray(publicKeyG2)
-	signature := bn256.G1ToBigIntArray(signatureG1)
+	publicKey, err := bn256.G2ToBigIntArray(publicKeyG2)
+	assert.Nil(t, err)
+
+	signature, err := bn256.G1ToBigIntArray(signatureG1)
+	assert.Nil(t, err)
 
 	good, err := c.Crypto().Verify(callOpts, bclaimsHash, signature, publicKey)
 	assert.Nil(t, err)

@@ -9,7 +9,7 @@ import (
 
 func TestRegister(t *testing.T) {
 
-	eth, err := setupEthereum(t)
+	eth, err := setupEthereum(t, 4)
 	assert.Nil(t, err)
 	defer eth.Close()
 

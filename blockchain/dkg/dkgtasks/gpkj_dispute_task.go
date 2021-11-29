@@ -27,8 +27,9 @@ func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	}
 }
 
+// Initialize prepares for work to be done in the GPKjDispute phase.
+// Here, we determine if anyone submitted an invalid gpkj.
 func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -46,15 +47,13 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 	}
 
 	var (
-		groupPublicKeys [][4]*big.Int
-		groupSignatures [][2]*big.Int
+		groupPublicKeys  [][4]*big.Int
+		groupSignatures  [][2]*big.Int
+		groupCommitments [][][2]*big.Int
 	)
-
-	// dkg.RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address)
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	for _, participant := range t.State.Participants {
-
 		// Retrieve values all group keys and signatures from contract
 		groupPublicKey, err := dkg.RetrieveGroupPublicKey(callOpts, eth, participant.Address)
 		if err != nil {
@@ -73,10 +72,11 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		// Build array
 		groupPublicKeys = append(groupPublicKeys, groupPublicKey)
 		groupSignatures = append(groupSignatures, groupSignature)
+		groupCommitments = append(groupCommitments, t.State.Commitments[participant.Address])
 	}
 
 	//
-	honest, dishonest, err := math.CategorizeGroupSigners(t.State.InitialMessage, t.State.MasterPublicKey, groupPublicKeys, groupSignatures, t.State.Participants, t.State.ValidatorThreshold)
+	honest, dishonest, missing, err := math.CategorizeGroupSigners(groupPublicKeys, t.State.Participants, groupCommitments)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
@@ -86,32 +86,25 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		return dkg.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
 
-	// The indices returned are into the participants array _not_ the Index of the participant in smart contract
-	for idx := range honest {
-		honest[idx] = t.State.Participants[idx].Index + 1
-	}
-	for idx := range dishonest {
-		dishonest[idx] = t.State.Participants[idx].Index + 1
-	}
+	logger.Debugf("   Honest indices: %v", honest.ExtractIndices())
+	logger.Debugf("Dishonest indices: %v", dishonest.ExtractIndices())
+	logger.Debugf("  Missing indices: %v", missing.ExtractIndices())
 
-	logger.Debugf("   Honest indices: %v", honest)
-	logger.Debugf("Dishonest indices: %v", dishonest)
-
-	t.State.DishonestValidatorsIndicies = dkg.IntsToBigInts(dishonest)
-	t.State.HonestValidatorsIndicies = dkg.IntsToBigInts(honest)
+	t.State.DishonestValidators = dishonest
+	t.State.HonestValidators = honest
 	t.State.Inverse = inverse
 
 	return nil
 }
 
-// DoWork is the first attempt at registering with ethdkg
+// DoWork is the first attempt at submitting an invalid gpkj accusation
 func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 
 	return t.doTask(ctx, logger, eth)
 }
 
-// DoRetry is all subsequent attempts at registering with ethdkg
+// DoRetry is all subsequent attempts at submitting an invalid gpkj accusation
 func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 
@@ -119,7 +112,6 @@ func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth
 }
 
 func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -130,34 +122,45 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 	}
 
 	// Perform group accusation
-	logger.Infof("   Honest: %v", t.State.HonestValidatorsIndicies)
-	logger.Infof("Dishonest: %v", t.State.DishonestValidatorsIndicies)
+	logger.Infof("   Honest indices: %v", t.State.HonestValidators.ExtractIndices())
+	logger.Infof("Dishonest indices: %v", t.State.DishonestValidators.ExtractIndices())
 
-	// TODO How about I just store these already with the + 1?
-	honest := make([]*big.Int, len(t.State.HonestValidatorsIndicies))
-	for i := range t.State.HonestValidatorsIndicies {
-		// honest[i] = big.NewInt(1)
-		honest[i] = big.NewInt(0)
-		honest[i].Add(honest[i], t.State.HonestValidatorsIndicies[i])
+	var groupEncryptedShares [][]*big.Int
+	var groupCommitments [][][2]*big.Int
+
+	for _, participant := range t.State.Participants {
+		// Get group encrypted shares
+		es := t.State.EncryptedShares[participant.Address]
+		groupEncryptedShares = append(groupEncryptedShares, es)
+		// Get group commitments
+		com := t.State.Commitments[participant.Address]
+		groupCommitments = append(groupCommitments, com)
 	}
 
-	txn, err := eth.Contracts().Ethdkg().GroupAccusationGPKj(txnOpts, t.State.Inverse, honest, t.State.DishonestValidatorsIndicies)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
-	}
+	// Loop through dishonest participants and perform accusation
+	for _, participant := range t.State.DishonestValidators {
+		// We convert the participant index to the "participant list index";
+		// that is, we convert from base 1 to base 0.
+		dishonestListIdxBig := new(big.Int).Sub(big.NewInt(int64(participant.Index)), big.NewInt(1))
 
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing registration receipt")
-	}
+		txn, err := eth.Contracts().Ethdkg().GroupAccusationGPKjComp(txnOpts, groupEncryptedShares, groupCommitments, dishonestListIdxBig, participant.Address)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
+		}
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		// Waiting for receipt
+		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
+		}
+		if receipt == nil {
+			return dkg.LogReturnErrorf(logger, "missing registration receipt")
+		}
+
+		// Check receipt to confirm we were successful
+		if receipt.Status != uint64(1) {
+			return dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		}
 	}
 
 	t.Success = true
