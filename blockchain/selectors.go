@@ -24,10 +24,17 @@ func NewKnownSelectors() interfaces.SelectorMap {
 		signatures: make(map[interfaces.FuncSelector]string, 20),
 		selectors:  make(map[string]interfaces.FuncSelector, 20)}
 
+	// This let's us recognize contract deploy transactions
 	byteCodePrefix := interfaces.FuncSelector{0x60, 0x80, 0x60, 0x40}
 
 	sm.selectors["_deploy_"] = byteCodePrefix
 	sm.signatures[byteCodePrefix] = "_deploy_"
+
+	// This is for simple ETH transfers
+	transferSelector := interfaces.FuncSelector{0x0, 0x0, 0x0, 0x0}
+
+	sm.selectors["_transfer_"] = transferSelector
+	sm.signatures[transferSelector] = "_transfer_"
 
 	// Facet admin
 	sm.Selector("addFacet(bytes4,address)")

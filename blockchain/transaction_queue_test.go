@@ -2,59 +2,65 @@ package blockchain_test
 
 import (
 	"context"
+	"math"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/etest"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/stretchr/testify/assert"
 )
 
+func ConnectSimulator(t *testing.T, numberAccounts int, mineInterval time.Duration) interfaces.Ethereum {
+	privKeys := etest.SetupPrivateKeys(numberAccounts)
+	eth, err := blockchain.NewEthereumSimulator(
+		privKeys,
+		1,
+		time.Second*2,
+		time.Second*5,
+		0,
+		big.NewInt(math.MaxInt64))
+	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
+	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
+
+	go func() {
+		for {
+			time.Sleep(mineInterval)
+			eth.Commit()
+		}
+	}()
+
+	return eth
+}
+
 func TestFoo(t *testing.T) {
-	eth := connectSimulatorEndpoint(t)
+
+	n := 2
+
+	eth := ConnectSimulator(t, n, 100*time.Millisecond)
 	defer eth.Close()
 
-	who := common.HexToAddress("0x9AC1c9afBAec85278679fF75Ef109217f26b1417")
-	c := eth.Contracts()
+	accounts := eth.GetKnownAccounts()
+	assert.Equal(t, n, len(accounts))
 
-	txnCount := 20
-	txnGroupCount := 4
+	for _, acct := range accounts {
+		eth.UnlockAccount(acct)
+	}
+
+	owner := accounts[0]
+	user := accounts[1]
+
+	ctx, cf := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cf()
+
+	amount := big.NewInt(12_345)
+
+	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
+	assert.Nil(t, err)
 
 	queue := eth.Queue()
 
-	ctx := context.Background()
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
-	assert.Nil(t, err)
-
-	toctx, cf := context.WithTimeout(ctx, 100*time.Second)
-	defer cf()
-
-	amount := int64(1_999_999)
-	bAmount := big.NewInt(amount)
-
-	txn, err := c.StakingToken().Transfer(txnOpts, who, bAmount)
-	assert.Nil(t, err)
-	queue.QueueGroupTransaction(toctx, 511, txn)
-
-	txn, err = eth.TransferEther(who, c.StakingTokenAddress(), bAmount)
-	assert.Nil(t, err)
-	queue.QueueGroupTransaction(toctx, 511, txn)
-
-	rcpts, err := queue.WaitGroupTransactions(toctx, 511)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(rcpts))
-
-	for idx := 0; idx < txnCount; idx++ {
-		txn, err = c.StakingToken().Transfer(txnOpts, who, big.NewInt(amount))
-		assert.Nil(t, err)
-		queue.QueueGroupTransaction(toctx, 5+idx%txnGroupCount, txn)
-	}
-
-	for idx := 0; idx < txnGroupCount; idx++ {
-		rcpts, err = queue.WaitGroupTransactions(toctx, 5+idx)
-		assert.Nil(t, err)
-		assert.Equal(t, txnCount/txnGroupCount, len(rcpts))
-	}
-
+	queue.QueueAndWait(ctx, txn)
 }
