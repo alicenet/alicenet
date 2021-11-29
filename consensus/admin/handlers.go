@@ -154,7 +154,6 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
-		ah.logger.Errorf("Returning earlier")
 		return ah.database.SetValidatorSetPostApplication(txn, v, v.NotBefore)
 	}
 	rcert, err := bh.GetRCert()
@@ -175,7 +174,6 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 			return err
 		}
 	}
-	ah.logger.Errorf("Set validator set")
 	err = ah.database.SetValidatorSet(txn, v)
 	if err != nil {
 		utils.DebugTrace(ah.logger, err)
@@ -201,6 +199,7 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) er
 			return err
 		}
 		if !safeToProceed {
+			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", validatorsChanged, bh.BClaims.Height+1, !validatorsChanged)
 			// set that it's safe to proceed to the next block
 			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, !validatorsChanged); err != nil {
 				utils.DebugTrace(ah.logger, err)

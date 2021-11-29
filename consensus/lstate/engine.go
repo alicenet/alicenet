@@ -177,7 +177,14 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height {
+		snapshot, err := ce.database.GetLastSnapshot(txn)
+		if err != nil {
+			return err
+		}
+		// If we fall behind more that one block or we found a snapshot in our
+		// current state that was already processed in a height in the future,
+		// we should enter in sync mode again.
+		if roundState.OwnState.SyncToBH.BClaims.Height+1 < roundState.OwnState.MaxBHSeen.BClaims.Height || snapshot.BClaims.Height >= roundState.OwnState.SyncToBH.BClaims.Height+1 {
 			isSync = false
 			updateLocalState = false
 		}
