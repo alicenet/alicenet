@@ -93,6 +93,8 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	return ah.database.Update(func(txn *badger.Txn) error {
+		// Checking if we can exit earlier (mainly when reconstructing the chain
+		// from ethereum data)
 		{
 			height := uint32(1)
 			if v.NotBefore >= 1 {
@@ -107,7 +109,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 				}
 				// do nothing
 			}
-			bhHeight := v.NotBefore - 1
+			bhHeight := height - 1
 			if v.NotBefore == 0 {
 				bhHeight = 1
 			}
@@ -118,11 +120,15 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 					return err
 				}
 			}
+			// If we have a committed blocker header, and the current validator
+			// set in memory is equal to the validator set that we are
+			// receiving, we are good and we don't need to execute the steps
+			// below
 			if bh != nil && vSet != nil && bytes.Equal(v.GroupKey, vSet.GroupKey) {
 				return nil
 			}
 		}
-		// epoch case
+		// Adding new validators in case of epoch boundary
 		if v.NotBefore%constants.EpochLength == 0 {
 			return ah.epochBoundaryValidator(txn, v)
 		}
@@ -131,23 +137,17 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 		if bytes.Equal(v.GroupKey, make([]byte, len(v.GroupKey))) {
 			return ah.database.SetValidatorSet(txn, v)
 		}
-		// set from reset case
+		// Setting a new set of validator outside the epoch boundaries and after
+		// a the reset case above
 		return ah.AddValidatorSetEdgecase(txn, v)
 	})
 }
 
+// AddValidatorSetEdgecase adds a validator set to the db if we have the
+// expected block at the height 'v.NotBefore-1' (e.g syncing from the ethereum
+// data). Otherwise, it will mark the change to happen in the future once we
+// have the required block
 func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
-
-	// apply to a height in the future
-	// don't erase current validator set until the specified height
-	// the current validator set round state
-
-	// only run for groupkey equals all zeros
-	// delete broadcast?
-	// own validator state and own state?
-
-	// It had a negative 1
-	// todo: apparently the postApplication setup is never passing this part
 	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -190,8 +190,6 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) er
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	// ah.logger.Error("!!! OPEN AddSnapshot TXN")
-	// defer func() { ah.logger.Error("!!! CLOSE AddSnapshot TXN") }()
 	return ah.database.Update(func(txn *badger.Txn) error {
 		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
@@ -499,6 +497,7 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 	return nil
 }
 
+// Re-Initializes our own Round State object
 func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) error {
 	rs, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
 	if err != nil {
@@ -523,6 +522,7 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 	return nil
 }
 
+// Re-Initializes all the validators Round State objects
 func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) (bool, error) {
 	isValidator := false
 	for i := 0; i < len(v.Validators); i++ {
@@ -557,6 +557,7 @@ func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorS
 	return isValidator, nil
 }
 
+// Init the validators DB and objects
 func (ah *Handlers) initDB(txn *badger.Txn, v *objs.ValidatorSet) (*objs.BlockHeader, error) {
 	stateRoot, err := ah.appHandler.ApplyState(txn, ah.chainID, 1, nil)
 	if err != nil {

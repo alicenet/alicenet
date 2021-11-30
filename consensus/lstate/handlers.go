@@ -423,7 +423,6 @@ func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey []byte, propose
 	if rNumber == constants.DEADBLOCKROUND {
 		return nil
 	}
-	//height := mb.normalizeHeight(bHeight, rHeight, rNumber)
 	pidx := objs.GetProposerIdx(len(vSet.Validators), rHeight, rNumber)
 	valObj := vSet.Validators[pidx]
 	vAddr := valObj.VAddr

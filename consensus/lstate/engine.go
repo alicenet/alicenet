@@ -112,8 +112,6 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 func (ce *Engine) UpdateLocalState() (bool, error) {
 	isSync := true
 	updateLocalState := true
-	// ce.logger.Error("!!! OPEN UpdateLocalState TXN")
-	// defer func() { ce.logger.Error("!!! CLOSE UpdateLocalState TXN") }()
 	err := ce.database.Update(func(txn *badger.Txn) error {
 		ownState, err := ce.database.GetOwnState(txn)
 		if err != nil {
@@ -177,7 +175,6 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		//todo:ask hunter!
 		// Enter in Sync mode again if we fall more than one block behind;
 		if roundState.OwnState.SyncToBH.BClaims.Height+1 <= roundState.OwnState.MaxBHSeen.BClaims.Height {
 			isSync = false
@@ -527,6 +524,8 @@ func (ce *Engine) Sync() (bool, error) {
 			utils.DebugTrace(ce.logger, err)
 			return err
 		}
+		// Checking if we have to change the validator set for the current
+		// height.
 		if ok && !bytes.Equal(vspa.GroupKey, vs.GroupKey) {
 			if err := ce.AdminBus.AddValidatorSetEdgecase(txn, vspa); err != nil {
 				utils.DebugTrace(ce.logger, err)
@@ -633,8 +632,12 @@ func (ce *Engine) Sync() (bool, error) {
 	return syncDone, nil
 }
 
+// Updates the loaded objects with information that were not applied in the past
+// due to the lack of information (e.g a new validator set that was received for
+// a block that was not committed to the db yet)
 func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ownState *objs.OwnState, ownValidatingState *objs.OwnValidatingState) (bool, error) {
 	ok := true
+	// Checks if we have a new validator set to be applied to this height
 	vspa, okpa, err := ce.database.GetValidatorSetPostApplication(txn, vs.NotBefore)
 	if err != nil {
 		return false, err
@@ -660,10 +663,6 @@ func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ow
 			if !bytes.Equal(validatorSet.GroupKey, ownState.GroupKey) || ce.bnSigner == nil {
 				ok = false
 				groupShare := utils.CopySlice((v.GroupShare))
-				// todo: error 'key not found' when val0 is reset (must become
-				// non-validator, stop val0 script, delete its directory, start
-				// val0 script again). the error will stop if we restart val0
-				// script.
 				pk, err := ce.AdminBus.GetPrivK(groupShare)
 				if err != nil {
 					utils.DebugTrace(ce.logger, err)

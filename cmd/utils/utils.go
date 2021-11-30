@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -226,6 +225,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		logger.Errorf("Can not unlock account %v: %v", acct.Address.Hex(), err)
 	}
+
 	// Route command
 	var exitCode int
 	switch cmd.Use {
@@ -253,6 +253,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		logger.Errorf("Could not find handler for %v", cmd.Use)
 		exitCode = 1
 	}
+
 	os.Exit(exitCode)
 }
 
@@ -330,13 +331,13 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	}
 
 	// Contract orchestration
-	txn, err := c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
+	_, err = c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
 	if err != nil {
 		logger.Errorf("Account %v could not leave validators pool: %v", acct.Address.Hex(), err)
 		return 1
 	}
-	logger.Infof("Left validators pool: %q", txn)
 	logger.Infof("Unregistered the address %x", acct.Address.Hex())
+
 	return 0
 }
 
@@ -390,6 +391,7 @@ func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 			logger.Infof("approval receipt success")
 			return true
 		}
+
 		return false
 	}
 
@@ -609,46 +611,46 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 }
 
 func arbitraryethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
-	if len(args) < 1 {
-		logger.Errorf("Arguments must include: madHeight")
-		return 1
-	}
+	// if len(args) < 1 {
+	// 	logger.Errorf("Arguments must include: madHeight")
+	// 	return 1
+	// }
 
-	var madHeight uint32
-	madHeight64, err := strconv.ParseUint(args[0], 10, 32)
-	if err != nil {
-		logger.Errorf("madHeight is invalid: %v! The height should be less than max(uint32)", madHeight64)
-		return 1
-	}
+	// var madHeight uint32
+	// madHeight64, err := strconv.ParseUint(args[0], 10, 32)
+	// if err != nil {
+	// 	logger.Errorf("madHeight is invalid: %v! The height should be less than max(uint32)", madHeight64)
+	// 	return 1
+	// }
 
-	madHeight = uint32(madHeight64)
+	// madHeight = uint32(madHeight64)
 
-	// More ethereum setup
-	acct := eth.GetDefaultAccount()
-	c := eth.Contracts()
+	// // More ethereum setup
+	// acct := eth.GetDefaultAccount()
+	// c := eth.Contracts()
 
-	ctx := context.Background()
+	// ctx := context.Background()
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
-	if err != nil {
-		logger.Errorf("Can not build transaction options: %v", err)
-		return 1
-	}
+	// txnOpts, err := eth.GetTransactionOpts(ctx, acct)
+	// if err != nil {
+	// 	logger.Errorf("Can not build transaction options: %v", err)
+	// 	return 1
+	// }
 
-	//
-	txn, err := c.Ethdkg().InitializeEthDKGFromArbitraryMadHeight(txnOpts, madHeight)
-	if err != nil {
-		logger.Errorf("Could not initialize arbitrary ethdkg: %v", err)
-		return 1
-	}
+	// //
+	// txn, err := c.Ethdkg().InitializeEthDKGFromArbitraryMadHeight(txnOpts, madHeight)
+	// if err != nil {
+	// 	logger.Errorf("Could not initialize arbitrary ethdkg: %v", err)
+	// 	return 1
+	// }
 
-	_, err = eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Error("Failed looking for transaction events.")
-		return 1
-	}
+	// _, err = eth.Queue().QueueAndWait(ctx, txn)
+	// if err != nil {
+	// 	logger.Error("Failed looking for transaction events.")
+	// 	return 1
+	// }
 
-	logger.Infof("Started arbitrary EthDKG at height %v", madHeight)
+	// logger.Infof("Started arbitrary EthDKG at height %v", madHeight)
 
 	return 0
 }

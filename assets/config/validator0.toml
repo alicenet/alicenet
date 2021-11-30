@@ -1,7 +1,6 @@
 [loglevel]
 ethereum = "info"
 consensus = "debug"
-monitor = "debug"
 
 [chain]
 id = 42

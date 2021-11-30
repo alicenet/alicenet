@@ -223,6 +223,9 @@ func (db *Database) makeValidatorSetKeyPostApplication(notBefore uint32) ([]byte
 	return key.MarshalBinary()
 }
 
+// Adds a new validator set in a different db entry that it's not being used by
+// the chain. The goal of this function is to set a validator set that will be
+// applied in a block that we don't currently have in our db.
 func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
 	key, err := db.makeValidatorSetKeyPostApplication(height)
 	if err != nil {
@@ -236,6 +239,7 @@ func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.Vali
 	return nil
 }
 
+// Get a "validator set" flagged to be applied at a certain "height".
 func (db *Database) GetValidatorSetPostApplication(txn *badger.Txn, height uint32) (*objs.ValidatorSet, bool, error) {
 	key, err := db.makeValidatorSetKeyPostApplication(height)
 	if err != nil {
@@ -1069,6 +1073,7 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	return result, nil
 }
 
+// Gets the latest snapshot starting from the Madnet 'height'
 func (db *Database) GetSnapshotByHeight(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
 	prefix := db.makeSnapshotBlockHeaderIterKey()
 	seek := []byte{}
