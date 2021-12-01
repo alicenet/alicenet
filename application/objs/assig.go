@@ -17,99 +17,111 @@ type AtomicSwapSignature struct {
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // AtomicSwapSignature object
-func (onr *AtomicSwapSignature) UnmarshalBinary(signature []byte) error {
+func (assig *AtomicSwapSignature) UnmarshalBinary(signature []byte) error {
+	if assig == nil {
+		return errorz.ErrInvalid{}.New("assig.unmarshalBinary; assig not initialized")
+	}
 	sva, signature, err := extractSVA(signature)
 	if err != nil {
 		return err
 	}
-	onr.SVA = sva
-	if err := onr.validateSVA(); err != nil {
+	assig.SVA = sva
+	if err := assig.validateSVA(); err != nil {
 		return err
 	}
 	curveSpec, signature, err := extractCurveSpec(signature)
 	if err != nil {
 		return err
 	}
-	onr.CurveSpec = curveSpec
-	if err := onr.validateCurveSpec(); err != nil {
+	assig.CurveSpec = curveSpec
+	if err := assig.validateCurveSpec(); err != nil {
 		return err
 	}
 	signerRole, signature, err := extractSignerRole(signature)
 	if err != nil {
 		return err
 	}
-	onr.SignerRole = signerRole
-	if err := onr.validateSignerRole(); err != nil {
+	assig.SignerRole = signerRole
+	if err := assig.validateSignerRole(); err != nil {
 		return err
 	}
 	hashKey, signature, err := extractHash(signature)
 	if err != nil {
 		return err
 	}
-	onr.HashKey = hashKey
+	assig.HashKey = hashKey
 	signature, null, err := extractSignature(signature, curveSpec)
 	if err != nil {
 		return err
 	}
-	onr.Signature = signature
+	assig.Signature = signature
 	return extractZero(null)
 }
 
 // MarshalBinary takes the AtomicSwapSignature object and returns the canonical
 // byte slice
-func (onr *AtomicSwapSignature) MarshalBinary() ([]byte, error) {
-	if err := onr.Validate(); err != nil {
+func (assig *AtomicSwapSignature) MarshalBinary() ([]byte, error) {
+	if err := assig.Validate(); err != nil {
 		return nil, err
 	}
 	signature := []byte{}
-	signature = append(signature, []byte{uint8(onr.SVA)}...)
-	signature = append(signature, []byte{uint8(onr.CurveSpec)}...)
-	signature = append(signature, []byte{uint8(onr.SignerRole)}...)
-	signature = append(signature, utils.CopySlice(onr.HashKey)...)
-	signature = append(signature, utils.CopySlice(onr.Signature)...)
+	signature = append(signature, []byte{uint8(assig.SVA)}...)
+	signature = append(signature, []byte{uint8(assig.CurveSpec)}...)
+	signature = append(signature, []byte{uint8(assig.SignerRole)}...)
+	signature = append(signature, utils.CopySlice(assig.HashKey)...)
+	signature = append(signature, utils.CopySlice(assig.Signature)...)
 	return signature, nil
 }
 
 // Validate validates the AtomicSwapSignature
-func (onr *AtomicSwapSignature) Validate() error {
-	if onr == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+func (assig *AtomicSwapSignature) Validate() error {
+	if assig == nil {
+		return errorz.ErrInvalid{}.New("assig.validate; assig not initialized")
 	}
-	if err := onr.validateSVA(); err != nil {
+	if err := assig.validateSVA(); err != nil {
 		return err
 	}
-	if err := onr.validateCurveSpec(); err != nil {
+	if err := assig.validateCurveSpec(); err != nil {
 		return err
 	}
-	if err := onr.validateSignerRole(); err != nil {
+	if err := assig.validateSignerRole(); err != nil {
 		return err
 	}
-	if err := utils.ValidateHash(onr.HashKey); err != nil {
+	if err := utils.ValidateHash(assig.HashKey); err != nil {
 		return err
 	}
-	return validateSignatureLen(onr.Signature, onr.CurveSpec)
+	return validateSignatureLen(assig.Signature, assig.CurveSpec)
 }
 
 // validateSVA validates the Signature Verification Algorithm
-func (onr *AtomicSwapSignature) validateSVA() error {
-	if onr.SVA != HashedTimelockSVA {
-		return errorz.ErrInvalid{}.New("signature verification algorithm invalid for AtomicSwapSignature")
+func (assig *AtomicSwapSignature) validateSVA() error {
+	if assig == nil {
+		return errorz.ErrInvalid{}.New("assig.validateSVA; assig not initialized")
+	}
+	if assig.SVA != HashedTimelockSVA {
+		return errorz.ErrInvalid{}.New("assig.validateSVA; invalid signature verification algorithm")
 	}
 	return nil
 }
 
 // validateCurveSpec validates the curve specification
-func (onr *AtomicSwapSignature) validateCurveSpec() error {
-	if onr.CurveSpec != constants.CurveSecp256k1 {
-		return errorz.ErrInvalid{}.New("Invalid curveSpec for AtomicSwapSignature")
+func (assig *AtomicSwapSignature) validateCurveSpec() error {
+	if assig == nil {
+		return errorz.ErrInvalid{}.New("assig.validateCurveSpec; assig not initialized")
+	}
+	if assig.CurveSpec != constants.CurveSecp256k1 {
+		return errorz.ErrInvalid{}.New("assig.validateCurveSpec; invalid curveSpec")
 	}
 	return nil
 }
 
 // validateSignerRole validates the roles
-func (onr *AtomicSwapSignature) validateSignerRole() error {
-	if onr.SignerRole != PrimarySignerRole && onr.SignerRole != AlternateSignerRole {
-		return errorz.ErrInvalid{}.New("Invalid SignerRole for AtomicSwapSignature")
+func (assig *AtomicSwapSignature) validateSignerRole() error {
+	if assig == nil {
+		return errorz.ErrInvalid{}.New("assig.validateSignerRole; assig not initialized")
+	}
+	if assig.SignerRole != PrimarySignerRole && assig.SignerRole != AlternateSignerRole {
+		return errorz.ErrInvalid{}.New("assig.validateSignerRole; invalid SignerRole")
 	}
 	return nil
 }

@@ -37,6 +37,7 @@ func (txv TxVec) ValidateUnique(exclSet map[string]bool) (map[string]bool, error
 	return exclSet, nil
 }
 
+// ValidateDataStoreIndexes ...
 func (txv TxVec) ValidateDataStoreIndexes(exclSet map[string]bool) (map[string]bool, error) {
 	if exclSet == nil {
 		exclSet = make(map[string]bool)

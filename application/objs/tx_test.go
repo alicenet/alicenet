@@ -1047,6 +1047,7 @@ func TestTxValidatePreSignature(t *testing.T) {
 
 func TestTxCallTxHash(t *testing.T) {
 	tx := &Tx{}
+	tx.Fee = uint256.Zero()
 	hashTrue := crypto.Hasher([][]byte{}...)
 	hash, err := tx.TxHash()
 	if err != nil {
