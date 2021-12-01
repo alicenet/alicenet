@@ -28,7 +28,7 @@ func (dso *DataStoreOwner) New(acct []byte, curveSpec constants.CurveSpec) {
 // DataStoreOwner
 func (dso *DataStoreOwner) NewFromOwner(o *Owner) error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("dso.newFromOwner; dso not initialized")
 	}
 	if err := o.Validate(); err != nil {
 		return err
@@ -59,7 +59,7 @@ func (dso *DataStoreOwner) MarshalBinary() ([]byte, error) {
 // Validate validates the DataStoreOwner
 func (dso *DataStoreOwner) Validate() error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+		return errorz.ErrInvalid{}.New("dso.validate; dso not initialized")
 	}
 	if err := dso.validateSVA(); err != nil {
 		return err
@@ -77,7 +77,7 @@ func (dso *DataStoreOwner) Validate() error {
 // DataStoreOwner object
 func (dso *DataStoreOwner) UnmarshalBinary(o []byte) error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("dso.unmarshalBinary; dso not initialized")
 	}
 	owner := utils.CopySlice(o)
 	sva, owner, err := extractSVA(owner)
@@ -107,13 +107,13 @@ func (dso *DataStoreOwner) UnmarshalBinary(o []byte) error {
 // ValidateSignature validates the DataStoreSignature
 func (dso *DataStoreOwner) ValidateSignature(msg []byte, sig *DataStoreSignature, isExpired bool) error {
 	if err := dso.Validate(); err != nil {
-		return errorz.ErrInvalid{}.New("invalid DataStoreOwner")
+		return errorz.ErrInvalid{}.New("dso.validateSignature; invalid DataStoreOwner")
 	}
 	if err := sig.Validate(); err != nil {
-		return errorz.ErrInvalid{}.New("invalid DataStoreSignature")
+		return errorz.ErrInvalid{}.New("dso.validateSignature; invalid DataStoreSignature")
 	}
 	if !isExpired && sig.CurveSpec != dso.CurveSpec {
-		return errorz.ErrInvalid{}.New("unmatched curve spec")
+		return errorz.ErrInvalid{}.New("dso.validateSignature; unmatched curve spec")
 	}
 	switch sig.CurveSpec {
 	case constants.CurveSecp256k1:
@@ -125,7 +125,7 @@ func (dso *DataStoreOwner) ValidateSignature(msg []byte, sig *DataStoreSignature
 		if !isExpired {
 			account := crypto.GetAccount(pk)
 			if !bytes.Equal(account, dso.Account) {
-				return errorz.ErrInvalid{}.New("invalid sig for account")
+				return errorz.ErrInvalid{}.New("dso.validateSignature; invalid sig for secp256k1 account")
 			}
 		}
 		return nil
@@ -138,41 +138,41 @@ func (dso *DataStoreOwner) ValidateSignature(msg []byte, sig *DataStoreSignature
 		if !isExpired {
 			account := crypto.GetAccount(pk)
 			if !bytes.Equal(account, dso.Account) {
-				return errorz.ErrInvalid{}.New("invalid sig for account")
+				return errorz.ErrInvalid{}.New("dso.validateSignature; invalid sig for bn256 account")
 			}
 		}
 		return nil
 	default:
-		return errorz.ErrInvalid{}.New("invalid curve spec")
+		return errorz.ErrInvalid{}.New("dso.validateSignature; invalid curve spec")
 	}
 }
 
 func (dso *DataStoreOwner) validateCurveSpec() error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("dso.validateCurveSpec; dso not initialized")
 	}
 	if !(dso.CurveSpec == constants.CurveSecp256k1) && !(dso.CurveSpec == constants.CurveBN256Eth) {
-		return errorz.ErrInvalid{}.New("invalid curve spec for DataStoreOwner")
+		return errorz.ErrInvalid{}.New("dso.validateCurveSpec; invalid curve spec")
 	}
 	return nil
 }
 
 func (dso *DataStoreOwner) validateSVA() error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("dso.validateSVA; dso not initialized")
 	}
 	if dso.SVA != DataStoreSVA {
-		return errorz.ErrInvalid{}.New("signature verification algorithm invalid for DataStoreOwner")
+		return errorz.ErrInvalid{}.New("dso.validateSVA; invalid signature verification algorithm")
 	}
 	return nil
 }
 
 func (dso *DataStoreOwner) validateAccount() error {
 	if dso == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("dso.validateAccount; dso not initialized")
 	}
 	if len(dso.Account) != constants.OwnerLen {
-		return errorz.ErrInvalid{}.New("account length wrong")
+		return errorz.ErrInvalid{}.New("dso.validateAccount; dso.account has incorrect length")
 	}
 	return nil
 }
@@ -200,7 +200,7 @@ func (dso *DataStoreOwner) Sign(msg []byte, s Signer) (*DataStoreSignature, erro
 		sig.Signature = signature
 		return sig, nil
 	default:
-		return nil, errorz.ErrInvalid{}.New("invalid signer type in DataStoreOwner.Sign")
+		return nil, errorz.ErrInvalid{}.New("dso.sign; invalid signer type")
 	}
 }
 
@@ -215,7 +215,7 @@ type DataStoreSignature struct {
 // DataStoreSignature object
 func (dss *DataStoreSignature) UnmarshalBinary(signature []byte) error {
 	if dss == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+		return errorz.ErrInvalid{}.New("dss.unmarshalBinary; dss not initialized")
 	}
 	sva, signature, err := extractSVA(signature)
 	if err != nil {
@@ -254,7 +254,7 @@ func (dss *DataStoreSignature) MarshalBinary() ([]byte, error) {
 // Validate validates the DataStoreSignature object
 func (dss *DataStoreSignature) Validate() error {
 	if dss == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+		return errorz.ErrInvalid{}.New("dss.validate; dss not initialized")
 	}
 	if err := dss.validateSVA(); err != nil {
 		return err
@@ -267,20 +267,20 @@ func (dss *DataStoreSignature) Validate() error {
 
 func (dss *DataStoreSignature) validateSVA() error {
 	if dss == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+		return errorz.ErrInvalid{}.New("dss.validateSVA; dss not initialized")
 	}
 	if dss.SVA != DataStoreSVA {
-		return errorz.ErrInvalid{}.New("signature verification algorithm invalid for DataStoreSignature")
+		return errorz.ErrInvalid{}.New("dss.validateSVA; invalid signature verification algorithm")
 	}
 	return nil
 }
 
 func (dss *DataStoreSignature) validateCurveSpec() error {
 	if dss == nil {
-		return errorz.ErrInvalid{}.New("object is nil")
+		return errorz.ErrInvalid{}.New("dss.validateCurveSpec; dss not initialized")
 	}
 	if !(dss.CurveSpec == constants.CurveSecp256k1) && !(dss.CurveSpec == constants.CurveBN256Eth) {
-		return errorz.ErrInvalid{}.New("invalid curve spec for DataStoreSignature")
+		return errorz.ErrInvalid{}.New("dss.validateCurveSpec; invalid curve spec")
 	}
 	return nil
 }

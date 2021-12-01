@@ -31,7 +31,7 @@ func (b *DataStore) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *DataStore) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.marshalBinary: ds not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -61,7 +61,7 @@ func (b *DataStore) UnmarshalCapn(bc mdefs.DataStore) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *DataStore) MarshalCapn(seg *capnp.Segment) (mdefs.DataStore, error) {
 	if b == nil {
-		return mdefs.DataStore{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.DataStore{}, errorz.ErrInvalid{}.New("ds.marshalCapn: ds not initialized")
 	}
 	var bc mdefs.DataStore
 	if seg == nil {
@@ -102,7 +102,7 @@ func (b *DataStore) MarshalCapn(seg *capnp.Segment) (mdefs.DataStore, error) {
 // IssuedAt returns the IssuedAt of the object
 func (b *DataStore) IssuedAt() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+		return 0, errorz.ErrInvalid{}.New("ds.issuedAt: ds not initialized")
 	}
 	return b.DSLinker.IssuedAt()
 }
@@ -110,7 +110,7 @@ func (b *DataStore) IssuedAt() (uint32, error) {
 // ChainID returns the ChainID of the object
 func (b *DataStore) ChainID() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+		return 0, errorz.ErrInvalid{}.New("ds.chainID: ds not initialized")
 	}
 	return b.DSLinker.ChainID()
 }
@@ -118,7 +118,7 @@ func (b *DataStore) ChainID() (uint32, error) {
 // Index returns the Index of the object
 func (b *DataStore) Index() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.index: ds not initialized")
 	}
 	return b.DSLinker.Index()
 }
@@ -126,7 +126,7 @@ func (b *DataStore) Index() ([]byte, error) {
 // PreHash returns the PreHash of the object
 func (b *DataStore) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.preHash: ds not initialized")
 	}
 	return b.DSLinker.PreHash()
 }
@@ -134,7 +134,7 @@ func (b *DataStore) PreHash() ([]byte, error) {
 // UTXOID returns the UTXOID of the object
 func (b *DataStore) UTXOID() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.utxoID: ds not initialized")
 	}
 	return b.DSLinker.UTXOID()
 }
@@ -142,7 +142,7 @@ func (b *DataStore) UTXOID() ([]byte, error) {
 // TxOutIdx returns the TxOutIdx of the object
 func (b *DataStore) TxOutIdx() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+		return 0, errorz.ErrInvalid{}.New("ds.txOutIdx: ds not initialized")
 	}
 	return b.DSLinker.TxOutIdx()
 }
@@ -150,29 +150,35 @@ func (b *DataStore) TxOutIdx() (uint32, error) {
 // SetTxOutIdx sets the TxOutIdx of the object
 func (b *DataStore) SetTxOutIdx(idx uint32) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ds.setTxOutIdx: ds not initialized")
 	}
 	return b.DSLinker.SetTxOutIdx(idx)
 }
 
 // TxHash returns the TxHash of the object
 func (b *DataStore) TxHash() ([]byte, error) {
-	if b == nil || b.DSLinker == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("ds.txhash: ds not initialized")
+	}
+	if b.DSLinker == nil {
+		return nil, errorz.ErrInvalid{}.New("ds.txhash: dsl not initialized")
 	}
 	if len(b.DSLinker.TxHash) != constants.HashLen {
-		return nil, errorz.ErrInvalid{}.New("invalid TxHash")
+		return nil, errorz.ErrInvalid{}.New("ds.txhash: dsl.txhash has incorrect length")
 	}
 	return utils.CopySlice(b.DSLinker.TxHash), nil
 }
 
 // SetTxHash sets the TxHash of the object
 func (b *DataStore) SetTxHash(txHash []byte) error {
-	if b == nil || b.DSLinker == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("ds.setTxHash: ds not initialized")
+	}
+	if b.DSLinker == nil {
+		return errorz.ErrInvalid{}.New("ds.setTxHash: dsl not initialized")
 	}
 	if len(txHash) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("Invalid hash length")
+		return errorz.ErrInvalid{}.New("ds.setTxHash: invalid hash length")
 	}
 	b.DSLinker.TxHash = utils.CopySlice(txHash)
 	return nil
@@ -181,7 +187,7 @@ func (b *DataStore) SetTxHash(txHash []byte) error {
 // RawData returns the RawData field of the sub object
 func (b *DataStore) RawData() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.rawData: ds not initialized")
 	}
 	return b.DSLinker.RawData()
 }
@@ -189,7 +195,7 @@ func (b *DataStore) RawData() ([]byte, error) {
 // Owner returns the DataStoreOwner of the DataStore
 func (b *DataStore) Owner() (*DataStoreOwner, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.owner: ds not initialized")
 	}
 	return b.DSLinker.Owner()
 }
@@ -211,7 +217,7 @@ func (b *DataStore) GenericOwner() (*Owner, error) {
 // IsExpired returns true if the datastore is free for garbage collection
 func (b *DataStore) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
-		return false, errorz.ErrInvalid{}.New("not initialized")
+		return false, errorz.ErrInvalid{}.New("ds.isExpired: ds not initialized")
 	}
 	return b.DSLinker.IsExpired(currentHeight)
 }
@@ -220,7 +226,7 @@ func (b *DataStore) IsExpired(currentHeight uint32) (bool, error) {
 // collected
 func (b *DataStore) EpochOfExpiration() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+		return 0, errorz.ErrInvalid{}.New("ds.epochOfExpiration: ds not initialized")
 	}
 	return b.DSLinker.EpochOfExpiration()
 }
@@ -228,7 +234,7 @@ func (b *DataStore) EpochOfExpiration() (uint32, error) {
 // RemainingValue returns remaining value at the time of consumption
 func (b *DataStore) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.remainingValue: ds not initialized")
 	}
 	return b.DSLinker.RemainingValue(currentHeight)
 }
@@ -236,7 +242,7 @@ func (b *DataStore) RemainingValue(currentHeight uint32) (*uint256.Uint256, erro
 // Value returns the value stored in the object at the time of creation
 func (b *DataStore) Value() (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.value: ds not initialized")
 	}
 	return b.DSLinker.Value()
 }
@@ -247,7 +253,7 @@ func (b *DataStore) Value() (*uint256.Uint256, error) {
 //			Fee == perEpochFee*(numEpochs + 2)
 func (b *DataStore) Fee() (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.fee: ds not initialized")
 	}
 	return b.DSLinker.Fee()
 }
@@ -294,6 +300,15 @@ func (b *DataStore) ValuePlusFee() (*uint256.Uint256, error) {
 
 // ValidateFee validates the fee of the datastore at the time of creation
 func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("ds.validateFee: ds not initialized")
+	}
+	if b.DSLinker == nil {
+		return errorz.ErrInvalid{}.New("ds.validateFee: dsl not initialized")
+	}
+	if b.DSLinker.DSPreImage == nil {
+		return errorz.ErrInvalid{}.New("ds.validateFee: dspi not initialized")
+	}
 	// Get Fee
 	fee, err := b.Fee()
 	if err != nil {
@@ -319,7 +334,7 @@ func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
 		return err
 	}
 	if fee.Cmp(feeTrue) != 0 {
-		return errorz.ErrInvalid{}.New("DataStore; invalid fee")
+		return errorz.ErrInvalid{}.New("ds.validateFee: invalid fee")
 	}
 	return nil
 }
@@ -328,7 +343,7 @@ func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
 // creation
 func (b *DataStore) ValidatePreSignature() error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ds.validatePreSignature: ds not initialized")
 	}
 	msg, err := b.DSLinker.MarshalBinary()
 	if err != nil {
@@ -340,7 +355,7 @@ func (b *DataStore) ValidatePreSignature() error {
 // PreSign generates the signature for a DataStore at the time of creation
 func (b *DataStore) PreSign(s Signer) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ds.preSign: ds not initialized")
 	}
 	msg, err := b.DSLinker.MarshalBinary()
 	if err != nil {
@@ -361,7 +376,10 @@ func (b *DataStore) PreSign(s Signer) error {
 // Sign generates the signature for a DataStore at the time of consumption
 func (b *DataStore) Sign(txIn *TXIn, s Signer) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ds.sign: ds not initialized")
+	}
+	if txIn == nil {
+		return errorz.ErrInvalid{}.New("ds.sign: txin not initialized")
 	}
 	msg, err := txIn.TXInLinker.MarshalBinary()
 	if err != nil {
@@ -387,7 +405,10 @@ func (b *DataStore) Sign(txIn *TXIn, s Signer) error {
 // consumption
 func (b *DataStore) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ds.validateSignature: ds not initialized")
+	}
+	if txIn == nil {
+		return errorz.ErrInvalid{}.New("ds.validateSignature: txin not initialized")
 	}
 	msg, err := txIn.TXInLinker.MarshalBinary()
 	if err != nil {
@@ -403,7 +424,7 @@ func (b *DataStore) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 // MakeTxIn constructs a TXIn object for the current object
 func (b *DataStore) MakeTxIn() (*TXIn, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("ds.makeTxIn: ds not initialized")
 	}
 	txOutIdx, err := b.TxOutIdx()
 	if err != nil {

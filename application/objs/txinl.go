@@ -29,7 +29,7 @@ func (b *TXInLinker) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *TXInLinker) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("txinl.marshalBinary; txinl not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -54,7 +54,7 @@ func (b *TXInLinker) UnmarshalCapn(bc mdefs.TXInLinker) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *TXInLinker) MarshalCapn(seg *capnp.Segment) (mdefs.TXInLinker, error) {
 	if b == nil {
-		return mdefs.TXInLinker{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.TXInLinker{}, errorz.ErrInvalid{}.New("txinl.marshalCapn; txinl not initialized")
 	}
 	var bc mdefs.TXInLinker
 	if seg == nil {
@@ -91,7 +91,7 @@ func (b *TXInLinker) MarshalCapn(seg *capnp.Segment) (mdefs.TXInLinker, error) {
 // PreHash returns the PreHash of the object
 func (b *TXInLinker) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("txinl.preHash; txinl not initialized")
 	}
 	return b.TXInPreImage.PreHash()
 }
@@ -99,7 +99,7 @@ func (b *TXInLinker) PreHash() ([]byte, error) {
 // UTXOID returns the UTXOID of the object
 func (b *TXInLinker) UTXOID() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("txinl.utxoID; txinl not initialized")
 	}
 	return b.TXInPreImage.UTXOID()
 }
@@ -114,19 +114,28 @@ func (b *TXInLinker) IsDeposit() bool {
 
 // ChainID returns the chain ID
 func (b *TXInLinker) ChainID() (uint32, error) {
-	if b == nil || b.TXInPreImage == nil || b.TXInPreImage.ChainID == 0 {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return 0, errorz.ErrInvalid{}.New("txinl.chainID; txinl not initialized")
+	}
+	if b.TXInPreImage == nil {
+		return 0, errorz.ErrInvalid{}.New("txinl.chainID; txinpi not initialized")
+	}
+	if b.TXInPreImage.ChainID == 0 {
+		return 0, errorz.ErrInvalid{}.New("txinl.chainID; txinpi.chainID is zero")
 	}
 	return b.TXInPreImage.ChainID, nil
 }
 
 // SetTxHash sets TxHash
 func (b *TXInLinker) SetTxHash(txHash []byte) error {
-	if b == nil || b.TXInPreImage == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("txinl.setTxHash; txinl not initialized")
+	}
+	if b.TXInPreImage == nil {
+		return errorz.ErrInvalid{}.New("txinl.setTxHash; txinpi not initialized")
 	}
 	if len(txHash) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("Invalid hash length")
+		return errorz.ErrInvalid{}.New("txinl.setTxHash; txhash has incorrect length")
 	}
 	b.TxHash = utils.CopySlice(txHash)
 	return nil
@@ -134,16 +143,25 @@ func (b *TXInLinker) SetTxHash(txHash []byte) error {
 
 // ConsumedTxIdx returns the consumed TxIdx
 func (b *TXInLinker) ConsumedTxIdx() (uint32, error) {
-	if b == nil || b.TXInPreImage == nil {
-		return 0, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return 0, errorz.ErrInvalid{}.New("txinl.consumedTxIdx; txinl not initialized")
+	}
+	if b.TXInPreImage == nil {
+		return 0, errorz.ErrInvalid{}.New("txinl.consumedTxIdx; txinpi not initialized")
 	}
 	return b.TXInPreImage.ConsumedTxIdx, nil
 }
 
 // ConsumedTxHash returns the consumed TxHash
 func (b *TXInLinker) ConsumedTxHash() ([]byte, error) {
-	if b == nil || b.TXInPreImage == nil || len(b.TXInPreImage.ConsumedTxHash) != constants.HashLen {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("txinl.consumedTxHash; txinl not initialized")
+	}
+	if b.TXInPreImage == nil {
+		return nil, errorz.ErrInvalid{}.New("txinl.consumedTxHash; txinpi not initialized")
+	}
+	if len(b.TXInPreImage.ConsumedTxHash) != constants.HashLen {
+		return nil, errorz.ErrInvalid{}.New("txinl.consumedTxHash; txinpi.txhash has incorrect length")
 	}
 	return utils.CopySlice(b.TXInPreImage.ConsumedTxHash), nil
 }
