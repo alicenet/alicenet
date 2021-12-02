@@ -23,6 +23,9 @@ type OwnValidatingState struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // OwnValidatingState object
 func (b *OwnValidatingState) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("OwnValidatingState.UnmarshalBinary; ovs not initialized")
+	}
 	bh, err := ovstate.Unmarshal(data)
 	if err != nil {
 		return err
@@ -33,6 +36,9 @@ func (b *OwnValidatingState) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *OwnValidatingState) UnmarshalCapn(bh mdefs.OwnValidatingState) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("OwnValidatingState.UnmarshalCapn; ovs not initialized")
+	}
 	err := ovstate.Validate(bh)
 	if err != nil {
 		return err
@@ -63,7 +69,7 @@ func (b *OwnValidatingState) UnmarshalCapn(bh mdefs.OwnValidatingState) error {
 // byte slice
 func (b *OwnValidatingState) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("OwnValidatingState.MarshalBinary; ovs not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -76,7 +82,7 @@ func (b *OwnValidatingState) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *OwnValidatingState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnValidatingState, error) {
 	if b == nil {
-		return mdefs.OwnValidatingState{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.OwnValidatingState{}, errorz.ErrInvalid{}.New("OwnValidatingState.MarshalCapn; ovs not initialized")
 	}
 	var bh mdefs.OwnValidatingState
 	if seg == nil {

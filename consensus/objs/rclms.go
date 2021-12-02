@@ -20,6 +20,9 @@ type RClaims struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // RClaims object
 func (b *RClaims) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalBinary; rclaims not initialized")
+	}
 	bh, err := rclaims.Unmarshal(data)
 	if err != nil {
 		return err
@@ -30,6 +33,9 @@ func (b *RClaims) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; rclaims not initialized")
+	}
 	err := rclaims.Validate(bh)
 	if err != nil {
 		return err
@@ -39,16 +45,16 @@ func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
 	b.Round = bh.Round()
 	b.PrevBlock = utils.CopySlice(bh.PrevBlock())
 	if b.Height < 1 {
-		return errorz.ErrInvalid{}.New("rclaims bad height")
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; height is zero")
 	}
 	if b.Round < 1 {
-		return errorz.ErrInvalid{}.New("rclaims bad round")
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; round is zero")
 	}
 	if b.ChainID < 1 {
-		return errorz.ErrInvalid{}.New("rclaims bad cid")
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; chainID is zero")
 	}
 	if b.Round > constants.DEADBLOCKROUND {
-		return errorz.ErrInvalid{}.New("rclaims round too big")
+		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; round > DBR")
 	}
 	return nil
 }
@@ -56,8 +62,20 @@ func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
 // MarshalBinary takes the RClaims object and returns the canonical
 // byte slice
 func (b *RClaims) MarshalBinary() ([]byte, error) {
-	if b == nil || b.ChainID == 0 || b.Round == 0 || b.Height == 0 {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; rclaims not initialized")
+	}
+	if b.ChainID == 0 {
+		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; chainID is zero")
+	}
+	if b.Round == 0 {
+		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; round is zero")
+	}
+	if b.Round > constants.DEADBLOCKROUND {
+		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; round > DBR")
+	}
+	if b.Height == 0 {
+		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; height is zero")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -70,7 +88,7 @@ func (b *RClaims) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *RClaims) MarshalCapn(seg *capnp.Segment) (mdefs.RClaims, error) {
 	if b == nil {
-		return mdefs.RClaims{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.RClaims{}, errorz.ErrInvalid{}.New("RClaims.MarshalCapn; rclaims not initialized")
 	}
 	var bh mdefs.RClaims
 	if seg == nil {

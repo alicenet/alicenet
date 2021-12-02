@@ -22,7 +22,7 @@ type RoundStateCurrentKey struct {
 // the canonical byte slice
 func (b *RoundStateCurrentKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("RoundStateCurrentKey.MarshalBinary; rsck not initialized")
 	}
 	key := []byte{}
 	Prefix := utils.CopySlice(b.Prefix)
@@ -42,7 +42,7 @@ func (b *RoundStateCurrentKey) MarshalBinary() ([]byte, error) {
 // RoundStateCurrentKey object
 func (b *RoundStateCurrentKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("RoundStateCurrentKey.UnmarshalBinary; rsck not initialized")
 	}
 	splitData := bytes.Split(data, []byte("|"))
 	if len(splitData) != 3 {
