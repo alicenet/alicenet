@@ -247,7 +247,7 @@ func (a *Application) SetMiningKey(privKey []byte, curveSpec constants.CurveSpec
 		a.defaultAccount = ac
 		a.defaultCurveSpec = curveSpec
 	default:
-		return errorz.ErrInvalid{}.New("the curve spec value is invalid")
+		return errorz.ErrInvalid{}.New("app.SetMiningKey; invalid curve spec")
 	}
 	return nil
 }

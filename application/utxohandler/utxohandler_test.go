@@ -66,6 +66,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 		t.Fatal(err)
 	}
 	tx.Vout = append(tx.Vout, newUTXO)
+	tx.Fee = uint256.Zero()
 	err = tx.SetTxHash()
 	if err != nil {
 		t.Fatal(err)

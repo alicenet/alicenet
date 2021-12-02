@@ -83,7 +83,7 @@ func (pt *Handler) Add(txnState *badger.Txn, txs []*objs.Tx, currentHeight uint3
 				utils.DebugTrace(pt.logger, err)
 				return nil
 			}
-			return errorz.ErrInvalid{}.New("already mined")
+			return errorz.ErrInvalid{}.New("ptHandler.Add; already mined")
 		}
 		return nil
 	})
@@ -458,7 +458,7 @@ func (pt *Handler) checkIsValid(txn *badger.Txn, txs objs.TxVec, currentHeight u
 	}
 	if len(spent) > 0 {
 		utils.DebugTrace(pt.logger, err)
-		return errorz.ErrInvalid{}.New("spent")
+		return errorz.ErrInvalid{}.New("ptHandler.checkIsValid; spent")
 	}
 	_, err = pt.UTXOHandler.IsValid(txn, txs, currentHeight, deposits)
 	if err != nil {
@@ -479,7 +479,7 @@ func (pt *Handler) getOneInternal(txn *badger.Txn, epoch uint32, txHash []byte) 
 	}
 	if expEpoch < epoch {
 		utils.DebugTrace(pt.logger, err)
-		return nil, errorz.ErrInvalid{}.New("expired")
+		return nil, errorz.ErrInvalid{}.New("ptHandler.getOneInternal; expired")
 	}
 	key := pt.makePendingTxKey(txHash)
 	tx, err := db.GetTx(txn, key)

@@ -132,7 +132,7 @@ func (hii *HeightIdxIndex) makeHeightIdx(height uint32, idx uint32) []byte {
 
 func (hii *HeightIdxIndex) getHeightIdx(heightIdx []byte) (uint32, uint32, error) {
 	if len(heightIdx) != 8 {
-		return 0, 0, errorz.ErrInvalid{}.New("getHeightIdx: invalid byte length from key; should be 8")
+		return 0, 0, errorz.ErrInvalid{}.New("heightIdxIndex.getHeightIdx: invalid byte length from key; should be 8")
 	}
 	heightBytes := heightIdx[:4]
 	idxBytes := heightIdx[4:]

@@ -121,9 +121,11 @@ func makeTxInitial() (objs.Vout, *objs.Tx) {
 	if err != nil {
 		panic(err)
 	}
+	txfee := uint256.Zero()
 	tx := &objs.Tx{
 		Vin:  txInputs,
 		Vout: generatedUTXOs,
+		Fee:  txfee,
 	}
 	err = tx.SetTxHash()
 	if err != nil {
@@ -160,9 +162,11 @@ func makeTxConsuming(consumedUTXOs objs.Vout) *objs.Tx {
 	if err != nil {
 		panic(err)
 	}
+	txfee := uint256.Zero()
 	tx := &objs.Tx{
 		Vin:  txInputs,
 		Vout: generatedUTXOs,
+		Fee:  txfee,
 	}
 	err = tx.SetTxHash()
 	if err != nil {

@@ -114,7 +114,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if len(missing) > 0 {
-			return nil, errorz.ErrInvalid{}.New("missing consumed utxo")
+			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; missing consumed utxo")
 		}
 		var refUTXOs objs.Vout
 		consumedUTXOIDsOnlyDeposits, err := objs.TxVec([]*objs.Tx{tx}).ConsumedUTXOIDOnlyDeposits()
@@ -126,7 +126,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			curUTXOID := utils.CopySlice(consumedUTXOIDsOnlyDeposits[j])
 			deposit, ok := depositMap[string(curUTXOID)]
 			if !ok {
-				return nil, errorz.ErrInvalid{}.New("missing consumed utxo (deposit)")
+				return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; missing consumed utxo (deposit)")
 			}
 			refUTXOs = append(refUTXOs, deposit)
 		}
@@ -209,7 +209,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		for k := range outputIndexes {
 			if knownIndexes[k] {
 				if !inputIndexes[k] {
-					return nil, errorz.ErrInvalid{}.New("duplicate datastore index")
+					return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; duplicate datastore index")
 				}
 			}
 		}
@@ -229,7 +229,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if ok {
-			return nil, errorz.ErrInvalid{}.New("double spend of deposit found in trie")
+			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; double spend of deposit found in trie")
 		}
 	}
 
@@ -247,7 +247,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if ok {
-			return nil, errorz.ErrInvalid{}.New("utxoID already in trie")
+			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; utxoID already in trie")
 		}
 	}
 
@@ -265,7 +265,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if !ok {
-			return nil, errorz.ErrInvalid{}.New("consumed utxoID not in trie")
+			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; consumed utxoID not in trie")
 		}
 	}
 	utxos, missing, err := ut.Get(txn, consumedUTXOIDs)
@@ -274,7 +274,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		return nil, err
 	}
 	if len(missing) > 0 {
-		return nil, errorz.ErrInvalid{}.New("missing transactions")
+		return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; missing transactions")
 	}
 	return utxos, nil
 }
@@ -415,7 +415,7 @@ func (ut *UTXOHandler) GetData(txn *badger.Txn, owner *objs.Owner, dataIdx []byt
 		}
 		return rd, nil
 	}
-	return nil, errorz.ErrInvalid{}.New("not a datastore")
+	return nil, errorz.ErrInvalid{}.New("utxoHandler.GetData; not a datastore")
 }
 
 // GetExpiredForProposal returns a list of UTXOs, the IDs of those UTXOs, and
@@ -470,7 +470,9 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 		}
 		account := crypto.GetAccount(pubk)
 		vs := &objs.ValueStore{}
-		err = vs.New(chainID, value, uint256.Zero(), account, curveSpec, make([]byte, constants.HashLen))
+		// We are making a cleanup Tx, so there is no fee.
+		fee := uint256.Zero()
+		err = vs.New(chainID, value, fee, account, curveSpec, make([]byte, constants.HashLen))
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
 			return nil, 0, err
@@ -481,9 +483,15 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 			utils.DebugTrace(ut.logger, err)
 			return nil, 0, err
 		}
+		txfee := uint256.Zero()
 		tx := &objs.Tx{
 			Vin:  txIns,
 			Vout: objs.Vout{utxo},
+			Fee:  txfee,
+		}
+		if !tx.IsCleanupTx(height, utxos) {
+			// Something is very wrong if this check fails
+			return nil, 0, errorz.ErrInvalid{}.New("utxoHandler.GetExpiredForProposal; not a cleanup transaction")
 		}
 		err = tx.SetTxHash()
 		if err != nil {
@@ -584,7 +592,7 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 	}
 	if len(missing) == 0 {
 		utils.DebugTrace(ut.logger, err)
-		return errorz.ErrInvalid{}.New("utxoID conflict")
+		return errorz.ErrInvalid{}.New("utxoHandler.addOne; utxoID conflict")
 	}
 	switch {
 	case utxo.HasDataStore():
@@ -640,9 +648,9 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 			return err
 		}
 	case utxo.HasAtomicSwap():
-		panic("UTXOHandler.addOne has not been implemented for AtomicSwap objects")
+		panic("utxoHandler.addOne; not implemented for AtomicSwap objects")
 	default:
-		panic("utxo type not defined in UTXOHandler.addOne")
+		panic("utxoHandler.addOne; utxo type not defined")
 	}
 	key := ut.makeUTXOKey(utxoID)
 	if err := db.SetUTXO(txn, key, utxo); err != nil {
@@ -666,12 +674,13 @@ func (ut *UTXOHandler) dropFromIndexes(txn *badger.Txn, utxoID []byte) error {
 	utxo, err := ut.getInternal(txn, utxoID)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			return errorz.ErrInvalid{}.New("missing utxo for utxoID")
+			return errorz.ErrInvalid{}.New("utxoHandler.dropFromIndexes; missing utxo for utxoID")
 		}
 		utils.DebugTrace(ut.logger, err)
 		return err
 	}
-	if utxo.HasDataStore() {
+	switch {
+	case utxo.HasDataStore():
 		err = ut.expIndex.Drop(txn, utxoID)
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
@@ -682,12 +691,16 @@ func (ut *UTXOHandler) dropFromIndexes(txn *badger.Txn, utxoID []byte) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	} else {
+	case utxo.HasValueStore():
 		err = ut.valueIndex.Drop(txn, utxoID)
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
+	case utxo.HasAtomicSwap():
+		panic("utxoHandler.dropFromIndexes; not implemented for AtomicSwap objects")
+	default:
+		panic("utxoHandler.dropFromIndexes; utxo type not defined")
 	}
 	return nil
 }
@@ -761,9 +774,9 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			return err
 		}
 	case utxo.HasAtomicSwap():
-		panic("UTXOHandler.addOneFastSync has not been implemented for AtomicSwap objects")
+		panic("utxoHandler.addOneFastSync; not implemented for AtomicSwap objects")
 	default:
-		panic("utxo type not defined in UTXOHandler.addOneFastSync")
+		panic("utxoHandler.addOneFastSync; utxo type not defined")
 	}
 	key := ut.makeUTXOKey(utxoID)
 	if err := db.SetUTXO(txn, key, utxo); err != nil {
@@ -815,7 +828,7 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID []byte, pr
 		if err != nil {
 			return err
 		}
-		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoID does not match calcUtxoID; utxoID: %x; calcUtxoID: %x calcTxHash: %x TxOutIdx: %v", utxoID, calcUtxoID, calcTxHash, utxoIdxOut))
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.StoreSnapShotStateData; utxoID does not match calcUtxoID; utxoID: %x; calcUtxoID: %x calcTxHash: %x TxOutIdx: %v", utxoID, calcUtxoID, calcTxHash, utxoIdxOut))
 	}
 	calcPreHash, err := utxo.PreHash()
 	if err != nil {
@@ -824,7 +837,7 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID []byte, pr
 	}
 	if !bytes.Equal(calcPreHash, preHash) {
 		utils.DebugTrace(ut.logger, err)
-		return errorz.ErrInvalid{}.New(fmt.Sprintf("preHash does not match calcPreHash; preHash: %x; calcPreHash: %x; utxoID: %x", preHash, calcPreHash, utxoID))
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.StoreSnapShotStateData; preHash does not match calcPreHash; preHash: %x; calcPreHash: %x; utxoID: %x", preHash, calcPreHash, utxoID))
 	}
 	if err := ut.addOneFastSync(txn, utxo); err != nil {
 		utils.DebugTrace(ut.logger, err)
