@@ -48,10 +48,10 @@ func (dp *Handler) IsValid(txn *badger.Txn, txs objs.TxVec) ([]*objs.TXOut, erro
 		return nil, err
 	}
 	if len(missing) > 0 {
-		return nil, errorz.ErrInvalid{}.New("a deposit is missing")
+		return nil, errorz.ErrInvalid{}.New("depositHandler.IsValid; a deposit is missing")
 	}
 	if len(spent) > 0 {
-		return nil, errorz.ErrInvalid{}.New("a deposit is already spent")
+		return nil, errorz.ErrInvalid{}.New("depositHandler.IsValid; a deposit is already spent")
 	}
 	return found, nil
 }
@@ -71,7 +71,7 @@ func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *
 		return err
 	}
 	if spent {
-		return errorz.ErrInvalid{}.New("a deposit is already spent")
+		return errorz.ErrInvalid{}.New("depositHandler.Add; a deposit is already spent")
 	}
 	n2 := utils.CopySlice(utxoID)
 	vso := &objs.ValueStoreOwner{}
@@ -109,7 +109,7 @@ func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *
 			return err
 		}
 	} else {
-		return errorz.ErrInvalid{}.New("stale")
+		return errorz.ErrInvalid{}.New("depositHandler.Add; stale")
 	}
 	if err := db.SetUTXO(txn, key, utxo); err != nil {
 		utils.DebugTrace(dp.logger, err)

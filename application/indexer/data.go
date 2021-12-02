@@ -87,7 +87,7 @@ func (di *DataIndex) addInternal(txn *badger.Txn, utxoID []byte, owner *objs.Own
 func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik []byte, utxoID []byte) error {
 	_, err := utils.GetValue(txn, dik)
 	if err == nil {
-		return errorz.ErrInvalid{}.New("index conflict")
+		return errorz.ErrInvalid{}.New("dataIndex.addInternalNoOverwrite; index conflict")
 	}
 	if err == badger.ErrKeyNotFound {
 		diRefKey := di.makeRefKey(utils.CopySlice(utxoID))
