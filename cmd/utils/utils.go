@@ -38,13 +38,6 @@ var EthdkgCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-// ArbitraryEthdkgCommand is the command that triggers ETHDKG process at arbitrary height
-var ArbitraryEthdkgCommand = cobra.Command{
-	Use:   "arbitraryethdkg",
-	Short: "",
-	Long:  "",
-	Run:   utilsNode}
-
 // SendWeiCommand is the command that sends wei from one account to another
 var SendWeiCommand = cobra.Command{
 	Use:   "sendwei",
@@ -233,8 +226,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		exitCode = approvetokens(logger, eth, cmd, args)
 	case "ethdkg":
 		exitCode = ethdkg(logger, eth, cmd, args)
-	case "arbitraryethdkg":
-		exitCode = arbitraryethdkg(logger, eth, cmd, args)
 	case "register":
 		exitCode = register(logger, eth, cmd, args)
 	case "sendwei":
@@ -606,51 +597,6 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 			}
 		}
 	}
-
-	return 0
-}
-
-func arbitraryethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
-	// if len(args) < 1 {
-	// 	logger.Errorf("Arguments must include: madHeight")
-	// 	return 1
-	// }
-
-	// var madHeight uint32
-	// madHeight64, err := strconv.ParseUint(args[0], 10, 32)
-	// if err != nil {
-	// 	logger.Errorf("madHeight is invalid: %v! The height should be less than max(uint32)", madHeight64)
-	// 	return 1
-	// }
-
-	// madHeight = uint32(madHeight64)
-
-	// // More ethereum setup
-	// acct := eth.GetDefaultAccount()
-	// c := eth.Contracts()
-
-	// ctx := context.Background()
-
-	// txnOpts, err := eth.GetTransactionOpts(ctx, acct)
-	// if err != nil {
-	// 	logger.Errorf("Can not build transaction options: %v", err)
-	// 	return 1
-	// }
-
-	// //
-	// txn, err := c.Ethdkg().InitializeEthDKGFromArbitraryMadHeight(txnOpts, madHeight)
-	// if err != nil {
-	// 	logger.Errorf("Could not initialize arbitrary ethdkg: %v", err)
-	// 	return 1
-	// }
-
-	// _, err = eth.Queue().QueueAndWait(ctx, txn)
-	// if err != nil {
-	// 	logger.Error("Failed looking for transaction events.")
-	// 	return 1
-	// }
-
-	// logger.Infof("Started arbitrary EthDKG at height %v", madHeight)
 
 	return 0
 }
