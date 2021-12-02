@@ -23,7 +23,7 @@ p2pListeningAddress = "0.0.0.0:5348"
 discoveryListeningAddress = "0.0.0.0:5449"
 localStateListeningAddress = "0.0.0.0:8893"
 peerLimitMax = 24
-peerLimitMin = 2
+peerLimitMin = 3
 upnp=false
 
 
@@ -40,7 +40,7 @@ keystore = "assets/test/keys"
 timeout = "1h"
 passcodes = "assets/test/passcodes.txt"
 testEther = "f000000000000000000"
-finalityDelay = 1
+finalityDelay = 2
 retryCount = 3
 retryDelay = "5s"
 startingBlock = 1

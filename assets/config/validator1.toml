@@ -1,6 +1,5 @@
 [loglevel]
 ethereum = "info"
-consensus = "debug"
 
 [chain]
 id = 42
@@ -8,8 +7,8 @@ stateDB = "~/validator1/"
 stateDBInMemory = false
 transactionDB = ""
 transactionDBInMemory = true
-monitorDB = ""
-monitorDBInMemory = true
+monitorDB = "~/validator1mon/"
+monitorDBInMemory = false
 
 [bootnode]
 listeningAddress = "0.0.0.0:4243"
@@ -23,7 +22,7 @@ p2pListeningAddress = "0.0.0.0:4344"
 discoveryListeningAddress = "0.0.0.0:4445"
 localStateListeningAddress = "0.0.0.0:8885"
 peerLimitMax = 24
-peerLimitMin = 2
+peerLimitMin = 3
 upnp=false
 
 [monitor]
@@ -39,7 +38,7 @@ keystore = "assets/test/keys"
 timeout = "1h"
 passcodes = "assets/test/passcodes.txt"
 testEther = "f000000000000000000"
-finalityDelay = 1
+finalityDelay = 2
 retryCount = 3
 retryDelay = "5s"
 startingBlock = 1
