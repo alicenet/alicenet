@@ -26,7 +26,7 @@ import (
 
 const chanBuffering int = int(constants.EpochLength)
 const maxNumber int = chanBuffering
-const minWorkers = chanBuffering
+const minWorkers = 4
 const maxRetryCount = 6
 const backOffAmount = 1
 const backOffJitter = float64(.1)
@@ -240,8 +240,7 @@ func (sc *stateCache) pop(height uint32, key []byte) (*stateResponse, error) {
 
 type bhCache struct {
 	sync.RWMutex
-	objs      map[nodeKey]*stateResponse
-	minHeight uint32
+	objs map[nodeKey]*stateResponse
 }
 
 func (bhc *bhCache) Init() {
@@ -264,10 +263,7 @@ func (bhc *bhCache) getLeafKeys(maxNumber int) []nodeKey {
 func (bhc *bhCache) contains(nk nodeKey) bool {
 	bhc.RLock()
 	defer bhc.RUnlock()
-	if bhc.objs[nk] == nil {
-		return false
-	}
-	return true
+	return bhc.objs[nk] != nil
 }
 
 func (bhc *bhCache) insert(sr *stateResponse) error {
@@ -298,8 +294,7 @@ func (bhc *bhCache) pop(key []byte) (*stateResponse, error) {
 
 type bhNodeCache struct {
 	sync.RWMutex
-	objs      map[nodeKey]*nodeResponse
-	minHeight uint32
+	objs map[nodeKey]*nodeResponse
 }
 
 func (bhnc *bhNodeCache) Init() {
@@ -322,10 +317,7 @@ func (bhnc *bhNodeCache) getNodeKeys(maxNumber int) []nodeKey {
 func (bhnc *bhNodeCache) contains(nk nodeKey) bool {
 	bhnc.RLock()
 	defer bhnc.RUnlock()
-	if bhnc.objs[nk] == nil {
-		return false
-	}
-	return true
+	return bhnc.objs[nk] != nil
 }
 
 func (bhnc *bhNodeCache) insert(sr *nodeResponse) error {
@@ -407,6 +399,8 @@ func (a *atomicU32) Get() uint32 {
 type workFunc func()
 
 type SnapShotManager struct {
+	sync.Mutex
+
 	appHandler     appmock.Application
 	requestBus     *request.Client
 	database       *db.Database
@@ -430,8 +424,6 @@ type SnapShotManager struct {
 	stateLeafDlChan chan *dlReq
 
 	workChan chan workFunc
-	reqCount int
-	reqAvg   float64
 
 	statusChan chan string
 	closeChan  chan struct{}
@@ -441,6 +433,8 @@ type SnapShotManager struct {
 	finalizeOnce         sync.Once
 
 	tailSyncHeight uint32
+
+	numWorkers int
 }
 
 // Init initializes the SnapShotManager
@@ -489,19 +483,16 @@ func (ssm *SnapShotManager) Init(database *db.Database, storage dynamics.Storage
 	go ssm.loggingDelayer()
 }
 
-func (ssm *SnapShotManager) close() {
-	ssm.closeOnce.Do(func() {
-		close(ssm.closeChan)
-	})
-}
-
 func (ssm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) error {
 	if ssm.finalizeFastSyncChan == nil {
 		ssm.finalizeOnce = sync.Once{}
 		ssm.finalizeFastSyncChan = make(chan struct{})
+		ssm.Lock()
 		for i := 0; i < minWorkers; i++ {
+			ssm.numWorkers++
 			go ssm.worker(ssm.finalizeFastSyncChan)
 		}
+		ssm.Unlock()
 	}
 	ssm.tailSyncHeight = snapShotBlockHeader.BClaims.Height
 	if err := ssm.database.SetCommittedBlockHeaderFastSync(txn, snapShotBlockHeader); err != nil {
@@ -886,7 +877,7 @@ func (ssm *SnapShotManager) syncTailingBlockHeaders(txn *badger.Txn, snapShotHei
 	if ssm.tailSyncHeight <= constants.EpochLength {
 		return nil
 	}
-	start := int(ssm.tailSyncHeight) - int(constants.EpochLength)%int(constants.EpochLength)
+	start := (int(ssm.tailSyncHeight) - int(constants.EpochLength)) % int(constants.EpochLength)
 	start = int(start) * int(constants.EpochLength)
 	if start <= int(constants.EpochLength) {
 		return nil
@@ -1216,19 +1207,31 @@ func (ssm *SnapShotManager) dlHdrLeaves(txn *badger.Txn, snapShotHeight uint32) 
 		case ssm.hdrLeafDlChan <- r:
 		default:
 			ssm.hdrLeafDLs.Pop(nk)
-			break
+			return nil
 		}
 	}
 	return nil
 }
 
 func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
+	defer func() {
+		ssm.Lock()
+		ssm.numWorkers--
+		ssm.Unlock()
+	}()
 	for {
 		select {
 		case <-killChan:
 			return
 		case <-ssm.closeChan:
 			return
+		case <-time.After(1 * time.Second):
+			ssm.Lock()
+			if ssm.numWorkers > minWorkers {
+				ssm.Unlock()
+				return
+			}
+			ssm.Unlock()
 		case w := <-ssm.workChan:
 			w()
 		}
@@ -1236,11 +1239,29 @@ func (ssm *SnapShotManager) worker(killChan <-chan struct{}) {
 }
 
 func (ssm *SnapShotManager) sendWork(w func()) {
-	select {
-	case <-ssm.closeChan:
-		return
-	case ssm.workChan <- w:
-		return
+	for {
+		select {
+		case <-ssm.closeChan:
+			return
+		case ssm.workChan <- w:
+			return
+		default:
+			ssm.Lock()
+			if ssm.numWorkers < maxNumber {
+				ssm.numWorkers++
+				go ssm.worker(ssm.finalizeFastSyncChan)
+				ssm.Unlock()
+			} else {
+				ssm.Unlock()
+				select {
+				case <-ssm.closeChan:
+					return
+				case ssm.workChan <- w:
+					return
+				}
+			}
+
+		}
 	}
 }
 
@@ -1386,7 +1407,7 @@ func (ssm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			}
 			if !bytes.Equal(bhash, bhashResp) {
 				peer.Feedback(-2)
-				utils.DebugTrace(ssm.logger, errors.New("Bad block hash"))
+				utils.DebugTrace(ssm.logger, errors.New("bad block hash"))
 				continue
 			}
 			bhBytes, err := resp[i].MarshalBinary()

@@ -305,6 +305,7 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 		logger.Errorf("Validators.AddValidator() failed")
 	}
 
+	logger.Infof("Registered the address %x", acct.Address.Hex())
 	return 0
 }
 
@@ -321,12 +322,12 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	}
 
 	// Contract orchestration
-	txn, err := c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
+	_, err = c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
 	if err != nil {
 		logger.Errorf("Account %v could not leave validators pool: %v", acct.Address.Hex(), err)
 		return 1
 	}
-	logger.Infof("Left validators pool: %q", txn)
+	logger.Infof("Unregistered the address %x", acct.Address.Hex())
 
 	return 0
 }
@@ -389,6 +390,7 @@ func approvetokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 		logger.Infof("retrying...")
 		time.Sleep(time.Second)
 	}
+	logger.Infof("Approved amount %d to address %x", amount, toAddress)
 
 	return 0
 }
@@ -514,6 +516,7 @@ func transfertokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Co
 	_, err = c.StakingToken().TransferFrom(txnOpts, fromAddress, acct.Address, amount)
 	if err != nil {
 		logger.Errorf("Could not transfer %v tokens from %v to %v: %v", amount, fromAddressString, acct.Address.Hex(), err)
+		return 1
 	}
 	logger.Infof("Transfered %v tokens from %v to %v", amount, fromAddressString, acct.Address.Hex())
 

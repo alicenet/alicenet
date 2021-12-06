@@ -1,8 +1,14 @@
 package blockchain
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"math/big"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/bridge/bindings"
@@ -38,79 +44,110 @@ type ContractDetails struct {
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
 func (c *ContractDetails) LookupContracts(ctx context.Context, registryAddress common.Address) error {
-
-	eth := c.eth
-	logger := eth.logger
-
-	// Load the registry first
-	registry, err := bindings.NewRegistry(registryAddress, eth.client)
-	if err != nil {
-		return err
-	}
-	c.registry = registry
-	c.registryAddress = registryAddress
-
-	// Just a help for looking up other contracts
-	lookup := func(name string) (common.Address, error) {
-		addr, err := registry.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), name)
-		if err != nil {
-			logger.Errorf("Failed lookup of \"%v\": %v", name, err)
-		} else {
-			logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
+	signals := make(chan os.Signal)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	for {
+		select {
+		case <-signals:
+			return errors.New("GoodBye from lookup contracts!")
+		case <-time.After(1 * time.Second):
 		}
-		return addr, err
+
+		eth := c.eth
+		logger := eth.logger
+
+		// Load the registry first
+		registry, err := bindings.NewRegistry(registryAddress, eth.client)
+		if err != nil {
+			return err
+		}
+		c.registry = registry
+		c.registryAddress = registryAddress
+
+		// Just a help for looking up other contracts
+		lookup := func(name string) (common.Address, error) {
+			addr, err := registry.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), name)
+			if err != nil {
+				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
+			} else {
+				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
+			}
+			return addr, err
+		}
+
+		// Lookup up governance address and bind to it
+		c.governorAddress, err = lookup("governance/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.governorAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.governor, err = bindings.NewGovernor(c.governorAddress, eth.client)
+		logAndEat(logger, err)
+
+		// Lookup up deposit address and bind to it
+		c.depositAddress, err = lookup("deposit/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.depositAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.deposit, err = bindings.NewDeposit(c.depositAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.ethdkgAddress, err = lookup("ethdkg/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.ethdkgAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.stakingTokenAddress, err = lookup("stakingToken/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.stakingTokenAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.stakingToken, err = bindings.NewToken(c.stakingTokenAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.utilityTokenAddress, err = lookup("utilityToken/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.utilityTokenAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.utilityToken, err = bindings.NewToken(c.utilityTokenAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.validatorsAddress, err = lookup("validators/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.validatorsAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
+		c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.participants, err = bindings.NewParticipants(c.validatorsAddress, eth.client)
+		logAndEat(logger, err)
+
+		c.snapshots, err = bindings.NewSnapshots(c.validatorsAddress, eth.client)
+		logAndEat(logger, err)
+
+		stakingAddress, err := lookup("staking/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(stakingAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.staking, err = bindings.NewStaking(stakingAddress, eth.client)
+		logAndEat(logger, err)
+		break
 	}
-
-	// Lookup up governance address and bind to it
-	c.governorAddress, err = lookup("governance/v1")
-	logAndEat(logger, err)
-
-	c.governor, err = bindings.NewGovernor(c.governorAddress, eth.client)
-	logAndEat(logger, err)
-
-	// Lookup up deposit address and bind to it
-	c.depositAddress, err = lookup("deposit/v1")
-	logAndEat(logger, err)
-
-	c.deposit, err = bindings.NewDeposit(c.depositAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.ethdkgAddress, err = lookup("ethdkg/v1")
-	logAndEat(logger, err)
-
-	c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.stakingTokenAddress, err = lookup("stakingToken/v1")
-	logAndEat(logger, err)
-
-	c.stakingToken, err = bindings.NewToken(c.stakingTokenAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.utilityTokenAddress, err = lookup("utilityToken/v1")
-	logAndEat(logger, err)
-
-	c.utilityToken, err = bindings.NewToken(c.utilityTokenAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.validatorsAddress, err = lookup("validators/v1")
-	logAndEat(logger, err)
-
-	// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
-	c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.participants, err = bindings.NewParticipants(c.validatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	c.snapshots, err = bindings.NewSnapshots(c.validatorsAddress, eth.client)
-	logAndEat(logger, err)
-
-	stakingAddress, err := lookup("staking/v1")
-	logAndEat(logger, err)
-
-	c.staking, err = bindings.NewStaking(stakingAddress, eth.client)
-	logAndEat(logger, err)
 
 	return nil
 }
@@ -632,22 +669,23 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		logger.Infof("ethdkg update status: %v", rcpt.Status)
 	}
 
-	// If we want to change the phase length, this is how:
-	//  tx, err = c.ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(40))
-	//	if err != nil {
-	//		logger.Errorf("Failed to update ethdkg phase length references: %v", err)
-	//		return nil, common.Address{}, err
-	//	}
+	// //START: If we want to change the phase length, this is how:
+	// tx, err = c.ethdkg.UpdatePhaseLength(txnOpts, big.NewInt(8))
+	// if err != nil {
+	// 	logger.Errorf("Failed to update ethdkg phase length references: %v", err)
+	// 	return nil, common.Address{}, err
+	// }
 
 	// eth.commit()
 
 	// rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
 	// if err != nil {
-	//		logger.Errorf("Failed to get receipt for ethdkg update: %v", err)
-	//		return nil, common.Address{}, err
-	//	} else if rcpt != nil {
-	//		logger.Infof("ethdkg update status: %v", rcpt.Status)
-	//	}
+	// 	logger.Errorf("Failed to get receipt for ethdkg update: %v", err)
+	// 	return nil, common.Address{}, err
+	// } else if rcpt != nil {
+	// 	logger.Infof("ethdkg update status: %v", rcpt.Status)
+	// }
+	// //END: If we want to change the phase length
 
 	return c.registry, c.registryAddress, nil
 }

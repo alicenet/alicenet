@@ -215,6 +215,51 @@ func (db *Database) DeleteBeforeHistoricRoundState(txn *badger.Txn, height uint3
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+func (db *Database) makeValidatorSetKeyPostApplication(notBefore uint32) ([]byte, error) {
+	key := &objs.ValidatorSetKey{
+		Prefix:    dbprefix.PrefixValidatorSetPostApplication(),
+		NotBefore: notBefore,
+	}
+	return key.MarshalBinary()
+}
+
+// Adds a new validator set in a different db entry that it's not being used by
+// the chain. The goal of this function is to set a validator set that will be
+// applied in a block that we don't currently have in our db.
+func (db *Database) SetValidatorSetPostApplication(txn *badger.Txn, v *objs.ValidatorSet, height uint32) error {
+	key, err := db.makeValidatorSetKeyPostApplication(height)
+	if err != nil {
+		return err
+	}
+	err = db.rawDB.SetValidatorSet(txn, key, v)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	return nil
+}
+
+// Get a "validator set" flagged to be applied at a certain "height".
+func (db *Database) GetValidatorSetPostApplication(txn *badger.Txn, height uint32) (*objs.ValidatorSet, bool, error) {
+	key, err := db.makeValidatorSetKeyPostApplication(height)
+	if err != nil {
+		return nil, false, err
+	}
+	vs, err := db.rawDB.GetValidatorSet(txn, key)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			utils.DebugTrace(db.logger, err)
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+	return vs, true, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 func (db *Database) makeValidatorSetKey(notBefore uint32) ([]byte, error) {
 	key := &objs.ValidatorSetKey{
 		Prefix:    dbprefix.PrefixValidatorSet(),
@@ -244,7 +289,7 @@ func (db *Database) GetValidatorSet(txn *badger.Txn, height uint32) (*objs.Valid
 	prefix := db.makeValidatorSetIterKey()
 	seek := []byte{}
 	seek = append(seek, prefix...)
-	heightBytes := utils.MarshalUint32(height + 1)
+	heightBytes := utils.MarshalUint32(height)
 	seek = append(seek, heightBytes...)
 	opts := badger.DefaultIteratorOptions
 	opts.Reverse = true
@@ -1028,6 +1073,39 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	return result, nil
 }
 
+// Gets the latest snapshot starting from the Madnet 'height'
+func (db *Database) GetSnapshotByHeight(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
+	prefix := db.makeSnapshotBlockHeaderIterKey()
+	seek := []byte{}
+	seek = append(seek, prefix...)
+	heightBytes := utils.MarshalUint32(height)
+	seek = append(seek, heightBytes...)
+	opts := badger.DefaultIteratorOptions
+	opts.Reverse = true
+	opts.Prefix = prefix
+	opts.PrefetchValues = false
+	var lastkey []byte
+	func() {
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		it.Seek(seek)
+		if it.Valid() {
+			item := it.Item()
+			k := item.KeyCopy(nil)
+			lastkey = k
+		}
+	}()
+	if lastkey == nil {
+		return nil, badger.ErrKeyNotFound
+	}
+	result, err := db.rawDB.GetBlockHeader(txn, lastkey)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	return result, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1620,6 +1698,9 @@ func (pni *PendingLeafIter) Close() {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (db *Database) SetSafeToProceed(txn *badger.Txn, height uint32, isSafe bool) error {
+	if height%constants.EpochLength != 1 {
+		panic("The height must be mod 1 epoch length")
+	}
 	key := &objs.SafeToProceedKey{Prefix: dbprefix.PrefixSafeToProceed(), Height: height}
 	k, err := key.MarshalBinary()
 	if err != nil {
@@ -1632,6 +1713,9 @@ func (db *Database) SetSafeToProceed(txn *badger.Txn, height uint32, isSafe bool
 }
 
 func (db *Database) GetSafeToProceed(txn *badger.Txn, height uint32) (bool, error) {
+	if height%constants.EpochLength != 1 {
+		panic("The height must be mod 1 epoch length")
+	}
 	key := &objs.SafeToProceedKey{Prefix: dbprefix.PrefixSafeToProceed(), Height: height}
 	k, err := key.MarshalBinary()
 	if err != nil {

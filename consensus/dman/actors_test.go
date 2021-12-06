@@ -220,7 +220,7 @@ func TestRootActor_download(t *testing.T) {
 			"BadBlock",
 			args{b: NewBlockHeaderDownloadRequest(10000, 1, BlockHeaderRequest)},
 			[]testingProxyCall{blockHeaderCall},
-			append([][]interface{}{}, []interface{}{[]*objs.BlockHeader{&objs.BlockHeader{}}, nil}),
+			append([][]interface{}{}, []interface{}{[]*objs.BlockHeader{new(objs.BlockHeader)}, nil}),
 			func(ra *RootActor) error {
 				if ra.bhc.Contains(1) {
 					return errors.New("had one in it")

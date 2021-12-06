@@ -387,7 +387,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	if err != nil {
 		return err
 	}
-	// set the current block inital value
+	// set the current block initial value
 	// this value is incremented at head of
 	// each loop iteration, so it is initialized
 	// as one less than the expected value at this
@@ -420,7 +420,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 				}
 
 			} else {
-				logEntry.Debug("Found unkown event")
+				logEntry.Debug("Found unknown event")
 			}
 
 		}

@@ -20,7 +20,7 @@ func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error 
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingProposalStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("doPendingProposalStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	if rcert.RClaims.Round == constants.DEADBLOCKROUND {
@@ -60,7 +60,7 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}
-	ce.logger.Debugf("doPendingPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("doPendingPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	os := rs.OwnRoundState()
 	rcert := os.RCert
 	if rcert.RClaims.Round == constants.DEADBLOCKROUND {
@@ -180,7 +180,7 @@ func (ce *Engine) doPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
+	ce.logger.Debugf("doPreVoteStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// if we have enough prevotes, cast a precommit
 	// this will update the locked value
 	if len(pvl) >= rs.GetCurrentThreshold() {
@@ -208,7 +208,7 @@ func (ce *Engine) doPreVoteNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
+	ce.logger.Debugf("doPreVoteNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		p, err := pvl.GetProposal()
 		if err != nil {
@@ -249,7 +249,7 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl))
+	ce.logger.Debugf("doPendingPreCommit:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PV:%v   PVN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pvl), len(pvnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// if we have prevote consensus now
 	if len(pvl) >= rs.GetCurrentThreshold() {
 		// if we preVoted for the proposal then preCommit
@@ -305,7 +305,7 @@ func (ce *Engine) doPreCommitStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
+	ce.logger.Debugf("doPreCommitStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// if we have consensus and can verify
 	// cast the nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -341,7 +341,7 @@ func (ce *Engine) doPreCommitNilStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
+	ce.logger.Debugf("doPreCommitNilStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v	  GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// if we have a preCommit consensus,
 	// move directly to next height
 	if len(pcl) >= rs.GetCurrentThreshold() {
@@ -389,7 +389,7 @@ func (ce *Engine) doPendingNext(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
+	ce.logger.Debugf("doPendingNext:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// if greater than threshold precommits,
 	// use our own precommit if we did a precommit this round
 	// if not use a random precommit. This is safe due to
@@ -472,7 +472,7 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 	}
 	// check for enough preCommits in current round to cast nextHeight
 	if len(pcl) >= rs.GetCurrentThreshold() {
-		ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl))
+		ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   PC:%v   PCN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(pcl), len(pcnl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 		p, err := pcl.GetProposal()
 		if err != nil {
 			return err
@@ -506,7 +506,7 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   NH:%v   NR:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl), len(nrl))
+	ce.logger.Debugf("doNextRoundStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v   NH:%v   NR:%v	  GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl), len(nrl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 
 	// form a new round cert if we have enough
 	if len(nrl) >= rs.GetCurrentThreshold() {
@@ -526,7 +526,7 @@ func (ce *Engine) doNextRoundStep(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) error {
-	ce.logger.Debugf("doRoundJump:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("doRoundJump:    MAXBH:%v    STBH:%v    RH:%v    RN:%v		GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// local node cast a precommit nil this round
 	// count the precommits
 	pcl, _, err := rs.GetCurrentPreCommits()
@@ -559,7 +559,7 @@ func (ce *Engine) doRoundJump(txn *badger.Txn, rs *RoundStates, rc *objs.RCert) 
 // doCheckValidValue is called by non-validating nodes to update ValidValue
 // and perform other related tasks.
 func (ce *Engine) doCheckValidValue(txn *badger.Txn, rs *RoundStates) error {
-	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("doCheckValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 
 	nhl, _, err := rs.GetCurrentNext()
 	if err != nil {
@@ -653,7 +653,7 @@ func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
 		utils.DebugTrace(ce.logger, err)
 		return err
 	}
-	ce.logger.Debugf("doNextHeightStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v    NHs:%d", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl))
+	ce.logger.Debugf("doNextHeightStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v    NHs:%d	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, len(nhl), rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 
 	// if we have a threshold
 	// make a new round cert and form the new block header
@@ -678,7 +678,7 @@ func (ce *Engine) doNextHeightStep(txn *badger.Txn, rs *RoundStates) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs.RCert) (bool, error) {
-	ce.logger.Debugf("doHeightJumpStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("doHeightJumpStep:    MAXBH:%v    STBH:%v    RH:%v    RN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	// get the last element of the sorted future height
 	// if we can just jump up to this height, do so.
 	// if the height is only one more, we can simply move to this
@@ -779,7 +779,7 @@ func (ce *Engine) doHeightJumpStep(txn *badger.Txn, rs *RoundStates, rcert *objs
 ////////////////////////////////////////////////////////////////////////////////
 
 func (ce *Engine) updateValidValue(txn *badger.Txn, rs *RoundStates, p *objs.Proposal) error {
-	ce.logger.Debugf("updateValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+	ce.logger.Debugf("updateValidValue:    MAXBH:%v    STBH:%v    RH:%v    RN:%v	GRPK:%x..%x", rs.OwnState.MaxBHSeen.BClaims.Height, rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round, rs.ValidatorSet.GroupKey[0:4], rs.ValidatorSet.GroupKey[len(rs.ValidatorSet.GroupKey)-5:len(rs.ValidatorSet.GroupKey)-1])
 	txs, _, err := ce.dm.GetTxs(txn, p.PClaims.BClaims.Height, rs.round, p.TxHshLst)
 	if err != nil {
 		if err != errorz.ErrMissingTransactions {
