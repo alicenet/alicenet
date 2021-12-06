@@ -26,6 +26,9 @@ type NextHeight struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // NextHeight object
 func (b *NextHeight) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.UnmarshalBinary; nh not initialized")
+	}
 	bh, err := nextheight.Unmarshal(data)
 	if err != nil {
 		return err
@@ -36,6 +39,9 @@ func (b *NextHeight) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *NextHeight) UnmarshalCapn(bh mdefs.NextHeight) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.UnmarshalCapn; nh not initialized")
+	}
 	b.NHClaims = &NHClaims{}
 	err := nextheight.Validate(bh)
 	if err != nil {
@@ -59,7 +65,7 @@ func (b *NextHeight) UnmarshalCapn(bh mdefs.NextHeight) error {
 // byte slice
 func (b *NextHeight) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("NextHeight.MarshalBinary; nh not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -72,7 +78,7 @@ func (b *NextHeight) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *NextHeight) MarshalCapn(seg *capnp.Segment) (mdefs.NextHeight, error) {
 	if b == nil {
-		return mdefs.NextHeight{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.NextHeight{}, errorz.ErrInvalid{}.New("NextHeight.MarshalCapn; nh not initialized")
 	}
 	var bh mdefs.NextHeight
 	if seg == nil {
@@ -109,8 +115,17 @@ func (b *NextHeight) MarshalCapn(seg *capnp.Segment) (mdefs.NextHeight, error) {
 }
 
 func (b *NextHeight) ValidateSignatures(secpVal *crypto.Secp256k1Validator, bnVal *crypto.BNGroupValidator) error {
-	if b == nil || b.NHClaims == nil || b.NHClaims.Proposal == nil || b.NHClaims.Proposal.PClaims == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.ValidateSignatures; nh not initialized")
+	}
+	if b.NHClaims == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.ValidateSignatures; nhclaims not initialized")
+	}
+	if b.NHClaims.Proposal == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.ValidateSignatures; proposal not initialized")
+	}
+	if b.NHClaims.Proposal.PClaims == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.ValidateSignatures; pclaims not initialized")
 	}
 	err := b.NHClaims.ValidateSignatures(secpVal, bnVal)
 	if err != nil {
@@ -162,8 +177,17 @@ func (b *NextHeight) Plagiarize(secpSigner *crypto.Secp256k1Signer, bnSigner *cr
 }
 
 func (b *NextHeight) Sign(secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.BNGroupSigner) error {
-	if b == nil || b.NHClaims == nil || b.NHClaims.Proposal == nil || b.NHClaims.Proposal.PClaims == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.Sign; nh not initialized")
+	}
+	if b.NHClaims == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.Sign; nhclaims not initialized")
+	}
+	if b.NHClaims.Proposal == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.Sign; proposal not initialized")
+	}
+	if b.NHClaims.Proposal.PClaims == nil {
+		return errorz.ErrInvalid{}.New("NextHeight.Sign; pclaims not initialized")
 	}
 	canonicalEncoding, err := b.NHClaims.Proposal.PClaims.MarshalBinary()
 	if err != nil {

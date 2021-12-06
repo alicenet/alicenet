@@ -39,6 +39,9 @@ type RoundState struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // RoundState object
 func (b *RoundState) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RoundState.UnmarshalBinary; rs not initialized")
+	}
 	bh, err := rstate.Unmarshal(data)
 	if err != nil {
 		return err
@@ -49,6 +52,9 @@ func (b *RoundState) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *RoundState) UnmarshalCapn(bh mdefs.RoundState) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RoundState.UnmarshalCapn; rs not initialized")
+	}
 	err := rstate.Validate(bh)
 	if err != nil {
 		return err
@@ -155,7 +161,7 @@ func (b *RoundState) UnmarshalCapn(bh mdefs.RoundState) error {
 // byte slice
 func (b *RoundState) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("RoundState.MarshalBinary; rs not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -168,7 +174,7 @@ func (b *RoundState) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *RoundState) MarshalCapn(seg *capnp.Segment) (mdefs.RoundState, error) {
 	if b == nil {
-		return mdefs.RoundState{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.RoundState{}, errorz.ErrInvalid{}.New("RoundState.MarshalCapn; rs not initialized")
 	}
 	var bh mdefs.RoundState
 	if seg == nil {
@@ -469,7 +475,7 @@ func (b *RoundState) SetRCert(rc *RCert) error {
 func (b *RoundState) SetProposal(v *Proposal) (bool, error) {
 	if IsDeadBlockRound(v) {
 		if len(v.TxHshLst) != 0 {
-			return false, errorz.ErrInvalid{}.New("tx hash in DBR set proposal")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetProposal; tx hash in DBR set proposal")
 		}
 	}
 	ok, err := b.genericSet(v)
@@ -478,7 +484,7 @@ func (b *RoundState) SetProposal(v *Proposal) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt p in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetProposal; corrupt p in dbr")
 		}
 	}
 	return ok, nil
@@ -487,7 +493,7 @@ func (b *RoundState) SetProposal(v *Proposal) (bool, error) {
 func (b *RoundState) SetPreVote(v *PreVote) (bool, error) {
 	if IsDeadBlockRound(v) {
 		if len(v.Proposal.TxHshLst) != 0 {
-			return false, errorz.ErrInvalid{}.New("tx hash in dbr set pv")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreVote; tx hash in dbr set pv")
 		}
 	}
 	ok, err := b.genericSet(v)
@@ -496,7 +502,7 @@ func (b *RoundState) SetPreVote(v *PreVote) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pv in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreVote; corrupt pv in dbr")
 		}
 	}
 	return ok, nil
@@ -504,7 +510,7 @@ func (b *RoundState) SetPreVote(v *PreVote) (bool, error) {
 
 func (b *RoundState) SetPreVoteNil(v *PreVoteNil) (bool, error) {
 	if IsDeadBlockRound(v) {
-		return false, errorz.ErrInvalid{}.New("dbr tx hash in set pvn")
+		return false, errorz.ErrInvalid{}.New("RoundState.SetPreVoteNil; dbr tx hash in set pvn")
 	}
 	ok, err := b.genericSet(v)
 	if err != nil {
@@ -512,7 +518,7 @@ func (b *RoundState) SetPreVoteNil(v *PreVoteNil) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pvn in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreVoteNil; corrupt pvn in dbr")
 		}
 	}
 	return ok, nil
@@ -521,7 +527,7 @@ func (b *RoundState) SetPreVoteNil(v *PreVoteNil) (bool, error) {
 func (b *RoundState) SetPreCommit(v *PreCommit) (bool, error) {
 	if IsDeadBlockRound(v) {
 		if len(v.Proposal.TxHshLst) != 0 {
-			return false, errorz.ErrInvalid{}.New("dbr tx hash in set pc")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreCommit; dbr tx hash in set pc")
 		}
 	}
 	ok, err := b.genericSet(v)
@@ -530,7 +536,7 @@ func (b *RoundState) SetPreCommit(v *PreCommit) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pc in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreCommit; corrupt pc in dbr")
 		}
 	}
 	return ok, nil
@@ -538,7 +544,7 @@ func (b *RoundState) SetPreCommit(v *PreCommit) (bool, error) {
 
 func (b *RoundState) SetPreCommitNil(v *PreCommitNil) (bool, error) {
 	if IsDeadBlockRound(v) {
-		return false, errorz.ErrInvalid{}.New("dbr tx hash in pcn")
+		return false, errorz.ErrInvalid{}.New("RoundState.SetPreCommitNil; dbr tx hash in pcn")
 	}
 	ok, err := b.genericSet(v)
 	if err != nil {
@@ -546,7 +552,7 @@ func (b *RoundState) SetPreCommitNil(v *PreCommitNil) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt pcn in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetPreCommitNil; corrupt pcn in dbr")
 		}
 	}
 	return ok, nil
@@ -554,7 +560,7 @@ func (b *RoundState) SetPreCommitNil(v *PreCommitNil) (bool, error) {
 
 func (b *RoundState) SetNextRound(v *NextRound) (bool, error) {
 	if IsDeadBlockRound(v) {
-		return false, errorz.ErrInvalid{}.New("nr in dbr")
+		return false, errorz.ErrInvalid{}.New("RoundState.SetNextRound; nr in dbr")
 	}
 	ok, err := b.genericSet(v)
 	if err != nil {
@@ -562,7 +568,7 @@ func (b *RoundState) SetNextRound(v *NextRound) (bool, error) {
 	}
 	if !ok {
 		if IsDeadBlockRound(v) {
-			return false, errorz.ErrInvalid{}.New("corrupt nr in dbr")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetNextRound; corrupt nr in dbr")
 		}
 	}
 	return ok, nil
@@ -571,12 +577,12 @@ func (b *RoundState) SetNextRound(v *NextRound) (bool, error) {
 func (b *RoundState) SetNextHeight(v *NextHeight) (bool, error) {
 	if IsDeadBlockRound(v) {
 		if len(v.NHClaims.Proposal.TxHshLst) != 0 {
-			return false, errorz.ErrInvalid{}.New("set nh dbr tx hash")
+			return false, errorz.ErrInvalid{}.New("RoundState.SetNextHeight; set nh dbr tx hash")
 		}
 	}
 	relationH := RelateH(b, v)
 	if relationH == 1 { // from prev height
-		return false, errorz.ErrStale{}.New("set nh relation == 1")
+		return false, errorz.ErrStale{}.New("RoundState.SetNextHeight; set nh relation == 1")
 	}
 	if relationH == -1 { // from future height
 		b.setReset(v)
@@ -594,7 +600,7 @@ func (b *RoundState) SetNextHeight(v *NextHeight) (bool, error) {
 func (b *RoundState) genericSet(v interface{}) (bool, error) {
 	relationH := RelateH(b, v)
 	if relationH == 1 { // from prev height
-		return false, errorz.ErrStale{}.New("generic set: relationH == 1")
+		return false, errorz.ErrStale{}.New("RoundState.genericSet; relationH == 1")
 	}
 	if relationH == -1 { // from future height
 		b.setReset(v)
@@ -608,11 +614,11 @@ func (b *RoundState) genericSet(v interface{}) (bool, error) {
 		case *NextHeight:
 			if b.NextHeight != nil {
 				if RelateHR(b.NextHeight, v) != -1 {
-					return false, errorz.ErrStale{}.New("stale next height")
+					return false, errorz.ErrStale{}.New("RoundState.genericSet; stale next height")
 				}
 			}
 		default:
-			return false, errorz.ErrStale{}.New("generic set: relationHR == 1")
+			return false, errorz.ErrStale{}.New("RoundState.genericSet; relationHR == 1")
 		}
 	}
 	if relationHR == -1 { // from future round
@@ -673,7 +679,7 @@ func (b *RoundState) checkConflict(a interface{}, internal bool) error {
 	case *NextHeight:
 		hasBClaims = true
 	default:
-		panic("bad type in hash bclaims check")
+		panic("RoundState.checkConflict; bad type in hash bclaims check")
 	}
 	if b.Proposal != nil && hasBClaims {
 		ok, err := BClaimsEqual(a, b.Proposal)
@@ -749,49 +755,49 @@ func (b *RoundState) resetNHForDBR(v interface{}) {
 
 func (b *RoundState) checkSameTypeConflict(any interface{}) error {
 	if b.ImplicitPVN || b.ImplicitPCN {
-		return errorz.ErrInvalid{}.New("pvn or pcn implicit nil set")
+		return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pvn or pcn implicit nil set")
 	}
 	if b.ConflictingRCert != nil {
-		return errorz.ErrInvalid{}.New("conflicting rc")
+		return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; conflicting rc")
 	}
 	switch any.(type) {
 	case *Proposal:
 		if b.ConflictingProposal != nil {
-			return errorz.ErrInvalid{}.New("conflicting p set")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; conflicting p set")
 		}
 	case *PreVote:
 		if b.PreVoteNil != nil {
-			return errorz.ErrInvalid{}.New("conflicting pvn set")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; conflicting pvn set")
 		}
 		if b.ConflictingPreVote != nil {
-			return errorz.ErrInvalid{}.New("conflicting pv set")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; conflicting pv set")
 		}
 	case *PreVoteNil:
 		if b.PreVote != nil {
-			return errorz.ErrInvalid{}.New("pv and pvn")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pv and pvn")
 		}
 	case *PreCommit:
 		if b.PreVoteNil != nil {
-			return errorz.ErrInvalid{}.New("pc and pvn")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pc and pvn")
 		}
 		if b.PreCommitNil != nil {
-			return errorz.ErrInvalid{}.New("pc and pcn")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pc and pcn")
 		}
 		if b.ConflictingPreCommit != nil {
-			return errorz.ErrInvalid{}.New("pc and conflicting pc set")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pc and conflicting pc set")
 		}
 	case *PreCommitNil:
 		if b.PreCommit != nil {
-			return errorz.ErrInvalid{}.New("pc and pcn on nil side")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; pc and pcn on nil side")
 		}
 	case *NextRound:
 	// check rcert done above
 	case *NextHeight:
 		if b.ConflictingNextHeight != nil {
-			return errorz.ErrInvalid{}.New("nh conflicting set")
+			return errorz.ErrInvalid{}.New("RoundState.checkSameTypeConflict; nh conflicting set")
 		}
 	default:
-		panic("bad type in check same conflict")
+		panic("RoundState.checkSameTypeConflict; bad type in check same conflict")
 	}
 	return nil
 }
@@ -845,7 +851,7 @@ func (b *RoundState) setReset(any interface{}) {
 			b.ConflictingNextHeight = nil
 		}
 	default:
-		panic("bad type in set type")
+		panic("RoundState.setReset; bad type in set type")
 	}
 	b.Reset()
 	b.setType(ExtractRCert(any))
@@ -870,7 +876,7 @@ func (b *RoundState) setTypeConflict(any interface{}, internal bool) {
 		case *NextHeight:
 			b.ConflictingNextHeight = v
 		default:
-			panic("bad type in set conflict")
+			panic("RoundState.setTypeConflict; bad type in set conflict")
 		}
 	}
 	b.ImplicitPVN = true
@@ -896,7 +902,7 @@ func (b *RoundState) setType(any interface{}) {
 	case *NextHeight:
 		b.NextHeight = v
 	default:
-		panic("bad type in set type")
+		panic("RoundState.setType; bad type in set type")
 	}
 }
 
@@ -907,34 +913,34 @@ func (b *RoundState) checkTypeStale(any interface{}, internal bool) error {
 	switch any.(type) {
 	case *Proposal:
 		if b.Proposal != nil {
-			return errorz.ErrStale{}.New("prop already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; prop already set")
 		}
 	case *PreVote:
 		if b.PreVote != nil {
-			return errorz.ErrStale{}.New("pv already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; pv already set")
 		}
 	case *PreVoteNil:
 		if b.PreVoteNil != nil {
-			return errorz.ErrStale{}.New("pvn already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; pvn already set")
 		}
 	case *PreCommit:
 		if b.PreCommit != nil {
-			return errorz.ErrStale{}.New("pc already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; pc already set")
 		}
 	case *PreCommitNil:
 		if b.PreCommitNil != nil {
-			return errorz.ErrStale{}.New("pcn already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; pcn already set")
 		}
 	case *NextHeight:
 		if b.NextHeight != nil {
-			return errorz.ErrStale{}.New("nh already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; nh already set")
 		}
 	case *NextRound:
 		if b.NextRound != nil {
-			return errorz.ErrStale{}.New("nr already set")
+			return errorz.ErrStale{}.New("RoundState.checkTypeStale; nr already set")
 		}
 	default:
-		panic("bad type in check stale")
+		panic("RoundState.checkTypeStale; bad type in check stale")
 	}
 	return nil
 }

@@ -32,6 +32,9 @@ type Tx struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // Tx object
 func (b *Tx) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: tx not initialized")
+	}
 	bc, err := tx.Unmarshal(data)
 	if err != nil {
 		return err
@@ -63,6 +66,9 @@ func (b *Tx) MarshalBinary() ([]byte, error) {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("tx.unmarshalCapn: tx not initialized")
+	}
 	if err := tx.Validate(bc); err != nil {
 		return err
 	}

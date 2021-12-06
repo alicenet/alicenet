@@ -25,6 +25,9 @@ type ValidatorSet struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // ValidatorSet object
 func (b *ValidatorSet) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("ValidatorSet.UnmarshalBinary; vs not initialized")
+	}
 	bh, err := vset.Unmarshal(data)
 	if err != nil {
 		return err
@@ -35,6 +38,9 @@ func (b *ValidatorSet) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *ValidatorSet) UnmarshalCapn(bh mdefs.ValidatorSet) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("ValidatorSet.UnmarshalCapn; vs not initialized")
+	}
 	err := vset.Validate(bh)
 	if err != nil {
 		return err
@@ -69,8 +75,11 @@ func (b *ValidatorSet) UnmarshalCapn(bh mdefs.ValidatorSet) error {
 // MarshalBinary takes the ValidatorSet object and returns the canonical
 // byte slice
 func (b *ValidatorSet) MarshalBinary() ([]byte, error) {
-	if b == nil || b.NotBefore == 0 {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("ValidatorSet.MarshalBinary; vs not initialized")
+	}
+	if b.NotBefore == 0 {
+		return nil, errorz.ErrInvalid{}.New("ValidatorSet.MarshalBinary; NotBefore is zero")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -83,7 +92,7 @@ func (b *ValidatorSet) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *ValidatorSet) MarshalCapn(seg *capnp.Segment) (mdefs.ValidatorSet, error) {
 	if b == nil {
-		return mdefs.ValidatorSet{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.ValidatorSet{}, errorz.ErrInvalid{}.New("ValidatorSet.MarshalCapn; vs not initialized")
 	}
 	var bh mdefs.ValidatorSet
 	if seg == nil {

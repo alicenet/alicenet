@@ -21,6 +21,9 @@ type RCert struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // RCert object
 func (b *RCert) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RCert.UnmarshalBinary; rcert not initialized")
+	}
 	bh, err := rcert.Unmarshal(data)
 	if err != nil {
 		return err
@@ -31,6 +34,9 @@ func (b *RCert) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *RCert) UnmarshalCapn(bh mdefs.RCert) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RCert.UnmarshalCapn; rcert not initialized")
+	}
 	b.RClaims = &RClaims{}
 	err := rcert.Validate(bh)
 	if err != nil {
@@ -48,7 +54,7 @@ func (b *RCert) UnmarshalCapn(bh mdefs.RCert) error {
 // byte slice
 func (b *RCert) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("RCert.MarshalBinary; rcert not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -61,7 +67,7 @@ func (b *RCert) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *RCert) MarshalCapn(seg *capnp.Segment) (mdefs.RCert, error) {
 	if b == nil {
-		return mdefs.RCert{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.RCert{}, errorz.ErrInvalid{}.New("RCert.MarshalCapn; rcert not initialized")
 	}
 	var bh mdefs.RCert
 	if seg == nil {
@@ -98,8 +104,23 @@ func (b *RCert) MarshalCapn(seg *capnp.Segment) (mdefs.RCert, error) {
 
 // ValidateSignature validates the group signature on the RCert
 func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
-	if b == nil || b.RClaims == nil || b.RClaims.Height == 0 || b.RClaims.ChainID == 0 || b.RClaims.Round == 0 || b.RClaims.Round > constants.DEADBLOCKROUND {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; rcert not initialized")
+	}
+	if b.RClaims == nil {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; rclaims not initialized")
+	}
+	if b.RClaims.Height == 0 {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; height is zero")
+	}
+	if b.RClaims.ChainID == 0 {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; chainID is zero")
+	}
+	if b.RClaims.Round == 0 {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; round is zero")
+	}
+	if b.RClaims.Round > constants.DEADBLOCKROUND {
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; round > DeadBlockRound")
 	}
 	if b.RClaims.Height == 1 && b.RClaims.Round == 1 {
 		b.GroupKey = make([]byte, constants.CurveBN256EthPubkeyLen)
@@ -107,14 +128,14 @@ func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
 	}
 	if b.RClaims.Height == 1 && b.RClaims.Round > 1 {
 		// No such RCert should exist, so raise an error
-		return errorz.ErrInvalid{}.New("RCert should not exist!")
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; RCert should not exist!")
 	}
 	if b.RClaims.Height == 2 && b.RClaims.Round == 1 {
 		// There is nothing we can check because there is no group signature
 		return nil
 	}
 	if len(b.RClaims.PrevBlock) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("invalid PrevBlock")
+		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; invalid PrevBlock")
 	}
 	if b.RClaims.Round > 1 {
 		canonicalEncoding, err := b.RClaims.MarshalBinary()
@@ -193,7 +214,7 @@ func (b *RCert) PreCommitNil(secpSigner *crypto.Secp256k1Signer) (*PreCommitNil,
 // NextRound constructs a NextRound object from RCert
 func (b *RCert) NextRound(secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.BNGroupSigner) (*NextRound, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("RCert.NextRound; rcert not initialized")
 	}
 	rcClaims, err := b.RClaims.MarshalBinary()
 	if err != nil {

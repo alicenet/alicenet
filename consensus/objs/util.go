@@ -63,7 +63,7 @@ func ExtractHR(any interface{}) (uint32, uint32) {
 		rc := v
 		return rc.Height, 1
 	default:
-		panic(fmt.Sprintf("undefined type in ExtractHR %T", v))
+		panic(fmt.Sprintf("ExtractHR; undefined type %T", v))
 	}
 }
 
@@ -102,7 +102,7 @@ func ExtractHCID(any interface{}) (uint32, uint32) {
 		rc := v
 		return rc.Height, rc.ChainID
 	default:
-		panic(fmt.Sprintf("undefined type in ExtractHCID %T", v))
+		panic(fmt.Sprintf("ExtractHCID; undefined type %T", v))
 	}
 }
 
@@ -158,7 +158,7 @@ func ExtractRCert(any interface{}) *RCert {
 		rc := v.NHClaims.Proposal.PClaims.RCert
 		return rc
 	default:
-		panic(fmt.Sprintf("undefined type in ExtractRCert %T", v))
+		panic(fmt.Sprintf("ExtractRCert; undefined type %T", v))
 	}
 }
 
@@ -259,7 +259,7 @@ func ExtractBClaims(any interface{}) *BClaims {
 	case *NextHeight:
 		return v.NHClaims.Proposal.PClaims.BClaims
 	default:
-		panic(fmt.Sprintf("undefined type in ExtractBClaims %T", v))
+		panic(fmt.Sprintf("ExtractBClaims; undefined type %T", v))
 	}
 }
 
@@ -285,7 +285,7 @@ func MakeTxRoot(txHashes [][]byte) ([]byte, error) {
 	for i := 0; i < len(txHashes); i++ {
 		txHash := txHashes[i]
 		if len(txHash) != constants.HashLen {
-			return nil, errorz.ErrInvalid{}.New("incorrect txHash length")
+			return nil, errorz.ErrInvalid{}.New("MakeTxRoot; incorrect txHash length")
 		}
 		values = append(values, crypto.Hasher(txHash))
 	}
@@ -311,8 +311,11 @@ func GetProposerIdx(numv int, height uint32, round uint32) uint8 {
 
 // SplitBlob separates a blob of fixed size data types into a slice of slices
 func SplitBlob(s []byte, blen int) ([][]byte, error) {
+	if blen <= 0 {
+		return [][]byte{}, errorz.ErrInvalid{}.New("SplitBlob; blen <= 0")
+	}
 	if len(s)%blen != 0 {
-		return [][]byte{}, errorz.ErrInvalid{}.New("split blob length is not modulo length")
+		return [][]byte{}, errorz.ErrInvalid{}.New("SplitBlob; invalid length")
 	}
 	buf := [][]byte{}
 	for i := 0; i < len(s)/blen; i++ {

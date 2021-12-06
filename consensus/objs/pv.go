@@ -21,6 +21,9 @@ type PreVote struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // PreVote object
 func (b *PreVote) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("PreVote.UnmarshalBinary; pv not initialized")
+	}
 	bh, err := prevote.Unmarshal(data)
 	if err != nil {
 		return err
@@ -31,6 +34,9 @@ func (b *PreVote) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *PreVote) UnmarshalCapn(bh mdefs.PreVote) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("PreVote.UnmarshalCapn; pv not initialized")
+	}
 	b.Proposal = &Proposal{}
 	err := prevote.Validate(bh)
 	if err != nil {
@@ -48,7 +54,7 @@ func (b *PreVote) UnmarshalCapn(bh mdefs.PreVote) error {
 // byte slice
 func (b *PreVote) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("PreVote.MarshalBinary; pv not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -61,7 +67,7 @@ func (b *PreVote) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *PreVote) MarshalCapn(seg *capnp.Segment) (mdefs.PreVote, error) {
 	if b == nil {
-		return mdefs.PreVote{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.PreVote{}, errorz.ErrInvalid{}.New("PreVote.MarshalCapn; pv not initialized")
 	}
 	var bh mdefs.PreVote
 	if seg == nil {
@@ -98,7 +104,7 @@ func (b *PreVote) MarshalCapn(seg *capnp.Segment) (mdefs.PreVote, error) {
 
 func (b *PreVote) ValidateSignatures(secpVal *crypto.Secp256k1Validator, bnVal *crypto.BNGroupValidator) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("PreVote.ValidateSignatures; pv not initialized")
 	}
 	err := b.Proposal.ValidateSignatures(secpVal, bnVal)
 	if err != nil {
@@ -122,7 +128,10 @@ func (b *PreVote) ValidateSignatures(secpVal *crypto.Secp256k1Validator, bnVal *
 
 func (b *PreVote) Sign(secpSigner *crypto.Secp256k1Signer) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("PreVote.Sign; pv not initialized")
+	}
+	if b.Proposal == nil {
+		return errorz.ErrInvalid{}.New("PreVote.Sign; proposal not initialized")
 	}
 	canonicalEncoding, err := b.Proposal.PClaims.MarshalBinary()
 	if err != nil {

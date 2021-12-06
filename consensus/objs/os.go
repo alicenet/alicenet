@@ -20,6 +20,9 @@ type OwnState struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // OwnState object
 func (b *OwnState) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("OwnState.UnmarshalBinary; os not initialized")
+	}
 	bh, err := ostate.Unmarshal(data)
 	if err != nil {
 		return err
@@ -30,6 +33,9 @@ func (b *OwnState) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("OwnState.UnmarshalCapn; os not initialized")
+	}
 	b.SyncToBH = &BlockHeader{}
 	b.MaxBHSeen = &BlockHeader{}
 	b.PendingSnapShot = &BlockHeader{}
@@ -63,7 +69,7 @@ func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
 // byte slice
 func (b *OwnState) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("OwnState.MarshalBinary; os not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -76,7 +82,7 @@ func (b *OwnState) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *OwnState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnState, error) {
 	if b == nil {
-		return mdefs.OwnState{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.OwnState{}, errorz.ErrInvalid{}.New("OwnState.MarshalCapn; os not initialized")
 	}
 	var bh mdefs.OwnState
 	if seg == nil {

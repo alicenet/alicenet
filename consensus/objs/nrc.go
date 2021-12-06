@@ -22,6 +22,9 @@ type NRClaims struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // NRClaims object
 func (b *NRClaims) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalBinary; nrclaims not initialized")
+	}
 	bh, err := nrclaims.Unmarshal(data)
 	if err != nil {
 		return err
@@ -32,6 +35,9 @@ func (b *NRClaims) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims not initialized")
+	}
 	b.RCert = &RCert{}
 	b.RClaims = &RClaims{}
 	err := nrclaims.Validate(bh)
@@ -48,16 +54,16 @@ func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
 	}
 	b.SigShare = bh.SigShare()
 	if b.RCert.RClaims.Height != b.RClaims.Height {
-		return errorz.ErrInvalid{}.New("nrc height mismatch")
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims height mismatch")
 	}
 	if b.RCert.RClaims.Round+1 != b.RClaims.Round {
-		return errorz.ErrInvalid{}.New("nrc round not plus 1")
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims round not plus 1")
 	}
 	if b.RCert.RClaims.ChainID != b.RClaims.ChainID {
-		return errorz.ErrInvalid{}.New("nrc cid != cid")
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims chainID != chainID")
 	}
 	if !bytes.Equal(b.RCert.RClaims.PrevBlock, b.RClaims.PrevBlock) {
-		return errorz.ErrInvalid{}.New("nrc prevb != prevb")
+		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims prevBlock != prevBlock")
 	}
 	return nil
 }
@@ -66,7 +72,7 @@ func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
 // byte slice
 func (b *NRClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("NRClaims.MarshalBinary; nrclaims not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -79,7 +85,7 @@ func (b *NRClaims) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *NRClaims) MarshalCapn(seg *capnp.Segment) (mdefs.NRClaims, error) {
 	if b == nil {
-		return mdefs.NRClaims{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.NRClaims{}, errorz.ErrInvalid{}.New("NRClaims.MarshalCapn; nrclaims not initialized")
 	}
 	var bh mdefs.NRClaims
 	if seg == nil {
@@ -124,7 +130,7 @@ func (b *NRClaims) MarshalCapn(seg *capnp.Segment) (mdefs.NRClaims, error) {
 
 func (b *NRClaims) ValidateSignatures(bnVal *crypto.BNGroupValidator) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("NRClaims.ValidateSignatures; nrclaims not initialized")
 	}
 	err := b.RCert.ValidateSignature(bnVal)
 	if err != nil {
@@ -144,7 +150,7 @@ func (b *NRClaims) ValidateSignatures(bnVal *crypto.BNGroupValidator) error {
 
 func (b *NRClaims) Sign(bnSigner *crypto.BNGroupSigner) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("NRClaims.Sign; nrclaims not initialized")
 	}
 	canonicalEncoding, err := b.RClaims.MarshalBinary()
 	if err != nil {

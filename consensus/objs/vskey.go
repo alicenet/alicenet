@@ -15,15 +15,15 @@ type ValidatorSetKey struct {
 // ValidatorSetKey object
 func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; vsk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("data incorrect length for unmarshalling ValidatorSetKey")
+		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; incorrect data length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	nb, _ := utils.UnmarshalUint32(data[2:6])
 	if nb == 0 {
-		return errorz.ErrInvalid{}.New("invalid NotBefore for unmarshalling ValidatorSetKey; NotBefore == 0")
+		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; NotBefore is zero")
 	}
 	b.NotBefore = nb
 	return nil
@@ -32,8 +32,14 @@ func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 // MarshalBinary takes the ValidatorSetKey object and returns the canonical
 // byte slice
 func (b *ValidatorSetKey) MarshalBinary() ([]byte, error) {
-	if b == nil || len(b.Prefix) != 2 || b.NotBefore == 0 {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("ValidatorSetKey.MarshalBinary; vsk not initialized")
+	}
+	if len(b.Prefix) != 2 {
+		return nil, errorz.ErrInvalid{}.New("ValidatorSetKey.MarshalBinary; incorrect prefix length")
+	}
+	if b.NotBefore == 0 {
+		return nil, errorz.ErrInvalid{}.New("ValidatorSetKey.MarshalBinary; NotBefore is zero")
 	}
 	key := []byte{}
 	Prefix := utils.CopySlice(b.Prefix)

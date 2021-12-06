@@ -24,6 +24,9 @@ type BlockHeader struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // BlockHeader object
 func (b *BlockHeader) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalBinary; bh not initialized")
+	}
 	bh, err := blockheader.Unmarshal(data)
 	if err != nil {
 		return err
@@ -34,6 +37,9 @@ func (b *BlockHeader) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalCapn; bh not initialized")
+	}
 	err := blockheader.Validate(bh)
 	if err != nil {
 		return err
@@ -51,11 +57,11 @@ func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
 	}
 	sigGroup := bh.SigGroup()
 	if len(sigGroup) != constants.CurveBN256EthSigLen {
-		return errorz.ErrInvalid{}.New("cap bclaims sigGroup incorrect length")
+		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalCapn; incorrect SigGroup length")
 	}
 	b.SigGroup = sigGroup
 	if len(b.TxHshLst) != int(b.BClaims.TxCount) {
-		return errorz.ErrInvalid{}.New("cap bclaims txhsh lst len mismatch")
+		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalCapn; incorrect txHshLst length")
 	}
 	return nil
 }
@@ -64,7 +70,7 @@ func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
 // byte slice
 func (b *BlockHeader) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("BlockHeader.MarshalBinary; bh not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -77,7 +83,7 @@ func (b *BlockHeader) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *BlockHeader) MarshalCapn(seg *capnp.Segment) (mdefs.BlockHeader, error) {
 	if b == nil {
-		return mdefs.BlockHeader{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.BlockHeader{}, errorz.ErrInvalid{}.New("BlockHeader.MarshalCapn; bh not initialized")
 	}
 	var bh mdefs.BlockHeader
 	if seg == nil {
@@ -119,7 +125,7 @@ func (b *BlockHeader) MarshalCapn(seg *capnp.Segment) (mdefs.BlockHeader, error)
 // BlockHash returns the BlockHash of BlockHeader
 func (b *BlockHeader) BlockHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("BlockHeader.BlockHash; bh not initialized")
 	}
 	return b.BClaims.BlockHash()
 }
@@ -127,15 +133,18 @@ func (b *BlockHeader) BlockHash() ([]byte, error) {
 // ValidateSignatures validates the TxRoot and group signature
 // on the Blockheader
 func (b *BlockHeader) ValidateSignatures(bnVal *crypto.BNGroupValidator) error {
-	if b == nil || b.BClaims == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("BlockHeader.ValidateSignatures; bh not initialized")
+	}
+	if b.BClaims == nil {
+		return errorz.ErrInvalid{}.New("BlockHeader.ValidateSignatures; bclaims not initialized")
 	}
 	txRoot, err := MakeTxRoot(b.TxHshLst)
 	if err != nil {
 		return err
 	}
 	if !bytes.Equal(txRoot, b.BClaims.TxRoot) {
-		return errorz.ErrInvalid{}.New("bclaims txroot mismatch")
+		return errorz.ErrInvalid{}.New("BlockHeader.ValidateSignatures; bclaims TxRoot mismatch")
 	}
 	bhsh, err := b.BlockHash()
 	if err != nil {
@@ -171,10 +180,13 @@ func (b *BlockHeader) GetRCert() (*RCert, error) {
 	return rc, nil
 }
 
-// MakeDeadRoundProposal makes the proposal for the DeadBlockRound
-func (b *BlockHeader) MakeDeadRoundProposal(rcert *RCert, headerRoot []byte) (*Proposal, error) {
-	if b == nil || b.BClaims == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+// MakeDeadBlockRoundProposal makes the proposal for the DeadBlockRound
+func (b *BlockHeader) MakeDeadBlockRoundProposal(rcert *RCert, headerRoot []byte) (*Proposal, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("BlockHeader.MakeDeadBlockRoundProposal; bh not initialized")
+	}
+	if b.BClaims == nil {
+		return nil, errorz.ErrInvalid{}.New("BlockHeader.MakeDeadBlockRoundProposal; bclaims not initialized")
 	}
 	txRoot, err := MakeTxRoot([][]byte{})
 	StateRoot := utils.CopySlice(b.BClaims.StateRoot)

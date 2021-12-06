@@ -86,21 +86,6 @@ func TestRClaimsBad(t *testing.T) {
 		t.Fatal("Should have raised error (3)")
 	}
 
-	rcl = &RClaims{
-		ChainID:   cid,
-		Height:    height,
-		Round:     constants.DEADBLOCKROUND + 1,
-		PrevBlock: prevHash,
-	}
-	dataBad, err := rcl.MarshalBinary()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = rcl2.UnmarshalBinary(dataBad)
-	if err == nil {
-		t.Fatal("Should have raised error (4)")
-	}
-
 	prevHashBad := make([]byte, constants.HashLen+1)
 	rcl = &RClaims{
 		ChainID:   cid,
@@ -114,14 +99,14 @@ func TestRClaimsBad(t *testing.T) {
 	}
 	err = rcl2.UnmarshalBinary(dataBad2)
 	if err == nil {
-		t.Fatal("Should have raised error (5)")
+		t.Fatal("Should have raised error (4)")
 	}
 }
 
 func TestRClaimsBad2(t *testing.T) {
 	cid := uint32(66)
 	height := uint32(113)
-	round := uint32(175)
+	round := uint32(1)
 	prevHash := make([]byte, constants.HashLen)
 
 	rcl := &RClaims{

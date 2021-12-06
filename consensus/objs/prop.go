@@ -25,6 +25,9 @@ type Proposal struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // Proposal object
 func (b *Proposal) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("Proposal.UnmarshalBinary; prop not initialized")
+	}
 	bh, err := proposal.Unmarshal(data)
 	if err != nil {
 		return err
@@ -35,6 +38,9 @@ func (b *Proposal) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("Proposal.UnmarshalCapn; prop not initialized")
+	}
 	b.PClaims = &PClaims{}
 	err := proposal.Validate(bh)
 	if err != nil {
@@ -53,7 +59,7 @@ func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
 	b.Signature = utils.CopySlice(bh.Signature())
 	if b.PClaims.RCert.RClaims.Round == constants.DEADBLOCKROUND {
 		if len(b.TxHshLst) != 0 {
-			return errorz.ErrInvalid{}.New("non empty tx hash lst in deadblockround")
+			return errorz.ErrInvalid{}.New("Proposal.UnmarshalCapn; nonempty TxHshLst in DeadBlockRound")
 		}
 	}
 	return nil
@@ -63,7 +69,7 @@ func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
 // byte slice
 func (b *Proposal) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("Proposal.MarshalBinary; prop not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -76,7 +82,7 @@ func (b *Proposal) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *Proposal) MarshalCapn(seg *capnp.Segment) (mdefs.Proposal, error) {
 	if b == nil {
-		return mdefs.Proposal{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.Proposal{}, errorz.ErrInvalid{}.New("Proposal.MarshalCapn; prop not initialized")
 	}
 	var bh mdefs.Proposal
 	if seg == nil {
@@ -141,11 +147,20 @@ func (b *Proposal) RePropose(secpSigner *crypto.Secp256k1Signer, rc *RCert) (*Pr
 }
 
 func (b *Proposal) Sign(secpSigner *crypto.Secp256k1Signer) error {
-	if b == nil || b.PClaims == nil || b.PClaims.RCert == nil || b.PClaims.RCert.RClaims == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("Proposal.Sign; prop not initialized")
+	}
+	if b.PClaims == nil {
+		return errorz.ErrInvalid{}.New("Proposal.Sign; pclaims not initialized")
+	}
+	if b.PClaims.RCert == nil {
+		return errorz.ErrInvalid{}.New("Proposal.Sign; rcert not initialized")
+	}
+	if b.PClaims.RCert.RClaims == nil {
+		return errorz.ErrInvalid{}.New("Proposal.Sign; rclaims not initialized")
 	}
 	if b.PClaims.RCert.RClaims.Round > constants.DEADBLOCKROUND {
-		return errorz.ErrInvalid{}.New("proposal round > DBR")
+		return errorz.ErrInvalid{}.New("Proposal.Sign; Proposal.Round > DBR")
 	}
 	canonicalEncoding, err := b.PClaims.MarshalBinary()
 	if err != nil {
@@ -163,22 +178,31 @@ func (b *Proposal) Sign(secpSigner *crypto.Secp256k1Signer) error {
 }
 
 func (b *Proposal) ValidateSignatures(val *crypto.Secp256k1Validator, bnVal *crypto.BNGroupValidator) error {
-	if b == nil || b.PClaims == nil || b.PClaims.BClaims == nil || b.PClaims.RCert == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; prop not initialized")
+	}
+	if b.PClaims == nil {
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; pclaims not initialized")
+	}
+	if b.PClaims.BClaims == nil {
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; bclaims not initialized")
+	}
+	if b.PClaims.RCert == nil {
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; rcert not initialized")
 	}
 	txRoot, err := MakeTxRoot(b.TxHshLst)
 	if err != nil {
 		return err
 	}
 	if !bytes.Equal(txRoot, b.PClaims.BClaims.TxRoot) {
-		return errorz.ErrInvalid{}.New("proposal txroot mismatch")
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; Proposal TxRoot mismatch")
 	}
 	err = b.PClaims.RCert.ValidateSignature(bnVal)
 	if err != nil {
 		return err
 	}
 	if b.PClaims.RCert.RClaims.Round > constants.DEADBLOCKROUND {
-		return errorz.ErrInvalid{}.New("proposal rcert round > DBR")
+		return errorz.ErrInvalid{}.New("Proposal.ValidateSignatures; Proposal.RCert.Round > DBR")
 	}
 	canonicalEncoding, err := b.PClaims.MarshalBinary()
 	if err != nil {

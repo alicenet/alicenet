@@ -22,6 +22,9 @@ type BClaims struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // BClaims object
 func (b *BClaims) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("BClaims.UnmarshalBinary; bclaims not initialized")
+	}
 	bc, err := bclaims.Unmarshal(data)
 	if err != nil {
 		return err
@@ -33,8 +36,14 @@ func (b *BClaims) UnmarshalBinary(data []byte) error {
 // MarshalBinary takes the BClaims object and returns the canonical
 // byte slice
 func (b *BClaims) MarshalBinary() ([]byte, error) {
-	if b == nil || b.ChainID == 0 || b.Height == 0 {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("BClaims.MarshalBinary; bclaims not initialized")
+	}
+	if b.ChainID == 0 {
+		return nil, errorz.ErrInvalid{}.New("BClaims.MarshalBinary; chainID is zero")
+	}
+	if b.Height == 0 {
+		return nil, errorz.ErrInvalid{}.New("BClaims.MarshalBinary; height is zero")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -46,6 +55,9 @@ func (b *BClaims) MarshalBinary() ([]byte, error) {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("BClaims.UnmarshalCapn; bclaims not initialized")
+	}
 	err := bclaims.Validate(bc)
 	if err != nil {
 		return err
@@ -58,10 +70,10 @@ func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 	b.StateRoot = bc.StateRoot()
 	b.TxRoot = bc.TxRoot()
 	if b.Height < 1 {
-		return errorz.ErrInvalid{}.New("capn bclaims bad height")
+		return errorz.ErrInvalid{}.New("BClaims.UnmarshalCapn; height is zero")
 	}
 	if b.ChainID < 1 {
-		return errorz.ErrInvalid{}.New("capn bclaims bad cid")
+		return errorz.ErrInvalid{}.New("BClaims.UnmarshalCapn; chainID is zero")
 	}
 	return nil
 }
@@ -69,7 +81,7 @@ func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *BClaims) MarshalCapn(seg *capnp.Segment) (mdefs.BClaims, error) {
 	if b == nil {
-		return mdefs.BClaims{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.BClaims{}, errorz.ErrInvalid{}.New("BClaims.MarshalCapn; bclaims not initialized")
 	}
 	var bc mdefs.BClaims
 	if seg == nil {

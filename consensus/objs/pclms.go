@@ -18,6 +18,9 @@ type PClaims struct {
 // UnmarshalBinary takes a byte slice and returns the corresponding
 // PClaims object
 func (b *PClaims) UnmarshalBinary(data []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("PClaims.UnmarshalBinary; pclaims not initialized")
+	}
 	bh, err := pclaims.Unmarshal(data)
 	if err != nil {
 		return err
@@ -28,6 +31,9 @@ func (b *PClaims) UnmarshalBinary(data []byte) error {
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *PClaims) UnmarshalCapn(bh mdefs.PClaims) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("PClaims.UnmarshalCapn; pclaims not initialized")
+	}
 	b.RCert = &RCert{}
 	b.BClaims = &BClaims{}
 	err := pclaims.Validate(bh)
@@ -43,13 +49,13 @@ func (b *PClaims) UnmarshalCapn(bh mdefs.PClaims) error {
 		return err
 	}
 	if b.RCert.RClaims.ChainID != b.BClaims.ChainID {
-		return errorz.ErrInvalid{}.New("pclaims cid != cid")
+		return errorz.ErrInvalid{}.New("PClaims.UnmarshalCapn; pclaims chainID != chainID")
 	}
 	if b.RCert.RClaims.Height != b.BClaims.Height {
-		return errorz.ErrInvalid{}.New("pclaims h != h")
+		return errorz.ErrInvalid{}.New("PClaims.UnmarshalCapn; pclaims height != height")
 	}
 	if !bytes.Equal(b.RCert.RClaims.PrevBlock[:], b.BClaims.PrevBlock[:]) {
-		return errorz.ErrInvalid{}.New("pclaims prevb != prevb")
+		return errorz.ErrInvalid{}.New("PClaims.UnmarshalCapn; pclaims prevBlock != prevBlock")
 	}
 	return nil
 }
@@ -58,7 +64,7 @@ func (b *PClaims) UnmarshalCapn(bh mdefs.PClaims) error {
 // byte slice
 func (b *PClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+		return nil, errorz.ErrInvalid{}.New("PClaims.MarshalBinary; pclaims not initialized")
 	}
 	bh, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -71,7 +77,7 @@ func (b *PClaims) MarshalBinary() ([]byte, error) {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *PClaims) MarshalCapn(seg *capnp.Segment) (mdefs.PClaims, error) {
 	if b == nil {
-		return mdefs.PClaims{}, errorz.ErrInvalid{}.New("not initialized")
+		return mdefs.PClaims{}, errorz.ErrInvalid{}.New("PClaims.MarshalCapn; pclaims not initialized")
 	}
 	var bh mdefs.PClaims
 	if seg == nil {

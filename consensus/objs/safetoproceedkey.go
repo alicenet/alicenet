@@ -16,8 +16,11 @@ type SafeToProceedKey struct {
 // MarshalBinary takes the SafeToProceedKey object and returns
 // the canonical byte slice
 func (b *SafeToProceedKey) MarshalBinary() ([]byte, error) {
-	if b == nil || b.Height == 0 {
-		return nil, errorz.ErrInvalid{}.New("not initialized")
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("SafeToProceedKey.MarshalBinary; stpk not initialized")
+	}
+	if b.Height == 0 {
+		return nil, errorz.ErrInvalid{}.New("SafeToProceedKey.MarshalBinary; height is zero")
 	}
 	key := []byte{}
 	Prefix := utils.CopySlice(b.Prefix)
@@ -33,7 +36,7 @@ func (b *SafeToProceedKey) MarshalBinary() ([]byte, error) {
 // SafeToProceedKey object
 func (b *SafeToProceedKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("not initialized")
+		return errorz.ErrInvalid{}.New("SafeToProceedKey.UnmarshalBinary; stpk not initialized")
 	}
 	splitData := bytes.Split(data, []byte("|"))
 	if len(splitData) != 3 {
@@ -45,10 +48,10 @@ func (b *SafeToProceedKey) UnmarshalBinary(data []byte) error {
 		return err
 	}
 	if Height == 0 {
-		return errorz.ErrInvalid{}.New("invalid height for unmarshalling")
+		return errorz.ErrInvalid{}.New("SafeToProceedKey.UnmarshalBinary; height is zero")
 	}
 	if len(splitData[2]) != 0 {
-		return errorz.ErrInvalid{}.New("invalid SafeToProceedKey")
+		return errorz.ErrInvalid{}.New("SafeToProceedKey.UnmarshalBinary; invalid key")
 	}
 	b.Height = Height
 	return nil
