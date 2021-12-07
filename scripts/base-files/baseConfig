@@ -1,0 +1,55 @@
+[loglevel]
+
+[chain]
+id = 42
+stateDB = ""
+stateDBInMemory = false
+transactionDB = ""
+transactionDBInMemory = true
+monitorDB = ""
+monitorDBInMemory = true
+
+[bootnode]
+listeningAddress = ""
+cacheSize = 20
+
+[transport]
+upnp=false
+originLimit = 50
+privateKey = ""
+bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
+p2pListeningAddress = ""
+discoveryListeningAddress = ""
+localStateListeningAddress = ""
+peerLimitMax = 24
+peerLimitMin = 3
+
+[monitor]
+batchSize = 1000
+interval = "7s"
+timeout = "1h"
+
+[ethereum]
+defaultAccount = ""
+endpoint = "http://localhost:8545"
+endpointPeers = 0
+keystore = ""
+timeout = "1h"
+passcodes = ""
+testEther = "f000000000000000000"
+finalityDelay = 2
+retryCount = 3
+retryDelay = "5s"
+startingBlock = 1
+registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+
+[edge]
+ethTimeout = "5s"
+
+[utils]
+status = true
+
+[validator]
+rewardAccount = ""
+rewardCurveSpec = 1
+symmetricKey = "someSuperFancySecretThatWillBeHashed"
