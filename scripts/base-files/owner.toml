@@ -1,0 +1,22 @@
+logging = "main=info,ethereum=debug"
+
+[chain]
+id = 42
+
+[ethereum]
+defaultAccount = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+endpoint = "http://localhost:8545"
+endpointPeers = 0
+keystore = "scripts/generated/keystores/keys"
+monitorInterval = "5s"
+timeout = "1h"
+passcodes = "scripts/generated/keystores/passcodes.txt"
+testEther = "f000000000000000000"
+finalityDelay = 12
+retryCount = 30
+retryDelay = "5s"
+startingBlock = 100
+registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+
+[utils]
+status = true

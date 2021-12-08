@@ -50,57 +50,46 @@ This is required for the tests to run.
 ### Local execution
 
 In order to initialize a chain with all validators
-online and a valid group key, we use the `snapshot.zip` file
-and then proceed from a valid snapshot of the chain.
-The commands which follow enable all tests to be run
-except for the ETHDKG test;
-this test is described in its entirety [here](#ethdkg-test).
+online we need to generate the configuration files, keystores, geth genesis file, and password files.
+To do this execute:
+```
+./scripts/main.sh init {# of validators 4-32}
+```
+This will generate all necessary files for the local chain inside: `./scripts/generated`
 
-First, build the latest version of the repository.
-We now setup the bootnode to allow for communication between
-the nodes:
+Open a terminal and start geth:
 ```
-./scripts/bootnode.sh
-```
-
-First execute
-```
-./scripts/geth-local-snapshot-restore.sh
-```
-This will restore the testnet Ethereum database and
-the validator databases and allows us to not have to run ETHDKG
-to test functionality.
-This script **must** run to completion before continuing the test setup.
-
-Open a new terminal and run
-```
-./scripts/geth-local-resume.sh
+./scripts/main.sh geth
 ```
 
-Open five additional terminals and execute the validator scripts
+Open another terminal and start the bootnode:
 ```
-./scripts/validator0.sh
-./scripts/validator1.sh
-./scripts/validator2.sh
-./scripts/validator3.sh
-./scripts/validator4.sh
+./scripts/main.sh bootnode
 ```
-The first 4 validators (validator0 -- validator3) mine transactions.
-validator4 sends transactions to the other validators.
 
-The validators load their configuration from `assets/config`, and use the following ports for P2P communication:
+Open another terminal and deploy the contracts and transfer tokens needed for validators:
+```
+./scripts/main.sh deploy
+```
 
-- `validator0`: 4242
-- `validator1`: 4243
-- `validator2`: 4244
-- `validator3`: 4245
-- `validator4`: 5343
+Once this has finished, turn on each of the validators, each in its own terminal:
+```
+./scripts/main.sh validator {# for the validator you want to start}
+```
+
+Wait until all of the validators have peered together and then start ethDKG:
+```
+./scripts/main.sh ethdkg
+```
+
+This will print out blocks at which ethDKG events will happen. 
+Once it has been completed and MadNet starts mining blocks, the system is ready.
 
 Deposits are required in order to submit DataStores.
 Run the following at least 4 times in order to deposit enough funds
 to inject datastores.
 ```
-./madnet --config=./assets/config/owner.toml utils deposit
+./scripts/main.sh deposit
 ```
 Note that DataStores are injected in the Wallet-JS
 [tests](#wallet-js-tests),
@@ -109,6 +98,7 @@ tests to be successful.
 
 At this point, the testnet should now be ready to run the standard tests.
 
+To list other commands from the script, run the script with no arguments.
 
 ### With Docker Compose
 
@@ -207,57 +197,6 @@ implying the data would be stored for over 8.5 hours.
 To make this test more reasonable and
 ensure that datastores are consumed, change
 `EpochLength = 16`.
-
-### ETHDKG Test
-This test requires a different set of commands than
-the previous tests and all commands have been included.
-First ensure the project has been built.
-From here, start the bootnode:
-```
-./scripts/bootnode.sh
-```
-
-Now, setup a local geth environment:
-```
-./scripts/geth-local.sh
-```
-This differs from the standard tests because the standard
-tests store a valid snapshot of data after ETHDKG has been
-completed in order to save time when running tests.
-On the Ethereum mainnet, this test would take approximately
-40 minutes; on the testnet, this test should take approximately
-20 minutes.
-
-Remove all directories containing previous validator information:
-```
-rm -r ~/validator*
-```
-
-We now deploy the ETHDKG smart contract, approve tokens,
-transfer tokens to the validators, and register the validators:
-```
-./scripts/deploy.sh && ./scripts/approvetokens.sh && ./scripts/transfertokens.sh && ./scripts/register.sh
-```
-This script **must** run to completion before the test continues.
-
-We now turn on the validators:
-```
-./scripts/validator0.sh
-./scripts/validator1.sh
-./scripts/validator2.sh
-./scripts/validator3.sh
-```
-Note that we do not run validator4 at this time;
-it is not required for this test.
-
-We now wait for the validators to synchronize with the
-Ethereum (or testnet) blockchain.
-We will look for `InSync: false -> true` in the log statements.
-Once the validators are synched, we finally run ETHDKG:
-```
-./scripts/ethdkg.sh
-```
-Once completed, the validators will start mining blocks.
 
 
 ## Interaction

@@ -19,3 +19,6 @@ local-geth/*
 **/thumbs.db
 **/desktop.ini
 **/.directory
+
+# generated script files
+scripts/generated
