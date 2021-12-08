@@ -51,8 +51,8 @@ CREATE_CONFIGS () {
     DA=4444
     LSA=8884
     # Check that number of validators is valid
-    if ! [[ $1 =~ $re ]] || [[ $1 -lt 3 ]] || [[ $1 -gt 20 ]]; then
-        echo -e "Invalid number of validators [3-20]"
+    if ! [[ $1 =~ $re ]] || [[ $1 -lt 4 ]] || [[ $1 -gt 32 ]]; then
+        echo -e "Invalid number of validators [4-32]"
         exit 1
     fi
     if [ -f "./scripts/generated/genesis.json" ]; then
