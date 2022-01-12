@@ -175,13 +175,14 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 	}
 
 	logger.Info(strings.Repeat("-", 80))
-	logger.Infof("      Crypto contract: %v", c.CryptoAddress().Hex())
-	logger.Infof("     Deposit contract: %v", c.DepositAddress().Hex())
-	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress().Hex())
-	logger.Infof("*   Registry contract: %v", c.RegistryAddress().Hex())
-	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress().Hex())
-	logger.Infof("    Governor contract: %v", c.GovernorAddress().Hex())
-	logger.Infof("  Validators contract: %v", c.ValidatorsAddress().Hex())
+	logger.Infof("          Crypto contract: %v", c.CryptoAddress().Hex())
+	logger.Infof("         Deposit contract: %v", c.DepositAddress().Hex())
+	logger.Infof("          EthDKG contract: %v", c.EthdkgAddress().Hex())
+	logger.Infof("*       Registry contract: %v", c.RegistryAddress().Hex())
+	logger.Infof("    StakingToken contract: %v", c.StakingTokenAddress().Hex())
+	logger.Infof("        Governor contract: %v", c.GovernorAddress().Hex())
+	logger.Infof("      Validators contract: %v", c.ValidatorsAddress().Hex())
+	logger.Infof("  ValidatorsPool contract: %v", c.ValidatorPoolAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
 	logger.Infof("              Public key: 0x%x", crypto.FromECDSAPub(&keys.PrivateKey.PublicKey))
@@ -253,7 +254,6 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
-	madNetID := [2]*big.Int{{}, {}}
 	ctx := context.Background()
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
@@ -293,7 +293,7 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 	}
 
 	// Actually join validator pool
-	txn, err = c.Validators().AddValidator(txnOpts, acct.Address, madNetID)
+	txn, err = c.ValidatorPool().AddValidator(txnOpts, acct.Address)
 	if err != nil {
 		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
 	}
@@ -314,7 +314,6 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
-	madNetID := [2]*big.Int{{}, {}}
 
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
@@ -322,7 +321,7 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	}
 
 	// Contract orchestration
-	_, err = c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
+	_, err = c.ValidatorPool().RemoveValidator(txnOpts, acct.Address)
 	if err != nil {
 		logger.Errorf("Account %v could not leave validators pool: %v", acct.Address.Hex(), err)
 		return 1

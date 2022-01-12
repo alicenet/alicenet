@@ -13,12 +13,17 @@ import (
 func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
 	// DKG event processors
-	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen",
+	if err := em.RegisterLocked("0xc867fa8c9b2d0ef5b1687773346ccc44cbc8b392ec2934a6178ffe529f311c8d", "RegistrationOpened",
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return dkgevents.ProcessOpenRegistration(eth, logger, state, log, adminHandler)
 		}); err != nil {
 		return err
 	}
+
+	if err := em.RegisterLocked("0x7f1304057ec61140fbf2f5f236790f34fcafe123d3eb0d298d92317c97da500d", "AddressRegistered", dkgevents.ProcessAddressRegistered); err != nil {
+		return err
+	}
+
 	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
 		return err
 	}

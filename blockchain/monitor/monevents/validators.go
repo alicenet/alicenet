@@ -31,7 +31,7 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 
 	vs := state.ValidatorSets[epoch]
 	vs.NotBeforeMadNetHeight = uint32(event.MadHeight.Uint64())
-	vs.ValidatorCount = uint32(event.ValidatorCount.Uint64())
+	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1
 	vs.GroupKey[2] = event.GroupKey2
@@ -71,10 +71,9 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 
 	index := uint32(event.Index.Uint64()) - 1
 
-	//todoLeoRicPrime: check if changing the variable types will not mess up the system
 	v := objects.Validator{
 		Account:   event.Account,
-		Index:     index,
+		Index:     uint8(index),
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 	if len(state.Validators[epoch]) < int(index+1) {

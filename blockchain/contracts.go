@@ -129,6 +129,15 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, registryAddress c
 			continue
 		}
 
+		c.validatorPoolAddress, err = lookup("validatorPool/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.validatorPoolAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
+		logAndEat(logger, err)
+
 		// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
 		c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
 		logAndEat(logger, err)
@@ -373,9 +382,12 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		return nil, common.Address{}, err
 	}
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress())
+	logger.Infof(" Gas = %0.10v EthDKG  = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress())
 
 	c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
+	logAndEat(logger, err)
+
+	c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
 	logAndEat(logger, err)
 
 	// Wait for all the deploys to finish
@@ -383,6 +395,10 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 
 	q.WaitGroupTransactions(ctx, facetConfigGroup)
 	// flushQ(txnQueue)
+
+	txn, err = c.ValidatorPool().SetETHDKG(txnOpts, c.ethdkgAddress)
+	logAndEat(logger, err)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.registry.Register(txnOpts, "deposit/v1", c.depositAddress)
 	logAndEat(logger, err)

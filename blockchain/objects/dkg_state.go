@@ -141,6 +141,9 @@ type DkgState struct {
 	GPKJGroupAccusationEnd   uint64
 	CompleteStart            uint64
 	CompleteEnd              uint64
+
+	PhaseLength        uint64
+	ConfirmationLength uint64
 }
 
 // NewDkgState makes a new DkgState object
