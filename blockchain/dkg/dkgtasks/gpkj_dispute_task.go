@@ -9,6 +9,9 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/crypto/bn256"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,7 +51,6 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	var (
 		groupPublicKeys  [][4]*big.Int
-		groupSignatures  [][2]*big.Int
 		groupCommitments [][][2]*big.Int
 	)
 
@@ -60,18 +62,11 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 			return dkg.LogReturnErrorf(logger, "Failed to retrieve group public key for %v", participant.Address.Hex())
 		}
 
-		groupSignature, err := dkg.RetrieveSignature(callOpts, eth, participant.Address)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "Failed to retrieve group signature for %v", participant.Address.Hex())
-		}
-
 		// Save the values
 		t.State.GroupPublicKeys[participant.Address] = groupPublicKey
-		t.State.GroupSignatures[participant.Address] = groupSignature
 
 		// Build array
 		groupPublicKeys = append(groupPublicKeys, groupPublicKey)
-		groupSignatures = append(groupSignatures, groupSignature)
 		groupCommitments = append(groupCommitments, t.State.Commitments[participant.Address])
 	}
 
@@ -125,25 +120,30 @@ func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 	logger.Infof("   Honest indices: %v", t.State.HonestValidators.ExtractIndices())
 	logger.Infof("Dishonest indices: %v", t.State.DishonestValidators.ExtractIndices())
 
-	var groupEncryptedShares [][]*big.Int
+	var groupEncryptedSharesHash [][32]byte
 	var groupCommitments [][][2]*big.Int
+	var validatorAddresses []common.Address
 
 	for _, participant := range t.State.Participants {
 		// Get group encrypted shares
 		es := t.State.EncryptedShares[participant.Address]
-		groupEncryptedShares = append(groupEncryptedShares, es)
+		encryptedSharesBin, err := bn256.MarshalBigIntSlice(es)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
+		}
+		hashSlice := crypto.Hasher(encryptedSharesBin)
+		var hashSlice32 [32]byte
+		copy(hashSlice32[:], hashSlice)
+		groupEncryptedSharesHash = append(groupEncryptedSharesHash, hashSlice32)
 		// Get group commitments
 		com := t.State.Commitments[participant.Address]
 		groupCommitments = append(groupCommitments, com)
+		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
 	// Loop through dishonest participants and perform accusation
-	for _, participant := range t.State.DishonestValidators {
-		// We convert the participant index to the "participant list index";
-		// that is, we convert from base 1 to base 0.
-		dishonestListIdxBig := new(big.Int).Sub(big.NewInt(int64(participant.Index)), big.NewInt(1))
-
-		txn, err := eth.Contracts().Ethdkg().GroupAccusationGPKjComp(txnOpts, groupEncryptedShares, groupCommitments, dishonestListIdxBig, participant.Address)
+	for _, dishonestParticipant := range t.State.DishonestValidators {
+		txn, err := eth.Contracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
 		}

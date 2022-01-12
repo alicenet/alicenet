@@ -19,7 +19,7 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 	myIndex := math.MaxInt32
 
 	// Need to find how many participants there will be
-	bigN, err := c.Ethdkg().NumberOfRegistrations(callOpts)
+	bigN, err := c.ValidatorPool().GetValidatorsCount(callOpts)
 	if err != nil {
 		return nil, myIndex, err
 	}
@@ -29,57 +29,33 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 	participants := make(objects.ParticipantList, n)
 	for idx := 0; idx < n; idx++ {
 		// First retrieve the address
-		addr, err := c.Ethdkg().Addresses(callOpts, big.NewInt(int64(idx)))
+		addr, err := c.ValidatorPool().GetValidator(callOpts, big.NewInt(int64(idx)))
 		if err != nil {
 			return nil, myIndex, err
 		}
 
-		// Now the public keys
-		var publicKey [2]*big.Int
-		publicKey[0], err = c.Ethdkg().PublicKeys(callOpts, addr, common.Big0)
+		participantState, err := c.Ethdkg().GetParticipantInternalState(callOpts, addr)
 		if err != nil {
 			return nil, myIndex, objects.ErrCanNotContinue
 		}
-		publicKey[1], err = c.Ethdkg().PublicKeys(callOpts, addr, common.Big1)
-		if err != nil {
-			return nil, myIndex, objects.ErrCanNotContinue
-		}
+
+		publicKey := participantState.PublicKey
 
 		// Make corresponding Participant object
 		participant := &objects.Participant{}
 		participant.Address = addr
 		participant.PublicKey = publicKey
-		participant.Index = idx + 1
+		participant.Index = participant.Index
 
 		// Set own index
 		if callOpts.From == addr {
-			myIndex = idx + 1
+			myIndex = participant.Index
 		}
 
 		participants[idx] = participant
 	}
 
 	return participants, myIndex, nil
-}
-
-// RetrieveSignature retrieves participant's signature from ETHDKG contract
-func RetrieveSignature(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([2]*big.Int, error) {
-	var err error
-	var sigBig [2]*big.Int
-
-	ethdkg := eth.Contracts().Ethdkg()
-
-	sigBig[0], err = ethdkg.InitialSignatures(callOpts, addr, common.Big0)
-	if err != nil {
-		return sigBig, err
-	}
-
-	sigBig[1], err = ethdkg.InitialSignatures(callOpts, addr, common.Big1)
-	if err != nil {
-		return sigBig, err
-	}
-
-	return sigBig, nil
 }
 
 // RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
@@ -89,25 +65,12 @@ func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, ad
 
 	ethdkg := eth.Contracts().Ethdkg()
 
-	gpkjBig[0], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big0)
+	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {
 		return gpkjBig, err
 	}
 
-	gpkjBig[1], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big1)
-	if err != nil {
-		return gpkjBig, err
-	}
-
-	gpkjBig[2], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big2)
-	if err != nil {
-		return gpkjBig, err
-	}
-
-	gpkjBig[3], err = ethdkg.GpkjSubmissions(callOpts, addr, common.Big3)
-	if err != nil {
-		return gpkjBig, err
-	}
+	gpkjBig = participantState.Gpkj
 
 	return gpkjBig, nil
 }

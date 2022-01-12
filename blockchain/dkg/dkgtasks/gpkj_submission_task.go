@@ -50,13 +50,6 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
 	}
 
-	// TODO Guard
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	initialMessage, err := eth.Contracts().Ethdkg().InitialMessage(callOpts)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "Could not retrieve initial message: %v", err)
-	}
-
 	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
 	for idx, participant := range t.State.Participants {
 		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
@@ -68,17 +61,15 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		}
 	}
 
-	groupPrivateKey, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage,
+	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
 		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
 		encryptedShares, t.State.Index, t.State.Participants)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
-	t.State.InitialMessage = initialMessage
 	t.State.GroupPrivateKey = groupPrivateKey
 	t.State.GroupPublicKey = groupPublicKey
-	t.State.GroupSignature = groupSignature
 
 	// Pass private key on to consensus
 	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
@@ -111,7 +102,7 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKj(txnOpts, t.State.GroupPublicKey, t.State.GroupSignature)
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.GroupPublicKey)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}

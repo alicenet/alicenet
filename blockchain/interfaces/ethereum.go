@@ -143,6 +143,8 @@ type Contracts interface {
 	UtilityTokenAddress() common.Address
 	Validators() *bindings.Validators
 	ValidatorsAddress() common.Address
+	ValidatorPool() *bindings.ValidatorPool
+	ValidatorPoolAddress() common.Address
 }
 
 // Task the interface requirements of a task

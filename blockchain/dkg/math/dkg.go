@@ -329,21 +329,21 @@ func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int)
 }
 
 // GenerateGroupKeys returns the group private key, group public key, and a signature
-func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants objects.ParticipantList) (*big.Int, [4]*big.Int, [2]*big.Int, error) {
+func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants objects.ParticipantList) (*big.Int, [4]*big.Int, error) {
 	// setup
 	n := len(participants)
 	threshold := ThresholdForUserCount(n)
 	if transportPrivateKey == nil {
-		return nil, empty4Big, empty2Big, errors.New("Missing transportPrivateKey")
+		return nil, empty4Big, errors.New("Missing transportPrivateKey")
 	}
 	if index <= 0 {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid index: require index > 0; index = %v", index)
+		return nil, empty4Big, fmt.Errorf("Invalid index: require index > 0; index = %v", index)
 	}
 	if len(privateCoefficients) != threshold+1 {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid privateCoefficients array: require length == threshold+1; length == %v", len(privateCoefficients))
+		return nil, empty4Big, fmt.Errorf("Invalid privateCoefficients array: require length == threshold+1; length == %v", len(privateCoefficients))
 	}
 	if len(encryptedShares) != n {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid encryptedShares array: require length == len(Participants); length == %v", len(encryptedShares))
+		return nil, empty4Big, fmt.Errorf("Invalid encryptedShares array: require length == len(Participants); length == %v", len(encryptedShares))
 	}
 
 	// build portions of group secret key
@@ -352,7 +352,7 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	for idx := 0; idx < n; idx++ {
 		publicKeyG1, err := bn256.BigIntArrayToG1(participants[idx].PublicKey)
 		if err != nil {
-			return nil, empty4Big, empty2Big, fmt.Errorf("error converting public key to g1: %v", err)
+			return nil, empty4Big, fmt.Errorf("error converting public key to g1: %v", err)
 		}
 		publicKeyG1s[idx] = publicKeyG1
 	}
@@ -360,12 +360,12 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(transportPrivateKey)
 	sharedEncrypted, err := cloudflare.CondenseCommitments(transportPublicKeyG1, encryptedShares, publicKeyG1s)
 	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error condensing commitments: %v", err)
+		return nil, empty4Big, fmt.Errorf("error condensing commitments: %v", err)
 	}
 
 	sharedSecrets, err := cloudflare.GenerateDecryptedShares(transportPrivateKey, sharedEncrypted, publicKeyG1s)
 	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error generating decrypted shares: %v", err)
+		return nil, empty4Big, fmt.Errorf("error generating decrypted shares: %v", err)
 	}
 
 	// here's the final group secret
@@ -379,30 +379,30 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	gpkj := new(cloudflare.G2).ScalarBaseMult(gskj)
 	gpkjBig, err := bn256.G2ToBigIntArray(gpkj)
 	if err != nil {
-		return nil, empty4Big, empty2Big, err
+		return nil, empty4Big, err
 	}
 
-	// create sig
-	sig, err := cloudflare.Sign(initialMessage, gskj, cloudflare.HashToG1)
-	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error signing message: %v", err)
-	}
-	sigBig, err := bn256.G1ToBigIntArray(sig)
-	if err != nil {
-		return nil, empty4Big, empty2Big, err
-	}
+	// // create sig
+	// sig, err := cloudflare.Sign(initialMessage, gskj, cloudflare.HashToG1)
+	// if err != nil {
+	// 	return nil, empty4Big, empty2Big, fmt.Errorf("error signing message: %v", err)
+	// }
+	// sigBig, err := bn256.G1ToBigIntArray(sig)
+	// if err != nil {
+	// 	return nil, empty4Big, empty2Big, err
+	// }
 
-	// verify signature
-	validSig, err := cloudflare.Verify(initialMessage, sig, gpkj, cloudflare.HashToG1)
-	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error verifying signature: %v", err)
-	}
+	// // verify signature
+	// validSig, err := cloudflare.Verify(initialMessage, sig, gpkj, cloudflare.HashToG1)
+	// if err != nil {
+	// 	return nil, empty4Big, empty2Big, fmt.Errorf("error verifying signature: %v", err)
+	// }
 
-	if !validSig {
-		return nil, empty4Big, empty2Big, errors.New("not a valid group signature")
-	}
+	// if !validSig {
+	// 	return nil, empty4Big, empty2Big, errors.New("not a valid group signature")
+	// }
 
-	return gskj, gpkjBig, sigBig, nil
+	return gskj, gpkjBig, nil
 }
 
 // CategorizeGroupSigners returns 0 based indicies of honest participants, 0 based indicies of dishonest participants

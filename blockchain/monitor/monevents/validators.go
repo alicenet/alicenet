@@ -22,7 +22,7 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 
 	updatedState := state
 
-	event, err := c.Ethdkg().ParseValidatorSet(log)
+	event, err := c.Ethdkg().ParseValidatorSetCompleted(log)
 	if err != nil {
 		return err
 	}
@@ -30,8 +30,8 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 	epoch := uint32(event.Epoch.Int64())
 
 	vs := state.ValidatorSets[epoch]
-	vs.NotBeforeMadNetHeight = event.MadHeight
-	vs.ValidatorCount = event.ValidatorCount
+	vs.NotBeforeMadNetHeight = uint32(event.MadHeight.Uint64())
+	vs.ValidatorCount = uint32(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1
 	vs.GroupKey[2] = event.GroupKey2
@@ -62,15 +62,16 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 
 	c := eth.Contracts()
 
-	event, err := c.Ethdkg().ParseValidatorMember(log)
+	event, err := c.Ethdkg().ParseValidatorMemberAdded(log)
 	if err != nil {
 		return err
 	}
 
 	epoch := uint32(event.Epoch.Int64())
 
-	index := uint8(event.Index.Uint64()) - 1
+	index := uint32(event.Index.Uint64()) - 1
 
+	//todoLeoRicPrime: check if changing the variable types will not mess up the system
 	v := objects.Validator{
 		Account:   event.Account,
 		Index:     index,

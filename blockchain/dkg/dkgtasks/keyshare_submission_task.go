@@ -92,7 +92,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		t.State.KeyShareG1s[me.Address],
 		t.State.KeyShareG1CorrectnessProofs[me.Address],
 		t.State.KeyShareG2s[me.Address])
-	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts, me.Address,
+	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
 		t.State.KeyShareG1s[me.Address],
 		t.State.KeyShareG1CorrectnessProofs[me.Address],
 		t.State.KeyShareG2s[me.Address])

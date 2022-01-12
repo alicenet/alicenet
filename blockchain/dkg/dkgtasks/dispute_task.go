@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -103,13 +102,9 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth inte
 		// eth.Contracts().Ethdkg().SubmitDispute()
 
 		// Initial information;
-		// issuer issued bad information; this is participant.
+		// dishonestAddress issued bad information; this is participant.
 		// disputer is disputing them; *you* are disputing the information.
-		issuer := participant.Address
-		// NOTE: The smart contract uses index-0 in this function call.
-		//		 We are using index-1 when storing, so we need to subtract 1 here.
-		issuerListIdx := big.NewInt(int64(participant.Index - 1))
-		disputerListIdx := big.NewInt(int64(t.State.Index - 1))
+		dishonestAddress := participant.Address
 		encryptedShares := t.State.EncryptedShares[participant.Address]
 		commitments := t.State.Commitments[participant.Address]
 
@@ -138,7 +133,7 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth inte
 			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 		}
 
-		txn, err := eth.Contracts().Ethdkg().SubmitDispute(txnOpts, issuer, issuerListIdx, disputerListIdx, encryptedShares, commitments, sharedKey, sharedKeyProof)
+		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}

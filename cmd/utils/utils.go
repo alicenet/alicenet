@@ -563,7 +563,7 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 	}
 
 	//
-	txn, err := c.Ethdkg().InitializeState(txnOpts)
+	txn, err := c.ValidatorPool().InitializeETHDKG(txnOpts)
 	if err != nil {
 		logger.Errorf("Could not initialize ethdkg: %v", err)
 		return 1
@@ -581,17 +581,10 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 
 	for _, log := range logs {
 		if log.Topics[0].Hex() == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
-			event, err := c.Ethdkg().ParseRegistrationOpen(*log)
-			logger.Infof("Distributed key generation has begun...\nDkgStarts:%v\nRegistrationEnds:%v\nShareDistributionEnds:%v\nDisputeEnds:%v\nKeyShareSubmissionEnds:%v\nMpkSubmissionEnds:%v\nGpkjSubmissionEnds:%v\nGpkjDisputeEnds:%v\nDkgComplete:%v",
-				event.DkgStarts,
-				event.RegistrationEnds,
-				event.ShareDistributionEnds,
-				event.DisputeEnds,
-				event.KeyShareSubmissionEnds,
-				event.MpkSubmissionEnds,
-				event.GpkjSubmissionEnds,
-				event.GpkjDisputeEnds,
-				event.DkgComplete)
+			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
+			logger.Infof("Distributed key generation has begun...\nDkgStarts:%v\nNonce:%v",
+				event.StartBlock,
+				event.Nonce)
 			if err != nil {
 				logger.Warnf("Could not parse RegistrationOpen event: %v", err)
 			}

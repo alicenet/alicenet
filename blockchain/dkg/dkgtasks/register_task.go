@@ -139,7 +139,8 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Check if the registration window has moved, quit if it has
-	lastBlock, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
+	//todoLeo&RicPrime: Pay attention to this!
+	lastBlock, err := c.Ethdkg().GetPhaseStartBlock(callOpts)
 	if err != nil {
 		return true
 	}

@@ -53,20 +53,12 @@ type DkgState struct {
 	// As mentioned above, the secret key called the master secret key
 	// and is the sum of all the shared secrets of all the participants.
 	MasterPublicKey [4]*big.Int
-	// InitialMessage is a message which is signed to help ensure
-	// valid group public key submission.
-	InitialMessage []byte
 	// GroupPrivateKey is the local Validator's portion of the master secret key.
 	// This is also denoted gskj.
 	GroupPrivateKey *big.Int
 	// GroupPublicKey is the local Validator's portion of the master public key.
 	// This is also denoted gpkj.
 	GroupPublicKey [4]*big.Int
-	// GroupSignature is the signature of InitialMessage corresponding to
-	// GroupPublicKey. The smart contract logic verifies that GroupSignature
-	// is a valid signature of GroupPublicKey.
-	// This may be used in the GroupSignature validation logic.
-	GroupSignature [2]*big.Int
 
 	// Remote validator info
 	////////////////////////////////////////////////////////////////////////////
@@ -109,9 +101,6 @@ type DkgState struct {
 	// GroupPublicKeys stores the group public keys (gpkj)
 	// for each participant.
 	GroupPublicKeys map[common.Address][4]*big.Int // Retrieved to validate group keys
-	// GroupSignatures stores the group signatures
-	// for each participant.
-	GroupSignatures map[common.Address][2]*big.Int // "
 
 	// Group Public Key (GPKj) Accusation Phase
 	//////////////////////////////////////////////////
@@ -162,7 +151,6 @@ func NewDkgState(account accounts.Account) *DkgState {
 		Commitments:                 make(map[common.Address][][2]*big.Int),
 		EncryptedShares:             make(map[common.Address][]*big.Int),
 		GroupPublicKeys:             make(map[common.Address][4]*big.Int),
-		GroupSignatures:             make(map[common.Address][2]*big.Int),
 		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
 		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
 		KeyShareG2s:                 make(map[common.Address][4]*big.Int),

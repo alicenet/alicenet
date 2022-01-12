@@ -152,13 +152,13 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
 		callOpts := eth.GetCallOpts(ctx, t.State.Account)
-		distributionHash, err := eth.Contracts().Ethdkg().ShareDistributionHashes(callOpts, t.State.Account.Address)
+		participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
 		if err != nil {
 			return true
 		}
 
 		// TODO can I prove this is the correct share distribution hash?
-		logger.Infof("DistributionHash: %x", distributionHash)
+		logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
 	}
 
 	return false

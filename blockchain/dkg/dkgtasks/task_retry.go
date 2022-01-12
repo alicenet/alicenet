@@ -76,7 +76,8 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 
 	// This essentially checks if ethdkg was restarted while this task was running
 	callOpts := eth.GetCallOpts(ctx, acct)
-	registrationEnd, err := eth.Contracts().Ethdkg().TREGISTRATIONEND(callOpts)
+	//todoLeo&RicPrime: pay attention to this!!!
+	registrationEnd, err := eth.Contracts().Ethdkg().GetPhaseStartBlock(callOpts)
 	if err != nil {
 		logger.Warnf("could not check when registration should have ended: %v", err)
 		return true
