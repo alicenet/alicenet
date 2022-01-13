@@ -168,7 +168,7 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 	if n < 4 {
 		return false, false, errors.New("invalid participants; not enough validators")
 	}
-	threshold := ThresholdForUserCount(n)
+	threshold := ThresholdForUserCount(int(n))
 
 	// Get commitments
 	commitments, commitmentsPresent := dkgState.Commitments[participant.Address]
@@ -190,7 +190,7 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 	}
 
 	// confirm correct length of encryptedShares
-	if len(encryptedShares) != n-1 {
+	if len(encryptedShares) != int(n)-1 {
 		return false, false, errors.New("invalid encryptedShares: incorrect length")
 	}
 

@@ -11,16 +11,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
-	logger.Info("ProcessOpenRegistration() ...")
+	logger.Info("ProcessRegistrationOpened() ...")
 	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpened(log)
 	if err != nil {
 		return err
 	}
 
 	registrationEnds := (&big.Int{}).Add(event.StartBlock, event.PhaseLength)
+
+	logger.WithFields(logrus.Fields{
+		"StartBlock":         event.StartBlock,
+		"NumberValidators":   event.NumberValidators,
+		"Nonce":              event.Nonce,
+		"PhaseLength":        event.PhaseLength,
+		"ConfirmationLength": event.ConfirmationLength,
+	}).Info("ETHDKG RegistrationOpened")
 
 	// If we're already finalized before registration ends, there's no point in continuing
 	finalizedBig := (&big.Int{}).SetUint64(state.HighestBlockFinalized)
@@ -42,24 +50,30 @@ func ProcessOpenRegistration(eth interfaces.Ethereum, logger *logrus.Entry, stat
 	defer state.Unlock()
 
 	dkgState := state.EthDKG
+	dkgState.Phase = objects.Registration
+	dkgState.PhaseLength = event.PhaseLength.Uint64()
+	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
+	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
+	dkgState.Participants = nil
 
 	state.Schedule.Purge()
 
-	PopulateSchedule(state.EthDKG, event)
+	//PopulateSchedule(state.EthDKG, event)
+	dkgState.RegistrationStart = event.StartBlock.Uint64()
+	dkgState.RegistrationEnd = event.StartBlock.Uint64() + event.PhaseLength.Uint64()
 
-	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState))                        // Registration
-	state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))     // ShareDistribution
-	state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                   // DisputeShares
-	state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState))  // KeyShareSubmission
-	state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                 // MasterPublicKeySubmission
-	state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewGPKSubmissionTask(dkgState, adminHandler)) // GroupPublicKeySubmission
-	state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))       // DisputeGroupPublicKey
-	state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                              // Complete
+	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState)) // Registration
+	state.Schedule.Schedule(dkgState.RegistrationEnd, dkgState.RegistrationEnd+dkgState.PhaseLength, dkgtasks.NewDisputeRegistrationTask(dkgState))
+
+	// state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))     // ShareDistribution
+	// state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                   // DisputeShares
+	// state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState))  // KeyShareSubmission
+	// state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                 // MasterPublicKeySubmission
+	// state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewGPKSubmissionTask(dkgState, adminHandler)) // GroupPublicKeySubmission
+	// state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))       // DisputeGroupPublicKey
+	// state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                              // Complete
 
 	state.Schedule.Status(logger)
-
-	state.EthDKG.PhaseLength = event.PhaseLength.Uint64()
-	state.EthDKG.ConfirmationLength = event.ConfirmationLength.Uint64()
 
 	return nil
 }
@@ -78,7 +92,50 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, sta
 		"Index":     event.Index,
 		"Nonce":     event.Nonce,
 		"PublicKey": event.PublicKey,
-	}).Info("Address registered")
+	}).Info("Address registered!")
+
+	state.Lock()
+	defer state.Unlock()
+
+	state.EthDKG.Participants = append(state.EthDKG.Participants, &objects.Participant{
+		Address:   event.Account,
+		Index:     int(event.Index.Uint64()),
+		PublicKey: event.PublicKey,
+	})
+
+	return nil
+}
+
+func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessRegistrationComplete() ...")
+
+	event, err := eth.Contracts().Ethdkg().ParseRegistrationComplete(log)
+	if err != nil {
+		return err
+	}
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+	}).Info("ETHDKG Registration Complete")
+
+	state.Lock()
+	defer state.Unlock()
+
+	// set phase
+	state.EthDKG.Phase = objects.ShareDistribution
+
+	state.Schedule.Purge()
+
+	state.EthDKG.ShareDistributionStart = event.BlockNumber.Uint64()
+	state.EthDKG.ShareDistributionEnd = event.BlockNumber.Uint64() + state.EthDKG.PhaseLength
+
+	state.Schedule.Schedule(state.EthDKG.ShareDistributionStart, state.EthDKG.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(state.EthDKG)) // ShareDistribution
+
+	// schedule bad path where validators did not distribute shares
+	// or distributed invalid shares
+	state.EthDKG.DisputeShareDistributionStart = state.EthDKG.ShareDistributionEnd
+	state.EthDKG.DisputeShareDistributionEnd = state.EthDKG.DisputeShareDistributionStart + state.EthDKG.PhaseLength
 
 	return nil
 }
@@ -135,24 +192,24 @@ func PopulateSchedule(state *objects.DkgState, event *bindings.ETHDKGRegistratio
 	state.RegistrationStart = event.StartBlock.Uint64()
 	state.RegistrationEnd = event.StartBlock.Uint64() + event.PhaseLength.Uint64()
 
-	state.ShareDistributionStart = state.RegistrationEnd + event.ConfirmationLength.Uint64()
-	state.ShareDistributionEnd = state.ShareDistributionStart + event.PhaseLength.Uint64()
+	// state.ShareDistributionStart = state.RegistrationEnd + event.ConfirmationLength.Uint64()
+	// state.ShareDistributionEnd = state.ShareDistributionStart + event.PhaseLength.Uint64()
 
-	state.DisputeStart = state.ShareDistributionEnd + event.ConfirmationLength.Uint64()
-	state.DisputeEnd = state.DisputeStart + event.PhaseLength.Uint64()
+	// state.DisputeStart = state.ShareDistributionEnd + event.ConfirmationLength.Uint64()
+	// state.DisputeEnd = state.DisputeStart + event.PhaseLength.Uint64()
 
-	state.KeyShareSubmissionStart = state.DisputeEnd + event.ConfirmationLength.Uint64()
-	state.KeyShareSubmissionEnd = state.KeyShareSubmissionStart + event.PhaseLength.Uint64()
+	// state.KeyShareSubmissionStart = state.DisputeEnd + event.ConfirmationLength.Uint64()
+	// state.KeyShareSubmissionEnd = state.KeyShareSubmissionStart + event.PhaseLength.Uint64()
 
-	state.MPKSubmissionStart = state.KeyShareSubmissionEnd + event.ConfirmationLength.Uint64()
-	state.MPKSubmissionEnd = state.MPKSubmissionStart + event.PhaseLength.Uint64()
+	// state.MPKSubmissionStart = state.KeyShareSubmissionEnd + event.ConfirmationLength.Uint64()
+	// state.MPKSubmissionEnd = state.MPKSubmissionStart + event.PhaseLength.Uint64()
 
-	state.GPKJSubmissionStart = state.MPKSubmissionEnd + event.ConfirmationLength.Uint64()
-	state.GPKJSubmissionEnd = state.GPKJSubmissionStart + event.PhaseLength.Uint64()
+	// state.GPKJSubmissionStart = state.MPKSubmissionEnd + event.ConfirmationLength.Uint64()
+	// state.GPKJSubmissionEnd = state.GPKJSubmissionStart + event.PhaseLength.Uint64()
 
-	state.GPKJGroupAccusationStart = state.GPKJSubmissionEnd + event.ConfirmationLength.Uint64()
-	state.GPKJGroupAccusationEnd = state.GPKJGroupAccusationStart + event.PhaseLength.Uint64()
+	// state.GPKJGroupAccusationStart = state.GPKJSubmissionEnd + event.ConfirmationLength.Uint64()
+	// state.GPKJGroupAccusationEnd = state.GPKJGroupAccusationStart + event.PhaseLength.Uint64()
 
-	state.CompleteStart = state.GPKJGroupAccusationEnd + event.ConfirmationLength.Uint64()
-	state.CompleteEnd = state.CompleteStart + event.PhaseLength.Uint64()
+	// state.CompleteStart = state.GPKJGroupAccusationEnd + event.ConfirmationLength.Uint64()
+	// state.CompleteEnd = state.CompleteStart + event.PhaseLength.Uint64()
 }

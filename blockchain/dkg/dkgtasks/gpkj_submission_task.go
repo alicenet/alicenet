@@ -54,7 +54,7 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	for idx, participant := range t.State.Participants {
 		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
 		pes, present := t.State.EncryptedShares[participant.Address]
-		if present && idx >= 0 && idx < t.State.NumberOfValidators {
+		if present && idx >= 0 && idx < int(t.State.NumberOfValidators) {
 			encryptedShares = append(encryptedShares, pes)
 		} else {
 			logger.Errorf("Encrypted share state broken for %v", idx)

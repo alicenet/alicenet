@@ -76,7 +76,7 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		return dkg.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
-	inverse, err := math.InverseArrayForUserCount(t.State.NumberOfValidators)
+	inverse, err := math.InverseArrayForUserCount(int(t.State.NumberOfValidators))
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}

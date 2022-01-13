@@ -77,7 +77,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	t.State.Commitments[me.Address] = commitments
 	t.State.EncryptedShares[me.Address] = encryptedShares
 	t.State.Index = index
-	t.State.NumberOfValidators = numParticipants
+	t.State.NumberOfValidators = uint64(numParticipants)
 	t.State.Participants = participants
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
