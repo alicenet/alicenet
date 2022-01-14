@@ -147,7 +147,10 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	// We save registration star
 	if lastBlock.Uint64() != t.OriginalRegistrationEnd {
-		logger.Infof("aborting registration due to restart")
+		logger.WithFields(logrus.Fields{
+			"lastBlock":               lastBlock,
+			"OriginalRegistrationEnd": t.OriginalRegistrationEnd,
+		}).Infof("aborting registration due to restart")
 		return false
 	}
 

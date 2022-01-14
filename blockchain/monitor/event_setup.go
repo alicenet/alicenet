@@ -13,10 +13,7 @@ import (
 func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
 	// DKG event processors
-	if err := em.RegisterLocked("0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9", "RegistrationOpened",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return dkgevents.ProcessRegistrationOpened(eth, logger, state, log, adminHandler)
-		}); err != nil {
+	if err := em.RegisterLocked("0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9", "RegistrationOpened", dkgevents.ProcessRegistrationOpened); err != nil {
 		return err
 	}
 
@@ -27,11 +24,17 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 	if err := em.RegisterLocked("0x833013b96b786b4eca83baac286920e5e53956c21ff3894f1d9f02e97d6ed764", "RegistrationComplete", dkgevents.ProcessRegistrationComplete); err != nil {
 		return err
 	}
-	// done
 
-	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
+	if err := em.RegisterLocked("0xf0c8b0ef2867c2b4639b404a0296b6bbf0bf97e20856af42144a5a6035c0d0d2", "SharesDistributed", dkgevents.ProcessShareDistribution); err != nil {
 		return err
 	}
+
+	if err := em.RegisterLocked("0xbfe94ffef5ddde4d25ac7b652f3f67686ea63f9badbfe1f25451e26fc262d11c", "ShareDistributionComplete", dkgevents.ProcessShareDistributionComplete); err != nil {
+		return err
+	}
+
+	// done
+
 	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
 		return err
 	}

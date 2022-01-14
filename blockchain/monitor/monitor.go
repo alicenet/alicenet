@@ -407,6 +407,12 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			logEntry := logEntry.WithField("EventID", eventID)
 
 			info, present := eventMap.Lookup(eventID)
+
+			// debug
+			logger.WithField("EventID", eventID).
+				WithField("info", info.Name).
+				Warn("event detected")
+
 			if present {
 				logEntry = logEntry.WithField("Event", info.Name)
 				if info.Processor != nil {

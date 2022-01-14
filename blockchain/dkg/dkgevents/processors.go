@@ -11,8 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	adminHandler interfaces.AdminHandler) error {
+func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info("ProcessRegistrationOpened() ...")
 	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpened(log)
@@ -56,10 +55,13 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
 	dkgState.Participants = nil
 
+	logger.WithFields(logrus.Fields{
+		"Phase": dkgState.Phase,
+	}).Warn("Purging Schedule")
 	state.Schedule.Purge()
 
 	//PopulateSchedule(state.EthDKG, event)
-	dkgState.RegistrationStart = event.StartBlock.Uint64()
+	dkgState.RegistrationStart = event.StartBlock.Uint64() + 1
 	dkgState.RegistrationEnd = event.StartBlock.Uint64() + event.PhaseLength.Uint64()
 
 	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState)) // Registration
@@ -88,10 +90,12 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, sta
 	}
 
 	logger.WithFields(logrus.Fields{
-		"Account":   event.Account.Hex(),
-		"Index":     event.Index,
-		"Nonce":     event.Nonce,
-		"PublicKey": event.PublicKey,
+		"Account":       event.Account.Hex(),
+		"Index":         event.Index,
+		"Nonce":         event.Nonce,
+		"PublicKey":     event.PublicKey,
+		"#Participants": state.EthDKG.Participants.Len(),
+		"#Validators":   state.EthDKG.NumberOfValidators,
 	}).Info("Address registered!")
 
 	state.Lock()
@@ -125,16 +129,19 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 	// set phase
 	state.EthDKG.Phase = objects.ShareDistribution
 
+	logger.WithFields(logrus.Fields{
+		"Phase": state.EthDKG.Phase,
+	}).Infof("Purging schedule")
 	state.Schedule.Purge()
 
-	state.EthDKG.ShareDistributionStart = event.BlockNumber.Uint64()
-	state.EthDKG.ShareDistributionEnd = event.BlockNumber.Uint64() + state.EthDKG.PhaseLength
+	state.EthDKG.ShareDistributionStart = event.BlockNumber.Uint64() + 1 // + state.EthDKG.ConfirmationLength
+	state.EthDKG.ShareDistributionEnd = state.EthDKG.ShareDistributionStart + state.EthDKG.PhaseLength
 
 	state.Schedule.Schedule(state.EthDKG.ShareDistributionStart, state.EthDKG.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(state.EthDKG)) // ShareDistribution
 
 	// schedule bad path where validators did not distribute shares
 	// or distributed invalid shares
-	state.EthDKG.DisputeShareDistributionStart = state.EthDKG.ShareDistributionEnd
+	state.EthDKG.DisputeShareDistributionStart = state.EthDKG.ShareDistributionEnd //  + state.EthDKG.ConfirmationLength
 	state.EthDKG.DisputeShareDistributionEnd = state.EthDKG.DisputeShareDistributionStart + state.EthDKG.PhaseLength
 
 	return nil
@@ -159,6 +166,12 @@ func ProcessKeyShareSubmission(eth interfaces.Ethereum, logger *logrus.Entry, st
 	state.EthDKG.KeyShareG1s[event.Account] = event.KeyShareG1
 	state.EthDKG.KeyShareG1CorrectnessProofs[event.Account] = event.KeyShareG1CorrectnessProof
 	state.EthDKG.KeyShareG2s[event.Account] = event.KeyShareG2
+
+	logger.WithFields(logrus.Fields{
+		"#KeyShareG1s":                 len(state.EthDKG.KeyShareG1s[event.Account]),
+		"#KeyShareG1CorrectnessProofs": len(state.EthDKG.KeyShareG1CorrectnessProofs[event.Account]),
+		"#KeyShareG2s":                 len(state.EthDKG.KeyShareG2s[event.Account]),
+	}).Info("Received key shares2")
 	state.Unlock()
 
 	return nil
@@ -173,16 +186,42 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, sta
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	l := logger.WithFields(logrus.Fields{
 		"Issuer":          event.Account.Hex(),
 		"Index":           event.Index,
 		"EncryptedShares": event.EncryptedShares,
-	}).Info("Received share distribution")
+	})
 
 	state.Lock()
 	state.EthDKG.Commitments[event.Account] = event.Commitments
 	state.EthDKG.EncryptedShares[event.Account] = event.EncryptedShares
 	state.Unlock()
+
+	l.WithFields(logrus.Fields{
+		"TotalCommitments":     len(state.EthDKG.Commitments[event.Account]),
+		"TotalEncryptedShares": len(state.EthDKG.EncryptedShares[event.Account]),
+	}).Info("Received share distribution")
+
+	return nil
+}
+
+func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessShareDistributionComplete() ...")
+
+	event, err := eth.Contracts().Ethdkg().ParseShareDistributionComplete(log)
+	if err != nil {
+		return err
+	}
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+	}).Info("Received share distribution complete")
+
+	//state.Lock()
+	//state.EthDKG.Commitments[event.Account] = event.Commitments
+	//state.EthDKG.EncryptedShares[event.Account] = event.EncryptedShares
+	//state.Unlock()
 
 	return nil
 }

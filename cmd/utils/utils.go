@@ -142,8 +142,8 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 		return
 	}
 
-	logger.Infof("Validators() address is %v", c.ValidatorsAddress().Hex())
-	isValidator, err := c.Validators().IsValidator(callOpts, acct.Address)
+	logger.Infof("ValidatorPool() address is %v", c.ValidatorPoolAddress().Hex())
+	isValidator, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	if err != nil {
 		logger.Warnf("Failed checking whether %v is a validator: %v", acct.Address.Hex(), err)
 		return
@@ -253,6 +253,12 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
+
+	if acct.Address.String() == "0x546F99F244b7B58B855330AE0E2BC1b30b41302F" {
+		logger.Infof("Skipping validator registration for admin acount: %v", acct.Address.String())
+		return 0
+	}
+
 	c := eth.Contracts()
 	ctx := context.Background()
 
@@ -581,7 +587,7 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 	for _, log := range logs {
 		if log.Topics[0].Hex() == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
 			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
-			logger.Infof("Distributed key generation has begun...\nDkgStarts:%v\nNonce:%v",
+			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
 				event.StartBlock,
 				event.Nonce)
 			if err != nil {
