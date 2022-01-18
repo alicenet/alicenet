@@ -49,7 +49,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	}
 
 	// Retrieve information about other participants from smart contracts
-	participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
+	participants, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
 	if err != nil {
 		logger.Errorf("Failed to retrieve other participants: %v", err)
 		return err
@@ -76,8 +76,8 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	// Store calculated values
 	t.State.Commitments[me.Address] = commitments
 	t.State.EncryptedShares[me.Address] = encryptedShares
-	t.State.Index = index
-	t.State.NumberOfValidators = uint64(numParticipants)
+	//t.State.Index = index
+	//t.State.NumberOfValidators = uint64(numParticipants)
 	t.State.Participants = participants
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
@@ -145,6 +145,8 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("ShareDistributionTask ShouldRetry()")
+
 	// This wraps the retry logic for the general case
 	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
 		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.ShareDistributionEnd)
@@ -159,6 +161,13 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 
 		// TODO can I prove this is the correct share distribution hash?
 		logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
+		var emptySharesHash [32]byte
+		if participantState.DistributedSharesHash == emptySharesHash {
+			logger.Info("Did not distribute shares after all. needs retry")
+			return true
+		}
+
+		logger.Info("Did distribute shares after all. needs no retry")
 	}
 
 	return false

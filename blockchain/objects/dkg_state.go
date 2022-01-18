@@ -22,6 +22,7 @@ type DkgState struct {
 	Phase              EthDKGPhase
 	PhaseLength        uint64
 	ConfirmationLength uint64
+	PhaseStart         uint64
 
 	// Local validator info
 	////////////////////////////////////////////////////////////////////////////
@@ -118,16 +119,19 @@ type DkgState struct {
 	// of elements. This may be used in GPKJGroupAccusation logic.
 	Inverse []*big.Int // "
 
+	// todo: remove this and rely on .Phase instead
 	// Flags indicating phase success
-	Registration        bool
-	ShareDistribution   bool
-	Dispute             bool
-	KeyShareSubmission  bool
-	MPKSubmission       bool
-	GPKJSubmission      bool
-	GPKJGroupAccusation bool
-	Complete            bool
+	Registration               bool
+	DisputeMissingRegistration bool
+	ShareDistribution          bool
+	DisputeShareDistribution   bool
+	KeyShareSubmission         bool
+	MPKSubmission              bool
+	GPKJSubmission             bool
+	GPKJGroupAccusation        bool
+	Complete                   bool
 
+	// todo: delete this
 	// Phase schedule
 	RegistrationStart             uint64
 	RegistrationEnd               uint64

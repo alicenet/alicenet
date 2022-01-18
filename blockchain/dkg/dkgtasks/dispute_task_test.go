@@ -140,12 +140,12 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 	}
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeTask, n)
+	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		tasks[idx] = dkgtasks.NewDisputeTask(state)
+		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -301,12 +301,12 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeTask, n)
+	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		tasks[idx] = dkgtasks.NewDisputeTask(state)
+		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -470,12 +470,12 @@ func TestShareDisputeGoodMaliciousAccusation(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeTask, n)
+	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		tasks[idx] = dkgtasks.NewDisputeTask(state)
+		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		// We ensure that there is no participant who submitted invalid shares.
@@ -554,7 +554,7 @@ func TestShareDisputeBad1(t *testing.T) {
 
 	// Create a task to share distribution and make sure it succeeds
 	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewDisputeTask(state)
+	task := dkgtasks.NewDisputeShareDistributionTask(state)
 	log := logger.WithField("TaskID", "foo")
 
 	defer func() {

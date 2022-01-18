@@ -132,12 +132,12 @@ func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Dispute task
-	disputeTasks := make([]*dkgtasks.DisputeTask, n)
+	disputeTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		disputeTasks[idx] = dkgtasks.NewDisputeTask(state)
+		disputeTasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err = disputeTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = disputeTasks[idx].DoWork(ctx, logger, eth)
@@ -380,12 +380,12 @@ func TestKeyShareSubmissionBad3(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Dispute task
-	disputeTasks := make([]*dkgtasks.DisputeTask, n)
+	disputeTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		disputeTasks[idx] = dkgtasks.NewDisputeTask(state)
+		disputeTasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err = disputeTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = disputeTasks[idx].DoWork(ctx, logger, eth)
@@ -540,12 +540,12 @@ func TestKeyShareSubmissionBad4(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Dispute task
-	disputeTasks := make([]*dkgtasks.DisputeTask, n)
+	disputeTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		disputeTasks[idx] = dkgtasks.NewDisputeTask(state)
+		disputeTasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err = disputeTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = disputeTasks[idx].DoWork(ctx, logger, eth)

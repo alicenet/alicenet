@@ -80,7 +80,7 @@ func NewMonitor(cdb *db.Database,
 	tr := &objects.TypeRegistry{}
 
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
@@ -409,9 +409,14 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			info, present := eventMap.Lookup(eventID)
 
 			// debug
-			logger.WithField("EventID", eventID).
-				WithField("info", info.Name).
-				Warn("event detected")
+			if present {
+				logger.WithField("EventID", eventID).
+					WithField("info", info.Name).
+					Warn("event detected")
+			} else {
+				logger.WithField("EventID", eventID).
+					Warn("unknown event detected")
+			}
 
 			if present {
 				logEntry = logEntry.WithField("Event", info.Name)

@@ -44,8 +44,9 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKSubmissionTask Initialize()...")
 
+	// todo: delete this bc State.MPKSubmission should not exist
 	if !t.State.MPKSubmission {
 		return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
 	}
@@ -61,10 +62,15 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		}
 	}
 
+	// todo: get my index (done)
+
 	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
 		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
 		encryptedShares, t.State.Index, t.State.Participants)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"t.State.Index": t.State.Index,
+		}).Errorf("Could not generate group keys: %v", err)
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
@@ -95,6 +101,8 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("GPKSubmissionTask doTask()")
+
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
@@ -115,6 +123,12 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	if receipt == nil {
 		return dkg.LogReturnErrorf(logger, "missing registration receipt")
 	}
+
+	// Check receipt to confirm we were successful
+	if receipt.Status != uint64(1) {
+		return dkg.LogReturnErrorf(logger, "submit gpkj status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+	}
+
 	t.Success = true
 
 	return nil
@@ -127,12 +141,19 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
+	logger.Info("GPKSubmissionTask ShouldRetry()")
 
 	state := t.State
 
+	var shouldRetry bool = GeneralTaskShouldRetry(ctx, state.Account, logger, eth, state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJSubmissionEnd)
+
+	logger.WithFields(logrus.Fields{
+		"shouldRetry": shouldRetry,
+	}).Info("GPKSubmissionTask ShouldRetry2()")
+
 	// This wraps the retry logic for the general case
-	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJSubmissionEnd)
+	// todo: fix this
+	return true || shouldRetry
 }
 
 // DoDone creates a log entry saying task is complete
@@ -140,7 +161,7 @@ func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
+	logger.WithField("Success", t.Success).Infof("GPKSubmissionTask done")
 
 	t.State.GPKJSubmission = t.Success
 }

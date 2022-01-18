@@ -14,7 +14,7 @@ import (
 )
 
 // RetrieveParticipants retrieves participant details from ETHDKG contract
-func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (objects.ParticipantList, int, error) {
+func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum, logger *logrus.Entry) (objects.ParticipantList, int, error) {
 	c := eth.Contracts()
 	myIndex := math.MaxInt32
 
@@ -39,20 +39,28 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum) (obj
 			return nil, myIndex, objects.ErrCanNotContinue
 		}
 
-		publicKey := participantState.PublicKey
+		// if participantState.Index != uint64(idx)+1 {
+		// 	logger.WithFields(logrus.Fields{
+		// 		"participantState.Index": participantState.Index,
+		// 		"idx":                    uint64(idx),
+		// 		"idx+1":                  uint64(idx) + 1,
+		// 		"addr":                   addr.String(),
+		// 	}).Info("indexes do not match")
+		// 	return nil, myIndex, objects.ErrCanNotContinue
+		// }
 
 		// Make corresponding Participant object
 		participant := &objects.Participant{}
 		participant.Address = addr
-		participant.PublicKey = publicKey
-		participant.Index = participant.Index
+		participant.PublicKey = participantState.PublicKey
+		participant.Index = int(participantState.Index)
 
 		// Set own index
 		if callOpts.From == addr {
 			myIndex = participant.Index
 		}
 
-		participants[idx] = participant
+		participants[participant.Index-1] = participant
 	}
 
 	return participants, myIndex, nil

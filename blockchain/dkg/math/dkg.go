@@ -211,6 +211,7 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 		return false, false, err
 	}
 
+	// todo: confirm with Chris
 	// Decrypt secret
 	encShareIdx := dkgState.Index - 1
 	if participant.Index < dkgState.Index {

@@ -33,11 +33,40 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
-	// done
-
-	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
+	if err := em.RegisterLocked("0x6162e2d11398e4063e4c8565dafc4fb6755bbead93747ea836a5ef73a594aaf7", "KeyShareSubmitted", dkgevents.ProcessKeyShareSubmitted); err != nil {
 		return err
 	}
+
+	if err := em.RegisterLocked("0x522cec98f6caa194456c44afa9e8cef9ac63eecb0be60e20d180ce19cfb0ef59", "KeyShareSubmissionComplete", dkgevents.ProcessKeyShareSubmissionComplete); err != nil {
+		return err
+	}
+
+	if err := em.RegisterLocked("0x71b1ebd27be320895a22125d6458e3363aefa6944a312ede4bf275867e6d5a71", "MPKSet", func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessMPKSet(eth, logger, state, log, adminHandler)
+	}); err != nil {
+		return err
+	}
+
+	if err := em.RegisterLocked("0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06", "ValidatorMemberAdded",
+		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return monevents.ProcessValidatorMemberAdded(eth, logger, state, log, adminHandler)
+		}); err != nil {
+		return err
+	}
+
+	if err := em.RegisterLocked("0x87bfe600b78cad9f7cf68c99eb582c1748f636b3269842b37d5873b0e069f628", "GPKJSubmissionComplete", dkgevents.ProcessGPKJSubmissionComplete); err != nil {
+		return err
+	}
+
+	if err := em.RegisterLocked("0xd7237b781669fa700ecf77be6cd8fa0f4b98b1a24ac584a9b6b44c509216718a", "ValidatorSetCompleted",
+		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
+		}); err != nil {
+		return err
+	}
+
+	//
+	// done
 
 	// Events to pass through to side chain
 	if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived",
@@ -54,15 +83,10 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
-	if err := em.RegisterLocked("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValidatorMember(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
+	// todo: delete this bc deprecated
 	if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet",
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValidatorSet(eth, logger, state, log, adminHandler)
+			return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
 		}); err != nil {
 		return err
 	}

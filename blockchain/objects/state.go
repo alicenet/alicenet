@@ -42,11 +42,12 @@ type EthDKGPhase int
 const (
 	Registration EthDKGPhase = iota
 	ShareDistribution
-	Dispute
+	DisputeShareDistribution
 	KeyShareSubmission
 	MPKSubmission
 	GPKJSubmission
-	GPKJGroupAccusation
+	DisputeGPKJSubmission
+	Completion
 )
 
 // ValidatorSet is summary information about a ValidatorSet

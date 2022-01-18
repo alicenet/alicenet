@@ -38,7 +38,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("CompletionTask Initialize()...")
 
 	if !t.State.GPKJGroupAccusation {
 		return fmt.Errorf("%w because gpkj dispute phase not successful", objects.ErrCanNotContinue)
@@ -75,7 +75,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
-	logger.Info("Completion completed")
+	logger.Info("CompletionTask sent completed call")
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -91,6 +91,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 
+	logger.Info("CompletionTask complete!")
+
 	t.Success = true
 
 	return nil
@@ -105,9 +107,13 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
 		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.CompleteEnd)
+
+	logger.WithField("shouldRetry", shouldRetry).Info("CompletionTask ShouldRetry")
+
+	// This wraps the retry logic for every phase, _except_ registration
+	return shouldRetry
 }
 
 // DoDone creates a log entry saying task is complete
@@ -115,7 +121,7 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
+	logger.WithField("Success", t.Success).Infof("CompletionTask done")
 
 	t.State.Complete = t.Success
 }

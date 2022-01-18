@@ -15,25 +15,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DisputeTask stores the data required to dispute shares
-type DisputeTask struct {
+// DisputeShareDistributionTask stores the data required to dispute shares
+type DisputeShareDistributionTask struct {
 	OriginalRegistrationEnd uint64
 	State                   *objects.DkgState
 	Success                 bool
 }
 
-// NewDisputeTask creates a new task
-func NewDisputeTask(state *objects.DkgState) *DisputeTask {
-	return &DisputeTask{
+// NewDisputeShareDistributionTask creates a new task
+func NewDisputeShareDistributionTask(state *objects.DkgState) *DisputeShareDistributionTask {
+	return &DisputeShareDistributionTask{
 		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State:                   state,
 	}
 }
 
-// Initialize begins the setup phase for DisputeTask.
+// Initialize begins the setup phase for DisputeShareDistributionTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -44,7 +44,7 @@ func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("DisputeShareDistributionTask Initialize()")
 
 	if !t.State.ShareDistribution {
 		return fmt.Errorf("%w because share distribution not successful", objects.ErrCanNotContinue)
@@ -53,8 +53,8 @@ func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth 
 	// Loop through all participants and check to see if shares are valid
 	for idx := 0; idx < len(t.State.Participants); idx++ {
 		participant := t.State.Participants[idx]
-		logger.Infof("t.State.Index: %v\n", t.State.Index)
-		logger.Infof("participant.Index: %v\n", participant.Index)
+		//logger.Infof("t.State.Index: %v\n", t.State.Index)
+		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
 		valid, present, err := math.VerifyDistributedShares(t.State, participant)
 		if err != nil {
 			// A major error occured; we cannot continue
@@ -75,18 +75,20 @@ func (t *DisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, eth 
 }
 
 // DoWork is the first attempt at disputing distributed shares
-func (t *DisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Info("DisputeShareDistributionTask doTask()")
 
 	for _, participant := range t.State.BadShares {
 		/*
@@ -158,22 +160,38 @@ func (t *DisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth inte
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *DisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("DisputeShareDistributionTask ShouldRetry()")
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	if err != nil {
+		logger.Error("could not get BadParticipants")
+	}
+
+	logger.WithFields(logrus.Fields{
+		"state.BadShares":     len(t.State.BadShares),
+		"eth.badParticipants": badParticipants,
+	}).Info("DisputeShareDistributionTask ShouldRetry2()")
+
+	return len(t.State.BadShares) != int(badParticipants.Int64())
+
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.DisputeShareDistributionEnd)
+	//return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	//	t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.DisputeShareDistributionEnd)
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *DisputeTask) DoDone(logger *logrus.Entry) {
+func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("DisputeShareDistributionTask DoDone()")
+
 	logger.WithField("Success", t.Success).Info("done")
 
-	t.State.Dispute = t.Success
+	t.State.DisputeShareDistribution = t.Success
 }

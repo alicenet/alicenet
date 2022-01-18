@@ -500,7 +500,7 @@ func TestShareDistributionBad3(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].DisputeStart)
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeTask, n)
+	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		if idx == noShareIdx {
 			continue
@@ -508,7 +508,7 @@ func TestShareDistributionBad3(t *testing.T) {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		tasks[idx] = dkgtasks.NewDisputeTask(state)
+		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)

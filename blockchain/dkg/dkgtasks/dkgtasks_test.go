@@ -204,7 +204,7 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
