@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -66,7 +67,7 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 
 	name, present := registry.lookupName(tipe)
 	if !present {
-		return nil, ErrUnknownType
+		return nil, errors.New(fmt.Sprintf("unable to wrapInstance: %v", tipe))
 	}
 
 	raw, err := json.Marshal(t)

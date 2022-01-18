@@ -81,12 +81,14 @@ func NewMonitor(cdb *db.Database,
 
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeParticipantDidNotDistributeSharesTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterDisputeTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()
