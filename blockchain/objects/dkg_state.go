@@ -121,34 +121,34 @@ type DkgState struct {
 
 	// todo: remove this and rely on .Phase instead
 	// Flags indicating phase success
-	Registration               bool
-	DisputeMissingRegistration bool
-	ShareDistribution          bool
-	DisputeShareDistribution   bool
-	KeyShareSubmission         bool
-	MPKSubmission              bool
-	GPKJSubmission             bool
-	GPKJGroupAccusation        bool
-	Complete                   bool
+	// Registration               bool
+	// DisputeMissingRegistration bool
+	// ShareDistribution          bool
+	// DisputeShareDistribution   bool
+	// KeyShareSubmission         bool
+	// MPKSubmission              bool
+	// GPKJSubmission             bool
+	// GPKJGroupAccusation        bool
+	// Complete                   bool
 
 	// todo: delete this
 	// Phase schedule
-	RegistrationStart             uint64
-	RegistrationEnd               uint64
-	ShareDistributionStart        uint64
-	ShareDistributionEnd          uint64
-	DisputeShareDistributionStart uint64
-	DisputeShareDistributionEnd   uint64
-	KeyShareSubmissionStart       uint64
-	KeyShareSubmissionEnd         uint64
-	MPKSubmissionStart            uint64
-	MPKSubmissionEnd              uint64
-	GPKJSubmissionStart           uint64
-	GPKJSubmissionEnd             uint64
-	GPKJGroupAccusationStart      uint64
-	GPKJGroupAccusationEnd        uint64
-	CompleteStart                 uint64
-	CompleteEnd                   uint64
+	// RegistrationStart             uint64
+	// RegistrationEnd               uint64
+	// ShareDistributionStart        uint64
+	// ShareDistributionEnd          uint64
+	// DisputeShareDistributionStart uint64
+	// DisputeShareDistributionEnd   uint64
+	// KeyShareSubmissionStart       uint64
+	// KeyShareSubmissionEnd         uint64
+	// MPKSubmissionStart            uint64
+	// MPKSubmissionEnd              uint64
+	// GPKJSubmissionStart           uint64
+	// GPKJSubmissionEnd             uint64
+	// GPKJGroupAccusationStart      uint64
+	// GPKJGroupAccusationEnd        uint64
+	// CompleteStart                 uint64
+	// CompleteEnd                   uint64
 }
 
 // NewDkgState makes a new DkgState object
@@ -176,7 +176,13 @@ type Participant struct {
 	// REPEAT: THIS IS BASE-1
 	Index int
 	// PublicKey is the TransportPublicKey of Participant.
-	PublicKey [2]*big.Int
+	PublicKey                   [2]*big.Int
+	Nonce                       uint64
+	Phase                       uint8
+	DistributedSharesHash       [32]byte
+	CommitmentsFirstCoefficient [2]*big.Int
+	KeyShares                   [2]*big.Int
+	Gpkj                        [4]*big.Int
 }
 
 // ParticipantList is a required type alias since the Sort interface is awful

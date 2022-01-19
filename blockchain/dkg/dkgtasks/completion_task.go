@@ -12,16 +12,14 @@ import (
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState) *CompletionTask {
 	return &CompletionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd,
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -40,8 +38,8 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("CompletionTask Initialize()...")
 
-	if !t.State.GPKJGroupAccusation {
-		return fmt.Errorf("%w because gpkj dispute phase not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.DisputeGPKJSubmission {
+		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	return nil
@@ -61,6 +59,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Info("CompletionTask doTask()")
 
 	// Setup
 	c := eth.Contracts()
@@ -107,10 +107,27 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.CompleteEnd)
+	logger.Info("CompletionTask ShouldRetry()")
 
-	logger.WithField("shouldRetry", shouldRetry).Info("CompletionTask ShouldRetry")
+	if t.State.Phase != objects.DisputeGPKJSubmission {
+		logger.WithFields(logrus.Fields{
+			"t.State.Phase":      t.State.Phase,
+			"t.State.PhaseStart": t.State.PhaseStart,
+		}).Info("CompletionTask ShouldRetry - will not retry")
+		return false
+	}
+
+	var phaseStart = t.State.PhaseStart + t.State.PhaseLength
+	var phaseEnd = phaseStart + t.State.PhaseLength
+
+	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+		t.State.TransportPublicKey, phaseStart, phaseEnd)
+
+	logger.WithFields(logrus.Fields{
+		"shouldRetry": shouldRetry,
+		"phaseStart":  phaseStart,
+		"phaseEnd":    phaseEnd,
+	}).Info("CompletionTask ShouldRetry")
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return shouldRetry
@@ -122,6 +139,4 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
-
-	t.State.Complete = t.Success
 }

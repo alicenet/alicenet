@@ -1,8 +1,6 @@
 package dkgevents
 
 import (
-	"math/big"
-
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -18,7 +16,18 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		return err
 	}
 
-	registrationEnds := (&big.Int{}).Add(event.StartBlock, event.PhaseLength)
+	state.Lock()
+	defer state.Unlock()
+
+	dkgState := state.EthDKG
+	dkgState.Phase = objects.RegistrationOpen
+	dkgState.PhaseStart = event.StartBlock.Uint64()
+	dkgState.PhaseLength = event.PhaseLength.Uint64()
+	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
+	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
+	dkgState.Participants = nil
+
+	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 
 	logger.WithFields(logrus.Fields{
 		"StartBlock":         event.StartBlock,
@@ -26,53 +35,29 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"Nonce":              event.Nonce,
 		"PhaseLength":        event.PhaseLength,
 		"ConfirmationLength": event.ConfirmationLength,
+		"RegistrationEnd":    registrationEnds,
 	}).Info("ETHDKG RegistrationOpened")
-
-	// If we're already finalized before registration ends, there's no point in continuing
-	finalizedBig := (&big.Int{}).SetUint64(state.HighestBlockFinalized)
-	if registrationEnds.Cmp(finalizedBig) < 1 {
-		logger.WithField("RegistrationEnd", registrationEnds.String()).Info("Too late to participate in EthDKG")
-		return nil
-	}
-
-	// todo: L&R This is bad! Pay attention to this! This will prevent us from restarting ethdkg
-	// ETHDKG contract should be one to tell you if there's an ETHDKG going on or not
-	if state.EthDKG != nil && state.EthDKG.RegistrationEnd >= registrationEnds.Uint64() {
-		logger.WithField("RegistrationEnd", registrationEnds.String()).Info("EthDKG already in progress")
-		return nil
-	}
-
-	logger.WithField("RegistrationEnd", registrationEnds.String()).Info("Participating in EthDKG")
-
-	state.Lock()
-	defer state.Unlock()
-
-	dkgState := state.EthDKG
-	dkgState.Phase = objects.Registration
-	dkgState.PhaseLength = event.PhaseLength.Uint64()
-	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
-	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
-	dkgState.Participants = nil
 
 	logger.WithFields(logrus.Fields{
 		"Phase": dkgState.Phase,
 	}).Warn("Purging Schedule")
 	state.Schedule.Purge()
 
-	//PopulateSchedule(state.EthDKG, event)
-	dkgState.RegistrationStart = event.StartBlock.Uint64()
-	dkgState.RegistrationEnd = event.StartBlock.Uint64() + event.PhaseLength.Uint64()
+	// schedule Registration
+	logger.WithFields(logrus.Fields{
+		"PhaseStart": state.EthDKG.PhaseStart,
+		"PhaseEnd":   registrationEnds,
+	}).Info("Scheduling NewRegisterTask")
 
-	state.Schedule.Schedule(dkgState.RegistrationStart, dkgState.RegistrationEnd, dkgtasks.NewRegisterTask(dkgState)) // Registration
-	state.Schedule.Schedule(dkgState.RegistrationEnd, dkgState.RegistrationEnd+dkgState.PhaseLength, dkgtasks.NewDisputeRegistrationTask(dkgState))
+	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, dkgtasks.NewRegisterTask(dkgState))
 
-	// state.Schedule.Schedule(dkgState.ShareDistributionStart, dkgState.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(dkgState))     // ShareDistribution
-	// state.Schedule.Schedule(dkgState.DisputeStart, dkgState.DisputeEnd, dkgtasks.NewDisputeTask(dkgState))                                   // DisputeShares
-	// state.Schedule.Schedule(dkgState.KeyShareSubmissionStart, dkgState.KeyShareSubmissionEnd, dkgtasks.NewKeyshareSubmissionTask(dkgState))  // KeyShareSubmission
-	// state.Schedule.Schedule(dkgState.MPKSubmissionStart, dkgState.MPKSubmissionEnd, dkgtasks.NewMPKSubmissionTask(dkgState))                 // MasterPublicKeySubmission
-	// state.Schedule.Schedule(dkgState.GPKJSubmissionStart, dkgState.GPKJSubmissionEnd, dkgtasks.NewGPKSubmissionTask(dkgState, adminHandler)) // GroupPublicKeySubmission
-	// state.Schedule.Schedule(dkgState.GPKJGroupAccusationStart, dkgState.GPKJGroupAccusationEnd, dkgtasks.NewGPKJDisputeTask(dkgState))       // DisputeGroupPublicKey
-	// state.Schedule.Schedule(dkgState.CompleteStart, dkgState.CompleteEnd, dkgtasks.NewCompletionTask(dkgState))                              // Complete
+	// schedule DisputeRegistration
+	logger.WithFields(logrus.Fields{
+		"PhaseStart": registrationEnds,
+		"PhaseEnd":   registrationEnds + dkgState.PhaseLength,
+	}).Info("Scheduling NewDisputeRegistrationTask")
+
+	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeRegistrationTask(dkgState))
 
 	state.Schedule.Status(logger)
 
@@ -138,6 +123,8 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 	// set phase
 	state.EthDKG.Phase = objects.ShareDistribution
+	state.EthDKG.PhaseStart = event.BlockNumber.Uint64() + state.EthDKG.ConfirmationLength
+	var phaseEnd = state.EthDKG.PhaseStart + state.EthDKG.PhaseLength
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,
@@ -145,19 +132,22 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 	state.Schedule.Purge()
 
 	// schedule ShareDistribution phase
-	state.EthDKG.ShareDistributionStart = event.BlockNumber.Uint64() + state.EthDKG.ConfirmationLength
-	state.EthDKG.ShareDistributionEnd = state.EthDKG.ShareDistributionStart + state.EthDKG.PhaseLength
+	logger.WithFields(logrus.Fields{
+		"PhaseStart": state.EthDKG.PhaseStart,
+		"PhaseEnd":   phaseEnd,
+	}).Info("Scheduling NewShareDistributionTask")
 
-	state.Schedule.Schedule(state.EthDKG.ShareDistributionStart, state.EthDKG.ShareDistributionEnd, dkgtasks.NewShareDistributionTask(state.EthDKG)) // ShareDistribution
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewShareDistributionTask(state.EthDKG))
 
-	// schedule bad path where validators did not distribute shares
-	// or distributed invalid shares
-	// state.EthDKG.DisputeShareDistributionStart = state.EthDKG.ShareDistributionEnd + 1 //  + state.EthDKG.ConfirmationLength
-	// state.EthDKG.DisputeShareDistributionEnd = state.EthDKG.DisputeShareDistributionStart + state.EthDKG.PhaseLength
+	// schedule DisputeParticipantDidNotDistributeSharesTask
+	var phaseStart = phaseEnd
+	phaseEnd = phaseEnd + state.EthDKG.PhaseLength
+	logger.WithFields(logrus.Fields{
+		"PhaseStart": phaseStart,
+		"PhaseEnd":   phaseEnd,
+	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	// state.Schedule.Schedule(state.EthDKG.DisputeShareDistributionStart, state.EthDKG.DisputeShareDistributionEnd, dkgtasks.NewDisputeShareDistributionTask(state.EthDKG))
-
-	// todo: also schedule DisputeParticipantDidNotDistributeShares task
+	state.Schedule.Schedule(phaseStart, phaseEnd, dkgtasks.NewDisputeMissingShareDistributionTask(state.EthDKG))
 
 	return nil
 }
@@ -207,7 +197,7 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	state.Lock()
 	defer state.Unlock()
 
-	state.EthDKG.ShareDistribution = true
+	state.EthDKG.Phase = objects.DisputeShareDistribution
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,
@@ -221,21 +211,21 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewDisputeShareDistributionTask(state.EthDKG))
 
 	logger.WithFields(logrus.Fields{
-		"BlockNumber":             event.BlockNumber,
-		"state.EthDKG.PhaseStart": state.EthDKG.PhaseStart,
-		"phaseEnd":                phaseEnd,
+		"BlockNumber": event.BlockNumber,
+		"PhaseStart":  state.EthDKG.PhaseStart,
+		"phaseEnd":    phaseEnd,
 	}).Info("Scheduling DisputeShareDistributionTask")
 
 	// schedule SubmitKeySharesPhase
-	var submitKeySharesPhaseStart uint64 = phaseEnd + 1
+	var submitKeySharesPhaseStart uint64 = phaseEnd
 	phaseEnd = submitKeySharesPhaseStart + state.EthDKG.PhaseLength
 
 	state.Schedule.Schedule(submitKeySharesPhaseStart, phaseEnd, dkgtasks.NewKeyshareSubmissionTask(state.EthDKG))
 
 	logger.WithFields(logrus.Fields{
-		"BlockNumber":               event.BlockNumber,
-		"submitKeySharesPhaseStart": submitKeySharesPhaseStart,
-		"phaseEnd":                  phaseEnd,
+		"BlockNumber": event.BlockNumber,
+		"PhaseStart":  submitKeySharesPhaseStart,
+		"phaseEnd":    phaseEnd,
 	}).Info("Scheduling KeyshareSubmissionTask")
 
 	return nil
@@ -259,6 +249,9 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, sta
 
 	state.Lock()
 	defer state.Unlock()
+
+	state.EthDKG.Phase = objects.KeyShareSubmission
+
 	state.EthDKG.KeyShareG1s[event.Account] = event.KeyShareG1
 	state.EthDKG.KeyShareG1CorrectnessProofs[event.Account] = event.KeyShareG1CorrectnessProof
 	state.EthDKG.KeyShareG2s[event.Account] = event.KeyShareG2
@@ -327,7 +320,6 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	defer state.Unlock()
 
 	state.EthDKG.Phase = objects.GPKJSubmission
-	state.EthDKG.MPKSubmission = true
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,
@@ -365,8 +357,6 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 	defer state.Unlock()
 
 	state.EthDKG.Phase = objects.DisputeGPKJSubmission
-	// todo: delete this because it's deprecated
-	state.EthDKG.GPKJSubmission = true
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,

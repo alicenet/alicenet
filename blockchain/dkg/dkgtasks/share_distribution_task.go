@@ -14,16 +14,14 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -36,17 +34,19 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
 	}
 
+	logger.Info("ShareDistributionTask Initialize()")
+
 	t.State = dkgState
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	if t.State.Phase != objects.ShareDistribution {
+		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
+	}
+
 	me := t.State.Account
 	callOpts := eth.GetCallOpts(ctx, me)
-
-	if !t.State.Registration {
-		return fmt.Errorf("%w because registration not successful", objects.ErrCanNotContinue)
-	}
 
 	// Retrieve information about other participants from smart contracts
 	participants, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
@@ -56,11 +56,11 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	}
 
 	//
-	if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
-		for idx, participant := range participants {
-			logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
-		}
-	}
+	// if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
+	// 	for idx, participant := range participants {
+	// 		logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
+	// 	}
+	// }
 
 	numParticipants := len(participants)
 	threshold := math.ThresholdForUserCount(numParticipants)
@@ -76,8 +76,6 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	// Store calculated values
 	t.State.Commitments[me.Address] = commitments
 	t.State.EncryptedShares[me.Address] = encryptedShares
-	//t.State.Index = index
-	//t.State.NumberOfValidators = uint64(numParticipants)
 	t.State.Participants = participants
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
@@ -100,6 +98,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	// Setup
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Info("ShareDistributionTask doTask()")
 
 	c := eth.Contracts()
 	me := t.State.Account.Address
@@ -147,9 +147,16 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 
 	logger.Info("ShareDistributionTask ShouldRetry()")
 
+	if t.State.Phase != objects.ShareDistribution {
+		return false
+	}
+
+	var phaseStart = t.State.PhaseStart
+	var phaseEnd = t.State.PhaseStart + t.State.PhaseLength
+
 	// This wraps the retry logic for the general case
 	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.ShareDistributionEnd)
+		t.State.TransportPublicKey, phaseStart, phaseEnd)
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {
@@ -178,7 +185,5 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.ShareDistribution = t.Success
+	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
 }

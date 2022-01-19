@@ -13,7 +13,6 @@ import (
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
-	//OriginalRegistrationEnd uint64
 	State   *objects.DkgState
 	Success bool
 }
@@ -21,7 +20,6 @@ type KeyshareSubmissionTask struct {
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		//OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
 		State: state,
 	}
 }
@@ -201,6 +199,4 @@ func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
-
-	t.State.KeyShareSubmission = t.Success
 }

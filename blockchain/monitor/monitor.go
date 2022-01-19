@@ -81,7 +81,8 @@ func NewMonitor(cdb *db.Database,
 
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeParticipantDidNotDistributeSharesTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
@@ -302,10 +303,10 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 	rawData, err := json.Marshal(m.State)
 
 	if err != nil {
-		fmt.Errorf("Could not marshal state: %v", err)
+		return nil, fmt.Errorf("could not marshal state: %v", err)
 	}
 
-	return rawData, err
+	return rawData, nil
 }
 
 func (m *monitor) UnmarshalJSON(raw []byte) error {
@@ -414,11 +415,11 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			if present {
 				logger.WithField("EventID", eventID).
 					WithField("info", info.Name).
-					Warn("event detected")
-			} else {
+					Info("event received")
+			} /*  else {
 				logger.WithField("EventID", eventID).
-					Warn("unknown event detected")
-			}
+					Info("unknown event received")
+			} */
 
 			if present {
 				logEntry = logEntry.WithField("Event", info.Name)

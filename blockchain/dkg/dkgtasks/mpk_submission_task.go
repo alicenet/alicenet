@@ -14,16 +14,14 @@ import (
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -41,10 +39,10 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("MPKSubmissionTask Initialize()...")
 
-	if !t.State.KeyShareSubmission {
-		return fmt.Errorf("%w because key share submission not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.MPKSubmission {
+		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
@@ -92,19 +90,19 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 // DoWork is the first attempt at submitting the mpk
 func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting the mpk
 func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Info("MPKSubmissionTask doTask()")
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -145,9 +143,26 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("MPKSubmissionTask ShouldRetry()")
+
+	var phaseStart = t.State.PhaseStart
+	var phaseEnd = phaseStart + t.State.PhaseLength
+
+	currentBlock, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return true
+	}
+	logger = logger.WithField("CurrentHeight", currentBlock)
+
+	if t.State.Phase == objects.MPKSubmission &&
+		phaseStart <= currentBlock &&
+		currentBlock < phaseEnd {
+		return true
+	}
+
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.MPKSubmissionEnd)
+		t.State.TransportPublicKey, phaseStart, phaseEnd)
 }
 
 // DoDone creates a log entry saying task is complete
@@ -155,7 +170,5 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.MPKSubmission = t.Success
+	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
 }

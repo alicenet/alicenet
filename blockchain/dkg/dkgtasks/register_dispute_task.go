@@ -14,16 +14,14 @@ import (
 
 // RegisterDisputeTask contains required state for accusing missing registrations
 type RegisterDisputeTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewDisputeRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeRegistrationTask(state *objects.DkgState) *RegisterDisputeTask {
 	return &RegisterDisputeTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -40,7 +38,7 @@ func (t *RegisterDisputeTask) Initialize(ctx context.Context, logger *logrus.Ent
 
 	t.State = dkgState
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("RegisterDisputeTask Initialize()...")
 
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
@@ -65,14 +63,18 @@ func (t *RegisterDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, 
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("RegisterDisputeTask doTask()")
+
 	// Is there any point in running? Make sure we're both initialized and within block range
 	block, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return err
 	}
 
-	if block >= t.State.RegistrationEnd {
-		return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, t.State.RegistrationEnd)
+	var phaseEnd = t.State.PhaseStart + t.State.PhaseLength
+
+	if t.State.Phase != objects.RegistrationOpen || block >= phaseEnd {
+		return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, phaseEnd)
 	}
 
 	// Setup
@@ -123,7 +125,9 @@ func (t *RegisterDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.En
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	c := eth.Contracts()
+	logger.Info("RegisterDisputeTask ShouldRetry()")
+
+	//c := eth.Contracts()
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
@@ -132,27 +136,15 @@ func (t *RegisterDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.En
 	}
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
+	var phaseEnd = t.State.PhaseStart + t.State.PhaseLength
+
 	// Definitely past quitting time
-	if currentBlock >= t.State.RegistrationEnd {
+	if currentBlock >= phaseEnd {
 		logger.Info("aborting registration due to scheduled end")
 		return false
 	}
 
-	// Check if the registration window has moved, quit if it has
-	//todoLeo&RicPrime: Pay attention to this!
-	lastBlock, err := c.Ethdkg().GetPhaseStartBlock(callOpts)
-	if err != nil {
-		return true
-	}
-
-	// We save registration star
-	if lastBlock.Uint64() != t.OriginalRegistrationEnd {
-		logger.Infof("aborting registration due to restart")
-		return false
-	}
-
 	// Check to see if we are already registered
-	// TODO SILENT FAILURE!
 	ethdkg := eth.Contracts().Ethdkg()
 	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 	if err != nil {
@@ -172,7 +164,5 @@ func (t *RegisterDisputeTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.Registration = t.Success
+	logger.WithField("Success", t.Success).Infof("RegisterDisputeTask done")
 }

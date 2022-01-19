@@ -17,16 +17,14 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -46,8 +44,8 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("DisputeShareDistributionTask Initialize()")
 
-	if !t.State.ShareDistribution {
-		return fmt.Errorf("%w because share distribution not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.DisputeShareDistribution {
+		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
 	// Loop through all participants and check to see if shares are valid
@@ -189,9 +187,5 @@ func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.Info("DisputeShareDistributionTask DoDone()")
-
-	logger.WithField("Success", t.Success).Info("done")
-
-	t.State.DisputeShareDistribution = t.Success
+	logger.WithField("Success", t.Success).Info("DisputeShareDistributionTask done")
 }

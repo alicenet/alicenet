@@ -17,16 +17,14 @@ import (
 
 // GPKJDisputeTask contains required state for performing a group accusation
 type GPKJDisputeTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewGPKJDisputeTask creates a background task that attempts perform a group accusation if necessary
 func NewGPKJDisputeTask(state *objects.DkgState) *GPKJDisputeTask {
 	return &GPKJDisputeTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -43,10 +41,10 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKJDisputeTask Initialize()...")
 
-	if !t.State.GPKJSubmission {
-		return fmt.Errorf("%w because gpk submission phase not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.DisputeGPKJSubmission {
+		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	var (
@@ -94,21 +92,19 @@ func (t *GPKJDisputeTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 // DoWork is the first attempt at submitting an invalid gpkj accusation
 func (t *GPKJDisputeTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoWork() ...")
-
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting an invalid gpkj accusation
 func (t *GPKJDisputeTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoRetry() ...")
-
 	return t.doTask(ctx, logger, eth)
 }
 
 func (t *GPKJDisputeTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Info("GPKJDisputeTask doTask()")
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -177,11 +173,26 @@ func (t *GPKJDisputeTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	state := t.State
+	logger.Info("GPKJDisputeTask ShouldRetry()")
+
+	var phaseStart = t.State.PhaseStart
+	var phaseEnd = phaseStart + t.State.PhaseLength
+
+	currentBlock, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return true
+	}
+	logger = logger.WithField("CurrentHeight", currentBlock)
+
+	if t.State.Phase == objects.DisputeGPKJSubmission &&
+		phaseStart <= currentBlock &&
+		currentBlock < phaseEnd {
+		return true
+	}
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJGroupAccusationEnd)
+	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+		t.State.TransportPublicKey, phaseStart, phaseEnd)
 }
 
 // DoDone creates a log entry saying task is complete
@@ -189,7 +200,5 @@ func (t *GPKJDisputeTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.GPKJGroupAccusation = t.Success
+	logger.WithField("Success", t.Success).Infof("GPKJDisputeTask done")
 }

@@ -40,7 +40,7 @@ type EthDKGPhase int
 
 // These are the valid phases of ETHDKG
 const (
-	Registration EthDKGPhase = iota
+	RegistrationOpen EthDKGPhase = iota
 	ShareDistribution
 	DisputeShareDistribution
 	KeyShareSubmission

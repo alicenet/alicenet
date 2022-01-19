@@ -18,45 +18,41 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum, logg
 	c := eth.Contracts()
 	myIndex := math.MaxInt32
 
-	// Need to find how many participants there will be
-	bigN, err := c.ValidatorPool().GetValidatorsCount(callOpts)
+	addresses, err := c.ValidatorPool().GetValidatorAddresses(callOpts)
 	if err != nil {
+		message := fmt.Sprintf("could not get validator addresses from ValidatorPool: %v", err)
+		logger.Errorf(message)
 		return nil, myIndex, err
 	}
-	n := int(bigN.Uint64())
+
+	validatorStates, err := c.Ethdkg().GetParticipantsInternalState(callOpts, addresses)
+	if err != nil {
+		message := fmt.Sprintf("could not get internal states from ValidatorPool: %v", err)
+		logger.Errorf(message)
+		return nil, myIndex, err
+	}
+
+	var n = len(addresses)
 
 	// Now we retrieve participant details
 	participants := make(objects.ParticipantList, n)
-	for idx := 0; idx < n; idx++ {
-		// First retrieve the address
-		addr, err := c.ValidatorPool().GetValidator(callOpts, big.NewInt(int64(idx)))
-		if err != nil {
-			return nil, myIndex, err
-		}
-
-		participantState, err := c.Ethdkg().GetParticipantInternalState(callOpts, addr)
-		if err != nil {
-			return nil, myIndex, objects.ErrCanNotContinue
-		}
-
-		// if participantState.Index != uint64(idx)+1 {
-		// 	logger.WithFields(logrus.Fields{
-		// 		"participantState.Index": participantState.Index,
-		// 		"idx":                    uint64(idx),
-		// 		"idx+1":                  uint64(idx) + 1,
-		// 		"addr":                   addr.String(),
-		// 	}).Info("indexes do not match")
-		// 	return nil, myIndex, objects.ErrCanNotContinue
-		// }
+	for i := 0; i < n; i++ {
+		participantState := validatorStates[i]
 
 		// Make corresponding Participant object
 		participant := &objects.Participant{}
-		participant.Address = addr
+		participant.Address = addresses[i]
 		participant.PublicKey = participantState.PublicKey
 		participant.Index = int(participantState.Index)
+		participant.Nonce = participantState.Nonce
+		participant.Phase = participantState.Phase
+		participant.DistributedSharesHash = participantState.DistributedSharesHash
+		participant.CommitmentsFirstCoefficient = participantState.CommitmentsFirstCoefficient
+		participant.KeyShares = participantState.KeyShares
+		participant.Gpkj = participantState.Gpkj
 
 		// Set own index
-		if callOpts.From == addr {
+		if callOpts.From == addresses[i] {
 			myIndex = participant.Index
 		}
 

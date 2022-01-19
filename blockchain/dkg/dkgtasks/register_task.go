@@ -14,16 +14,14 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	State   *objects.DkgState
+	Success bool
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 	return &RegisterTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		State: state,
 	}
 }
 
@@ -40,7 +38,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	t.State = dkgState
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("RegisterTask Initialize()")
 
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
@@ -71,9 +69,11 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return err
 	}
 
-	if block >= t.State.RegistrationEnd {
-		return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, t.State.RegistrationEnd)
-	}
+	logger.Info("RegisterTask doTask()")
+
+	// if block >= t.State.RegistrationEnd {
+	// 	return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, t.State.RegistrationEnd)
+	// }
 
 	// Setup
 	c := eth.Contracts()
@@ -134,48 +134,27 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
-	// Definitely past quitting time
-	if currentBlock >= t.State.RegistrationEnd {
-		logger.Info("aborting registration due to scheduled end")
-		return false
-	}
+	var needsRegistration = func() bool {
+		ethdkg := c.Ethdkg()
+		status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+		if err != nil {
+			logger.Warnf("could not check if we're registered: %v", err)
+			return true
+		}
 
-	// Check if the registration window has moved, quit if it has
-	//todoLeo&RicPrime: Pay attention to this!
-	// lastBlock, err := c.Ethdkg().GetPhaseStartBlock(callOpts)
-	// if err != nil {
-	// 	return true
-	// }
-	/*
-		monitor     INFO   [1-15|13:11:33.425] Registering  publicKey (0x08f...7ab) with ETHDKG  Block=612 EndpointInSync=true EthereumInSync=true Interval=7s Method=DoWork TaskID=c3177871-192e-4041-9a06-268a4404d14d TaskName=dkgtasks.RegisterTask Timeout=1h0m0s
-		monitor     ERROR  [1-15|13:11:34.935] registration status (0) indicates failure: []  Block=612 EndpointInSync=true EthereumInSync=true Interval=7s Method=DoWork TaskID=c3177871-192e-4041-9a06-268a4404d14d TaskName=dkgtasks.RegisterTask Timeout=1h0m0s
-		monitor     INFO   [1-15|13:11:34.937] aborting registration due to restart          Block=612 CurrentHeight=615 EndpointInSync=true EthereumInSync=true Interval=7s Method=ShouldRetry OriginalRegistrationEnd=651 TaskID=c3177871-192e-4041-9a06-268a4404d14d TaskName=dkgtasks.RegisterTask Timeout=1h0m0s lastBlock=611
-		monitor     ERROR  [1-15|13:11:34.937] Failed to execute task registration status (0) indicates failure: []  Block=612 EndpointInSync=true EthereumInSync=true Interval=7s Method=MonitorTick TaskID=c3177871-192e-4041-9a06-268a4404d14d TaskName=dkgtasks.RegisterTask Timeout=1h0m0s
-	*/
+		if status == Registered || status == BadRegistration {
+			return false
+		}
 
-	// We save registration star
-	// if lastBlock.Uint64() != t.OriginalRegistrationEnd {
-	// 	logger.WithFields(logrus.Fields{
-	// 		"lastBlock":               lastBlock,
-	// 		"OriginalRegistrationEnd": t.OriginalRegistrationEnd,
-	// 	}).Infof("aborting registration due to restart")
-	// 	return false
-	// }
-
-	// Check to see if we are already registered
-	// TODO SILENT FAILURE!
-	ethdkg := c.Ethdkg()
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
-	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
 		return true
 	}
 
-	if status == Registered || status == BadRegistration {
-		return false
+	if t.State.Phase == objects.RegistrationOpen &&
+		(t.State.PhaseStart <= currentBlock || currentBlock < (t.State.PhaseStart+t.State.PhaseLength) && needsRegistration()) {
+		return true
 	}
 
-	return true
+	return false
 }
 
 // DoDone just creates a log entry saying task is complete
@@ -183,7 +162,5 @@ func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.Registration = t.Success
+	logger.WithField("Success", t.Success).Infof("RegisterTask done")
 }

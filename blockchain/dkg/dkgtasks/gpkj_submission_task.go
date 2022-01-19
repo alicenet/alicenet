@@ -15,18 +15,16 @@ import (
 
 // GPKSubmissionTask contains required state for gpk submission
 type GPKSubmissionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
-	adminHandler            interfaces.AdminHandler
+	State        *objects.DkgState
+	Success      bool
+	adminHandler interfaces.AdminHandler
 }
 
 // NewGPKSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.AdminHandler) *GPKSubmissionTask {
 	return &GPKSubmissionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
-		adminHandler:            adminHandler,
+		State:        state,
+		adminHandler: adminHandler,
 	}
 }
 
@@ -47,9 +45,9 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKSubmissionTask Initialize()...")
 
 	// todo: delete this bc State.MPKSubmission should not exist
-	if !t.State.MPKSubmission {
-		return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
-	}
+	// if !t.State.MPKSubmission {
+	// 	return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
+	// }
 
 	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
 	for idx, participant := range t.State.Participants {
@@ -143,9 +141,22 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask ShouldRetry()")
 
-	state := t.State
+	var phaseStart = t.State.PhaseStart
+	var phaseEnd = phaseStart + t.State.PhaseLength
 
-	var shouldRetry bool = GeneralTaskShouldRetry(ctx, state.Account, logger, eth, state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJSubmissionEnd)
+	currentBlock, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return true
+	}
+	logger = logger.WithField("CurrentHeight", currentBlock)
+
+	if t.State.Phase == objects.GPKJSubmission &&
+		phaseStart <= currentBlock &&
+		currentBlock < phaseEnd {
+		return true
+	}
+
+	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, phaseStart, phaseEnd)
 
 	logger.WithFields(logrus.Fields{
 		"shouldRetry": shouldRetry,
@@ -153,7 +164,7 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 	// This wraps the retry logic for the general case
 	// todo: fix this
-	return true || shouldRetry
+	return shouldRetry
 }
 
 // DoDone creates a log entry saying task is complete
@@ -162,8 +173,6 @@ func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("GPKSubmissionTask done")
-
-	t.State.GPKJSubmission = t.Success
 }
 
 // SetAdminHandler sets the task adminHandler

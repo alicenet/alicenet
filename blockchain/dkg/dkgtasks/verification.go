@@ -67,7 +67,7 @@ func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
 	if receivedPublicKey[0].Cmp(publicKey[0]) != 0 &&
 		receivedPublicKey[1].Cmp(publicKey[1]) != 0 {
 
-		logger.Warnf("address (%v) is already registered with %x", addr.Hex(), receivedPublicKey)
+		logger.Warnf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
 
 		return BadRegistration, nil
 	}
