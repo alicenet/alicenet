@@ -27,23 +27,36 @@ func RetrieveParticipants(callOpts *bind.CallOpts, eth interfaces.Ethereum, logg
 
 	validatorStates, err := c.Ethdkg().GetParticipantsInternalState(callOpts, addresses)
 	if err != nil {
-		message := fmt.Sprintf("could not get internal states from ValidatorPool: %v", err)
+		message := fmt.Sprintf("could not get internal states from Ethdkg: %v", err)
 		logger.Errorf(message)
 		return nil, myIndex, err
 	}
 
-	var n = len(addresses)
+	n := len(addresses)
+	m := n
 
-	// Now we retrieve participant details
+	// Now we process participant details
 	participants := make(objects.ParticipantList, n)
 	for i := 0; i < n; i++ {
 		participantState := validatorStates[i]
+
+		// todo: skip if participantState.Address == 0
+		// because it means this validator is in the ValidatorPool
+		// but has never registered in ETHDKG
+		// if participantState.
 
 		// Make corresponding Participant object
 		participant := &objects.Participant{}
 		participant.Address = addresses[i]
 		participant.PublicKey = participantState.PublicKey
-		participant.Index = int(participantState.Index)
+
+		if participantState.Index == 0 {
+			participant.Index = m
+			m--
+		} else {
+			participant.Index = int(participantState.Index)
+		}
+
 		participant.Nonce = participantState.Nonce
 		participant.Phase = participantState.Phase
 		participant.DistributedSharesHash = participantState.DistributedSharesHash

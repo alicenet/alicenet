@@ -25,6 +25,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	dkgState.PhaseLength = event.PhaseLength.Uint64()
 	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
 	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
+	dkgState.Nonce = event.Nonce.Uint64()
 	dkgState.Participants = nil
 
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
@@ -40,7 +41,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 
 	logger.WithFields(logrus.Fields{
 		"Phase": dkgState.Phase,
-	}).Warn("Purging Schedule")
+	}).Infof("Purging Schedule")
 	state.Schedule.Purge()
 
 	// schedule Registration
@@ -57,7 +58,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds + dkgState.PhaseLength,
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeRegistrationTask(dkgState))
+	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeMissingRegistrationTask(dkgState))
 
 	state.Schedule.Status(logger)
 

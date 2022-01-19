@@ -89,7 +89,7 @@ func NewMonitor(cdb *db.Database,
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterDisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()

@@ -68,7 +68,9 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 
 	// add all validators to missing
 	for _, v := range validators {
-		missingParticipants[v.Address] = v
+		if v != nil {
+			missingParticipants[v.Address] = v
+		}
 	}
 
 	// filter out validators who submitted key shares

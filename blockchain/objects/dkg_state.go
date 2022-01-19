@@ -35,6 +35,8 @@ type DkgState struct {
 	Index int
 	// NumberOfValidators is the total number of validators
 	NumberOfValidators uint64
+	// ETHDKG nonce
+	Nonce uint64
 	// ValidatorThreshold is the threshold number of validators for the system.
 	// If n = NumberOfValidators and t = threshold, then
 	// 			t+1 > 2*n/3
@@ -118,37 +120,6 @@ type DkgState struct {
 	// Inverse stores the multiplicative inverses
 	// of elements. This may be used in GPKJGroupAccusation logic.
 	Inverse []*big.Int // "
-
-	// todo: remove this and rely on .Phase instead
-	// Flags indicating phase success
-	// Registration               bool
-	// DisputeMissingRegistration bool
-	// ShareDistribution          bool
-	// DisputeShareDistribution   bool
-	// KeyShareSubmission         bool
-	// MPKSubmission              bool
-	// GPKJSubmission             bool
-	// GPKJGroupAccusation        bool
-	// Complete                   bool
-
-	// todo: delete this
-	// Phase schedule
-	// RegistrationStart             uint64
-	// RegistrationEnd               uint64
-	// ShareDistributionStart        uint64
-	// ShareDistributionEnd          uint64
-	// DisputeShareDistributionStart uint64
-	// DisputeShareDistributionEnd   uint64
-	// KeyShareSubmissionStart       uint64
-	// KeyShareSubmissionEnd         uint64
-	// MPKSubmissionStart            uint64
-	// MPKSubmissionEnd              uint64
-	// GPKJSubmissionStart           uint64
-	// GPKJSubmissionEnd             uint64
-	// GPKJGroupAccusationStart      uint64
-	// GPKJGroupAccusationEnd        uint64
-	// CompleteStart                 uint64
-	// CompleteEnd                   uint64
 }
 
 // NewDkgState makes a new DkgState object

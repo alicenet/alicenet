@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -28,14 +27,8 @@ func NewDisputeMissingShareDistributionTask(state *objects.DkgState) *DisputeMis
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
 func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
 
-	t.State = dkgState
-
-	logger.Info("Initializing DisputeMissingShareDistributionTask...")
+	logger.Info("DisputeMissingShareDistributionTask Initializing...")
 
 	return nil
 }
@@ -56,13 +49,6 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 
 	logger.Info("DisputeMissingShareDistributionTask doTask()")
 
-	// todo: check internal state t.State for #shares
-
-	// todo: with the missing participants:
-	// - getParticipantInternalState(p) and check for validator.shares == 0
-
-	// todo: accuse missing validators
-
 	var missingParticipants = make(map[common.Address]*objects.Participant)
 
 	// get validators data
@@ -74,7 +60,9 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 
 	// add all validators to missing
 	for _, v := range validators {
-		missingParticipants[v.Address] = v
+		if v != nil {
+			missingParticipants[v.Address] = v
+		}
 	}
 
 	// filter out validators who submitted key shares
