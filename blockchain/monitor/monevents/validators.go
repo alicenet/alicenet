@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -73,12 +74,17 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	}).Infof("Purging schedule")
 	state.Schedule.Purge()
 
+	state.EthDKG.Phase = objects.Completion
+
 	return nil
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
 func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
+
+	state.Lock()
+	defer state.Unlock()
 
 	c := eth.Contracts()
 
@@ -96,6 +102,19 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 		Index:     uint8(index),
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
+
+	// sanity check
+	if v.Account == state.EthDKG.Account.Address &&
+		(state.EthDKG.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+
+		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
+	}
+
+	state.EthDKG.Participants[event.Account].GPKj = v.SharedKey
+
 	if len(state.Validators[epoch]) < int(index) {
 		newValList := make([]objects.Validator, int(index))
 		copy(newValList, state.Validators[epoch])

@@ -207,8 +207,8 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
 

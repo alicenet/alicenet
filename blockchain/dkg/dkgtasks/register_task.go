@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -14,14 +15,19 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(state *objects.DkgState) *RegisterTask {
+func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -38,7 +44,20 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	t.State = dkgState
 
+	t.State.Lock()
+	defer t.State.Unlock()
+
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("RegisterTask Initialize()")
+
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "RegisterTask.Initialize(): Unable to get validatorAddresses from ValidatorPool: %v", err)
+	}
+
+	t.State.ValidatorAddresses = validatorAddresses
+	t.State.NumberOfValidators = len(validatorAddresses)
 
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
@@ -150,7 +169,9 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	if t.State.Phase == objects.RegistrationOpen &&
-		(t.State.PhaseStart <= currentBlock || currentBlock < (t.State.PhaseStart+t.State.PhaseLength) && needsRegistration()) {
+		t.Start <= currentBlock &&
+		currentBlock < t.End &&
+		needsRegistration() {
 		return true
 	}
 

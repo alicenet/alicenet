@@ -14,14 +14,22 @@ import (
 
 // DisputeMissingKeySharesTask stores the data required to dispute shares
 type DisputeMissingKeySharesTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
+// asserting that DisputeMissingKeySharesTask struct implements interface interfaces.Task
+var _ interfaces.Task = &DisputeMissingKeySharesTask{}
+
 // NewDisputeMissingKeySharesTask creates a new task
-func NewDisputeMissingKeySharesTask(state *objects.DkgState) *DisputeMissingKeySharesTask {
+func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -57,39 +65,23 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 
 	logger.Info("DisputeMissingKeySharesTask doTask()")
 
-	var missingParticipants = make(map[common.Address]*objects.Participant)
-
-	// get validators data
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	validators, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting validators data: %v", err)
-	}
-
-	// add all validators to missing
-	for _, v := range validators {
-		if v != nil {
-			missingParticipants[v.Address] = v
-		}
-	}
-
-	// filter out validators who submitted key shares
-	for participant := range t.State.KeyShareG1s {
-		// remove from missing
-		delete(missingParticipants, participant)
-	}
-
-	// check for validator.KeyShares == 0
 	var accusableParticipants []common.Address
-	for address, v := range missingParticipants {
-		if v.KeyShares[0].Cmp(big.NewInt(0)) == 0 && v.KeyShares[1].Cmp(big.NewInt(0)) == 0 {
+
+	// find participants who did not submit key shares
+	for _, p := range t.State.Participants {
+		if p.Nonce != t.State.Nonce ||
+			p.Phase != uint8(objects.KeyShareSubmission) ||
+			(p.KeyShares[0].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShares[1].Cmp(big.NewInt(0)) == 0) {
 			// did not submit
-			accusableParticipants = append(accusableParticipants, address)
+			accusableParticipants = append(accusableParticipants, p.Address)
 		}
 	}
 
 	// accuse missing validators
 	if len(accusableParticipants) > 0 {
+		logger.Warnf("Accusing missing key shares: %v", accusableParticipants)
+
 		txOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txOpts: %v", err)
@@ -113,6 +105,8 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 		if receipt.Status != uint64(1) {
 			return dkg.LogReturnErrorf(logger, "missing key share dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 		}
+	} else {
+		logger.Info("No accusations for missing key shares")
 	}
 
 	t.Success = true
@@ -127,9 +121,6 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 
 	logger.Info("DisputeMissingKeySharesTask ShouldRetry()")
 
-	var phaseStart = t.State.PhaseStart + t.State.PhaseLength
-	var phaseEnd = phaseStart + t.State.PhaseLength
-
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return true
@@ -137,14 +128,14 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.KeyShareSubmission &&
-		phaseStart <= currentBlock &&
-		currentBlock < phaseEnd {
+		t.Start <= currentBlock &&
+		currentBlock < t.End {
 		return true
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, phaseStart, phaseEnd)
+		t.State.TransportPublicKey, t.Start, t.End)
 }
 
 // DoDone creates a log entry saying task is complete

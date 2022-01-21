@@ -14,14 +14,19 @@ import (
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
 // NewMPKSubmissionTask creates a new task
-func NewMPKSubmissionTask(state *objects.DkgState) *MPKSubmissionTask {
+func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -48,11 +53,12 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
 	g2KeyShares := make([][4]*big.Int, t.State.NumberOfValidators)
 
+	var participantsList = t.State.GetSortedParticipants()
 	validMPK := true
-	for idx, participant := range t.State.Participants {
+	for idx, participant := range participantsList {
 		// Bringing these in from state but could directly query contract
-		g1KeyShares[idx] = t.State.KeyShareG1s[participant.Address]
-		g2KeyShares[idx] = t.State.KeyShareG2s[participant.Address]
+		g1KeyShares[idx] = t.State.Participants[participant.Address].KeyShareG1s
+		g2KeyShares[idx] = t.State.Participants[participant.Address].KeyShareG2s
 
 		logger.Debugf("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
 
@@ -123,12 +129,12 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
 	}
 	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing registration receipt")
+		return dkg.LogReturnErrorf(logger, "missing receipt")
 	}
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		dkg.LogReturnErrorf(logger, "master public key (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 	t.Success = true
 
@@ -145,9 +151,6 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("MPKSubmissionTask ShouldRetry()")
 
-	var phaseStart = t.State.PhaseStart
-	var phaseEnd = phaseStart + t.State.PhaseLength
-
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return true
@@ -155,14 +158,14 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.MPKSubmission &&
-		phaseStart <= currentBlock &&
-		currentBlock < phaseEnd {
+		t.Start <= currentBlock &&
+		currentBlock < t.End {
 		return true
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, phaseStart, phaseEnd)
+		t.State.TransportPublicKey, t.Start, t.End)
 }
 
 // DoDone creates a log entry saying task is complete

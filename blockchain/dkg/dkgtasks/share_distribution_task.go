@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -14,14 +13,19 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
+func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -45,23 +49,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
-	me := t.State.Account
-	callOpts := eth.GetCallOpts(ctx, me)
-
-	// Retrieve information about other participants from smart contracts
-	participants, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
-	if err != nil {
-		logger.Errorf("Failed to retrieve other participants: %v", err)
-		return err
-	}
-
-	//
-	// if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
-	// 	for idx, participant := range participants {
-	// 		logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
-	// 	}
-	// }
-
+	participants := t.State.GetSortedParticipants()
 	numParticipants := len(participants)
 	threshold := math.ThresholdForUserCount(numParticipants)
 
@@ -74,9 +62,9 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	}
 
 	// Store calculated values
-	t.State.Commitments[me.Address] = commitments
-	t.State.EncryptedShares[me.Address] = encryptedShares
-	t.State.Participants = participants
+	t.State.Participants[t.State.Account.Address].Commitments = commitments
+	t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
+	//t.State.Participants = participants
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
 	t.State.ValidatorThreshold = threshold
@@ -111,8 +99,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	}
 
 	// Distribute shares
-	logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.EncryptedShares[me], t.State.Commitments[me])
+	//logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
@@ -151,12 +139,9 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return false
 	}
 
-	var phaseStart = t.State.PhaseStart
-	var phaseEnd = t.State.PhaseStart + t.State.PhaseLength
-
 	// This wraps the retry logic for the general case
 	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, phaseStart, phaseEnd)
+		t.State.TransportPublicKey, t.Start, t.End)
 
 	// If it's generally good to retry, let's try to be more specific
 	if generalRetry {

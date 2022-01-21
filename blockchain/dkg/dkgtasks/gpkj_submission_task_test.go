@@ -263,13 +263,13 @@ func TestGPKjSubmissionGoodAllValid(t *testing.T) {
 	dtest.GenerateGPKJ(dkgStates)
 
 	// Do GPKj Submission task
-	tasks := make([]*dkgtasks.GPKSubmissionTask, n)
+	tasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		adminHandler := new(adminHandlerMock)
-		tasks[idx] = dkgtasks.NewGPKSubmissionTask(state, adminHandler)
+		tasks[idx] = dkgtasks.NewGPKjSubmissionTask(state, adminHandler)
 		err = tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -343,7 +343,7 @@ func TestGPKjSubmissionBad1(t *testing.T) {
 	// Create a task to share distribution and make sure it succeeds
 	state := objects.NewDkgState(acct)
 	adminHandler := new(adminHandlerMock)
-	task := dkgtasks.NewGPKSubmissionTask(state, adminHandler)
+	task := dkgtasks.NewGPKjSubmissionTask(state, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
 	defer func() {
@@ -378,7 +378,7 @@ func TestGPKjSubmissionBad2(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	adminHandler := new(adminHandlerMock)
-	task := dkgtasks.NewGPKSubmissionTask(state, adminHandler)
+	task := dkgtasks.NewGPKjSubmissionTask(state, adminHandler)
 	err := task.Initialize(ctx, log, eth, state)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -655,7 +655,7 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 
 	// Do GPKj Submission task
 	noShareIdx := n - 2
-	tasks := make([]*dkgtasks.GPKSubmissionTask, n)
+	tasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	for idx := 0; idx < n; idx++ {
 		if idx == noShareIdx {
 			continue
@@ -664,7 +664,7 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		adminHandler := new(adminHandlerMock)
-		tasks[idx] = dkgtasks.NewGPKSubmissionTask(state, adminHandler)
+		tasks[idx] = dkgtasks.NewGPKjSubmissionTask(state, adminHandler)
 		err = tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -716,7 +716,7 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 	advanceTo(t, eth, dkgStates[0].GPKJGroupAccusationStart)
 
 	// Do GPKjDispute task
-	gpkjDisputeTasks := make([]*dkgtasks.GPKJDisputeTask, n)
+	gpkjDisputeTasks := make([]*dkgtasks.DisputeGPKjTask, n)
 	for idx := 0; idx < n; idx++ {
 		if idx == noShareIdx {
 			continue
@@ -724,7 +724,7 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		gpkjDisputeTasks[idx] = dkgtasks.NewGPKJDisputeTask(state)
+		gpkjDisputeTasks[idx] = dkgtasks.NewDisputeGPKjTask(state)
 		logger.Errorf("Idx: %v\n", idx)
 		err = gpkjDisputeTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
@@ -1045,7 +1045,7 @@ func TestGPKjSubmissionBad4(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
 	adminHandler := new(adminHandlerMock)
-	task := dkgtasks.NewGPKSubmissionTask(state, adminHandler)
+	task := dkgtasks.NewGPKjSubmissionTask(state, adminHandler)
 	err = task.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	// Mess up signature; this will cause DoWork to fail

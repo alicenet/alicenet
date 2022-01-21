@@ -1,6 +1,7 @@
 package dkgevents
 
 import (
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -19,14 +20,13 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	state.Lock()
 	defer state.Unlock()
 
-	dkgState := state.EthDKG
+	dkgState := objects.NewDkgState(state.EthDKG.Account)
+	state.EthDKG = dkgState
 	dkgState.Phase = objects.RegistrationOpen
 	dkgState.PhaseStart = event.StartBlock.Uint64()
 	dkgState.PhaseLength = event.PhaseLength.Uint64()
 	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
-	dkgState.NumberOfValidators = event.NumberValidators.Uint64()
 	dkgState.Nonce = event.Nonce.Uint64()
-	dkgState.Participants = nil
 
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 
@@ -50,7 +50,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds,
 	}).Info("Scheduling NewRegisterTask")
 
-	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, dkgtasks.NewRegisterTask(dkgState))
+	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds))
 
 	// schedule DisputeRegistration
 	logger.WithFields(logrus.Fields{
@@ -58,7 +58,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds + dkgState.PhaseLength,
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeMissingRegistrationTask(dkgState))
+	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeMissingRegistrationTask(dkgState, registrationEnds, registrationEnds+dkgState.PhaseLength))
 
 	state.Schedule.Status(logger)
 
@@ -80,18 +80,20 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, sta
 		"numRegistered": event.Index,
 		"Nonce":         event.Nonce,
 		"PublicKey":     event.PublicKey,
-		"#Participants": state.EthDKG.Participants.Len(),
-		"#Validators":   state.EthDKG.NumberOfValidators,
+		"#Participants": len(state.EthDKG.Participants),
+		"#Validators":   len(state.EthDKG.ValidatorAddresses),
 	}).Info("Address registered!")
 
 	state.Lock()
 	defer state.Unlock()
 
-	state.EthDKG.Participants = append(state.EthDKG.Participants, &objects.Participant{
+	state.EthDKG.Participants[event.Account] = &objects.Participant{
 		Address:   event.Account,
 		Index:     int(event.Index.Uint64()),
 		PublicKey: event.PublicKey,
-	})
+		Phase:     uint8(objects.RegistrationOpen),
+		Nonce:     state.EthDKG.Nonce,
+	}
 
 	// update state.Index with my index, if this event was mine
 	if event.Account.String() == state.EthDKG.Account.Address.String() {
@@ -138,7 +140,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"PhaseEnd":   phaseEnd,
 	}).Info("Scheduling NewShareDistributionTask")
 
-	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewShareDistributionTask(state.EthDKG))
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewShareDistributionTask(state.EthDKG, state.EthDKG.PhaseStart, phaseEnd))
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
 	var phaseStart = phaseEnd
@@ -148,7 +150,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"PhaseEnd":   phaseEnd,
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	state.Schedule.Schedule(phaseStart, phaseEnd, dkgtasks.NewDisputeMissingShareDistributionTask(state.EthDKG))
+	state.Schedule.Schedule(phaseStart, phaseEnd, dkgtasks.NewDisputeMissingShareDistributionTask(state.EthDKG, phaseStart, phaseEnd))
 
 	return nil
 }
@@ -162,22 +164,25 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, sta
 		return err
 	}
 
-	l := logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"Issuer":          event.Account.Hex(),
 		"Index":           event.Index,
 		"EncryptedShares": event.EncryptedShares,
-	})
+		"Commitments":     event.Commitments,
+	}).Info("Received share distribution")
 
 	state.Lock()
 	defer state.Unlock()
 
-	state.EthDKG.Commitments[event.Account] = event.Commitments
-	state.EthDKG.EncryptedShares[event.Account] = event.EncryptedShares
+	// compute distributed shares hash
+	distributedSharesHash, _, _, err := dkg.ComputeDistributedSharesHash(event.EncryptedShares, event.Commitments)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
+	}
 
-	l.WithFields(logrus.Fields{
-		"TotalCommitments":     len(state.EthDKG.Commitments[event.Account]),
-		"TotalEncryptedShares": len(state.EthDKG.EncryptedShares[event.Account]),
-	}).Info("Received share distribution")
+	state.EthDKG.Participants[event.Account].DistributedSharesHash = distributedSharesHash
+	state.EthDKG.Participants[event.Account].Commitments = event.Commitments
+	state.EthDKG.Participants[event.Account].EncryptedShares = event.EncryptedShares
 
 	return nil
 }
@@ -209,7 +214,7 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	state.EthDKG.PhaseStart = event.BlockNumber.Uint64() + state.EthDKG.ConfirmationLength
 	var phaseEnd uint64 = state.EthDKG.PhaseStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewDisputeShareDistributionTask(state.EthDKG))
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewDisputeShareDistributionTask(state.EthDKG, state.EthDKG.PhaseStart, phaseEnd))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -221,13 +226,25 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	var submitKeySharesPhaseStart uint64 = phaseEnd
 	phaseEnd = submitKeySharesPhaseStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(submitKeySharesPhaseStart, phaseEnd, dkgtasks.NewKeyshareSubmissionTask(state.EthDKG))
+	state.Schedule.Schedule(submitKeySharesPhaseStart, phaseEnd, dkgtasks.NewKeyshareSubmissionTask(state.EthDKG, submitKeySharesPhaseStart, phaseEnd))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"PhaseStart":  submitKeySharesPhaseStart,
 		"phaseEnd":    phaseEnd,
 	}).Info("Scheduling KeyshareSubmissionTask")
+
+	// schedule DisputeMissingKeySharesPhase
+	var missingKeySharesDisputeStart uint64 = phaseEnd
+	phaseEnd = missingKeySharesDisputeStart + state.EthDKG.PhaseLength
+
+	state.Schedule.Schedule(missingKeySharesDisputeStart, phaseEnd, dkgtasks.NewDisputeMissingKeySharesTask(state.EthDKG, missingKeySharesDisputeStart, phaseEnd))
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+		"PhaseStart":  missingKeySharesDisputeStart,
+		"phaseEnd":    phaseEnd,
+	}).Info("Scheduling DisputeMissingKeySharesTask")
 
 	return nil
 }
@@ -253,15 +270,9 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, sta
 
 	state.EthDKG.Phase = objects.KeyShareSubmission
 
-	state.EthDKG.KeyShareG1s[event.Account] = event.KeyShareG1
-	state.EthDKG.KeyShareG1CorrectnessProofs[event.Account] = event.KeyShareG1CorrectnessProof
-	state.EthDKG.KeyShareG2s[event.Account] = event.KeyShareG2
-
-	logger.WithFields(logrus.Fields{
-		"#KeyShareG1s":                 len(state.EthDKG.KeyShareG1s[event.Account]),
-		"#KeyShareG1CorrectnessProofs": len(state.EthDKG.KeyShareG1CorrectnessProofs[event.Account]),
-		"#KeyShareG2s":                 len(state.EthDKG.KeyShareG2s[event.Account]),
-	}).Info("Received key shares2")
+	state.EthDKG.Participants[event.Account].KeyShareG1s = event.KeyShareG1
+	state.EthDKG.Participants[event.Account].KeyShareG1CorrectnessProofs = event.KeyShareG1CorrectnessProof
+	state.EthDKG.Participants[event.Account].KeyShareG2s = event.KeyShareG2
 
 	return nil
 }
@@ -292,7 +303,7 @@ func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.E
 	state.EthDKG.PhaseStart = event.BlockNumber.Uint64() + state.EthDKG.ConfirmationLength
 	var phaseEnd uint64 = state.EthDKG.PhaseStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewMPKSubmissionTask(state.EthDKG))
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewMPKSubmissionTask(state.EthDKG, state.EthDKG.PhaseStart, phaseEnd))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber":             event.BlockNumber,
@@ -316,7 +327,6 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 		"MPK":         event.Mpk,
 	}).Info("ProcessMPKSet() ...")
 
-	// schedule GPKJ Submission phase
 	state.Lock()
 	defer state.Unlock()
 
@@ -328,16 +338,28 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	state.Schedule.Purge()
 
 	// schedule GPKJSubmissionTask
-	state.EthDKG.PhaseStart = event.BlockNumber.Uint64() // + state.EthDKG.ConfirmationLength + 1
+	state.EthDKG.PhaseStart = event.BlockNumber.Uint64()
 	var phaseEnd uint64 = state.EthDKG.PhaseStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewGPKSubmissionTask(state.EthDKG, adminHandler))
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewGPKjSubmissionTask(state.EthDKG, state.EthDKG.PhaseStart, phaseEnd, adminHandler))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber":             event.BlockNumber,
 		"state.EthDKG.PhaseStart": state.EthDKG.PhaseStart,
 		"phaseEnd":                phaseEnd,
 	}).Info("Scheduling GPKJSubmissionTask")
+
+	// schedule DisputeMissingGPKjTask
+	disputeMissingGPKjStart := phaseEnd
+	phaseEnd = disputeMissingGPKjStart + state.EthDKG.PhaseLength
+
+	state.Schedule.Schedule(disputeMissingGPKjStart, phaseEnd, dkgtasks.NewDisputeMissingGPKjTask(state.EthDKG, disputeMissingGPKjStart, phaseEnd))
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber":             event.BlockNumber,
+		"disputeMissingGPKjStart": disputeMissingGPKjStart,
+		"phaseEnd":                phaseEnd,
+	}).Info("Scheduling DisputeMissingGPKjTask")
 
 	return nil
 }
@@ -353,7 +375,6 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessGPKJSubmissionComplete() ...")
 
-	// schedule DisputeGPKJSubmission phase
 	state.Lock()
 	defer state.Unlock()
 
@@ -368,7 +389,7 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 	state.EthDKG.PhaseStart = event.BlockNumber.Uint64() + state.EthDKG.ConfirmationLength
 	var phaseEnd uint64 = state.EthDKG.PhaseStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewGPKJDisputeTask(state.EthDKG))
+	state.Schedule.Schedule(state.EthDKG.PhaseStart, phaseEnd, dkgtasks.NewDisputeGPKjTask(state.EthDKG, state.EthDKG.PhaseStart, phaseEnd))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber":             event.BlockNumber,
@@ -380,7 +401,7 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 	var completionStart = phaseEnd
 	phaseEnd = completionStart + state.EthDKG.PhaseLength
 
-	state.Schedule.Schedule(completionStart, phaseEnd, dkgtasks.NewCompletionTask(state.EthDKG))
+	state.Schedule.Schedule(completionStart, phaseEnd, dkgtasks.NewCompletionTask(state.EthDKG, completionStart, phaseEnd))
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber":     event.BlockNumber,

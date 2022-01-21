@@ -13,17 +13,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GPKSubmissionTask contains required state for gpk submission
-type GPKSubmissionTask struct {
+// GPKjSubmissionTask contains required state for gpk submission
+type GPKjSubmissionTask struct {
+	Start        uint64
+	End          uint64
 	State        *objects.DkgState
 	Success      bool
 	adminHandler interfaces.AdminHandler
 }
 
-// NewGPKSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
-func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.AdminHandler) *GPKSubmissionTask {
-	return &GPKSubmissionTask{
+// NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
+func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
+	return &GPKjSubmissionTask{
+		Start:        start,
+		End:          end,
 		State:        state,
+		Success:      false,
 		adminHandler: adminHandler,
 	}
 }
@@ -31,7 +36,7 @@ func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.Admin
 // Initialize prepares for work to be done in GPKSubmission phase.
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
-func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
 		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
@@ -44,27 +49,16 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKSubmissionTask Initialize()...")
 
-	// todo: delete this bc State.MPKSubmission should not exist
-	// if !t.State.MPKSubmission {
-	// 	return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
-	// }
-
+	var participantsList = t.State.GetSortedParticipants()
 	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
-	for idx, participant := range t.State.Participants {
+	for _, participant := range participantsList {
 		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
-		pes, present := t.State.EncryptedShares[participant.Address]
-		if present && idx >= 0 && idx < int(t.State.NumberOfValidators) {
-			encryptedShares = append(encryptedShares, pes)
-		} else {
-			logger.Errorf("Encrypted share state broken for %v", idx)
-		}
+		encryptedShares = append(encryptedShares, participant.EncryptedShares)
 	}
-
-	// todo: get my index (done)
 
 	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
 		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
-		encryptedShares, t.State.Index, t.State.Participants)
+		encryptedShares, t.State.Index, participantsList)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"t.State.Index": t.State.Index,
@@ -73,7 +67,7 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	}
 
 	t.State.GroupPrivateKey = groupPrivateKey
-	t.State.GroupPublicKey = groupPublicKey
+	t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
 
 	// Pass private key on to consensus
 	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
@@ -86,20 +80,28 @@ func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 }
 
 // DoWork is the first attempt at submitting gpkj and signature.
-func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting gpkj and signature.
-func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.Info("GPKSubmissionTask doTask()")
+	// debug case
+	// if t.State.Account.Address.String() == "0x565128Dd9Fe84629E1d3b3F2B2Fee43b801d5adE" {
+	// 	// this is val5, just drop
+	// 	// logger.Warn("GPKSubmissionTask won't doTask()")
+	// 	// return nil
+	// 	return dkg.LogReturnErrorf(logger, "GPKSubmissionTask won't doTask()")
+	// }
+
+	logger.Infof("GPKSubmissionTask doTask(): %v", t.State.Account.Address)
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -108,7 +110,7 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.GroupPublicKey)
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
@@ -136,13 +138,10 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask ShouldRetry()")
-
-	var phaseStart = t.State.PhaseStart
-	var phaseEnd = phaseStart + t.State.PhaseLength
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -151,12 +150,12 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.GPKJSubmission &&
-		phaseStart <= currentBlock &&
-		currentBlock < phaseEnd {
+		t.Start <= currentBlock &&
+		currentBlock < t.End {
 		return true
 	}
 
-	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, phaseStart, phaseEnd)
+	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, t.Start, t.End)
 
 	logger.WithFields(logrus.Fields{
 		"shouldRetry": shouldRetry,
@@ -168,7 +167,7 @@ func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
+func (t *GPKjSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -176,6 +175,6 @@ func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
 }
 
 // SetAdminHandler sets the task adminHandler
-func (t *GPKSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
+func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
 }

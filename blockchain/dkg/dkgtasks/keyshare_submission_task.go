@@ -13,14 +13,22 @@ import (
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
+// asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &KeyshareSubmissionTask{}
+
 // NewKeyshareSubmissionTask creates a new task
-func NewKeyshareSubmissionTask(state *objects.DkgState) *KeyshareSubmissionTask {
+func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -55,9 +63,9 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 
 	logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
 
-	t.State.KeyShareG1s[me] = g1KeyShare
-	t.State.KeyShareG1CorrectnessProofs[me] = g1Proof
-	t.State.KeyShareG2s[me] = g2KeyShare
+	t.State.Participants[me].KeyShareG1s = g1KeyShare
+	t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
+	t.State.Participants[me].KeyShareG2s = g2KeyShare
 
 	return nil
 }
@@ -91,13 +99,13 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	// Submit Keyshares
 	logger.Infof("submitting key shares: %v %v %v %v",
 		me.Address,
-		t.State.KeyShareG1s[me.Address],
-		t.State.KeyShareG1CorrectnessProofs[me.Address],
-		t.State.KeyShareG2s[me.Address])
+		t.State.Participants[me.Address].KeyShareG1s,
+		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
+		t.State.Participants[me.Address].KeyShareG2s)
 	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
-		t.State.KeyShareG1s[me.Address],
-		t.State.KeyShareG1CorrectnessProofs[me.Address],
-		t.State.KeyShareG2s[me.Address])
+		t.State.Participants[me.Address].KeyShareG1s,
+		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
+		t.State.Participants[me.Address].KeyShareG2s)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
@@ -155,11 +163,11 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	// }
 
 	// DisputeShareDistribution || KeyShareSubmission
-	if (phase == 2) || (phase == 3) {
+	if phase == uint8(objects.DisputeShareDistribution) || phase == uint8(objects.KeyShareSubmission) {
 		return true
 	}
 
-	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.KeyShareG1s[me.Address])
+	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
 	if err != nil {
 		logger.Info("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true

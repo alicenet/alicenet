@@ -33,8 +33,10 @@ type DkgState struct {
 	// during the Share Distribution phase for verifiable secret sharing.
 	// REPEAT: THIS IS BASE-1
 	Index int
-	// NumberOfValidators is the total number of validators
-	NumberOfValidators uint64
+	// ValidatorAddresses stores all validator addresses at the beginning of ETHDKG
+	ValidatorAddresses []common.Address
+	// NumberOfValidators is equal to len(ValidatorAddresses)
+	NumberOfValidators int
 	// ETHDKG nonce
 	Nonce uint64
 	// ValidatorThreshold is the threshold number of validators for the system.
@@ -63,51 +65,16 @@ type DkgState struct {
 	// GroupPrivateKey is the local Validator's portion of the master secret key.
 	// This is also denoted gskj.
 	GroupPrivateKey *big.Int
-	// GroupPublicKey is the local Validator's portion of the master public key.
-	// This is also denoted gpkj.
-	GroupPublicKey [4]*big.Int
 
 	// Remote validator info
 	////////////////////////////////////////////////////////////////////////////
 	// Participants is the list of Validators
-	Participants ParticipantList // Index, Address & PublicKey
-
-	// Share Distribution Phase
-	//////////////////////////////////////////////////
-	// Commitments stores the Public Coefficients
-	// corresponding to public polynomial
-	// in Shamir Secret Sharing protocol.
-	// The first coefficient (constant term) is the public commitment
-	// corresponding to the secret share (SecretValue).
-	Commitments map[common.Address][][2]*big.Int
-	// EncryptedShares are the encrypted secret shares
-	// in the Shamir Secret Sharing protocol.
-	EncryptedShares map[common.Address][]*big.Int
+	Participants map[common.Address]*Participant // Index, Address & PublicKey
 
 	// Share Dispute Phase
 	//////////////////////////////////////////////////
 	// These are the participants with bad shares
 	BadShares map[common.Address]*Participant
-
-	// Key Share Submission Phase
-	//////////////////////////////////////////////////
-	// KeyShareG1s stores the key shares of G1 element
-	// for each participant
-	KeyShareG1s map[common.Address][2]*big.Int
-	// KeyShareG1CorrectnessProofs stores the proofs of each
-	// G1 element for each participant.
-	KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int
-	// KeyShareG2s stores the key shares of G2 element
-	// for each participant.
-	// Adding all the G2 shares together produces the
-	// master public key (MasterPublicKey).
-	KeyShareG2s map[common.Address][4]*big.Int
-
-	// Group Public Key (GPKj) Submission Phase
-	//////////////////////////////////////////////////
-	// GroupPublicKeys stores the group public keys (gpkj)
-	// for each participant.
-	GroupPublicKeys map[common.Address][4]*big.Int // Retrieved to validate group keys
 
 	// Group Public Key (GPKj) Accusation Phase
 	//////////////////////////////////////////////////
@@ -122,17 +89,23 @@ type DkgState struct {
 	Inverse []*big.Int // "
 }
 
+// GetSortedParticipants returns the participant list sorted by Index field
+func (dkg *DkgState) GetSortedParticipants() ParticipantList {
+	var list = make(ParticipantList, len(dkg.Participants))
+
+	for _, p := range dkg.Participants {
+		list[p.Index-1] = p
+	}
+
+	return list
+}
+
 // NewDkgState makes a new DkgState object
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
-		Account:                     account,
-		BadShares:                   make(map[common.Address]*Participant),
-		Commitments:                 make(map[common.Address][][2]*big.Int),
-		EncryptedShares:             make(map[common.Address][]*big.Int),
-		GroupPublicKeys:             make(map[common.Address][4]*big.Int),
-		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
-		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
-		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
+		Account:      account,
+		BadShares:    make(map[common.Address]*Participant),
+		Participants: make(map[common.Address]*Participant),
 	}
 }
 
@@ -147,13 +120,47 @@ type Participant struct {
 	// REPEAT: THIS IS BASE-1
 	Index int
 	// PublicKey is the TransportPublicKey of Participant.
-	PublicKey                   [2]*big.Int
-	Nonce                       uint64
-	Phase                       uint8
-	DistributedSharesHash       [32]byte
+	PublicKey [2]*big.Int
+	Nonce     uint64
+	Phase     uint8
+
+	// Share Distribution Phase
+	//////////////////////////////////////////////////
+	// Commitments stores the Public Coefficients
+	// corresponding to public polynomial
+	// in Shamir Secret Sharing protocol.
+	// The first coefficient (constant term) is the public commitment
+	// corresponding to the secret share (SecretValue).
+	Commitments [][2]*big.Int
+	// EncryptedShares are the encrypted secret shares
+	// in the Shamir Secret Sharing protocol.
+	EncryptedShares       []*big.Int
+	DistributedSharesHash [32]byte
+
 	CommitmentsFirstCoefficient [2]*big.Int
-	KeyShares                   [2]*big.Int
-	Gpkj                        [4]*big.Int
+
+	// todo: delete this
+	KeyShares [2]*big.Int
+
+	// Key Share Submission Phase
+	//////////////////////////////////////////////////
+	// KeyShareG1s stores the key shares of G1 element
+	// for each participant
+	KeyShareG1s [2]*big.Int
+
+	// KeyShareG1CorrectnessProofs stores the proofs of each
+	// G1 element for each participant.
+	KeyShareG1CorrectnessProofs [2]*big.Int
+
+	// KeyShareG2s stores the key shares of G2 element
+	// for each participant.
+	// Adding all the G2 shares together produces the
+	// master public key (MasterPublicKey).
+	KeyShareG2s [4]*big.Int
+
+	// GPKj is the local Validator's portion of the master public key.
+	// This is also denoted GroupPublicKey.
+	GPKj [4]*big.Int
 }
 
 // ParticipantList is a required type alias since the Sort interface is awful

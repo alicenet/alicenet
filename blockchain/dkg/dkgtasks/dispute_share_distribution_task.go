@@ -17,14 +17,19 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
 // NewDisputeShareDistributionTask creates a new task
-func NewDisputeShareDistributionTask(state *objects.DkgState) *DisputeShareDistributionTask {
+func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -48,9 +53,10 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
+	var participantsList = t.State.GetSortedParticipants()
 	// Loop through all participants and check to see if shares are valid
-	for idx := 0; idx < len(t.State.Participants); idx++ {
-		participant := t.State.Participants[idx]
+	for idx := 0; idx < len(participantsList); idx++ {
+		participant := participantsList[idx]
 		//logger.Infof("t.State.Index: %v\n", t.State.Index)
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
 		valid, present, err := math.VerifyDistributedShares(t.State, participant)
@@ -105,8 +111,8 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		// dishonestAddress issued bad information; this is participant.
 		// disputer is disputing them; *you* are disputing the information.
 		dishonestAddress := participant.Address
-		encryptedShares := t.State.EncryptedShares[participant.Address]
-		commitments := t.State.Commitments[participant.Address]
+		encryptedShares := t.State.Participants[participant.Address].EncryptedShares
+		commitments := t.State.Participants[participant.Address].Commitments
 
 		// Construct shared key
 		disputePublicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)

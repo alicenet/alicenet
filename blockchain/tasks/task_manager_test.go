@@ -241,7 +241,7 @@ func TestSharedState(t *testing.T) {
 func TestIsAdminClient(t *testing.T) {
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
 
-	task := &dkgtasks.GPKSubmissionTask{}
+	task := &dkgtasks.GPKjSubmissionTask{}
 	isAdminClient := reflect.TypeOf(task).Implements(adminInterface)
 
 	assert.True(t, isAdminClient)

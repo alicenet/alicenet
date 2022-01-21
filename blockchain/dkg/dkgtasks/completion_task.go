@@ -12,14 +12,22 @@ import (
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
+// asserting that CompletionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &CompletionTask{}
+
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *objects.DkgState) *CompletionTask {
+func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -109,7 +117,8 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 
 	logger.Info("CompletionTask ShouldRetry()")
 
-	if t.State.Phase != objects.DisputeGPKJSubmission {
+	if t.State.Phase != objects.DisputeGPKJSubmission ||
+		t.State.Phase == objects.Completion {
 		logger.WithFields(logrus.Fields{
 			"t.State.Phase":      t.State.Phase,
 			"t.State.PhaseStart": t.State.PhaseStart,
@@ -117,16 +126,13 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	var phaseStart = t.State.PhaseStart + t.State.PhaseLength
-	var phaseEnd = phaseStart + t.State.PhaseLength
-
 	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, phaseStart, phaseEnd)
+		t.State.TransportPublicKey, t.Start, t.End)
 
 	logger.WithFields(logrus.Fields{
 		"shouldRetry": shouldRetry,
-		"phaseStart":  phaseStart,
-		"phaseEnd":    phaseEnd,
+		"t.Start":     t.Start,
+		"t.End":       t.End,
 	}).Info("CompletionTask ShouldRetry")
 
 	// This wraps the retry logic for every phase, _except_ registration

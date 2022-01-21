@@ -13,14 +13,22 @@ import (
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
+// asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
+var _ interfaces.Task = &DisputeMissingRegistrationTask{}
+
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
-func NewDisputeMissingRegistrationTask(state *objects.DkgState) *DisputeMissingRegistrationTask {
+func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -51,37 +59,20 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 	logger.Info("DisputeMissingRegistrationTask doTask()")
 
-	var missingParticipants = make(map[common.Address]*objects.Participant)
-
-	// get validators data
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	validators, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting validators data: %v", err)
-	}
-
-	// add all validators to missing
-	for _, v := range validators {
-		if v != nil {
-			missingParticipants[v.Address] = v
-		}
-	}
-
-	// filter out validators who registered
-	for _, participant := range t.State.Participants {
-		// remove from missing
-		delete(missingParticipants, participant.Address)
-	}
-
-	// check for validator.PublicKey == 0
 	var accusableParticipants []common.Address
-	for address, v := range missingParticipants {
-		if v.Nonce != t.State.Nonce ||
-			v.Phase != uint8(objects.RegistrationOpen) ||
-			v.PublicKey[0].Cmp(big.NewInt(0)) == 0 ||
-			v.PublicKey[1].Cmp(big.NewInt(0)) == 0 {
+
+	// find participants who did not register
+	for _, addr := range t.State.ValidatorAddresses {
+
+		participant, ok := t.State.Participants[addr]
+
+		if !ok ||
+			participant.Nonce != t.State.Nonce ||
+			participant.Phase != uint8(objects.RegistrationOpen) ||
+			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0) {
 			// did not register
-			accusableParticipants = append(accusableParticipants, address)
+			accusableParticipants = append(accusableParticipants, addr)
 		}
 	}
 
@@ -139,10 +130,8 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 	}
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
-	var phaseEnd = t.State.PhaseStart + t.State.PhaseLength
-
 	// Definitely past quitting time
-	if currentBlock >= phaseEnd {
+	if currentBlock >= t.End {
 		logger.Info("aborting registration due to scheduled end")
 		return false
 	}

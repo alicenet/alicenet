@@ -12,14 +12,19 @@ import (
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
 type DisputeMissingShareDistributionTask struct {
+	Start   uint64
+	End     uint64
 	State   *objects.DkgState
 	Success bool
 }
 
 // NewDisputeMissingShareDistributionTask creates a new task
-func NewDisputeMissingShareDistributionTask(state *objects.DkgState) *DisputeMissingShareDistributionTask {
+func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		State: state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -49,40 +54,23 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 
 	logger.Info("DisputeMissingShareDistributionTask doTask()")
 
-	var missingParticipants = make(map[common.Address]*objects.Participant)
-
-	// get validators data
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	validators, _, err := dkg.RetrieveParticipants(callOpts, eth, logger)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting validators data: %v", err)
-	}
-
-	// add all validators to missing
-	for _, v := range validators {
-		if v != nil {
-			missingParticipants[v.Address] = v
-		}
-	}
-
-	// filter out validators who submitted key shares
-	for participant := range t.State.KeyShareG1s {
-		// remove from missing
-		delete(missingParticipants, participant)
-	}
-
-	// check for validator.DistributedShares == 0
 	var accusableParticipants []common.Address
+
+	// find participants who did not distribute shares
 	var emptySharesHash [32]byte
-	for address, v := range missingParticipants {
-		if v.DistributedSharesHash == emptySharesHash {
-			// did not submit
-			accusableParticipants = append(accusableParticipants, address)
+	for _, p := range t.State.Participants {
+		if p.Nonce != t.State.Nonce ||
+			p.Phase != uint8(objects.ShareDistribution) ||
+			p.DistributedSharesHash == emptySharesHash {
+			// did not distribute shares
+			accusableParticipants = append(accusableParticipants, p.Address)
 		}
 	}
 
 	// accuse missing validators
 	if len(accusableParticipants) > 0 {
+		logger.Warnf("Accusing missing distributed shares: %v", accusableParticipants)
+
 		txOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting txOpts: %v", err)
@@ -106,6 +94,8 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 		if receipt.Status != uint64(1) {
 			return dkg.LogReturnErrorf(logger, "missing share distribution dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 		}
+	} else {
+		logger.Info("No accusations for missing distributed shares")
 	}
 
 	t.Success = true
@@ -120,9 +110,6 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 
 	logger.Info("DisputeMissingShareDistributionTask ShouldRetry()")
 
-	var phaseStart = t.State.PhaseStart + t.State.PhaseLength
-	var phaseEnd = phaseStart + t.State.PhaseLength
-
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return true
@@ -130,14 +117,14 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.ShareDistribution &&
-		phaseStart <= currentBlock &&
-		currentBlock < phaseEnd {
+		t.Start <= currentBlock &&
+		currentBlock < t.End {
 		return true
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
 	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, phaseStart, phaseEnd)
+		t.State.TransportPublicKey, t.Start, t.End)
 }
 
 // DoDone creates a log entry saying task is complete
