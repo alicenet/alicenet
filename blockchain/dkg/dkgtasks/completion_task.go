@@ -126,17 +126,18 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.Start, t.End)
+	// var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	// 	t.State.TransportPublicKey, t.Start, t.End)
 
-	logger.WithFields(logrus.Fields{
-		"shouldRetry": shouldRetry,
-		"t.Start":     t.Start,
-		"t.End":       t.End,
-	}).Info("CompletionTask ShouldRetry")
+	// logger.WithFields(logrus.Fields{
+	// 	"shouldRetry": shouldRetry,
+	// 	"t.Start":     t.Start,
+	// 	"t.End":       t.End,
+	// }).Info("CompletionTask ShouldRetry")
 
-	// This wraps the retry logic for every phase, _except_ registration
-	return shouldRetry
+	// // This wraps the retry logic for every phase, _except_ registration
+	// return shouldRetry
+	return true
 }
 
 // DoDone creates a log entry saying task is complete

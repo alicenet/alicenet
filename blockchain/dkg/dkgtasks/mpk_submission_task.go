@@ -155,7 +155,7 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	if err != nil {
 		return true
 	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
+	//logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.MPKSubmission &&
 		t.Start <= currentBlock &&
@@ -164,8 +164,9 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.Start, t.End)
+	//return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	//	t.State.TransportPublicKey, t.Start, t.End)
+	return false
 }
 
 // DoDone creates a log entry saying task is complete

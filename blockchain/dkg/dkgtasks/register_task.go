@@ -153,6 +153,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 	logger = logger.WithField("CurrentHeight", currentBlock)
 
+	// todo: move this to utilities.go
 	var needsRegistration = func() bool {
 		ethdkg := c.Ethdkg()
 		status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)

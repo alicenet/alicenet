@@ -55,7 +55,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 
 	var participantsList = t.State.GetSortedParticipants()
 	// Loop through all participants and check to see if shares are valid
-	for idx := 0; idx < len(participantsList); idx++ {
+	for idx := 0; idx < t.State.NumberOfValidators; idx++ {
 		participant := participantsList[idx]
 		//logger.Infof("t.State.Index: %v\n", t.State.Index)
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)

@@ -63,8 +63,24 @@ func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
 		return NoRegistration, nil
 	}
 
+	// get ethdkg nonce
+	nonce, err := ethdkg.GetNonce(callOpts)
+	if err != nil {
+		return NoRegistration, nil
+	}
+
+	// get ethdkg phase
+	phase, err := ethdkg.GetETHDKGPhase(callOpts)
+	if err != nil {
+		return NoRegistration, nil
+	}
+
+	if participantState.Nonce != nonce.Uint64() || participantState.Phase != phase {
+		return NoRegistration, nil
+	}
+
 	// Check if expected public key is registered
-	if receivedPublicKey[0].Cmp(publicKey[0]) != 0 &&
+	if receivedPublicKey[0].Cmp(publicKey[0]) != 0 ||
 		receivedPublicKey[1].Cmp(publicKey[1]) != 0 {
 
 		logger.Warnf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)

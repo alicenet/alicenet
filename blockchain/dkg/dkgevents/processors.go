@@ -1,6 +1,9 @@
 package dkgevents
 
 import (
+	"context"
+	"errors"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -9,7 +12,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// todo: improve this
+func isValidator(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState) (bool, error) {
+	ctx := context.Background()
+	callOpts := eth.GetCallOpts(ctx, state.EthDKG.Account)
+	isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, state.EthDKG.Account.Address)
+	if err != nil {
+		return false, errors.New("cannot check if I'm a validator")
+	}
+
+	if !isValidator {
+		logger.Info("cannot take part in ETHDKG because I'm not a validator")
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	logger.Info("ProcessRegistrationOpened() ...")
 	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpened(log)
@@ -67,6 +96,15 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 
 func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
+
 	logger.Info("ProcessAddressRegistered() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseAddressRegistered(log)
@@ -109,6 +147,15 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, sta
 }
 
 func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	logger.Info("ProcessRegistrationComplete() ...")
 
@@ -157,6 +204,15 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
+
 	logger.Info("ProcessShareDistribution() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseSharesDistributed(log)
@@ -188,6 +244,15 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, sta
 }
 
 func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	logger.Info("ProcessShareDistributionComplete() ...")
 
@@ -251,6 +316,15 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 
 func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
+
 	logger.Info("ProcessKeyShareSubmitted() ...")
 
 	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmitted(log)
@@ -278,6 +352,15 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, sta
 }
 
 func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
 	if err != nil {
@@ -315,6 +398,15 @@ func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.E
 }
 
 func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, adminHandler interfaces.AdminHandler) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	event, err := eth.Contracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
@@ -365,6 +457,15 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 }
 
 func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	amIaValidator, err := isValidator(eth, logger, state)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+	if !amIaValidator {
+		state.Schedule.Purge()
+		return nil
+	}
 
 	event, err := eth.Contracts().Ethdkg().ParseGPKJSubmissionComplete(log)
 	if err != nil {

@@ -127,7 +127,7 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 	if err != nil {
 		return true
 	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
+	//logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.GPKJSubmission &&
 		t.Start <= currentBlock &&
@@ -136,8 +136,9 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 	}
 
 	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.Start, t.End)
+	// return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	// 	t.State.TransportPublicKey, t.Start, t.End)
+	return false
 }
 
 // DoDone creates a log entry saying task is complete

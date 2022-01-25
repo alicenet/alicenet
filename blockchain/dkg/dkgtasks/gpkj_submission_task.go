@@ -66,6 +66,22 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
+	// todo: delete this
+	// inject bad GPKj data
+	// if t.State.Index == 5 {
+	// 	// mess up with group provate key (gskj)
+	// 	gskjBad := new(big.Int).Add(groupPrivateKey, big.NewInt(1))
+	// 	// here's the group public key
+	// 	gpkj := new(cloudflare.G2).ScalarBaseMult(gskjBad)
+	// 	gpkjBig, err := bn256.G2ToBigIntArray(gpkj)
+	// 	if err != nil {
+	// 		return dkg.LogReturnErrorf(logger, "error generating invalid gpkj: %v", err)
+	// 	}
+
+	// 	groupPrivateKey = gskjBad
+	// 	groupPublicKey = gpkjBig
+	// }
+
 	t.State.GroupPrivateKey = groupPrivateKey
 	t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
 
@@ -147,7 +163,7 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 	if err != nil {
 		return true
 	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
+	// logger = logger.WithField("CurrentHeight", currentBlock)
 
 	if t.State.Phase == objects.GPKJSubmission &&
 		t.Start <= currentBlock &&
@@ -155,15 +171,15 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 		return true
 	}
 
-	var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, t.Start, t.End)
+	// var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, t.Start, t.End)
 
-	logger.WithFields(logrus.Fields{
-		"shouldRetry": shouldRetry,
-	}).Info("GPKSubmissionTask ShouldRetry2()")
+	// logger.WithFields(logrus.Fields{
+	// 	"shouldRetry": shouldRetry,
+	// }).Info("GPKSubmissionTask ShouldRetry2()")
 
 	// This wraps the retry logic for the general case
 	// todo: fix this
-	return shouldRetry
+	return false
 }
 
 // DoDone creates a log entry saying task is complete

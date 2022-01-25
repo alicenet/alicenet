@@ -61,6 +61,17 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return err
 	}
 
+	// todo: delete this
+	// inject bad encryptedShares
+	// For the badIdx, submit invalid shares; zero everything;
+	// this overwrites what was done in Initialize
+	//if t.State.Index == 1 {
+	// if t.State.Index == 5 {
+	// 	for _, s := range encryptedShares {
+	// 		s.Set(big.NewInt(0))
+	// 	}
+	// }
+
 	// Store calculated values
 	t.State.Participants[t.State.Account.Address].Commitments = commitments
 	t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
@@ -140,27 +151,28 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	}
 
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.Start, t.End)
+	// generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
+	// 	t.State.TransportPublicKey, t.Start, t.End)
 
 	// If it's generally good to retry, let's try to be more specific
-	if generalRetry {
-		callOpts := eth.GetCallOpts(ctx, t.State.Account)
-		participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
-		if err != nil {
-			return true
-		}
-
-		// TODO can I prove this is the correct share distribution hash?
-		logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
-		var emptySharesHash [32]byte
-		if participantState.DistributedSharesHash == emptySharesHash {
-			logger.Info("Did not distribute shares after all. needs retry")
-			return true
-		}
-
-		logger.Info("Did distribute shares after all. needs no retry")
+	//if generalRetry {
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
+	if err != nil {
+		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)
+		return true
 	}
+
+	// TODO can I prove this is the correct share distribution hash?
+	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
+	var emptySharesHash [32]byte
+	if participantState.DistributedSharesHash == emptySharesHash {
+		logger.Warn("Did not distribute shares after all. needs retry")
+		return true
+	}
+
+	logger.Info("Did distribute shares after all. needs no retry")
+	//}
 
 	return false
 }
