@@ -3,7 +3,10 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/pkg/errors"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -19,6 +22,7 @@ type RegisterTask struct {
 	End     uint64
 	State   *objects.DkgState
 	Success bool
+	TxOpts  *bind.TransactOpts
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
@@ -95,29 +99,82 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	// }
 
 	// Setup
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return err
+	if t.TxOpts == nil {
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		if err != nil {
+			logger.Errorf("getting txn opts failed: %v", err)
+			return err
+		}
+
+		// gasPrice, err := eth.client.SuggestGasPrice(ctx)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// tipCap, err := eth.client.SuggestGasTipCap(ctx)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("Could not get suggested gas tip cap: %w", err)
+		// }
+
+		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+		if err != nil {
+			logger.Errorf("getting acct nonce: %v", err)
+			return err
+		}
+
+		txnOpts.Nonce = big.NewInt(int64(nonce))
+
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": txnOpts.GasFeeCap,
+			"GasTipCap": txnOpts.GasTipCap,
+			"Nonce":     txnOpts.Nonce,
+		}).Info("registering fees")
+
+		txnOpts.GasFeeCap = big.NewInt(17537) // 57537 - 421211
+		txnOpts.GasTipCap = big.NewInt(1)     // 1
+
+		t.TxOpts = txnOpts
 	}
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := c.Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return err
 	}
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap":  t.TxOpts.GasFeeCap,
+		"GasFeeCap2": txn.GasFeeCap(),
+		"GasTipCap":  t.TxOpts.GasTipCap,
+		"GasTipCap2": txn.GasTipCap(),
+		"Nonce":      t.TxOpts.Nonce,
+		"Nonce2":     txn.Nonce,
+	}).Info("registering fees 2")
+
+	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 20*time.Second)
+	defer cancelFunc()
+
 	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	start := time.Now()
+	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return err
 	}
+	end := time.Now()
+	logger.Infof("elapsed time registering: %v", end.Sub(start))
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": txn.GasFeeCap(),
+		"GasTipCap": txn.GasTipCap(),
+		"Nonce":     t.TxOpts.Nonce,
+		"Nonce2":    txn.Nonce,
+	}).Info("registering fees 3")
+
 	if receipt == nil {
 		logger.Error("missing registration receipt")
 		return errors.New("registration receipt is nil")
@@ -143,40 +200,81 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	defer t.State.Unlock()
 
 	logger.Info("RegisterTask ShouldRetry")
+	var shouldRetry bool
 
-	c := eth.Contracts()
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
-		return true
-	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
+		shouldRetry = true
+	} else {
+		logger = logger.WithField("CurrentHeight", currentBlock)
 
-	// todo: move this to utilities.go
-	var needsRegistration = func() bool {
-		ethdkg := c.Ethdkg()
-		status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+		var needsRegistration bool
+		status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 		if err != nil {
-			logger.Warnf("could not check if we're registered: %v", err)
-			return true
+			needsRegistration = true
+		} else {
+			if status != Registered && status != BadRegistration {
+				needsRegistration = true
+			}
 		}
 
-		if status == Registered || status == BadRegistration {
-			return false
+		if t.State.Phase == objects.RegistrationOpen &&
+			t.Start <= currentBlock &&
+			currentBlock < t.End &&
+			needsRegistration {
+			shouldRetry = true
+		}
+	}
+
+	if shouldRetry {
+		if t.TxOpts == nil {
+			txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+			if err != nil {
+				logger.Errorf("getting txn opts failed: %v", err)
+				return true
+			}
+
+			t.TxOpts = txnOpts
+
+			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+			if err != nil {
+				logger.Errorf("getting acct nonce 2: %v", err)
+				return true
+			}
+
+			txnOpts.Nonce = big.NewInt(int64(nonce))
 		}
 
-		return true
+		// increase FeeCap and TipCap
+		l := logger.WithFields(logrus.Fields{
+			"gasFeeCap": t.TxOpts.GasFeeCap,
+			"gasTipCap": t.TxOpts.GasTipCap,
+			"Nonce":     t.TxOpts.Nonce,
+		})
+
+		// calculate 10% increase in BaseFeeCap
+		var gasFeeCap10pc = (&big.Int{}).Mul(t.TxOpts.GasFeeCap, big.NewInt(10))
+		gasFeeCap10pc = (&big.Int{}).Div(gasFeeCap10pc, big.NewInt(100))
+		t.TxOpts.GasFeeCap = (&big.Int{}).Add(t.TxOpts.GasFeeCap, gasFeeCap10pc)
+		// because of rounding errors
+		t.TxOpts.GasFeeCap = (&big.Int{}).Add(t.TxOpts.GasFeeCap, big.NewInt(1))
+
+		// calculate 10% increase in BaseTipCap
+		var gasTipCap10pc = (&big.Int{}).Mul(t.TxOpts.GasTipCap, big.NewInt(10))
+		gasTipCap10pc = (&big.Int{}).Div(gasTipCap10pc, big.NewInt(100))
+		t.TxOpts.GasTipCap = (&big.Int{}).Add(t.TxOpts.GasTipCap, gasTipCap10pc)
+		// because of rounding errors
+		t.TxOpts.GasTipCap = (&big.Int{}).Add(t.TxOpts.GasTipCap, big.NewInt(1))
+
+		l.WithFields(logrus.Fields{
+			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
+			"gasTipCap10pc": t.TxOpts.GasTipCap,
+		}).Info("Retrying register with higher fee/tip caps")
 	}
 
-	if t.State.Phase == objects.RegistrationOpen &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End &&
-		needsRegistration() {
-		return true
-	}
-
-	return false
+	return shouldRetry
 }
 
 // DoDone just creates a log entry saying task is complete
