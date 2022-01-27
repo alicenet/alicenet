@@ -115,14 +115,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		// 	return nil, fmt.Errorf("Could not get suggested gas tip cap: %w", err)
 		// }
 
-		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-		if err != nil {
-			logger.Errorf("getting acct nonce: %v", err)
-			return err
-		}
-
-		txnOpts.Nonce = big.NewInt(int64(nonce))
-
 		logger.WithFields(logrus.Fields{
 			"GasFeeCap": txnOpts.GasFeeCap,
 			"GasTipCap": txnOpts.GasTipCap,
@@ -134,6 +126,15 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 
 		t.TxOpts = txnOpts
 	}
+
+	nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+	if err != nil {
+		logger.Errorf("getting acct nonce: %v", err)
+		return err
+	}
+
+	logger.Infof("RegisterTask doTask() nonce: %v", nonce)
+	t.TxOpts.Nonce = big.NewInt(int64(nonce))
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
@@ -153,7 +154,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		"Nonce2":     txn.Nonce,
 	}).Info("registering fees 2")
 
-	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 20*time.Second)
+	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 1*time.Second)
 	defer cancelFunc()
 
 	eth.Queue().QueueTransaction(ctx, txn)
@@ -204,6 +205,14 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
+	// nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+	// if err != nil {
+	// 	logger.Errorf("getting acct nonce2: %v", err)
+	// 	return true
+	// }
+
+	// logger.Infof("RegisterTask ShouldRetry() nonce: %v", nonce)
+
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		shouldRetry = true
@@ -212,6 +221,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 		var needsRegistration bool
 		status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+		logger.Infof("registration status: %v", status)
 		if err != nil {
 			needsRegistration = true
 		} else {

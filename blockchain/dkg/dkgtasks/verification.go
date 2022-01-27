@@ -66,16 +66,10 @@ func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
 	// get ethdkg nonce
 	nonce, err := ethdkg.GetNonce(callOpts)
 	if err != nil {
-		return NoRegistration, nil
+		return Undefined, nil
 	}
 
-	// get ethdkg phase
-	phase, err := ethdkg.GetETHDKGPhase(callOpts)
-	if err != nil {
-		return NoRegistration, nil
-	}
-
-	if participantState.Nonce != nonce.Uint64() || participantState.Phase != phase {
+	if participantState.Nonce != nonce.Uint64() {
 		return NoRegistration, nil
 	}
 
