@@ -106,14 +106,13 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 			return err
 		}
 
-		// gasPrice, err := eth.client.SuggestGasPrice(ctx)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// tipCap, err := eth.client.SuggestGasTipCap(ctx)
-		// if err != nil {
-		// 	return nil, fmt.Errorf("Could not get suggested gas tip cap: %w", err)
-		// }
+		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+		if err != nil {
+			logger.Errorf("getting acct nonce 2: %v", err)
+			return err
+		}
+
+		txnOpts.Nonce = big.NewInt(int64(nonce))
 
 		logger.WithFields(logrus.Fields{
 			"GasFeeCap": txnOpts.GasFeeCap,
@@ -121,20 +120,20 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 			"Nonce":     txnOpts.Nonce,
 		}).Info("registering fees")
 
-		txnOpts.GasFeeCap = big.NewInt(17537) // 57537 - 421211
-		txnOpts.GasTipCap = big.NewInt(1)     // 1
+		//txnOpts.GasFeeCap = big.NewInt(17537) // 57537 - 421211
+		//txnOpts.GasTipCap = big.NewInt(1)     // 1
 
 		t.TxOpts = txnOpts
 	}
 
-	nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-	if err != nil {
-		logger.Errorf("getting acct nonce: %v", err)
-		return err
-	}
+	// nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+	// if err != nil {
+	// 	logger.Errorf("getting acct nonce: %v", err)
+	// 	return err
+	// }
 
-	logger.Infof("RegisterTask doTask() nonce: %v", nonce)
-	t.TxOpts.Nonce = big.NewInt(int64(nonce))
+	// logger.Infof("RegisterTask doTask() nonce: %v", nonce)
+	// t.TxOpts.Nonce = big.NewInt(int64(nonce))
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
@@ -142,6 +141,17 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
+
+		if err.Error() == "nonce too low" {
+			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+			if err != nil {
+				logger.Errorf("getting acct nonce 2: %v", err)
+				return err
+			}
+
+			t.TxOpts.Nonce = big.NewInt(int64(nonce))
+		}
+
 		return err
 	}
 
@@ -154,7 +164,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		"Nonce2":     txn.Nonce,
 	}).Info("registering fees 2")
 
-	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 1*time.Second)
+	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelFunc()
 
 	eth.Queue().QueueTransaction(ctx, txn)
@@ -247,14 +257,6 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 			}
 
 			t.TxOpts = txnOpts
-
-			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-			if err != nil {
-				logger.Errorf("getting acct nonce 2: %v", err)
-				return true
-			}
-
-			txnOpts.Nonce = big.NewInt(int64(nonce))
 		}
 
 		// increase FeeCap and TipCap
