@@ -59,21 +59,9 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 	logger.Info("DisputeMissingRegistrationTask doTask()")
 
-	var accusableParticipants []common.Address
-
-	// find participants who did not register
-	for _, addr := range t.State.ValidatorAddresses {
-
-		participant, ok := t.State.Participants[addr]
-
-		if !ok ||
-			participant.Nonce != t.State.Nonce ||
-			participant.Phase != uint8(objects.RegistrationOpen) ||
-			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
-				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0) {
-			// did not register
-			accusableParticipants = append(accusableParticipants, addr)
-		}
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
 	}
 
 	// accuse missing validators
@@ -89,6 +77,8 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing key shares: %v", err)
 		}
+
+		//TODO: add retry logic, add timeout
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -121,34 +111,27 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 
 	logger.Info("DisputeMissingRegistrationTask ShouldRetry()")
 
-	//c := eth.Contracts()
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-
-	currentBlock, err := eth.GetCurrentHeight(ctx)
-	if err != nil {
-		return true
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
 	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
 
-	// Definitely past quitting time
-	if currentBlock >= t.End {
-		logger.Info("aborting registration due to scheduled end")
+	if t.State.Phase != objects.RegistrationOpen {
 		return false
 	}
 
 	// Check to see if we are already registered
-	ethdkg := eth.Contracts().Ethdkg()
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
+		logger.Errorf("DisputeMissingRegistrationTask ShouldRetry() error getting accusable participants: %v", err)
 		return true
 	}
 
-	if status == Registered || status == BadRegistration {
-		return false
+	if len(accusableParticipants) > 0 {
+		return true
 	}
 
-	return true
+	return false
 }
 
 // DoDone just creates a log entry saying task is complete
@@ -157,4 +140,38 @@ func (t *DisputeMissingRegistrationTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("DisputeMissingRegistrationTask done")
+}
+
+func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+	var accusableParticipants []common.Address
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+
+	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	if err != nil {
+		return nil, dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
+	}
+
+	validatorsMap := make(map[common.Address]bool)
+	for _, validator := range validators {
+		validatorsMap[validator] = true
+	}
+
+	// find participants who did not register
+	for _, addr := range t.State.ValidatorAddresses {
+
+		participant, ok := t.State.Participants[addr]
+		_, isValidator := validatorsMap[addr]
+
+		if isValidator && (!ok ||
+			participant.Nonce != t.State.Nonce ||
+			participant.Phase != uint8(objects.RegistrationOpen) ||
+			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {
+
+			// did not register
+			accusableParticipants = append(accusableParticipants, addr)
+		}
+	}
+
+	return accusableParticipants, nil
 }

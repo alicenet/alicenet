@@ -110,6 +110,8 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
 
+	//TODO: add retry logic, add timeout
+
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
@@ -139,6 +141,11 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	logger.Info("KeyshareSubmissionTask ShouldRetry()")
 
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
 	state := t.State
 
 	me := state.Account
@@ -150,21 +157,9 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return true
 	}
 
-	// phaseStartBlock, err := eth.Contracts().Ethdkg().GetPhaseStartBlock(callOpts)
-	// if err != nil {
-	// 	logger.Warnf("KeyshareSubmissionTask ShouldRetry GetPhaseStartBlock error: %v", err)
-	// 	return true
-	// }
-
-	// currentEthBlock, err = eth.GetCurrentHeight()
-	// if err != nil {
-	// 	logger.Warnf("KeyshareSubmissionTask ShouldRetry GetCurrentHeight error: %v", err)
-	// 	return true
-	// }
-
 	// DisputeShareDistribution || KeyShareSubmission
-	if phase == uint8(objects.DisputeShareDistribution) || phase == uint8(objects.KeyShareSubmission) {
-		return true
+	if phase != uint8(objects.DisputeShareDistribution) && phase != uint8(objects.KeyShareSubmission) {
+		return false
 	}
 
 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
@@ -177,28 +172,8 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	// This wraps the retry logic for the general case
-	// generalRetry := GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-	// 	state.TransportPublicKey, t.OriginalRegistrationEnd, state.KeyShareSubmissionEnd)
-
-	// // If it's generally good to retry, let's try to be more specific
-	// if generalRetry {
-	// 	me := state.Account
-	// 	callOpts := eth.GetCallOpts(ctx, me)
-	// 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.KeyShareG1s[me.Address])
-	// 	if err != nil {
-	// 		return true
-	// 	}
-	// 	logger.Infof("Key shared status: %v", status)
-
-	// 	// If we have already shared a key, there is no reason to retry. Regardless of whether it's right or wrong.
-	// 	if status == KeyShared || status == BadKeyShared {
-	// 		return false
-	// 	}
-	// }
-
-	logger.Info("KeyshareSubmissionTask ShouldRetry END-false")
-	return false
+	logger.Info("KeyshareSubmissionTask ShouldRetry END-true")
+	return true
 }
 
 // DoDone creates a log entry saying task is complete

@@ -148,12 +148,25 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	// Loop through dishonest participants and perform accusation
 	for _, dishonestParticipant := range t.State.DishonestValidators {
+
+		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, dishonestParticipant.Address)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
+		}
+
+		if !isValidator {
+			continue
+		}
+
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
 		}
+
+		//TODO: add retry logic, add timeout
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -186,22 +199,28 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 
 	logger.Info("GPKJDisputeTask ShouldRetry()")
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.DisputeGPKJSubmission {
+		return false
+	}
+
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
-		return true
-	}
-	//logger = logger.WithField("CurrentHeight", currentBlock)
-
-	if t.State.Phase == objects.DisputeGPKJSubmission &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End {
+		logger.Error("could not get BadParticipants")
 		return true
 	}
 
-	// This wraps the retry logic for every phase, _except_ registration
-	// return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	// 	t.State.TransportPublicKey, t.Start, t.End)
-	return false
+	logger.WithFields(logrus.Fields{
+		"state.BadShares":     len(t.State.BadShares),
+		"eth.badParticipants": badParticipants,
+	}).Debug("DisputeGPKjTask ShouldRetry2()")
+
+	return len(t.State.DishonestValidators) != int(badParticipants.Int64())
 }
 
 // DoDone creates a log entry saying task is complete

@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -54,17 +53,9 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 
 	logger.Info("DisputeMissingShareDistributionTask doTask()")
 
-	var accusableParticipants []common.Address
-
-	// find participants who did not distribute shares
-	var emptySharesHash [32]byte
-	for _, p := range t.State.Participants {
-		if p.Nonce != t.State.Nonce ||
-			p.Phase != uint8(objects.ShareDistribution) ||
-			p.DistributedSharesHash == emptySharesHash {
-			// did not distribute shares
-			accusableParticipants = append(accusableParticipants, p.Address)
-		}
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting accusableParticipants: %v", err)
 	}
 
 	// accuse missing validators
@@ -80,6 +71,8 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error accusing missing key shares: %v", err)
 		}
+
+		//TODO: add retry logic, add timeout
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -110,21 +103,26 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 
 	logger.Info("DisputeMissingShareDistributionTask ShouldRetry()")
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.ShareDistribution {
+		return false
+	}
+
+	// Check to see if we are already registered
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return true
-	}
-	//logger = logger.WithField("CurrentHeight", currentBlock)
-
-	if t.State.Phase == objects.ShareDistribution &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End {
+		logger.Errorf("DisputeMissingShareDistributionTask ShouldRetry() error getting accusable participants: %v", err)
 		return true
 	}
 
-	// This wraps the retry logic for every phase, _except_ registration
-	// return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	// 	t.State.TransportPublicKey, t.Start, t.End)
+	if len(accusableParticipants) > 0 {
+		return true
+	}
+
 	return false
 }
 
@@ -134,4 +132,33 @@ func (t *DisputeMissingShareDistributionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Info("DisputeMissingShareDistributionTask done")
+}
+
+func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+	var accusableParticipants []common.Address
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+
+	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	if err != nil {
+		return nil, dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask getAccusableParticipants() error getting validators: %v", err)
+	}
+
+	validatorsMap := make(map[common.Address]bool)
+	for _, validator := range validators {
+		validatorsMap[validator] = true
+	}
+
+	// find participants who did not register
+	var emptySharesHash [32]byte
+	for _, p := range t.State.Participants {
+		_, isValidator := validatorsMap[p.Address]
+		if isValidator && (p.Nonce != t.State.Nonce ||
+			p.Phase != uint8(objects.ShareDistribution) ||
+			p.DistributedSharesHash == emptySharesHash) {
+			// did not distribute shares
+			accusableParticipants = append(accusableParticipants, p.Address)
+		}
+	}
+
+	return accusableParticipants, nil
 }

@@ -109,6 +109,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 		return err
 	}
 
+	//TODO: add retry logic and timeout
+
 	// Distribute shares
 	//logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
 	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
@@ -146,16 +148,17 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 
 	logger.Info("ShareDistributionTask ShouldRetry()")
 
+	// This wraps the retry logic for the general case
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
 	if t.State.Phase != objects.ShareDistribution {
 		return false
 	}
 
-	// This wraps the retry logic for the general case
-	// generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	// 	t.State.TransportPublicKey, t.Start, t.End)
-
 	// If it's generally good to retry, let's try to be more specific
-	//if generalRetry {
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
 	if err != nil {
@@ -163,7 +166,6 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return true
 	}
 
-	// TODO can I prove this is the correct share distribution hash?
 	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
 	if participantState.DistributedSharesHash == emptySharesHash {
@@ -172,7 +174,6 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	}
 
 	logger.Info("Did distribute shares after all. needs no retry")
-	//}
 
 	return false
 }

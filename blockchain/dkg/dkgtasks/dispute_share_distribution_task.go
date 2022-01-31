@@ -94,22 +94,19 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 	logger.Info("DisputeShareDistributionTask doTask()")
 
-	for _, participant := range t.State.BadShares {
-		/*
-			function submit_dispute(
-				address issuer,
-				uint256 issuer_list_idx,
-				uint256 disputer_list_idx,
-				uint256[] memory encrypted_shares,
-				uint256[2][] memory commitments,
-				uint256[2] memory shared_key,
-				uint256[2] memory shared_key_correctness_proof
-			) */
-		// eth.Contracts().Ethdkg().SubmitDispute()
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
-		// Initial information;
-		// dishonestAddress issued bad information; this is participant.
-		// disputer is disputing them; *you* are disputing the information.
+	for _, participant := range t.State.BadShares {
+
+		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
+		}
+
+		if !isValidator {
+			continue
+		}
+
 		dishonestAddress := participant.Address
 		encryptedShares := t.State.Participants[participant.Address].EncryptedShares
 		commitments := t.State.Participants[participant.Address].Commitments
@@ -144,6 +141,8 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}
 
+		//TODO: add retry logic, add timeout
+
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 		if err != nil {
@@ -170,6 +169,16 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 	defer t.State.Unlock()
 
 	logger.Info("DisputeShareDistributionTask ShouldRetry()")
+
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.DisputeShareDistribution {
+		return false
+	}
+
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
@@ -179,13 +188,9 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 	logger.WithFields(logrus.Fields{
 		"state.BadShares":     len(t.State.BadShares),
 		"eth.badParticipants": badParticipants,
-	}).Info("DisputeShareDistributionTask ShouldRetry2()")
+	}).Debug("DisputeShareDistributionTask ShouldRetry2()")
 
 	return len(t.State.BadShares) != int(badParticipants.Int64())
-
-	// This wraps the retry logic for every phase, _except_ registration
-	//return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	//	t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.DisputeShareDistributionEnd)
 }
 
 // DoDone creates a log entry saying task is complete

@@ -211,7 +211,14 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	defer t.State.Unlock()
 
 	logger.Info("RegisterTask ShouldRetry")
-	var shouldRetry bool
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.RegistrationOpen {
+		return false
+	}
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
@@ -223,32 +230,18 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	// logger.Infof("RegisterTask ShouldRetry() nonce: %v", nonce)
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
+	var needsRegistration bool
+	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+	logger.Infof("registration status: %v", status)
 	if err != nil {
-		shouldRetry = true
+		needsRegistration = true
 	} else {
-		logger = logger.WithField("CurrentHeight", currentBlock)
-
-		var needsRegistration bool
-		status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
-		logger.Infof("registration status: %v", status)
-		if err != nil {
+		if status != Registered && status != BadRegistration {
 			needsRegistration = true
-		} else {
-			if status != Registered && status != BadRegistration {
-				needsRegistration = true
-			}
-		}
-
-		if t.State.Phase == objects.RegistrationOpen &&
-			t.Start <= currentBlock &&
-			currentBlock < t.End &&
-			needsRegistration {
-			shouldRetry = true
 		}
 	}
 
-	if shouldRetry {
+	if needsRegistration {
 		if t.TxOpts == nil {
 			txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 			if err != nil {
@@ -286,7 +279,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		}).Info("Retrying register with higher fee/tip caps")
 	}
 
-	return shouldRetry
+	return needsRegistration
 }
 
 // DoDone just creates a log entry saying task is complete

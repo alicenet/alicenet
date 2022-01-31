@@ -65,19 +65,9 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("DisputeMissingGPKjTask doTask()")
 
-	var accusableParticipants []common.Address
-
-	// find participants who did not submit GPKj
-	for _, p := range t.State.Participants {
-		if p.Nonce != t.State.Nonce ||
-			p.Phase != uint8(objects.GPKJSubmission) ||
-			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
-				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&
-				p.GPKj[2].Cmp(big.NewInt(0)) == 0 &&
-				p.GPKj[3].Cmp(big.NewInt(0)) == 0) {
-			// did not submit
-			accusableParticipants = append(accusableParticipants, p.Address)
-		}
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting accusableParticipants: %v", err)
 	}
 
 	// accuse missing validators
@@ -93,6 +83,8 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error accusing missing gpkj: %v", err)
 		}
+
+		//TODO: add retry logic, add timeout
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -123,21 +115,26 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	logger.Info("DisputeMissingGPKjTask ShouldRetry()")
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.GPKJSubmission {
+		return false
+	}
+
+	// Check to see if we are already registered
+	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return true
-	}
-	//logger = logger.WithField("CurrentHeight", currentBlock)
-
-	if t.State.Phase == objects.GPKJSubmission &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End {
+		logger.Errorf("DisputeMissingGPKjTask ShouldRetry() error getting accusable participants: %v", err)
 		return true
 	}
 
-	// This wraps the retry logic for every phase, _except_ registration
-	// return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	// 	t.State.TransportPublicKey, t.Start, t.End)
+	if len(accusableParticipants) > 0 {
+		return true
+	}
+
 	return false
 }
 
@@ -147,4 +144,35 @@ func (t *DisputeMissingGPKjTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Info("DisputeMissingGPKjTask done")
+}
+
+func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+	var accusableParticipants []common.Address
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+
+	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	if err != nil {
+		return nil, dkg.LogReturnErrorf(logger, "DisputeMissingGPKjTask getAccusableParticipants() error getting validators: %v", err)
+	}
+
+	validatorsMap := make(map[common.Address]bool)
+	for _, validator := range validators {
+		validatorsMap[validator] = true
+	}
+
+	// find participants who did not submit GPKj
+	for _, p := range t.State.Participants {
+		_, isValidator := validatorsMap[p.Address]
+		if isValidator && (p.Nonce != t.State.Nonce ||
+			p.Phase != uint8(objects.GPKJSubmission) ||
+			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
+				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&
+				p.GPKj[2].Cmp(big.NewInt(0)) == 0 &&
+				p.GPKj[3].Cmp(big.NewInt(0)) == 0)) {
+			// did not submit
+			accusableParticipants = append(accusableParticipants, p.Address)
+		}
+	}
+
+	return accusableParticipants, nil
 }

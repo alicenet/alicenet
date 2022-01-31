@@ -131,6 +131,8 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 
+	//TODO: add retry logic, add timeout
+
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
@@ -159,27 +161,26 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask ShouldRetry()")
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
-	if err != nil {
-		return true
-	}
-	// logger = logger.WithField("CurrentHeight", currentBlock)
-
-	if t.State.Phase == objects.GPKJSubmission &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End {
-		return true
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
 	}
 
-	// var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth, t.State.TransportPublicKey, t.Start, t.End)
+	if t.State.Phase != objects.GPKJSubmission {
+		return false
+	}
 
-	// logger.WithFields(logrus.Fields{
-	// 	"shouldRetry": shouldRetry,
-	// }).Info("GPKSubmissionTask ShouldRetry2()")
+	me := t.State.Account
+	callOpts := eth.GetCallOpts(ctx, me)
+	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)
+	if err == nil && participantState.Gpkj[0].Cmp(t.State.Participants[me.Address].GPKj[0]) == 0 &&
+		participantState.Gpkj[1].Cmp(t.State.Participants[me.Address].GPKj[1]) == 0 &&
+		participantState.Gpkj[2].Cmp(t.State.Participants[me.Address].GPKj[2]) == 0 &&
+		participantState.Gpkj[3].Cmp(t.State.Participants[me.Address].GPKj[3]) == 0 {
+		return false
+	}
 
-	// This wraps the retry logic for the general case
-	// todo: fix this
-	return false
+	return true
 }
 
 // DoDone creates a log entry saying task is complete

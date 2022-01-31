@@ -110,6 +110,10 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 
 	logger.Info("MPKSubmissionTask doTask()")
 
+	if !t.shouldSubmitMPK(ctx, eth) {
+		return nil
+	}
+
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
@@ -123,6 +127,8 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 
+	//TODO: add retry logic, add timeout
+
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
 	if err != nil {
@@ -134,7 +140,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
-		dkg.LogReturnErrorf(logger, "master public key (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+		return dkg.LogReturnErrorf(logger, "master public key (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 	t.Success = true
 
@@ -151,22 +157,16 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("MPKSubmissionTask ShouldRetry()")
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
-	if err != nil {
-		return true
-	}
-	//logger = logger.WithField("CurrentHeight", currentBlock)
-
-	if t.State.Phase == objects.MPKSubmission &&
-		t.Start <= currentBlock &&
-		currentBlock < t.End {
-		return true
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
 	}
 
-	// This wraps the retry logic for every phase, _except_ registration
-	//return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	//	t.State.TransportPublicKey, t.Start, t.End)
-	return false
+	if t.State.Phase != objects.MPKSubmission {
+		return false
+	}
+
+	return t.shouldSubmitMPK(ctx, eth)
 }
 
 // DoDone creates a log entry saying task is complete
@@ -175,4 +175,20 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
+}
+
+func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum) bool {
+	if t.State.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+		t.State.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
+		t.State.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
+		t.State.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0 {
+		return false
+	}
+
+	isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(eth.GetCallOpts(ctx, t.State.Account))
+	if err == nil && isMPKSet {
+		return false
+	}
+
+	return true
 }

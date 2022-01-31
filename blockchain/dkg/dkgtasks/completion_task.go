@@ -70,6 +70,10 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	logger.Info("CompletionTask doTask()")
 
+	if t.isTaskCompleted(ctx, eth) {
+		return nil
+	}
+
 	// Setup
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -84,6 +88,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	}
 
 	logger.Info("CompletionTask sent completed call")
+
+	//TODO: add retry logic, add timeout
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -117,8 +123,12 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 
 	logger.Info("CompletionTask ShouldRetry()")
 
-	if t.State.Phase != objects.DisputeGPKJSubmission ||
-		t.State.Phase == objects.Completion {
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.isTaskCompleted(ctx, eth) {
 		logger.WithFields(logrus.Fields{
 			"t.State.Phase":      t.State.Phase,
 			"t.State.PhaseStart": t.State.PhaseStart,
@@ -126,17 +136,6 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	// var shouldRetry bool = GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-	// 	t.State.TransportPublicKey, t.Start, t.End)
-
-	// logger.WithFields(logrus.Fields{
-	// 	"shouldRetry": shouldRetry,
-	// 	"t.Start":     t.Start,
-	// 	"t.End":       t.End,
-	// }).Info("CompletionTask ShouldRetry")
-
-	// // This wraps the retry logic for every phase, _except_ registration
-	// return shouldRetry
 	return true
 }
 
@@ -146,4 +145,14 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
+}
+
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {
+	c := eth.Contracts()
+	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, t.State.Account))
+	if err != nil {
+		return false
+	}
+
+	return phase == uint8(objects.Completion)
 }

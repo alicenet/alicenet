@@ -41,7 +41,7 @@ const (
 )
 
 // CheckRegistration checks if given address is registered as expected
-func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
+func CheckRegistration(ethdkg *bindings.ETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
