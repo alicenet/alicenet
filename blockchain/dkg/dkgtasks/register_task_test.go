@@ -96,13 +96,13 @@ func TestRegisterTask(t *testing.T) {
 	// Create a task to register and make sure it succeeds
 	state := objects.NewDkgState(acct)
 	state.Phase = objects.RegistrationOpen
-	state.PhaseStart = openEvent.BlockNumber
-	state.PhaseLength = openEvent.PhaseLength
+	state.PhaseStart = openEvent.StartBlock.Uint64()
+	state.PhaseLength = openEvent.PhaseLength.Uint64()
 	var registrationEnd = state.PhaseStart + state.PhaseLength
 
-	task := dkgtasks.NewRegisterTask(state)
+	task := dkgtasks.NewRegisterTask(state, state.PhaseStart, registrationEnd)
 
-	t.Logf("registration ends:%v", openEvent.RegistrationEnds.Uint64())
+	t.Logf("registration ends:%v", registrationEnd)
 
 	log := logger.WithField("TaskID", "foo")
 
