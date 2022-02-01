@@ -126,11 +126,11 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		// 4. Tell system 'acct' wants to join as validator
-		var validatorId [2]*big.Int
-		validatorId[0] = big.NewInt(int64(idx))
-		validatorId[1] = big.NewInt(int64(idx * 2))
+		//var validatorId [2]*big.Int
+		//validatorId[0] = big.NewInt(int64(idx))
+		//validatorId[1] = big.NewInt(int64(idx * 2))
 
-		txn, err = c.Validators().AddValidator(o, acct.Address, validatorId)
+		txn, err = c.ValidatorPool().AddValidator(o, acct.Address)
 		assert.Nilf(t, err, "Failed on register %v", idx)
 		assert.NotNil(t, txn)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
@@ -184,10 +184,10 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 		// 1) complete successfully, or
 		// 2) past the point when we possibly could. This means we aborted somewhere along the way and failed DKG
 		dkgState.RLock()
-		done = dkgState.Complete || (dkgState.CompleteEnd > 0 && monitorState.HighestBlockProcessed >= dkgState.CompleteEnd)
+		phase := dkgState.Phase
+		done = phase == objects.Completion
 		logger.WithFields(logrus.Fields{
-			"Complete":              dkgState.Complete,
-			"CompleteEnd":           dkgState.CompleteEnd,
+			"Phase":                 phase,
 			"HighestBlockProcessed": monitorState.HighestBlockProcessed,
 			"HighestBlockFinalized": monitorState.HighestBlockFinalized,
 			"Done":                  done,
@@ -197,7 +197,7 @@ func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct acc
 
 	// Make sure we used the admin handler
 	assert.True(t, adminHandler.privateKeyCalled)
-	assert.True(t, dkgState.Complete)
+	assert.Equal(t, objects.Completion, dkgState.Phase)
 }
 
 func SetupTasks(tr *objects.TypeRegistry) {
@@ -253,7 +253,6 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 
 	c := eth.Contracts()
 
-	callOpts := eth.GetCallOpts(ctx, ownerAccount)
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
 	assert.Nil(t, err)
 
@@ -270,11 +269,11 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg().UpdatePhaseLength(txnOpts, big.NewInt(10))
+	txn, err := c.Ethdkg().SetPhaseLength(txnOpts, 10)
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 
-	txn, err = c.Ethdkg().InitializeState(txnOpts)
+	txn, err = c.Ethdkg().InitializeETHDKG(txnOpts)
 	assert.Nil(t, err)
 	eth.Queue().QueueAndWait(ctx, txn)
 
@@ -283,10 +282,6 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 	t.Logf("Current Height:%v", currentHeight)
-
-	endingHeight, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
-	assert.Nil(t, err)
-	t.Logf("Registration Close Height:%v", endingHeight)
 
 	// Wait for validators to complete
 	wg.Wait()

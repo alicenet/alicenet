@@ -153,7 +153,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		logger.Info("KeyshareSubmissionTask ShouldRetry GetETHDKGPhase error: %v", err)
+		logger.Infof("KeyshareSubmissionTask ShouldRetry GetETHDKGPhase error: %v", err)
 		return true
 	}
 
@@ -164,7 +164,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
 	if err != nil {
-		logger.Info("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
+		logger.Infof("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true
 	}
 
