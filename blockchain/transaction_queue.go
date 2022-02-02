@@ -146,6 +146,12 @@ func (b *Behind) collectReceipts() {
 					b.logger.Debugf("receipt not found: %v", txn.Hex())
 					return
 				}
+
+				//This only could happen using a SimulatedBackend during the tests
+				if rcpt == nil {
+					b.logger.Debugf("receipt is nil: %v", txn.Hex())
+					return
+				}
 				b.readyTxns[txn] = rcpt
 
 				var profile TransactionProfile

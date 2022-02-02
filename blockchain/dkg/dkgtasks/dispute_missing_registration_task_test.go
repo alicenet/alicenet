@@ -20,8 +20,8 @@ type TestSuite struct {
 	ecdsaPrivateKeys []*ecdsa.PrivateKey
 }
 
-func TestDoTaskSuccessNoAccusableParticipants(t *testing.T) {
-	suite := NewTestSuite(t, 5, 100)
+func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
+	suite := NewTestSuite(t, 5, 1, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -33,13 +33,9 @@ func TestDoTaskSuccessNoAccusableParticipants(t *testing.T) {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// Set Registration success to true
-		//suite.dkgStates[idx].Phase = objects.RegistrationOpen
-		suite.dkgStates[idx].PhaseStart = 20
-		//suite.dkgStates[idx].PhaseLength = event.PhaseLength.Uint64()
-		//suite.dkgStates[idx].ConfirmationLength = event.ConfirmationLength.Uint64()
-		//suite.dkgStates[idx].Nonce = event.Nonce.Uint64()
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, suite.dkgStates[idx].PhaseStart, suite.dkgStates[idx].PhaseStart+suite.dkgStates[idx].PhaseLength)
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
 		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, suite.eth)
@@ -48,9 +44,143 @@ func TestDoTaskSuccessNoAccusableParticipants(t *testing.T) {
 		suite.eth.Commit()
 		assert.True(t, tasks[idx].Success)
 	}
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1), badParticipants.Int64())
 }
 
-func NewTestSuite(t *testing.T, n int, phaseLength uint16) *TestSuite {
+func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
+	suite := NewTestSuite(t, 5, 3, 100)
+	defer suite.eth.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	accounts := suite.eth.GetKnownAccounts()
+	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		state := suite.dkgStates[idx]
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(3), badParticipants.Int64())
+}
+
+func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
+	suite := NewTestSuite(t, 5, 5, 100)
+	defer suite.eth.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	accounts := suite.eth.GetKnownAccounts()
+	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		state := suite.dkgStates[idx]
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(5), badParticipants.Int64())
+}
+
+func TestShouldRetryTrue(t *testing.T) {
+	suite := NewTestSuite(t, 5, 0, 100)
+	defer suite.eth.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	accounts := suite.eth.GetKnownAccounts()
+	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		state := suite.dkgStates[idx]
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		suite.dkgStates[idx].Nonce++
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		assert.True(t, shouldRetry)
+	}
+}
+
+func TestShouldRetryFalse(t *testing.T) {
+	suite := NewTestSuite(t, 5, 0, 100)
+	defer suite.eth.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	accounts := suite.eth.GetKnownAccounts()
+	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		state := suite.dkgStates[idx]
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		assert.False(t, shouldRetry)
+	}
+}
+
+func NewTestSuite(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -97,20 +227,37 @@ func NewTestSuite(t *testing.T, n int, phaseLength uint16) *TestSuite {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		// Set Registration success to true
-		dkgStates[idx].Phase = objects.RegistrationOpen
-		dkgStates[idx].PhaseStart = event.StartBlock.Uint64()
-		dkgStates[idx].PhaseLength = event.PhaseLength.Uint64()
-		dkgStates[idx].ConfirmationLength = event.ConfirmationLength.Uint64()
-		dkgStates[idx].Nonce = event.Nonce.Uint64()
+		state.Phase = objects.RegistrationOpen
+		state.PhaseStart = event.StartBlock.Uint64()
+		state.PhaseLength = event.PhaseLength.Uint64()
+		state.ConfirmationLength = event.ConfirmationLength.Uint64()
+		state.Nonce = event.Nonce.Uint64()
 		tasks[idx] = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 		err = tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
+
+		if idx >= n-unregisteredValidators {
+			continue
+		}
+
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
 		assert.True(t, tasks[idx].Success)
+
+		for i := 0; i < n; i++ {
+			dkgStates[i].Participants[state.Account.Address] = &objects.Participant{
+				Address:   state.Account.Address,
+				Index:     idx + 1,
+				PublicKey: state.TransportPublicKey,
+				Phase:     uint8(objects.RegistrationOpen),
+				Nonce:     state.Nonce,
+			}
+		}
 	}
+
+	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 
 	return &TestSuite{
 		eth:              eth,
