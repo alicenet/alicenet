@@ -113,3 +113,62 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
+
+func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
+	n := 5
+	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Test", "Test1")
+
+	tasks := make([]*dkgtasks.DisputeMissingShareDistributionTask, len(suite.dkgStates))
+
+	for idx := range accounts {
+		state := suite.dkgStates[idx]
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingShareDistributionTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		suite.dkgStates[idx].Nonce++
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		assert.True(t, shouldRetry)
+	}
+}
+
+func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
+	n := 5
+	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Test", "Test1")
+
+	tasks := make([]*dkgtasks.DisputeMissingShareDistributionTask, len(suite.dkgStates))
+
+	for idx := range accounts {
+		state := suite.dkgStates[idx]
+		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
+		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
+		tasks[idx] = dkgtasks.NewDisputeMissingShareDistributionTask(state, phaseStart, phaseEnd)
+		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, tasks[idx].Success)
+	}
+
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		assert.False(t, shouldRetry)
+	}
+}
