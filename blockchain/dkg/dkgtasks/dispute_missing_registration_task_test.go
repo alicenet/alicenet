@@ -2,14 +2,15 @@ package dkgtasks_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
-	suite := StartAtDistributeSharesPhase(t, 5, 1, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 1, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -40,7 +41,7 @@ func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
 }
 
 func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
-	suite := StartAtDistributeSharesPhase(t, 5, 3, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 3, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -71,7 +72,7 @@ func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
 }
 
 func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
-	suite := StartAtDistributeSharesPhase(t, 5, 5, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 5, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -102,7 +103,7 @@ func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 }
 
 func TestShouldRetryTrue(t *testing.T) {
-	suite := StartAtDistributeSharesPhase(t, 5, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 0, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -136,7 +137,7 @@ func TestShouldRetryTrue(t *testing.T) {
 }
 
 func TestShouldNotRetryAfterSuccessfulyAccusingAllMissingParticipants(t *testing.T) {
-	suite := StartAtDistributeSharesPhase(t, 5, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 0, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())

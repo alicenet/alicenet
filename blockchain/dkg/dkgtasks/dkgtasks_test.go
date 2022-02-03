@@ -3,12 +3,13 @@ package dkgtasks_test
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/MadBase/bridge/bindings"
 	"math"
 	"math/big"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/MadBase/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
@@ -294,7 +295,7 @@ type TestSuite struct {
 	ecdsaPrivateKeys []*ecdsa.PrivateKey
 }
 
-func StartAtDistributeSharesPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
+func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -378,4 +379,50 @@ func StartAtDistributeSharesPhase(t *testing.T, n int, unregisteredValidators in
 		dkgStates:        dkgStates,
 		ecdsaPrivateKeys: ecdsaPrivateKeys,
 	}
+}
+
+func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
+	suite := StartFromRegistrationOpenPhase(t, n, 0, phaseLength)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+
+	// Do Share Distribution task
+	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
+	for idx := 0; idx < n; idx++ {
+		state := suite.dkgStates[idx]
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+
+		// set phase
+		state.Phase = objects.ShareDistribution
+		state.PhaseStart = currentHeight + state.ConfirmationLength
+		phaseEnd := state.PhaseStart + state.PhaseLength
+
+		if idx >= n-undistributedShares {
+			continue
+		}
+
+		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
+		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+
+		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, shareDistributionTasks[idx].Success)
+
+		// event
+		for j := 0; j < n; j++ {
+			suite.dkgStates[j].Participants[state.Account.Address].Phase = uint8(objects.ShareDistribution)
+		}
+
+	}
+	// Ensure all participants have valid share information
+	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
+
+	advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+
+	return suite
 }

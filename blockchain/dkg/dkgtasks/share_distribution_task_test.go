@@ -2,6 +2,10 @@ package dkgtasks_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -9,15 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
 )
 
 //Here we test the happy path.
 func TestShareDistributionGood(t *testing.T) {
 	n := 5
-	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -45,7 +46,7 @@ func TestShareDistributionGood(t *testing.T) {
 
 	}
 	// Ensure all participants have valid share information
-	dtest.PopulateEncryptedSharesAndCommitments(suite.dkgStates)
+	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
 }
 
 // Here we test for invalid share distribution.
@@ -53,7 +54,7 @@ func TestShareDistributionGood(t *testing.T) {
 // This should result in a failed submission.
 func TestShareDistributionBad1(t *testing.T) {
 	n := 5
-	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -120,7 +121,7 @@ func TestShareDistributionBad1(t *testing.T) {
 // This should result in a failed submission.
 func TestShareDistributionBad2(t *testing.T) {
 	n := 5
-	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -197,7 +198,7 @@ func TestShareDistributionBad2(t *testing.T) {
 //
 //	// After receiving no share, an EthDKG restart should be required.
 //	n := 4
-//	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+//	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 //	accounts := suite.eth.GetKnownAccounts()
 //	ctx := context.Background()
 //	eth := suite.eth
@@ -350,7 +351,7 @@ func TestShareDistributionBad2(t *testing.T) {
 // This should result in a failed submission.
 func TestShareDistributionBad4(t *testing.T) {
 	n := 7
-	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -420,7 +421,7 @@ func TestShareDistributionBad4(t *testing.T) {
 // This should result in a failed submission.
 func TestShareDistributionBad5(t *testing.T) {
 	n := 6
-	suite := StartAtDistributeSharesPhase(t, n, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -430,8 +431,8 @@ func TestShareDistributionBad5(t *testing.T) {
 	dtest.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	badShareIdx := n - 2
-	startPhase := currentHeight + dkgStates[0].ConfirmationLength
-	endPhase := startPhase + dkgStates[0].PhaseLength
+	phaseStart := currentHeight + dkgStates[0].ConfirmationLength
+	phaseEnd := phaseStart + dkgStates[0].PhaseLength
 	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
@@ -447,7 +448,7 @@ func TestShareDistributionBad5(t *testing.T) {
 		// set phase
 		state.Phase = objects.ShareDistribution
 
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, startPhase, endPhase)
+		tasks[idx] = dkgtasks.NewShareDistributionTask(state, phaseStart, phaseEnd)
 		tasks[idx].DoWork(ctx, logger, eth)
 
 		eth.Commit()

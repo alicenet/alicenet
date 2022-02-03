@@ -3,13 +3,16 @@ package dtest
 import (
 	"crypto/ecdsa"
 	"math/big"
+	"testing"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/etest"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/stretchr/testify/assert"
 )
 
 func InitializeNewDetDkgStateInfo(n int) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
@@ -262,19 +265,27 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 	}
 }
 
-func PopulateEncryptedSharesAndCommitments(dkgStates []*objects.DkgState) {
+func PopulateEncryptedSharesAndCommitments(t *testing.T, dkgStates []*objects.DkgState) {
 	n := len(dkgStates)
 	for k := 0; k < n; k++ {
 		dkgState := dkgStates[k]
-		publicCoefs := dkgState.Participants[dkgState.Account.Address].Commitments
+		commitments := dkgState.Participants[dkgState.Account.Address].Commitments
 		encryptedShares := dkgState.Participants[dkgState.Account.Address].EncryptedShares
+
+		// compute distributed shares hash
+		distributedSharesHash, _, _, err := dkg.ComputeDistributedSharesHash(encryptedShares, commitments)
+		assert.Nil(t, err)
+
+		dkgState.Participants[dkgState.Account.Address].DistributedSharesHash = distributedSharesHash
+
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
 			if ell == k {
 				continue
 			}
-			dkgStates[ell].Participants[dkgState.Account.Address].Commitments = publicCoefs
+			dkgStates[ell].Participants[dkgState.Account.Address].Commitments = commitments
 			dkgStates[ell].Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
+			dkgStates[ell].Participants[dkgState.Account.Address].DistributedSharesHash = distributedSharesHash
 		}
 	}
 }
