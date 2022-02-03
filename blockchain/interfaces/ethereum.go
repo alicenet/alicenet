@@ -50,6 +50,7 @@ type Ethereum interface {
 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
 	GetValidators(context.Context) ([]common.Address, error)
+	GetFinalityDelay() uint64
 
 	KnownSelectors() SelectorMap
 	Queue() TxnQueue

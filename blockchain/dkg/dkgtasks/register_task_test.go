@@ -2,10 +2,11 @@ package dkgtasks_test
 
 import (
 	"context"
-	"github.com/MadBase/bridge/bindings"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/MadBase/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
@@ -135,14 +136,14 @@ func TestRegistrationGood2(t *testing.T) {
 	// Shorten ethdkg phase for testing purposes
 	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, 100)
 	assert.Nil(t, err)
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.Nil(t, err)
 
 	eth.Commit()
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	var event *bindings.ETHDKGRegistrationOpened
@@ -226,14 +227,14 @@ func TestRegistrationBad1(t *testing.T) {
 	// Shorten ethdkg phase for testing purposes
 	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, 100)
 	assert.Nil(t, err)
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.Nil(t, err)
 
 	eth.Commit()
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	var event *bindings.ETHDKGRegistrationOpened
@@ -254,8 +255,7 @@ func TestRegistrationBad1(t *testing.T) {
 	state := dkgStates[0]
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := &dkgtasks.RegisterTask{}
-	task = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 	err = task.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -290,14 +290,14 @@ func TestRegistrationBad2(t *testing.T) {
 	// Shorten ethdkg phase for testing purposes
 	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, 100)
 	assert.Nil(t, err)
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.Nil(t, err)
 
 	eth.Commit()
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	var event *bindings.ETHDKGRegistrationOpened
@@ -317,8 +317,7 @@ func TestRegistrationBad2(t *testing.T) {
 	state := dkgStates[0]
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := &dkgtasks.RegisterTask{}
-	task = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 	err = task.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -386,7 +385,7 @@ func TestRegistrationBad4(t *testing.T) {
 	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
-	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
+	_, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.NotNil(t, err)
 }
 
@@ -415,14 +414,14 @@ func TestRegistrationBad5(t *testing.T) {
 	// Shorten ethdkg phase for testing purposes
 	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, 100)
 	assert.Nil(t, err)
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.Nil(t, err)
 
 	eth.Commit()
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	var event *bindings.ETHDKGRegistrationOpened
@@ -446,8 +445,7 @@ func TestRegistrationBad5(t *testing.T) {
 	state := dkgStates[0]
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := &dkgtasks.RegisterTask{}
-	task = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 	err = task.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	err = task.DoWork(ctx, logger, eth)

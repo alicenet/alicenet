@@ -3,6 +3,9 @@ package dkgtasks_test
 import (
 	"context"
 	"crypto/ecdsa"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -10,8 +13,6 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 type TestSuite struct {
@@ -147,7 +148,7 @@ func TestShouldRetryTrue(t *testing.T) {
 	}
 }
 
-func TestShouldRetryFalse(t *testing.T) {
+func TestShouldNotRetryAfterSuccessfulyAccusingAllMissingParticipants(t *testing.T) {
 	suite := NewTestSuite(t, 5, 0, 100)
 	defer suite.eth.Close()
 
@@ -200,14 +201,14 @@ func NewTestSuite(t *testing.T, n int, unregisteredValidators int, phaseLength u
 	// Shorten ethdkg phase for testing purposes
 	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, phaseLength)
 	assert.Nil(t, err)
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
 	assert.Nil(t, err)
 
 	eth.Commit()
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
 	var event *bindings.ETHDKGRegistrationOpened

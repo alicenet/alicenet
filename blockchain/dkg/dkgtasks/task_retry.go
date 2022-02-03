@@ -66,7 +66,7 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 		return true
 	}
 
-	logger = logger.WithField("CurrentHeight", currentBlock)
+	//logger = logger.WithField("CurrentHeight", currentBlock)
 	if currentBlock >= expectedLastBlock || currentBlock < expectedFirstBlock {
 		return false
 	}

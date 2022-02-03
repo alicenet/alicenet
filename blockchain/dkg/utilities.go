@@ -171,7 +171,7 @@ func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*
 	return distributedSharesHash, encryptedSharesHash, commitmentsHash, nil
 }
 
-func WaitConfirmations(nConfirmation uint64, txHash common.Hash, ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
 	//var nConfirmation uint64 = 12
 	var done = false
@@ -207,7 +207,7 @@ func WaitConfirmations(nConfirmation uint64, txHash common.Hash, ctx context.Con
 			return LogReturnErrorf(logger, "could not get block height: %v", err)
 		}
 
-		if currentHeight >= receiptBlock+nConfirmation {
+		if currentHeight >= receiptBlock+eth.GetFinalityDelay() {
 			done = true
 		}
 

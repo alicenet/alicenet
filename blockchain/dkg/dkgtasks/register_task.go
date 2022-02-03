@@ -96,10 +96,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 
 	logger.Info("RegisterTask doTask()")
 
-	// if block >= t.State.RegistrationEnd {
-	// 	return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, t.State.RegistrationEnd)
-	// }
-
 	// Setup
 	if t.TxOpts == nil {
 		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -127,15 +123,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 
 		t.TxOpts = txnOpts
 	}
-
-	// nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-	// if err != nil {
-	// 	logger.Errorf("getting acct nonce: %v", err)
-	// 	return err
-	// }
-
-	// logger.Infof("RegisterTask doTask() nonce: %v", nonce)
-	// t.TxOpts.Nonce = big.NewInt(int64(nonce))
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
@@ -189,7 +176,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return errors.New("missing registration receipt")
 	}
 
-	err = dkg.WaitConfirmations(12, receipt.TxHash, ctx, logger, eth)
+	err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
 	if err != nil {
 		logger.Errorf("waiting confirmations failed: %v", err)
 		return err
@@ -278,7 +265,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 		var emptyHash common.Hash
 		if t.TxHash != emptyHash {
-			err = dkg.WaitConfirmations(12, t.TxHash, ctx, logger, eth)
+			err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
 			if err != nil {
 				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)
 				return true
