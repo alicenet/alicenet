@@ -2,12 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/pkg/errors"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -23,6 +24,7 @@ type RegisterTask struct {
 	State   *objects.DkgState
 	Success bool
 	TxOpts  *bind.TransactOpts
+	TxHash  common.Hash
 }
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
@@ -155,13 +157,18 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return err
 	}
 
+	t.TxHash = txn.Hash()
+
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  t.TxOpts.GasFeeCap,
-		"GasFeeCap2": txn.GasFeeCap(),
-		"GasTipCap":  t.TxOpts.GasTipCap,
-		"GasTipCap2": txn.GasTipCap(),
-		"Nonce":      t.TxOpts.Nonce,
-		"Nonce2":     txn.Nonce,
+		"GasFeeCap":   t.TxOpts.GasFeeCap,
+		"GasFeeCap2":  txn.GasFeeCap(),
+		"GasTipCap":   t.TxOpts.GasTipCap,
+		"GasTipCap2":  txn.GasTipCap(),
+		"Nonce":       t.TxOpts.Nonce,
+		"Nonce2":      txn.Nonce,
+		"txHash":      txn.Hash().Hex(),
+		"txHashEmpty": t.TxHash.Hex(),
+		//"emptyHashEq": t.TxHash == emptyHash,
 	}).Info("registering fees 2")
 
 	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
@@ -170,32 +177,22 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	eth.Queue().QueueTransaction(ctx, txn)
 
 	// Waiting for receipt
-	start := time.Now()
+	//start := time.Now()
 	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return err
 	}
-	end := time.Now()
-	logger.Infof("elapsed time registering: %v", end.Sub(start))
-
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txn.GasFeeCap(),
-		"GasTipCap": txn.GasTipCap(),
-		"Nonce":     t.TxOpts.Nonce,
-		"Nonce2":    txn.Nonce,
-	}).Info("registering fees 3")
 
 	if receipt == nil {
-		logger.Error("missing registration receipt")
-		return errors.New("registration receipt is nil")
+		//logger.Error("missing registration receipt")
+		return errors.New("missing registration receipt")
 	}
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		message := fmt.Sprintf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		logger.Error(message)
-		return errors.New(message)
+	err = dkg.WaitConfirmations(12, receipt.TxHash, ctx, logger, eth)
+	if err != nil {
+		logger.Errorf("waiting confirmations failed: %v", err)
+		return err
 	}
 
 	t.Success = true
@@ -277,6 +274,16 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
 			"gasTipCap10pc": t.TxOpts.GasTipCap,
 		}).Info("Retrying register with higher fee/tip caps")
+	} else {
+
+		var emptyHash common.Hash
+		if t.TxHash != emptyHash {
+			err = dkg.WaitConfirmations(12, t.TxHash, ctx, logger, eth)
+			if err != nil {
+				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)
+				return true
+			}
+		}
 	}
 
 	return needsRegistration

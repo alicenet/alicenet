@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -168,4 +169,49 @@ func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*
 	copy(distributedSharesHash[:], hashSlice)
 
 	return distributedSharesHash, encryptedSharesHash, commitmentsHash, nil
+}
+
+func WaitConfirmations(nConfirmation uint64, txHash common.Hash, ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	//var nConfirmation uint64 = 12
+	var done = false
+
+	for !done {
+
+		receipt, err := eth.GetGethClient().TransactionReceipt(ctx, txHash)
+
+		if err != nil {
+			logger.Errorf("waiting for receipt failed: %v", err)
+			return err
+		}
+		//end := time.Now()
+		//logger.Infof("elapsed time registering: %v", end.Sub(start))
+
+		if receipt == nil {
+			//logger.Error("missing registration receipt")
+			return errors.New("receipt is nil")
+		}
+
+		// Check receipt to confirm we were successful
+		if receipt.Status != uint64(1) {
+			message := fmt.Sprintf("tx status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+			logger.Error(message)
+			return errors.New(message)
+		}
+
+		receiptBlock := receipt.BlockNumber.Uint64()
+
+		// receipt was successful, let's wait for `nConfirmation` block confirmations
+		currentHeight, err := eth.GetCurrentHeight(ctx)
+		if err != nil {
+			return LogReturnErrorf(logger, "could not get block height: %v", err)
+		}
+
+		if currentHeight >= receiptBlock+nConfirmation {
+			done = true
+		}
+
+	}
+
+	return nil
 }
