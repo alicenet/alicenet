@@ -3,11 +3,11 @@ package dkgevents
 import (
 	"context"
 	"errors"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -49,15 +49,13 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	state.Lock()
 	defer state.Unlock()
 
-	dkgState := objects.NewDkgState(state.EthDKG.Account)
+	dkgState, registrationEnds, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(
+		state.EthDKG.Account,
+		event.StartBlock.Uint64(),
+		event.PhaseLength.Uint64(),
+		event.ConfirmationLength.Uint64(),
+		event.Nonce.Uint64())
 	state.EthDKG = dkgState
-	dkgState.Phase = objects.RegistrationOpen
-	dkgState.PhaseStart = event.StartBlock.Uint64()
-	dkgState.PhaseLength = event.PhaseLength.Uint64()
-	dkgState.ConfirmationLength = event.ConfirmationLength.Uint64()
-	dkgState.Nonce = event.Nonce.Uint64()
-
-	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 
 	logger.WithFields(logrus.Fields{
 		"StartBlock":         event.StartBlock,
@@ -79,7 +77,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds,
 	}).Info("Scheduling NewRegisterTask")
 
-	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds))
+	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, registrationTask)
 
 	// schedule DisputeRegistration
 	logger.WithFields(logrus.Fields{
@@ -87,11 +85,25 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds + dkgState.PhaseLength,
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, dkgtasks.NewDisputeMissingRegistrationTask(dkgState, registrationEnds, registrationEnds+dkgState.PhaseLength))
+	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, disputeMissingRegistrationTask)
 
 	state.Schedule.Status(logger)
 
 	return nil
+}
+
+func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64) (*objects.DkgState, uint64, interfaces.Task, interfaces.Task) {
+	dkgState := objects.NewDkgState(account)
+	dkgState.Phase = objects.RegistrationOpen
+	dkgState.PhaseStart = startBlock
+	dkgState.PhaseLength = phaseLength
+	dkgState.ConfirmationLength = confirmationLength
+	dkgState.Nonce = nonce
+	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
+	registrationTask := dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds)
+	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(dkgState, registrationEnds, registrationEnds+dkgState.PhaseLength)
+
+	return dkgState, registrationEnds, registrationTask, disputeMissingRegistrationTask
 }
 
 func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {

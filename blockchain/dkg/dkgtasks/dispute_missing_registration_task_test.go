@@ -4,102 +4,95 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
-	suite := StartFromRegistrationOpenPhase(t, 5, 1, 100)
+	n := 5
+	d := 1
+	suite := StartFromRegistrationOpenPhase(t, n, d, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	accounts := suite.eth.GetKnownAccounts()
-	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+
+		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
 	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(1), badParticipants.Int64())
+	assert.Equal(t, int64(d), badParticipants.Int64())
 }
 
 func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
-	suite := StartFromRegistrationOpenPhase(t, 5, 3, 100)
+	n := 5
+	d := 3
+	suite := StartFromRegistrationOpenPhase(t, n, d, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	accounts := suite.eth.GetKnownAccounts()
-	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+
+		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
 	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(3), badParticipants.Int64())
+	assert.Equal(t, int64(d), badParticipants.Int64())
 }
 
 func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
-	suite := StartFromRegistrationOpenPhase(t, 5, 5, 100)
+	n := 5
+	d := 5
+	suite := StartFromRegistrationOpenPhase(t, n, d, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	accounts := suite.eth.GetKnownAccounts()
-	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+
+		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
 	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(5), badParticipants.Int64())
+	assert.Equal(t, int64(d), badParticipants.Int64())
 }
 
 func TestShouldRetryTrue(t *testing.T) {
@@ -110,33 +103,27 @@ func TestShouldRetryTrue(t *testing.T) {
 	defer cancel()
 
 	accounts := suite.eth.GetKnownAccounts()
-	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+	for idx := 0; idx < len(suite.dkgStates); idx++ {
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+
+		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		suite.dkgStates[idx].Nonce++
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		shouldRetry := suite.dispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}
 }
 
-func TestShouldNotRetryAfterSuccessfulyAccusingAllMissingParticipants(t *testing.T) {
+func TestShouldNotRetryAfterSuccessfullyAccusingAllMissingParticipants(t *testing.T) {
 	suite := StartFromRegistrationOpenPhase(t, 5, 0, 100)
 	defer suite.eth.Close()
 
@@ -144,27 +131,20 @@ func TestShouldNotRetryAfterSuccessfulyAccusingAllMissingParticipants(t *testing
 	defer cancel()
 
 	accounts := suite.eth.GetKnownAccounts()
-	tasks := make([]*dkgtasks.DisputeMissingRegistrationTask, len(suite.dkgStates))
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeMissingRegistrationTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+
+		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		shouldRetry := suite.dispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.eth)
 		assert.False(t, shouldRetry)
 	}
 }

@@ -3,6 +3,7 @@ package dkgtasks_test
 import (
 	"context"
 	"crypto/ecdsa"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"math"
 	"math/big"
 	"sync"
@@ -290,23 +291,21 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 }
 
 type TestSuite struct {
-	eth              interfaces.Ethereum
-	dkgStates        []*objects.DkgState
-	ecdsaPrivateKeys []*ecdsa.PrivateKey
+	eth                 interfaces.Ethereum
+	dkgStates           []*objects.DkgState
+	ecdsaPrivateKeys    []*ecdsa.PrivateKey
+	regTasks            []*dkgtasks.RegisterTask
+	dispMissingRegTasks []*dkgtasks.DisputeMissingRegistrationTask
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()
-
-	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
-	err := eth.UnlockAccount(owner)
-	assert.Nil(t, err)
 
 	// Start EthDKG
 	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
@@ -336,31 +335,41 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.NotNil(t, event)
 
 	// Do Register task
-	tasks := make([]*dkgtasks.RegisterTask, n)
+	regTasks := make([]*dkgtasks.RegisterTask, n)
+	dispMissingRegTasks := make([]*dkgtasks.DisputeMissingRegistrationTask, n)
+	dkgStates := make([]*objects.DkgState, n)
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
 		// Set Registration success to true
-		state.Phase = objects.RegistrationOpen
-		state.PhaseStart = event.StartBlock.Uint64()
-		state.PhaseLength = event.PhaseLength.Uint64()
-		state.ConfirmationLength = event.ConfirmationLength.Uint64()
-		state.Nonce = event.Nonce.Uint64()
-		tasks[idx] = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
-		err = tasks[idx].Initialize(ctx, logger, eth, state)
+		state, _, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
+			accounts[idx],
+			event.StartBlock.Uint64(),
+			event.PhaseLength.Uint64(),
+			event.ConfirmationLength.Uint64(),
+			event.Nonce.Uint64())
+
+		dkgStates[idx] = state
+		regTasks[idx] = regTask.(*dkgtasks.RegisterTask)
+		dispMissingRegTasks[idx] = dispMissingRegTask.(*dkgtasks.DisputeMissingRegistrationTask)
+		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 
 		if idx >= n-unregisteredValidators {
 			continue
 		}
 
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = regTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, regTasks[idx].Success)
+	}
 
+	for idx := 0; idx < n; idx++ {
+		state := dkgStates[idx]
+		if idx >= n-unregisteredValidators {
+			continue
+		}
 		for i := 0; i < n; i++ {
 			dkgStates[i].Participants[state.Account.Address] = &objects.Participant{
 				Address:   state.Account.Address,
@@ -375,9 +384,11 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 
 	return &TestSuite{
-		eth:              eth,
-		dkgStates:        dkgStates,
-		ecdsaPrivateKeys: ecdsaPrivateKeys,
+		eth:                 eth,
+		dkgStates:           dkgStates,
+		ecdsaPrivateKeys:    ecdsaPrivateKeys,
+		regTasks:            regTasks,
+		dispMissingRegTasks: dispMissingRegTasks,
 	}
 }
 

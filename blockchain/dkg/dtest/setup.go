@@ -2,6 +2,7 @@ package dtest
 
 import (
 	"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/accounts"
 	"math/big"
 	"testing"
 
@@ -288,4 +289,11 @@ func PopulateEncryptedSharesAndCommitments(t *testing.T, dkgStates []*objects.Dk
 			dkgStates[ell].Participants[dkgState.Account.Address].DistributedSharesHash = distributedSharesHash
 		}
 	}
+}
+
+func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Account) {
+	ecdsaPrivateKeys := etest.SetupPrivateKeys(n)
+	accounts := etest.SetupAccounts(ecdsaPrivateKeys)
+
+	return ecdsaPrivateKeys, accounts
 }

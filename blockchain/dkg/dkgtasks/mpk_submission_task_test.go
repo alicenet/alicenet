@@ -55,19 +55,19 @@ package dkgtasks_test
 //	}
 //
 //	// Do Register task
-//	registerTasks := make([]*dkgtasks.RegisterTask, n)
+//	regTasks := make([]*dkgtasks.RegisterTask, n)
 //	for idx := 0; idx < n; idx++ {
 //		state := dkgStates[idx]
 //		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 //
-//		registerTasks[idx] = dkgtasks.NewRegisterTask(state)
-//		err = registerTasks[idx].Initialize(ctx, logger, eth, state)
+//		regTasks[idx] = dkgtasks.NewRegisterTask(state)
+//		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 //		assert.Nil(t, err)
-//		err = registerTasks[idx].DoWork(ctx, logger, eth)
+//		err = regTasks[idx].DoWork(ctx, logger, eth)
 //		assert.Nil(t, err)
 //
 //		eth.Commit()
-//		assert.True(t, registerTasks[idx].Success)
+//		assert.True(t, regTasks[idx].Success)
 //
 //		// Set Registration success to true
 //		dkgStates[idx].Registration = true
@@ -314,19 +314,19 @@ package dkgtasks_test
 //	}
 //
 //	// Do Register task
-//	registerTasks := make([]*dkgtasks.RegisterTask, n)
+//	regTasks := make([]*dkgtasks.RegisterTask, n)
 //	for idx := 0; idx < n; idx++ {
 //		state := dkgStates[idx]
 //		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 //
-//		registerTasks[idx] = dkgtasks.NewRegisterTask(state)
-//		err = registerTasks[idx].Initialize(ctx, logger, eth, state)
+//		regTasks[idx] = dkgtasks.NewRegisterTask(state)
+//		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 //		assert.Nil(t, err)
-//		err = registerTasks[idx].DoWork(ctx, logger, eth)
+//		err = regTasks[idx].DoWork(ctx, logger, eth)
 //		assert.Nil(t, err)
 //
 //		eth.Commit()
-//		assert.True(t, registerTasks[idx].Success)
+//		assert.True(t, regTasks[idx].Success)
 //
 //		// Set Registration success to true
 //		dkgStates[idx].Registration = true
@@ -535,19 +535,19 @@ package dkgtasks_test
 //	}
 //
 //	// Do Register task
-//	registerTasks := make([]*dkgtasks.RegisterTask, n)
+//	regTasks := make([]*dkgtasks.RegisterTask, n)
 //	for idx := 0; idx < n; idx++ {
 //		state := dkgStates[idx]
 //		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 //
-//		registerTasks[idx] = dkgtasks.NewRegisterTask(state)
-//		err = registerTasks[idx].Initialize(ctx, logger, eth, state)
+//		regTasks[idx] = dkgtasks.NewRegisterTask(state)
+//		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 //		assert.Nil(t, err)
-//		err = registerTasks[idx].DoWork(ctx, logger, eth)
+//		err = regTasks[idx].DoWork(ctx, logger, eth)
 //		assert.Nil(t, err)
 //
 //		eth.Commit()
-//		assert.True(t, registerTasks[idx].Success)
+//		assert.True(t, regTasks[idx].Success)
 //
 //		// Set Registration success to true
 //		dkgStates[idx].Registration = true
@@ -803,19 +803,19 @@ package dkgtasks_test
 //	}
 //
 //	// Do Register task
-//	registerTasks := make([]*dkgtasks.RegisterTask, n)
+//	regTasks := make([]*dkgtasks.RegisterTask, n)
 //	for idx := 0; idx < n; idx++ {
 //		state := dkgStates[idx]
 //		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 //
-//		registerTasks[idx] = dkgtasks.NewRegisterTask(state)
-//		err = registerTasks[idx].Initialize(ctx, logger, eth, state)
+//		regTasks[idx] = dkgtasks.NewRegisterTask(state)
+//		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 //		assert.Nil(t, err)
-//		err = registerTasks[idx].DoWork(ctx, logger, eth)
+//		err = regTasks[idx].DoWork(ctx, logger, eth)
 //		assert.Nil(t, err)
 //
 //		eth.Commit()
-//		assert.True(t, registerTasks[idx].Success)
+//		assert.True(t, regTasks[idx].Success)
 //
 //		// Set Registration success to true
 //		dkgStates[idx].Registration = true

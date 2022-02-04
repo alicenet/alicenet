@@ -2,6 +2,7 @@ package dkgtasks_test
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"math/big"
 	"testing"
 	"time"
@@ -18,9 +19,9 @@ import (
 )
 
 func TestRegisterTask(t *testing.T) {
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(5)
+	n := 5
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 
-	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
 	tr := &objects.TypeRegistry{}
@@ -48,10 +49,6 @@ func TestRegisterTask(t *testing.T) {
 	// Kick off EthDKG
 	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-
-	// mess, err := c.Ethdkg().InitialMessage(callOpts)
-	// assert.Nil(t, err)
-	// assert.NotNil(t, mess)
 
 	// Reuse these
 	var (
@@ -93,22 +90,21 @@ func TestRegisterTask(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	state.Phase = objects.RegistrationOpen
-	state.PhaseStart = openEvent.StartBlock.Uint64()
-	state.PhaseLength = openEvent.PhaseLength.Uint64()
-	var registrationEnd = state.PhaseStart + state.PhaseLength
+	state, registrationEnds, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		acct,
+		openEvent.StartBlock.Uint64(),
+		openEvent.PhaseLength.Uint64(),
+		openEvent.ConfirmationLength.Uint64(),
+		openEvent.Nonce.Uint64())
 
-	task := dkgtasks.NewRegisterTask(state, state.PhaseStart, registrationEnd)
-
-	t.Logf("registration ends:%v", registrationEnd)
+	t.Logf("registration ends:%v", registrationEnds)
 
 	log := logger.WithField("TaskID", "foo")
 
-	err = task.Initialize(ctx, log, eth, state)
+	err = registrationTask.Initialize(ctx, log, eth, state)
 	assert.Nil(t, err)
 
-	err = task.DoWork(ctx, log, eth)
+	err = registrationTask.DoWork(ctx, log, eth)
 	assert.Nil(t, err)
 }
 
@@ -116,7 +112,7 @@ func TestRegisterTask(t *testing.T) {
 // This test calls Initialize and DoWork.
 func TestRegistrationGood2(t *testing.T) {
 	n := 6
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
@@ -124,10 +120,7 @@ func TestRegistrationGood2(t *testing.T) {
 
 	ctx := context.Background()
 
-	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
-	err := eth.UnlockAccount(owner)
-	assert.Nil(t, err)
 
 	// Start EthDKG
 	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
@@ -152,27 +145,24 @@ func TestRegistrationGood2(t *testing.T) {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
-			//
-			//for _, dkgState := range dkgStates {
-			//	dkgevents.PopulateSchedule(dkgState, event)
-			//}
 		}
 	}
 	assert.NotNil(t, event)
 
 	// Do Register task
 	tasks := make([]*dkgtasks.RegisterTask, n)
+	dkgStates := make([]*objects.DkgState, n)
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
+		state, _, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+			accounts[idx],
+			event.StartBlock.Uint64(),
+			event.PhaseLength.Uint64(),
+			event.ConfirmationLength.Uint64(),
+			event.Nonce.Uint64())
 
-		// Set Registration success to true
-		dkgStates[idx].Phase = objects.RegistrationOpen
-		dkgStates[idx].PhaseStart = event.StartBlock.Uint64()
-		dkgStates[idx].PhaseLength = event.PhaseLength.Uint64()
-		dkgStates[idx].ConfirmationLength = event.ConfirmationLength.Uint64()
-		dkgStates[idx].Nonce = event.Nonce.Uint64()
-		tasks[idx] = dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+		dkgStates[idx] = state
+		tasks[idx] = registrationTask.(*dkgtasks.RegisterTask)
 		err = tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -181,9 +171,6 @@ func TestRegistrationGood2(t *testing.T) {
 		eth.Commit()
 		assert.True(t, tasks[idx].Success)
 	}
-
-	// Advance to share distribution phase; afterward, we confirm all are valid
-	//advanceTo(t, eth, dkgStates[0].ShareDistributionStart)
 
 	// Check public keys are present and valid; last will be invalid
 	for idx, acct := range accounts {
@@ -207,7 +194,7 @@ func TestRegistrationGood2(t *testing.T) {
 // This should raise an error and not allow that participant to proceed.
 func TestRegistrationBad1(t *testing.T) {
 	n := 5
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
@@ -215,10 +202,7 @@ func TestRegistrationBad1(t *testing.T) {
 
 	ctx := context.Background()
 
-	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
-	err := eth.UnlockAccount(owner)
-	assert.Nil(t, err)
 
 	// Start EthDKG
 	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
@@ -252,17 +236,22 @@ func TestRegistrationBad1(t *testing.T) {
 	assert.NotNil(t, event)
 
 	// Do Register task
-	state := dkgStates[0]
+	state, _, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		accounts[0],
+		event.StartBlock.Uint64(),
+		event.PhaseLength.Uint64(),
+		event.ConfirmationLength.Uint64(),
+		event.Nonce.Uint64())
+
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
-	err = task.Initialize(ctx, logger, eth, state)
+	err = registrationTask.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	// Mess up private key
 	state.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid
 	state.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(1)}
-	err = task.DoWork(ctx, logger, eth)
+	err = registrationTask.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)
 }
 
@@ -270,18 +259,14 @@ func TestRegistrationBad1(t *testing.T) {
 // This should raise an error and not allow that participant to proceed.
 func TestRegistrationBad2(t *testing.T) {
 	n := 7
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
 	ctx := context.Background()
-
-	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
-	err := eth.UnlockAccount(owner)
-	assert.Nil(t, err)
 
 	// Start EthDKG
 	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
@@ -314,17 +299,21 @@ func TestRegistrationBad2(t *testing.T) {
 	assert.NotNil(t, event)
 
 	// Do Register task
-	state := dkgStates[0]
+	state, _, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		accounts[0],
+		event.StartBlock.Uint64(),
+		event.PhaseLength.Uint64(),
+		event.ConfirmationLength.Uint64(),
+		event.Nonce.Uint64())
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
-	err = task.Initialize(ctx, logger, eth, state)
+	err = registrationTask.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
 	// Mess up private key
 	state.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid (the identity element)
 	state.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(0)}
-	err = task.DoWork(ctx, logger, eth)
+	err = registrationTask.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)
 }
 
@@ -394,7 +383,7 @@ func TestRegistrationBad4(t *testing.T) {
 // This should raise an error.
 func TestRegistrationBad5(t *testing.T) {
 	n := 5
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
@@ -402,10 +391,7 @@ func TestRegistrationBad5(t *testing.T) {
 
 	ctx := context.Background()
 
-	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
-	err := eth.UnlockAccount(owner)
-	assert.Nil(t, err)
 
 	// Start EthDKG
 	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
@@ -442,21 +428,25 @@ func TestRegistrationBad5(t *testing.T) {
 	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 
 	// Do Register task
-	state := dkgStates[0]
+	state, _, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		accounts[0],
+		event.StartBlock.Uint64(),
+		event.PhaseLength.Uint64(),
+		event.ConfirmationLength.Uint64(),
+		event.Nonce.Uint64())
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	task := dkgtasks.NewRegisterTask(state, event.StartBlock.Uint64(), event.StartBlock.Uint64()+event.PhaseLength.Uint64())
-	err = task.Initialize(ctx, logger, eth, state)
+	err = registrationTask.Initialize(ctx, logger, eth, state)
 	assert.Nil(t, err)
-	err = task.DoWork(ctx, logger, eth)
+	err = registrationTask.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)
 }
 
 // ShouldRetry() return false because the registration was successful
 func TestRegisterTaskShouldRetryFalse(t *testing.T) {
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(5)
+	n := 5
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
 	tr := &objects.TypeRegistry{}
@@ -523,34 +513,33 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	openEvent, err := c.Ethdkg().ParseRegistrationOpened(*openLog)
 	assert.Nil(t, err)
 
-	// Create a task to register and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	state.Phase = objects.RegistrationOpen
-	state.PhaseStart = openEvent.StartBlock.Uint64()
-	state.PhaseLength = openEvent.PhaseLength.Uint64()
-	var registrationEnd = state.PhaseStart + state.PhaseLength
+	// Do Register task
+	state, registrationEnds, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		accounts[0],
+		openEvent.StartBlock.Uint64(),
+		openEvent.PhaseLength.Uint64(),
+		openEvent.ConfirmationLength.Uint64(),
+		openEvent.Nonce.Uint64())
 
-	task := dkgtasks.NewRegisterTask(state, state.PhaseStart, registrationEnd)
-
-	t.Logf("registration ends:%v", registrationEnd)
+	t.Logf("registration ends:%v", registrationEnds)
 
 	log := logger.WithField("TaskID", "foo")
 
-	err = task.Initialize(ctx, log, eth, state)
+	err = registrationTask.Initialize(ctx, log, eth, state)
 	assert.Nil(t, err)
 
-	err = task.DoWork(ctx, log, eth)
+	err = registrationTask.DoWork(ctx, log, eth)
 	assert.Nil(t, err)
 
-	retry := task.ShouldRetry(ctx, log, eth)
+	retry := registrationTask.ShouldRetry(ctx, log, eth)
 	assert.False(t, retry)
 }
 
 // ShouldRetry() return true because the registration was unsuccessful
 func TestRegisterTaskShouldRetryTrue(t *testing.T) {
-	dkgStates, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(5)
+	n := 5
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
 	tr := &objects.TypeRegistry{}
@@ -617,31 +606,26 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 	openEvent, err := c.Ethdkg().ParseRegistrationOpened(*openLog)
 	assert.Nil(t, err)
 
-	// Create a task to register and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	state.Phase = objects.RegistrationOpen
-	state.PhaseStart = openEvent.StartBlock.Uint64()
-	state.PhaseLength = openEvent.PhaseLength.Uint64()
-	var registrationEnd = state.PhaseStart + state.PhaseLength
+	// Do Register task
+	state, registrationEnds, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		accounts[0],
+		openEvent.StartBlock.Uint64(),
+		openEvent.PhaseLength.Uint64(),
+		openEvent.ConfirmationLength.Uint64(),
+		openEvent.Nonce.Uint64())
 
-	task := dkgtasks.NewRegisterTask(state, state.PhaseStart, registrationEnd)
-
-	t.Logf("registration ends:%v", registrationEnd)
+	t.Logf("registration ends:%v", registrationEnds)
 
 	log := logger.WithField("TaskID", "foo")
 
-	err = task.Initialize(ctx, log, eth, state)
+	err = registrationTask.Initialize(ctx, log, eth, state)
 	assert.Nil(t, err)
 
-	//k1 := state.TransportPublicKey[0]
-	//k2 := state.TransportPublicKey[1]
 	state.TransportPublicKey[0] = big.NewInt(0)
 	state.TransportPublicKey[0] = big.NewInt(0)
-	err = task.DoWork(ctx, log, eth)
+	err = registrationTask.DoWork(ctx, log, eth)
 	assert.NotNil(t, err)
 
-	//state.TransportPublicKey[0] = k1
-	//state.TransportPublicKey[0] = k2
-	retry := task.ShouldRetry(ctx, log, eth)
+	retry := registrationTask.ShouldRetry(ctx, log, eth)
 	assert.True(t, retry)
 }

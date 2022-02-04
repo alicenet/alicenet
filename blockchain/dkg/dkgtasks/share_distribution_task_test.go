@@ -60,8 +60,6 @@ func TestShareDistributionBad1(t *testing.T) {
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	dtest.GenerateEncryptedSharesAndCommitments(suite.dkgStates)
-
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
 		callOpts := suite.eth.GetCallOpts(context.Background(), acct)
@@ -79,14 +77,7 @@ func TestShareDistributionBad1(t *testing.T) {
 	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		com := state.Participants[accounts[idx].Address].Commitments
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		// if we're on the last account, we just add 1 to the first commitment (y component)
-		if idx == badIdx {
-			// Mess up one of the commitments (first coefficient)
-			com[0][1].Add(com[0][1], big.NewInt(1))
-		}
 
 		// set phase
 		state.Phase = objects.ShareDistribution
@@ -94,6 +85,15 @@ func TestShareDistributionBad1(t *testing.T) {
 		phaseEnd := state.PhaseStart + state.PhaseLength
 
 		tasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
+		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+
+		com := state.Participants[accounts[idx].Address].Commitments
+		// if we're on the last account, we just add 1 to the first commitment (y component)
+		if idx == badIdx {
+			// Mess up one of the commitments (first coefficient)
+			com[0][1].Add(com[0][1], big.NewInt(1))
+		}
+
 		tasks[idx].DoWork(ctx, logger, suite.eth)
 
 		suite.eth.Commit()
@@ -127,8 +127,6 @@ func TestShareDistributionBad2(t *testing.T) {
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	dtest.GenerateEncryptedSharesAndCommitments(suite.dkgStates)
-
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
 		callOpts := suite.eth.GetCallOpts(context.Background(), acct)
@@ -146,15 +144,7 @@ func TestShareDistributionBad2(t *testing.T) {
 	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		com := state.Participants[accounts[idx].Address].Commitments
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		// if we're on the last account, change the one of the commitments to 0
-		if idx == badIdx {
-			// Mess up one of the commitments (first coefficient)
-			com[0][0].Set(common.Big0)
-			com[0][1].Set(common.Big0)
-		}
 
 		// set phase
 		state.Phase = objects.ShareDistribution
@@ -162,6 +152,16 @@ func TestShareDistributionBad2(t *testing.T) {
 		phaseEnd := state.PhaseStart + state.PhaseLength
 
 		tasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
+		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+
+		com := state.Participants[accounts[idx].Address].Commitments
+		// if we're on the last account, change the one of the commitments to 0
+		if idx == badIdx {
+			// Mess up one of the commitments (first coefficient)
+			com[0][0].Set(common.Big0)
+			com[0][1].Set(common.Big0)
+		}
+
 		tasks[idx].DoWork(ctx, logger, suite.eth)
 
 		suite.eth.Commit()
@@ -197,8 +197,6 @@ func TestShareDistributionBad4(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 
-	dtest.GenerateEncryptedSharesAndCommitments(dkgStates)
-
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
 		callOpts := eth.GetCallOpts(context.Background(), acct)
@@ -218,20 +216,22 @@ func TestShareDistributionBad4(t *testing.T) {
 	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		com := state.Participants[accounts[idx].Address].Commitments
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
+		// set phase
+		state.Phase = objects.ShareDistribution
+
+		tasks[idx] = dkgtasks.NewShareDistributionTask(state, startPhase, phaseEnd)
+		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+
 		// if we're on the last account, we just add 1 to the first commitment (y component)
+		com := state.Participants[accounts[idx].Address].Commitments
 		if idx == badCommitmentIdx {
 			// Mess up one of the commitments (incorrect length)
 			com = com[:len(com)-1]
 			state.Participants[accounts[idx].Address].Commitments = com
 		}
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, startPhase, phaseEnd)
 		tasks[idx].DoWork(ctx, logger, eth)
 
 		eth.Commit()
@@ -266,7 +266,6 @@ func TestShareDistributionBad5(t *testing.T) {
 	assert.Nil(t, err)
 	eth := suite.eth
 	dkgStates := suite.dkgStates
-	dtest.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	badShareIdx := n - 2
 	phaseStart := currentHeight + dkgStates[0].ConfirmationLength
@@ -274,19 +273,21 @@ func TestShareDistributionBad5(t *testing.T) {
 	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
+		// set phase
+		state.Phase = objects.ShareDistribution
+
+		tasks[idx] = dkgtasks.NewShareDistributionTask(state, phaseStart, phaseEnd)
+		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+
+		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		if idx == badShareIdx {
 			// Mess up one of the encryptedShares (incorrect length)
 			encryptedShares = encryptedShares[:len(encryptedShares)-1]
 			state.Participants[accounts[idx].Address].EncryptedShares = encryptedShares
 		}
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, phaseStart, phaseEnd)
 		tasks[idx].DoWork(ctx, logger, eth)
 
 		eth.Commit()
