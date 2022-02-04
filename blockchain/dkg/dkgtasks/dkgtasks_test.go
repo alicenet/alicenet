@@ -422,7 +422,16 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 	// Ensure all participants have valid share information
 	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
 
-	advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+	if undistributedShares == 0 {
+		// this means all validators distributed their shares and now the phase is
+		// set phase to DisputeShareDistribution
+		for i := 0; i < n; i++ {
+			suite.dkgStates[i].Phase = objects.DisputeShareDistribution
+		}
+	} else {
+		// this means some validators did not distribute shares, and the next phase is DisputeMissingShareDistribution
+		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+	}
 
 	return suite
 }
