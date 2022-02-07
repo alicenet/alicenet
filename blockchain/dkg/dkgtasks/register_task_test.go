@@ -2,10 +2,11 @@ package dkgtasks_test
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 
 	"github.com/MadBase/bridge/bindings"
 
@@ -162,7 +163,7 @@ func TestRegistrationGood2(t *testing.T) {
 			event.Nonce.Uint64())
 
 		dkgStates[idx] = state
-		tasks[idx] = registrationTask.(*dkgtasks.RegisterTask)
+		tasks[idx] = registrationTask
 		err = tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)

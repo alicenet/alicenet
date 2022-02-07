@@ -3,12 +3,13 @@ package dkgtasks_test
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"math"
 	"math/big"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 
 	"github.com/MadBase/bridge/bindings"
 
@@ -291,11 +292,22 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 }
 
 type TestSuite struct {
-	eth                 interfaces.Ethereum
-	dkgStates           []*objects.DkgState
-	ecdsaPrivateKeys    []*ecdsa.PrivateKey
-	regTasks            []*dkgtasks.RegisterTask
-	dispMissingRegTasks []*dkgtasks.DisputeMissingRegistrationTask
+	eth              interfaces.Ethereum
+	dkgStates        []*objects.DkgState
+	ecdsaPrivateKeys []*ecdsa.PrivateKey
+
+	regTasks                     []*dkgtasks.RegisterTask
+	dispMissingRegTasks          []*dkgtasks.DisputeMissingRegistrationTask
+	shareDistTasks               []*dkgtasks.ShareDistributionTask
+	disputeMissingShareDistTasks []*dkgtasks.DisputeMissingShareDistributionTask
+	disputeShareDistTasks        []*dkgtasks.DisputeShareDistributionTask
+	keyshareSubmissionTasks      []*dkgtasks.KeyshareSubmissionTask
+	disputeMissingKeyshareTasks  []*dkgtasks.DisputeMissingKeySharesTask
+	mpkSubmissionTasks           []*dkgtasks.MPKSubmissionTask
+	gpkjSubmissionTasks          []*dkgtasks.GPKjSubmissionTask
+	disputeMissingGPKjTasks      []*dkgtasks.DisputeMissingGPKjTask
+	disputeGPKjTasks             []*dkgtasks.DisputeGPKjTask
+	completionTasks              []*dkgtasks.CompletionTask
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
@@ -349,8 +361,8 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 			event.Nonce.Uint64())
 
 		dkgStates[idx] = state
-		regTasks[idx] = regTask.(*dkgtasks.RegisterTask)
-		dispMissingRegTasks[idx] = dispMissingRegTask.(*dkgtasks.DisputeMissingRegistrationTask)
+		regTasks[idx] = regTask
+		dispMissingRegTasks[idx] = dispMissingRegTask
 		err = regTasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
 
@@ -365,84 +377,122 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		assert.True(t, regTasks[idx].Success)
 	}
 
-	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-		if idx >= n-unregisteredValidators {
+	// simulate receiving AddressRegistered event
+	for i := 0; i < n; i++ {
+		state := dkgStates[i]
+
+		if i >= n-unregisteredValidators {
 			continue
 		}
-		for i := 0; i < n; i++ {
-			dkgStates[i].Participants[state.Account.Address] = &objects.Participant{
-				Address:   state.Account.Address,
-				Index:     idx + 1,
-				PublicKey: state.TransportPublicKey,
-				Phase:     uint8(objects.RegistrationOpen),
-				Nonce:     state.Nonce,
-			}
+
+		for j := 0; j < n; j++ {
+			dkgevents.UpdateStateOnAddressRegistered(dkgStates[j], state.Account.Address, i+1, state.Nonce, state.TransportPublicKey)
+		}
+	}
+
+	// simulate receiving AddressRegistered event
+	// for idx := 0; idx < n; idx++ {
+	// 	state := dkgStates[idx]
+	// 	if idx >= n-unregisteredValidators {
+	// 		continue
+	// 	}
+
+	// 	dkgevents.UpdateStateOnAddressRegistered(state, state.Account.Address, idx+1, state.Nonce, state.TransportPublicKey)
+	// }
+
+	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
+	disputeMissingShareDistributionTasks := make([]*dkgtasks.DisputeMissingShareDistributionTask, n)
+
+	if unregisteredValidators == 0 {
+		height, err := eth.GetCurrentHeight(ctx)
+		assert.Nil(t, err)
+
+		for idx := 0; idx < n; idx++ {
+			shareDistributionTask, _, _, disputeMissingShareDistributionTask, _, _ := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
+
+			shareDistributionTasks[idx] = shareDistributionTask
+			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
 		}
 	}
 
 	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 
 	return &TestSuite{
-		eth:                 eth,
-		dkgStates:           dkgStates,
-		ecdsaPrivateKeys:    ecdsaPrivateKeys,
-		regTasks:            regTasks,
-		dispMissingRegTasks: dispMissingRegTasks,
+		eth:                          eth,
+		dkgStates:                    dkgStates,
+		ecdsaPrivateKeys:             ecdsaPrivateKeys,
+		regTasks:                     regTasks,
+		dispMissingRegTasks:          dispMissingRegTasks,
+		shareDistTasks:               shareDistributionTasks,
+		disputeMissingShareDistTasks: disputeMissingShareDistributionTasks,
 	}
 }
 
 func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, n, 0, phaseLength)
-	accounts := suite.eth.GetKnownAccounts()
+	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
+	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do Share Distribution task
-	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
 
 		if idx >= n-undistributedShares {
 			continue
 		}
 
-		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		shareDistTask := suite.shareDistTasks[idx]
+
+		err := shareDistTask.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
 
-		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		err = shareDistTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, shareDistributionTasks[idx].Success)
+		assert.True(t, shareDistTask.Success)
 
 		// event
 		for j := 0; j < n; j++ {
-			suite.dkgStates[j].Participants[state.Account.Address].Phase = uint8(objects.ShareDistribution)
+			// simulate receiving event for all participants
+			err = dkgevents.UpdateStateOnSharesDistributed(
+				suite.dkgStates[j],
+				logger,
+				state.Account.Address,
+				state.Participants[state.Account.Address].EncryptedShares,
+				state.Participants[state.Account.Address].Commitments,
+			)
+			assert.Nil(t, err)
 		}
 
 	}
-	// Ensure all participants have valid share information
-	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
+
+	disputeShareDistributionTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
+	keyshareSubmissionTasks := make([]*dkgtasks.KeyshareSubmissionTask, n)
+	disputeMissingKeySharesTasks := make([]*dkgtasks.DisputeMissingKeySharesTask, n)
 
 	if undistributedShares == 0 {
+		height, err := suite.eth.GetCurrentHeight(ctx)
+		assert.Nil(t, err)
+
 		// this means all validators distributed their shares and now the phase is
 		// set phase to DisputeShareDistribution
 		for i := 0; i < n; i++ {
-			suite.dkgStates[i].Phase = objects.DisputeShareDistribution
+			disputeShareDistributionTask, _, _, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
+
+			disputeShareDistributionTasks[i] = disputeShareDistributionTask
+			keyshareSubmissionTasks[i] = keyshareSubmissionTask
+			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
 		}
 	} else {
 		// this means some validators did not distribute shares, and the next phase is DisputeMissingShareDistribution
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
 	}
+
+	suite.disputeShareDistTasks = disputeShareDistributionTasks
+	suite.keyshareSubmissionTasks = keyshareSubmissionTasks
+	suite.disputeMissingKeyshareTasks = disputeMissingKeySharesTasks
 
 	return suite
 }

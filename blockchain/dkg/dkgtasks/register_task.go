@@ -27,6 +27,8 @@ type RegisterTask struct {
 	TxHash  common.Hash
 }
 
+var _ interfaces.Task = &RegisterTask{}
+
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{

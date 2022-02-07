@@ -5,9 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,21 +29,18 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 	}
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		phaseStart := suite.dkgStates[idx].PhaseStart + suite.dkgStates[idx].PhaseLength
-		phaseEnd := phaseStart + suite.dkgStates[idx].PhaseLength
-		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state, phaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.disputeShareDistTasks[idx]
+		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, task.Success)
 	}
 
 	// Check number of BadShares and confirm correct values
@@ -62,7 +57,7 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
 
-// In this test, we cause one validator to submit invalid information.
+// In this test, we have one validator submit invalid information.
 // This causes another validator to submit a dispute against him,
 // causing a stake-slashing event.
 func TestShareDisputeGoodMaliciousShare(t *testing.T) {
@@ -70,24 +65,16 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
-	badShares := n - 1
+	badShares := 1
+	logger := logging.GetLogger("test").WithField("Validator", "")
 
-	// Do Share Distribution task, with one of the validators distributed bad shares
-	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
+	// Do Share Distribution task, with one of the validators distributing bad shares
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
 
 		if idx >= n-badShares {
@@ -97,51 +84,46 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 			}
 		}
 
-		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, shareDistributionTasks[idx].Success)
+		assert.True(t, task.Success)
 
 		// event
 		for j := 0; j < n; j++ {
-			suite.dkgStates[j].Participants[state.Account.Address].Phase = uint8(objects.ShareDistribution)
+			// simulate receiving event for all participants
+			err = dkgevents.UpdateStateOnSharesDistributed(
+				suite.dkgStates[j],
+				logger,
+				state.Account.Address,
+				state.Participants[state.Account.Address].EncryptedShares,
+				state.Participants[state.Account.Address].Commitments,
+			)
+			assert.Nil(t, err)
 		}
-
 	}
 
-	// Ensure all participants have all share information
-	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
-
-	// all validators distributed their shares and now the phase is
-	// set phase to DisputeShareDistribution
-	for i := 0; i < n; i++ {
-		suite.dkgStates[i].Phase = objects.DisputeShareDistribution
-	}
-
-	advanceTo(t, suite.eth, currentHeight+suite.dkgStates[0].PhaseLength)
-
-	currentHeight, err = suite.eth.GetCurrentHeight(ctx)
+	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
+	nextPhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
+	advanceTo(t, suite.eth, nextPhaseAt)
 
 	// Do Share Dispute task
-	tasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		// state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
+		disputeShareDistributionTask, _, _, _, _, _, _, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, logger, nextPhaseAt)
 
-		tasks[idx] = dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, suite.eth)
+		err = disputeShareDistributionTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, disputeShareDistributionTask.Success)
 
 		// Set Dispute success to true
 		// suite.dkgStates[idx].Dispute = true
@@ -161,7 +143,6 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 
 		assert.False(t, isValidator)
 	}
-
 }
 
 //// In this test, we cause one validator to submit an invalid accusation.

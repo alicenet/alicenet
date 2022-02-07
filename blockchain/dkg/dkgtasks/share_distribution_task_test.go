@@ -45,8 +45,6 @@ func TestShareDistributionGood(t *testing.T) {
 		assert.True(t, shareDistributionTasks[idx].Success)
 
 	}
-	// Ensure all participants have valid share information
-	dtest.PopulateEncryptedSharesAndCommitments(t, suite.dkgStates)
 }
 
 // Here we test for invalid share distribution.
