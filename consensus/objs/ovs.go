@@ -6,7 +6,7 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/consensus/objs/ovstate"
 	"github.com/MadBase/MadNet/errorz"
-	capnp "zombiezen.com/go/capnproto2"
+	capnp "github.com/MadBase/go-capnproto2/v2"
 )
 
 // OwnValidatingState ...

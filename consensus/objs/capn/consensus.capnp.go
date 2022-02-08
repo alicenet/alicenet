@@ -3,9 +3,9 @@
 package capn
 
 import (
-	capnp "zombiezen.com/go/capnproto2"
-	text "zombiezen.com/go/capnproto2/encoding/text"
-	schemas "zombiezen.com/go/capnproto2/schemas"
+	capnp "github.com/MadBase/go-capnproto2/v2"
+	text "github.com/MadBase/go-capnproto2/v2/encoding/text"
+	schemas "github.com/MadBase/go-capnproto2/v2/schemas"
 )
 
 // Constants defined in consensus.capnp.
