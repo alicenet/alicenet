@@ -475,16 +475,22 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 	if undistributedShares == 0 {
 		height, err := suite.eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
+		var disputeShareDistributionEnd uint64
 
 		// this means all validators distributed their shares and now the phase is
 		// set phase to DisputeShareDistribution
 		for i := 0; i < n; i++ {
-			disputeShareDistributionTask, _, _, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
+			disputeShareDistributionTask, _, disputeShareDistributionPhaseEnd, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
+
+			disputeShareDistributionEnd = disputeShareDistributionPhaseEnd
 
 			disputeShareDistributionTasks[i] = disputeShareDistributionTask
 			keyshareSubmissionTasks[i] = keyshareSubmissionTask
 			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
 		}
+
+		// skip all the way to KeyShareSubmission phase
+		advanceTo(t, suite.eth, disputeShareDistributionEnd)
 	} else {
 		// this means some validators did not distribute shares, and the next phase is DisputeMissingShareDistribution
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
@@ -493,6 +499,72 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 	suite.disputeShareDistTasks = disputeShareDistributionTasks
 	suite.keyshareSubmissionTasks = keyshareSubmissionTasks
 	suite.disputeMissingKeyshareTasks = disputeMissingKeySharesTasks
+
+	return suite
+}
+
+func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
+	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	//accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	// Do key share submission task
+	for idx := 0; idx < n; idx++ {
+		state := suite.dkgStates[idx]
+
+		if idx >= n-undistributedShares {
+			continue
+		}
+
+		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
+
+		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+
+		err = keyshareSubmissionTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, keyshareSubmissionTask.Success)
+
+		// event
+		for j := 0; j < n; j++ {
+			// simulate receiving event for all participants
+			dkgevents.UpdateStateOnKeyShareSubmitted(
+				suite.dkgStates[j],
+				state.Account.Address,
+				state.Participants[state.Account.Address].KeyShareG1s,
+				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
+				state.Participants[state.Account.Address].KeyShareG2s,
+			)
+		}
+	}
+
+	mpkSubmissionTasks := make([]*dkgtasks.MPKSubmissionTask, n)
+
+	if undistributedShares == 0 {
+		// at this point all the validators submitted their key shares
+		height, err := suite.eth.GetCurrentHeight(ctx)
+		assert.Nil(t, err)
+
+		// this means all validators submitted their respective key shares and now the phase is
+		// set phase to MPK
+		for i := 0; i < n; i++ {
+			mpkSubmissionTask, _, _ := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], logger, height)
+
+			mpkSubmissionTasks[i] = mpkSubmissionTask
+		}
+
+		// skip all the way to MPKSubmission phase
+		// todo: now we only need to skip the DisputeMissingKeyShares phase
+		//advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+	} else {
+		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
+		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+	}
+
+	suite.mpkSubmissionTasks = mpkSubmissionTasks
 
 	return suite
 }
