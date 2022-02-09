@@ -2,7 +2,9 @@
 
 package MadNet
 
-// Package tools records tool dependencies. It cannot actually be compiled.
+// This file tracks tool dependencies.
+// This is so that "go mod tidy" doesnt remove deps that we actually use for generate commands.
+// It will not actually be compiled due to the build tag used above.
 
 import (
 	_ "github.com/MadBase/go-capnproto2/v2/capnpc-go"
