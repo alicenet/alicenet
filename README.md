@@ -83,7 +83,7 @@ Once this has finished, turn on each of the validators, each in its own terminal
 ./scripts/main.sh validator {# for the validator you want to start}
 ```
 
-Wait until all of the validators have peered together and then start ethDKG:
+Wait until all of the validators have peered together (TODO: how can we know when this is done?) and then start ethDKG:
 ```
 ./scripts/main.sh ethdkg
 ```
