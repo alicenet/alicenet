@@ -34,7 +34,7 @@ generate:
 		docker create --name madnet-go-generate -it -v $$PWD:/app madnet-go-generate; \
 	fi; \
 	echo "$(YELLOW)  Starting container...  $(NOCOL)"; \
-	docker start -a madnet-go-generate; 
+	docker start -ia madnet-go-generate; 
 
 clean: 
 	$(GOCLEAN)
