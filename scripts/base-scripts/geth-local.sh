@@ -7,4 +7,4 @@ geth --datadir $DATADIR init ./scripts/generated/genesis.json
 
 cp assets/test/keys/* $DATADIR/keystore/
   
-./scripts/geth-local-resume.sh
+./scripts/base-scripts/geth-local-resume.sh
