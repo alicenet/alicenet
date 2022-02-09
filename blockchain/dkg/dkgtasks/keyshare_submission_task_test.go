@@ -14,6 +14,7 @@ import (
 func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
 	n := 5
 	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -52,6 +53,7 @@ func TestKeyShareSubmissionBad3(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
 	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	defer suite.eth.Close()
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -76,6 +78,7 @@ func TestKeyShareSubmissionBad4(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
 	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	defer suite.eth.Close()
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")

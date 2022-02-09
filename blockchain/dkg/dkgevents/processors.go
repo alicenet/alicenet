@@ -268,6 +268,7 @@ func UpdateStateOnSharesDistributed(state *objects.DkgState, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
 	}
 
+	state.Participants[account].Phase = uint8(objects.ShareDistribution)
 	state.Participants[account].DistributedSharesHash = distributedSharesHash
 	state.Participants[account].Commitments = commitments
 	state.Participants[account].EncryptedShares = encryptedShares
@@ -400,6 +401,7 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, sta
 func UpdateStateOnKeyShareSubmitted(state *objects.DkgState, account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
 	state.Phase = objects.KeyShareSubmission
 
+	state.Participants[account].Phase = uint8(objects.KeyShareSubmission)
 	state.Participants[account].KeyShareG1s = keyShareG1
 	state.Participants[account].KeyShareG1CorrectnessProofs = keyShareG1CorrectnessProof
 	state.Participants[account].KeyShareG2s = keyShareG2

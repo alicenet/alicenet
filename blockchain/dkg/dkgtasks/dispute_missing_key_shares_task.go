@@ -164,8 +164,14 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != t.State.Nonce ||
 			p.Phase != uint8(objects.KeyShareSubmission) ||
-			(p.KeyShares[0].Cmp(big.NewInt(0)) == 0 &&
-				p.KeyShares[1].Cmp(big.NewInt(0)) == 0)) {
+			(p.KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) ||
+			(p.KeyShareG1CorrectnessProofs[0].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShareG1CorrectnessProofs[1].Cmp(big.NewInt(0)) == 0) ||
+			(p.KeyShareG2s[0].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShareG2s[1].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShareG2s[2].Cmp(big.NewInt(0)) == 0 &&
+				p.KeyShareG2s[3].Cmp(big.NewInt(0)) == 0)) {
 			// did not submit
 			accusableParticipants = append(accusableParticipants, p.Address)
 		}

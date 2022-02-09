@@ -550,15 +550,17 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 
 		// this means all validators submitted their respective key shares and now the phase is
 		// set phase to MPK
+		var mpkSubmissionTaskStart uint64
 		for i := 0; i < n; i++ {
-			mpkSubmissionTask, _, _ := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], logger, height)
+			mpkSubmissionTask, taskStart, _ := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], logger, height)
+			mpkSubmissionTaskStart = taskStart
 
 			mpkSubmissionTasks[i] = mpkSubmissionTask
 		}
 
 		// skip all the way to MPKSubmission phase
 		// todo: now we only need to skip the DisputeMissingKeyShares phase
-		//advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+		advanceTo(t, suite.eth, mpkSubmissionTaskStart)
 	} else {
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)

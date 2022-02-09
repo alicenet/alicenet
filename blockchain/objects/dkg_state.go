@@ -140,7 +140,7 @@ type Participant struct {
 	CommitmentsFirstCoefficient [2]*big.Int
 
 	// todo: delete this
-	KeyShares [2]*big.Int
+	//KeyShares [2]*big.Int
 
 	// Key Share Submission Phase
 	//////////////////////////////////////////////////

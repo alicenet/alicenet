@@ -11,6 +11,7 @@ import (
 func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, 1, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -38,6 +39,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, n, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -64,6 +66,7 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -105,6 +108,7 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
@@ -132,6 +136,7 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")

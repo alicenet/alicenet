@@ -19,6 +19,7 @@ import (
 func TestShareDistributionGood(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -53,6 +54,7 @@ func TestShareDistributionGood(t *testing.T) {
 func TestShareDistributionBad1(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -120,6 +122,7 @@ func TestShareDistributionBad1(t *testing.T) {
 func TestShareDistributionBad2(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -188,6 +191,7 @@ func TestShareDistributionBad2(t *testing.T) {
 func TestShareDistributionBad4(t *testing.T) {
 	n := 7
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -258,6 +262,7 @@ func TestShareDistributionBad4(t *testing.T) {
 func TestShareDistributionBad5(t *testing.T) {
 	n := 6
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -368,6 +373,7 @@ func TestShareDistributionBad7(t *testing.T) {
 func TestShareDistributionShouldRetryTrue(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
@@ -410,6 +416,7 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 func TestShareDistributionShouldRetryFalse(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	currentHeight, err := suite.eth.GetCurrentHeight(ctx)

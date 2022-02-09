@@ -114,6 +114,7 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 	}
 
 	state.EthDKG.Participants[event.Account].GPKj = v.SharedKey
+	state.EthDKG.Participants[event.Account].Phase = uint8(objects.GPKJSubmission)
 
 	if len(state.Validators[epoch]) < int(index) {
 		newValList := make([]objects.Validator, int(index))
