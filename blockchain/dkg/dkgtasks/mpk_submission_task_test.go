@@ -155,3 +155,55 @@ func TestMPKSubmissionBad4(t *testing.T) {
 	err := task.Initialize(ctx, log, eth, state)
 	assert.NotNil(t, err)
 }
+
+func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
+	n := 4
+	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
+	ctx := context.Background()
+	eth := suite.eth
+	dkgStates := suite.dkgStates
+	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	// Do MPK Submission task
+	tasks := suite.mpkSubmissionTasks
+	for idx := 0; idx < n; idx++ {
+		state := dkgStates[idx]
+
+		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		assert.Nil(t, err)
+		err = tasks[idx].DoWork(ctx, logger, eth)
+		assert.Nil(t, err)
+
+		eth.Commit()
+
+		//This is because the MPK submission task should be
+		//executed only by 1 validator
+		if idx == 0 {
+			assert.True(t, tasks[idx].Success)
+		} else {
+			assert.False(t, tasks[idx].Success)
+		}
+
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
+		assert.False(t, shouldRetry)
+	}
+}
+
+func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
+	n := 4
+	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
+	ctx := context.Background()
+	eth := suite.eth
+	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	// Do MPK Submission task
+	tasks := suite.mpkSubmissionTasks
+	for idx := 0; idx < n; idx++ {
+		tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
+
+		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
+		assert.True(t, shouldRetry)
+	}
+}

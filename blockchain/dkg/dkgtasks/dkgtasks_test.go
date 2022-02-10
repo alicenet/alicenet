@@ -570,3 +570,41 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 
 	return suite
 }
+
+func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestSuite {
+	suite := StartFromKeyShareSubmissionPhase(t, n, 0, phaseLength)
+	//accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Validator", "")
+	dkgStates := suite.dkgStates
+	eth := suite.eth
+
+	// Do MPK Submission task (once is enough)
+	task := suite.mpkSubmissionTasks[0]
+	state := dkgStates[0]
+
+	err := task.Initialize(ctx, logger, eth, state)
+	assert.Nil(t, err)
+	err = task.DoWork(ctx, logger, eth)
+	assert.Nil(t, err)
+
+	eth.Commit()
+
+	height, err := suite.eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+
+	gpkjSubmissionTasks := make([]*dkgtasks.GPKjSubmissionTask, n)
+	disputeMissingGPKjTasks := make([]*dkgtasks.DisputeMissingGPKjTask, n)
+	for idx := 0; idx < n; idx++ {
+		state := dkgStates[idx]
+		gpkjSubmissionTask, _, _, disputeMissingGPKjTask, _, _ := dkgevents.UpdateStateOnMPKSet(state, logger, height, new(adminHandlerMock))
+
+		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
+		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
+	}
+
+	suite.gpkjSubmissionTasks = gpkjSubmissionTasks
+	suite.disputeMissingGPKjTasks = disputeMissingGPKjTasks
+
+	return suite
+}
