@@ -113,8 +113,8 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
 	}
 
-	state.EthDKG.Participants[event.Account].GPKj = v.SharedKey
-	state.EthDKG.Participants[event.Account].Phase = uint8(objects.GPKJSubmission)
+	// state update
+	state.EthDKG.OnGPKjSubmitted(event.Account, v.SharedKey)
 
 	if len(state.Validators[epoch]) < int(index) {
 		newValList := make([]objects.Validator, int(index))
@@ -134,7 +134,8 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 	groupShareHex := fmt.Sprintf("%x", groupShare)
 	logger.WithFields(logrus.Fields{
 		"Index":      v.Index,
-		"GroupShare": groupShareHex}).Infof("Received Validator")
+		"GroupShare": groupShareHex,
+	}).Infof("Received Validator")
 
 	// err = checkValidatorSet(state, epoch, logger, adminHandler)
 	// if err != nil {

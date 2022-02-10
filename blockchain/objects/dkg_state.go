@@ -100,6 +100,12 @@ func (dkg *DkgState) GetSortedParticipants() ParticipantList {
 	return list
 }
 
+// GetSortedParticipants returns the participant list sorted by Index field
+func (dkg *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
+	dkg.Participants[account].GPKj = gpkj
+	dkg.Participants[account].Phase = uint8(GPKJSubmission)
+}
+
 // NewDkgState makes a new DkgState object
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
