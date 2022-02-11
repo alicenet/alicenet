@@ -3,14 +3,12 @@ package dkgevents
 import (
 	"context"
 	"errors"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -97,11 +95,13 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 
 func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64) (*objects.DkgState, uint64, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
 	dkgState := objects.NewDkgState(account)
-	dkgState.Phase = objects.RegistrationOpen
-	dkgState.PhaseStart = startBlock
-	dkgState.PhaseLength = phaseLength
-	dkgState.ConfirmationLength = confirmationLength
-	dkgState.Nonce = nonce
+	dkgState.OnRegistrationOpened(
+		startBlock,
+		phaseLength,
+		confirmationLength,
+		nonce,
+	)
+
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 	registrationTask := dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds)
 	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(dkgState, registrationEnds, registrationEnds+dkgState.PhaseLength)
@@ -140,24 +140,9 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, sta
 	state.Lock()
 	defer state.Unlock()
 
-	UpdateStateOnAddressRegistered(state.EthDKG, event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
+	state.EthDKG.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
 
 	return nil
-}
-
-func UpdateStateOnAddressRegistered(state *objects.DkgState, account common.Address, index int, nonce uint64, publicKey [2]*big.Int) {
-	state.Participants[account] = &objects.Participant{
-		Address:   account,
-		Index:     index,
-		PublicKey: publicKey,
-		Phase:     uint8(objects.RegistrationOpen),
-		Nonce:     nonce,
-	}
-
-	// update state.Index with my index, if this event was mine
-	if account.String() == state.Account.Address.String() {
-		state.Index = index
-	}
 }
 
 func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
@@ -192,7 +177,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 	}).Infof("Purging schedule")
 	state.Schedule.Purge()
 
-	// // schedule ShareDistribution phase
+	// schedule ShareDistribution phase
 	logger.WithFields(logrus.Fields{
 		"PhaseStart": shareDistributionStart,
 		"PhaseEnd":   shareDistributionEnd,
@@ -200,7 +185,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 	state.Schedule.Schedule(shareDistributionStart, shareDistributionEnd, shareDistributionTask)
 
-	// // schedule DisputeParticipantDidNotDistributeSharesTask
+	// schedule DisputeParticipantDidNotDistributeSharesTask
 	// var phaseStart = phaseEnd
 	// phaseEnd = phaseEnd + state.EthDKG.PhaseLength
 	logger.WithFields(logrus.Fields{
@@ -214,20 +199,21 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 }
 
 func UpdateStateOnRegistrationComplete(state *objects.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, uint64, uint64, *dkgtasks.DisputeMissingShareDistributionTask, uint64, uint64) {
-	state.Phase = objects.ShareDistribution
-	state.PhaseStart = shareDistributionStartBlockNumber + state.ConfirmationLength
-	var phaseEnd = state.PhaseStart + state.PhaseLength
+	state.OnRegistrationComplete(shareDistributionStartBlockNumber)
+
+	shareDistStartBlock := state.PhaseStart
+	shareDistEndBlock := shareDistStartBlock + state.PhaseLength
 
 	// schedule ShareDistribution phase
-	shareDistributionTask := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
+	shareDistributionTask := dkgtasks.NewShareDistributionTask(state, shareDistStartBlock, shareDistEndBlock)
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
-	var disputeStart = phaseEnd
-	var disputeEnd = disputeStart + state.PhaseLength
+	var dispMissingShareStartBlock = shareDistEndBlock
+	var dispMissingShareEndBlock = dispMissingShareStartBlock + state.PhaseLength
 
-	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(state, disputeStart, disputeEnd)
+	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(state, dispMissingShareStartBlock, dispMissingShareEndBlock)
 
-	return shareDistributionTask, state.PhaseStart, phaseEnd, disputeMissingShareDistributionTask, disputeStart, disputeEnd
+	return shareDistributionTask, shareDistStartBlock, shareDistEndBlock, disputeMissingShareDistributionTask, dispMissingShareStartBlock, dispMissingShareEndBlock
 }
 
 func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
@@ -258,22 +244,7 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, sta
 	state.Lock()
 	defer state.Unlock()
 
-	return UpdateStateOnSharesDistributed(state.EthDKG, logger, event.Account, event.EncryptedShares, event.Commitments)
-}
-
-func UpdateStateOnSharesDistributed(state *objects.DkgState, logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
-	// compute distributed shares hash
-	distributedSharesHash, _, _, err := dkg.ComputeDistributedSharesHash(encryptedShares, commitments)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
-	}
-
-	state.Participants[account].Phase = uint8(objects.ShareDistribution)
-	state.Participants[account].DistributedSharesHash = distributedSharesHash
-	state.Participants[account].Commitments = commitments
-	state.Participants[account].EncryptedShares = encryptedShares
-
-	return nil
+	return state.EthDKG.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
 }
 
 func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
@@ -321,10 +292,8 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 }
 
 func UpdateStateOnShareDistributionComplete(state *objects.DkgState, logger *logrus.Entry, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, uint64, uint64, *dkgtasks.KeyshareSubmissionTask, uint64, uint64, *dkgtasks.DisputeMissingKeySharesTask, uint64, uint64) {
-	state.Phase = objects.DisputeShareDistribution
 
-	// schedule DisputeShareDistributionTask
-	state.PhaseStart = disputeShareDistributionStartBlock + state.ConfirmationLength
+	state.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 	var phaseEnd uint64 = state.PhaseStart + state.PhaseLength
 
 	//state.Schedule.Schedule(state.PhaseStart, phaseEnd, )
@@ -393,18 +362,9 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, sta
 	state.Lock()
 	defer state.Unlock()
 
-	UpdateStateOnKeyShareSubmitted(state.EthDKG, event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
+	state.EthDKG.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
 
 	return nil
-}
-
-func UpdateStateOnKeyShareSubmitted(state *objects.DkgState, account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
-	state.Phase = objects.KeyShareSubmission
-
-	state.Participants[account].Phase = uint8(objects.KeyShareSubmission)
-	state.Participants[account].KeyShareG1s = keyShareG1
-	state.Participants[account].KeyShareG1CorrectnessProofs = keyShareG1CorrectnessProof
-	state.Participants[account].KeyShareG2s = keyShareG2
 }
 
 func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
@@ -451,10 +411,7 @@ func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.E
 }
 
 func UpdateStateOnKeyShareSubmissionComplete(state *objects.DkgState, logger *logrus.Entry, mpkSubmissionStartBlock uint64) (*dkgtasks.MPKSubmissionTask, uint64, uint64) {
-	state.Phase = objects.MPKSubmission
-
-	// schedule MPKSubmissionTask
-	state.PhaseStart = mpkSubmissionStartBlock + state.ConfirmationLength
+	state.OnKeyShareSubmissionComplete(mpkSubmissionStartBlock)
 	var phaseEnd uint64 = state.PhaseStart + state.PhaseLength
 
 	mpkSubmissionTask := dkgtasks.NewMPKSubmissionTask(state, state.PhaseStart, phaseEnd)
@@ -516,10 +473,7 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 }
 
 func UpdateStateOnMPKSet(state *objects.DkgState, logger *logrus.Entry, gpkjSubmissionStartBlock uint64, adminHandler interfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, uint64, uint64, *dkgtasks.DisputeMissingGPKjTask, uint64, uint64) {
-	state.Phase = objects.GPKJSubmission
-
-	// schedule GPKJSubmissionTask
-	state.PhaseStart = gpkjSubmissionStartBlock
+	state.OnMPKSet(gpkjSubmissionStartBlock)
 	var gpkjSubmissionEnd uint64 = state.PhaseStart + state.PhaseLength
 
 	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(state, state.PhaseStart, gpkjSubmissionEnd, adminHandler)
@@ -585,10 +539,7 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 }
 
 func UpdateStateOnGPKJSubmissionComplete(state *objects.DkgState, logger *logrus.Entry, disputeGPKjStartBlock uint64) (*dkgtasks.DisputeGPKjTask, uint64, uint64, *dkgtasks.CompletionTask, uint64, uint64) {
-	state.Phase = objects.DisputeGPKJSubmission
-
-	// schedule DisputeGPKJSubmissionTask
-	state.PhaseStart = disputeGPKjStartBlock + state.ConfirmationLength
+	state.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
 	var disputeGPKjPhaseEnd uint64 = state.PhaseStart + state.PhaseLength
 
 	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(state, state.PhaseStart, disputeGPKjPhaseEnd)

@@ -6,8 +6,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrCanNotContinue standard error if we must drop out of ETHDKG
@@ -90,20 +92,109 @@ type DkgState struct {
 }
 
 // GetSortedParticipants returns the participant list sorted by Index field
-func (dkg *DkgState) GetSortedParticipants() ParticipantList {
-	var list = make(ParticipantList, len(dkg.Participants))
+func (state *DkgState) GetSortedParticipants() ParticipantList {
+	var list = make(ParticipantList, len(state.Participants))
 
-	for _, p := range dkg.Participants {
+	for _, p := range state.Participants {
 		list[p.Index-1] = p
 	}
 
 	return list
 }
 
-// GetSortedParticipants returns the participant list sorted by Index field
-func (dkg *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
-	dkg.Participants[account].GPKj = gpkj
-	dkg.Participants[account].Phase = uint8(GPKJSubmission)
+// OnRegistrationOpened processes data from RegistrationOpened event
+func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmationLength, nonce uint64) {
+	state.Phase = RegistrationOpen
+	state.PhaseStart = startBlock
+	state.PhaseLength = phaseLength
+	state.ConfirmationLength = confirmationLength
+	state.Nonce = nonce
+}
+
+// OnAddressRegistered processes data from AddressRegistered event
+func (state *DkgState) OnAddressRegistered(account common.Address, index int, nonce uint64, publicKey [2]*big.Int) {
+	state.Participants[account] = &Participant{
+		Address:   account,
+		Index:     index,
+		PublicKey: publicKey,
+		Phase:     uint8(RegistrationOpen),
+		Nonce:     nonce,
+	}
+
+	// update state.Index with my index, if this event was mine
+	if account.String() == state.Account.Address.String() {
+		state.Index = index
+	}
+}
+
+// OnRegistrationComplete processes data from RegistrationComplete event
+func (state *DkgState) OnRegistrationComplete(shareDistributionStartBlockNumber uint64) {
+	state.Phase = ShareDistribution
+	state.PhaseStart = shareDistributionStartBlockNumber + state.ConfirmationLength
+}
+
+// OnSharesDistributed processes data from SharesDistributed event
+func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
+	// compute distributed shares hash
+	distributedSharesHash, _, _, err := dkg.ComputeDistributedSharesHash(encryptedShares, commitments)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
+	}
+
+	state.Participants[account].Phase = uint8(ShareDistribution)
+	state.Participants[account].DistributedSharesHash = distributedSharesHash
+	state.Participants[account].Commitments = commitments
+	state.Participants[account].EncryptedShares = encryptedShares
+
+	return nil
+}
+
+// OnShareDistributionComplete processes data from ShareDistributionComplete event
+func (state *DkgState) OnShareDistributionComplete(disputeShareDistributionStartBlock uint64) {
+	state.Phase = DisputeShareDistribution
+
+	// schedule DisputeShareDistributionTask
+	dispShareStartBlock := disputeShareDistributionStartBlock + state.ConfirmationLength
+	state.PhaseStart = dispShareStartBlock
+}
+
+// OnKeyShareSubmissionComplete processes data from KeyShareSubmissionComplete event
+func (state *DkgState) OnKeyShareSubmissionComplete(mpkSubmissionStartBlock uint64) {
+	state.Phase = MPKSubmission
+	state.PhaseStart = mpkSubmissionStartBlock + state.ConfirmationLength
+}
+
+// OnMPKSet processes data from MPKSet event
+func (state *DkgState) OnMPKSet(gpkjSubmissionStartBlock uint64) {
+	state.Phase = GPKJSubmission
+	state.PhaseStart = gpkjSubmissionStartBlock
+}
+
+// OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event
+func (state *DkgState) OnGPKJSubmissionComplete(disputeGPKjStartBlock uint64) {
+	state.Phase = DisputeGPKJSubmission
+	state.PhaseStart = disputeGPKjStartBlock + state.ConfirmationLength
+}
+
+// OnKeyShareSubmitted processes data from KeyShareSubmitted event
+func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
+	state.Phase = KeyShareSubmission
+
+	state.Participants[account].Phase = uint8(KeyShareSubmission)
+	state.Participants[account].KeyShareG1s = keyShareG1
+	state.Participants[account].KeyShareG1CorrectnessProofs = keyShareG1CorrectnessProof
+	state.Participants[account].KeyShareG2s = keyShareG2
+}
+
+// OnGPKjSubmitted processes data from GPKjSubmitted event
+func (state *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
+	state.Participants[account].GPKj = gpkj
+	state.Participants[account].Phase = uint8(GPKJSubmission)
+}
+
+// OnCompletion processes data from ValidatorSetCompleted event
+func (state *DkgState) OnCompletion() {
+	state.Phase = Completion
 }
 
 // NewDkgState makes a new DkgState object

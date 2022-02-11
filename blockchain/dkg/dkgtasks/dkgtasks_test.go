@@ -386,7 +386,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		}
 
 		for j := 0; j < n; j++ {
-			dkgevents.UpdateStateOnAddressRegistered(dkgStates[j], state.Account.Address, i+1, state.Nonce, state.TransportPublicKey)
+			dkgStates[j].OnAddressRegistered(state.Account.Address, i+1, state.Nonce, state.TransportPublicKey)
 		}
 	}
 
@@ -456,8 +456,7 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			err = dkgevents.UpdateStateOnSharesDistributed(
-				suite.dkgStates[j],
+			err = suite.dkgStates[j].OnSharesDistributed(
 				logger,
 				state.Account.Address,
 				state.Participants[state.Account.Address].EncryptedShares,
@@ -531,8 +530,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			dkgevents.UpdateStateOnKeyShareSubmitted(
-				suite.dkgStates[j],
+			suite.dkgStates[j].OnKeyShareSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].KeyShareG1s,
 				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,

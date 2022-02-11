@@ -74,7 +74,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	}).Infof("Purging schedule")
 	state.Schedule.Purge()
 
-	state.EthDKG.Phase = objects.Completion
+	state.EthDKG.OnCompletion()
 
 	return nil
 }

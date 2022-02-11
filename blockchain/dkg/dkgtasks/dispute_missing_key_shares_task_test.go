@@ -2,10 +2,10 @@ package dkgtasks_test
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"testing"
+
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
@@ -37,8 +37,7 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			dkgevents.UpdateStateOnKeyShareSubmitted(
-				dkgStates[j],
+			dkgStates[j].OnKeyShareSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].KeyShareG1s,
 				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
@@ -98,8 +97,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			dkgevents.UpdateStateOnKeyShareSubmitted(
-				dkgStates[j],
+			dkgStates[j].OnKeyShareSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].KeyShareG1s,
 				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
@@ -157,8 +155,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			dkgevents.UpdateStateOnKeyShareSubmitted(
-				dkgStates[j],
+			dkgStates[j].OnKeyShareSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].KeyShareG1s,
 				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,

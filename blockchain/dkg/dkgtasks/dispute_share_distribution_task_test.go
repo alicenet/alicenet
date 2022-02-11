@@ -2,6 +2,10 @@ package dkgtasks_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
@@ -10,9 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
 )
 
 // We test to ensure that everything behaves correctly.
@@ -95,8 +96,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			err = dkgevents.UpdateStateOnSharesDistributed(
-				suite.dkgStates[j],
+			err = suite.dkgStates[j].OnSharesDistributed(
 				logger,
 				state.Account.Address,
 				state.Participants[state.Account.Address].EncryptedShares,
