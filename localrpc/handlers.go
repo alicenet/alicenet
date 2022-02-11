@@ -631,7 +631,7 @@ func (srpc *Handlers) HandleLocalStateGetTransactionStatus(ctx context.Context, 
 	var isMined bool
 	err = srpc.database.View(func(txn *badger.Txn) error {
 		txi, missing, err := srpc.AppHandler.MinedTxGet(txn, [][]byte{txHash})
-		if err != nil && len(missing) == 0 && len(txi) == 1 {
+		if err == nil && len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
 			if ok {
 				tx = tmp
@@ -640,13 +640,16 @@ func (srpc *Handlers) HandleLocalStateGetTransactionStatus(ctx context.Context, 
 			}
 		}
 
-		os, err := srpc.database.GetOwnState(txn)
-		if err != nil {
-			return err
+		os, err2 := srpc.database.GetOwnState(txn)
+		if err2 != nil {
+			return err2
 		}
-		txi, missing, err = srpc.AppHandler.PendingTxGet(txn, os.SyncToBH.BClaims.Height, [][]byte{txHash})
-		if err != nil {
-			return err
+		txi, missing, err2 = srpc.AppHandler.PendingTxGet(txn, os.SyncToBH.BClaims.Height, [][]byte{txHash})
+		if err2 != nil {
+			if err != nil {
+				return fmt.Errorf("%v\n%v", err, err2)
+			}
+			return err2
 		}
 		if len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
@@ -655,6 +658,9 @@ func (srpc *Handlers) HandleLocalStateGetTransactionStatus(ctx context.Context, 
 				isMined = false
 				return nil
 			}
+		}
+		if err != nil {
+			return err
 		}
 		return fmt.Errorf("unknown transaction: %s", req.TxHash)
 	})
