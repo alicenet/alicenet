@@ -69,17 +69,17 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 	// todo: delete this
 	// inject bad GPKj data
 	// if t.State.Index == 5 {
-	// 	// mess up with group provate key (gskj)
+	// 	// mess up with group private key (gskj)
 	// 	gskjBad := new(big.Int).Add(groupPrivateKey, big.NewInt(1))
 	// 	// here's the group public key
 	// 	gpkj := new(cloudflare.G2).ScalarBaseMult(gskjBad)
-	// 	gpkjBig, err := bn256.G2ToBigIntArray(gpkj)
+	// 	gpkjBad, err := bn256.G2ToBigIntArray(gpkj)
 	// 	if err != nil {
 	// 		return dkg.LogReturnErrorf(logger, "error generating invalid gpkj: %v", err)
 	// 	}
 
 	// 	groupPrivateKey = gskjBad
-	// 	groupPublicKey = gpkjBig
+	// 	groupPublicKey = gpkjBad
 	// }
 
 	t.State.GroupPrivateKey = groupPrivateKey

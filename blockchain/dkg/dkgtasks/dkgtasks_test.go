@@ -595,6 +595,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 
 	gpkjSubmissionTasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	disputeMissingGPKjTasks := make([]*dkgtasks.DisputeMissingGPKjTask, n)
+
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		gpkjSubmissionTask, _, _, disputeMissingGPKjTask, _, _ := dkgevents.UpdateStateOnMPKSet(state, logger, height, new(adminHandlerMock))
