@@ -170,7 +170,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 	state.Lock()
 	defer state.Unlock()
 
-	shareDistributionTask, shareDistributionStart, shareDistributionEnd, disputeMissingShareDistributionTask, disputeStart, disputeEnd := UpdateStateOnRegistrationComplete(state.EthDKG, event.BlockNumber.Uint64())
+	shareDistributionTask, shareDistributionStart, shareDistributionEnd, disputeMissingShareDistributionTask, disputeBadSharesTask, disputeStart, disputeEnd := UpdateStateOnRegistrationComplete(state.EthDKG, event.BlockNumber.Uint64())
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,
@@ -186,8 +186,6 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 	state.Schedule.Schedule(shareDistributionStart, shareDistributionEnd, shareDistributionTask)
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
-	// var phaseStart = phaseEnd
-	// phaseEnd = phaseEnd + state.EthDKG.PhaseLength
 	logger.WithFields(logrus.Fields{
 		"PhaseStart": disputeStart,
 		"PhaseEnd":   disputeEnd,
@@ -195,10 +193,18 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 	state.Schedule.Schedule(disputeStart, disputeEnd, disputeMissingShareDistributionTask)
 
+	// schedule DisputeDistributeSharesTask
+	logger.WithFields(logrus.Fields{
+		"PhaseStart": disputeStart,
+		"PhaseEnd":   disputeEnd,
+	}).Info("Scheduling NewDisputeDistributeSharesTask")
+
+	state.Schedule.Schedule(disputeStart, disputeEnd, disputeBadSharesTask)
+
 	return nil
 }
 
-func UpdateStateOnRegistrationComplete(state *objects.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, uint64, uint64, *dkgtasks.DisputeMissingShareDistributionTask, uint64, uint64) {
+func UpdateStateOnRegistrationComplete(state *objects.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, uint64, uint64, *dkgtasks.DisputeMissingShareDistributionTask, *dkgtasks.DisputeShareDistributionTask, uint64, uint64) {
 	state.OnRegistrationComplete(shareDistributionStartBlockNumber)
 
 	shareDistStartBlock := state.PhaseStart
@@ -208,12 +214,15 @@ func UpdateStateOnRegistrationComplete(state *objects.DkgState, shareDistributio
 	shareDistributionTask := dkgtasks.NewShareDistributionTask(state, shareDistStartBlock, shareDistEndBlock)
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
-	var dispMissingShareStartBlock = shareDistEndBlock
-	var dispMissingShareEndBlock = dispMissingShareStartBlock + state.PhaseLength
+	var dispShareStartBlock = shareDistEndBlock
+	var dispShareEndBlock = dispShareStartBlock + state.PhaseLength
 
-	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(state, dispMissingShareStartBlock, dispMissingShareEndBlock)
+	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(state, dispShareStartBlock, dispShareEndBlock)
 
-	return shareDistributionTask, shareDistStartBlock, shareDistEndBlock, disputeMissingShareDistributionTask, dispMissingShareStartBlock, dispMissingShareEndBlock
+	// schedule DisputeShareDistributionTask
+	disputeBadSharesTask := dkgtasks.NewDisputeShareDistributionTask(state, dispShareStartBlock, dispShareEndBlock)
+
+	return shareDistributionTask, shareDistStartBlock, shareDistEndBlock, disputeMissingShareDistributionTask, disputeBadSharesTask, dispShareStartBlock, dispShareEndBlock
 }
 
 func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {

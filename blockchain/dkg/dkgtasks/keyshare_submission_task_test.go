@@ -52,7 +52,7 @@ func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
 func TestKeyShareSubmissionBad3(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
-	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
 	defer suite.eth.Close()
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -77,7 +77,7 @@ func TestKeyShareSubmissionBad3(t *testing.T) {
 func TestKeyShareSubmissionBad4(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
-	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
 	defer suite.eth.Close()
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()

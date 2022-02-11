@@ -11,7 +11,7 @@ import (
 func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
 	n := 10
 	unsubmittedKeyShares := 4
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -72,7 +72,7 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 	n := 5
 	unsubmittedKeyShares := 1
-	suite := StartFromShareDistributionPhase(t, n, 0, 300)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 300)
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth
@@ -130,7 +130,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 	n := 5
 	unsubmittedKeyShares := 1
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth

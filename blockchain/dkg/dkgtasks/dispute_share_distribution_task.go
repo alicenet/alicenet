@@ -49,7 +49,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("DisputeShareDistributionTask Initialize()")
 
-	if t.State.Phase != objects.DisputeShareDistribution {
+	if t.State.Phase != objects.DisputeShareDistribution && t.State.Phase != objects.ShareDistribution {
 		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
@@ -57,6 +57,12 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 	// Loop through all participants and check to see if shares are valid
 	for idx := 0; idx < t.State.NumberOfValidators; idx++ {
 		participant := participantsList[idx]
+
+		var emptyHash [32]byte
+		if participant.DistributedSharesHash == emptyHash {
+			continue
+		}
+
 		//logger.Infof("t.State.Index: %v\n", t.State.Index)
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
 		valid, present, err := math.VerifyDistributedShares(t.State, participant)

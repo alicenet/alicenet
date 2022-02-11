@@ -402,16 +402,18 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 
 	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	disputeMissingShareDistributionTasks := make([]*dkgtasks.DisputeMissingShareDistributionTask, n)
+	disputeShareDistTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
 
 	if unregisteredValidators == 0 {
 		height, err := eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 
 		for idx := 0; idx < n; idx++ {
-			shareDistributionTask, _, _, disputeMissingShareDistributionTask, _, _ := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
+			shareDistributionTask, _, _, disputeMissingShareDistributionTask, disputeShareDistTask, _, _ := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
 
 			shareDistributionTasks[idx] = shareDistributionTask
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
+			disputeShareDistTasks[idx] = disputeShareDistTask
 		}
 	}
 
@@ -425,10 +427,11 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		dispMissingRegTasks:          dispMissingRegTasks,
 		shareDistTasks:               shareDistributionTasks,
 		disputeMissingShareDistTasks: disputeMissingShareDistributionTasks,
+		disputeShareDistTasks:        disputeShareDistTasks,
 	}
 }
 
-func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
+func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, n, 0, phaseLength)
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -438,7 +441,15 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 
-		if idx >= n-undistributedShares {
+		var skipLoop = false
+
+		for _, undistIdx := range undistributedSharesIdx {
+			if idx == undistIdx {
+				skipLoop = true
+			}
+		}
+
+		if skipLoop {
 			continue
 		}
 
@@ -446,6 +457,15 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 
 		err := shareDistTask.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
+
+		for _, badIdx := range badSharesIdx {
+			if idx == badIdx {
+				// inject bad shares
+				for _, s := range state.Participants[state.Account.Address].EncryptedShares {
+					s.Set(big.NewInt(0))
+				}
+			}
+		}
 
 		err = shareDistTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -471,39 +491,39 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedShares in
 	keyshareSubmissionTasks := make([]*dkgtasks.KeyshareSubmissionTask, n)
 	disputeMissingKeySharesTasks := make([]*dkgtasks.DisputeMissingKeySharesTask, n)
 
-	if undistributedShares == 0 {
+	if len(undistributedSharesIdx) == 0 {
 		height, err := suite.eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
-		var disputeShareDistributionEnd uint64
+		var dispShareDistStartBlock uint64
 
 		// this means all validators distributed their shares and now the phase is
 		// set phase to DisputeShareDistribution
 		for i := 0; i < n; i++ {
-			disputeShareDistributionTask, _, disputeShareDistributionPhaseEnd, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
+			disputeShareDistributionTask, dispShareStartBlock, _, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
 
-			disputeShareDistributionEnd = disputeShareDistributionPhaseEnd
+			dispShareDistStartBlock = dispShareStartBlock
 
 			disputeShareDistributionTasks[i] = disputeShareDistributionTask
 			keyshareSubmissionTasks[i] = keyshareSubmissionTask
 			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
 		}
 
-		// skip all the way to KeyShareSubmission phase
-		advanceTo(t, suite.eth, disputeShareDistributionEnd)
+		suite.disputeShareDistTasks = disputeShareDistributionTasks
+		suite.keyshareSubmissionTasks = keyshareSubmissionTasks
+		suite.disputeMissingKeyshareTasks = disputeMissingKeySharesTasks
+
+		// skip all the way to DisputeShareDistribution phase
+		advanceTo(t, suite.eth, dispShareDistStartBlock)
 	} else {
 		// this means some validators did not distribute shares, and the next phase is DisputeMissingShareDistribution
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
 	}
 
-	suite.disputeShareDistTasks = disputeShareDistributionTasks
-	suite.keyshareSubmissionTasks = keyshareSubmissionTasks
-	suite.disputeMissingKeyshareTasks = disputeMissingKeySharesTasks
-
 	return suite
 }
 
 func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
-	suite := StartFromShareDistributionPhase(t, n, 0, phaseLength)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")

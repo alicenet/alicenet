@@ -10,7 +10,7 @@ import (
 
 func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 1, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{4}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -38,7 +38,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 
 func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, n, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{0, 1, 2, 3, 4}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -65,7 +65,7 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 
 func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -107,7 +107,7 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 
 func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -135,7 +135,7 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 
 func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -158,4 +158,59 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.False(t, shouldRetry)
 	}
+}
+
+func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBadShares(t *testing.T) {
+	n := 5
+	suite := StartFromShareDistributionPhase(t, n, []int{4}, []int{3}, 100)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Test", "Test1")
+
+	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
+	// assert.Nil(t, err)
+	// nextPhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
+	// advanceTo(t, suite.eth, nextPhaseAt)
+
+	// Do Share Dispute task
+	for idx := range accounts {
+		state := suite.dkgStates[idx]
+
+		// disputeMissingShareDist
+		disputeMissingShareDistTask := suite.disputeMissingShareDistTasks[idx]
+
+		err := disputeMissingShareDistTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeMissingShareDistTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeMissingShareDistTask.Success)
+
+		// disputeMissingShareDist
+		disputeShareDistTask := suite.disputeShareDistTasks[idx]
+
+		err = disputeShareDistTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeShareDistTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeShareDistTask.Success)
+	}
+
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(2), badParticipants.Uint64())
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+
+	//assert bad participants are not validators anymore, i.e, they were fined and evicted
+	isValidator, err := suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[3].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+
+	isValidator, err = suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[4].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
 }

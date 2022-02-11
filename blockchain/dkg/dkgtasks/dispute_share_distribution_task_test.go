@@ -19,7 +19,7 @@ import (
 // We test to ensure that everything behaves correctly.
 func TestShareDisputeGoodAllValid(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 
@@ -215,7 +215,7 @@ func TestShareDisputeBad2(t *testing.T) {
 
 func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
@@ -259,7 +259,7 @@ func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 
 func TestDisputeShareDistributionTask_DoRetry_returnsTrue(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, 0, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	accounts := suite.eth.GetKnownAccounts()
