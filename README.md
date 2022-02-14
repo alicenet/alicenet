@@ -12,7 +12,7 @@ First, this repository needs to be cloned, and be the current working dir.
 
 <br />
 
-Then to perform all code auto generation:
+Then to perform all code auto generation (run with `sudo` if your `docker` is only installed for `root`):
 ```
 make generate
 ```
