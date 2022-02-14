@@ -44,7 +44,7 @@ message TransactionStatusRequest {
     bool ReturnTx = 2;
 }
 message TransactionStatusResponse {
-    bool isMined = 1;
+    bool IsMined = 1;
     Tx Tx = 2;
 }
 

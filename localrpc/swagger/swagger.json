@@ -1009,7 +1009,7 @@
     "protoTransactionStatusResponse": {
       "type": "object",
       "properties": {
-        "isMined": {
+        "IsMined": {
           "type": "boolean"
         },
         "Tx": {
