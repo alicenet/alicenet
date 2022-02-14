@@ -39,6 +39,15 @@ message MinedTransactionResponse {
     Tx Tx = 1;
 }
 
+message TransactionStatusRequest {
+    string TxHash = 1; // 32 bytes
+    bool ReturnTx = 2;
+}
+message TransactionStatusResponse {
+    bool IsMined = 1;
+    Tx Tx = 2;
+}
+
 
 message BlockHeaderRequest {
     uint32 Height = 1; // must not be zero

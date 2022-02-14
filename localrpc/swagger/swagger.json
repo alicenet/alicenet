@@ -307,6 +307,39 @@
         ]
       }
     },
+    "/v1/get-transaction-status": {
+      "post": {
+        "summary": "Get transaction status by hash",
+        "operationId": "LocalState_GetTransactionStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoTransactionStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTransactionStatusRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LocalState"
+        ]
+      }
+    },
     "/v1/get-tx-block-number": {
       "post": {
         "summary": "Get the current block number",
@@ -959,6 +992,28 @@
       "properties": {
         "TxHash": {
           "type": "string"
+        }
+      }
+    },
+    "protoTransactionStatusRequest": {
+      "type": "object",
+      "properties": {
+        "TxHash": {
+          "type": "string"
+        },
+        "ReturnTx": {
+          "type": "boolean"
+        }
+      }
+    },
+    "protoTransactionStatusResponse": {
+      "type": "object",
+      "properties": {
+        "IsMined": {
+          "type": "boolean"
+        },
+        "Tx": {
+          "$ref": "#/definitions/protoTx"
         }
       }
     },

@@ -415,6 +415,74 @@ func TestLocalStateGetUTXOCancel(t *testing.T) {
 	assert.EqualError(t, cancelErr, "context canceled", "the error returned must be a context canceled error")
 }
 
+type testLocalStateGetTransactionStatusHandler struct{}
+
+func (th *testLocalStateGetTransactionStatusHandler) HandleLocalStateGetTransactionStatus(context.Context, *TransactionStatusRequest) (*TransactionStatusResponse, error) {
+	return &TransactionStatusResponse{}, nil
+}
+
+func TestLocalStateGetTransactionStatus(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Setup the handler for the TestService
+	h := &testLocalStateGetTransactionStatusHandler{}
+
+	// Register the handler with the dispatch class
+	d.RegisterLocalStateGetTransactionStatus(h)
+
+	// Create the server and pass in the dispatch class
+	srvr := GeneratedLocalStateServer{
+		dispatch: d,
+	}
+
+	// Test calling the method TestCall
+	_, err := srvr.GetTransactionStatus(context.Background(), &TransactionStatusRequest{})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDoubleregistrationLocalStateGetTransactionStatus(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Setup the handler for the TestService
+	h := &testLocalStateGetTransactionStatusHandler{}
+
+	// Register the handler with the dispatch class
+	d.RegisterLocalStateGetTransactionStatus(h)
+
+	fn := func() {
+		d.RegisterLocalStateGetTransactionStatus(h)
+	}
+	assert.Panics(t, fn, "double registration must panic")
+}
+
+func TestLocalStateGetTransactionStatusCancel(t *testing.T) {
+	// Setup the dispatch handler
+	d := NewLocalStateDispatch()
+
+	// Create the server and pass in the dispatch class
+	srvr := GeneratedLocalStateServer{
+		dispatch: d,
+	}
+
+	// Test calling the method TestCall
+	errChan := make(chan error)
+	defer close(errChan)
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	fn := func() {
+		_, err := srvr.GetTransactionStatus(cancelCtx, &TransactionStatusRequest{})
+		errChan <- err
+	}
+	go fn()
+	cancelFunc()
+	cancelErr := <-errChan
+	assert.EqualError(t, cancelErr, "context canceled", "the error returned must be a context canceled error")
+}
+
 type testLocalStateGetPendingTransactionHandler struct{}
 
 func (th *testLocalStateGetPendingTransactionHandler) HandleLocalStateGetPendingTransaction(context.Context, *PendingTransactionRequest) (*PendingTransactionResponse, error) {
