@@ -187,7 +187,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBad
 		suite.eth.Commit()
 		assert.True(t, disputeMissingShareDistTask.Success)
 
-		// disputeMissingShareDist
+		// disputeShareDist
 		disputeShareDistTask := suite.disputeShareDistTasks[idx]
 
 		err = disputeShareDistTask.Initialize(ctx, logger, suite.eth, state)

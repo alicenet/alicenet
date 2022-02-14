@@ -453,7 +453,7 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	state.Lock()
 	defer state.Unlock()
 
-	gpkjSubmissionTask, gpkjSubmissionStart, gpkjSubmissionEnd, disputeMissingGPKjTask, disputeMissingGPKjStart, disputeMissingGPKjEnd := UpdateStateOnMPKSet(state.EthDKG, logger, event.BlockNumber.Uint64(), adminHandler)
+	gpkjSubmissionTask, gpkjSubmissionStart, gpkjSubmissionEnd, disputeMissingGPKjTask, disputeGPKjTask, disputeMissingGPKjStart, disputeMissingGPKjEnd := UpdateStateOnMPKSet(state.EthDKG, logger, event.BlockNumber.Uint64(), adminHandler)
 
 	logger.WithFields(logrus.Fields{
 		"Phase": state.EthDKG.Phase,
@@ -478,10 +478,19 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 		"phaseEnd":    disputeMissingGPKjEnd,
 	}).Info("Scheduling DisputeMissingGPKjTask")
 
+	// schedule DisputeGPKjTask
+	state.Schedule.Schedule(disputeMissingGPKjStart, disputeMissingGPKjEnd, disputeGPKjTask)
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+		"phaseStart":  disputeMissingGPKjStart,
+		"phaseEnd":    disputeMissingGPKjEnd,
+	}).Info("Scheduling DisputeGPKjTask")
+
 	return nil
 }
 
-func UpdateStateOnMPKSet(state *objects.DkgState, logger *logrus.Entry, gpkjSubmissionStartBlock uint64, adminHandler interfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, uint64, uint64, *dkgtasks.DisputeMissingGPKjTask, uint64, uint64) {
+func UpdateStateOnMPKSet(state *objects.DkgState, logger *logrus.Entry, gpkjSubmissionStartBlock uint64, adminHandler interfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, uint64, uint64, *dkgtasks.DisputeMissingGPKjTask, *dkgtasks.DisputeGPKjTask, uint64, uint64) {
 	state.OnMPKSet(gpkjSubmissionStartBlock)
 	var gpkjSubmissionEnd uint64 = state.PhaseStart + state.PhaseLength
 
@@ -493,7 +502,9 @@ func UpdateStateOnMPKSet(state *objects.DkgState, logger *logrus.Entry, gpkjSubm
 
 	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(state, disputeMissingGPKjStart, disputeMissingGPKjEnd)
 
-	return gpkjSubmissionTask, state.PhaseStart, gpkjSubmissionEnd, disputeMissingGPKjTask, disputeMissingGPKjStart, disputeMissingGPKjEnd
+	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(state, disputeMissingGPKjStart, disputeMissingGPKjEnd)
+
+	return gpkjSubmissionTask, state.PhaseStart, gpkjSubmissionEnd, disputeMissingGPKjTask, disputeGPKjTask, disputeMissingGPKjStart, disputeMissingGPKjEnd
 }
 
 func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {

@@ -164,3 +164,111 @@ func TestDisputeMissingGPKjTask_ShouldRetry_True(t *testing.T) {
 		assert.True(t, shouldRetry)
 	}
 }
+
+func TestShouldAccuseOneValidatorWhoDidNotDistributeGPKjAndAnotherSubmittedBadGPKj(t *testing.T) {
+	n := 5
+	suite := StartFromGPKjPhase(t, n, []int{4}, []int{3}, 100)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Test", "Test1")
+
+	// Do GPKj Dispute task
+	for idx := range accounts {
+		state := suite.dkgStates[idx]
+
+		// disputeMissingGPKj
+		disputeMissingGPKjTask := suite.disputeMissingGPKjTasks[idx]
+
+		err := disputeMissingGPKjTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeMissingGPKjTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeMissingGPKjTask.Success)
+
+		// disputeGPKj
+		disputeGPKjTask := suite.disputeGPKjTasks[idx]
+
+		err = disputeGPKjTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeGPKjTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeGPKjTask.Success)
+	}
+
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(2), badParticipants.Uint64())
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+
+	//assert bad participants are not validators anymore, i.e, they were fined and evicted
+	isValidator, err := suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[3].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+
+	isValidator, err = suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[4].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+}
+
+func TestShouldAccuseTwoValidatorWhoDidNotDistributeGPKjAndAnotherTwoSubmittedBadGPKj(t *testing.T) {
+	n := 5
+	suite := StartFromGPKjPhase(t, n, []int{3, 4}, []int{1, 2}, 100)
+	accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Test", "Test1")
+
+	// Do GPKj Dispute task
+	for idx := range accounts {
+		state := suite.dkgStates[idx]
+
+		// disputeMissingGPKj
+		disputeMissingGPKjTask := suite.disputeMissingGPKjTasks[idx]
+
+		err := disputeMissingGPKjTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeMissingGPKjTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeMissingGPKjTask.Success)
+
+		// disputeGPKj
+		disputeGPKjTask := suite.disputeGPKjTasks[idx]
+
+		err = disputeGPKjTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+		err = disputeGPKjTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, disputeGPKjTask.Success)
+	}
+
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(4), badParticipants.Uint64())
+
+	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+
+	//assert bad participants are not validators anymore, i.e, they were fined and evicted
+	isValidator, err := suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[1].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+
+	isValidator, err = suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[2].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+
+	isValidator, err = suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[3].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+
+	isValidator, err = suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[4].Account.Address)
+	assert.Nil(t, err)
+	assert.False(t, isValidator)
+}

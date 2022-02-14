@@ -434,24 +434,28 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 	for idx := 0; idx < n; idx++ {
 		// Loop through all participants to confirm each is valid
 		participant := participants[idx]
+
+		// If public key is all zeros, then no public key was submitted;
+		// add to missing.
+		big0 := big.NewInt(0)
+		if (publishedPublicKeys[idx][0] == nil &&
+			publishedPublicKeys[idx][1] == nil &&
+			publishedPublicKeys[idx][2] == nil &&
+			publishedPublicKeys[idx][3] == nil) || (publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][3].Cmp(big0) == 0) {
+			missing = append(missing, participant.Copy())
+			continue
+		}
+
 		j := participant.Index // participant index
 		jBig := big.NewInt(int64(j))
 
 		tmp0 := new(cloudflare.G1)
 		gpkj, err := bn256.BigIntArrayToG2(publishedPublicKeys[idx])
 		if err != nil {
-			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, err
-		}
-
-		// If public key is all zeros, then no public key was submitted;
-		// add to missing.
-		big0 := big.NewInt(0)
-		if publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][3].Cmp(big0) == 0 {
-			missing = append(missing, participant.Copy())
-			continue
+			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("1 (%v)", err)
 		}
 
 		// Outer loop determines what needs to be exponentiated
@@ -462,7 +466,7 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 				tmp2Big := commitments[participantIdx][polyDegreeIdx]
 				tmp2, err := bn256.BigIntArrayToG1(tmp2Big)
 				if err != nil {
-					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, err
+					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("2 (%v)", err)
 				}
 				tmp1.Add(tmp1, tmp2)
 			}

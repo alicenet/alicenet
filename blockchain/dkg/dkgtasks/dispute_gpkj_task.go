@@ -51,8 +51,8 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKJDisputeTask Initialize()...")
 
-	if t.State.Phase != objects.DisputeGPKJSubmission {
-		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.DisputeGPKJSubmission && t.State.Phase != objects.GPKJSubmission {
+		return fmt.Errorf("%w because it's not DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	var (

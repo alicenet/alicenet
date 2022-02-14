@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/crypto/bn256"
+	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
 	"github.com/MadBase/bridge/bindings"
 
@@ -528,6 +530,9 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
+	keyshareSubmissionStartBlock := suite.keyshareSubmissionTasks[0].Start
+	advanceTo(t, suite.eth, keyshareSubmissionStartBlock)
+
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
@@ -611,19 +616,115 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 	height, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
+	// advanceTo(t, eth, height+dkgStates[0].ConfirmationLength)
+
 	gpkjSubmissionTasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	disputeMissingGPKjTasks := make([]*dkgtasks.DisputeMissingGPKjTask, n)
+	disputeGPKjTasks := make([]*dkgtasks.DisputeGPKjTask, n)
 
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask, _, _, disputeMissingGPKjTask, _, _ := dkgevents.UpdateStateOnMPKSet(state, logger, height, new(adminHandlerMock))
+		gpkjSubmissionTask, _, _, disputeMissingGPKjTask, disputeGPKjTask, _, _ := dkgevents.UpdateStateOnMPKSet(state, logger, height, new(adminHandlerMock))
 
 		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
 		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
+		disputeGPKjTasks[idx] = disputeGPKjTask
 	}
 
 	suite.gpkjSubmissionTasks = gpkjSubmissionTasks
 	suite.disputeMissingGPKjTasks = disputeMissingGPKjTasks
+	suite.disputeGPKjTasks = disputeGPKjTasks
+
+	return suite
+}
+
+func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *TestSuite {
+	suite := StartFromMPKSubmissionPhase(t, n, phaseLength)
+	//accounts := suite.eth.GetKnownAccounts()
+	ctx := context.Background()
+	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	// Do GPKj Submission task
+	for idx := 0; idx < n; idx++ {
+		state := suite.dkgStates[idx]
+
+		var skipLoop = false
+
+		for _, undistIdx := range undistributedGPKjIdx {
+			if idx == undistIdx {
+				skipLoop = true
+			}
+		}
+
+		if skipLoop {
+			continue
+		}
+
+		gpkjSubTask := suite.gpkjSubmissionTasks[idx]
+
+		err := gpkjSubTask.Initialize(ctx, logger, suite.eth, state)
+		assert.Nil(t, err)
+
+		for _, badIdx := range badGPKjIdx {
+			if idx == badIdx {
+				// inject bad shares
+				// mess up with group private key (gskj)
+				gskjBad := new(big.Int).Add(state.GroupPrivateKey, big.NewInt(1))
+				// here's the group public key
+				gpkj := new(cloudflare.G2).ScalarBaseMult(gskjBad)
+				gpkjBad, err := bn256.G2ToBigIntArray(gpkj)
+				assert.Nil(t, err)
+
+				state.GroupPrivateKey = gskjBad
+				state.Participants[state.Account.Address].GPKj = gpkjBad
+			}
+		}
+
+		err = gpkjSubTask.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
+
+		suite.eth.Commit()
+		assert.True(t, gpkjSubTask.Success)
+
+		// event
+		for j := 0; j < n; j++ {
+			// simulate receiving event for all participants
+			suite.dkgStates[j].OnGPKjSubmitted(
+				state.Account.Address,
+				state.Participants[state.Account.Address].GPKj,
+			)
+		}
+
+	}
+
+	disputeGPKjTasks := make([]*dkgtasks.DisputeGPKjTask, n)
+	completionTasks := make([]*dkgtasks.CompletionTask, n)
+
+	if len(undistributedGPKjIdx) == 0 {
+		height, err := suite.eth.GetCurrentHeight(ctx)
+		assert.Nil(t, err)
+		var dispGPKjStartBlock uint64
+
+		// this means all validators submitted their GPKjs and now the phase is
+		// set phase to DisputeGPKjDistribution
+		for i := 0; i < n; i++ {
+			disputeGPKjTask, disputeGPKjStartBlock, _, completionTask, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(suite.dkgStates[i], logger, height)
+
+			dispGPKjStartBlock = disputeGPKjStartBlock
+
+			disputeGPKjTasks[i] = disputeGPKjTask
+			completionTasks[i] = completionTask
+		}
+
+		suite.disputeGPKjTasks = disputeGPKjTasks
+		suite.completionTasks = completionTasks
+
+		// skip all the way to DisputeGPKj phase
+		advanceTo(t, suite.eth, dispGPKjStartBlock)
+	} else {
+		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
+		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+	}
 
 	return suite
 }
