@@ -2,22 +2,28 @@
 Mad Network Layer 1
 
 
-## Environment Setup
-First, clone this repository.
-Next, clone the bridge repository to the same directory as MadNet;
-that is, if this repository is located at the path `~/mn/MadNet`,
-then the bridge repository should be located at the path `~/mn/bridge`.
-Also, clone the MadNetWallet-JS repository;
-directions for installing the Wallet software will be described below.
-
+## Requirements
+* Recent version of Docker (with docker compose)
+* Go 1.17
+* Geth 1.10.8
 
 ## Build MadNet
-To build the project, run the following command in the root
-of the repository:
+First, this repository needs to be cloned, and be the current working dir.
+
+<br />
+
+Then to perform all code auto generation (run with `sudo` if your `docker` is only installed for `root`):
+```
+make generate
+```
+This generates all protobuf, capnproto, grpcs, and swagger files that the project depends on. Any time you make changes to any of the source files of these, this command needs to be rerun.
+
+<br />
+
+Finally, to compile an executable:
 ```
 make build
 ```
-
 
 ## Build Wallet
 
@@ -77,7 +83,7 @@ Once this has finished, turn on each of the validators, each in its own terminal
 ./scripts/main.sh validator {# for the validator you want to start}
 ```
 
-Wait until all of the validators have peered together and then start ethDKG:
+Wait until all of the validators have peered together (TODO: how can we know when this is done?) and then start ethDKG:
 ```
 ./scripts/main.sh ethdkg
 ```

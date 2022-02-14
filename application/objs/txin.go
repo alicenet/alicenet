@@ -6,7 +6,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
-	capnp "zombiezen.com/go/capnproto2"
+	capnp "github.com/MadBase/go-capnproto2/v2"
 )
 
 // TXIn is a tx input object that acts as a reference to a UTXO
