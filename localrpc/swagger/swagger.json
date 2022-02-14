@@ -1001,7 +1001,7 @@
         "TxHash": {
           "type": "string"
         },
-        "returnTx": {
+        "ReturnTx": {
           "type": "boolean"
         }
       }

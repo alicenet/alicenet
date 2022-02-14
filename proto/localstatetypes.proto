@@ -41,7 +41,7 @@ message MinedTransactionResponse {
 
 message TransactionStatusRequest {
     string TxHash = 1; // 32 bytes
-    bool returnTx = 2;
+    bool ReturnTx = 2;
 }
 message TransactionStatusResponse {
     bool isMined = 1;
