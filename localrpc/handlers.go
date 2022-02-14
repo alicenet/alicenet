@@ -669,7 +669,7 @@ func (srpc *Handlers) HandleLocalStateGetTransactionStatus(ctx context.Context, 
 	}
 
 	result := &pb.TransactionStatusResponse{IsMined: isMined}
-	if req.Full {
+	if req.ReturnTx {
 		txOut, err := ForwardTranslateTx(tx)
 		if err != nil {
 			return nil, err
