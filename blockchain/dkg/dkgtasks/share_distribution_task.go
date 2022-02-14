@@ -142,6 +142,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 }
 
 // ShouldRetry checks if it makes sense to try again
+// if the DKG process is in the right phase and blocks
+// range and the distributed share hash is empty, we retry
 func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()

@@ -32,18 +32,15 @@ func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, en
 	}
 }
 
-// Initialize begins the setup phase for Register.
-// We construct our TransportPrivateKey and TransportPublicKey
-// which will be used in the ShareDistribution phase for secure communication.
-// These keys are *not* used otherwise.
+// Initialize begins the setup phase for Dispute Registration.
 func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
-	logger.Info("DisputeMissingShareDistributionTask Initializing...")
+	logger.Info("DisputeMissingRegistrationTask Initializing...")
 
 	return nil
 }
 
-// DoWork is the first attempt at registering with ethdkg
+// DoWork is the first attempt at Disputing Missing Registrations with ethdkg
 func (t *DisputeMissingRegistrationTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
@@ -105,6 +102,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
+// -- We have unregistered participants
 func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()

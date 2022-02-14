@@ -236,9 +236,6 @@ type Participant struct {
 
 	CommitmentsFirstCoefficient [2]*big.Int
 
-	// todo: delete this
-	//KeyShares [2]*big.Int
-
 	// Key Share Submission Phase
 	//////////////////////////////////////////////////
 	// KeyShareG1s stores the key shares of G1 element

@@ -108,6 +108,9 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 }
 
 // ShouldRetry checks if it makes sense to try again
+// if the DKG process is in the right phase and blocks
+// range and there still someone to accuse, the retry
+// is executed
 func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
 	t.State.Lock()
