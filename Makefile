@@ -16,7 +16,8 @@ race:
 	$(GOCMD) build -o $(RACE_DETECTOR) -race ./cmd/main.go
 
 generate:
-	@ DOCKER_BUILDKIT=1 docker build . -f dockerfiles/generate/Dockerfile -t madnet-go-generate; \
+	@ set -eu && \
+	DOCKER_BUILDKIT=1 docker build . -f dockerfiles/generate/Dockerfile -t madnet-go-generate; \
 	EXISTING=$$(docker ps -a --filter name=madnet-go-generate --format {{.Image}}); \
 	\
 	if [ "$$EXISTING" = "madnet-go-generate" ]; then \
