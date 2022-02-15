@@ -2,7 +2,7 @@
 DATADIR=./local-geth/
   
 geth \
-  --port "35555" 
+  --port "35555" \
   --networkid 1337 \
   --datadir=$DATADIR \
   --fakepow \
