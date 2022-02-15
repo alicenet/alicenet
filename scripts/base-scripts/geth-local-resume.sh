@@ -19,12 +19,12 @@ geth \
   --maxpeers 0 \
   \
   --ws \
-  --ws.addr=127.0.0.1 \
+  --ws.addr=0.0.0.0 \
   --ws.port=8546 \
   --ws.api="admin,eth,net,web3,personal,miner,txpool,debug" \
   \
   --http \
-  --http.addr=127.0.0.1 \
+  --http.addr=0.0.0.0 \
   --http.port=8545 \
   --http.api="admin,eth,net,web3,personal,miner,txpool,debug" \
   --http.vhosts='*' \
