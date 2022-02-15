@@ -127,7 +127,6 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	// Check to see if we are already registered
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
 		logger.Errorf("DisputeMissingGPKjTask ShouldRetry() error getting accusable participants: %v", err)

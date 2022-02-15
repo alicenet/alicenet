@@ -63,7 +63,6 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 			continue
 		}
 
-		//logger.Infof("t.State.Index: %v\n", t.State.Index)
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
 		valid, present, err := math.VerifyDistributedShares(t.State, participant)
 		if err != nil {
@@ -142,6 +141,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 		}
 
+		// Accuse participant
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
@@ -199,6 +199,7 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 		"eth.badParticipants": badParticipants,
 	}).Debug("DisputeShareDistributionTask ShouldRetry2()")
 
+	// if there is someone that wasn't accused we need to retry
 	return len(t.State.BadShares) != int(badParticipants.Int64())
 }
 

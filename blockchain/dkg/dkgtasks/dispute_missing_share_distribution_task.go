@@ -29,8 +29,6 @@ func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint6
 }
 
 // Initialize begins the setup phase for DisputeMissingShareDistributionTask.
-// It determines if the shares previously distributed are valid.
-// If any are invalid, disputes will be issued.
 func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	logger.Info("DisputeMissingShareDistributionTask Initializing...")
@@ -116,7 +114,6 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 		return false
 	}
 
-	// Check to see if we are already registered
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
 		logger.Errorf("DisputeMissingShareDistributionTask ShouldRetry() error getting accusable participants: %v", err)
@@ -152,7 +149,7 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx conte
 		validatorsMap[validator] = true
 	}
 
-	// find participants who did not register
+	// find participants who did not submit their shares
 	var emptySharesHash [32]byte
 	for _, p := range t.State.Participants {
 		_, isValidator := validatorsMap[p.Address]

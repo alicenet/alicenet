@@ -120,7 +120,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// Register
+	// Submit MPK
 	logger.Infof("submitting master public key:%v", t.State.MasterPublicKey)
 	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, t.State.MasterPublicKey)
 	if err != nil {
@@ -150,7 +150,6 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()

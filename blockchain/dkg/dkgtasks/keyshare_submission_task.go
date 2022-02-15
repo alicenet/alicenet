@@ -48,17 +48,12 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 
 	logger.Info("KeyshareSubmissionTask Initialize()")
 
-	// if !t.State.Dispute {
-	// 	return fmt.Errorf("%w because dispute phase not successful", objects.ErrCanNotContinue)
-	// }
-
 	// Generate the key shares
 	g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
 	if err != nil {
 		return err
 	}
 
-	// t.State.KeyShareG1s[state.Account.Address]
 	me := t.State.Account.Address
 
 	logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
@@ -134,7 +129,6 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -162,6 +156,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
+	// Check the key share submission status
 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
 	if err != nil {
 		logger.Infof("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)

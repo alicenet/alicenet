@@ -34,8 +34,6 @@ func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end u
 }
 
 // Initialize begins the setup phase for DisputeMissingKeySharesTask.
-// It determines if the shares previously distributed are valid.
-// If any are invalid, disputes will be issued.
 func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	dkgState, validState := state.(*objects.DkgState)
 	if !validState {
@@ -162,7 +160,7 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 		validatorsMap[validator] = true
 	}
 
-	// find participants who did not register
+	// find participants who did not submit they key shares
 	for _, p := range t.State.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != t.State.Nonce ||

@@ -83,14 +83,6 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
-	// todo: delete this bc deprecated
-	if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
-
 	if err := em.RegisterLocked("0x36dcd0e03525dedd9d5c21a263ef5f35d030298b5c48f1a713006aefc064ad05", "ValueUpdated",
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)

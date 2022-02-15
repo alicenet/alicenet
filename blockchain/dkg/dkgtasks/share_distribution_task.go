@@ -61,7 +61,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return err
 	}
 
-	// todo: delete this
+	// Uncomment these lines if you want to inject bad data
 	// inject bad encryptedShares
 	// For the badIdx, submit invalid shares; zero everything;
 	// this overwrites what was done in Initialize
@@ -112,7 +112,6 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	//TODO: add retry logic and timeout
 
 	// Distribute shares
-	//logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
 	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)

@@ -43,6 +43,8 @@ func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *Registe
 // We construct our TransportPrivateKey and TransportPublicKey
 // which will be used in the ShareDistribution phase for secure communication.
 // These keys are *not* used otherwise.
+// Also get the list of existing validators from the pool to assert accusation
+// in later phases
 func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	dkgState, validState := state.(*objects.DkgState)
@@ -120,9 +122,6 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 			"Nonce":     txnOpts.Nonce,
 		}).Info("registering fees")
 
-		//txnOpts.GasFeeCap = big.NewInt(17537) // 57537 - 421211
-		//txnOpts.GasTipCap = big.NewInt(1)     // 1
-
 		t.TxOpts = txnOpts
 	}
 
@@ -165,8 +164,9 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 
 	eth.Queue().QueueTransaction(ctx, txn)
 
-	// Waiting for receipt
-	//start := time.Now()
+	// Waiting for receipt with timeout
+	// If we reach the timeout, we return an error
+	// to evaluate if we should retry with a higher fee and tip
 	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
@@ -178,6 +178,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return errors.New("missing registration receipt")
 	}
 
+	// Wait for finalityDelay to avoid fork rollback
 	err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
 	if err != nil {
 		logger.Errorf("waiting confirmations failed: %v", err)
@@ -208,14 +209,6 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
-	// nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-	// if err != nil {
-	// 	logger.Errorf("getting acct nonce2: %v", err)
-	// 	return true
-	// }
-
-	// logger.Infof("RegisterTask ShouldRetry() nonce: %v", nonce)
-
 	var needsRegistration bool
 	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
 	logger.Infof("registration status: %v", status)
@@ -245,28 +238,19 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 			"Nonce":     t.TxOpts.Nonce,
 		})
 
-		// calculate 10% increase in BaseFeeCap
-		var gasFeeCap10pc = (&big.Int{}).Mul(t.TxOpts.GasFeeCap, big.NewInt(10))
-		gasFeeCap10pc = (&big.Int{}).Div(gasFeeCap10pc, big.NewInt(100))
-		t.TxOpts.GasFeeCap = (&big.Int{}).Add(t.TxOpts.GasFeeCap, gasFeeCap10pc)
-		// because of rounding errors
-		t.TxOpts.GasFeeCap = (&big.Int{}).Add(t.TxOpts.GasFeeCap, big.NewInt(1))
-
-		// calculate 10% increase in BaseTipCap
-		var gasTipCap10pc = (&big.Int{}).Mul(t.TxOpts.GasTipCap, big.NewInt(10))
-		gasTipCap10pc = (&big.Int{}).Div(gasTipCap10pc, big.NewInt(100))
-		t.TxOpts.GasTipCap = (&big.Int{}).Add(t.TxOpts.GasTipCap, gasTipCap10pc)
-		// because of rounding errors
-		t.TxOpts.GasTipCap = (&big.Int{}).Add(t.TxOpts.GasTipCap, big.NewInt(1))
+		// calculate 10% increase in GasFeeCap and GasTipCap
+		increasedFeeCap, increasedTipCap := dkg.IncreaseFeeAndTipCap(t.TxOpts.GasFeeCap, t.TxOpts.GasTipCap, big.NewInt(10))
+		t.TxOpts.GasFeeCap = increasedFeeCap
+		t.TxOpts.GasTipCap = increasedTipCap
 
 		l.WithFields(logrus.Fields{
 			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
 			"gasTipCap10pc": t.TxOpts.GasTipCap,
 		}).Info("Retrying register with higher fee/tip caps")
 	} else {
-
 		var emptyHash common.Hash
 		if t.TxHash != emptyHash {
+			// Wait for finalityDelay to avoid fork rollback
 			err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
 			if err != nil {
 				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/crypto"
@@ -172,8 +173,6 @@ func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*
 }
 
 func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
-	//var nConfirmation uint64 = 12
 	var done = false
 
 	for !done {
@@ -184,11 +183,8 @@ func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.E
 			logger.Errorf("waiting for receipt failed: %v", err)
 			return err
 		}
-		//end := time.Now()
-		//logger.Infof("elapsed time registering: %v", end.Sub(start))
 
 		if receipt == nil {
-			//logger.Error("missing registration receipt")
 			return errors.New("receipt is nil")
 		}
 
@@ -211,7 +207,27 @@ func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.E
 			done = true
 		}
 
+		time.Sleep(5 * time.Second)
+
 	}
 
 	return nil
+}
+
+func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap, percentage *big.Int) (*big.Int, *big.Int) {
+	// calculate 10% increase in GasFeeCap
+	var gasFeeCap10pc = (&big.Int{}).Mul(gasFeeCap, percentage)
+	gasFeeCap10pc = (&big.Int{}).Div(gasFeeCap10pc, big.NewInt(100))
+	resultFeeCap := (&big.Int{}).Add(gasFeeCap, gasFeeCap10pc)
+	// because of rounding errors
+	resultFeeCap = (&big.Int{}).Add(gasFeeCap, big.NewInt(1))
+
+	// calculate 10% increase in GasTipCap
+	var gasTipCap10pc = (&big.Int{}).Mul(gasTipCap, percentage)
+	gasTipCap10pc = (&big.Int{}).Div(gasTipCap10pc, big.NewInt(100))
+	resultTipCap := (&big.Int{}).Add(gasTipCap, gasTipCap10pc)
+	// because of rounding errors
+	resultTipCap = (&big.Int{}).Add(gasTipCap, big.NewInt(1))
+
+	return resultFeeCap, resultTipCap
 }

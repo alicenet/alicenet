@@ -301,42 +301,20 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	participant := &objects.Participant{}
 	participant.Index = partIdx + 1
 	participant.Address = participantState.Account.Address
-	// Make commitment list of correct length and valid;
-	// raise an error for invalid public key
-	commitments := make([][2]*big.Int, threshold+1)
-	for k := 0; k < len(commitments); k++ {
-		commitments[k] = [2]*big.Int{common.Big1, common.Big2}
-	}
-	//participant.Commitments = commitments
-	//encryptedSharesList := make([]*big.Int, n-1)
-	//for i := 0; i < len(encryptedSharesList); i++ {
-	//	encryptedShares := GenerateEncryptedShares([]*objects.DkgState{dkgState}, i)
-	//	encryptedSharesList = append(encryptedSharesList, encryptedShares...)
-	//}
-	//participant.EncryptedShares = encryptedSharesList
-	//_, public, _ := math.GenerateKeys()
-	//participant.PublicKey = public
 	dkgState.Participants[participant.Address] = participant
 
-	// Test after initial setup; nothing present
-	//valid, present, err := math.VerifyDistributedShares(dkgState, participant)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//if present {
-	//	t.Fatal("Should not be present")
-	//}
-	//if valid {
-	//	t.Fatal("Should not be valid")
-	//}
+	//Test after initial setup; nothing present
+	valid, present, err := math.VerifyDistributedShares(dkgState, participant)
+	assert.NotNil(t, err)
+	assert.False(t, present)
+	assert.False(t, valid)
 
 	// no commitment present but (invalid) shares
 	encryptedSharesBad := make([]*big.Int, 0)
 	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
-	_, _, err := math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (0)")
-	}
+	_, _, err = math.VerifyDistributedShares(dkgState, participant)
+	assert.NotNil(t, err)
+
 	// Remove shares from map
 	dkgState.Participants[participant.Address].EncryptedShares = nil
 
@@ -344,9 +322,8 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	commitmentsBad0 := make([][2]*big.Int, 0)
 	dkgState.Participants[participant.Address].Commitments = commitmentsBad0
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (1)")
-	}
+	assert.NotNil(t, err)
+
 	dkgState.Participants[participant.Address].Commitments = nil
 
 	// Raise error from invalid commitment length
@@ -354,9 +331,8 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	dkgState.Participants[participant.Address].Commitments = commitmentsBad1
 	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (3)")
-	}
+	assert.NotNil(t, err)
+
 	dkgState.Participants[participant.Address].Commitments = nil
 	dkgState.Participants[participant.Address].EncryptedShares = nil
 
@@ -365,9 +341,8 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	dkgState.Participants[participant.Address].Commitments = commitmentsBad2
 	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (4)")
-	}
+	assert.NotNil(t, err)
+
 	dkgState.Participants[participant.Address].Commitments = nil
 	dkgState.Participants[participant.Address].EncryptedShares = nil
 
@@ -376,24 +351,21 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	dkgState.Participants[participant.Address].Commitments = commitmentsBad2
 	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesEmpty
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (6)")
-	}
+	assert.NotNil(t, err)
+
 	dkgState.Participants[participant.Address].Commitments = nil
 	dkgState.Participants[participant.Address].EncryptedShares = nil
 
-	// Make commitment list of correct length and valid;
-	// raise an error for invalid public key
-	//commitments := make([][2]*big.Int, threshold+1)
-	//for k := 0; k < len(commitments); k++ {
-	//	commitments[k] = [2]*big.Int{common.Big1, common.Big2}
-	//}
+	//Make commitment list of correct length and valid;
+	//raise an error for invalid public key
+	commitments := make([][2]*big.Int, threshold+1)
+	for k := 0; k < len(commitments); k++ {
+		commitments[k] = [2]*big.Int{common.Big1, common.Big2}
+	}
 	dkgState.Participants[participant.Address].Commitments = commitments
 	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesEmpty
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (7)")
-	}
+	assert.NotNil(t, err)
 }
 
 func TestGenerateKeyShare(t *testing.T) {

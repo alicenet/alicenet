@@ -118,7 +118,6 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 		return false
 	}
 
-	// Check to see if we are already registered
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
 		logger.Errorf("DisputeMissingRegistrationTask ShouldRetry() error getting accusable participants: %v", err)

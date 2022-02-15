@@ -60,31 +60,20 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		groupCommitments [][][2]*big.Int
 	)
 
-	// callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	var participantList = t.State.GetSortedParticipants()
 
 	for _, participant := range participantList {
-		// Retrieve values all group keys and signatures from contract
-		// groupPublicKey, err := dkg.RetrieveGroupPublicKey(callOpts, eth, participant.Address)
-		// if err != nil {
-		// 	return dkg.LogReturnErrorf(logger, "Failed to retrieve group public key for %v", participant.Address.Hex())
-		// }
-
-		// Save the values
-		// t.State.GroupPublicKeys[participant.Address] = groupPublicKey
-
 		// Build array
 		groupPublicKeys = append(groupPublicKeys, participant.GPKj)
 		groupCommitments = append(groupCommitments, participant.Commitments)
 	}
 
-	//
 	honest, dishonest, missing, err := math.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
-	inverse, err := math.InverseArrayForUserCount(int(t.State.NumberOfValidators))
+	inverse, err := math.InverseArrayForUserCount(t.State.NumberOfValidators)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
@@ -189,9 +178,9 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 }
 
 // ShouldRetry checks if it makes sense to try again
-// Predicates:
-// -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
+// if the DKG process is in the right phase and blocks
+// range and there still someone to accuse, the retry
+// is executed
 func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 
 	t.State.Lock()

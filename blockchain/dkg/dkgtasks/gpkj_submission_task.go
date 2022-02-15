@@ -33,7 +33,7 @@ func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, ad
 	}
 }
 
-// Initialize prepares for work to be done in GPKSubmission phase.
+// Initialize prepares for work to be done in GPKjSubmission phase.
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
 func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
@@ -49,6 +49,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 
 	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKSubmissionTask Initialize()...")
 
+	// Collecting all the participants encrypted shares to be used for the GPKj
 	var participantsList = t.State.GetSortedParticipants()
 	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
 	for _, participant := range participantsList {
@@ -56,6 +57,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		encryptedShares = append(encryptedShares, participant.EncryptedShares)
 	}
 
+	// Generate the GPKj
 	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
 		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
 		encryptedShares, t.State.Index, participantsList)
@@ -66,7 +68,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
-	// todo: delete this
+	// Uncomment these lines if you want to inject bad data
 	// inject bad GPKj data
 	// if t.State.Index == 5 {
 	// 	// mess up with group private key (gskj)
@@ -89,7 +91,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
 	err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
 	if err != nil {
-		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err) // TODO this is seriously bad, any better actions possible?
+		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
 	}
 
 	return nil
@@ -108,14 +110,6 @@ func (t *GPKjSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, 
 func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
-
-	// debug case
-	// if t.State.Account.Address.String() == "0x565128Dd9Fe84629E1d3b3F2B2Fee43b801d5adE" {
-	// 	// this is val5, just drop
-	// 	// logger.Warn("GPKSubmissionTask won't doTask()")
-	// 	// return nil
-	// 	return dkg.LogReturnErrorf(logger, "GPKSubmissionTask won't doTask()")
-	// }
 
 	logger.Infof("GPKSubmissionTask doTask(): %v", t.State.Account.Address)
 
@@ -155,7 +149,6 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -170,6 +163,7 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 		return false
 	}
 
+	//Check if my GPKj is submitted, if not should retry
 	me := t.State.Account
 	callOpts := eth.GetCallOpts(ctx, me)
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)

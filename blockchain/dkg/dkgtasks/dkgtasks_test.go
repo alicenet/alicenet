@@ -582,7 +582,6 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 		}
 
 		// skip all the way to MPKSubmission phase
-		// todo: now we only need to skip the DisputeMissingKeyShares phase
 		advanceTo(t, suite.eth, mpkSubmissionTaskStart)
 	} else {
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
