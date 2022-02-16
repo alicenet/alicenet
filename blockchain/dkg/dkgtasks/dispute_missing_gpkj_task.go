@@ -21,7 +21,7 @@ type DisputeMissingGPKjTask struct {
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
-var _ interfaces.Task = &RegisterTask{}
+var _ interfaces.Task = &DisputeMissingGPKjTask{}
 
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
