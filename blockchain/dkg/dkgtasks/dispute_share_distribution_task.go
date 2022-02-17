@@ -23,6 +23,9 @@ type DisputeShareDistributionTask struct {
 	Success bool
 }
 
+// asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &DisputeShareDistributionTask{}
+
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{

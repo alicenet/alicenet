@@ -18,6 +18,9 @@ type DisputeMissingShareDistributionTask struct {
 	Success bool
 }
 
+// asserting that DisputeMissingShareDistributionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &DisputeMissingShareDistributionTask{}
+
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{

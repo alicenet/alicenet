@@ -23,8 +23,6 @@ func InitializeNewNonDetDkgStateInfo(n int) ([]*objects.DkgState, []*ecdsa.Priva
 }
 
 func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
-	//initialMessage := []byte("MadHive Rocks!")
-
 	// Get private keys for validators
 	privKeys := etest.SetupPrivateKeys(n)
 	accountsArray := etest.SetupAccounts(privKeys)
@@ -53,8 +51,6 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 		// Set Number of Validators
 		dkgState.NumberOfValidators = n
 		dkgState.ValidatorThreshold = threshold
-		// Set initial message
-		//dkgState.InitialMessage = utils.CopySlice(initialMessage)
 
 		// Setup TransportKey
 		transportPrivateKey := new(big.Int).Add(baseTransportValue, bigK)
@@ -253,13 +249,10 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 		}
 
 		dkgState.GroupPrivateKey = groupPrivateKey
-		//dkgState.GroupPublicKey = groupPublicKey
-		//dkgState.GroupSignature = groupSignature
 
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
 			dkgStates[ell].Participants[dkgState.Account.Address].GPKj = groupPublicKey
-			//dkgStates[ell].Participants[dkgState.Account.Address].GroupSignature = groupSignature
 		}
 	}
 }

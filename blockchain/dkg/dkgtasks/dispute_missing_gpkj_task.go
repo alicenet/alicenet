@@ -20,7 +20,7 @@ type DisputeMissingGPKjTask struct {
 	Success bool
 }
 
-// asserting that RegisterTask struct implements interface interfaces.Task
+// asserting that DisputeMissingGPKjTask struct implements interface interfaces.Task
 var _ interfaces.Task = &DisputeMissingGPKjTask{}
 
 // NewDisputeMissingGPKjTask creates a new task

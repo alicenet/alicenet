@@ -20,9 +20,6 @@ var (
 	ErrTooMany                 = errors.New("building array of size n with more than n required")
 )
 
-// Evil
-//var logger *logrus.Logger = logging.GetLogger("dkg")
-
 // Useful pseudo-constants
 var (
 	empty2Big     [2]*big.Int
@@ -39,7 +36,7 @@ func ThresholdForUserCount(n int) int {
 // InverseArrayForUserCount pre-calculates an inverse array for use by ethereum contracts
 func InverseArrayForUserCount(n int) ([]*big.Int, error) {
 	if n < 4 {
-		return []*big.Int{}, errors.New("invalid user count")
+		return nil, errors.New("invalid user count")
 	}
 	bigNeg2 := big.NewInt(-2)
 	orderMinus2 := new(big.Int).Add(cloudflare.Order, bigNeg2)
@@ -371,26 +368,6 @@ func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.
 		return nil, empty4Big, err
 	}
 
-	// // create sig
-	// sig, err := cloudflare.Sign(initialMessage, gskj, cloudflare.HashToG1)
-	// if err != nil {
-	// 	return nil, empty4Big, empty2Big, fmt.Errorf("error signing message: %v", err)
-	// }
-	// sigBig, err := bn256.G1ToBigIntArray(sig)
-	// if err != nil {
-	// 	return nil, empty4Big, empty2Big, err
-	// }
-
-	// // verify signature
-	// validSig, err := cloudflare.Verify(initialMessage, sig, gpkj, cloudflare.HashToG1)
-	// if err != nil {
-	// 	return nil, empty4Big, empty2Big, fmt.Errorf("error verifying signature: %v", err)
-	// }
-
-	// if !validSig {
-	// 	return nil, empty4Big, empty2Big, errors.New("not a valid group signature")
-	// }
-
 	return gskj, gpkjBig, nil
 }
 
@@ -454,7 +431,7 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 		tmp0 := new(cloudflare.G1)
 		gpkj, err := bn256.BigIntArrayToG2(publishedPublicKeys[idx])
 		if err != nil {
-			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("1 (%v)", err)
+			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G2: %v", err)
 		}
 
 		// Outer loop determines what needs to be exponentiated
@@ -465,7 +442,7 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 				tmp2Big := commitments[participantIdx][polyDegreeIdx]
 				tmp2, err := bn256.BigIntArrayToG1(tmp2Big)
 				if err != nil {
-					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("2 (%v)", err)
+					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G1: %v", err)
 				}
 				tmp1.Add(tmp1, tmp2)
 			}

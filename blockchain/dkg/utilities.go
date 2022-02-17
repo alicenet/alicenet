@@ -15,85 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-/*
-// RetrieveParticipants retrieves participant details from ETHDKG contract
-func RetrieveParticipants(participants []common.Address, callOpts *bind.CallOpts, eth interfaces.Ethereum, logger *logrus.Entry) (objects.ParticipantList, int, error) {
-	c := eth.Contracts()
-	myIndex := math.MaxInt32
-
-	// addresses, err := c.ValidatorPool().GetValidatorAddresses(callOpts)
-	// if err != nil {
-	// 	message := fmt.Sprintf("could not get validator addresses from ValidatorPool: %v", err)
-	// 	logger.Errorf(message)
-	// 	return nil, myIndex, err
-	// }
-
-	validatorStates, err := c.Ethdkg().GetParticipantsInternalState(callOpts, participants)
-	if err != nil {
-		message := fmt.Sprintf("could not get internal states from Ethdkg: %v", err)
-		logger.Errorf(message)
-		return nil, myIndex, err
-	}
-
-	// nValidators, err := c.Ethdkg().GetNumValidators(callOpts)
-	// if err != nil {
-	// 	message := fmt.Sprintf("could not get number of validators from Ethdkg: %v", err)
-	// 	logger.Errorf(message)
-	// 	return nil, myIndex, err
-	// }
-
-	var expectedNumValidators = len(participants)
-	// var numValidators = len(participants)
-
-	var n = expectedNumValidators
-
-	// if numValidators > expectedNumValidators {
-	// 	n = numValidators
-	// }
-
-	// m := n
-
-	// Now we process participant details
-	participantStates := make(objects.ParticipantList, n)
-	for i := 0; i < n; i++ {
-		participantState := validatorStates[i]
-
-		// todo: skip if participantState.Address == 0
-		// because it means this validator is in the ValidatorPool
-		// but has never registered in ETHDKG
-		// if participantState.
-
-		// Make corresponding Participant object
-		participant := &objects.Participant{}
-		participant.Address = participants[i]
-		participant.PublicKey = participantState.PublicKey
-
-		// if participantState.Index == 0 {
-		// 	participant.Index = m
-		// 	m--
-		// } else {
-		// 	participant.Index = int(participantState.Index)
-		// }
-
-		participant.Nonce = participantState.Nonce
-		participant.Phase = participantState.Phase
-		participant.DistributedSharesHash = participantState.DistributedSharesHash
-		participant.CommitmentsFirstCoefficient = participantState.CommitmentsFirstCoefficient
-		participant.KeyShares = participantState.KeyShares
-		participant.Gpkj = participantState.Gpkj
-
-		// Set own index
-		if callOpts.From == participants[i] {
-			myIndex = participant.Index
-		}
-
-		participantStates[participant.Index-1] = participant
-	}
-
-	return participantStates, myIndex, nil
-}
-*/
-
 // RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
 func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth interfaces.Ethereum, addr common.Address) ([4]*big.Int, error) {
 	var err error
@@ -215,19 +136,21 @@ func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.E
 }
 
 func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap, percentage *big.Int) (*big.Int, *big.Int) {
-	// calculate 10% increase in GasFeeCap
-	var gasFeeCap10pc = (&big.Int{}).Mul(gasFeeCap, percentage)
-	gasFeeCap10pc = (&big.Int{}).Div(gasFeeCap10pc, big.NewInt(100))
-	resultFeeCap := (&big.Int{}).Add(gasFeeCap, gasFeeCap10pc)
+	// calculate percentage% increase in GasFeeCap
+	var gasFeeCapPercent = (&big.Int{}).Mul(gasFeeCap, percentage)
+	gasFeeCapPercent = (&big.Int{}).Div(gasFeeCapPercent, big.NewInt(100))
+	gasFeeCapRemainder := (&big.Int{}).Mod(gasFeeCapPercent, big.NewInt(100))
+	resultFeeCap := (&big.Int{}).Add(gasFeeCap, gasFeeCapPercent)
 	// because of rounding errors
-	resultFeeCap = (&big.Int{}).Add(gasFeeCap, big.NewInt(1))
+	resultFeeCap = (&big.Int{}).Add(resultFeeCap, gasFeeCapRemainder)
 
-	// calculate 10% increase in GasTipCap
-	var gasTipCap10pc = (&big.Int{}).Mul(gasTipCap, percentage)
-	gasTipCap10pc = (&big.Int{}).Div(gasTipCap10pc, big.NewInt(100))
-	resultTipCap := (&big.Int{}).Add(gasTipCap, gasTipCap10pc)
+	// calculate percentage% increase in GasTipCap
+	var gasTipCapPercent = (&big.Int{}).Mul(gasTipCap, percentage)
+	gasTipCapPercent = (&big.Int{}).Div(gasTipCapPercent, big.NewInt(100))
+	gasTipCapRemainder := (&big.Int{}).Mod(gasTipCapPercent, big.NewInt(100))
+	resultTipCap := (&big.Int{}).Add(gasTipCap, gasTipCapPercent)
 	// because of rounding errors
-	resultTipCap = (&big.Int{}).Add(gasTipCap, big.NewInt(1))
+	resultTipCap = (&big.Int{}).Add(resultTipCap, gasTipCapRemainder)
 
 	return resultFeeCap, resultTipCap
 }

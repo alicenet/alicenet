@@ -74,8 +74,8 @@ func CheckRegistration(ethdkg *bindings.ETHDKG,
 	}
 
 	// Check if expected public key is registered
-	if receivedPublicKey[0].Cmp(publicKey[0]) != 0 ||
-		receivedPublicKey[1].Cmp(publicKey[1]) != 0 {
+	if !(receivedPublicKey[0].Cmp(publicKey[0]) == 0 &&
+		receivedPublicKey[1].Cmp(publicKey[1]) == 0) {
 
 		logger.Warnf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
 

@@ -20,6 +20,9 @@ type MPKSubmissionTask struct {
 	Success bool
 }
 
+// asserting that MPKSubmissionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &MPKSubmissionTask{}
+
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{

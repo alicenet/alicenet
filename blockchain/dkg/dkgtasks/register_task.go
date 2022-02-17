@@ -27,6 +27,7 @@ type RegisterTask struct {
 	TxHash  common.Hash
 }
 
+// asserting that RegisterTask struct implements interface interfaces.Task
 var _ interfaces.Task = &RegisterTask{}
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG

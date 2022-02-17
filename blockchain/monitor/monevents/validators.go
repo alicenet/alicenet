@@ -95,11 +95,12 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 	epoch := uint32(event.Epoch.Int64())
 
-	index := uint32(event.Index.Uint64()) // - 1
+	participantIndex := uint32(event.Index.Uint64())
+	arrayIndex := participantIndex - 1
 
 	v := objects.Validator{
 		Account:   event.Account,
-		Index:     uint8(index),
+		Index:     uint8(participantIndex),
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 
@@ -116,12 +117,12 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 	// state update
 	state.EthDKG.OnGPKjSubmitted(event.Account, v.SharedKey)
 
-	if len(state.Validators[epoch]) < int(index) {
-		newValList := make([]objects.Validator, int(index))
+	if len(state.Validators[epoch]) < int(participantIndex) {
+		newValList := make([]objects.Validator, int(participantIndex))
 		copy(newValList, state.Validators[epoch])
 		state.Validators[epoch] = newValList
 	}
-	state.Validators[epoch][index-1] = v
+	state.Validators[epoch][arrayIndex] = v
 	ptrGroupShare := [4]*big.Int{
 		v.SharedKey[0], v.SharedKey[1],
 		v.SharedKey[2], v.SharedKey[3]}
@@ -136,11 +137,6 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"Index":      v.Index,
 		"GroupShare": groupShareHex,
 	}).Infof("Received Validator")
-
-	// err = checkValidatorSet(state, epoch, logger, adminHandler)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
