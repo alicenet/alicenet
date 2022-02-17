@@ -168,7 +168,6 @@ func main() {
 		&utils.TransferTokensCommand: {},
 		&utils.UnregisterCommand:     {},
 		&utils.UpdateValueCommand:    {},
-		&utils.TestTxCommand:         {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
@@ -199,7 +198,6 @@ func main() {
 		&utils.SendWeiCommand:        &utils.Command,
 		&utils.TransferTokensCommand: &utils.Command,
 		&utils.UnregisterCommand:     &utils.Command,
-		&utils.TestTxCommand:         &utils.Command,
 		&utils.DepositCommand:        &utils.Command}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper

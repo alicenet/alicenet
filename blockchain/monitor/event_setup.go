@@ -15,11 +15,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
+func GetETHDKGEvents() map[string]abi.Event {
 	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.IETHDKGEventsMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
+
+	return ethDkgABI.Events
+}
+
+func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
+	ethDkgEvents := GetETHDKGEvents()
 
 	var eventProcessorMap map[string]objects.EventProcessor = make(map[string]objects.EventProcessor)
 	eventProcessorMap["RegistrationOpened"] = dkgevents.ProcessRegistrationOpened
@@ -43,7 +49,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHan
 	// actually register the events
 	for eventName, processor := range eventProcessorMap {
 		// get the event from the ABI
-		event, ok := ethDkgABI.Events[eventName]
+		event, ok := ethDkgEvents[eventName]
 		if !ok {
 			panic(fmt.Errorf("%v event not found in ABI", eventName))
 		}

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -9,10 +10,9 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
@@ -79,13 +79,6 @@ var UpdateValueCommand = cobra.Command{
 var DepositCommand = cobra.Command{
 	Use:   "deposit",
 	Short: "Creates a token deposit into the sidechain",
-	Long:  "",
-	Run:   utilsNode}
-
-// TestTxCommand is the command that makes txs between them to load the ethereum network
-var TestTxCommand = cobra.Command{
-	Use:   "testtx",
-	Short: "Spawns up a bunch of wallets and makes txs between them to load the ethereum network",
 	Long:  "",
 	Run:   utilsNode}
 
@@ -250,8 +243,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		exitCode = transfertokens(logger, eth, cmd, args)
 	case "deposit":
 		exitCode = deposittokens(logger, eth, cmd, args)
-	case "testtx":
-		exitCode = testtx(logger, eth, cmd, args)
 	default:
 		logger.Errorf("Could not find handler for %v", cmd.Use)
 		exitCode = 1
@@ -264,8 +255,9 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
+	eth.GetCoinbaseAddress()
 
-	if acct.Address.String() == "0x546F99F244b7B58B855330AE0E2BC1b30b41302F" {
+	if acct.Address.String() == eth.GetCoinbaseAddress().String() {
 		logger.Infof("Skipping validator registration for admin acount: %v", acct.Address.String())
 		return 0
 	}
@@ -280,8 +272,8 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 
 	// Contract orchestration
 	// Approve tokens for staking
-	var retry bool = true
-	for retry {
+	var maxRetries int = 10
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
 		txn, err := c.StakingToken().Approve(txnOpts, c.ValidatorsAddress(), big.NewInt(1_000_000))
 		if err != nil {
 			logger.Errorf("StakingToken.Approve() failed: %v", err)
@@ -295,13 +287,12 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 		if rcpt != nil && rcpt.Status != 1 {
 			logger.Errorf("StakingToken.Approve() failed")
 		} else {
-			retry = false
+			break
 		}
 	}
 
 	// Lock tokens as stake
-	retry = true
-	for retry {
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
 		txn, err := c.Staking().LockStake(txnOpts, big.NewInt(1_000_000))
 		if err != nil {
 			logger.Errorf("Staking.LockStake() failed: %v", err)
@@ -315,13 +306,12 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 		if rcpt != nil && rcpt.Status != 1 {
 			logger.Errorf("Staking.LockStake() failed")
 		} else {
-			retry = false
+			break
 		}
 	}
 
 	// Actually join validator pool
-	retry = true
-	for retry {
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
 		txn, err := c.ValidatorPool().AddValidator(txnOpts, acct.Address)
 		if err != nil {
 			logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
@@ -333,7 +323,7 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 		if rcpt != nil && rcpt.Status != 1 {
 			logger.Errorf("Validators.AddValidator() failed")
 		} else {
-			retry = false
+			break
 		}
 	}
 
@@ -516,82 +506,6 @@ func deposittokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Com
 	return 0
 }
 
-func testtx(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
-	// More ethereum setup
-	// acct := eth.GetDefaultAccount()
-	// c := eth.Contracts()
-	// amount := big.NewInt(10000)
-	// ctx := context.Background()
-
-	// sendwei(logger, eth, cmd, args)
-	var directoryPath = "./test_accts"
-	logger.Infof("texttx(\"%v\")...", directoryPath)
-	ks := keystore.NewKeyStore(directoryPath, keystore.StandardScryptN, keystore.StandardScryptP)
-	accts := make(map[common.Address]accounts.Account, 10)
-	acctIndex := make(map[common.Address]int, 10)
-	var acctList = make([]common.Address, 0)
-	var newArgs = []string{"10000000000000000000"}
-
-	var index int
-	for _, wallet := range ks.Wallets() {
-		for _, account := range wallet.Accounts() {
-			logger.Infof("... found account %v", account.Address.Hex())
-			accts[account.Address] = account
-			acctIndex[account.Address] = index
-			index++
-			newArgs = append(newArgs, account.Address.Hex())
-			acctList = append(acctList, account.Address)
-			err := eth.UnlockAccount(account)
-			if err != nil {
-				logger.Errorf("error unlocking account: %v | %v", account.URL.Path, err)
-			}
-
-		}
-	}
-
-	logger.Infof("Loaded %v accts", len(accts))
-
-	//sendwei(logger, eth, cmd, newArgs)
-
-	logger.Infof("Funds sent to accts")
-
-	// do txs
-
-	var sendF = func(from common.Address, to []common.Address) {
-		wei, ok := new(big.Int).SetString("1", 10)
-		if !ok {
-			logger.Errorf("Could not parse wei amount (base 10).")
-			return
-		}
-
-		for idx := 0; ; idx++ {
-
-			if idx >= len(to) {
-				idx = 0
-			}
-
-			if from.String() == to[idx].String() {
-				continue
-			}
-
-			_, err := eth.TransferEther(from, to[idx], wei)
-			if err != nil {
-				logger.Errorf("Transfer failed: %v", err)
-				return
-			}
-		}
-	}
-
-	//for _, _ := range acctList {
-	sendF(eth.GetDefaultAccount().Address, acctList)
-	//}
-
-	// wait forever
-	//time.Sleep(24 * time.Hour)
-
-	return 0
-}
-
 func transfertokens(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
 	// Arguments are 1) src of tokens, and 2) amount to transfer
@@ -686,8 +600,14 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 
 	logger.Infof("Found %v log events after initializing ethdkg", len(logs))
 
+	ethDkgEvents := monitor.GetETHDKGEvents()
+	regOpenedEvent, ok := ethDkgEvents["RegistrationOpened"]
+	if !ok {
+		panic(fmt.Errorf("could not find event named RegistrationOpened"))
+	}
+
 	for _, log := range logs {
-		if log.Topics[0].Hex() == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
+		if log.Topics[0].Hex() == regOpenedEvent.ID.Hex() {
 			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
 			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
 				event.StartBlock,
