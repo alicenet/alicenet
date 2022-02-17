@@ -66,7 +66,7 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 		return true
 	}
 
-	if currentBlock >= expectedLastBlock || currentBlock < expectedFirstBlock {
+	if currentBlock >= expectedLastBlock {
 		return false
 	}
 

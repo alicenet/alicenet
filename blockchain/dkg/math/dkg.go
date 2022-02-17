@@ -414,9 +414,9 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 		// If public key is all zeros, then no public key was submitted;
 		// add to missing.
 		big0 := big.NewInt(0)
-		if (publishedPublicKeys[idx][0] == nil &&
-			publishedPublicKeys[idx][1] == nil &&
-			publishedPublicKeys[idx][2] == nil &&
+		if (publishedPublicKeys[idx][0] == nil ||
+			publishedPublicKeys[idx][1] == nil ||
+			publishedPublicKeys[idx][2] == nil ||
 			publishedPublicKeys[idx][3] == nil) || (publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
 			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
 			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
