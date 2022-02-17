@@ -441,7 +441,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 				"TaskID":   uuid.String(),
 				"TaskName": taskName})
 
-			tasks.StartTask(log, wg, eth, task, monitorState.EthDKG)
+			tasks.StartTask(log, wg, eth, task, nil)
 
 			monitorState.Schedule.Remove(uuid)
 		} else if err == objects.ErrNothingScheduled {

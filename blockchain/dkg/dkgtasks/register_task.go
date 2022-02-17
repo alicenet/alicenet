@@ -47,14 +47,6 @@ func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *Registe
 // Also get the list of existing validators from the pool to assert accusation
 // in later phases
 func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

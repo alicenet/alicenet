@@ -39,13 +39,6 @@ func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *Disp
 // Initialize prepares for work to be done in the GPKjDispute phase.
 // Here, we determine if anyone submitted an invalid gpkj.
 func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

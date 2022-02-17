@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -37,13 +36,6 @@ func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
 func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	logger.Info("Initializing DisputeMissingGPKjTask...")
 
 	return nil

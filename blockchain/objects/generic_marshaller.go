@@ -67,7 +67,7 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 
 	name, present := registry.lookupName(tipe)
 	if !present {
-		return nil, fmt.Errorf("unable to wrapInstance: %v", tipe)
+		panic(fmt.Errorf("unable to wrapInstance: %v", tipe))
 	}
 
 	raw, err := json.Marshal(t)

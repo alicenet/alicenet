@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -36,13 +35,6 @@ func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
 func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	t.State.Lock()
 	defer t.State.Unlock()
 

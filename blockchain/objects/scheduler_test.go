@@ -160,17 +160,6 @@ func TestFailSchedule3(t *testing.T) {
 	_, err = s.Schedule(1, 8, task)
 	t.Log("error:", err)
 	assert.NotNil(t, err)
-
-	// _, err = s.Schedule(6, 14, task)
-	// assert.NotNil(t, err)
-
-	// _, err = s.Schedule(14, 16, task)
-	// assert.NotNil(t, err)
-
-	// _, err = s.Schedule(4, 16, task)
-	// assert.NotNil(t, err)
-
-	// assert.Equal(t, 1, s.Length())
 }
 
 func TestFind(t *testing.T) {

@@ -2,7 +2,6 @@ package dkgtasks
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -35,13 +34,6 @@ func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end u
 
 // Initialize begins the setup phase for DisputeMissingKeySharesTask.
 func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	logger.Info("Initializing DisputeMissingKeySharesTask...")
 
 	return nil
