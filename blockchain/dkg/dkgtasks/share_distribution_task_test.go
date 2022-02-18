@@ -295,16 +295,8 @@ func TestShareDistributionBad6(t *testing.T) {
 	task := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	defer func() {
-		// If we didn't get here by recovering from a panic() we failed
-		if reason := recover(); reason == nil {
-			t.Log("No panic in sight")
-			t.Fatal("Should have panicked")
-		} else {
-			t.Logf("Good panic because: %v", reason)
-		}
-	}()
-	task.Initialize(ctx, log, eth, nil)
+	err := task.Initialize(ctx, log, eth, nil)
+	assert.NotNil(t, err)
 }
 
 // We test to ensure that everything behaves correctly.

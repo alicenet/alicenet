@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"math/big"
 	"sync"
@@ -148,10 +149,13 @@ func (b *Behind) collectReceipts() {
 				}
 
 				// This only happens using a SimulatedBackend during tests
-				if rcpt == nil {
-					b.logger.Debugf("receipt is nil: %v", txn.Hex())
-					return
+				if isTestRun() {
+					if rcpt == nil {
+						b.logger.Debugf("receipt is nil: %v", txn.Hex())
+						return
+					}
 				}
+
 				b.readyTxns[txn] = rcpt
 
 				var profile TransactionProfile
@@ -478,4 +482,8 @@ func (f *TxnQueueDetail) requestWait(ctx context.Context, req *Request) *Respons
 	}
 
 	return nil // no response channel, so no meaningful response
+}
+
+func isTestRun() bool {
+	return flag.Lookup("test.v") != nil
 }
