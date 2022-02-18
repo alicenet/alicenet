@@ -48,8 +48,6 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 
 	me := t.State.Account.Address
 
-	logger.Infof("generating key shares for %v from %v", me.Hex(), t.State.SecretValue.String())
-
 	t.State.Participants[me].KeyShareG1s = g1KeyShare
 	t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
 	t.State.Participants[me].KeyShareG2s = g2KeyShare
@@ -151,7 +149,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	// Check the key share submission status
 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
 	if err != nil {
-		logger.Infof("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
+		logger.Errorf("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true
 	}
 
@@ -159,7 +157,6 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	logger.Info("KeyshareSubmissionTask ShouldRetry END-true")
 	return true
 }
 

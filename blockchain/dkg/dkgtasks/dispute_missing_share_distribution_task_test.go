@@ -14,8 +14,6 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
@@ -42,8 +40,6 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
@@ -69,8 +65,6 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
@@ -107,7 +101,7 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 
 func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{0}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -118,16 +112,6 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 		task := suite.disputeMissingShareDistTasks[idx]
 		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = task.DoWork(ctx, logger, suite.eth)
-		assert.Nil(t, err)
-
-		suite.eth.Commit()
-		assert.True(t, task.Success)
-	}
-
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		suite.dkgStates[idx].Nonce++
-		task := suite.disputeMissingShareDistTasks[idx]
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}
@@ -166,11 +150,6 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBad
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
-
-	// currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
-	// nextPhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
-	// advanceTo(t, suite.eth, nextPhaseAt)
 
 	// Do Share Dispute task
 	for idx := range accounts {

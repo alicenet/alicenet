@@ -110,7 +110,6 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		assert.Nil(t, err)
 
 		eth.Commit()
-
 		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
 
 		// 1. Give 'acct' tokens
@@ -130,11 +129,6 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		txn, err = c.Staking().LockStake(o, big.NewInt(1_000_000))
 		assert.Nilf(t, err, "Failed on lock %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		// 4. Tell system 'acct' wants to join as validator
-		//var validatorId [2]*big.Int
-		//validatorId[0] = big.NewInt(int64(idx))
-		//validatorId[1] = big.NewInt(int64(idx * 2))
 
 		txn, err = c.ValidatorPool().AddValidator(o, acct.Address)
 		assert.Nilf(t, err, "Failed on register %v", idx)
@@ -315,7 +309,7 @@ type TestSuite struct {
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()
@@ -338,9 +332,14 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
 	var event *bindings.ETHDKGRegistrationOpened
 	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if log.Topics[0].String() == eventInfo.ID.String() {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
@@ -372,6 +371,19 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 			continue
 		}
 
+		callOpts := eth.GetCallOpts(ctx, accounts[0])
+		phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+		assert.Nil(t, err)
+		assert.Equal(t, uint8(objects.RegistrationOpen), phase)
+
+		nVal, err := eth.Contracts().Ethdkg().GetNumParticipants(callOpts)
+		assert.Nil(t, err)
+		assert.Equal(t, uint64(idx), nVal.Uint64())
+
+		valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
+		assert.Nil(t, err)
+		assert.Equal(t, uint64(n), valCount.Uint64())
+
 		err = regTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
@@ -392,16 +404,6 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		}
 	}
 
-	// simulate receiving AddressRegistered event
-	// for idx := 0; idx < n; idx++ {
-	// 	state := dkgStates[idx]
-	// 	if idx >= n-unregisteredValidators {
-	// 		continue
-	// 	}
-
-	// 	dkgevents.UpdateStateOnAddressRegistered(state, state.Account.Address, idx+1, state.Nonce, state.TransportPublicKey)
-	// }
-
 	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	disputeMissingShareDistributionTasks := make([]*dkgtasks.DisputeMissingShareDistributionTask, n)
 	disputeShareDistTasks := make([]*dkgtasks.DisputeShareDistributionTask, n)
@@ -417,9 +419,13 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
 			disputeShareDistTasks[idx] = disputeShareDistTask
 		}
-	}
 
-	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+		// skip all the way to ShareDistribution phase
+		advanceTo(t, eth, shareDistributionTasks[0].Start)
+	} else {
+		// this means some validators did not register, and the next phase is DisputeMissingRegistration
+		advanceTo(t, eth, dkgStates[0].PhaseStart+dkgStates[0].PhaseLength)
+	}
 
 	return &TestSuite{
 		eth:                          eth,

@@ -40,7 +40,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("MPKSubmissionTask Initialize()...")
+	logger.Info("MPKSubmissionTask Initialize()...")
 
 	if t.State.Phase != objects.MPKSubmission {
 		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
@@ -73,7 +73,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		}
 	}
 
-	logger.Infof("# Participants:%v Data:%+v", len(t.State.Participants), t.State.Participants)
+	logger.Infof("# Participants:%v\n", len(t.State.Participants))
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 	if err != nil && validMPK {

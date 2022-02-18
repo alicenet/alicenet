@@ -64,7 +64,6 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		// state.Phase = objects.ShareDistribution
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, state)
@@ -146,7 +145,6 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		// state.Phase = objects.ShareDistribution
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, state)
@@ -218,7 +216,6 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		// state.Phase = objects.ShareDistribution
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, state)

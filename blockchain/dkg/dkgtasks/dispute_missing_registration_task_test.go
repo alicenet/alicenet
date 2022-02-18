@@ -96,7 +96,7 @@ func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 }
 
 func TestShouldRetryTrue(t *testing.T) {
-	suite := StartFromRegistrationOpenPhase(t, 5, 0, 100)
+	suite := StartFromRegistrationOpenPhase(t, 5, 1, 100)
 	defer suite.eth.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -109,15 +109,6 @@ func TestShouldRetryTrue(t *testing.T) {
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
 		assert.Nil(t, err)
 
-		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
-		assert.Nil(t, err)
-
-		suite.eth.Commit()
-		assert.True(t, suite.dispMissingRegTasks[idx].Success)
-	}
-
-	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		suite.dkgStates[idx].Nonce++
 		shouldRetry := suite.dispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}

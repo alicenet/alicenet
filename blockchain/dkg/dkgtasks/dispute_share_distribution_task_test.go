@@ -116,7 +116,6 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// state.Phase = objects.ShareDistribution
 		disputeShareDistributionTask, _, _, _, _, _, _, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, logger, nextPhaseAt)
 
 		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.eth, state)
@@ -126,9 +125,6 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 
 		suite.eth.Commit()
 		assert.True(t, disputeShareDistributionTask.Success)
-
-		// Set Dispute success to true
-		// suite.dkgStates[idx].Dispute = true
 	}
 
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
@@ -168,16 +164,8 @@ func TestShareDisputeBad1(t *testing.T) {
 	task := dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	defer func() {
-		// If we didn't get here by recovering from a panic() we failed
-		if reason := recover(); reason == nil {
-			t.Log("No panic in sight")
-			t.Fatal("Should have panicked")
-		} else {
-			t.Logf("Good panic because: %v", reason)
-		}
-	}()
-	task.Initialize(ctx, log, eth, nil)
+	err := task.Initialize(ctx, log, eth, nil)
+	assert.NotNil(t, err)
 }
 
 // We test to ensure that everything behaves correctly.

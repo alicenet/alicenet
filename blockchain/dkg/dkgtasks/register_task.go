@@ -3,7 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -50,7 +49,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("RegisterTask Initialize()")
+	logger.Info("RegisterTask Initialize()")
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
@@ -141,14 +140,14 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	t.TxHash = txn.Hash()
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":   t.TxOpts.GasFeeCap,
-		"GasFeeCap2":  txn.GasFeeCap(),
-		"GasTipCap":   t.TxOpts.GasTipCap,
-		"GasTipCap2":  txn.GasTipCap(),
-		"Nonce":       t.TxOpts.Nonce,
-		"Nonce2":      txn.Nonce,
-		"txHash":      txn.Hash().Hex(),
-		"txHashEmpty": t.TxHash.Hex(),
+		"GasFeeCap":  t.TxOpts.GasFeeCap,
+		"GasFeeCap2": txn.GasFeeCap(),
+		"GasTipCap":  t.TxOpts.GasTipCap,
+		"GasTipCap2": txn.GasTipCap(),
+		"Nonce":      t.TxOpts.Nonce,
+		// "Nonce2":     txn.Nonce,
+		"txn.Hash()": txn.Hash().Hex(),
+		"t.TxHash":   t.TxHash.Hex(),
 		//"emptyHashEq": t.TxHash == emptyHash,
 	}).Info("registering fees 2")
 

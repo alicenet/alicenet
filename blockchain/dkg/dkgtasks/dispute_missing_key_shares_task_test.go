@@ -18,8 +18,9 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	currentHeight, err := eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
+
+	// skip DisputeShareDistribution and move to KeyShareSubmission phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].Start)
 
 	// Do key share submission task
 	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
@@ -46,8 +47,9 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 		}
 	}
 
-	nextPhaseAt := currentHeight + dkgStates[0].PhaseLength
-	advanceTo(t, eth, nextPhaseAt)
+	// advance into the end of KeyShareSubmission phase,
+	// which is the start of DisputeMissingKeyShares phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].End)
 
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
@@ -78,8 +80,9 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	currentHeight, err := eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
+
+	// skip DisputeShareDistribution and move to KeyShareSubmission phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].Start)
 
 	// Do key share submission task
 	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
@@ -106,8 +109,9 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 		}
 	}
 
-	nextPhaseAt := currentHeight + dkgStates[0].PhaseLength
-	advanceTo(t, eth, nextPhaseAt)
+	// advance into the end of KeyShareSubmission phase,
+	// which is the start of DisputeMissingKeyShares phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].End)
 
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
@@ -136,8 +140,9 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	currentHeight, err := eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
+
+	// skip DisputeShareDistribution and move to KeyShareSubmission phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].Start)
 
 	// Do key share submission task
 	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
@@ -164,8 +169,9 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 		}
 	}
 
-	nextPhaseAt := currentHeight + dkgStates[0].PhaseLength
-	advanceTo(t, eth, nextPhaseAt)
+	// advance into the end of KeyShareSubmission phase,
+	// which is the start of DisputeMissingKeyShares phase
+	advanceTo(t, eth, suite.keyshareSubmissionTasks[0].End)
 
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {

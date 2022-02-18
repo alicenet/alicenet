@@ -98,9 +98,14 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 		Address: addr0,
 		URL: accounts.URL{
 			Scheme: "keystore",
-			Path:   "/home/agdean/Projects/MadNet/assets/test/keys/UTC--2020-03-24T13-41-44.886736400Z--26d3d8ab74d62c26f1acc220da1646411c9880ac"}}
+			Path:   ""}}
 	state.EthDKG.Index = 1
 	state.EthDKG.SecretValue = big.NewInt(512)
+	meAsAParticipant := &objects.Participant{
+		Address: state.EthDKG.Account.Address,
+		Index:   state.EthDKG.Index,
+	}
+	state.EthDKG.Participants[addr0] = meAsAParticipant
 	state.EthDKG.Participants[addr0].GPKj = [4]*big.Int{
 		big.NewInt(44), big.NewInt(33), big.NewInt(22), big.NewInt(11)}
 	state.EthDKG.Participants[addr0].Commitments = make([][2]*big.Int, 3)

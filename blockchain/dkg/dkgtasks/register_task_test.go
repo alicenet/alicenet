@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/blockchain/monitor"
 
 	"github.com/MadBase/bridge/bindings"
 
@@ -77,10 +78,16 @@ func TestRegisterTask(t *testing.T) {
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var openLog *types.Log
 	for _, log := range rcpt.Logs {
 		eventSelector := log.Topics[0].String()
-		if eventSelector == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if eventSelector == eventInfo.ID.String() {
 			openLog = log
 		}
 	}
@@ -140,9 +147,15 @@ func TestRegistrationGood2(t *testing.T) {
 	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var event *bindings.ETHDKGRegistrationOpened
 	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if log.Topics[0].String() == eventInfo.ID.String() {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
@@ -222,16 +235,18 @@ func TestRegistrationBad1(t *testing.T) {
 	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var event *bindings.ETHDKGRegistrationOpened
 	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if log.Topics[0].String() == eventInfo.ID.String() {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
-			//
-			//for _, dkgState := range dkgStates {
-			//	dkgevents.PopulateSchedule(dkgState, event)
-			//}
 		}
 	}
 	assert.NotNil(t, event)
@@ -286,15 +301,18 @@ func TestRegistrationBad2(t *testing.T) {
 	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var event *bindings.ETHDKGRegistrationOpened
 	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if log.Topics[0].String() == eventInfo.ID.String() {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
-			//for _, dkgState := range dkgStates {
-			//	dkgevents.PopulateSchedule(dkgState, event)
-			//}
 		}
 	}
 	assert.NotNil(t, event)
@@ -316,37 +334,6 @@ func TestRegistrationBad2(t *testing.T) {
 	state.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	err = registrationTask.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)
-}
-
-// Here we expect the test to fail because we provide an invalid
-// value in the state interface.
-func TestRegistrationBad3(t *testing.T) {
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(5)
-	logger := logging.GetLogger("ethereum")
-	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
-	defer eth.Close()
-
-	acct := eth.GetKnownAccounts()[0]
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Create a task to register and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewRegisterTask(state, 1, 5)
-	log := logger.WithField("TaskID", "foo")
-
-	defer func() {
-		// If we didn't get here by recovering from a panic() we failed
-		if reason := recover(); reason == nil {
-			t.Log("No panic in sight")
-			t.Fatal("Should have panicked")
-		} else {
-			t.Logf("Good panic because: %v", reason)
-		}
-	}()
-	task.Initialize(ctx, log, eth, nil)
 }
 
 // The initialization should fail because we dont allow less than 4 validators
@@ -411,10 +398,15 @@ func TestRegistrationBad5(t *testing.T) {
 	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
 	assert.Nil(t, err)
 
-	var event *bindings.ETHDKGRegistrationOpened
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
 
+	var event *bindings.ETHDKGRegistrationOpened
 	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if log.Topics[0].String() == eventInfo.ID.String() {
 			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
 			assert.Nil(t, err)
 			break
@@ -501,10 +493,16 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var openLog *types.Log
 	for _, log := range rcpt.Logs {
 		eventSelector := log.Topics[0].String()
-		if eventSelector == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if eventSelector == eventInfo.ID.String() {
 			openLog = log
 		}
 	}
@@ -594,10 +592,16 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+
 	var openLog *types.Log
 	for _, log := range rcpt.Logs {
 		eventSelector := log.Topics[0].String()
-		if eventSelector == "0xbda431b9b63510f1398bf33d700e013315bcba905507078a1780f13ea5b354b9" {
+		if eventSelector == eventInfo.ID.String() {
 			openLog = log
 		}
 	}

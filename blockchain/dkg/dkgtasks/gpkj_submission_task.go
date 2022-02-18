@@ -43,7 +43,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("GPKSubmissionTask Initialize()...")
+	logger.Info("GPKSubmissionTask Initialize()...")
 
 	// Collecting all the participants encrypted shares to be used for the GPKj
 	var participantsList = t.State.GetSortedParticipants()
@@ -63,22 +63,6 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		}).Errorf("Could not generate group keys: %v", err)
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
-
-	// Uncomment these lines if you want to inject bad data
-	// inject bad GPKj data
-	// if t.State.Index == 5 {
-	// 	// mess up with group private key (gskj)
-	// 	gskjBad := new(big.Int).Add(groupPrivateKey, big.NewInt(1))
-	// 	// here's the group public key
-	// 	gpkj := new(cloudflare.G2).ScalarBaseMult(gskjBad)
-	// 	gpkjBad, err := bn256.G2ToBigIntArray(gpkj)
-	// 	if err != nil {
-	// 		return dkg.LogReturnErrorf(logger, "error generating invalid gpkj: %v", err)
-	// 	}
-
-	// 	groupPrivateKey = gskjBad
-	// 	groupPublicKey = gpkjBad
-	// }
 
 	t.State.GroupPrivateKey = groupPrivateKey
 	t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey

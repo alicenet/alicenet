@@ -318,7 +318,6 @@ func UpdateStateOnShareDistributionComplete(state *objects.DkgState, logger *log
 	var submitKeySharesPhaseStart uint64 = phaseEnd
 	var submitKeySharesPhaseEnd = submitKeySharesPhaseStart + state.PhaseLength
 
-	//state.Schedule.Schedule(submitKeySharesPhaseStart, submitKeySharesPhaseEnd, )
 	keyshareSubmissionTask := dkgtasks.NewKeyshareSubmissionTask(state, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
 
 	logger.WithFields(logrus.Fields{

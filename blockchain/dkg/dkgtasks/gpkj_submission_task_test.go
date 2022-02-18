@@ -2,15 +2,16 @@ package dkgtasks_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
 )
 
 //We test to ensure that everything behaves correctly.
@@ -74,16 +75,8 @@ func TestGPKjSubmissionBad1(t *testing.T) {
 	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
-	defer func() {
-		// If we didn't get here by recovering from a panic() we failed
-		if reason := recover(); reason == nil {
-			t.Log("No panic in sight")
-			t.Fatal("Should have panicked")
-		} else {
-			t.Logf("Good panic because: %v", reason)
-		}
-	}()
-	task.Initialize(ctx, log, eth, nil)
+	err := task.Initialize(ctx, log, eth, nil)
+	assert.NotNil(t, err)
 }
 
 // We test to ensure that everything behaves correctly.

@@ -147,7 +147,7 @@ func (b *Behind) collectReceipts() {
 					return
 				}
 
-				//This only could happen using a SimulatedBackend during the tests
+				// This only happens using a SimulatedBackend during tests
 				if rcpt == nil {
 					b.logger.Debugf("receipt is nil: %v", txn.Hex())
 					return

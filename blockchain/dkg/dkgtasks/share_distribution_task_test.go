@@ -22,28 +22,20 @@ func TestShareDistributionGood(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
 	// Do Share Distribution task
-	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		shareDistributionTask := suite.shareDistTasks[idx]
+		err := shareDistributionTask.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		err = shareDistributionTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, shareDistributionTasks[idx].Success)
+		assert.True(t, shareDistributionTask.Success)
 
 	}
 }
@@ -57,8 +49,6 @@ func TestShareDistributionBad1(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
@@ -74,18 +64,13 @@ func TestShareDistributionBad1(t *testing.T) {
 	}
 
 	badIdx := n - 2
-	tasks := make([]*dkgtasks.ShareDistributionTask, n)
+	//tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		task.Initialize(ctx, logger, suite.eth, state)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, we just add 1 to the first commitment (y component)
@@ -94,15 +79,15 @@ func TestShareDistributionBad1(t *testing.T) {
 			com[0][1].Add(com[0][1], big.NewInt(1))
 		}
 
-		tasks[idx].DoWork(ctx, logger, suite.eth)
+		task.DoWork(ctx, logger, suite.eth)
 
 		suite.eth.Commit()
 
 		// The last task should have failed
 		if idx == badIdx {
-			assert.False(t, tasks[idx].Success)
+			assert.False(t, task.Success)
 		} else {
-			assert.True(t, tasks[idx].Success)
+			assert.True(t, task.Success)
 		}
 	}
 
@@ -125,8 +110,6 @@ func TestShareDistributionBad2(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
@@ -142,18 +125,12 @@ func TestShareDistributionBad2(t *testing.T) {
 	}
 
 	badIdx := n - 1
-	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		task.Initialize(ctx, logger, suite.eth, state)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, change the one of the commitments to 0
@@ -163,15 +140,15 @@ func TestShareDistributionBad2(t *testing.T) {
 			com[0][1].Set(common.Big0)
 		}
 
-		tasks[idx].DoWork(ctx, logger, suite.eth)
+		task.DoWork(ctx, logger, suite.eth)
 
 		suite.eth.Commit()
 
 		// The last task should have failed
 		if idx == badIdx {
-			assert.False(t, tasks[idx].Success)
+			assert.False(t, task.Success)
 		} else {
-			assert.True(t, tasks[idx].Success)
+			assert.True(t, task.Success)
 		}
 	}
 
@@ -194,8 +171,6 @@ func TestShareDistributionBad4(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 
@@ -213,18 +188,12 @@ func TestShareDistributionBad4(t *testing.T) {
 	}
 
 	badCommitmentIdx := n - 3
-	startPhase := currentHeight + dkgStates[0].ConfirmationLength
-	phaseEnd := startPhase + dkgStates[0].PhaseLength
-	tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, startPhase, phaseEnd)
-		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		task.Initialize(ctx, logger, suite.eth, state)
 
 		// if we're on the last account, we just add 1 to the first commitment (y component)
 		com := state.Participants[accounts[idx].Address].Commitments
@@ -234,15 +203,15 @@ func TestShareDistributionBad4(t *testing.T) {
 			state.Participants[accounts[idx].Address].Commitments = com
 		}
 
-		tasks[idx].DoWork(ctx, logger, eth)
+		task.DoWork(ctx, logger, eth)
 
 		eth.Commit()
 
 		// The last task should have failed
 		if idx == badCommitmentIdx {
-			assert.False(t, tasks[idx].Success)
+			assert.False(t, task.Success)
 		} else {
-			assert.True(t, tasks[idx].Success)
+			assert.True(t, task.Success)
 		}
 	}
 
@@ -265,24 +234,17 @@ func TestShareDistributionBad5(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 
 	badShareIdx := n - 2
-	phaseStart := currentHeight + dkgStates[0].ConfirmationLength
-	phaseEnd := phaseStart + dkgStates[0].PhaseLength
-	tasks := make([]*dkgtasks.ShareDistributionTask, n)
+	//tasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-
-		tasks[idx] = dkgtasks.NewShareDistributionTask(state, phaseStart, phaseEnd)
-		tasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		task.Initialize(ctx, logger, suite.eth, state)
 
 		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		if idx == badShareIdx {
@@ -291,15 +253,15 @@ func TestShareDistributionBad5(t *testing.T) {
 			state.Participants[accounts[idx].Address].EncryptedShares = encryptedShares
 		}
 
-		tasks[idx].DoWork(ctx, logger, eth)
+		task.DoWork(ctx, logger, eth)
 
 		eth.Commit()
 
 		// The last task should have failed
 		if idx == badShareIdx {
-			assert.False(t, tasks[idx].Success)
+			assert.False(t, task.Success)
 		} else {
-			assert.True(t, tasks[idx].Success)
+			assert.True(t, task.Success)
 		}
 	}
 
@@ -376,39 +338,28 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
 	// Do Share Distribution task
-	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
+	//shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, shareDistributionTasks[idx].Success)
+		assert.True(t, task.Success)
 	}
-
-	suite.eth.Commit()
-	suite.eth.Commit()
-	suite.eth.Commit()
-	suite.eth.Commit()
 
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-		shareDistributionTasks[idx].State.Account.Address = common.Address{}
-		shouldRetry := shareDistributionTasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		task := suite.shareDistTasks[idx]
+		task.State.Account.Address = common.Address{}
+		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}
 }
@@ -419,30 +370,22 @@ func TestShareDistributionShouldRetryFalse(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
-	assert.Nil(t, err)
 
 	// Do Share Distribution task
-	shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		// set phase
-		state.Phase = objects.ShareDistribution
-		state.PhaseStart = currentHeight + state.ConfirmationLength
-		phaseEnd := state.PhaseStart + state.PhaseLength
-
-		shareDistributionTasks[idx] = dkgtasks.NewShareDistributionTask(state, state.PhaseStart, phaseEnd)
-		err := shareDistributionTasks[idx].Initialize(ctx, logger, suite.eth, state)
+		task := suite.shareDistTasks[idx]
+		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = shareDistributionTasks[idx].DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		suite.eth.Commit()
-		assert.True(t, shareDistributionTasks[idx].Success)
+		assert.True(t, task.Success)
 
-		shouldRetry := shareDistributionTasks[idx].ShouldRetry(ctx, logger, suite.eth)
+		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.False(t, shouldRetry)
 	}
 }

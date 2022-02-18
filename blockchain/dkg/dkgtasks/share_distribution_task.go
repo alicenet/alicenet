@@ -55,21 +55,10 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return err
 	}
 
-	// Uncomment these lines if you want to inject bad data
-	// inject bad encryptedShares
-	// For the badIdx, submit invalid shares; zero everything;
-	// this overwrites what was done in Initialize
-	//if t.State.Index == 1 {
-	// if t.State.Index == 5 {
-	// 	for _, s := range encryptedShares {
-	// 		s.Set(big.NewInt(0))
-	// 	}
-	// }
-
 	// Store calculated values
 	t.State.Participants[t.State.Account.Address].Commitments = commitments
 	t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
-	//t.State.Participants = participants
+
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
 	t.State.ValidatorThreshold = threshold
