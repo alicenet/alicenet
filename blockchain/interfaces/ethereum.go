@@ -126,25 +126,24 @@ type Contracts interface {
 
 	Ethdkg() *bindings.ETHDKG
 	EthdkgAddress() common.Address
-
 	MadToken() *bindings.MadToken
 	MadTokenAddress() common.Address
-
 	MadByte() *bindings.MadByte
 	MadByteAddress() common.Address
-
 	StakeNFT() *bindings.StakeNFT
 	StakeNFTAddress() common.Address
-
 	ValidatorNFT() *bindings.ValidatorNFT
 	ValidatorNFTAddress() common.Address
-
 	Registry() *bindings.Registry
 	RegistryAddress() common.Address
 	SnapshotsAddress() common.Address
 	Snapshots() *bindings.Snapshots
 	ValidatorPool() *bindings.ValidatorPool
 	ValidatorPoolAddress() common.Address
+	Governance() *bindings.Governance
+	GovernanceAddress() common.Address
+	// Factory() *bindings.Factory
+	// FactoryAddress() common.Address
 }
 
 // Task the interface requirements of a task

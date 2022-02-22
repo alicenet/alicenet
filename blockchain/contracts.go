@@ -34,6 +34,8 @@ type ContractDetails struct {
 	validatorPoolAddress common.Address
 	// factory        *bindings.Factory
 	// factoryAddress common.Address
+	governance        *bindings.Governance
+	governanceAddress common.Address
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
@@ -164,6 +166,14 @@ func (c *ContractDetails) ValidatorPool() *bindings.ValidatorPool {
 
 func (c *ContractDetails) ValidatorPoolAddress() common.Address {
 	return c.validatorPoolAddress
+}
+
+func (c *ContractDetails) Governance() *bindings.Governance {
+	return c.governance
+}
+
+func (c *ContractDetails) GovernanceAddress() common.Address {
+	return c.governanceAddress
 }
 
 // func (c *ContractDetails) Factory() *bindings.Factory {
