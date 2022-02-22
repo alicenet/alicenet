@@ -79,12 +79,12 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
-	if err := em.RegisterLocked("0x36dcd0e03525dedd9d5c21a263ef5f35d030298b5c48f1a713006aefc064ad05", "ValueUpdated",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
+	// if err := em.RegisterLocked("0x36dcd0e03525dedd9d5c21a263ef5f35d030298b5c48f1a713006aefc064ad05", "ValueUpdated",
+	// 	func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	// 		return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)
+	// 	}); err != nil {
+	// 	return err
+	// }
 
 	// Registering just for informational purposes
 	if err := em.RegisterLocked("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", "DSTokenApproval", nil); err != nil {

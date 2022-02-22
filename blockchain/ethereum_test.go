@@ -1,7 +1,6 @@
 package blockchain_test
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"math/big"
@@ -120,17 +119,18 @@ func setupEthereum(t *testing.T, n int) (interfaces.Ethereum, error) {
 	acct := eth.GetDefaultAccount()
 	assert.Nil(t, eth.UnlockAccount(acct))
 
-	c := eth.Contracts()
-	_, _, err = c.DeployContracts(context.TODO(), acct)
-	assert.Nil(t, err)
+	panic("needs deployment")
+	// c := eth.Contracts()
+	// _, _, err = c.DeployContracts(context.TODO(), acct)
+	// assert.Nil(t, err)
 
-	go func() {
-		for {
-			t.Log(".")
-			time.Sleep(100 * time.Second)
-			eth.Commit()
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		t.Log(".")
+	// 		time.Sleep(100 * time.Second)
+	// 		eth.Commit()
+	// 	}
+	// }()
 
 	return eth, err
 }
@@ -158,30 +158,31 @@ func TestValues(t *testing.T) {
 	assert.Nil(t, err)
 	defer eth.Close()
 
-	c := eth.Contracts()
-	c.DeployContracts(context.Background(), eth.GetDefaultAccount())
+	//c := eth.Contracts()
+	//c.DeployContracts(context.Background(), eth.GetDefaultAccount())
+	panic("needs deployment")
+	/*
+		eth.Commit()
 
-	eth.Commit()
+		txnOpts, err := eth.GetTransactionOpts(context.Background(), eth.GetDefaultAccount())
+		assert.Nil(t, err)
 
-	txnOpts, err := eth.GetTransactionOpts(context.Background(), eth.GetDefaultAccount())
-	assert.Nil(t, err)
+		amount := big.NewInt(987654321)
+		t.Logf("amount:%v", amount.Text(10))
 
-	amount := big.NewInt(987654321)
-	t.Logf("amount:%v", amount.Text(10))
+		txn, err := c.Staking().SetMinimumStake(txnOpts, amount)
+		assert.Nil(t, err)
+		eth.Commit()
+		eth.Queue().QueueAndWait(context.Background(), txn)
 
-	txn, err := c.Staking().SetMinimumStake(txnOpts, amount)
-	assert.Nil(t, err)
-	eth.Commit()
-	eth.Queue().QueueAndWait(context.Background(), txn)
+		eth.Commit()
+		ms, err := c.Staking().MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
 
-	eth.Commit()
-	ms, err := c.Staking().MinimumStake(eth.GetCallOpts(context.Background(), eth.GetDefaultAccount()))
+		eth.Commit()
+		assert.Nil(t, err)
+		t.Logf("minimum stake:%v", ms.Text(10))
 
-	eth.Commit()
-	assert.Nil(t, err)
-	t.Logf("minimum stake:%v", ms.Text(10))
-
-	assert.Equal(t, 0, amount.Cmp(ms))
+		assert.Equal(t, 0, amount.Cmp(ms)) */
 }
 
 func TestCreateSelector(t *testing.T) {
