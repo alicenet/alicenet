@@ -21,5 +21,12 @@ local-geth/*
 **/.directory
 .idea/
 
-# generated script files
+# generated files
 scripts/generated
+localstate.swagger.json
+**/swagger-bindata/bindata.go
+**/*.pb.go
+**/*.capnp.go
+**/*.pb.gw.go
+**/*_mngen.go
+**/*_mngen_test.go

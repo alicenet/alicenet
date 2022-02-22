@@ -4,7 +4,7 @@ import (
 	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/utils"
-	capnp "zombiezen.com/go/capnproto2"
+	capnp "github.com/MadBase/go-capnproto2/v2"
 )
 
 // Marshal will marshal the RClaims object.

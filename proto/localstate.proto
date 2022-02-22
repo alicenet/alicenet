@@ -51,6 +51,13 @@ service LocalState {
           body: "*"
         };
     }
+    // Get transaction status by hash
+    rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
+      option (google.api.http) = {
+          post: "/v1/get-transaction-status"
+          body: "*"
+        };
+    }
     // Get a pending transaction by hash
     rpc GetPendingTransaction(PendingTransactionRequest) returns (PendingTransactionResponse) {
       option (google.api.http) = {
