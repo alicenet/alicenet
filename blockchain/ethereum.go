@@ -230,6 +230,10 @@ func NewEthereumEndpoint(
 	return eth, nil
 }
 
+func (eth *EthereumDetails) GetFinalityDelay() uint64 {
+	return eth.finalityDelay
+}
+
 func (eth *EthereumDetails) KnownSelectors() interfaces.SelectorMap {
 	return eth.selectors
 }

@@ -19,6 +19,7 @@ local-geth/*
 **/thumbs.db
 **/desktop.ini
 **/.directory
+.idea/
 
 # generated files
 scripts/generated

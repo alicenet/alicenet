@@ -10,20 +10,15 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 // Distributed Key Generation related errors
 var (
-	ErrInsufficientGoodSigners = errors.New("Insufficient non-malicious signers to identify malicious signers")
-	ErrTooFew                  = errors.New("Building array of size n with less than n required + optional")
-	ErrTooMany                 = errors.New("Building array of size n with more than n required")
+	ErrInsufficientGoodSigners = errors.New("insufficient non-malicious signers to identify malicious signers")
+	ErrTooFew                  = errors.New("building array of size n with less than n required + optional")
+	ErrTooMany                 = errors.New("building array of size n with more than n required")
 )
-
-// Evil
-var logger *logrus.Logger = logging.GetLogger("dkg")
 
 // Useful pseudo-constants
 var (
@@ -41,7 +36,7 @@ func ThresholdForUserCount(n int) int {
 // InverseArrayForUserCount pre-calculates an inverse array for use by ethereum contracts
 func InverseArrayForUserCount(n int) ([]*big.Int, error) {
 	if n < 4 {
-		return []*big.Int{}, errors.New("Invalid user count")
+		return nil, errors.New("invalid user count")
 	}
 	bigNeg2 := big.NewInt(-2)
 	orderMinus2 := new(big.Int).Add(cloudflare.Order, bigNeg2)
@@ -57,7 +52,7 @@ func InverseArrayForUserCount(n int) ([]*big.Int, error) {
 		res := new(big.Int).Mul(m, mInv)
 		res.Mod(res, cloudflare.Order)
 		if res.Cmp(common.Big1) != 0 {
-			return nil, errors.New("Error when computing inverseArray")
+			return nil, errors.New("error when computing inverseArray")
 		}
 		invArrayBig[idx] = mInv
 	}
@@ -168,21 +163,12 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 	if n < 4 {
 		return false, false, errors.New("invalid participants; not enough validators")
 	}
-	threshold := ThresholdForUserCount(n)
+	threshold := ThresholdForUserCount(int(n))
 
 	// Get commitments
-	commitments, commitmentsPresent := dkgState.Commitments[participant.Address]
+	commitments := dkgState.Participants[participant.Address].Commitments
 	// Get encryptedShares
-	encryptedShares, sharesPresent := dkgState.EncryptedShares[participant.Address]
-
-	if !commitmentsPresent && !sharesPresent {
-		// Validator did not submit commitments or shares
-		return false, false, nil
-	} else if !commitmentsPresent {
-		return false, false, errors.New("invalid commitments: not present")
-	} else if !sharesPresent {
-		return false, false, errors.New("invalid encryptedShares: not present")
-	}
+	encryptedShares := dkgState.Participants[participant.Address].EncryptedShares
 
 	// confirm correct length of commitments
 	if len(commitments) != threshold+1 {
@@ -190,7 +176,7 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 	}
 
 	// confirm correct length of encryptedShares
-	if len(encryptedShares) != n-1 {
+	if len(encryptedShares) != int(n)-1 {
 		return false, false, errors.New("invalid encryptedShares: incorrect length")
 	}
 
@@ -235,7 +221,7 @@ func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Pa
 // GenerateKeyShare returns G1 key share, G1 proof, and G2 key share
 func GenerateKeyShare(secretValue *big.Int) ([2]*big.Int, [2]*big.Int, [4]*big.Int, error) {
 	if secretValue == nil {
-		return empty2Big, empty2Big, empty4Big, errors.New("Missing secret value, aka private coefficient[0]")
+		return empty2Big, empty2Big, empty4Big, errors.New("missing secret value, aka private coefficient[0]")
 	}
 
 	h1Base, err := cloudflare.HashToG1(h1BaseMessage)
@@ -329,21 +315,21 @@ func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int)
 }
 
 // GenerateGroupKeys returns the group private key, group public key, and a signature
-func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants objects.ParticipantList) (*big.Int, [4]*big.Int, [2]*big.Int, error) {
+func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants objects.ParticipantList) (*big.Int, [4]*big.Int, error) {
 	// setup
 	n := len(participants)
 	threshold := ThresholdForUserCount(n)
 	if transportPrivateKey == nil {
-		return nil, empty4Big, empty2Big, errors.New("Missing transportPrivateKey")
+		return nil, empty4Big, errors.New("missing transportPrivateKey")
 	}
 	if index <= 0 {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid index: require index > 0; index = %v", index)
+		return nil, empty4Big, fmt.Errorf("invalid index: require index > 0; index = %v", index)
 	}
 	if len(privateCoefficients) != threshold+1 {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid privateCoefficients array: require length == threshold+1; length == %v", len(privateCoefficients))
+		return nil, empty4Big, fmt.Errorf("invalid privateCoefficients array: require length == threshold+1; length == %v", len(privateCoefficients))
 	}
 	if len(encryptedShares) != n {
-		return nil, empty4Big, empty2Big, fmt.Errorf("Invalid encryptedShares array: require length == len(Participants); length == %v", len(encryptedShares))
+		return nil, empty4Big, fmt.Errorf("invalid encryptedShares array: require length == len(Participants); length == %v", len(encryptedShares))
 	}
 
 	// build portions of group secret key
@@ -352,7 +338,7 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	for idx := 0; idx < n; idx++ {
 		publicKeyG1, err := bn256.BigIntArrayToG1(participants[idx].PublicKey)
 		if err != nil {
-			return nil, empty4Big, empty2Big, fmt.Errorf("error converting public key to g1: %v", err)
+			return nil, empty4Big, fmt.Errorf("error converting public key to g1: %v", err)
 		}
 		publicKeyG1s[idx] = publicKeyG1
 	}
@@ -360,12 +346,12 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(transportPrivateKey)
 	sharedEncrypted, err := cloudflare.CondenseCommitments(transportPublicKeyG1, encryptedShares, publicKeyG1s)
 	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error condensing commitments: %v", err)
+		return nil, empty4Big, fmt.Errorf("error condensing commitments: %v", err)
 	}
 
 	sharedSecrets, err := cloudflare.GenerateDecryptedShares(transportPrivateKey, sharedEncrypted, publicKeyG1s)
 	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error generating decrypted shares: %v", err)
+		return nil, empty4Big, fmt.Errorf("error generating decrypted shares: %v", err)
 	}
 
 	// here's the final group secret
@@ -379,30 +365,10 @@ func GenerateGroupKeys(initialMessage []byte, transportPrivateKey *big.Int, priv
 	gpkj := new(cloudflare.G2).ScalarBaseMult(gskj)
 	gpkjBig, err := bn256.G2ToBigIntArray(gpkj)
 	if err != nil {
-		return nil, empty4Big, empty2Big, err
+		return nil, empty4Big, err
 	}
 
-	// create sig
-	sig, err := cloudflare.Sign(initialMessage, gskj, cloudflare.HashToG1)
-	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error signing message: %v", err)
-	}
-	sigBig, err := bn256.G1ToBigIntArray(sig)
-	if err != nil {
-		return nil, empty4Big, empty2Big, err
-	}
-
-	// verify signature
-	validSig, err := cloudflare.Verify(initialMessage, sig, gpkj, cloudflare.HashToG1)
-	if err != nil {
-		return nil, empty4Big, empty2Big, fmt.Errorf("error verifying signature: %v", err)
-	}
-
-	if !validSig {
-		return nil, empty4Big, empty2Big, errors.New("not a valid group signature")
-	}
-
-	return gskj, gpkjBig, sigBig, nil
+	return gskj, gpkjBig, nil
 }
 
 // CategorizeGroupSigners returns 0 based indicies of honest participants, 0 based indicies of dishonest participants
@@ -444,24 +410,28 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 	for idx := 0; idx < n; idx++ {
 		// Loop through all participants to confirm each is valid
 		participant := participants[idx]
+
+		// If public key is all zeros, then no public key was submitted;
+		// add to missing.
+		big0 := big.NewInt(0)
+		if (publishedPublicKeys[idx][0] == nil ||
+			publishedPublicKeys[idx][1] == nil ||
+			publishedPublicKeys[idx][2] == nil ||
+			publishedPublicKeys[idx][3] == nil) || (publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
+			publishedPublicKeys[idx][3].Cmp(big0) == 0) {
+			missing = append(missing, participant.Copy())
+			continue
+		}
+
 		j := participant.Index // participant index
 		jBig := big.NewInt(int64(j))
 
 		tmp0 := new(cloudflare.G1)
 		gpkj, err := bn256.BigIntArrayToG2(publishedPublicKeys[idx])
 		if err != nil {
-			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, err
-		}
-
-		// If public key is all zeros, then no public key was submitted;
-		// add to missing.
-		big0 := big.NewInt(0)
-		if publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][3].Cmp(big0) == 0 {
-			missing = append(missing, participant.Copy())
-			continue
+			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G2: %v", err)
 		}
 
 		// Outer loop determines what needs to be exponentiated
@@ -472,7 +442,7 @@ func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants obje
 				tmp2Big := commitments[participantIdx][polyDegreeIdx]
 				tmp2, err := bn256.BigIntArrayToG1(tmp2Big)
 				if err != nil {
-					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, err
+					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G1: %v", err)
 				}
 				tmp1.Add(tmp1, tmp2)
 			}

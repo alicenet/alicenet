@@ -76,6 +76,10 @@ func (eth *mockEthereum) ChainID() *big.Int {
 	return nil
 }
 
+func (eth *mockEthereum) GetFinalityDelay() uint64 {
+	return 12
+}
+
 func (eth *mockEthereum) Close() error {
 	return nil
 }
@@ -201,7 +205,7 @@ func TestFoo(t *testing.T) {
 
 func TestType(t *testing.T) {
 	state := objects.NewDkgState(accounts.Account{})
-	ct := dkgtasks.NewCompletionTask(state)
+	ct := dkgtasks.NewCompletionTask(state, 1, 10)
 
 	var task interfaces.Task = ct
 	raw, err := json.Marshal(task)
@@ -241,7 +245,7 @@ func TestSharedState(t *testing.T) {
 func TestIsAdminClient(t *testing.T) {
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
 
-	task := &dkgtasks.GPKSubmissionTask{}
+	task := &dkgtasks.GPKjSubmissionTask{}
 	isAdminClient := reflect.TypeOf(task).Implements(adminInterface)
 
 	assert.True(t, isAdminClient)

@@ -98,14 +98,19 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 		Address: addr0,
 		URL: accounts.URL{
 			Scheme: "keystore",
-			Path:   "/home/agdean/Projects/MadNet/assets/test/keys/UTC--2020-03-24T13-41-44.886736400Z--26d3d8ab74d62c26f1acc220da1646411c9880ac"}}
+			Path:   ""}}
 	state.EthDKG.Index = 1
 	state.EthDKG.SecretValue = big.NewInt(512)
-	state.EthDKG.GroupPublicKeys[addr0] = [4]*big.Int{
+	meAsAParticipant := &objects.Participant{
+		Address: state.EthDKG.Account.Address,
+		Index:   state.EthDKG.Index,
+	}
+	state.EthDKG.Participants[addr0] = meAsAParticipant
+	state.EthDKG.Participants[addr0].GPKj = [4]*big.Int{
 		big.NewInt(44), big.NewInt(33), big.NewInt(22), big.NewInt(11)}
-	state.EthDKG.Commitments[addr0] = make([][2]*big.Int, 3)
-	state.EthDKG.Commitments[addr0][0][0] = big.NewInt(5)
-	state.EthDKG.Commitments[addr0][0][1] = big.NewInt(2)
+	state.EthDKG.Participants[addr0].Commitments = make([][2]*big.Int, 3)
+	state.EthDKG.Participants[addr0].Commitments[0][0] = big.NewInt(5)
+	state.EthDKG.Participants[addr0].Commitments[0][1] = big.NewInt(2)
 
 	state.ValidatorSets[EPOCH] = objects.ValidatorSet{
 		ValidatorCount:        4,
@@ -191,6 +196,10 @@ type mockEthereum struct {
 
 func (eth *mockEthereum) ChainID() *big.Int {
 	return nil
+}
+
+func (eth *mockEthereum) GetFinalityDelay() uint64 {
+	return 12
 }
 
 func (eth *mockEthereum) Close() error {
@@ -394,7 +403,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	validator0 := createValidator("0x546F99F244b7B58B855330AE0E2BC1b30b41302F", 1)
 
 	assert.Equal(t, 0, validator0.SharedKey[0].Cmp(newMon.State.Validators[EPOCH][0].SharedKey[0]))
-	assert.Equal(t, 0, big.NewInt(44).Cmp(newMon.State.EthDKG.GroupPublicKeys[addr0][0]))
+	assert.Equal(t, 0, big.NewInt(44).Cmp(newMon.State.EthDKG.Participants[addr0].GPKj[0]))
 
 	// Compare the schedules
 	_, err = newMon.State.Schedule.Find(9)

@@ -50,7 +50,7 @@ func (s *SequentialSchedule) Initialize(typeRegistry *TypeRegistry, adminHandler
 func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.Task) (uuid.UUID, error) {
 
 	for _, block := range s.Ranges {
-		if start <= block.End && block.Start <= end {
+		if start < block.End && block.Start < end {
 			return nil, ErrOverlappingSchedule
 		}
 	}
@@ -79,7 +79,7 @@ func (s *SequentialSchedule) PurgePrior(now uint64) {
 func (s *SequentialSchedule) Find(now uint64) (uuid.UUID, error) {
 
 	for taskId, block := range s.Ranges {
-		if block.Start <= now && block.End >= now {
+		if block.Start <= now && block.End > now {
 			return uuid.Parse(taskId), nil
 		}
 	}
@@ -132,8 +132,11 @@ func (ss *SequentialSchedule) MarshalJSON() ([]byte, error) {
 	}
 
 	raw, err := json.Marshal(&ws)
+	if err != nil {
+		return []byte{}, err
+	}
 
-	return raw, err
+	return raw, nil
 }
 
 func (ss *SequentialSchedule) UnmarshalJSON(raw []byte) error {

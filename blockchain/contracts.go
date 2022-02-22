@@ -19,27 +19,28 @@ import (
 
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
-	eth                 *EthereumDetails
-	accusation          *bindings.Accusation
-	crypto              *bindings.Crypto
-	cryptoAddress       common.Address
-	deposit             *bindings.Deposit
-	depositAddress      common.Address
-	governor            *bindings.Governor
-	governorAddress     common.Address
-	ethdkg              *bindings.ETHDKG
-	ethdkgAddress       common.Address
-	participants        *bindings.Participants
-	registry            *bindings.Registry
-	registryAddress     common.Address
-	snapshots           *bindings.Snapshots
-	staking             *bindings.Staking
-	stakingToken        *bindings.Token
-	stakingTokenAddress common.Address
-	utilityToken        *bindings.Token
-	utilityTokenAddress common.Address
-	validators          *bindings.Validators
-	validatorsAddress   common.Address
+	eth                  *EthereumDetails
+	crypto               *bindings.Crypto
+	cryptoAddress        common.Address
+	deposit              *bindings.Deposit
+	depositAddress       common.Address
+	governor             *bindings.Governor
+	governorAddress      common.Address
+	ethdkg               *bindings.ETHDKG
+	ethdkgAddress        common.Address
+	participants         *bindings.Participants
+	registry             *bindings.Registry
+	registryAddress      common.Address
+	snapshots            *bindings.Snapshots
+	staking              *bindings.Staking
+	stakingToken         *bindings.Token
+	stakingTokenAddress  common.Address
+	utilityToken         *bindings.Token
+	utilityTokenAddress  common.Address
+	validators           *bindings.Validators
+	validatorsAddress    common.Address
+	validatorPool        *bindings.ValidatorPool
+	validatorPoolAddress common.Address
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
@@ -127,6 +128,15 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, registryAddress c
 		if bytes.Equal(c.validatorsAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
+
+		c.validatorPoolAddress, err = lookup("validatorPool/v1")
+		logAndEat(logger, err)
+		if bytes.Equal(c.validatorPoolAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
+		logAndEat(logger, err)
 
 		// These all call the ValidatorsDiamond contract but we need various interfaces to keep API
 		c.validators, err = bindings.NewValidators(c.validatorsAddress, eth.client)
@@ -260,18 +270,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	}
 	q.QueueGroupTransaction(ctx, deployGroup, txn)
 
-	// Deploy accusation facet
-	accusationFacet, txn, _, err := bindings.DeployAccusationMultipleProposalFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Error("Failed to deploy accusation multiple proposal...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, deployGroup, txn)
-
-	// Bind diamond to interfaces
-	c.accusation, err = bindings.NewAccusation(c.validatorsAddress, eth.client)
-	logAndEat(logger, err)
-
 	c.participants, err = bindings.NewParticipants(c.validatorsAddress, eth.client)
 	logAndEat(logger, err)
 
@@ -301,9 +299,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 
 	// Register all the validators facets
 	vu := &Updater{Updater: validatorsUpdate, TxnOpts: txnOpts, Logger: logger}
-
-	// Accusation management
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("AccuseMultipleProposal(bytes,bytes,bytes,bytes)", accusationFacet))
 
 	// Staking maintenance
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeStaking(address)", stakingFacet))
@@ -357,85 +352,43 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("validatorCount()", participantsFacet))
 	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("setValidatorMaxCount(uint8)", participantsFacet))
 
-	c.ethdkgAddress, txn, _, err = bindings.DeployEthDKGDiamond(txnOpts, eth.client)
+	c.validatorPoolAddress, txn, _, err = bindings.DeployValidatorPool(txnOpts, eth.client, make([]byte, 0))
 	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGDiamond...")
+		logger.Errorf("Failed to deploy Validator Pool contract...")
 		return nil, common.Address{}, err
 	}
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGDiamond = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress())
+	logger.Infof(" Gas = %0.10v Validator Pool = \"0x%0.40x\"", txn.Gas(), c.ValidatorPoolAddress())
+
+	ethdkgAccusationAddress, txn, _, err := bindings.DeployETHDKGAccusations(txnOpts, eth.client)
+	if err != nil {
+		logger.Errorf("Failed to deploy ETHDKGAccusation contract...")
+		return nil, common.Address{}, err
+	}
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
+	logger.Infof(" Gas = %0.10v Ethdkg Accusation = \"0x%0.40x\"", txn.Gas(), ethdkgAccusationAddress)
+
+	ethdkgPhasesAddress, txn, _, err := bindings.DeployETHDKGPhases(txnOpts, eth.client)
+	if err != nil {
+		logger.Errorf("Failed to deploy ETHDKGPhases contract...")
+		return nil, common.Address{}, err
+	}
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
+	logger.Infof(" Gas = %0.10v ETHDKG Phases = \"0x%0.40x\"", txn.Gas(), ethdkgPhasesAddress)
+
+	c.ethdkgAddress, txn, _, err = bindings.DeployETHDKG(txnOpts, eth.client, c.validatorPoolAddress, ethdkgAccusationAddress, ethdkgPhasesAddress, make([]byte, 0))
+	if err != nil {
+		logger.Errorf("Failed to deploy EthDKG...")
+		return nil, common.Address{}, err
+	}
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
+	logger.Infof(" Gas = %0.10v EthDKG  = \"0x%0.40x\"", txn.Gas(), c.EthdkgAddress())
 
 	c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
 	logAndEat(logger, err)
 
-	var ethdkgCompletionAddress common.Address
-	ethdkgCompletionAddress, txn, _, err = bindings.DeployEthDKGCompletionFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGCompletionFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGCompletionFacet = \"0x%0.40x\"", txn.Gas(), ethdkgCompletionAddress)
-
-	var ethdkgGroupAccusationAddress common.Address
-	ethdkgGroupAccusationAddress, txn, _, err = bindings.DeployEthDKGGroupAccusationFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGGroupAccusationFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGGroupAccusationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgGroupAccusationAddress)
-
-	var ethdkgInitializeAddress common.Address
-	ethdkgInitializeAddress, txn, _, err = bindings.DeployEthDKGInitializeFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGInitializeFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGInitializeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInitializeAddress)
-
-	var ethdkgSubmitMPKAddress common.Address
-	ethdkgSubmitMPKAddress, txn, _, err = bindings.DeployEthDKGSubmitMPKFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGSubmitMPKFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGSubmitMPKFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitMPKAddress)
-
-	var ethdkgSubmitDisputeAddress common.Address
-	ethdkgSubmitDisputeAddress, txn, _, err = bindings.DeployEthDKGSubmitDisputeFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGSubmitDisputeFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGSubmitDisputeFacet = \"0x%0.40x\"", txn.Gas(), ethdkgSubmitDisputeAddress)
-
-	var ethdkgMiscAddress common.Address
-	ethdkgMiscAddress, txn, _, err = bindings.DeployEthDKGMiscFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGMiscFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGMiscFacet = \"0x%0.40x\"", txn.Gas(), ethdkgMiscAddress)
-
-	var ethdkgInfoFacetAddress common.Address
-	ethdkgInfoFacetAddress, txn, _, err = bindings.DeployEthDKGInformationFacet(txnOpts, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to deploy EthDKGInformationFacet...")
-		return nil, common.Address{}, err
-	}
-	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
-	logger.Infof(" Gas = %0.10v EthDKGInformationFacet = \"0x%0.40x\"", txn.Gas(), ethdkgInfoFacetAddress)
-
-	ethdkgUpdate, err := bindings.NewDiamondUpdateFacet(c.ethdkgAddress, eth.client)
-	if err != nil {
-		logger.Errorf("Failed to bind ethdkg update  ..")
-		return nil, common.Address{}, err
-	}
+	c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
+	logAndEat(logger, err)
 
 	// Wait for all the deploys to finish
 	eth.commit()
@@ -443,52 +396,9 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.WaitGroupTransactions(ctx, facetConfigGroup)
 	// flushQ(txnQueue)
 
-	// Register all the ethdkg facets
-	vu = &Updater{Updater: ethdkgUpdate, TxnOpts: txnOpts, Logger: logger}
-
-	//
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeEthDKG(address)", ethdkgInitializeAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initializeState()", ethdkgInitializeAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("updatePhaseLength(uint256)", ethdkgInitializeAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_master_public_key(uint256[4])", ethdkgSubmitMPKAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("getPhaseLength()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialMessage()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("initialSignatures(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_REGISTRATION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_SHARE_DISTRIBUTION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DISPUTE_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_KEY_SHARE_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_MPK_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJ_SUBMISSION_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_GPKJDISPUTE_END()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("T_DKG_COMPLETE()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("publicKeys(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("isMalicious(address)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("shareDistributionHashes(address)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("keyShares(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("commitments_1st_coefficient(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("gpkj_submissions(address,uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("master_public_key(uint256)", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("numberOfRegistrations()", ethdkgInfoFacetAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("addresses(uint256)", ethdkgInfoFacetAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj(uint256[],uint256[],uint256[])", ethdkgGroupAccusationAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Group_Accusation_GPKj_Comp(uint256[][],uint256[2][][],uint256,address)", ethdkgGroupAccusationAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_dispute(address,uint256,uint256,uint256[],uint256[2][],uint256[2],uint256[2])", ethdkgSubmitDisputeAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("submit_key_share(address,uint256[2],uint256[2],uint256[4])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("register(uint256[2])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Submit_GPKj(uint256[4],uint256[2])", ethdkgMiscAddress))
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("distribute_shares(uint256[],uint256[2][])", ethdkgMiscAddress))
-
-	q.QueueGroupTransaction(ctx, facetConfigGroup, vu.Add("Successful_Completion()", ethdkgCompletionAddress))
-
-	// Flush everything
-	// eth.contracts = c
-	eth.commit()
+	txn, err = c.ValidatorPool().SetETHDKG(txnOpts, c.ethdkgAddress)
+	logAndEat(logger, err)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.registry.Register(txnOpts, "deposit/v1", c.depositAddress)
 	logAndEat(logger, err)
@@ -519,6 +429,10 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
 	txn, err = c.registry.Register(txnOpts, "validators/v1", c.validatorsAddress)
+	logAndEat(logger, err)
+	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
+
+	txn, err = c.registry.Register(txnOpts, "validatorPool/v1", c.validatorPoolAddress)
 	logAndEat(logger, err)
 	q.QueueGroupTransaction(ctx, facetConfigGroup, txn)
 
@@ -652,13 +566,6 @@ func (c *ContractDetails) DeployContracts(ctx context.Context, account accounts.
 		logger.Infof("deposit update status: %v", rcpt.Status)
 	}
 
-	// ETHDKG updates
-	tx, err = c.ethdkg.InitializeEthDKG(txnOpts, c.registryAddress)
-	if err != nil {
-		logger.Errorf("Failed to update ethdkg contract references: %v", err)
-		return nil, common.Address{}, err
-	}
-
 	eth.commit()
 
 	rcpt, err = eth.Queue().QueueAndWait(ctx, tx)
@@ -764,4 +671,12 @@ func (c *ContractDetails) Validators() *bindings.Validators {
 
 func (c *ContractDetails) ValidatorsAddress() common.Address {
 	return c.validatorsAddress
+}
+
+func (c *ContractDetails) ValidatorPool() *bindings.ValidatorPool {
+	return c.validatorPool
+}
+
+func (c *ContractDetails) ValidatorPoolAddress() common.Address {
+	return c.validatorPoolAddress
 }

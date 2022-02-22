@@ -1,30 +1,68 @@
 package monitor
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/monevents"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/bridge/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
+func GetETHDKGEvents() map[string]abi.Event {
+	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.IETHDKGEventsMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+
+	return ethDkgABI.Events
+}
+
+func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
+	ethDkgEvents := GetETHDKGEvents()
+
+	var eventProcessorMap map[string]objects.EventProcessor = make(map[string]objects.EventProcessor)
+	eventProcessorMap["RegistrationOpened"] = dkgevents.ProcessRegistrationOpened
+	eventProcessorMap["AddressRegistered"] = dkgevents.ProcessAddressRegistered
+	eventProcessorMap["RegistrationComplete"] = dkgevents.ProcessRegistrationComplete
+	eventProcessorMap["SharesDistributed"] = dkgevents.ProcessShareDistribution
+	eventProcessorMap["ShareDistributionComplete"] = dkgevents.ProcessShareDistributionComplete
+	eventProcessorMap["KeyShareSubmitted"] = dkgevents.ProcessKeyShareSubmitted
+	eventProcessorMap["KeyShareSubmissionComplete"] = dkgevents.ProcessKeyShareSubmissionComplete
+	eventProcessorMap["MPKSet"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessMPKSet(eth, logger, state, log, adminHandler)
+	}
+	eventProcessorMap["ValidatorMemberAdded"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return monevents.ProcessValidatorMemberAdded(eth, logger, state, log, adminHandler)
+	}
+	eventProcessorMap["GPKJSubmissionComplete"] = dkgevents.ProcessGPKJSubmissionComplete
+	eventProcessorMap["ValidatorSetCompleted"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
+	}
+
+	// actually register the events
+	for eventName, processor := range eventProcessorMap {
+		// get the event from the ABI
+		event, ok := ethDkgEvents[eventName]
+		if !ok {
+			panic(fmt.Errorf("%v event not found in ABI", eventName))
+		}
+		// register it
+		if err := em.RegisterLocked(event.ID.String(), eventName, processor); err != nil {
+			panic(fmt.Errorf("could not register event %v", eventName))
+		}
+	}
+}
+
 func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
 
-	// DKG event processors
-	if err := em.RegisterLocked("0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97", "RegistrationOpen",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return dkgevents.ProcessOpenRegistration(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0xa84d294194d6169652a99150fd2ef10e18b0d2caa10beeea237bbddcc6e22b10", "ShareDistribution", dkgevents.ProcessShareDistribution); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0xb0ee36c3780de716eb6c83687f433ae2558a6923e090fd238b657fb6c896badc", "KeyShareSubmission", dkgevents.ProcessKeyShareSubmission); err != nil {
-		return err
-	}
+	RegisterETHDKGEvents(em, adminHandler)
 
 	// Events to pass through to side chain
 	if err := em.RegisterLocked("0x5b063c6569a91e8133fc6cd71d31a4ca5c65c652fd53ae093f46107754f08541", "DepositReceived",
@@ -37,19 +75,6 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 	if err := em.RegisterLocked("0x6d438b6b835d16cdae6efdc0259fdfba17e6aa32dae81863a2467866f85f724a", "SnapshotTaken",
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return monevents.ProcessSnapshotTaken(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
-
-	if err := em.RegisterLocked("0x113b129fac2dde341b9fbbec2bb79a95b9945b0e80fda711fc8ae5c7b0ea83b0", "ValidatorMember",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValidatorMember(eth, logger, state, log, adminHandler)
-		}); err != nil {
-		return err
-	}
-	if err := em.RegisterLocked("0x1c85ff1efe0a905f8feca811e617102cb7ec896aded693eb96366c8ef22bb09f", "ValidatorSet",
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValidatorSet(eth, logger, state, log, adminHandler)
 		}); err != nil {
 		return err
 	}

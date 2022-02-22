@@ -41,7 +41,7 @@ const (
 )
 
 // CheckRegistration checks if given address is registered as expected
-func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
+func CheckRegistration(ethdkg *bindings.ETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
@@ -50,28 +50,34 @@ func CheckRegistration(ctx context.Context, ethdkg *bindings.ETHDKG,
 	var receivedPublicKey [2]*big.Int
 	var err error
 
+	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
+	if err != nil {
+		logger.Warnf("could not check if we're registered: %v", err)
+		return Undefined, err
+	}
 	// Grab both parts of registered public key
-	receivedPublicKey[0], err = ethdkg.PublicKeys(callOpts, addr, big.NewInt(0))
-	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
-		return Undefined, err
-	}
-	receivedPublicKey[1], err = ethdkg.PublicKeys(callOpts, addr, big.NewInt(1))
-	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
-		return Undefined, err
-	}
+	receivedPublicKey = participantState.PublicKey
 
 	// Check if anything is registered
 	if receivedPublicKey[0].Cmp(big.NewInt(0)) == 0 && receivedPublicKey[1].Cmp(big.NewInt(0)) == 0 {
 		return NoRegistration, nil
 	}
 
-	// Check if expected public key is registered
-	if receivedPublicKey[0].Cmp(publicKey[0]) != 0 &&
-		receivedPublicKey[1].Cmp(publicKey[1]) != 0 {
+	// get ethdkg nonce
+	nonce, err := ethdkg.GetNonce(callOpts)
+	if err != nil {
+		return Undefined, nil
+	}
 
-		logger.Warnf("address (%v) is already registered with %x", addr.Hex(), receivedPublicKey)
+	if participantState.Nonce != nonce.Uint64() {
+		return NoRegistration, nil
+	}
+
+	// Check if expected public key is registered
+	if !(receivedPublicKey[0].Cmp(publicKey[0]) == 0 &&
+		receivedPublicKey[1].Cmp(publicKey[1]) == 0) {
+
+		logger.Warnf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
 
 		return BadRegistration, nil
 	}
@@ -89,17 +95,13 @@ func CheckKeyShare(ctx context.Context, ethdkg *bindings.ETHDKG,
 	var receivedKeyShare [2]*big.Int
 	var err error
 
+	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
+	if err != nil {
+		logger.Warnf("could not check if we're registered: %v", err)
+		return NoKeyShared, err
+	}
 	// Grab both parts of registered public key
-	receivedKeyShare[0], err = ethdkg.KeyShares(callOpts, addr, big.NewInt(0))
-	if err != nil {
-		logger.Warnf("could not check key shared: %v", err)
-		return UnknownKeyShare, err
-	}
-	receivedKeyShare[1], err = ethdkg.KeyShares(callOpts, addr, big.NewInt(1))
-	if err != nil {
-		logger.Warnf("could not check key shared: %v", err)
-		return UnknownKeyShare, err
-	}
+	receivedKeyShare = participantState.KeyShares
 
 	// Check if anything is registered
 	if receivedKeyShare[0].Cmp(big.NewInt(0)) == 0 && receivedKeyShare[1].Cmp(big.NewInt(0)) == 0 {

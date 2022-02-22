@@ -135,7 +135,7 @@ func TestVerifyDistributedSharesGood1(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
 		for partIdx := 0; partIdx < n; partIdx++ {
-			participant := dkgState.Participants[partIdx]
+			participant := dkgState.GetSortedParticipants()[partIdx]
 			valid, present, err := math.VerifyDistributedShares(dkgState, participant)
 			if err != nil {
 				t.Fatalf("Error raised in VerifyDistributedShares: s_i->j; i: %v; j: %v\nerr:= %v\n", participant.Index, dkgState.Index, err)
@@ -160,7 +160,7 @@ func TestVerifyDistributedSharesGood2(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
 		for partIdx := 0; partIdx < n; partIdx++ {
-			participant := dkgState.Participants[partIdx]
+			participant := dkgState.GetSortedParticipants()[partIdx]
 			valid, present, err := math.VerifyDistributedShares(dkgState, participant)
 			if err != nil {
 				t.Fatalf("Error raised in VerifyDistributedShares: s_i->j; i: %v; j: %v\nerr: %v", participant.Index, dkgState.Index, err)
@@ -185,13 +185,13 @@ func TestVerifyDistributedSharesGood3(t *testing.T) {
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
 	badIdx := 0
-	badParticipant := dkgStates[0].Participants[badIdx]
+	badParticipant := dkgStates[0].GetSortedParticipants()[badIdx]
 	badEncryptedShares := make([]*big.Int, n-1)
 	for k := 0; k < len(badEncryptedShares); k++ {
 		badEncryptedShares[k] = new(big.Int)
 	}
 	for idx := 0; idx < n; idx++ {
-		dkgStates[idx].EncryptedShares[badParticipant.Address] = badEncryptedShares
+		dkgStates[idx].Participants[badParticipant.Address].EncryptedShares = badEncryptedShares
 	}
 
 	// Loop through all participants and ensure that they all evaluate
@@ -224,14 +224,14 @@ func TestVerifyDistributedSharesGood4(t *testing.T) {
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
 	badIdx := 0
-	badParticipant := dkgStates[0].Participants[badIdx]
+	badParticipant := dkgStates[0].GetSortedParticipants()[badIdx]
 	badEncryptedShares := make([]*big.Int, n-1)
 	for k := 0; k < len(badEncryptedShares); k++ {
 		badEncryptedShares[k] = new(big.Int)
 	}
 	for idx := 0; idx < n; idx++ {
-		delete(dkgStates[idx].EncryptedShares, badParticipant.Address)
-		delete(dkgStates[idx].Commitments, badParticipant.Address)
+		dkgStates[idx].Participants[badParticipant.Address].EncryptedShares = badEncryptedShares
+		//dkgStates[idx].Participants[badParticipant.Address].Commitments = nil
 	}
 
 	// Loop through all participants and ensure that they all evaluate
@@ -245,7 +245,7 @@ func TestVerifyDistributedSharesGood4(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error raised in VerifyDistributedShares: s_i->j; i: %v; j: %v\nerr: %v\n", badParticipant.Index, dkgState.Index, err)
 		}
-		if present {
+		if !present {
 			t.Fatalf("Invalid share in VerifyDistributedShares: s_i->j; i: %v; j: %v\nnot present\n", badParticipant.Index, dkgState.Index)
 		}
 		if valid {
@@ -301,83 +301,71 @@ func TestVerifyDistributedSharesBad3(t *testing.T) {
 	participant := &objects.Participant{}
 	participant.Index = partIdx + 1
 	participant.Address = participantState.Account.Address
+	dkgState.Participants[participant.Address] = participant
 
-	// Test after initial setup; nothing present
+	//Test after initial setup; nothing present
 	valid, present, err := math.VerifyDistributedShares(dkgState, participant)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if present {
-		t.Fatal("Should not be present")
-	}
-	if valid {
-		t.Fatal("Should not be valid")
-	}
+	assert.NotNil(t, err)
+	assert.False(t, present)
+	assert.False(t, valid)
 
 	// no commitment present but (invalid) shares
 	encryptedSharesBad := make([]*big.Int, 0)
-	dkgState.EncryptedShares[participant.Address] = encryptedSharesBad
+	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (0)")
-	}
+	assert.NotNil(t, err)
+
 	// Remove shares from map
-	delete(dkgState.EncryptedShares, participant.Address)
+	dkgState.Participants[participant.Address].EncryptedShares = nil
 
 	// Make empty commitment list of big ints; raise error from incorrect length
 	commitmentsBad0 := make([][2]*big.Int, 0)
-	dkgState.Commitments[participant.Address] = commitmentsBad0
+	dkgState.Participants[participant.Address].Commitments = commitmentsBad0
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (1)")
-	}
-	delete(dkgState.Commitments, participant.Address)
+	assert.NotNil(t, err)
+
+	dkgState.Participants[participant.Address].Commitments = nil
 
 	// Raise error from invalid commitment length
 	commitmentsBad1 := make([][2]*big.Int, threshold)
-	dkgState.Commitments[participant.Address] = commitmentsBad1
-	dkgState.EncryptedShares[participant.Address] = encryptedSharesBad
+	dkgState.Participants[participant.Address].Commitments = commitmentsBad1
+	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (3)")
-	}
-	delete(dkgState.Commitments, participant.Address)
-	delete(dkgState.EncryptedShares, participant.Address)
+	assert.NotNil(t, err)
 
-	// Raise error from invalid encryptedShares length
+	dkgState.Participants[participant.Address].Commitments = nil
+	dkgState.Participants[participant.Address].EncryptedShares = nil
+
+	// Raise error from invalid encryptedSharesList length
 	commitmentsBad2 := make([][2]*big.Int, threshold+1)
-	dkgState.Commitments[participant.Address] = commitmentsBad2
-	dkgState.EncryptedShares[participant.Address] = encryptedSharesBad
+	dkgState.Participants[participant.Address].Commitments = commitmentsBad2
+	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesBad
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (4)")
-	}
-	delete(dkgState.Commitments, participant.Address)
-	delete(dkgState.EncryptedShares, participant.Address)
+	assert.NotNil(t, err)
+
+	dkgState.Participants[participant.Address].Commitments = nil
+	dkgState.Participants[participant.Address].EncryptedShares = nil
 
 	// Make empty encrypted share list; raise error invalid unmarshalling
 	encryptedSharesEmpty := make([]*big.Int, n-1)
-	dkgState.Commitments[participant.Address] = commitmentsBad2
-	dkgState.EncryptedShares[participant.Address] = encryptedSharesEmpty
+	dkgState.Participants[participant.Address].Commitments = commitmentsBad2
+	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesEmpty
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (6)")
-	}
-	delete(dkgState.Commitments, participant.Address)
-	delete(dkgState.EncryptedShares, participant.Address)
+	assert.NotNil(t, err)
 
-	// Make commitment list of correct length and valid;
-	// raise an error for invalid public key
+	dkgState.Participants[participant.Address].Commitments = nil
+	dkgState.Participants[participant.Address].EncryptedShares = nil
+
+	//Make commitment list of correct length and valid;
+	//raise an error for invalid public key
 	commitments := make([][2]*big.Int, threshold+1)
 	for k := 0; k < len(commitments); k++ {
 		commitments[k] = [2]*big.Int{common.Big1, common.Big2}
 	}
-	dkgState.Commitments[participant.Address] = commitments
-	dkgState.EncryptedShares[participant.Address] = encryptedSharesEmpty
+	dkgState.Participants[participant.Address].Commitments = commitments
+	dkgState.Participants[participant.Address].EncryptedShares = encryptedSharesEmpty
 	_, _, err = math.VerifyDistributedShares(dkgState, participant)
-	if err == nil {
-		t.Fatal("Should have raised error (7)")
-	}
+	assert.NotNil(t, err)
 }
 
 func TestGenerateKeyShare(t *testing.T) {
@@ -550,17 +538,17 @@ func TestGenerateGroupKeys(t *testing.T) {
 
 	// Generate the Group Keys and sanity check them
 	index := 1
-	groupPrivate, groupPublic, groupSignature, err := math.GenerateGroupKeys(initialMessage, private, privateCoefficients, encryptedShares, index, participants)
+	groupPrivate, groupPublic, err := math.GenerateGroupKeys(private, privateCoefficients, encryptedShares, index, participants)
 	assert.Nil(t, err, "error generating key share")
 	assert.NotNil(t, groupPrivate, "group private key is missing")
 	assert.NotNil(t, groupPublic[0], "group public key element is missing")
 	assert.NotNil(t, groupPublic[1], "group public key element is missing")
 	assert.NotNil(t, groupPublic[2], "group public key element is missing")
 	assert.NotNil(t, groupPublic[3], "group public key element is missing")
-	assert.NotNil(t, groupSignature[0], "group signature element is missing")
-	assert.NotNil(t, groupSignature[1], "group signature element is missing")
+	// assert.NotNil(t, groupSignature[0], "group signature element is missing")
+	// assert.NotNil(t, groupSignature[1], "group signature element is missing")
 
-	t.Logf("groupPrivate:%x groupPublic:%x groupSignature:%x", groupPrivate, groupPublic, groupSignature)
+	//t.Logf("groupPrivate:%x groupPublic:%x groupSignature:%x", groupPrivate, groupPublic, groupSignature)
 }
 
 func TestGenerateGroupKeysBad1(t *testing.T) {
@@ -573,21 +561,21 @@ func TestGenerateGroupKeysBad1(t *testing.T) {
 	// Start raising errors
 	// Raise error for nil transportPrivateKey
 	index := 0
-	_, _, _, err := math.GenerateGroupKeys(initialMessage, nil, nil, nil, index, participants)
+	_, _, err := math.GenerateGroupKeys(nil, nil, nil, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (0)")
 	}
 
 	// Raise error for zero index
 	transportPrivateKey := big.NewInt(123456789)
-	_, _, _, err = math.GenerateGroupKeys(initialMessage, transportPrivateKey, nil, nil, index, participants)
+	_, _, err = math.GenerateGroupKeys(transportPrivateKey, nil, nil, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
 
 	// Raise error for invalid private coefficients
 	index = 1
-	_, _, _, err = math.GenerateGroupKeys(initialMessage, transportPrivateKey, nil, nil, index, participants)
+	_, _, err = math.GenerateGroupKeys(transportPrivateKey, nil, nil, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
@@ -595,7 +583,7 @@ func TestGenerateGroupKeysBad1(t *testing.T) {
 	// Raise an error for invalid encrypted shares
 	threshold := math.ThresholdForUserCount(n)
 	privCoefs := make([]*big.Int, threshold+1)
-	_, _, _, err = math.GenerateGroupKeys(initialMessage, transportPrivateKey, privCoefs, nil, index, participants)
+	_, _, err = math.GenerateGroupKeys(transportPrivateKey, privCoefs, nil, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (3)")
 	}
@@ -616,7 +604,7 @@ func TestGenerateGroupKeysBad2(t *testing.T) {
 
 	// Mess up public key
 	participants[0].PublicKey = [2]*big.Int{}
-	_, _, _, err := math.GenerateGroupKeys(initialMessage, transportPrivateKey, privCoefs, encryptedShares, index, participants)
+	_, _, err := math.GenerateGroupKeys(transportPrivateKey, privCoefs, encryptedShares, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
@@ -624,7 +612,7 @@ func TestGenerateGroupKeysBad2(t *testing.T) {
 	// Reset participant list
 	participants = GenerateParticipantList(dkgStates)
 	// Raise an error for condensing commitments
-	_, _, _, err = math.GenerateGroupKeys(initialMessage, transportPrivateKey, privCoefs, encryptedShares, index, participants)
+	_, _, err = math.GenerateGroupKeys(transportPrivateKey, privCoefs, encryptedShares, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
@@ -632,7 +620,7 @@ func TestGenerateGroupKeysBad2(t *testing.T) {
 
 func TestCategorizeGroupSigners(t *testing.T) {
 	n := 10
-	_, publishedPublicKeys, _, participants, commitmentArray := setupGroupSigners(t, n)
+	_, publishedPublicKeys, participants, commitmentArray := setupGroupSigners(t, n)
 
 	honest, dishonest, missing, err := math.CategorizeGroupSigners(publishedPublicKeys, participants, commitmentArray)
 	assert.Nil(t, err, "failed to categorize group signers")
@@ -647,7 +635,7 @@ func TestCategorizeGroupSigners1Negative(t *testing.T) {
 	logger := logging.GetLogger("dkg")
 	logger.SetLevel(logrus.DebugLevel)
 
-	_, publishedPublicKeys, _, participants, commitmentArray := setupGroupSigners(t, n)
+	_, publishedPublicKeys, participants, commitmentArray := setupGroupSigners(t, n)
 
 	participants[0].Index = n + 100
 
@@ -662,7 +650,7 @@ func TestCategorizeGroupSigners2Negative(t *testing.T) {
 	n := 10
 	threshold := math.ThresholdForUserCount(n)
 
-	_, publishedPublicKeys, _, participants, commitmentArray := setupGroupSigners(t, n)
+	_, publishedPublicKeys, participants, commitmentArray := setupGroupSigners(t, n)
 
 	participants[n-1].Index = n + 100
 	participants[n-2].Index = n + 101
@@ -684,7 +672,7 @@ func TestCategorizeGroupSigners2Negative(t *testing.T) {
 
 func TestCategorizeGroupSignersBad(t *testing.T) {
 	n := 4
-	_, publishedPublicKeys, _, participants, commitmentArray := setupGroupSigners(t, n)
+	_, publishedPublicKeys, participants, commitmentArray := setupGroupSigners(t, n)
 	threshold := math.ThresholdForUserCount(n)
 
 	// Raise error for bad number of commitments
@@ -715,7 +703,7 @@ func TestCategorizeGroupSignersBad(t *testing.T) {
 	// raises error when converting to G2.
 	publishedPublicKeysBad2 := [][4]*big.Int{}
 	for k := 0; k < n; k++ {
-		publishedPublicKeysBad2 = append(publishedPublicKeysBad2, [4]*big.Int{})
+		publishedPublicKeysBad2 = append(publishedPublicKeysBad2, [4]*big.Int{big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1)})
 	}
 	_, _, _, err = math.CategorizeGroupSigners(publishedPublicKeysBad2, participants, commitmentArray)
 	if err == nil {
@@ -737,7 +725,7 @@ func TestCategorizeGroupSignersBad(t *testing.T) {
 
 func TestCategorizeGroupSignersBad2(t *testing.T) {
 	n := 4
-	_, publishedPublicKeys, _, participants, commitmentArray := setupGroupSigners(t, n)
+	_, publishedPublicKeys, participants, commitmentArray := setupGroupSigners(t, n)
 	publishedPublicKeysBad := [][4]*big.Int{}
 	for k := 0; k < len(publishedPublicKeys); k++ {
 		zeroPubKey := [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
@@ -770,7 +758,7 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 }
 
 // ---------------------------------------------------------------------------
-func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*big.Int, []*objects.Participant, [][][2]*big.Int) {
+func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*objects.Participant, [][][2]*big.Int) {
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
 	participants := []*objects.Participant{}
@@ -821,16 +809,16 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, [][2]*b
 	assert.Nil(t, err, "failed to generate master public key")
 
 	publishedPublicKeys := [][4]*big.Int{}
-	publishedSignatures := [][2]*big.Int{}
+	//publishedSignatures := [][2]*big.Int{}
 	for idx, participant := range participants {
 		privateKey := privateKeys[participant.Address]
 
-		_, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage, privateKey, privateCoefficients[idx], encryptedShares, participant.Index, participants)
+		_, groupPublicKey, err := math.GenerateGroupKeys(privateKey, privateCoefficients[idx], encryptedShares, participant.Index, participants)
 		assert.Nil(t, err, "failed to generate group keys")
 
 		publishedPublicKeys = append(publishedPublicKeys, groupPublicKey)
-		publishedSignatures = append(publishedSignatures, groupSignature)
+		//publishedSignatures = append(publishedSignatures, groupSignature)
 	}
 
-	return masterPublicKey, publishedPublicKeys, publishedSignatures, participants, commitmentArray
+	return masterPublicKey, publishedPublicKeys, participants, commitmentArray
 }

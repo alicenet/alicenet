@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -14,16 +13,22 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	Start   uint64
+	End     uint64
+	State   *objects.DkgState
+	Success bool
 }
 
+// asserting that ShareDistributionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &ShareDistributionTask{}
+
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
+func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -31,37 +36,14 @@ func NewShareDistributionTask(state *objects.DkgState) *ShareDistributionTask {
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
 func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	me := t.State.Account
-	callOpts := eth.GetCallOpts(ctx, me)
-
-	if !t.State.Registration {
-		return fmt.Errorf("%w because registration not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.ShareDistribution {
+		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
-	// Retrieve information about other participants from smart contracts
-	participants, index, err := dkg.RetrieveParticipants(callOpts, eth)
-	if err != nil {
-		logger.Errorf("Failed to retrieve other participants: %v", err)
-		return err
-	}
-
-	//
-	if logger.Logger.IsLevelEnabled(logrus.DebugLevel) {
-		for idx, participant := range participants {
-			logger.Debugf("Index:%v Participant Index:%v PublicKey:%v", idx, participant.Index, FormatPublicKey(participant.PublicKey))
-		}
-	}
-
+	participants := t.State.GetSortedParticipants()
 	numParticipants := len(participants)
 	threshold := math.ThresholdForUserCount(numParticipants)
 
@@ -74,11 +56,9 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 	}
 
 	// Store calculated values
-	t.State.Commitments[me.Address] = commitments
-	t.State.EncryptedShares[me.Address] = encryptedShares
-	t.State.Index = index
-	t.State.NumberOfValidators = numParticipants
-	t.State.Participants = participants
+	t.State.Participants[t.State.Account.Address].Commitments = commitments
+	t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
+
 	t.State.PrivateCoefficients = privateCoefficients
 	t.State.SecretValue = privateCoefficients[0]
 	t.State.ValidatorThreshold = threshold
@@ -101,6 +81,8 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("ShareDistributionTask doTask()")
+
 	c := eth.Contracts()
 	me := t.State.Account.Address
 	logger.Debugf("me:%v", me.Hex())
@@ -110,9 +92,10 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 		return err
 	}
 
+	//TODO: add retry logic and timeout
+
 	// Distribute shares
-	logger.Infof("# shares:%d # commitments:%d", len(t.State.EncryptedShares), len(t.State.Commitments))
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.EncryptedShares[me], t.State.Commitments[me])
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
@@ -141,25 +124,40 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 }
 
 // ShouldRetry checks if it makes sense to try again
+// if the DKG process is in the right phase and blocks
+// range and the distributed share hash is empty, we retry
 func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("ShareDistributionTask ShouldRetry()")
+
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.ShareDistributionEnd)
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.ShareDistribution {
+		return false
+	}
 
 	// If it's generally good to retry, let's try to be more specific
-	if generalRetry {
-		callOpts := eth.GetCallOpts(ctx, t.State.Account)
-		distributionHash, err := eth.Contracts().Ethdkg().ShareDistributionHashes(callOpts, t.State.Account.Address)
-		if err != nil {
-			return true
-		}
-
-		// TODO can I prove this is the correct share distribution hash?
-		logger.Infof("DistributionHash: %x", distributionHash)
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
+	if err != nil {
+		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)
+		return true
 	}
+
+	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
+	var emptySharesHash [32]byte
+	if participantState.DistributedSharesHash == emptySharesHash {
+		logger.Warn("Did not distribute shares after all. needs retry")
+		return true
+	}
+
+	logger.Info("Did distribute shares after all. needs no retry")
 
 	return false
 }
@@ -169,7 +167,5 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.ShareDistribution = t.Success
+	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
 }

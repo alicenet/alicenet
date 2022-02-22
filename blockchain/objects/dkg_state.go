@@ -6,8 +6,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrCanNotContinue standard error if we must drop out of ETHDKG
@@ -19,6 +21,11 @@ var (
 type DkgState struct {
 	sync.RWMutex
 
+	Phase              EthDKGPhase
+	PhaseLength        uint64
+	ConfirmationLength uint64
+	PhaseStart         uint64
+
 	// Local validator info
 	////////////////////////////////////////////////////////////////////////////
 	// Account is the Ethereum account corresponding to the Ethereum Public Key
@@ -28,8 +35,12 @@ type DkgState struct {
 	// during the Share Distribution phase for verifiable secret sharing.
 	// REPEAT: THIS IS BASE-1
 	Index int
-	// NumberOfValidators is the total number of validators
+	// ValidatorAddresses stores all validator addresses at the beginning of ETHDKG
+	ValidatorAddresses []common.Address
+	// NumberOfValidators is equal to len(ValidatorAddresses)
 	NumberOfValidators int
+	// ETHDKG nonce
+	Nonce uint64
 	// ValidatorThreshold is the threshold number of validators for the system.
 	// If n = NumberOfValidators and t = threshold, then
 	// 			t+1 > 2*n/3
@@ -53,65 +64,19 @@ type DkgState struct {
 	// As mentioned above, the secret key called the master secret key
 	// and is the sum of all the shared secrets of all the participants.
 	MasterPublicKey [4]*big.Int
-	// InitialMessage is a message which is signed to help ensure
-	// valid group public key submission.
-	InitialMessage []byte
 	// GroupPrivateKey is the local Validator's portion of the master secret key.
 	// This is also denoted gskj.
 	GroupPrivateKey *big.Int
-	// GroupPublicKey is the local Validator's portion of the master public key.
-	// This is also denoted gpkj.
-	GroupPublicKey [4]*big.Int
-	// GroupSignature is the signature of InitialMessage corresponding to
-	// GroupPublicKey. The smart contract logic verifies that GroupSignature
-	// is a valid signature of GroupPublicKey.
-	// This may be used in the GroupSignature validation logic.
-	GroupSignature [2]*big.Int
 
 	// Remote validator info
 	////////////////////////////////////////////////////////////////////////////
 	// Participants is the list of Validators
-	Participants ParticipantList // Index, Address & PublicKey
-
-	// Share Distribution Phase
-	//////////////////////////////////////////////////
-	// Commitments stores the Public Coefficients
-	// corresponding to public polynomial
-	// in Shamir Secret Sharing protocol.
-	// The first coefficient (constant term) is the public commitment
-	// corresponding to the secret share (SecretValue).
-	Commitments map[common.Address][][2]*big.Int
-	// EncryptedShares are the encrypted secret shares
-	// in the Shamir Secret Sharing protocol.
-	EncryptedShares map[common.Address][]*big.Int
+	Participants map[common.Address]*Participant // Index, Address & PublicKey
 
 	// Share Dispute Phase
 	//////////////////////////////////////////////////
 	// These are the participants with bad shares
 	BadShares map[common.Address]*Participant
-
-	// Key Share Submission Phase
-	//////////////////////////////////////////////////
-	// KeyShareG1s stores the key shares of G1 element
-	// for each participant
-	KeyShareG1s map[common.Address][2]*big.Int
-	// KeyShareG1CorrectnessProofs stores the proofs of each
-	// G1 element for each participant.
-	KeyShareG1CorrectnessProofs map[common.Address][2]*big.Int
-	// KeyShareG2s stores the key shares of G2 element
-	// for each participant.
-	// Adding all the G2 shares together produces the
-	// master public key (MasterPublicKey).
-	KeyShareG2s map[common.Address][4]*big.Int
-
-	// Group Public Key (GPKj) Submission Phase
-	//////////////////////////////////////////////////
-	// GroupPublicKeys stores the group public keys (gpkj)
-	// for each participant.
-	GroupPublicKeys map[common.Address][4]*big.Int // Retrieved to validate group keys
-	// GroupSignatures stores the group signatures
-	// for each participant.
-	GroupSignatures map[common.Address][2]*big.Int // "
 
 	// Group Public Key (GPKj) Accusation Phase
 	//////////////////////////////////////////////////
@@ -124,48 +89,120 @@ type DkgState struct {
 	// Inverse stores the multiplicative inverses
 	// of elements. This may be used in GPKJGroupAccusation logic.
 	Inverse []*big.Int // "
+}
 
-	// Flags indicating phase success
-	Registration        bool
-	ShareDistribution   bool
-	Dispute             bool
-	KeyShareSubmission  bool
-	MPKSubmission       bool
-	GPKJSubmission      bool
-	GPKJGroupAccusation bool
-	Complete            bool
+// GetSortedParticipants returns the participant list sorted by Index field
+func (state *DkgState) GetSortedParticipants() ParticipantList {
+	var list = make(ParticipantList, len(state.Participants))
 
-	// Phase schedule
-	RegistrationStart        uint64
-	RegistrationEnd          uint64
-	ShareDistributionStart   uint64
-	ShareDistributionEnd     uint64
-	DisputeStart             uint64
-	DisputeEnd               uint64
-	KeyShareSubmissionStart  uint64
-	KeyShareSubmissionEnd    uint64
-	MPKSubmissionStart       uint64
-	MPKSubmissionEnd         uint64
-	GPKJSubmissionStart      uint64
-	GPKJSubmissionEnd        uint64
-	GPKJGroupAccusationStart uint64
-	GPKJGroupAccusationEnd   uint64
-	CompleteStart            uint64
-	CompleteEnd              uint64
+	for _, p := range state.Participants {
+		list[p.Index-1] = p
+	}
+
+	return list
+}
+
+// OnRegistrationOpened processes data from RegistrationOpened event
+func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmationLength, nonce uint64) {
+	state.Phase = RegistrationOpen
+	state.PhaseStart = startBlock
+	state.PhaseLength = phaseLength
+	state.ConfirmationLength = confirmationLength
+	state.Nonce = nonce
+}
+
+// OnAddressRegistered processes data from AddressRegistered event
+func (state *DkgState) OnAddressRegistered(account common.Address, index int, nonce uint64, publicKey [2]*big.Int) {
+	state.Participants[account] = &Participant{
+		Address:   account,
+		Index:     index,
+		PublicKey: publicKey,
+		Phase:     uint8(RegistrationOpen),
+		Nonce:     nonce,
+	}
+
+	// update state.Index with my index, if this event was mine
+	if account.String() == state.Account.Address.String() {
+		state.Index = index
+	}
+}
+
+// OnRegistrationComplete processes data from RegistrationComplete event
+func (state *DkgState) OnRegistrationComplete(shareDistributionStartBlockNumber uint64) {
+	state.Phase = ShareDistribution
+	state.PhaseStart = shareDistributionStartBlockNumber + state.ConfirmationLength
+}
+
+// OnSharesDistributed processes data from SharesDistributed event
+func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
+	// compute distributed shares hash
+	distributedSharesHash, _, _, err := dkg.ComputeDistributedSharesHash(encryptedShares, commitments)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
+	}
+
+	state.Participants[account].Phase = uint8(ShareDistribution)
+	state.Participants[account].DistributedSharesHash = distributedSharesHash
+	state.Participants[account].Commitments = commitments
+	state.Participants[account].EncryptedShares = encryptedShares
+
+	return nil
+}
+
+// OnShareDistributionComplete processes data from ShareDistributionComplete event
+func (state *DkgState) OnShareDistributionComplete(disputeShareDistributionStartBlock uint64) {
+	state.Phase = DisputeShareDistribution
+
+	// schedule DisputeShareDistributionTask
+	dispShareStartBlock := disputeShareDistributionStartBlock + state.ConfirmationLength
+	state.PhaseStart = dispShareStartBlock
+}
+
+// OnKeyShareSubmissionComplete processes data from KeyShareSubmissionComplete event
+func (state *DkgState) OnKeyShareSubmissionComplete(mpkSubmissionStartBlock uint64) {
+	state.Phase = MPKSubmission
+	state.PhaseStart = mpkSubmissionStartBlock + state.ConfirmationLength
+}
+
+// OnMPKSet processes data from MPKSet event
+func (state *DkgState) OnMPKSet(gpkjSubmissionStartBlock uint64) {
+	state.Phase = GPKJSubmission
+	state.PhaseStart = gpkjSubmissionStartBlock
+}
+
+// OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event
+func (state *DkgState) OnGPKJSubmissionComplete(disputeGPKjStartBlock uint64) {
+	state.Phase = DisputeGPKJSubmission
+	state.PhaseStart = disputeGPKjStartBlock + state.ConfirmationLength
+}
+
+// OnKeyShareSubmitted processes data from KeyShareSubmitted event
+func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
+	state.Phase = KeyShareSubmission
+
+	state.Participants[account].Phase = uint8(KeyShareSubmission)
+	state.Participants[account].KeyShareG1s = keyShareG1
+	state.Participants[account].KeyShareG1CorrectnessProofs = keyShareG1CorrectnessProof
+	state.Participants[account].KeyShareG2s = keyShareG2
+}
+
+// OnGPKjSubmitted processes data from GPKjSubmitted event
+func (state *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
+	state.Participants[account].GPKj = gpkj
+	state.Participants[account].Phase = uint8(GPKJSubmission)
+}
+
+// OnCompletion processes data from ValidatorSetCompleted event
+func (state *DkgState) OnCompletion() {
+	state.Phase = Completion
 }
 
 // NewDkgState makes a new DkgState object
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
-		Account:                     account,
-		BadShares:                   make(map[common.Address]*Participant),
-		Commitments:                 make(map[common.Address][][2]*big.Int),
-		EncryptedShares:             make(map[common.Address][]*big.Int),
-		GroupPublicKeys:             make(map[common.Address][4]*big.Int),
-		GroupSignatures:             make(map[common.Address][2]*big.Int),
-		KeyShareG1s:                 make(map[common.Address][2]*big.Int),
-		KeyShareG1CorrectnessProofs: make(map[common.Address][2]*big.Int),
-		KeyShareG2s:                 make(map[common.Address][4]*big.Int),
+		Account:      account,
+		BadShares:    make(map[common.Address]*Participant),
+		Participants: make(map[common.Address]*Participant),
 	}
 }
 
@@ -181,6 +218,43 @@ type Participant struct {
 	Index int
 	// PublicKey is the TransportPublicKey of Participant.
 	PublicKey [2]*big.Int
+	Nonce     uint64
+	Phase     uint8
+
+	// Share Distribution Phase
+	//////////////////////////////////////////////////
+	// Commitments stores the Public Coefficients
+	// corresponding to public polynomial
+	// in Shamir Secret Sharing protocol.
+	// The first coefficient (constant term) is the public commitment
+	// corresponding to the secret share (SecretValue).
+	Commitments [][2]*big.Int
+	// EncryptedShares are the encrypted secret shares
+	// in the Shamir Secret Sharing protocol.
+	EncryptedShares       []*big.Int
+	DistributedSharesHash [32]byte
+
+	CommitmentsFirstCoefficient [2]*big.Int
+
+	// Key Share Submission Phase
+	//////////////////////////////////////////////////
+	// KeyShareG1s stores the key shares of G1 element
+	// for each participant
+	KeyShareG1s [2]*big.Int
+
+	// KeyShareG1CorrectnessProofs stores the proofs of each
+	// G1 element for each participant.
+	KeyShareG1CorrectnessProofs [2]*big.Int
+
+	// KeyShareG2s stores the key shares of G2 element
+	// for each participant.
+	// Adding all the G2 shares together produces the
+	// master public key (MasterPublicKey).
+	KeyShareG2s [4]*big.Int
+
+	// GPKj is the local Validator's portion of the master public key.
+	// This is also denoted GroupPublicKey.
+	GPKj [4]*big.Int
 }
 
 // ParticipantList is a required type alias since the Sort interface is awful

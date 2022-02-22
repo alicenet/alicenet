@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -14,24 +15,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ProcessValidatorSet handles receiving validatorSet changes
-func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+// ProcessValidatorSetCompleted handles receiving validatorSet changes
+func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
 	c := eth.Contracts()
 
+	state.Lock()
+	defer state.Unlock()
+
 	updatedState := state
 
-	event, err := c.Ethdkg().ParseValidatorSet(log)
+	event, err := c.Ethdkg().ParseValidatorSetCompleted(log)
 	if err != nil {
 		return err
 	}
 
+	logger.WithFields(logrus.Fields{
+		"ValidatorCount": event.ValidatorCount,
+		"Nonce":          event.Nonce,
+		"Epoch":          event.Epoch,
+		"EthHeight":      event.EthHeight,
+		"MadHeight":      event.MadHeight,
+		"GroupKey0":      event.GroupKey0,
+		"GroupKey1":      event.GroupKey1,
+		"GroupKey2":      event.GroupKey2,
+		"GroupKey3":      event.GroupKey3,
+	}).Infof("ProcessValidatorSetCompleted()")
+
 	epoch := uint32(event.Epoch.Int64())
 
 	vs := state.ValidatorSets[epoch]
-	vs.NotBeforeMadNetHeight = event.MadHeight
-	vs.ValidatorCount = event.ValidatorCount
+	vs.NotBeforeMadNetHeight = uint32(event.MadHeight.Uint64())
+	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1
 	vs.GroupKey[2] = event.GroupKey2
@@ -53,35 +69,60 @@ func ProcessValidatorSet(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 		return err
 	}
 
+	logger.WithFields(logrus.Fields{
+		"Phase": state.EthDKG.Phase,
+	}).Infof("Purging schedule")
+	state.Schedule.Purge()
+
+	state.EthDKG.OnCompletion()
+
 	return nil
 }
 
-// ProcessValidatorMember handles receiving keys for a specific validator
-func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+// ProcessValidatorMemberAdded handles receiving keys for a specific validator
+func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
+
+	state.Lock()
+	defer state.Unlock()
 
 	c := eth.Contracts()
 
-	event, err := c.Ethdkg().ParseValidatorMember(log)
+	event, err := c.Ethdkg().ParseValidatorMemberAdded(log)
 	if err != nil {
 		return err
 	}
 
 	epoch := uint32(event.Epoch.Int64())
 
-	index := uint8(event.Index.Uint64()) - 1
+	participantIndex := uint32(event.Index.Uint64())
+	arrayIndex := participantIndex - 1
 
 	v := objects.Validator{
 		Account:   event.Account,
-		Index:     index,
+		Index:     uint8(participantIndex),
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
-	if len(state.Validators[epoch]) < int(index+1) {
-		newValList := make([]objects.Validator, int(index+1))
+
+	// sanity check
+	if v.Account == state.EthDKG.Account.Address &&
+		(state.EthDKG.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
+			state.EthDKG.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+
+		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
+	}
+
+	// state update
+	state.EthDKG.OnGPKjSubmitted(event.Account, v.SharedKey)
+
+	if len(state.Validators[epoch]) < int(participantIndex) {
+		newValList := make([]objects.Validator, int(participantIndex))
 		copy(newValList, state.Validators[epoch])
 		state.Validators[epoch] = newValList
 	}
-	state.Validators[epoch][index] = v
+	state.Validators[epoch][arrayIndex] = v
 	ptrGroupShare := [4]*big.Int{
 		v.SharedKey[0], v.SharedKey[1],
 		v.SharedKey[2], v.SharedKey[3]}
@@ -94,12 +135,8 @@ func ProcessValidatorMember(eth interfaces.Ethereum, logger *logrus.Entry, state
 	groupShareHex := fmt.Sprintf("%x", groupShare)
 	logger.WithFields(logrus.Fields{
 		"Index":      v.Index,
-		"GroupShare": groupShareHex}).Infof("Received Validator")
-
-	err = checkValidatorSet(state, epoch, logger, adminHandler)
-	if err != nil {
-		return err
-	}
+		"GroupShare": groupShareHex,
+	}).Infof("Received Validator")
 
 	return nil
 }
@@ -122,7 +159,7 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 
 	// See how many validator members we've seen and how many we expect
 	receivedCount := len(validators)
-	expectedCount := int(validatorSet.ValidatorCount)
+	expectedCount := int(state.EthDKG.NumberOfValidators)
 
 	// Log validator set status
 	logger.WithFields(logrus.Fields{
@@ -156,7 +193,7 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 			v := &objs.Validator{
 				VAddr:      validator.Account.Bytes(),
 				GroupShare: groupShare}
-			vs.Validators[validator.Index] = v
+			vs.Validators[validator.Index-1] = v
 			logger.WithFields(logrus.Fields{
 				"Index":      validator.Index,
 				"GroupShare": fmt.Sprintf("0x%x", groupShare),

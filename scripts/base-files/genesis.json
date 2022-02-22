@@ -7,7 +7,12 @@
     "eip158Block": 0,
     "byzantiumBlock": 0,
     "constantinopleBlock": 0,
-    "petersburgBlock": 0
+    "petersburgBlock": 0,
+    "istanbulBlock": 0,
+    "muirglacierBlock": 0,
+    "berlinBlock": 0,
+    "londonBlock": 0,
+    "arrowglacierBlock": 0
   },
   "coinbase": "0x0000000000000000000000000000000000000000",
   "nonce": "0x0000000000000042",

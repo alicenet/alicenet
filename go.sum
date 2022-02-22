@@ -53,8 +53,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/MadBase/bridge v0.8.0 h1:VeggnfaZYkDWTRsmN8NyDjwhboBlTQSyemqA5uOl89Y=
-github.com/MadBase/bridge v0.8.0/go.mod h1:QKjScPoutZ2RwEZMn77Hht6LmgS9du/+l+mM7/ZkQbI=
+github.com/MadBase/bridge v0.9.0 h1:fE9GZcKYjD+kjd5egZJEgSMEBm3Am/+SRY7I2m9XBH0=
+github.com/MadBase/bridge v0.9.0/go.mod h1:QKjScPoutZ2RwEZMn77Hht6LmgS9du/+l+mM7/ZkQbI=
 github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1 h1:YCuKcZkLlOe+EQ7SlqZ273pORzuHZR8zpGdKyee8AJg=
 github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1/go.mod h1:mTxxPnU7YuHt2XP7FdWK2rsmARPIlHPMxzKmSrYwbPQ=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=

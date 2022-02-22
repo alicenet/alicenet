@@ -118,6 +118,50 @@ func TestFailSchedule(t *testing.T) {
 	assert.Equal(t, 1, s.Length())
 }
 
+func TestFailSchedule2(t *testing.T) {
+	m := &objects.TypeRegistry{}
+	s := objects.NewSequentialSchedule(m, nil)
+	assert.NotNil(t, s, "Scheduler should not be nil")
+
+	var err error
+	var task interfaces.Task
+
+	_, err = s.Schedule(1, 2, task)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(2, 3, task)
+	t.Log("error:", err)
+	assert.Nil(t, err)
+}
+
+func TestFailSchedule3(t *testing.T) {
+	m := &objects.TypeRegistry{}
+	s := objects.NewSequentialSchedule(m, nil)
+	assert.NotNil(t, s, "Scheduler should not be nil")
+
+	var err error
+	var task interfaces.Task
+
+	_, err = s.Schedule(7, 15, task)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(15, 17, task)
+	t.Log("error:", err)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(15, 21, task)
+	t.Log("error:", err)
+	assert.NotNil(t, err)
+
+	_, err = s.Schedule(1, 7, task)
+	t.Log("error:", err)
+	assert.Nil(t, err)
+
+	_, err = s.Schedule(1, 8, task)
+	t.Log("error:", err)
+	assert.NotNil(t, err)
+}
+
 func TestFind(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
@@ -131,6 +175,21 @@ func TestFind(t *testing.T) {
 	taskID, err := s.Find(10)
 	assert.Nil(t, err)
 	assert.Equal(t, id, taskID)
+
+	taskID, err = s.Find(14)
+	assert.Nil(t, err)
+	assert.Equal(t, id, taskID)
+
+	taskID, err = s.Find(5)
+	assert.Nil(t, err)
+	assert.Equal(t, id, taskID)
+
+	_, err = s.Find(15)
+	assert.NotNil(t, err)
+
+	_, err = s.Find(4)
+	assert.NotNil(t, err)
+
 }
 
 func TestFailFind(t *testing.T) {
@@ -144,6 +203,20 @@ func TestFailFind(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = s.Find(4)
+	assert.Equal(t, objects.ErrNothingScheduled, err)
+}
+
+func TestFailFind2(t *testing.T) {
+	m := &objects.TypeRegistry{}
+	s := objects.NewSequentialSchedule(m, nil)
+	assert.NotNil(t, s, "Scheduler should not be nil")
+
+	var task interfaces.Task
+
+	_, err := s.Schedule(5, 15, task)
+	assert.Nil(t, err)
+
+	_, err = s.Find(15)
 	assert.Equal(t, objects.ErrNothingScheduled, err)
 }
 

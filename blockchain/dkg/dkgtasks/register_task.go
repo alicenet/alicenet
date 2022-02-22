@@ -2,10 +2,14 @@ package dkgtasks
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"math/big"
+	"time"
 
-	"github.com/pkg/errors"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -14,16 +18,24 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	Start   uint64
+	End     uint64
+	State   *objects.DkgState
+	Success bool
+	TxOpts  *bind.TransactOpts
+	TxHash  common.Hash
 }
 
+// asserting that RegisterTask struct implements interface interfaces.Task
+var _ interfaces.Task = &RegisterTask{}
+
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(state *objects.DkgState) *RegisterTask {
+func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
@@ -31,16 +43,23 @@ func NewRegisterTask(state *objects.DkgState) *RegisterTask {
 // We construct our TransportPrivateKey and TransportPublicKey
 // which will be used in the ShareDistribution phase for secure communication.
 // These keys are *not* used otherwise.
+// Also get the list of existing validators from the pool to assert accusation
+// in later phases
 func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+	t.State.Lock()
+	defer t.State.Unlock()
 
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
+	logger.Info("RegisterTask Initialize()")
+
+	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "RegisterTask.Initialize(): Unable to get validatorAddresses from ValidatorPool: %v", err)
 	}
 
-	t.State = dkgState
-
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	t.State.ValidatorAddresses = validatorAddresses
+	t.State.NumberOfValidators = len(validatorAddresses)
 
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
@@ -71,44 +90,91 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return err
 	}
 
-	if block >= t.State.RegistrationEnd {
-		return errors.Wrapf(objects.ErrCanNotContinue, "At block %v but registration ends at %v", block, t.State.RegistrationEnd)
-	}
+	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return err
+	if t.TxOpts == nil {
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		if err != nil {
+			logger.Errorf("getting txn opts failed: %v", err)
+			return err
+		}
+
+		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+		if err != nil {
+			logger.Errorf("getting acct nonce 2: %v", err)
+			return err
+		}
+
+		txnOpts.Nonce = big.NewInt(int64(nonce))
+
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": txnOpts.GasFeeCap,
+			"GasTipCap": txnOpts.GasTipCap,
+			"Nonce":     txnOpts.Nonce,
+		}).Info("registering fees")
+
+		t.TxOpts = txnOpts
 	}
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := c.Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
+
+		if err.Error() == "nonce too low" {
+			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
+			if err != nil {
+				logger.Errorf("getting acct nonce 2: %v", err)
+				return err
+			}
+
+			t.TxOpts.Nonce = big.NewInt(int64(nonce))
+		}
+
 		return err
 	}
+
+	t.TxHash = txn.Hash()
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap":  t.TxOpts.GasFeeCap,
+		"GasFeeCap2": txn.GasFeeCap(),
+		"GasTipCap":  t.TxOpts.GasTipCap,
+		"GasTipCap2": txn.GasTipCap(),
+		"Nonce":      t.TxOpts.Nonce,
+		// "Nonce2":     txn.Nonce,
+		"txn.Hash()": txn.Hash().Hex(),
+		"t.TxHash":   t.TxHash.Hex(),
+		//"emptyHashEq": t.TxHash == emptyHash,
+	}).Info("registering fees 2")
+
+	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelFunc()
+
 	eth.Queue().QueueTransaction(ctx, txn)
 
-	// Waiting for receipt
-	receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	// Waiting for receipt with timeout
+	// If we reach the timeout, we return an error
+	// to evaluate if we should retry with a higher fee and tip
+	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
 	if err != nil {
 		logger.Errorf("waiting for receipt failed: %v", err)
 		return err
 	}
+
 	if receipt == nil {
-		logger.Error("missing registration receipt")
-		return errors.New("registration receipt is nil")
+		//logger.Error("missing registration receipt")
+		return errors.New("missing registration receipt")
 	}
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		message := fmt.Sprintf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		logger.Error(message)
-		return errors.New(message)
+	// Wait for finalityDelay to avoid fork rollback
+	err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
+	if err != nil {
+		logger.Errorf("waiting confirmations failed: %v", err)
+		return err
 	}
 
 	t.Success = true
@@ -123,47 +189,69 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	c := eth.Contracts()
+	logger.Info("RegisterTask ShouldRetry")
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.State.Phase != objects.RegistrationOpen {
+		return false
+	}
+
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
-	currentBlock, err := eth.GetCurrentHeight(ctx)
+	var needsRegistration bool
+	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+	logger.Infof("registration status: %v", status)
 	if err != nil {
-		return true
-	}
-	logger = logger.WithField("CurrentHeight", currentBlock)
-
-	// Definitely past quitting time
-	if currentBlock >= t.State.RegistrationEnd {
-		logger.Info("aborting registration due to scheduled end")
-		return false
+		needsRegistration = true
+	} else {
+		if status != Registered && status != BadRegistration {
+			needsRegistration = true
+		}
 	}
 
-	// Check if the registration window has moved, quit if it has
-	lastBlock, err := c.Ethdkg().TREGISTRATIONEND(callOpts)
-	if err != nil {
-		return true
+	if needsRegistration {
+		if t.TxOpts == nil {
+			txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+			if err != nil {
+				logger.Errorf("getting txn opts failed: %v", err)
+				return true
+			}
+
+			t.TxOpts = txnOpts
+		}
+
+		// increase FeeCap and TipCap
+		l := logger.WithFields(logrus.Fields{
+			"gasFeeCap": t.TxOpts.GasFeeCap,
+			"gasTipCap": t.TxOpts.GasTipCap,
+			"Nonce":     t.TxOpts.Nonce,
+		})
+
+		// calculate 10% increase in GasFeeCap and GasTipCap
+		increasedFeeCap, increasedTipCap := dkg.IncreaseFeeAndTipCap(t.TxOpts.GasFeeCap, t.TxOpts.GasTipCap, big.NewInt(10))
+		t.TxOpts.GasFeeCap = increasedFeeCap
+		t.TxOpts.GasTipCap = increasedTipCap
+
+		l.WithFields(logrus.Fields{
+			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
+			"gasTipCap10pc": t.TxOpts.GasTipCap,
+		}).Info("Retrying register with higher fee/tip caps")
+	} else {
+		var emptyHash common.Hash
+		if t.TxHash != emptyHash {
+			// Wait for finalityDelay to avoid fork rollback
+			err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
+			if err != nil {
+				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)
+				return true
+			}
+		}
 	}
 
-	// We save registration star
-	if lastBlock.Uint64() != t.OriginalRegistrationEnd {
-		logger.Infof("aborting registration due to restart")
-		return false
-	}
-
-	// Check to see if we are already registered
-	// TODO SILENT FAILURE!
-	ethdkg := eth.Contracts().Ethdkg()
-	status, err := CheckRegistration(ctx, ethdkg, logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
-	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
-		return true
-	}
-
-	if status == Registered || status == BadRegistration {
-		return false
-	}
-
-	return true
+	return needsRegistration
 }
 
 // DoDone just creates a log entry saying task is complete
@@ -171,7 +259,5 @@ func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.Registration = t.Success
+	logger.WithField("Success", t.Success).Infof("RegisterTask done")
 }

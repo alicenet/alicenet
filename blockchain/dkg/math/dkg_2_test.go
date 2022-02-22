@@ -51,8 +51,6 @@ func SetupAccounts(privKeys []*ecdsa.PrivateKey) []accounts.Account {
 }
 
 func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
-	initialMessage := []byte("MadHive Rocks!")
-
 	// Get private keys for validators
 	privKeys := SetupPrivateKeys(n)
 	accountsArray := SetupAccounts(privKeys)
@@ -81,8 +79,6 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 		// Set Number of Validators
 		dkgState.NumberOfValidators = n
 		dkgState.ValidatorThreshold = threshold
-		// Set initial message
-		dkgState.InitialMessage = utils.CopySlice(initialMessage)
 
 		// Setup TransportKey
 		transportPrivateKey := new(big.Int).Add(baseTransportValue, bigK)
@@ -101,7 +97,10 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 	// Generate Participants
 	for k := 0; k < n; k++ {
 		participantList := GenerateParticipantList(dkgStates)
-		dkgStates[k].Participants = participantList
+
+		for _, p := range participantList {
+			dkgStates[k].Participants[p.Address] = p
+		}
 	}
 
 	// Prepare secret shares
@@ -118,7 +117,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 			dkgState.PrivateCoefficients = privCoefs
 		} else {
 			// Random shares
-			_, privCoefs, _, err := dkgMath.GenerateShares(dkgState.TransportPrivateKey, dkgState.Participants)
+			_, privCoefs, _, err := dkgMath.GenerateShares(dkgState.TransportPrivateKey, dkgState.GetSortedParticipants())
 			if err != nil {
 				panic(err)
 			}
@@ -158,8 +157,8 @@ func GenerateEncryptedSharesAndCommitments(dkgStates []*objects.DkgState) {
 		encryptedShares := GenerateEncryptedShares(dkgStates, k)
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].Commitments[dkgState.Account.Address] = publicCoefs
-			dkgStates[ell].EncryptedShares[dkgState.Account.Address] = encryptedShares
+			dkgStates[ell].Participants[dkgState.Account.Address].Commitments = publicCoefs
+			dkgStates[ell].Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
 		}
 	}
 }
@@ -230,9 +229,9 @@ func GenerateKeyShares(dkgStates []*objects.DkgState) {
 		addr := dkgState.Account.Address
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].KeyShareG1s[addr] = g1KeyShare
-			dkgStates[ell].KeyShareG1CorrectnessProofs[addr] = g1Proof
-			dkgStates[ell].KeyShareG2s[addr] = g2KeyShare
+			dkgStates[ell].Participants[addr].KeyShareG1s = g1KeyShare
+			dkgStates[ell].Participants[addr].KeyShareG1CorrectnessProofs = g1Proof
+			dkgStates[ell].Participants[addr].KeyShareG2s = g2KeyShare
 		}
 	}
 }
@@ -263,30 +262,27 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 		dkgState := dkgStates[k]
 
 		encryptedShares := make([][]*big.Int, n)
-		for idx, participant := range dkgState.Participants {
-			pes, present := dkgState.EncryptedShares[participant.Address]
-			if present && idx >= 0 && idx < n {
+		for idx, participant := range dkgState.GetSortedParticipants() {
+			pes := dkgState.Participants[participant.Address].EncryptedShares
+			if idx >= 0 && idx < n {
 				encryptedShares[idx] = pes
 			} else {
 				panic("Encrypted share state broken")
 			}
 		}
 
-		groupPrivateKey, groupPublicKey, groupSignature, err := dkgMath.GenerateGroupKeys(dkgState.InitialMessage,
-			dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
-			encryptedShares, dkgState.Index, dkgState.Participants)
+		groupPrivateKey, groupPublicKey, err := dkgMath.GenerateGroupKeys(dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
+			encryptedShares, dkgState.Index, dkgState.GetSortedParticipants())
 		if err != nil {
 			panic("Could not generate group keys")
 		}
 
 		dkgState.GroupPrivateKey = groupPrivateKey
-		dkgState.GroupPublicKey = groupPublicKey
-		dkgState.GroupSignature = groupSignature
+		dkgState.Participants[dkgState.Account.Address].GPKj = groupPublicKey
 
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].GroupPublicKeys[dkgState.Account.Address] = groupPublicKey
-			dkgStates[ell].GroupSignatures[dkgState.Account.Address] = groupSignature
+			dkgStates[ell].Participants[dkgState.Account.Address].GPKj = groupPublicKey
 		}
 	}
 }

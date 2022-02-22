@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -142,8 +144,8 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 		return
 	}
 
-	logger.Infof("Validators() address is %v", c.ValidatorsAddress().Hex())
-	isValidator, err := c.Validators().IsValidator(callOpts, acct.Address)
+	logger.Infof("ValidatorPool() address is %v", c.ValidatorPoolAddress().Hex())
+	isValidator, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	if err != nil {
 		logger.Warnf("Failed checking whether %v is a validator: %v", acct.Address.Hex(), err)
 		return
@@ -175,13 +177,14 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 	}
 
 	logger.Info(strings.Repeat("-", 80))
-	logger.Infof("      Crypto contract: %v", c.CryptoAddress().Hex())
-	logger.Infof("     Deposit contract: %v", c.DepositAddress().Hex())
-	logger.Infof("      EthDKG contract: %v", c.EthdkgAddress().Hex())
-	logger.Infof("*   Registry contract: %v", c.RegistryAddress().Hex())
-	logger.Infof("StakingToken contract: %v", c.StakingTokenAddress().Hex())
-	logger.Infof("    Governor contract: %v", c.GovernorAddress().Hex())
-	logger.Infof("  Validators contract: %v", c.ValidatorsAddress().Hex())
+	logger.Infof("          Crypto contract: %v", c.CryptoAddress().Hex())
+	logger.Infof("         Deposit contract: %v", c.DepositAddress().Hex())
+	logger.Infof("          EthDKG contract: %v", c.EthdkgAddress().Hex())
+	logger.Infof("*       Registry contract: %v", c.RegistryAddress().Hex())
+	logger.Infof("    StakingToken contract: %v", c.StakingTokenAddress().Hex())
+	logger.Infof("        Governor contract: %v", c.GovernorAddress().Hex())
+	logger.Infof("      Validators contract: %v", c.ValidatorsAddress().Hex())
+	logger.Infof("  ValidatorsPool contract: %v", c.ValidatorPoolAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
 	logger.Infof("              Public key: 0x%x", crypto.FromECDSAPub(&keys.PrivateKey.PublicKey))
@@ -252,8 +255,14 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
+	eth.GetCoinbaseAddress()
+
+	if acct.Address.String() == eth.GetCoinbaseAddress().String() {
+		logger.Infof("Skipping validator registration for admin acount: %v", acct.Address.String())
+		return 0
+	}
+
 	c := eth.Contracts()
-	madNetID := [2]*big.Int{{}, {}}
 	ctx := context.Background()
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
@@ -263,46 +272,59 @@ func register(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command,
 
 	// Contract orchestration
 	// Approve tokens for staking
-	txn, err := c.StakingToken().Approve(txnOpts, c.ValidatorsAddress(), big.NewInt(1_000_000))
-	if err != nil {
-		logger.Errorf("StakingToken.Approve() failed: %v", err)
-		return 1
-	}
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Errorf("StakingToken.Approve() failed: %v", err)
-		return 1
-	}
-	if rcpt != nil && rcpt.Status != 1 {
-		logger.Errorf("StakingToken.Approve() failed")
+	var maxRetries int = 10
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
+		txn, err := c.StakingToken().Approve(txnOpts, c.ValidatorsAddress(), big.NewInt(1_000_000))
+		if err != nil {
+			logger.Errorf("StakingToken.Approve() failed: %v", err)
+			return 1
+		}
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		if err != nil {
+			logger.Errorf("StakingToken.Approve() failed: %v", err)
+			return 1
+		}
+		if rcpt != nil && rcpt.Status != 1 {
+			logger.Errorf("StakingToken.Approve() failed")
+		} else {
+			break
+		}
 	}
 
 	// Lock tokens as stake
-	txn, err = c.Staking().LockStake(txnOpts, big.NewInt(1_000_000))
-	if err != nil {
-		logger.Errorf("Staking.LockStake() failed: %v", err)
-		return 1
-	}
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Errorf("Staking.LockStake() failed: %v", err)
-		return 1
-	}
-	if rcpt != nil && rcpt.Status != 1 {
-		logger.Errorf("Staking.LockStake() failed")
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
+		txn, err := c.Staking().LockStake(txnOpts, big.NewInt(1_000_000))
+		if err != nil {
+			logger.Errorf("Staking.LockStake() failed: %v", err)
+			return 1
+		}
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		if err != nil {
+			logger.Errorf("Staking.LockStake() failed: %v", err)
+			return 1
+		}
+		if rcpt != nil && rcpt.Status != 1 {
+			logger.Errorf("Staking.LockStake() failed")
+		} else {
+			break
+		}
 	}
 
 	// Actually join validator pool
-	txn, err = c.Validators().AddValidator(txnOpts, acct.Address, madNetID)
-	if err != nil {
-		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
-	}
-	rcpt, err = eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
-	}
-	if rcpt != nil && rcpt.Status != 1 {
-		logger.Errorf("Validators.AddValidator() failed")
+	for nRetries := 0; nRetries < maxRetries; nRetries++ {
+		txn, err := c.ValidatorPool().AddValidator(txnOpts, acct.Address)
+		if err != nil {
+			logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
+		}
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		if err != nil {
+			logger.Errorf("Could not add %v as validator: %v", acct.Address.Hex(), err)
+		}
+		if rcpt != nil && rcpt.Status != 1 {
+			logger.Errorf("Validators.AddValidator() failed")
+		} else {
+			break
+		}
 	}
 
 	logger.Infof("Registered the address %x", acct.Address.Hex())
@@ -314,7 +336,6 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	// More ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
-	madNetID := [2]*big.Int{{}, {}}
 
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), acct)
 	if err != nil {
@@ -322,7 +343,7 @@ func unregister(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Comman
 	}
 
 	// Contract orchestration
-	_, err = c.Validators().RemoveValidator(txnOpts, acct.Address, madNetID)
+	_, err = c.ValidatorPool().RemoveValidator(txnOpts, acct.Address)
 	if err != nil {
 		logger.Errorf("Account %v could not leave validators pool: %v", acct.Address.Hex(), err)
 		return 1
@@ -563,7 +584,7 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 	}
 
 	//
-	txn, err := c.Ethdkg().InitializeState(txnOpts)
+	txn, err := c.ValidatorPool().InitializeETHDKG(txnOpts)
 	if err != nil {
 		logger.Errorf("Could not initialize ethdkg: %v", err)
 		return 1
@@ -579,19 +600,18 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 
 	logger.Infof("Found %v log events after initializing ethdkg", len(logs))
 
+	ethDkgEvents := monitor.GetETHDKGEvents()
+	regOpenedEvent, ok := ethDkgEvents["RegistrationOpened"]
+	if !ok {
+		panic(fmt.Errorf("could not find event named RegistrationOpened"))
+	}
+
 	for _, log := range logs {
-		if log.Topics[0].Hex() == "0x9c6f8368fe7e77e8cb9438744581403bcb3f53298e517f04c1b8475487402e97" {
-			event, err := c.Ethdkg().ParseRegistrationOpen(*log)
-			logger.Infof("Distributed key generation has begun...\nDkgStarts:%v\nRegistrationEnds:%v\nShareDistributionEnds:%v\nDisputeEnds:%v\nKeyShareSubmissionEnds:%v\nMpkSubmissionEnds:%v\nGpkjSubmissionEnds:%v\nGpkjDisputeEnds:%v\nDkgComplete:%v",
-				event.DkgStarts,
-				event.RegistrationEnds,
-				event.ShareDistributionEnds,
-				event.DisputeEnds,
-				event.KeyShareSubmissionEnds,
-				event.MpkSubmissionEnds,
-				event.GpkjSubmissionEnds,
-				event.GpkjDisputeEnds,
-				event.DkgComplete)
+		if log.Topics[0].Hex() == regOpenedEvent.ID.Hex() {
+			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
+			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
+				event.StartBlock,
+				event.Nonce)
 			if err != nil {
 				logger.Warnf("Could not parse RegistrationOpen event: %v", err)
 			}

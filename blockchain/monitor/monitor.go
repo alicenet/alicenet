@@ -80,13 +80,17 @@ func NewMonitor(cdb *db.Database,
 	tr := &objects.TypeRegistry{}
 
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKJDisputeTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
 
 	eventMap := objects.NewEventMap()
@@ -300,10 +304,10 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 	rawData, err := json.Marshal(m.State)
 
 	if err != nil {
-		fmt.Errorf("Could not marshal state: %v", err)
+		return nil, fmt.Errorf("could not marshal state: %v", err)
 	}
 
-	return rawData, err
+	return rawData, nil
 }
 
 func (m *monitor) UnmarshalJSON(raw []byte) error {
@@ -437,7 +441,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 				"TaskID":   uuid.String(),
 				"TaskName": taskName})
 
-			tasks.StartTask(log, wg, eth, task, monitorState.EthDKG)
+			tasks.StartTask(log, wg, eth, task, nil)
 
 			monitorState.Schedule.Remove(uuid)
 		} else if err == objects.ErrNothingScheduled {

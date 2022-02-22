@@ -14,49 +14,40 @@
       "args": ["--config", "./assets/config/bootnode.toml", "bootnode"]
     },
     {
-      "name": "validator0",
+      "name": "val1",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./assets/config/validator0.toml", "validator"]
+      "args": ["--config", "./scripts/generated/config/validator1.toml", "validator"]
     },
     {
-      "name": "validator1",
+      "name": "val2",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./assets/config/validator1.toml", "validator"]
+      "args": ["--config", "./scripts/generated/config/validator2.toml", "validator"]
     },
     {
-      "name": "validator2",
+      "name": "val3",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./assets/config/validator2.toml", "validator"]
+      "args": ["--config", "./scripts/generated/config/validator3.toml", "validator"]
     },
     {
-      "name": "validator3",
+      "name": "val4",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./assets/config/validator3.toml", "validator"]
+      "args": ["--config", "./scripts/generated/config/validator4.toml", "validator"]
     },
-    {
-      "name": "validator4",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/cmd",
-      "cwd": "${workspaceFolder}",
-      "args": ["--config", "./assets/config/validator4.toml", "validator"]
-    }
   ]
 }

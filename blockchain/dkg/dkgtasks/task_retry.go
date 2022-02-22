@@ -8,22 +8,18 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/utils"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
 
 // GeneralTaskShouldRetry is the general logic used to determine if a task should try again
 // -- Process is
-func GeneralTaskShouldRetry(ctx context.Context, acct accounts.Account, logger *logrus.Entry,
-	eth interfaces.Ethereum, publicKey [2]*big.Int,
-	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
+func GeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
+	eth interfaces.Ethereum, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
 
-	result := internalGeneralTaskShouldRetry(ctx, logger, eth, acct, publicKey, expectedRegistrationEnd, expectedLastBlock)
+	result := internalGeneralTaskShouldRetry(ctx, logger, eth, expectedFirstBlock, expectedLastBlock)
 
-	logger.Infof("GeneralTaskRetry(acct:%v, publicKey:%v, expectedRegistrationEnd:%v, expectedLastBlock:%v): %v",
-		acct.Address.Hex(),
-		FormatPublicKey(publicKey),
-		expectedRegistrationEnd,
+	logger.Infof("GeneralTaskRetry(expectedFirstBlock: %v expectedLastBlock:%v): %v",
+		expectedFirstBlock,
 		expectedLastBlock,
 		result)
 
@@ -60,8 +56,7 @@ func FormatBigIntSlice(slice []*big.Int) string {
 }
 
 func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
-	eth interfaces.Ethereum, acct accounts.Account, publicKey [2]*big.Int,
-	expectedRegistrationEnd uint64, expectedLastBlock uint64) bool {
+	eth interfaces.Ethereum, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
 
 	// Make sure we're in the right block range to continue
 	currentBlock, err := eth.GetCurrentHeight(ctx)
@@ -70,33 +65,8 @@ func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 		logger.Warnf("could not check current height of chain: %v", err)
 		return true
 	}
-	if currentBlock > expectedLastBlock {
-		return false
-	}
 
-	// This essentially checks if ethdkg was restarted while this task was running
-	callOpts := eth.GetCallOpts(ctx, acct)
-	registrationEnd, err := eth.Contracts().Ethdkg().TREGISTRATIONEND(callOpts)
-	if err != nil {
-		logger.Warnf("could not check when registration should have ended: %v", err)
-		return true
-	}
-
-	if registrationEnd.Uint64() != expectedRegistrationEnd {
-		return false
-	}
-
-	// Check to see if we are already registered
-	status, err := CheckRegistration(ctx, eth.Contracts().Ethdkg(), logger, callOpts, acct.Address, publicKey)
-	if err != nil {
-		// This probably means an endpoint issue, so we have to try again
-		logger.Warnf("could not check if we're registered: %v", err)
-		return true
-	}
-
-	// If we aren't registered correctly retry won't work -- Not true for registration
-	if status == NoRegistration || status == BadRegistration {
-		logger.Warnf("registration status: %v", status)
+	if currentBlock >= expectedLastBlock {
 		return false
 	}
 

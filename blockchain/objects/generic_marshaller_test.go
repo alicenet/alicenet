@@ -68,6 +68,16 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestNegativeType(t *testing.T) {
+	defer func() {
+		// If we didn't get here by recovering from a panic() we failed
+		if reason := recover(); reason == nil {
+			t.Log("No panic in sight")
+			t.Fatal("Should have panicked")
+		} else {
+			t.Logf("Good panic because: %v", reason)
+		}
+	}()
+
 	tr := &objects.TypeRegistry{}
 
 	s0 := &S0{Val: 3}

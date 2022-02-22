@@ -12,36 +12,34 @@ import (
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
+	Start   uint64
+	End     uint64
+	State   *objects.DkgState
+	Success bool
 }
 
+// asserting that CompletionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &CompletionTask{}
+
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *objects.DkgState) *CompletionTask {
+func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd,
-		State:                   state,
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
 	}
 }
 
 // Initialize prepares for work to be done in the Completion phase
 func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("CompletionTask Initialize()...")
 
-	if !t.State.GPKJGroupAccusation {
-		return fmt.Errorf("%w because gpkj dispute phase not successful", objects.ErrCanNotContinue)
+	if t.State.Phase != objects.DisputeGPKJSubmission {
+		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	return nil
@@ -62,6 +60,12 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	logger.Info("CompletionTask doTask()")
+
+	if t.isTaskCompleted(ctx, eth) {
+		return nil
+	}
+
 	// Setup
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -70,12 +74,14 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	}
 
 	// Register
-	txn, err := c.Ethdkg().SuccessfulCompletion(txnOpts)
+	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
-	logger.Info("Completion completed")
+	logger.Info("CompletionTask sent completed call")
+
+	//TODO: add retry logic, add timeout
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -91,6 +97,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
 	}
 
+	logger.Info("CompletionTask complete!")
+
 	t.Success = true
 
 	return nil
@@ -105,9 +113,22 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	// This wraps the retry logic for every phase, _except_ registration
-	return GeneralTaskShouldRetry(ctx, t.State.Account, logger, eth,
-		t.State.TransportPublicKey, t.OriginalRegistrationEnd, t.State.CompleteEnd)
+	logger.Info("CompletionTask ShouldRetry()")
+
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
+
+	if t.isTaskCompleted(ctx, eth) {
+		logger.WithFields(logrus.Fields{
+			"t.State.Phase":      t.State.Phase,
+			"t.State.PhaseStart": t.State.PhaseStart,
+		}).Info("CompletionTask ShouldRetry - will not retry")
+		return false
+	}
+
+	return true
 }
 
 // DoDone creates a log entry saying task is complete
@@ -115,7 +136,15 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
+	logger.WithField("Success", t.Success).Infof("CompletionTask done")
+}
 
-	t.State.Complete = t.Success
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {
+	c := eth.Contracts()
+	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, t.State.Account))
+	if err != nil {
+		return false
+	}
+
+	return phase == uint8(objects.Completion)
 }

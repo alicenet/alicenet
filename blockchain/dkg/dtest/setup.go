@@ -4,13 +4,14 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts"
+
 	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/etest"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/utils"
 )
 
 func InitializeNewDetDkgStateInfo(n int) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
@@ -22,8 +23,6 @@ func InitializeNewNonDetDkgStateInfo(n int) ([]*objects.DkgState, []*ecdsa.Priva
 }
 
 func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
-	initialMessage := []byte("MadHive Rocks!")
-
 	// Get private keys for validators
 	privKeys := etest.SetupPrivateKeys(n)
 	accountsArray := etest.SetupAccounts(privKeys)
@@ -52,8 +51,6 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 		// Set Number of Validators
 		dkgState.NumberOfValidators = n
 		dkgState.ValidatorThreshold = threshold
-		// Set initial message
-		dkgState.InitialMessage = utils.CopySlice(initialMessage)
 
 		// Setup TransportKey
 		transportPrivateKey := new(big.Int).Add(baseTransportValue, bigK)
@@ -72,7 +69,9 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 	// Generate Participants
 	for k := 0; k < n; k++ {
 		participantList := GenerateParticipantList(dkgStates)
-		dkgStates[k].Participants = participantList
+		for _, p := range participantList {
+			dkgStates[k].Participants[p.Address] = p
+		}
 	}
 
 	// Prepare secret shares
@@ -89,7 +88,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 			dkgState.PrivateCoefficients = privCoefs
 		} else {
 			// Random shares
-			_, privCoefs, _, err := dkgMath.GenerateShares(dkgState.TransportPrivateKey, dkgState.Participants)
+			_, privCoefs, _, err := dkgMath.GenerateShares(dkgState.TransportPrivateKey, dkgState.GetSortedParticipants())
 			if err != nil {
 				panic(err)
 			}
@@ -129,8 +128,8 @@ func GenerateEncryptedSharesAndCommitments(dkgStates []*objects.DkgState) {
 		encryptedShares := GenerateEncryptedShares(dkgStates, k)
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].Commitments[dkgState.Account.Address] = publicCoefs
-			dkgStates[ell].EncryptedShares[dkgState.Account.Address] = encryptedShares
+			dkgStates[ell].Participants[dkgState.Account.Address].Commitments = publicCoefs
+			dkgStates[ell].Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
 		}
 	}
 }
@@ -201,9 +200,9 @@ func GenerateKeyShares(dkgStates []*objects.DkgState) {
 		addr := dkgState.Account.Address
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].KeyShareG1s[addr] = g1KeyShare
-			dkgStates[ell].KeyShareG1CorrectnessProofs[addr] = g1Proof
-			dkgStates[ell].KeyShareG2s[addr] = g2KeyShare
+			dkgStates[ell].Participants[addr].KeyShareG1s = g1KeyShare
+			dkgStates[ell].Participants[addr].KeyShareG1CorrectnessProofs = g1Proof
+			dkgStates[ell].Participants[addr].KeyShareG2s = g2KeyShare
 		}
 	}
 }
@@ -234,47 +233,33 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 		dkgState := dkgStates[k]
 
 		encryptedShares := make([][]*big.Int, n)
-		for idx, participant := range dkgState.Participants {
-			pes, present := dkgState.EncryptedShares[participant.Address]
+		for idx, participant := range dkgState.GetSortedParticipants() {
+			p, present := dkgState.Participants[participant.Address]
 			if present && idx >= 0 && idx < n {
-				encryptedShares[idx] = pes
+				encryptedShares[idx] = p.EncryptedShares
 			} else {
 				panic("Encrypted share state broken")
 			}
 		}
 
-		groupPrivateKey, groupPublicKey, groupSignature, err := dkgMath.GenerateGroupKeys(dkgState.InitialMessage,
-			dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
-			encryptedShares, dkgState.Index, dkgState.Participants)
+		groupPrivateKey, groupPublicKey, err := dkgMath.GenerateGroupKeys(dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
+			encryptedShares, dkgState.Index, dkgState.GetSortedParticipants())
 		if err != nil {
 			panic("Could not generate group keys")
 		}
 
 		dkgState.GroupPrivateKey = groupPrivateKey
-		dkgState.GroupPublicKey = groupPublicKey
-		dkgState.GroupSignature = groupSignature
 
 		// Loop through entire list and save in map
 		for ell := 0; ell < n; ell++ {
-			dkgStates[ell].GroupPublicKeys[dkgState.Account.Address] = groupPublicKey
-			dkgStates[ell].GroupSignatures[dkgState.Account.Address] = groupSignature
+			dkgStates[ell].Participants[dkgState.Account.Address].GPKj = groupPublicKey
 		}
 	}
 }
 
-func PopulateEncryptedSharesAndCommitments(dkgStates []*objects.DkgState) {
-	n := len(dkgStates)
-	for k := 0; k < n; k++ {
-		dkgState := dkgStates[k]
-		publicCoefs := dkgState.Commitments[dkgState.Account.Address]
-		encryptedShares := dkgState.EncryptedShares[dkgState.Account.Address]
-		// Loop through entire list and save in map
-		for ell := 0; ell < n; ell++ {
-			if ell == k {
-				continue
-			}
-			dkgStates[ell].Commitments[dkgState.Account.Address] = publicCoefs
-			dkgStates[ell].EncryptedShares[dkgState.Account.Address] = encryptedShares
-		}
-	}
+func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Account) {
+	ecdsaPrivateKeys := etest.SetupPrivateKeys(n)
+	accounts := etest.SetupAccounts(ecdsaPrivateKeys)
+
+	return ecdsaPrivateKeys, accounts
 }

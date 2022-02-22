@@ -36,17 +36,18 @@ type MonitorState struct {
 }
 
 // EthDKGPhase is used to indicate what phase we are currently in
-type EthDKGPhase int
+type EthDKGPhase uint8
 
 // These are the valid phases of ETHDKG
 const (
-	Registration EthDKGPhase = iota
+	RegistrationOpen EthDKGPhase = iota
 	ShareDistribution
-	Dispute
+	DisputeShareDistribution
 	KeyShareSubmission
 	MPKSubmission
 	GPKJSubmission
-	GPKJGroupAccusation
+	DisputeGPKJSubmission
+	Completion
 )
 
 // ValidatorSet is summary information about a ValidatorSet

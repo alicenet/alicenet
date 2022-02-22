@@ -13,96 +13,85 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GPKSubmissionTask contains required state for gpk submission
-type GPKSubmissionTask struct {
-	OriginalRegistrationEnd uint64
-	State                   *objects.DkgState
-	Success                 bool
-	adminHandler            interfaces.AdminHandler
+// GPKjSubmissionTask contains required state for gpk submission
+type GPKjSubmissionTask struct {
+	Start        uint64
+	End          uint64
+	State        *objects.DkgState
+	Success      bool
+	adminHandler interfaces.AdminHandler
 }
 
-// NewGPKSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
-func NewGPKSubmissionTask(state *objects.DkgState, adminHandler interfaces.AdminHandler) *GPKSubmissionTask {
-	return &GPKSubmissionTask{
-		OriginalRegistrationEnd: state.RegistrationEnd, // If these quit being equal, this task should be abandoned
-		State:                   state,
-		adminHandler:            adminHandler,
+// asserting that GPKjSubmissionTask struct implements interface interfaces.Task
+var _ interfaces.Task = &GPKjSubmissionTask{}
+
+// NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
+func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
+	return &GPKjSubmissionTask{
+		Start:        start,
+		End:          end,
+		State:        state,
+		Success:      false,
+		adminHandler: adminHandler,
 	}
 }
 
-// Initialize prepares for work to be done in GPKSubmission phase.
+// Initialize prepares for work to be done in GPKjSubmission phase.
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
-func (t *GPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState, validState := state.(*objects.DkgState)
-	if !validState {
-		panic(fmt.Errorf("%w invalid state type", objects.ErrCanNotContinue))
-	}
-
-	t.State = dkgState
-
+func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("StateLocation", fmt.Sprintf("%p", t.State)).Info("Initialize()...")
+	logger.Info("GPKSubmissionTask Initialize()...")
 
-	if !t.State.MPKSubmission {
-		return fmt.Errorf("%w because mpk submission not successful", objects.ErrCanNotContinue)
-	}
-
-	// TODO Guard
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	initialMessage, err := eth.Contracts().Ethdkg().InitialMessage(callOpts)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "Could not retrieve initial message: %v", err)
-	}
-
+	// Collecting all the participants encrypted shares to be used for the GPKj
+	var participantsList = t.State.GetSortedParticipants()
 	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
-	for idx, participant := range t.State.Participants {
+	for _, participant := range participantsList {
 		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
-		pes, present := t.State.EncryptedShares[participant.Address]
-		if present && idx >= 0 && idx < t.State.NumberOfValidators {
-			encryptedShares = append(encryptedShares, pes)
-		} else {
-			logger.Errorf("Encrypted share state broken for %v", idx)
-		}
+		encryptedShares = append(encryptedShares, participant.EncryptedShares)
 	}
 
-	groupPrivateKey, groupPublicKey, groupSignature, err := math.GenerateGroupKeys(initialMessage,
+	// Generate the GPKj
+	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
 		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
-		encryptedShares, t.State.Index, t.State.Participants)
+		encryptedShares, t.State.Index, participantsList)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"t.State.Index": t.State.Index,
+		}).Errorf("Could not generate group keys: %v", err)
 		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 	}
 
-	t.State.InitialMessage = initialMessage
 	t.State.GroupPrivateKey = groupPrivateKey
-	t.State.GroupPublicKey = groupPublicKey
-	t.State.GroupSignature = groupSignature
+	t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
 
 	// Pass private key on to consensus
 	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
 	err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
 	if err != nil {
-		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err) // TODO this is seriously bad, any better actions possible?
+		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
 	}
 
 	return nil
 }
 
 // DoWork is the first attempt at submitting gpkj and signature.
-func (t *GPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting gpkj and signature.
-func (t *GPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
+
+	logger.Infof("GPKSubmissionTask doTask(): %v", t.State.Account.Address)
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
@@ -111,10 +100,12 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKj(txnOpts, t.State.GroupPublicKey, t.State.GroupSignature)
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
+
+	//TODO: add retry logic, add timeout
 
 	// Waiting for receipt
 	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
@@ -124,6 +115,12 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	if receipt == nil {
 		return dkg.LogReturnErrorf(logger, "missing registration receipt")
 	}
+
+	// Check receipt to confirm we were successful
+	if receipt.Status != uint64(1) {
+		return dkg.LogReturnErrorf(logger, "submit gpkj status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+	}
+
 	t.Success = true
 
 	return nil
@@ -132,29 +129,43 @@ func (t *GPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *GPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
+	logger.Info("GPKSubmissionTask ShouldRetry()")
 
-	state := t.State
+	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	if !generalRetry {
+		return false
+	}
 
-	// This wraps the retry logic for the general case
-	return GeneralTaskShouldRetry(ctx, state.Account, logger, eth,
-		state.TransportPublicKey, t.OriginalRegistrationEnd, state.GPKJSubmissionEnd)
+	if t.State.Phase != objects.GPKJSubmission {
+		return false
+	}
+
+	//Check if my GPKj is submitted, if not should retry
+	me := t.State.Account
+	callOpts := eth.GetCallOpts(ctx, me)
+	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)
+	if err == nil && participantState.Gpkj[0].Cmp(t.State.Participants[me.Address].GPKj[0]) == 0 &&
+		participantState.Gpkj[1].Cmp(t.State.Participants[me.Address].GPKj[1]) == 0 &&
+		participantState.Gpkj[2].Cmp(t.State.Participants[me.Address].GPKj[2]) == 0 &&
+		participantState.Gpkj[3].Cmp(t.State.Participants[me.Address].GPKj[3]) == 0 {
+		return false
+	}
+
+	return true
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *GPKSubmissionTask) DoDone(logger *logrus.Entry) {
+func (t *GPKjSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("done")
-
-	t.State.GPKJSubmission = t.Success
+	logger.WithField("Success", t.Success).Infof("GPKSubmissionTask done")
 }
 
 // SetAdminHandler sets the task adminHandler
-func (t *GPKSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
+func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
 }
