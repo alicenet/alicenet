@@ -3,6 +3,7 @@ package dkgtasks
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -13,22 +14,29 @@ import (
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*DkgTask
 }
 
 // asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
 var _ interfaces.Task = &DisputeMissingRegistrationTask{}
 
+// asserting that DisputeMissingRegistrationTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &DisputeMissingRegistrationTask{}
+
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 	}
 }
 
@@ -137,6 +145,14 @@ func (t *DisputeMissingRegistrationTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("DisputeMissingRegistrationTask done")
+}
+
+func (t *DisputeMissingRegistrationTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *DisputeMissingRegistrationTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -14,22 +15,29 @@ import (
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*DkgTask
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &MPKSubmissionTask{}
 
+// asserting that MPKSubmissionTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &MPKSubmissionTask{}
+
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 	}
 }
 
@@ -170,6 +178,14 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
+}
+
+func (t *MPKSubmissionTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *MPKSubmissionTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }
 
 func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum) bool {

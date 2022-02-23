@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -13,22 +15,29 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*DkgTask
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &ShareDistributionTask{}
 
+// asserting that ShareDistributionTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &ShareDistributionTask{}
+
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 	}
 }
 
@@ -168,4 +177,12 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
+}
+
+func (t *ShareDistributionTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *ShareDistributionTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }
