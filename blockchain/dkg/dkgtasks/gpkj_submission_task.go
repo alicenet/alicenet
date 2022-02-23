@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -15,23 +16,30 @@ import (
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	Start        uint64
-	End          uint64
-	State        *objects.DkgState
-	Success      bool
+	*DkgTask
 	adminHandler interfaces.AdminHandler
 }
 
 // asserting that GPKjSubmissionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &GPKjSubmissionTask{}
 
+// asserting that GPKjSubmissionTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &GPKjSubmissionTask{}
+
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Start:        start,
-		End:          end,
-		State:        state,
-		Success:      false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 		adminHandler: adminHandler,
 	}
 }
@@ -168,4 +176,12 @@ func (t *GPKjSubmissionTask) DoDone(logger *logrus.Entry) {
 // SetAdminHandler sets the task adminHandler
 func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
+}
+
+func (t *GPKjSubmissionTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *GPKjSubmissionTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }

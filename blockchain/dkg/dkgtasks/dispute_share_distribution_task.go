@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"math/big"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -17,22 +19,29 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*DkgTask
 }
 
 // asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &DisputeShareDistributionTask{}
 
+// asserting that DisputeShareDistributionTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &DisputeShareDistributionTask{}
+
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 	}
 }
 
@@ -205,4 +214,12 @@ func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Info("DisputeShareDistributionTask done")
+}
+
+func (t *DisputeShareDistributionTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *DisputeShareDistributionTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }

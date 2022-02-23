@@ -2,40 +2,40 @@ package dkgtasks
 
 import (
 	"context"
-	"errors"
-	"math/big"
-	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
+	"time"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
-	TxOpts  *bind.TransactOpts
-	TxHash  common.Hash
+	*DkgTask
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
 var _ interfaces.Task = &RegisterTask{}
 
+// asserting that RegisterTask struct implements DkgTaskIfase
+var _ DkgTaskIfase = &RegisterTask{}
+
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		DkgTask: &DkgTask{
+			State:   state,
+			Start:   start,
+			End:     end,
+			Success: false,
+			CallOptions: CallOptions{
+				TxCheckFrequency:          5 * time.Second,
+				TxFeePercentageToIncrease: big.NewInt(50),
+				TxTimeoutForReplacement:   30 * time.Second,
+			},
+		},
 	}
 }
 
@@ -93,20 +93,12 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	if t.TxOpts == nil {
+	if t.CallOptions.TxOpts == nil {
 		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
 			logger.Errorf("getting txn opts failed: %v", err)
 			return err
 		}
-
-		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-		if err != nil {
-			logger.Errorf("getting acct nonce 2: %v", err)
-			return err
-		}
-
-		txnOpts.Nonce = big.NewInt(int64(nonce))
 
 		logger.WithFields(logrus.Fields{
 			"GasFeeCap": txnOpts.GasFeeCap,
@@ -114,68 +106,31 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 			"Nonce":     txnOpts.Nonce,
 		}).Info("registering fees")
 
-		t.TxOpts = txnOpts
+		t.CallOptions.TxOpts = txnOpts
 	}
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(t.CallOptions.TxOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
-
-		if err.Error() == "nonce too low" {
-			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-			if err != nil {
-				logger.Errorf("getting acct nonce 2: %v", err)
-				return err
-			}
-
-			t.TxOpts.Nonce = big.NewInt(int64(nonce))
-		}
-
 		return err
 	}
 
-	t.TxHash = txn.Hash()
+	t.CallOptions.TxHash = txn.Hash()
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  t.TxOpts.GasFeeCap,
+		"GasFeeCap":  t.CallOptions.TxOpts.GasFeeCap,
 		"GasFeeCap2": txn.GasFeeCap(),
-		"GasTipCap":  t.TxOpts.GasTipCap,
+		"GasTipCap":  t.CallOptions.TxOpts.GasTipCap,
 		"GasTipCap2": txn.GasTipCap(),
-		"Nonce":      t.TxOpts.Nonce,
-		// "Nonce2":     txn.Nonce,
+		"Nonce":      t.CallOptions.TxOpts.Nonce,
 		"txn.Hash()": txn.Hash().Hex(),
-		"t.TxHash":   t.TxHash.Hex(),
-		//"emptyHashEq": t.TxHash == emptyHash,
+		"t.TxHash":   t.CallOptions.TxHash.Hex(),
 	}).Info("registering fees 2")
 
-	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelFunc()
-
 	eth.Queue().QueueTransaction(ctx, txn)
-
-	// Waiting for receipt with timeout
-	// If we reach the timeout, we return an error
-	// to evaluate if we should retry with a higher fee and tip
-	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
-	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return err
-	}
-
-	if receipt == nil {
-		//logger.Error("missing registration receipt")
-		return errors.New("missing registration receipt")
-	}
-
-	// Wait for finalityDelay to avoid fork rollback
-	err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
-	if err != nil {
-		logger.Errorf("waiting confirmations failed: %v", err)
-		return err
-	}
 
 	t.Success = true
 	return nil
@@ -212,45 +167,6 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		}
 	}
 
-	if needsRegistration {
-		if t.TxOpts == nil {
-			txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-			if err != nil {
-				logger.Errorf("getting txn opts failed: %v", err)
-				return true
-			}
-
-			t.TxOpts = txnOpts
-		}
-
-		// increase FeeCap and TipCap
-		l := logger.WithFields(logrus.Fields{
-			"gasFeeCap": t.TxOpts.GasFeeCap,
-			"gasTipCap": t.TxOpts.GasTipCap,
-			"Nonce":     t.TxOpts.Nonce,
-		})
-
-		// calculate 10% increase in GasFeeCap and GasTipCap
-		increasedFeeCap, increasedTipCap := dkg.IncreaseFeeAndTipCap(t.TxOpts.GasFeeCap, t.TxOpts.GasTipCap, big.NewInt(10))
-		t.TxOpts.GasFeeCap = increasedFeeCap
-		t.TxOpts.GasTipCap = increasedTipCap
-
-		l.WithFields(logrus.Fields{
-			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
-			"gasTipCap10pc": t.TxOpts.GasTipCap,
-		}).Info("Retrying register with higher fee/tip caps")
-	} else {
-		var emptyHash common.Hash
-		if t.TxHash != emptyHash {
-			// Wait for finalityDelay to avoid fork rollback
-			err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
-			if err != nil {
-				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)
-				return true
-			}
-		}
-	}
-
 	return needsRegistration
 }
 
@@ -260,4 +176,12 @@ func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("RegisterTask done")
+}
+
+func (t *RegisterTask) GetDkgTask() *DkgTask {
+	return t.DkgTask
+}
+
+func (t *RegisterTask) SetDkgTask(dkgTask *DkgTask) {
+	t.DkgTask = dkgTask
 }
