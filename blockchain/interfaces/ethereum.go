@@ -134,16 +134,14 @@ type Contracts interface {
 	StakeNFTAddress() common.Address
 	ValidatorNFT() *bindings.ValidatorNFT
 	ValidatorNFTAddress() common.Address
-	Registry() *bindings.Registry
-	RegistryAddress() common.Address
+	ContractFactory() *bindings.MadnetFactory
+	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address
 	Snapshots() *bindings.Snapshots
 	ValidatorPool() *bindings.ValidatorPool
 	ValidatorPoolAddress() common.Address
 	Governance() *bindings.Governance
 	GovernanceAddress() common.Address
-	// Factory() *bindings.Factory
-	// FactoryAddress() common.Address
 }
 
 // Task the interface requirements of a task

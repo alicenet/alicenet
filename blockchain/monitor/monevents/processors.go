@@ -3,9 +3,11 @@ package monevents
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	bobjs "github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -58,15 +60,13 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 	return nil
 }
 
-/*
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract
 func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
 	logger.Info("ProcessValueUpdated() ...")
-	panic("unimplemented function!")
 
-	event, err := eth.Contracts().Governor().ParseValueUpdated(log)
+	event, err := eth.Contracts().Governance().ParseValueUpdated(log)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 
 	logger.Warnf("Dropping dynamic value on the floor")
 	return nil
-} */
+}
 
 // ProcessSnapshotTaken handles receiving snapshots
 func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *bobjs.MonitorState, log types.Log,

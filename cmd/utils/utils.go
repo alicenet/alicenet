@@ -141,7 +141,7 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof("          EthDKG contract: %v", c.EthdkgAddress().Hex())
-	logger.Infof("*       Registry contract: %v", c.RegistryAddress().Hex())
+	logger.Infof(" ContractFactory contract: %v", c.ContractFactoryAddress().Hex())
 	logger.Infof("  ValidatorsPool contract: %v", c.ValidatorPoolAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
