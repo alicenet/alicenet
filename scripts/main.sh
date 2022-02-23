@@ -152,6 +152,9 @@ case $1 in
     deposit)
         ./scripts/base-scripts/deposit.sh
     ;;
+    register)
+        ./scripts/base-scripts/register.sh
+    ;;
     unregister)
         ./scripts/base-scripts/unregister.sh
     ;;
@@ -166,7 +169,7 @@ case $1 in
     ;;
     *)
         echo -e "Unknown argument!"
-        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | unregister | list | status | clean"
+        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | register | unregister | list | status | clean"
         exit 1;
 esac
 exit 0
