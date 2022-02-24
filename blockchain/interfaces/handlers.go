@@ -11,7 +11,7 @@ import (
 
 type AdminHandler interface {
 	AddPrivateKey([]byte, constants.CurveSpec) error
-	AddSnapshot(header *objs.BlockHeader, validatorsChanged bool, safeToProceedConsensus bool) error
+	AddSnapshot(header *objs.BlockHeader, safeToProceedConsensus bool) error
 	AddValidatorSet(*objs.ValidatorSet) error
 	RegisterSnapshotCallback(func(*objs.BlockHeader) error)
 	SetSynchronized(v bool)

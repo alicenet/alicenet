@@ -147,7 +147,7 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 	// send the reconstituted header to a handler
 	logger.Debugf("invoking adminHandler.AddSnapshot")
 	// todo: critical! get validatorsChanged flag
-	err = adminHandler.AddSnapshot(header, false, safeToProceedConsensus)
+	err = adminHandler.AddSnapshot(header, safeToProceedConsensus)
 	if err != nil {
 		return err
 	}
