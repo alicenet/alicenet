@@ -29,6 +29,11 @@ func (m *LoggedMutex) Lock() {
 	m.l.Lock()
 }
 
+func (m *LoggedMutex) Init() *LoggedMutex {
+	m.l = new(sync.Mutex)
+	return m
+}
+
 func (m *LoggedMutex) Unlock() {
 	logging.GetLogger(constants.LoggerConsensus).Debug("released lock")
 	m.l.Unlock()
@@ -204,7 +209,7 @@ func (lc *loopConfig) withInitialDelay(idt time.Duration) *loopConfig {
 // The system operates as a scheduler as well as a reactor to external
 // events
 type Synchronizer struct {
-	*LoggedMutex
+	mut       *LoggedMutex
 	wg        sync.WaitGroup
 	startOnce sync.Once
 	logger    *logrus.Logger
@@ -232,6 +237,7 @@ type Synchronizer struct {
 
 // Init initializes the struct
 func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, storage dynamics.StorageGetter) {
+	s.mut = new(LoggedMutex).Init()
 	s.logger = logging.GetLogger(constants.LoggerConsensus)
 	s.cdb = cdb
 	s.mdb = mdb
@@ -252,6 +258,14 @@ func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc
 	s.peerMinThresh = newRemoteVar(s.peerMan.PeeringComplete)
 	s.madSyncDone = newResetVar()
 	s.storage = storage
+}
+
+func (s *Synchronizer) Lock() {
+	s.mut.Lock()
+}
+
+func (s *Synchronizer) Unlock() {
+	s.mut.Unlock()
 }
 
 func (s *Synchronizer) CloseChan() <-chan struct{} {

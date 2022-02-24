@@ -45,7 +45,7 @@ func (ah *adminHandlerMock) AddPrivateKey([]byte, constants.CurveSpec) error {
 	return nil
 }
 
-func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool) error {
+func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool, bool) error {
 	ah.snapshotCalled = true
 	return nil
 }

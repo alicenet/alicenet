@@ -184,7 +184,7 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 }
 
 // AddSnapshot stores a snapshot to the database
-func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) error {
+func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool, safeToProceedConsensus bool) error {
 	ah.logger.Debugf("inside adminHandler.AddSnapshot")
 	mutex, ok := ah.getLock()
 	if !ok {
