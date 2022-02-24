@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -523,7 +524,7 @@ func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, 
 
 func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
 
-	// More ethereum setup
+	// Ethereum setup
 	acct := eth.GetDefaultAccount()
 	c := eth.Contracts()
 
@@ -536,7 +537,12 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 	}
 
 	//
-	txn, err := c.ValidatorPool().InitializeETHDKG(txnOpts)
+	// c.ValidatorPool().InitializeETHDKG(txnOpts)
+	bs, err := hex.DecodeString("57b51c9c")
+	if err != nil {
+		panic(err)
+	}
+	txn, err := c.ContractFactory().CallAny(txnOpts, c.ValidatorPoolAddress(), big.NewInt(0), []byte(bs))
 	if err != nil {
 		logger.Errorf("Could not initialize ethdkg: %v", err)
 		return 1

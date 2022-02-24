@@ -43,11 +43,12 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		depositNonce := event.DepositID.Bytes()
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}
-		err := owner.New(account, constants.CurveSecp256k1)
-		if err != nil {
+		// todo: evvaluate sec concern of non-validated CurveSpec if any
+		if err := owner.New(account /*constants.CurveSecp256k1*/, constants.CurveSpec(event.AccountType)); err != nil {
 			logger.Debugf("Error in Services.ProcessDepositReceived at owner.New: %v", err)
 			return err
 		}
+
 		return depositHandler.Add(txn, chainID, depositNonce, event.Amount, owner)
 	})
 
@@ -144,6 +145,7 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 	header.TxHshLst = [][]byte{}
 
 	// send the reconstituted header to a handler
+	logger.Debugf("invoking adminHandler.AddSnapshot")
 	err = adminHandler.AddSnapshot(header, safeToProceedConsensus)
 	if err != nil {
 		return err

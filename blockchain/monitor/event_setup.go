@@ -91,6 +91,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 
 	RegisterETHDKGEvents(em, adminHandler)
 
+	// MadByte.DepositReceived
 	mbEvents := GetMadByteEvents()
 	depositReceived, ok := mbEvents["DepositReceived"]
 	if !ok {
@@ -104,6 +105,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
+	// Snapshots.SnapshotTaken
 	snapshotsEvents := GetSnapshotEvents()
 	snapshotTakenEvent, ok := snapshotsEvents["SnapshotTaken"]
 	if !ok {
@@ -117,6 +119,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		return err
 	}
 
+	// Governance.ValueUpdated
 	govEvents := GetGovernanceEvents()
 	valueUpdatedEvent, ok := govEvents["ValueUpdated"]
 	if !ok {

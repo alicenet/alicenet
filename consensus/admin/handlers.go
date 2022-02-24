@@ -3,6 +3,7 @@ package admin
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -184,13 +185,14 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 
 // AddSnapshot stores a snapshot to the database
 func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) error {
+	ah.logger.Debugf("inside adminHandler.AddSnapshot")
 	mutex, ok := ah.getLock()
 	if !ok {
-		return nil
+		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	return ah.database.Update(func(txn *badger.Txn) error {
+	err := ah.database.Update(func(txn *badger.Txn) error {
 		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
@@ -211,6 +213,12 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) er
 		}
 		return nil
 	})
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	ah.logger.Debugf("successfully saved state on adminHandler.AddSnapshot")
+	return nil
 }
 
 // UpdateDynamicStorage updates dynamic storage values.

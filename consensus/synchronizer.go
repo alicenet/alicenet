@@ -20,6 +20,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type LoggedMutex struct {
+	l *sync.Mutex
+}
+
+func (m *LoggedMutex) Lock() {
+	logging.GetLogger(constants.LoggerConsensus).Debug("got lock")
+	m.l.Lock()
+}
+
+func (m *LoggedMutex) Unlock() {
+	logging.GetLogger(constants.LoggerConsensus).Debug("released lock")
+	m.l.Unlock()
+}
+
 type remoteVar struct {
 	condition func() bool
 }
@@ -190,7 +204,7 @@ func (lc *loopConfig) withInitialDelay(idt time.Duration) *loopConfig {
 // The system operates as a scheduler as well as a reactor to external
 // events
 type Synchronizer struct {
-	sync.Mutex
+	*LoggedMutex
 	wg        sync.WaitGroup
 	startOnce sync.Once
 	logger    *logrus.Logger

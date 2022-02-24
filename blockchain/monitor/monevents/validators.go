@@ -106,6 +106,10 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 
 	// sanity check
 	if v.Account == state.EthDKG.Account.Address &&
+		state.EthDKG.Participants[event.Account].GPKj[0] != nil &&
+		state.EthDKG.Participants[event.Account].GPKj[1] != nil &&
+		state.EthDKG.Participants[event.Account].GPKj[2] != nil &&
+		state.EthDKG.Participants[event.Account].GPKj[3] != nil &&
 		(state.EthDKG.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
 			state.EthDKG.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
 			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||

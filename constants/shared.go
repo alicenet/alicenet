@@ -4,7 +4,8 @@ import "time"
 
 const (
 	// EpochLength is the number of blocks in an epoch for MadNet
-	EpochLength uint32 = 1024
+	// todo: critical! fix this
+	EpochLength uint32 = 16
 
 	// HashLen specifies the length of a hash in bytes
 	HashLen = 32
