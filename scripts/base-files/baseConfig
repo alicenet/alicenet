@@ -42,6 +42,10 @@ retryCount = 3
 retryDelay = "5s"
 startingBlock = 1
 registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+txFeePercentageToIncrease = 50
+txMaxFeeThresholdInGwei = 1000000
+txCheckFrequency = "5s"
+txTimeoutForReplacement = "30s"
 
 [edge]
 ethTimeout = "5s"

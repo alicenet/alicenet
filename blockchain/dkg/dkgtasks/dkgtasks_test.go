@@ -62,14 +62,18 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
 
-func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
+func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
 	eth, err := blockchain.NewEthereumSimulator(
 		privateKeys,
 		6,
 		1*time.Second,
 		5*time.Second,
 		0,
-		big.NewInt(math.MaxInt64))
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
 	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
@@ -233,7 +237,7 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
 
 	accountList := eth.GetKnownAccounts()
@@ -309,7 +313,7 @@ type TestSuite struct {
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()

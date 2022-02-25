@@ -3,9 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -14,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // DisputeGPKjTask contains required state for performing a group accusation
@@ -35,11 +33,6 @@ func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *Disp
 			Start:   start,
 			End:     end,
 			Success: false,
-			CallOptions: CallOptions{
-				TxCheckFrequency:          5 * time.Second,
-				TxFeePercentageToIncrease: big.NewInt(50),
-				TxTimeoutForReplacement:   30 * time.Second,
-			},
 		},
 	}
 }

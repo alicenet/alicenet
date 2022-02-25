@@ -3,9 +3,6 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -31,11 +28,6 @@ func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *Compl
 			Start:   start,
 			End:     end,
 			Success: false,
-			CallOptions: CallOptions{
-				TxCheckFrequency:          5 * time.Second,
-				TxFeePercentageToIncrease: big.NewInt(50),
-				TxTimeoutForReplacement:   30 * time.Second,
-			},
 		},
 	}
 }
@@ -77,37 +69,35 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	if t.TxOpts == nil {
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		}
+
+		t.TxOpts = txnOpts
 	}
 
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+		"TxHash":    t.TxHash.Hex(),
+	}).Info("complete fees")
+
 	// Register
-	txn, err := c.Ethdkg().Complete(txnOpts)
+	txn, err := c.Ethdkg().Complete(t.TxOpts)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
+	t.TxHash = txn.Hash()
 
 	logger.Info("CompletionTask sent completed call")
 
-	//TODO: add retry logic, add timeout
-
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing completion receipt")
-	}
-
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	}
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 
 	logger.Info("CompletionTask complete!")
-
 	t.Success = true
 
 	return nil

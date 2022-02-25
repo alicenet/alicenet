@@ -28,20 +28,24 @@ type chainConfig struct {
 }
 
 type ethereumConfig struct {
-	DefaultAccount       string
-	DeployAccount        string
-	Endpoint             string
-	EndpointMinimumPeers int
-	FinalityDelay        int
-	Keystore             string
-	MerkleProofContract  string
-	Passcodes            string
-	RegistryAddress      string
-	RetryCount           int
-	RetryDelay           time.Duration
-	StartingBlock        uint64
-	TestEther            string
-	Timeout              time.Duration
+	DefaultAccount            string
+	DeployAccount             string
+	Endpoint                  string
+	EndpointMinimumPeers      int
+	FinalityDelay             int
+	Keystore                  string
+	MerkleProofContract       string
+	Passcodes                 string
+	RegistryAddress           string
+	RetryCount                int
+	RetryDelay                time.Duration
+	StartingBlock             uint64
+	TestEther                 string
+	Timeout                   time.Duration
+	TxFeePercentageToIncrease int
+	TxMaxFeeThresholdInGwei   uint64
+	TxCheckFrequency          time.Duration
+	TxTimeoutForReplacement   time.Duration
 }
 
 type monitorConfig struct {

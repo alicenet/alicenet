@@ -1,8 +1,15 @@
 package dtest
 
 import (
+	"context"
 	"crypto/ecdsa"
+	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/stretchr/testify/assert"
+	"math"
 	"math/big"
+	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
 
@@ -13,6 +20,8 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 )
+
+const SETUP_GROUP int = 13
 
 func InitializeNewDetDkgStateInfo(n int) ([]*objects.DkgState, []*ecdsa.PrivateKey) {
 	return InitializeNewDkgStateInfo(n, true)
@@ -262,4 +271,97 @@ func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Ac
 	accounts := etest.SetupAccounts(ecdsaPrivateKeys)
 
 	return ecdsaPrivateKeys, accounts
+}
+
+func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
+	eth, err := blockchain.NewEthereumSimulator(
+		privateKeys,
+		6,
+		1*time.Second,
+		5*time.Second,
+		0,
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
+
+	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
+	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
+
+	// Mine a block once a second
+	if blockInterval > 1*time.Millisecond {
+		go func() {
+			for {
+				time.Sleep(blockInterval)
+				eth.Commit()
+			}
+		}()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Unlock the default account and use it to deploy contracts
+	deployAccount := eth.GetDefaultAccount()
+	err = eth.UnlockAccount(deployAccount)
+	assert.Nil(t, err, "Failed to unlock default account")
+
+	// Deploy all the contracts
+	c := eth.Contracts()
+	_, _, err = c.DeployContracts(ctx, deployAccount)
+	assert.Nil(t, err, "Failed to deploy contracts...")
+
+	// For each address passed set them up as a validator
+	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
+	assert.Nil(t, err, "Failed to create txn opts")
+
+	accountList := eth.GetKnownAccounts()
+	for idx, acct := range accountList {
+		//	for idx := 1; idx < len(accountAddresses); idx++ {
+		// acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
+		//assert.Nil(t, err)
+		err = eth.UnlockAccount(acct)
+		assert.Nil(t, err)
+
+		eth.Commit()
+		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
+
+		// 1. Give 'acct' tokens
+		txn, err := c.StakingToken().Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on transfer %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+
+		o, err := eth.GetTransactionOpts(ctx, acct)
+		assert.Nil(t, err)
+
+		// 2. Allow system to take tokens from 'acct' for staking
+		txn, err = c.StakingToken().Approve(o, c.ValidatorsAddress(), big.NewInt(10_000_000))
+		assert.Nilf(t, err, "Failed on approval %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+
+		// 3. Tell system to take tokens from 'acct' for staking
+		txn, err = c.Staking().LockStake(o, big.NewInt(1_000_000))
+		assert.Nilf(t, err, "Failed on lock %v", idx)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+
+		txn, err = c.ValidatorPool().AddValidator(o, acct.Address)
+		assert.Nilf(t, err, "Failed on register %v", idx)
+		assert.NotNil(t, txn)
+		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+		t.Logf("Finished loop %v of %v", idx+1, len(accountList))
+		eth.Commit()
+	}
+
+	// Wait for all transactions for all accounts to complete
+	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
+	assert.Nil(t, err)
+
+	// Make sure all transactions were successful
+	t.Logf("# rcpts: %v", len(rcpts))
+	for _, rcpt := range rcpts {
+		assert.Equal(t, uint64(1), rcpt.Status)
+	}
+
+	return eth
 }

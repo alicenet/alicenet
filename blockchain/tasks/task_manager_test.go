@@ -3,6 +3,11 @@ package tasks_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
+	"github.com/MadBase/MadNet/blockchain/monitor"
+	"github.com/MadBase/bridge/bindings"
+	"math"
 	"math/big"
 	"reflect"
 	"sync"
@@ -194,6 +199,22 @@ func (eth *mockEthereum) Contracts() interfaces.Contracts {
 	return nil
 }
 
+func (eth *mockEthereum) GetTxFeePercentageToIncrease() int {
+	return 50
+}
+
+func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() uint64 {
+	return math.MaxInt64
+}
+
+func (eth *mockEthereum) GetTxCheckFrequency() time.Duration {
+	return 5 * time.Second
+}
+
+func (eth *mockEthereum) GetTxTimeoutForReplacement() time.Duration {
+	return 30 * time.Second
+}
+
 func TestFoo(t *testing.T) {
 	var s map[string]string
 
@@ -249,4 +270,68 @@ func TestIsAdminClient(t *testing.T) {
 	isAdminClient := reflect.TypeOf(task).Implements(adminInterface)
 
 	assert.True(t, isAdminClient)
+}
+
+func TestRegistrationOpenPhase(t *testing.T) {
+	n := 5
+	var phaseLength uint16 = 100
+	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	assert.NotNil(t, eth)
+
+	ctx := context.Background()
+	owner := accounts[0]
+
+	// Start EthDKG
+	ownerOpts, err := eth.GetTransactionOpts(ctx, owner)
+	assert.Nil(t, err)
+
+	// Shorten ethdkg phase for testing purposes
+	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, phaseLength)
+	assert.Nil(t, err)
+	_, err = eth.Queue().QueueAndWait(ctx, txn)
+	assert.Nil(t, err)
+
+	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
+	assert.Nil(t, err)
+
+	eth.Commit()
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	assert.Nil(t, err)
+
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		t.Fatal("event not found: RegistrationOpened")
+	}
+	var event *bindings.ETHDKGRegistrationOpened
+	for _, log := range rcpt.Logs {
+		if log.Topics[0].String() == eventInfo.ID.String() {
+			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
+			assert.Nil(t, err)
+			break
+		}
+	}
+	assert.NotNil(t, event)
+
+	// Do Register task
+	regTasks := make([]*dkgtasks.RegisterTask, n)
+	dkgStates := make([]*objects.DkgState, n)
+	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
+	for idx := 0; idx < n; idx++ {
+		// Set Registration success to true
+		state, _, regTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+			accounts[idx],
+			event.StartBlock.Uint64(),
+			event.PhaseLength.Uint64(),
+			event.ConfirmationLength.Uint64(),
+			event.Nonce.Uint64())
+
+		dkgStates[idx] = state
+		regTasks[idx] = regTask
+	}
+
+	err = tasks.StartTask(logger, &sync.WaitGroup{}, eth, regTasks[0], nil)
+	assert.Nil(t, err)
 }

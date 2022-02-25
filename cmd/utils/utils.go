@@ -92,7 +92,11 @@ func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
 		config.Configuration.Ethereum.Timeout,
 		config.Configuration.Ethereum.RetryCount,
 		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.FinalityDelay)
+		config.Configuration.Ethereum.FinalityDelay,
+		config.Configuration.Ethereum.TxFeePercentageToIncrease,
+		config.Configuration.Ethereum.TxMaxFeeThresholdInGwei,
+		config.Configuration.Ethereum.TxCheckFrequency,
+		config.Configuration.Ethereum.TxTimeoutForReplacement)
 
 	if err != nil {
 		return nil, err

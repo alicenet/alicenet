@@ -60,6 +60,11 @@ type Ethereum interface {
 
 	Timeout() time.Duration
 
+	GetTxFeePercentageToIncrease() int
+	GetTxMaxFeeThresholdInGwei() uint64
+	GetTxCheckFrequency() time.Duration
+	GetTxTimeoutForReplacement() time.Duration
+
 	Contracts() Contracts
 }
 

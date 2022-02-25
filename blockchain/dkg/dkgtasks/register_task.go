@@ -8,7 +8,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 	"math/big"
-	"time"
 )
 
 // RegisterTask contains required state for safely performing a registration
@@ -30,11 +29,6 @@ func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *Registe
 			Start:   start,
 			End:     end,
 			Success: false,
-			CallOptions: CallOptions{
-				TxCheckFrequency:          5 * time.Second,
-				TxFeePercentageToIncrease: big.NewInt(50),
-				TxTimeoutForReplacement:   30 * time.Second,
-			},
 		},
 	}
 }
@@ -93,46 +87,47 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	if t.CallOptions.TxOpts == nil {
+	if t.TxOpts == nil {
 		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
-			logger.Errorf("getting txn opts failed: %v", err)
-			return err
+			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 		}
 
-		logger.WithFields(logrus.Fields{
-			"GasFeeCap": txnOpts.GasFeeCap,
-			"GasTipCap": txnOpts.GasTipCap,
-			"Nonce":     txnOpts.Nonce,
-		}).Info("registering fees")
-
-		t.CallOptions.TxOpts = txnOpts
+		t.TxOpts = txnOpts
 	}
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+		"TxHash":    t.TxHash.Hex(),
+	}).Info("registering fees")
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := eth.Contracts().Ethdkg().Register(t.CallOptions.TxOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return err
 	}
-
-	t.CallOptions.TxHash = txn.Hash()
+	t.TxHash = txn.Hash()
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  t.CallOptions.TxOpts.GasFeeCap,
-		"GasFeeCap2": txn.GasFeeCap(),
-		"GasTipCap":  t.CallOptions.TxOpts.GasTipCap,
-		"GasTipCap2": txn.GasTipCap(),
-		"Nonce":      t.CallOptions.TxOpts.Nonce,
-		"txn.Hash()": txn.Hash().Hex(),
-		"t.TxHash":   t.CallOptions.TxHash.Hex(),
-	}).Info("registering fees 2")
+		"GasFeeCap":  txn.GasFeeCap(),
+		"GasTipCap":  txn.GasTipCap(),
+		"Nonce":      txn.Nonce(),
+		"txn.Hash()": txn.Hash(),
+		"TxHash":     t.TxHash.Hex(),
+	}).Info("registering fees2")
 
+	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)
-
 	t.Success = true
+
 	return nil
 }
 
