@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CURRENT_WD=$PWD
-BRIDGE_DIR=../bridge_leonardo
+BRIDGE_DIR=../bridge
 
 cd $BRIDGE_DIR
 

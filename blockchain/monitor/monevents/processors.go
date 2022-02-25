@@ -12,7 +12,6 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -113,17 +112,7 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 
-	rawBClaims, err := c.Snapshots().GetBlockClaimsFromLatestSnapshot(callOpts)
-	if err != nil {
-		return err
-	}
-
-	signature, err := c.Snapshots().GetSignatureFromLatestSnapshot(callOpts)
-	if err != nil {
-		return err
-	}
-
-	sig, err := bn256.MarshalBigIntSlice(signature[:])
+	rawBClaims, err := c.Snapshots().GetBlockClaimsFromSnapshot(callOpts, epoch)
 	if err != nil {
 		return err
 	}
@@ -141,13 +130,13 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 
 	header := &objs.BlockHeader{}
 	header.BClaims = bclaims
-	header.SigGroup = sig
+	header.SigGroup = event.SignatureRaw
 	header.TxHshLst = [][]byte{}
 
 	// send the reconstituted header to a handler
 	logger.Debugf("invoking adminHandler.AddSnapshot")
 	// todo: critical! get validatorsChanged flag
-	err = adminHandler.AddSnapshot(header, false, safeToProceedConsensus)
+	err = adminHandler.AddSnapshot(header, safeToProceedConsensus)
 	if err != nil {
 		return err
 	}
