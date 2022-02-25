@@ -32,7 +32,7 @@ func TestRegisterTask(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -122,7 +122,7 @@ func TestRegistrationGood2(t *testing.T) {
 	n := 6
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -210,7 +210,7 @@ func TestRegistrationBad1(t *testing.T) {
 	n := 5
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -277,7 +277,7 @@ func TestRegistrationBad2(t *testing.T) {
 	n := 7
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -341,7 +341,7 @@ func TestRegistrationBad4(t *testing.T) {
 	n := 3
 	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -373,7 +373,7 @@ func TestRegistrationBad5(t *testing.T) {
 	n := 5
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -448,7 +448,7 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -547,7 +547,7 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]

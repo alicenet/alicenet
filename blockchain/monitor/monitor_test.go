@@ -45,7 +45,11 @@ func setupEthereum(t *testing.T, mineInterval time.Duration) interfaces.Ethereum
 		time.Second*2,
 		time.Second*5,
 		0,
-		big.NewInt(math.MaxInt64))
+		big.NewInt(math.MaxInt64),
+		big.NewInt(50),
+		big.NewInt(math.MaxInt64),
+		5*time.Second,
+		30*time.Second)
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
 	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
 	defer eth.Close()
@@ -315,6 +319,22 @@ func (eth *mockEthereum) Timeout() time.Duration {
 
 func (eth *mockEthereum) Contracts() interfaces.Contracts {
 	return nil
+}
+
+func (eth *mockEthereum) GetTxFeePercentageToIncrease() *big.Int {
+	return big.NewInt(50)
+}
+
+func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() *big.Int {
+	return big.NewInt(math.MaxInt64)
+}
+
+func (eth *mockEthereum) GetTxCheckFrequency() time.Duration {
+	return 5 * time.Second
+}
+
+func (eth *mockEthereum) GetTxTimeoutForReplacement() time.Duration {
+	return 30 * time.Second
 }
 
 //

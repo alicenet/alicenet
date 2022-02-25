@@ -3,14 +3,12 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
@@ -32,11 +30,6 @@ func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MP
 			Start:   start,
 			End:     end,
 			Success: false,
-			CallOptions: CallOptions{
-				TxCheckFrequency:          5 * time.Second,
-				TxFeePercentageToIncrease: big.NewInt(50),
-				TxTimeoutForReplacement:   30 * time.Second,
-			},
 		},
 	}
 }
@@ -119,33 +112,43 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	if t.TxOpts == nil {
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		if err != nil {
+			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		}
+
+		t.TxOpts = txnOpts
 	}
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+		"TxHash":    t.TxHash.Hex(),
+	}).Info("MPK submission fees")
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", t.State.MasterPublicKey)
-	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, t.State.MasterPublicKey)
+	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(t.TxOpts, t.State.MasterPublicKey)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
+	t.TxHash = txn.Hash()
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	//TODO: add retry logic, add timeout
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap":  txn.GasFeeCap(),
+		"GasTipCap":  txn.GasTipCap(),
+		"Nonce":      txn.Nonce(),
+		"txn.Hash()": txn.Hash(),
+		"TxHash":     t.TxHash.Hex(),
+	}).Info("MPK submission fees2")
 
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing receipt")
-	}
-
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "master public key (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	}
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 	t.Success = true
 
 	return nil

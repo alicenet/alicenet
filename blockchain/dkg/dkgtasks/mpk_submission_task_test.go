@@ -108,7 +108,7 @@ func TestMPKSubmissionBad2(t *testing.T) {
 	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -133,7 +133,7 @@ func TestMPKSubmissionBad4(t *testing.T) {
 	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]

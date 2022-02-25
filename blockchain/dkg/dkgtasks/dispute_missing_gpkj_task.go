@@ -2,14 +2,12 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // DisputeMissingGPKjTask stores the data required to dispute shares
@@ -31,11 +29,6 @@ func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64
 			Start:   start,
 			End:     end,
 			Success: false,
-			CallOptions: CallOptions{
-				TxCheckFrequency:          5 * time.Second,
-				TxFeePercentageToIncrease: big.NewInt(50),
-				TxTimeoutForReplacement:   30 * time.Second,
-			},
 		},
 	}
 }

@@ -36,28 +36,32 @@ var (
 )
 
 type EthereumDetails struct {
-	logger         *logrus.Logger
-	endpoint       string
-	keystore       *keystore.KeyStore
-	finalityDelay  uint64
-	accounts       map[common.Address]accounts.Account
-	accountIndex   map[common.Address]int
-	coinbase       common.Address
-	defaultAccount accounts.Account
-	keys           map[common.Address]*keystore.Key
-	passcodes      map[common.Address]string
-	timeout        time.Duration
-	retryCount     int
-	retryDelay     time.Duration
-	contracts      interfaces.Contracts
-	client         interfaces.GethClient
-	close          func() error
-	commit         func()
-	chainID        *big.Int
-	syncing        func(ctx context.Context) (*ethereum.SyncProgress, error)
-	peerCount      func(ctx context.Context) (uint64, error)
-	queue          interfaces.TxnQueue
-	selectors      interfaces.SelectorMap
+	logger                    *logrus.Logger
+	endpoint                  string
+	keystore                  *keystore.KeyStore
+	finalityDelay             uint64
+	accounts                  map[common.Address]accounts.Account
+	accountIndex              map[common.Address]int
+	coinbase                  common.Address
+	defaultAccount            accounts.Account
+	keys                      map[common.Address]*keystore.Key
+	passcodes                 map[common.Address]string
+	timeout                   time.Duration
+	retryCount                int
+	retryDelay                time.Duration
+	contracts                 interfaces.Contracts
+	client                    interfaces.GethClient
+	close                     func() error
+	commit                    func()
+	chainID                   *big.Int
+	syncing                   func(ctx context.Context) (*ethereum.SyncProgress, error)
+	peerCount                 func(ctx context.Context) (uint64, error)
+	queue                     interfaces.TxnQueue
+	selectors                 interfaces.SelectorMap
+	txFeePercentageToIncrease int
+	txMaxFeeThresholdInGwei   uint64
+	txCheckFrequency          time.Duration
+	txTimeoutForReplacement   time.Duration
 }
 
 //NewEthereumSimulator returns a simulator for testing
@@ -67,7 +71,11 @@ func NewEthereumSimulator(
 	retryDelay time.Duration,
 	timeout time.Duration,
 	finalityDelay int,
-	wei *big.Int) (*EthereumDetails, error) {
+	wei *big.Int,
+	txFeePercentageToIncrease int,
+	txMaxFeeThresholdInGwei uint64,
+	txCheckFrequency time.Duration,
+	txTimeoutForReplacement time.Duration) (*EthereumDetails, error) {
 	logger := logging.GetLogger("ethereum")
 
 	if len(privateKeys) < 1 {
@@ -92,6 +100,10 @@ func NewEthereumSimulator(
 	eth.retryDelay = retryDelay
 	eth.timeout = timeout
 	eth.selectors = NewKnownSelectors()
+	eth.txFeePercentageToIncrease = txFeePercentageToIncrease
+	eth.txMaxFeeThresholdInGwei = txMaxFeeThresholdInGwei
+	eth.txCheckFrequency = txCheckFrequency
+	eth.txTimeoutForReplacement = txTimeoutForReplacement
 
 	for idx, privateKey := range privateKeys {
 		account, err := eth.keystore.ImportECDSA(privateKey, "abc123")
@@ -157,21 +169,29 @@ func NewEthereumEndpoint(
 	timeout time.Duration,
 	retryCount int,
 	retryDelay time.Duration,
-	finalityDelay int) (*EthereumDetails, error) {
+	finalityDelay int,
+	txFeePercentageToIncrease int,
+	txMaxFeeThresholdInGwei uint64,
+	txCheckFrequency time.Duration,
+	txTimeoutForReplacement time.Duration) (*EthereumDetails, error) {
 
 	logger := logging.GetLogger("ethereum")
 
 	eth := &EthereumDetails{
-		endpoint:      endpoint,
-		logger:        logger,
-		accounts:      make(map[common.Address]accounts.Account),
-		keys:          make(map[common.Address]*keystore.Key),
-		passcodes:     make(map[common.Address]string),
-		finalityDelay: uint64(finalityDelay),
-		timeout:       timeout,
-		retryCount:    retryCount,
-		retryDelay:    retryDelay,
-		selectors:     NewKnownSelectors()}
+		endpoint:                  endpoint,
+		logger:                    logger,
+		accounts:                  make(map[common.Address]accounts.Account),
+		keys:                      make(map[common.Address]*keystore.Key),
+		passcodes:                 make(map[common.Address]string),
+		finalityDelay:             uint64(finalityDelay),
+		timeout:                   timeout,
+		retryCount:                retryCount,
+		retryDelay:                retryDelay,
+		selectors:                 NewKnownSelectors(),
+		txFeePercentageToIncrease: txFeePercentageToIncrease,
+		txMaxFeeThresholdInGwei:   txMaxFeeThresholdInGwei,
+		txCheckFrequency:          txCheckFrequency,
+		txTimeoutForReplacement:   txTimeoutForReplacement}
 
 	eth.contracts = &ContractDetails{eth: eth}
 
@@ -508,6 +528,22 @@ func (eth *EthereumDetails) RetryDelay() time.Duration {
 
 func (eth *EthereumDetails) Timeout() time.Duration {
 	return eth.timeout
+}
+
+func (eth *EthereumDetails) GetTxFeePercentageToIncrease() int {
+	return eth.txFeePercentageToIncrease
+}
+
+func (eth *EthereumDetails) GetTxMaxFeeThresholdInGwei() uint64 {
+	return eth.txMaxFeeThresholdInGwei
+}
+
+func (eth *EthereumDetails) GetTxCheckFrequency() time.Duration {
+	return eth.txCheckFrequency
+}
+
+func (eth *EthereumDetails) GetTxTimeoutForReplacement() time.Duration {
+	return eth.txTimeoutForReplacement
 }
 
 func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
