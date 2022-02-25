@@ -1,6 +1,6 @@
 #!/bin/sh
 DATADIR=./local-geth/
-  
+
 geth \
   --port "35555" \
   --networkid 1337 \
@@ -10,7 +10,8 @@ geth \
   \
   --mine \
   --miner.threads 1 \
-  --miner.gasprice 1 \
+  --miner.gasprice 0 \
+  --txpool.pricelimit 0 \
   --miner.gaslimit 10000000 \
   --miner.etherbase 546f99f244b7b58b855330ae0e2bc1b30b41302f \
   \
