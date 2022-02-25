@@ -50,7 +50,7 @@ func setupEthereum(t *testing.T, mineInterval time.Duration) interfaces.Ethereum
 	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
 	defer eth.Close()
 
-	c := eth.Contracts()
+	// c := eth.Contracts()
 
 	go func() {
 		for {
@@ -64,8 +64,9 @@ func setupEthereum(t *testing.T, mineInterval time.Duration) interfaces.Ethereum
 	err = eth.UnlockAccount(acct)
 	assert.Nil(t, err, "Failed to unlock deploy account")
 
-	_, _, err = c.DeployContracts(context.TODO(), acct)
-	assert.Nil(t, err, "Failed to deploy contracts...")
+	// _, _, err = c.DeployContracts(context.TODO(), acct)
+	// assert.Nil(t, err, "Failed to deploy contracts...")
+	panic("needs deployment")
 
 	return eth
 }
@@ -163,7 +164,7 @@ func (ah *mockAdminHandler) AddPrivateKey([]byte, constants.CurveSpec) error {
 	return nil
 }
 
-func (ah *mockAdminHandler) AddSnapshot(*objs.BlockHeader, bool) error {
+func (ah *mockAdminHandler) AddSnapshot(*objs.BlockHeader, bool, bool) error {
 	return nil
 }
 func (ah *mockAdminHandler) AddValidatorSet(*objs.ValidatorSet) error {

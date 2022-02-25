@@ -8,6 +8,7 @@ import (
 	aobjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	bobjs "github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
@@ -17,12 +18,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state *bobjs.MonitorState, log types.Log,
 	cdb *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	event, err := eth.Contracts().Deposit().ParseDepositReceived(log)
+	event, err := eth.Contracts().MadByte().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}
@@ -41,11 +42,12 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		depositNonce := event.DepositID.Bytes()
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}
-		err := owner.New(account, constants.CurveSecp256k1)
-		if err != nil {
+		// todo: evvaluate sec concern of non-validated CurveSpec if any
+		if err := owner.New(account /*constants.CurveSecp256k1*/, constants.CurveSpec(event.AccountType)); err != nil {
 			logger.Debugf("Error in Services.ProcessDepositReceived at owner.New: %v", err)
 			return err
 		}
+
 		return depositHandler.Add(txn, chainID, depositNonce, event.Amount, owner)
 	})
 
@@ -64,7 +66,7 @@ func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 
 	logger.Info("ProcessValueUpdated() ...")
 
-	event, err := eth.Contracts().Governor().ParseValueUpdated(log)
+	event, err := eth.Contracts().Governance().ParseValueUpdated(log)
 	if err != nil {
 		return err
 	}
@@ -82,27 +84,27 @@ func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 }
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *bobjs.MonitorState, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := eth.Contracts()
 
-	event, err := c.Validators().ParseSnapshotTaken(log)
+	event, err := c.Snapshots().ParseSnapshotTaken(log)
 	if err != nil {
 		return err
 	}
 
 	epoch := event.Epoch
-	ethDkgStarted := event.StartingETHDKG
+	safeToProceedConsensus := event.IsSafeToProceedConsensus
 
 	logger.WithFields(logrus.Fields{
-		"ChainID":        event.ChainId,
-		"Epoch":          epoch,
-		"Height":         event.Height,
-		"Validator":      event.Validator.Hex(),
-		"StartingEthDKG": event.StartingETHDKG}).Infof("Snapshot taken")
+		"ChainID":                  event.ChainId,
+		"Epoch":                    epoch,
+		"Height":                   event.Height,
+		"Validator":                event.Validator.Hex(),
+		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus}).Infof("Snapshot taken")
 
 	// Retrieve snapshot information from contract
 	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
@@ -110,28 +112,31 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 
-	rawBClaims, err := c.Validators().GetRawBlockClaimsSnapshot(callOpts, epoch)
-	if err != nil {
-		return err
-	}
-
-	rawSignature, err := c.Validators().GetRawSignatureSnapshot(callOpts, epoch)
+	rawBClaims, err := c.Snapshots().GetBlockClaimsFromSnapshot(callOpts, epoch)
 	if err != nil {
 		return err
 	}
 
 	// put it back together
-	bclaims := &objs.BClaims{}
-	err = bclaims.UnmarshalBinary(rawBClaims)
-	if err != nil {
-		return err
+	bclaims := &objs.BClaims{
+		ChainID:    rawBClaims.ChainId,
+		Height:     rawBClaims.Height,
+		TxCount:    rawBClaims.TxCount,
+		PrevBlock:  rawBClaims.PrevBlock[:],
+		TxRoot:     rawBClaims.TxRoot[:],
+		StateRoot:  rawBClaims.StateRoot[:],
+		HeaderRoot: rawBClaims.HeaderRoot[:],
 	}
+
 	header := &objs.BlockHeader{}
 	header.BClaims = bclaims
-	header.SigGroup = rawSignature
+	header.SigGroup = event.SignatureRaw
+	header.TxHshLst = [][]byte{}
 
 	// send the reconstituted header to a handler
-	err = adminHandler.AddSnapshot(header, ethDkgStarted)
+	logger.Debugf("invoking adminHandler.AddSnapshot")
+	// todo: critical! get validatorsChanged flag
+	err = adminHandler.AddSnapshot(header, safeToProceedConsensus)
 	if err != nil {
 		return err
 	}

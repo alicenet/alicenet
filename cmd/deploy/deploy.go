@@ -1,5 +1,6 @@
 package deploy
 
+/*
 import (
 	"bytes"
 	"context"
@@ -210,3 +211,4 @@ func deployMigrations(eth interfaces.Ethereum) error {
 
 	return nil
 }
+*/

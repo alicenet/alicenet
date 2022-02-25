@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/cmd/bootnode"
-	"github.com/MadBase/MadNet/cmd/deploy"
 	"github.com/MadBase/MadNet/cmd/firewalld"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/cmd/validator"
@@ -179,17 +178,17 @@ func main() {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
 
-		&deploy.Command: {
-			{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
-			{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
+		// &deploy.Command: {
+		// 	{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
+		// 	{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command:           &rootCommand,
-		&bootnode.Command:            &rootCommand,
-		&validator.Command:           &rootCommand,
-		&deploy.Command:              &rootCommand,
+		&firewalld.Command: &rootCommand,
+		&bootnode.Command:  &rootCommand,
+		&validator.Command: &rootCommand,
+		// &deploy.Command:              &rootCommand,
 		&utils.Command:               &rootCommand,
 		&utils.ApproveTokensCommand:  &utils.Command,
 		&utils.EthdkgCommand:         &utils.Command,

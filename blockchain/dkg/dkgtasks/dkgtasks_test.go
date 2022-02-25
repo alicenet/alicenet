@@ -25,6 +25,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -44,7 +45,7 @@ func (ah *adminHandlerMock) AddPrivateKey([]byte, constants.CurveSpec) error {
 	return nil
 }
 
-func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool) error {
+func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool, bool) error {
 	ah.snapshotCalled = true
 	return nil
 }
@@ -94,8 +95,9 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 
 	// Deploy all the contracts
 	c := eth.Contracts()
-	_, _, err = c.DeployContracts(ctx, deployAccount)
-	assert.Nil(t, err, "Failed to deploy contracts...")
+	panic("missing deploy step")
+	// _, _, err = c.DeployContracts(ctx, deployAccount)
+	// assert.Nil(t, err, "Failed to deploy contracts...")
 
 	// For each address passed set them up as a validator
 	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
@@ -113,24 +115,25 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
 
 		// 1. Give 'acct' tokens
-		txn, err := c.StakingToken().Transfer(txnOpts, acct.Address, big.NewInt(10_000_000))
+		txn, err := c.StakeNFT().MintTo(txnOpts, acct.Address, big.NewInt(10_000_000), big.NewInt(0))
 		assert.Nilf(t, err, "Failed on transfer %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+		tokenID := txn.Value()
 
 		o, err := eth.GetTransactionOpts(ctx, acct)
 		assert.Nil(t, err)
 
 		// 2. Allow system to take tokens from 'acct' for staking
-		txn, err = c.StakingToken().Approve(o, c.ValidatorsAddress(), big.NewInt(10_000_000))
+		txn, err = c.StakeNFT().Approve(o, c.ValidatorPoolAddress(), big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on approval %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		// 3. Tell system to take tokens from 'acct' for staking
-		txn, err = c.Staking().LockStake(o, big.NewInt(1_000_000))
-		assert.Nilf(t, err, "Failed on lock %v", idx)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
+		// txn, err = c.StakeNFT().LockStake(o, big.NewInt(1_000_000))
+		// assert.Nilf(t, err, "Failed on lock %v", idx)
+		// eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
-		txn, err = c.ValidatorPool().AddValidator(o, acct.Address)
+		txn, err = c.ValidatorPool().RegisterValidators(o, []common.Address{acct.Address}, []*big.Int{tokenID})
 		assert.Nilf(t, err, "Failed on register %v", idx)
 		assert.NotNil(t, txn)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)

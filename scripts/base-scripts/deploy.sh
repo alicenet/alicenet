@@ -1,2 +1,15 @@
 #!/bin/sh
-make build && ./madnet --config ./scripts/base-files/owner.toml --deploy.migrations=true deploy
+
+set -x
+
+CURRENT_WD=$PWD
+BRIDGE_DIR=../bridge
+NETWORK=${1:-"dev"}
+
+cd $BRIDGE_DIR
+
+npx hardhat --network $NETWORK --show-stack-traces updateDeploymentArgsWithFactory
+npx hardhat run scripts/deployscripts.ts --no-compile --network $NETWORK --show-stack-traces
+
+cd $CURRENT_WD
+

@@ -21,7 +21,7 @@ func TestRegistration(t *testing.T) {
 	ctx := context.TODO()
 
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	submitMPKAddress, err := c.Registry().Lookup(callOpts, "ethdkgSubmitMPK/v1")
+	submitMPKAddress, err := c.ContractFactory().Lookup(callOpts, "ethdkgSubmitMPK/v1")
 	assert.Nil(t, err)
 	t.Logf("submitMPKAddress:%v", submitMPKAddress.Hex())
 }

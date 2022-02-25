@@ -3,6 +3,7 @@ package admin
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -183,34 +184,43 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 }
 
 // AddSnapshot stores a snapshot to the database
-func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, validatorsChanged bool) error {
+func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
+	ah.logger.Debugf("inside adminHandler.AddSnapshot")
 	mutex, ok := ah.getLock()
 	if !ok {
-		return nil
+		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	return ah.database.Update(func(txn *badger.Txn) error {
+	err := ah.database.Update(func(txn *badger.Txn) error {
 		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
 		if !safeToProceed {
-			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", validatorsChanged, bh.BClaims.Height+1, !validatorsChanged)
+			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", !safeToProceedConsensus, bh.BClaims.Height+1, safeToProceedConsensus)
 			// set that it's safe to proceed to the next block
-			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, !validatorsChanged); err != nil {
+			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, safeToProceedConsensus); err != nil {
 				utils.DebugTrace(ah.logger, err)
 				return err
 			}
 		}
-		err = ah.database.SetSnapshotBlockHeader(txn, bh)
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
+		if bh.BClaims.Height > 1 {
+			err = ah.database.SetSnapshotBlockHeader(txn, bh)
+			if err != nil {
+				utils.DebugTrace(ah.logger, err)
+				return err
+			}
 		}
 		return nil
 	})
+	if err != nil {
+		utils.DebugTrace(ah.logger, err)
+		return err
+	}
+	ah.logger.Debugf("successfully saved state on adminHandler.AddSnapshot")
+	return nil
 }
 
 // UpdateDynamicStorage updates dynamic storage values.

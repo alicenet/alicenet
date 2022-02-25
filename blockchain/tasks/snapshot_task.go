@@ -94,20 +94,20 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	opts := eth.GetCallOpts(ctx, t.acct)
 
-	epoch, err := eth.Contracts().Snapshots().Epoch(opts)
+	epoch, err := eth.Contracts().Snapshots().GetEpoch(opts)
 	if err != nil {
 		logger.Errorf("Failed to determine current epoch: %v", err)
 		return true
 	}
 
-	height, err := eth.Contracts().Snapshots().GetMadHeightFromSnapshot(opts, epoch)
+	height, err := eth.Contracts().Snapshots().GetMadnetHeightFromSnapshot(opts, epoch)
 	if err != nil {
 		logger.Errorf("Failed to determine height: %v", err)
 		return true
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if t.BlockHeader.BClaims.Height != 0 && t.BlockHeader.BClaims.Height < height {
+	if t.BlockHeader.BClaims.Height != 0 && t.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
 		return false
 	}
 

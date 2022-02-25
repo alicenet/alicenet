@@ -123,29 +123,25 @@ type SelectorMap interface {
 // Contracts contains bindings to smart contract system
 type Contracts interface {
 	LookupContracts(ctx context.Context, registryAddress common.Address) error
-	DeployContracts(ctx context.Context, account accounts.Account) (*bindings.Registry, common.Address, error)
 
-	Crypto() *bindings.Crypto
-	CryptoAddress() common.Address
-	Deposit() *bindings.Deposit
-	DepositAddress() common.Address
 	Ethdkg() *bindings.ETHDKG
 	EthdkgAddress() common.Address
-	Governor() *bindings.Governor
-	GovernorAddress() common.Address
-	Participants() *bindings.Participants
-	Registry() *bindings.Registry
-	RegistryAddress() common.Address
+	MadToken() *bindings.MadToken
+	MadTokenAddress() common.Address
+	MadByte() *bindings.MadByte
+	MadByteAddress() common.Address
+	StakeNFT() *bindings.StakeNFT
+	StakeNFTAddress() common.Address
+	ValidatorNFT() *bindings.ValidatorNFT
+	ValidatorNFTAddress() common.Address
+	ContractFactory() *bindings.MadnetFactory
+	ContractFactoryAddress() common.Address
+	SnapshotsAddress() common.Address
 	Snapshots() *bindings.Snapshots
-	Staking() *bindings.Staking
-	StakingToken() *bindings.Token
-	StakingTokenAddress() common.Address
-	UtilityToken() *bindings.Token
-	UtilityTokenAddress() common.Address
-	Validators() *bindings.Validators
-	ValidatorsAddress() common.Address
 	ValidatorPool() *bindings.ValidatorPool
 	ValidatorPoolAddress() common.Address
+	Governance() *bindings.Governance
+	GovernanceAddress() common.Address
 }
 
 // Task the interface requirements of a task

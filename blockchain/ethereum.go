@@ -14,7 +14,6 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -552,7 +551,7 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 
 	block, err := eth.client.BlockByNumber(ctx, nil)
 	if err != nil && block == nil {
-		return nil, fmt.Errorf("Could not get block number: %w", err)
+		return nil, fmt.Errorf("could not get block number: %w", err)
 	}
 
 	eth.logger.Infof("Previous BaseFee:%v GasUsed:%v GasLimit:%v",
@@ -571,7 +570,7 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 	baseFee2x := new(big.Int).Mul(bm, bf)
 	tipCap, err := eth.client.SuggestGasTipCap(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get suggested gas tip cap: %w", err)
+		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 	}
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
@@ -633,7 +632,7 @@ func (eth *EthereumDetails) GetSnapshot() ([]byte, error) {
 
 func (eth *EthereumDetails) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
-	validatorAddresses, err := c.Validators().GetValidators(eth.GetCallOpts(ctx, eth.defaultAccount))
+	validatorAddresses, err := c.ValidatorPool().GetValidatorsAddresses(eth.GetCallOpts(ctx, eth.defaultAccount))
 	if err != nil {
 		eth.logger.Warnf("Could not call contract:%v", err)
 		return nil, err
@@ -662,6 +661,7 @@ func logAndEat(logger *logrus.Logger, err error) {
 	}
 }
 
+/*
 type Updater struct {
 	err     error
 	Logger  *logrus.Logger
@@ -684,3 +684,4 @@ func (u *Updater) Add(signature string, facet common.Address) *types.Transaction
 	u.err = err
 	return txn
 }
+*/

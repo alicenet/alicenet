@@ -141,7 +141,7 @@ case $1 in
         ./scripts/base-scripts/bootnode.sh
     ;;
     deploy)
-        ./scripts/base-scripts/deploy.sh && ./scripts/base-scripts/approvetokens.sh && ./scripts/base-scripts/transfertokens.sh && ./scripts/base-scripts/register.sh
+        ./scripts/base-scripts/deploy.sh
     ;;
     validator)
         RUN_VALIDATOR $2
@@ -151,6 +151,9 @@ case $1 in
     ;;
     deposit)
         ./scripts/base-scripts/deposit.sh
+    ;;
+    register)
+        ./scripts/base-scripts/register.sh
     ;;
     unregister)
         ./scripts/base-scripts/unregister.sh
@@ -166,7 +169,7 @@ case $1 in
     ;;
     *)
         echo -e "Unknown argument!"
-        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | unregister | list | status | clean"
+        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | register | unregister | list | status | clean"
         exit 1;
 esac
 exit 0

@@ -52,7 +52,7 @@ func LogReturnErrorf(logger *logrus.Entry, mess string, args ...interface{}) err
 func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
 	c := eth.Contracts()
 
-	addresses, err := c.ValidatorPool().GetValidatorAddresses(callOpts)
+	addresses, err := c.ValidatorPool().GetValidatorsAddresses(callOpts)
 	if err != nil {
 		message := fmt.Sprintf("could not get validator addresses from ValidatorPool: %v", err)
 		logger.Errorf(message)
