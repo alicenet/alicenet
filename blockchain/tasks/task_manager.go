@@ -22,66 +22,66 @@ var (
 func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}) error {
 
 	wg.Add(1)
-	//go func() {
-	defer task.DoDone(logger.WithField("Method", "DoDone"))
-	defer wg.Done()
+	go func() {
+		defer task.DoDone(logger.WithField("Method", "DoDone"))
+		defer wg.Done()
 
-	retryCount := eth.RetryCount()
-	retryDelay := eth.RetryDelay()
-	timeout := eth.Timeout()
-	logger.WithFields(logrus.Fields{
-		"Timeout":    timeout,
-		"RetryCount": retryCount,
-		"RetryDelay": retryDelay,
-	}).Info("StartTask()...")
+		retryCount := eth.RetryCount()
+		retryDelay := eth.RetryDelay()
+		timeout := eth.Timeout()
+		logger.WithFields(logrus.Fields{
+			"Timeout":    timeout,
+			"RetryCount": retryCount,
+			"RetryDelay": retryDelay,
+		}).Info("StartTask()...")
 
-	// Setup
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+		// Setup
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-	var count int
-	var err error
+		var count int
+		var err error
 
-	initializationLogger := logger.WithField("Method", "Initialize")
-	err = task.Initialize(ctx, initializationLogger, eth, state)
-	for err != nil && count < retryCount {
-		if errors.Is(err, objects.ErrCanNotContinue) {
-			initializationLogger.Error(err)
-			return nil
-		}
-		time.Sleep(retryDelay)
+		initializationLogger := logger.WithField("Method", "Initialize")
 		err = task.Initialize(ctx, initializationLogger, eth, state)
-		count++
-	}
-	if err != nil {
-		initializationLogger.Errorf("Failed to initialize task: %v", err)
-		return nil
-	}
-
-	count = 0
-
-	workLogger := logger.WithField("Method", "DoWork")
-	err = task.DoWork(ctx, workLogger, eth)
-
-	retryLogger := logger.WithField("Method", "DoRetry")
-	for err != nil && count < retryCount && task.ShouldRetry(ctx, logger.WithField("Method", "ShouldRetry"), eth) {
-		if errors.Is(err, objects.ErrCanNotContinue) {
-			initializationLogger.Error(err)
-			return nil
+		for err != nil && count < retryCount {
+			if errors.Is(err, objects.ErrCanNotContinue) {
+				initializationLogger.Error(err)
+				return
+			}
+			time.Sleep(retryDelay)
+			err = task.Initialize(ctx, initializationLogger, eth, state)
+			count++
 		}
-		time.Sleep(retryDelay)
-		count++
-		err = task.DoRetry(ctx, retryLogger.WithField("RetryCount", count), eth)
-	}
+		if err != nil {
+			initializationLogger.Errorf("Failed to initialize task: %v", err)
+			return
+		}
 
-	if err != nil {
-		logger.Error("Failed to execute task ", err)
-		return nil
-	}
+		count = 0
 
-	dkgLogger := logger.WithField("Method", "waitFinalityDelay")
-	waitFinalityDelay(context.Background(), dkgLogger, eth, task, count)
-	//}()
+		workLogger := logger.WithField("Method", "DoWork")
+		err = task.DoWork(ctx, workLogger, eth)
+
+		retryLogger := logger.WithField("Method", "DoRetry")
+		for err != nil && count < retryCount && task.ShouldRetry(ctx, logger.WithField("Method", "ShouldRetry"), eth) {
+			if errors.Is(err, objects.ErrCanNotContinue) {
+				initializationLogger.Error(err)
+				return
+			}
+			time.Sleep(retryDelay)
+			count++
+			err = task.DoRetry(ctx, retryLogger.WithField("RetryCount", count), eth)
+		}
+
+		if err != nil {
+			logger.Error("Failed to execute task ", err)
+			return
+		}
+
+		dkgLogger := logger.WithField("Method", "waitFinalityDelay")
+		go waitFinalityDelay(context.Background(), dkgLogger, eth, task, count)
+	}()
 
 	return nil
 }
@@ -104,7 +104,7 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 
 	logger.Infof("the dkgTask %#v", dkgTask)
 	var emptyHash [32]byte
-	if dkgTask.TxHash == emptyHash {
+	if dkgTask.TxReplacementOpts == nil || dkgTask.TxReplacementOpts.TxHash == emptyHash {
 		return
 	}
 
@@ -114,9 +114,9 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 		return
 	}
 
-	txCheckFrequency := 30 * time.Second //eth.GetTxCheckFrequency()
+	txCheckFrequency := eth.GetTxCheckFrequency()
 	nextTxCheck := time.After(txCheckFrequency)
-	txTimeoutForReplacement := 1 * time.Second //eth.GetTxTimeoutForReplacement()
+	txTimeoutForReplacement := eth.GetTxTimeoutForReplacement()
 	txReplacement := time.After(txTimeoutForReplacement)
 	dkgTaskEnd := dkgTask.End
 
@@ -124,7 +124,7 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 		"txCheckFrequency":        txCheckFrequency,
 		"txTimeoutForReplacement": txTimeoutForReplacement,
 		"dkgTaskEnd":              dkgTaskEnd,
-		"TxHash":                  dkgTask.TxHash,
+		"TxHash":                  dkgTask.TxReplacementOpts.TxHash.Hex(),
 	}).Info("waitFinalityDelay()...")
 
 	var txMinedOnBlock uint64
@@ -133,34 +133,36 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 		select {
 		case <-nextTxCheck:
 			//check if the tx is pending or was mined
-			_, isPending, err = eth.GetGethClient().TransactionByHash(ctx, dkgTask.TxHash)
+			_, isPending, err = eth.GetGethClient().TransactionByHash(ctx, dkgTask.TxReplacementOpts.TxHash)
 			if err != nil {
-				logger.Errorf("failed to get tx with hash %s wit error %v", dkgTask.TxHash.Hex(), err)
+				logger.Errorf("failed to get tx with hash %s wit error %v", dkgTask.TxReplacementOpts.TxHash.Hex(), err)
 				return
 			}
 
-			logger.Infof("the tx %s isPending %v", dkgTask.TxHash.Hex(), isPending)
+			logger.Infof("the tx %s isPending %v", dkgTask.TxReplacementOpts.TxHash.Hex(), isPending)
 
 			//if tx was mined we can check the receipt
 			if !isPending {
 
-				logger.Infof("the tx %s is not Pending", dkgTask.TxHash.Hex())
-				receipt, err := eth.GetGethClient().TransactionReceipt(ctx, dkgTask.TxHash)
+				logger.Infof("the tx %s is not Pending", dkgTask.TxReplacementOpts.TxHash.Hex())
+				receipt, err := eth.GetGethClient().TransactionReceipt(ctx, dkgTask.TxReplacementOpts.TxHash)
 				if err != nil {
-					logger.Errorf("failed to get receipt for tx %s with error %s ", dkgTask.TxHash.Hex(), err.Error())
+					logger.Errorf("failed to get receipt for tx %s with error %s ", dkgTask.TxReplacementOpts.TxHash.Hex(), err.Error())
 					return
 				}
 				if receipt == nil {
-					logger.Errorf("missing receipt for tx %s", dkgTask.TxHash.Hex())
+					logger.Errorf("missing receipt for tx %s", dkgTask.TxReplacementOpts.TxHash.Hex())
 					return
 				}
 
-				logger.Infof("the tx %s receipt not nil", dkgTask.TxHash.Hex())
+				logger.Infof("the tx %s receipt not nil", dkgTask.TxReplacementOpts.TxHash.Hex())
 
 				// Check receipt to confirm we were successful
 				if receipt.Status != uint64(1) {
-					logger.Errorf("receipt status indicates failure: %v for tx %s", receipt.Status, dkgTask.TxHash.Hex())
+					logger.Errorf("receipt status indicates failure: %v for tx %s", receipt.Status, dkgTask.TxReplacementOpts.TxHash.Hex())
 
+					// Clearing TxReplacementOpts used for tx replacement
+					dkgTask.TxReplacementOpts.Clean()
 					// Retry until reach the retryCount
 					err = retryTask(ctx, logger, eth, task, count)
 					if err != nil {
@@ -170,7 +172,7 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 				} else {
 					// the transaction was successful and mined
 					txMinedOnBlock = receipt.BlockNumber.Uint64()
-					logger.Infof("the tx %s was mined on height %d", dkgTask.TxHash.Hex(), txMinedOnBlock)
+					logger.Infof("the tx %s was mined on height %d", dkgTask.TxReplacementOpts.TxHash.Hex(), txMinedOnBlock)
 					break
 				}
 			}
@@ -186,11 +188,11 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 			nextTxCheck = time.After(txCheckFrequency)
 		case <-txReplacement:
 			//replace the tx with the same nonce but higher fee
-			logger.Infof("tx %s retry with fee replacement started", dkgTask.TxHash.Hex())
+			logger.Infof("tx %s retry with fee replacement started", dkgTask.TxReplacementOpts.TxHash.Hex())
 			count = 0
 			err = retryTaskWithFeeReplacement(ctx, logger, eth, task, dkgTask, count)
 			if err != nil {
-				logger.Errorf("failed to replace tx with hash %s and error %v", dkgTask.TxHash.Hex(), err)
+				logger.Errorf("failed to replace tx with hash %s and error %v", dkgTask.TxReplacementOpts.TxHash.Hex(), err)
 				return
 			}
 
@@ -209,25 +211,25 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 
 func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, count int) error {
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": dkgTask.TxOpts.GasFeeCap,
-		"GasTipCap": dkgTask.TxOpts.GasTipCap,
-		"Nonce":     dkgTask.TxOpts.Nonce,
-		"TxHash":    dkgTask.TxHash.Hex(),
+		"GasFeeCap": dkgTask.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": dkgTask.TxReplacementOpts.GasTipCap,
+		"Nonce":     dkgTask.TxReplacementOpts.Nonce,
+		"TxHash":    dkgTask.TxReplacementOpts.TxHash.Hex(),
 	}).Info("retryTaskWithFeeReplacement")
 
 	// increase gas and tip cap
 	gasFeeCap, gasTipCap := dkg.IncreaseFeeAndTipCap(
-		dkgTask.TxOpts.GasFeeCap,
-		dkgTask.TxOpts.GasTipCap,
+		dkgTask.TxReplacementOpts.GasFeeCap,
+		dkgTask.TxReplacementOpts.GasTipCap,
 		eth.GetTxFeePercentageToIncrease())
-	dkgTask.TxOpts.GasFeeCap = gasFeeCap
-	dkgTask.TxOpts.GasTipCap = gasTipCap
+	dkgTask.TxReplacementOpts.GasFeeCap = gasFeeCap
+	dkgTask.TxReplacementOpts.GasTipCap = gasTipCap
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": dkgTask.TxOpts.GasFeeCap,
-		"GasTipCap": dkgTask.TxOpts.GasTipCap,
-		"Nonce":     dkgTask.TxOpts.Nonce,
-		"TxHash":    dkgTask.TxHash.Hex(),
+		"GasFeeCap": dkgTask.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": dkgTask.TxReplacementOpts.GasTipCap,
+		"Nonce":     dkgTask.TxReplacementOpts.Nonce,
+		"TxHash":    dkgTask.TxReplacementOpts.TxHash.Hex(),
 	}).Info("retryTaskWithFeeReplacement2")
 
 	return retryTask(ctx, logger, eth, task, count)

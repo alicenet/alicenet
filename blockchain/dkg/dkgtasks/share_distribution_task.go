@@ -26,10 +26,11 @@ var _ DkgTaskIfase = &ShareDistributionTask{}
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
 		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
+			State:             state,
+			Start:             start,
+			End:               end,
+			Success:           false,
+			TxReplacementOpts: &TxReplacementOpts{},
 		},
 	}
 }
@@ -90,41 +91,35 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	logger.Debugf("me:%v", me.Hex())
 
 	// Setup
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
-
-		t.TxOpts = txnOpts
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-		"TxHash":    t.TxHash.Hex(),
+		"GasFeeCap": txnOpts.GasFeeCap,
+		"GasTipCap": txnOpts.GasTipCap,
+		"Nonce":     txnOpts.Nonce,
 	}).Info("share distribution fees")
 
 	//TODO: add retry logic and timeout
 
 	// Distribute shares
-	txn, err := c.Ethdkg().DistributeShares(t.TxOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
 	}
-	t.TxHash = txn.Hash()
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplacementOpts.TxHash = txn.Hash()
+	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  txn.GasFeeCap(),
-		"GasTipCap":  txn.GasTipCap(),
-		"Nonce":      txn.Nonce(),
-		"txn.Hash()": txn.Hash(),
-		"TxHash":     t.TxHash.Hex(),
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
 	}).Info("share distribution fees2")
 
 	// Queue transaction

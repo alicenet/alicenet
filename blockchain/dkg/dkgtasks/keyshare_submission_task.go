@@ -25,10 +25,11 @@ var _ DkgTaskIfase = &KeyshareSubmissionTask{}
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
 		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
+			State:             state,
+			Start:             start,
+			End:               end,
+			Success:           false,
+			TxReplacementOpts: &TxReplacementOpts{},
 		},
 	}
 }
@@ -79,20 +80,15 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	me := t.State.Account
 
 	// Setup
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
-
-		t.TxOpts = txnOpts
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-		"TxHash":    t.TxHash.Hex(),
+		"GasFeeCap": txnOpts.GasFeeCap,
+		"GasTipCap": txnOpts.GasTipCap,
+		"Nonce":     txnOpts.Nonce,
 	}).Info("key share submission fees")
 
 	// Submit Keyshares
@@ -101,24 +97,23 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		t.State.Participants[me.Address].KeyShareG1s,
 		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
 		t.State.Participants[me.Address].KeyShareG2s)
-	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(t.TxOpts,
+	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
 		t.State.Participants[me.Address].KeyShareG1s,
 		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
 		t.State.Participants[me.Address].KeyShareG2s)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
-	t.TxHash = txn.Hash()
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplacementOpts.TxHash = txn.Hash()
+	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  txn.GasFeeCap(),
-		"GasTipCap":  txn.GasTipCap(),
-		"Nonce":      txn.Nonce(),
-		"txn.Hash()": txn.Hash(),
-		"TxHash":     t.TxHash.Hex(),
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
 	}).Info("key share submission fees2")
 
 	// Queue transaction
