@@ -28,10 +28,11 @@ var _ DkgTaskIfase = &GPKjSubmissionTask{}
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
 		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
+			State:             state,
+			Start:             start,
+			End:               end,
+			Success:           false,
+			TxReplacementOpts: &TxReplacementOpts{},
 		},
 		adminHandler: adminHandler,
 	}
@@ -95,38 +96,32 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	logger.Infof("GPKSubmissionTask doTask(): %v", t.State.Account.Address)
 
 	// Setup
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
-
-		t.TxOpts = txnOpts
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-		"TxHash":    t.TxHash.Hex(),
+		"GasFeeCap": txnOpts.GasFeeCap,
+		"GasTipCap": txnOpts.GasTipCap,
+		"Nonce":     txnOpts.Nonce,
 	}).Info("GPKj submission fees")
 
 	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(t.TxOpts, t.State.Participants[t.State.Account.Address].GPKj)
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxHash = txn.Hash()
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplacementOpts.TxHash = txn.Hash()
+	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  txn.GasFeeCap(),
-		"GasTipCap":  txn.GasTipCap(),
-		"Nonce":      txn.Nonce(),
-		"txn.Hash()": txn.Hash(),
-		"TxHash":     t.TxHash.Hex(),
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
 	}).Info("GPKj submission fees2")
 
 	// Queue transaction

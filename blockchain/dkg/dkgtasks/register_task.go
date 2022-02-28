@@ -25,10 +25,11 @@ var _ DkgTaskIfase = &RegisterTask{}
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
 		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
+			State:             state,
+			Start:             start,
+			End:               end,
+			Success:           false,
+			TxReplacementOpts: &TxReplacementOpts{},
 		},
 	}
 }
@@ -87,45 +88,86 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	}
 
-		t.TxOpts = txnOpts
+	if t.TxReplacementOpts != nil && t.TxReplacementOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplacementOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplacementOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplacementOpts.GasTipCap
 	}
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-		"TxHash":    t.TxHash.Hex(),
+		"GasFeeCap": txnOpts.GasFeeCap,
+		"GasTipCap": txnOpts.GasTipCap,
+		"Nonce":     txnOpts.Nonce,
 	}).Info("registering fees")
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return err
 	}
-	t.TxHash = txn.Hash()
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplacementOpts.TxHash = txn.Hash()
+	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  txn.GasFeeCap(),
-		"GasTipCap":  txn.GasTipCap(),
-		"Nonce":      txn.Nonce(),
-		"txn.Hash()": txn.Hash(),
-		"TxHash":     t.TxHash.Hex(),
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
 	}).Info("registering fees2")
 
 	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)
+
+	// Waiting for receipt with timeout
+	// If we reach the timeout, we return an error
+	// to evaluate if we should retry with a higher fee and tip
+	//receipt, err := eth.Queue().WaitTransaction(ctx, txn)
+	//if err != nil {
+	//	logger.Errorf("waiting for receipt failed: %v", err)
+	//	return err
+	//}
+	//
+	//logger.Info("RECEIPT: NO ERROR")
+	//
+	//if receipt == nil {
+	//	logger.Error("missing registration receipt")
+	//	return errors.New("missing registration receipt")
+	//}
+	//
+	//logger.Info("RECEIPT: NOT NIL")
+	//
+	//// Check receipt to confirm we were successful
+	//if receipt.Status != uint64(1) {
+	//	logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+	//	return dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
+	//}
+	//logger.Info("RECEIPT: GOOD STATUS")
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
+	}).Info("registering fees3")
+
+	// Wait for finalityDelay to avoid fork rollback
+	//err = dkg.WaitConfirmations(t.TxReplacementOpts.TxHash, ctx, logger, eth)
+	//if err != nil {
+	//	logger.Errorf("waiting confirmations failed: %v", err)
+	//	return err
+	//}
+
 	t.Success = true
 
 	return nil

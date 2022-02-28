@@ -7,6 +7,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // CompletionTask contains required state for safely performing a registration
@@ -24,10 +25,11 @@ var _ DkgTaskIfase = &CompletionTask{}
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
 		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
+			State:             state,
+			Start:             start,
+			End:               end,
+			Success:           false,
+			TxReplacementOpts: &TxReplacementOpts{},
 		},
 	}
 }
@@ -69,28 +71,34 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	// Setup
 	c := eth.Contracts()
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
-
-		t.TxOpts = txnOpts
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-		"TxHash":    t.TxHash.Hex(),
+		"GasFeeCap": txnOpts.GasFeeCap,
+		"GasTipCap": txnOpts.GasTipCap,
+		"Nonce":     txnOpts.Nonce,
 	}).Info("complete fees")
 
 	// Register
-	txn, err := c.Ethdkg().Complete(t.TxOpts)
+	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
-	t.TxHash = txn.Hash()
+
+	t.TxReplacementOpts.TxHash = txn.Hash()
+	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
+		"GasTipCap": t.TxReplacementOpts.GasTipCap,
+		"Nonce":     t.TxReplacementOpts.Nonce,
+		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
+	}).Info("complete fees2")
 
 	logger.Info("CompletionTask sent completed call")
 
