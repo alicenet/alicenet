@@ -514,18 +514,41 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
 		eth.logger.Errorf("could not create transactor for %v: %v", account.Address.Hex(), err)
-	} else {
-		opts.Context = ctx
-		opts.Nonce = nil
-		opts.Value = big.NewInt(0)
-		opts.GasLimit = uint64(0)
-		opts.GasPrice = nil
+		return nil, err
+	}
+	subCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	block, err := eth.client.BlockByNumber(subCtx, nil)
+	if err != nil && block == nil {
+		return nil, fmt.Errorf("could not get block number: %w", err)
 	}
 
-	return opts, err
+	eth.logger.Infof("Previous BaseFee:%v GasUsed:%v GasLimit:%v",
+		block.BaseFee().String(),
+		block.GasUsed(),
+		block.GasLimit())
+
+	baseFee := block.BaseFee()
+
+	bmi64 := int64(100)
+	bm := new(big.Int).SetInt64(bmi64)
+	bf := new(big.Int).Set(baseFee)
+	baseFee2x := new(big.Int).Mul(bm, bf)
+	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
+	if err != nil {
+		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+	}
+	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
+
+	opts.Context = ctx
+	opts.GasFeeCap = new(big.Int).Set(feeCap)
+	opts.GasTipCap = new(big.Int).Set(tipCap)
+	return opts, nil
 }
 
 func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts {
+
 	return &bind.CallOpts{
 		BlockNumber: nil,
 		Context:     ctx,
