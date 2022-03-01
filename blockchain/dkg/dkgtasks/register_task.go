@@ -24,13 +24,7 @@ var _ DkgTaskIfase = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		DkgTask: &DkgTask{
-			State:             state,
-			Start:             start,
-			End:               end,
-			Success:           false,
-			TxReplacementOpts: &TxReplacementOpts{},
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -83,18 +77,14 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	if t.TxReplacementOpts != nil && t.TxReplacementOpts.Nonce != nil {
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplacementOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplacementOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplacementOpts.GasTipCap
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
 	}
-
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txnOpts.GasFeeCap,
-		"GasTipCap": txnOpts.GasTipCap,
-		"Nonce":     txnOpts.Nonce,
-	}).Info("registering fees")
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
@@ -104,59 +94,20 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		logger.Errorf("registering failed: %v", err)
 		return err
 	}
-	t.TxReplacementOpts.TxHash = txn.Hash()
-	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplOpts.TxHash = txn.Hash()
+	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": t.TxReplacementOpts.GasTipCap,
-		"Nonce":     t.TxReplacementOpts.Nonce,
-		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
-	}).Info("registering fees2")
+		"GasFeeCap": t.TxReplOpts.GasFeeCap,
+		"GasTipCap": t.TxReplOpts.GasTipCap,
+		"Nonce":     t.TxReplOpts.Nonce,
+		"Hash":      t.TxReplOpts.TxHash.Hex(),
+	}).Info("registering fees")
 
 	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)
-
-	// Waiting for receipt with timeout
-	// If we reach the timeout, we return an error
-	// to evaluate if we should retry with a higher fee and tip
-	//receipt, err := eth.Queue().WaitTransaction(ctx, txn)
-	//if err != nil {
-	//	logger.Errorf("waiting for receipt failed: %v", err)
-	//	return err
-	//}
-	//
-	//logger.Info("RECEIPT: NO ERROR")
-	//
-	//if receipt == nil {
-	//	logger.Error("missing registration receipt")
-	//	return errors.New("missing registration receipt")
-	//}
-	//
-	//logger.Info("RECEIPT: NOT NIL")
-	//
-	//// Check receipt to confirm we were successful
-	//if receipt.Status != uint64(1) {
-	//	logger.Errorf("registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	//	return dkg.LogReturnErrorf(logger, "registration status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	//}
-	//logger.Info("RECEIPT: GOOD STATUS")
-
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": t.TxReplacementOpts.GasTipCap,
-		"Nonce":     t.TxReplacementOpts.Nonce,
-		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
-	}).Info("registering fees3")
-
-	// Wait for finalityDelay to avoid fork rollback
-	//err = dkg.WaitConfirmations(t.TxReplacementOpts.TxHash, ctx, logger, eth)
-	//if err != nil {
-	//	logger.Errorf("waiting confirmations failed: %v", err)
-	//	return err
-	//}
 
 	t.Success = true
 

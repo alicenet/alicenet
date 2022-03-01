@@ -27,13 +27,7 @@ var _ DkgTaskIfase = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		DkgTask: &DkgTask{
-			State:             state,
-			Start:             start,
-			End:               end,
-			Success:           false,
-			TxReplacementOpts: &TxReplacementOpts{},
-		},
+		DkgTask:      NewDkgTask(state, start, end),
 		adminHandler: adminHandler,
 	}
 }
@@ -101,28 +95,31 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txnOpts.GasFeeCap,
-		"GasTipCap": txnOpts.GasTipCap,
-		"Nonce":     txnOpts.Nonce,
-	}).Info("GPKj submission fees")
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+	}
 
 	// Do it
 	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxReplacementOpts.TxHash = txn.Hash()
-	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplOpts.TxHash = txn.Hash()
+	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": t.TxReplacementOpts.GasTipCap,
-		"Nonce":     t.TxReplacementOpts.Nonce,
-		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
-	}).Info("GPKj submission fees2")
+		"GasFeeCap": t.TxReplOpts.GasFeeCap,
+		"GasTipCap": t.TxReplOpts.GasTipCap,
+		"Nonce":     t.TxReplOpts.Nonce,
+		"Hash":      t.TxReplOpts.TxHash.Hex(),
+	}).Info("GPKj submission fees")
 
 	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)

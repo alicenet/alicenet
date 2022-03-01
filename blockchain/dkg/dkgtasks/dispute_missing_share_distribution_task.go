@@ -7,6 +7,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
@@ -23,12 +24,7 @@ var _ DkgTaskIfase = &DisputeMissingShareDistributionTask{}
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -65,17 +61,35 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing distributed shares: %v", accusableParticipants)
 
-		txOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting txOpts: %v", err)
+			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting txnOpts: %v", err)
 		}
 
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txOpts, accusableParticipants)
+		// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+		// we increase the Gas to have priority for the next blocks
+		if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+			logger.Info("txnOpts Replaced")
+			txnOpts.Nonce = t.TxReplOpts.Nonce
+			txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+			txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		}
+
+		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error accusing missing key shares: %v", err)
 		}
+		t.TxReplOpts.TxHash = txn.Hash()
+		t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+		t.TxReplOpts.GasTipCap = txn.GasTipCap()
+		t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-		//TODO: add retry logic, add timeout
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": t.TxReplOpts.GasFeeCap,
+			"GasTipCap": t.TxReplOpts.GasTipCap,
+			"Nonce":     t.TxReplOpts.Nonce,
+			"Hash":      t.TxReplOpts.TxHash.Hex(),
+		}).Info("missing share dispute fees")
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
