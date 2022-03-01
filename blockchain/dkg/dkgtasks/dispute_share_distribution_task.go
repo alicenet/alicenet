@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // DisputeShareDistributionTask stores the data required to dispute shares
@@ -28,12 +29,7 @@ var _ DkgTaskIfase = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -98,6 +94,20 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	}
+
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+	}
+
 	for _, participant := range t.State.BadShares {
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
@@ -133,16 +143,22 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 			return err
 		}
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-		}
-
 		// Accuse participant
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}
+		t.TxReplOpts.TxHash = txn.Hash()
+		t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+		t.TxReplOpts.GasTipCap = txn.GasTipCap()
+		t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": t.TxReplOpts.GasFeeCap,
+			"GasTipCap": t.TxReplOpts.GasTipCap,
+			"Nonce":     t.TxReplOpts.Nonce,
+			"Hash":      t.TxReplOpts.TxHash.Hex(),
+		}).Info("bad share dispute fees")
 
 		//TODO: add retry logic, add timeout
 

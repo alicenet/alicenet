@@ -28,12 +28,7 @@ var _ DkgTaskIfase = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		DkgTask: &DkgTask{
-			State:   state,
-			Start:   start,
-			End:     end,
-			Success: false,
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -99,12 +94,6 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 	logger.Info("GPKJDisputeTask doTask()")
 
-	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-	}
-
 	// Perform group accusation
 	logger.Infof("   Honest indices: %v", t.State.HonestValidators.ExtractIndices())
 	logger.Infof("Dishonest indices: %v", t.State.DishonestValidators.ExtractIndices())
@@ -132,6 +121,22 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 	}
 
 	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+
+	// Setup
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	}
+
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+	}
+
 	// Loop through dishonest participants and perform accusation
 	for _, dishonestParticipant := range t.State.DishonestValidators {
 
@@ -148,8 +153,17 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "group accusation failed: %v", err)
 		}
+		t.TxReplOpts.TxHash = txn.Hash()
+		t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+		t.TxReplOpts.GasTipCap = txn.GasTipCap()
+		t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-		//TODO: add retry logic, add timeout
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": t.TxReplOpts.GasFeeCap,
+			"GasTipCap": t.TxReplOpts.GasTipCap,
+			"Nonce":     t.TxReplOpts.Nonce,
+			"Hash":      t.TxReplOpts.TxHash.Hex(),
+		}).Info("bad gpkj dispute fees")
 
 		// Waiting for receipt
 		receipt, err := eth.Queue().QueueAndWait(ctx, txn)

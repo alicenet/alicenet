@@ -102,9 +102,8 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 	dkgTaskImpl = task.(dkgtasks.DkgTaskIfase)
 	dkgTask = dkgTaskImpl.GetDkgTask()
 
-	logger.Infof("the dkgTask %#v", dkgTask)
 	var emptyHash [32]byte
-	if dkgTask.TxReplacementOpts == nil || dkgTask.TxReplacementOpts.TxHash == emptyHash {
+	if dkgTask.TxReplOpts == nil || dkgTask.TxReplOpts.TxHash == emptyHash {
 		return
 	}
 
@@ -124,45 +123,44 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 		"txCheckFrequency":        txCheckFrequency,
 		"txTimeoutForReplacement": txTimeoutForReplacement,
 		"dkgTaskEnd":              dkgTaskEnd,
-		"TxHash":                  dkgTask.TxReplacementOpts.TxHash.Hex(),
+		"TxHash":                  dkgTask.TxReplOpts.TxHash.Hex(),
 	}).Info("waitFinalityDelay()...")
 
 	var txMinedOnBlock uint64
-	isPending := true
 	for currentBlock < dkgTaskEnd && txMinedOnBlock == 0 {
 		select {
 		case <-nextTxCheck:
-			//check if the tx is pending or was mined
-			_, isPending, err = eth.GetGethClient().TransactionByHash(ctx, dkgTask.TxReplacementOpts.TxHash)
+			//check tx is pending
+			_, isPending, err := eth.GetGethClient().TransactionByHash(ctx, dkgTask.TxReplOpts.TxHash)
 			if err != nil {
-				logger.Errorf("failed to get tx with hash %s wit error %v", dkgTask.TxReplacementOpts.TxHash.Hex(), err)
+				logger.Errorf("failed to get tx with hash %s wit error %v", dkgTask.TxReplOpts.TxHash.Hex(), err)
 				return
 			}
 
-			logger.Infof("the tx %s isPending %v", dkgTask.TxReplacementOpts.TxHash.Hex(), isPending)
+			logger.Infof("the tx %s isPending %v", dkgTask.TxReplOpts.TxHash.Hex(), isPending)
 
 			//if tx was mined we can check the receipt
 			if !isPending {
 
-				logger.Infof("the tx %s is not Pending", dkgTask.TxReplacementOpts.TxHash.Hex())
-				receipt, err := eth.GetGethClient().TransactionReceipt(ctx, dkgTask.TxReplacementOpts.TxHash)
+				logger.Infof("the tx %s is not Pending", dkgTask.TxReplOpts.TxHash.Hex())
+				receipt, err := eth.GetGethClient().TransactionReceipt(ctx, dkgTask.TxReplOpts.TxHash)
 				if err != nil {
-					logger.Errorf("failed to get receipt for tx %s with error %s ", dkgTask.TxReplacementOpts.TxHash.Hex(), err.Error())
+					logger.Errorf("failed to get receipt for tx %s with error %s ", dkgTask.TxReplOpts.TxHash.Hex(), err.Error())
 					return
 				}
 				if receipt == nil {
-					logger.Errorf("missing receipt for tx %s", dkgTask.TxReplacementOpts.TxHash.Hex())
+					logger.Errorf("missing receipt for tx %s", dkgTask.TxReplOpts.TxHash.Hex())
 					return
 				}
 
-				logger.Infof("the tx %s receipt not nil", dkgTask.TxReplacementOpts.TxHash.Hex())
+				logger.Infof("the tx %s receipt not nil", dkgTask.TxReplOpts.TxHash.Hex())
 
 				// Check receipt to confirm we were successful
 				if receipt.Status != uint64(1) {
-					logger.Errorf("receipt status indicates failure: %v for tx %s", receipt.Status, dkgTask.TxReplacementOpts.TxHash.Hex())
+					logger.Errorf("receipt status indicates failure: %v for tx %s", receipt.Status, dkgTask.TxReplOpts.TxHash.Hex())
 
-					// Clearing TxReplacementOpts used for tx replacement
-					dkgTask.TxReplacementOpts.Clean()
+					// Clearing TxReplOpts used for tx gas ana nonce replacement
+					dkgTask.Clear()
 					// Retry until reach the retryCount
 					err = retryTask(ctx, logger, eth, task, count)
 					if err != nil {
@@ -172,37 +170,34 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 				} else {
 					// the transaction was successful and mined
 					txMinedOnBlock = receipt.BlockNumber.Uint64()
-					logger.Infof("the tx %s was mined on height %d", dkgTask.TxReplacementOpts.TxHash.Hex(), txMinedOnBlock)
+					logger.Infof("the tx %s was mined on height %d", dkgTask.TxReplOpts.TxHash.Hex(), txMinedOnBlock)
 					break
 				}
 			}
 
-			logger.Info("the tx is pending")
+			logger.Infof("the tx %s is pending", dkgTask.TxReplOpts.TxHash.Hex())
 
-			//if tx still pending we update the currentBlock and nextTxCheck
-			currentBlock, err = eth.GetCurrentHeight(ctx)
-			if err != nil {
-				logger.Error("failed to get current height ", err)
-				return
-			}
+			//if tx still pending we update nextTxCheck
 			nextTxCheck = time.After(txCheckFrequency)
 		case <-txReplacement:
 			//replace the tx with the same nonce but higher fee
-			logger.Infof("tx %s retry with fee replacement started", dkgTask.TxReplacementOpts.TxHash.Hex())
+			logger.Infof("tx %s retry with fee replacement started", dkgTask.TxReplOpts.TxHash.Hex())
 			count = 0
 			err = retryTaskWithFeeReplacement(ctx, logger, eth, task, dkgTask, count)
 			if err != nil {
-				logger.Errorf("failed to replace tx with hash %s and error %v", dkgTask.TxReplacementOpts.TxHash.Hex(), err)
+				logger.Errorf("failed to replace tx with hash %s and error %v", dkgTask.TxReplOpts.TxHash.Hex(), err)
 				return
 			}
 
-			//update the currentBlock and txReplacement
-			currentBlock, err = eth.GetCurrentHeight(ctx)
-			if err != nil {
-				logger.Error("failed to get current height ", err)
-				return
-			}
+			//update the  txReplacement
 			txReplacement = time.After(txTimeoutForReplacement)
+		}
+
+		//update the currentBlock
+		currentBlock, err = eth.GetCurrentHeight(ctx)
+		if err != nil {
+			logger.Error("failed to get current height ", err)
+			return
 		}
 	}
 
@@ -211,25 +206,25 @@ func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces
 
 func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, count int) error {
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": dkgTask.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": dkgTask.TxReplacementOpts.GasTipCap,
-		"Nonce":     dkgTask.TxReplacementOpts.Nonce,
-		"TxHash":    dkgTask.TxReplacementOpts.TxHash.Hex(),
+		"GasFeeCap": dkgTask.TxReplOpts.GasFeeCap,
+		"GasTipCap": dkgTask.TxReplOpts.GasTipCap,
+		"Nonce":     dkgTask.TxReplOpts.Nonce,
+		"TxHash":    dkgTask.TxReplOpts.TxHash.Hex(),
 	}).Info("retryTaskWithFeeReplacement")
 
 	// increase gas and tip cap
 	gasFeeCap, gasTipCap := dkg.IncreaseFeeAndTipCap(
-		dkgTask.TxReplacementOpts.GasFeeCap,
-		dkgTask.TxReplacementOpts.GasTipCap,
+		dkgTask.TxReplOpts.GasFeeCap,
+		dkgTask.TxReplOpts.GasTipCap,
 		eth.GetTxFeePercentageToIncrease())
-	dkgTask.TxReplacementOpts.GasFeeCap = gasFeeCap
-	dkgTask.TxReplacementOpts.GasTipCap = gasTipCap
+	dkgTask.TxReplOpts.GasFeeCap = gasFeeCap
+	dkgTask.TxReplOpts.GasTipCap = gasTipCap
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": dkgTask.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": dkgTask.TxReplacementOpts.GasTipCap,
-		"Nonce":     dkgTask.TxReplacementOpts.Nonce,
-		"TxHash":    dkgTask.TxReplacementOpts.TxHash.Hex(),
+		"GasFeeCap": dkgTask.TxReplOpts.GasFeeCap,
+		"GasTipCap": dkgTask.TxReplOpts.GasTipCap,
+		"Nonce":     dkgTask.TxReplOpts.Nonce,
+		"TxHash":    dkgTask.TxReplOpts.TxHash.Hex(),
 	}).Info("retryTaskWithFeeReplacement2")
 
 	return retryTask(ctx, logger, eth, task, count)

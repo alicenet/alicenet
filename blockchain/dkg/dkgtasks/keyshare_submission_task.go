@@ -24,13 +24,7 @@ var _ DkgTaskIfase = &KeyshareSubmissionTask{}
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		DkgTask: &DkgTask{
-			State:             state,
-			Start:             start,
-			End:               end,
-			Success:           false,
-			TxReplacementOpts: &TxReplacementOpts{},
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -85,11 +79,14 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txnOpts.GasFeeCap,
-		"GasTipCap": txnOpts.GasTipCap,
-		"Nonce":     txnOpts.Nonce,
-	}).Info("key share submission fees")
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+	}
 
 	// Submit Keyshares
 	logger.Infof("submitting key shares: %v %v %v %v",
@@ -104,17 +101,17 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
-	t.TxReplacementOpts.TxHash = txn.Hash()
-	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplOpts.TxHash = txn.Hash()
+	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": t.TxReplacementOpts.GasTipCap,
-		"Nonce":     t.TxReplacementOpts.Nonce,
-		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
-	}).Info("key share submission fees2")
+		"GasFeeCap": t.TxReplOpts.GasFeeCap,
+		"GasTipCap": t.TxReplOpts.GasTipCap,
+		"Nonce":     t.TxReplOpts.Nonce,
+		"Hash":      t.TxReplOpts.TxHash.Hex(),
+	}).Info("key share submission fees")
 
 	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)

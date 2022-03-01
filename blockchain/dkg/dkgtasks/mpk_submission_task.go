@@ -25,13 +25,7 @@ var _ DkgTaskIfase = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		DkgTask: &DkgTask{
-			State:             state,
-			Start:             start,
-			End:               end,
-			Success:           false,
-			TxReplacementOpts: &TxReplacementOpts{},
-		},
+		DkgTask: NewDkgTask(state, start, end),
 	}
 }
 
@@ -118,11 +112,14 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txnOpts.GasFeeCap,
-		"GasTipCap": txnOpts.GasTipCap,
-		"Nonce":     txnOpts.Nonce,
-	}).Info("MPK submission fees")
+	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxReplOpts.Nonce
+		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+	}
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", t.State.MasterPublicKey)
@@ -130,17 +127,17 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxReplacementOpts.TxHash = txn.Hash()
-	t.TxReplacementOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplacementOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplacementOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxReplOpts.TxHash = txn.Hash()
+	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxReplOpts.GasTipCap = txn.GasTipCap()
+	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplacementOpts.GasFeeCap,
-		"GasTipCap": t.TxReplacementOpts.GasTipCap,
-		"Nonce":     t.TxReplacementOpts.Nonce,
-		"Hash":      t.TxReplacementOpts.TxHash.Hex(),
-	}).Info("MPK submission fees2")
+		"GasFeeCap": t.TxReplOpts.GasFeeCap,
+		"GasTipCap": t.TxReplOpts.GasTipCap,
+		"Nonce":     t.TxReplOpts.Nonce,
+		"Hash":      t.TxReplOpts.TxHash.Hex(),
+	}).Info("MPK submission fees")
 
 	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)
