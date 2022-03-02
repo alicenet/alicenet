@@ -1,0 +1,56 @@
+@startuml
+
+[*]     --> RegistrationOpen : initializeState()
+state end1 <<end>>
+skinparam state {
+    EndColor Red
+}
+RegistrationOpen --> RegistrationOpen: register()
+RegistrationOpen --> ShareDistribution: register()
+RegistrationOpen --> AccuseMissingRegistration: timeout*
+
+AccuseMissingRegistration --> AccuseMissingRegistration: accuseParticipantNotRegistered()
+AccuseMissingRegistration --> end1: timeout*
+note on link : Didn't find all nodes\nthat didn't participate
+
+ShareDistribution --> ShareDistribution: distributeShares()
+ShareDistribution --> DisputeShareDistribution: distributeShares()
+state "AccuseMissingShareDistribution\n Or DisputeShareDistribution"  as AccuseShareWindow
+
+ShareDistribution -->  AccuseShareWindow: timeout*
+
+AccuseShareWindow -->  AccuseShareWindow: accuseParticipantDistributedBadShares()
+AccuseShareWindow -->end1: timeout*
+AccuseShareWindow -->  AccuseShareWindow: accuseParticipantDidNotDistributeShares()
+
+DisputeShareDistribution --> DisputeShareDistribution: accuseParticipantDistributedBadShares()
+DisputeShareDistribution --> KeyShareSubmission:  timeout* w/o accusation
+DisputeShareDistribution --> end1: timeout* with accusations
+KeyShareSubmission --> KeyShareSubmission: submitKeyShare()
+KeyShareSubmission --> MPKSubmission: submitKeyShare()
+
+KeyShareSubmission --> AccuseMissingKeyShareSubmission: timeout*
+AccuseMissingKeyShareSubmission --> AccuseMissingKeyShareSubmission: accuseParticipantDidNotSubmitKeyShares()
+AccuseMissingKeyShareSubmission --> end1: timeout*
+
+MPKSubmission --> SubmitGPKj: submitMasterPublicKey()
+
+MPKSubmission --> end1: timeout*
+
+SubmitGPKj --> SubmitGPKj: submitGPKJ()
+
+
+state "AccuseMissingGPKJSubmission\n Or DisputeGPKJ"  as AccuseGPKJWindow
+SubmitGPKj --> AccuseGPKJWindow: timeout*
+AccuseGPKJWindow --> AccuseGPKJWindow: accuseParticipantDidNotSubmitGPKJ()
+AccuseGPKJWindow --> AccuseGPKJWindow: accuseParticipantSubmittedBadGPKJ()
+AccuseGPKJWindow --> end1: timeout*
+
+SubmitGPKj --> DisputeGPKJDistribution: submitGPKJ()
+
+DisputeGPKJDistribution --> Completion: complete()
+DisputeGPKJDistribution --> end1: timeout* with accusations
+
+
+
+@enduml
