@@ -19,8 +19,7 @@ race:
 
 generate:
 	@ set -eu && \
-	$(GOCMD) mod tidy; \
-	cd bridge && npm i && npm run clean && npm run build && cd ..; \
+	cd bridge && npm ci && npm run clean && npm run build && cd ..; \
 	DOCKER_BUILDKIT=1 docker build . -f dockerfiles/generate/Dockerfile -t madnet-go-generate; \
 	EXISTING=$$(docker ps -a --filter name=madnet-go-generate --format {{.Image}}); \
 	\
@@ -39,7 +38,8 @@ generate:
 		docker create --name madnet-go-generate -it -v $$PWD:/app madnet-go-generate; \
 	fi; \
 	echo "$(YELLOW)  Starting container...  $(NOCOL)"; \
-	docker start -ia madnet-go-generate; 
+	docker start -ia madnet-go-generate; \
+	$(GOCMD) mod tidy;
 
 clean: 
 	$(GOCLEAN)

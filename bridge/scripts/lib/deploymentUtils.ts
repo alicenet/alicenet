@@ -31,9 +31,10 @@ export async function deployStatic(fullyQualifiedName: string) {
       initializerArgs
     );
   }
+
   let hasConArgs = await hasConstructorArgs(fullyQualifiedName);
   let constructorArgs = hasConArgs
-    ? getDeploymentConstructorArgs(fullyQualifiedName)
+    ? (await getDeploymentConstructorArgs(fullyQualifiedName))
     : [];
   return await run("deployMetamorphic", {
     contractName: extractName(fullyQualifiedName),
