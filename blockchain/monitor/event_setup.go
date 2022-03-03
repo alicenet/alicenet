@@ -51,6 +51,15 @@ func GetSnapshotEvents() map[string]abi.Event {
 	return snapshotsABI.Events
 }
 
+func GetValidatorPoolEvents() map[string]abi.Event {
+	validatorPoolABI, err := abi.JSON(strings.NewReader(bindings.ValidatorPoolMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+
+	return validatorPoolABI.Events
+}
+
 func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
 	ethDkgEvents := GetETHDKGEvents()
 
@@ -131,6 +140,27 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 			return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)
 		}); err != nil {
 		return err
+	}
+
+	// ValidatorPool.ValidatorMinorSlashed
+	vpEvents := GetValidatorPoolEvents()
+	validatorMinorSlashedEvent, ok := vpEvents["ValidatorMinorSlashed"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
+	}
+
+	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, monevents.ProcessValidatorMinorSlashed); err != nil {
+		panic(err)
+	}
+
+	// ValidatorPool.ValidatorMajorSlashed
+	validatorMajorSlashedEvent, ok := vpEvents["ValidatorMajorSlashed"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorMajorSlashed")
+	}
+
+	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, monevents.ProcessValidatorMajorSlashed); err != nil {
+		panic(err)
 	}
 
 	return nil

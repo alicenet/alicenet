@@ -21,6 +21,7 @@ var (
 type DkgState struct {
 	sync.RWMutex
 
+	IsValidator        bool
 	Phase              EthDKGPhase
 	PhaseLength        uint64
 	ConfirmationLength uint64
