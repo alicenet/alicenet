@@ -12,8 +12,12 @@ contract Governance is IGovernor {
         _factory = msg.sender;
     }
 
-    function updateValue(uint256 epoch, uint256 key, bytes32 value) external {
-        require(msg.sender == _factory , "Governance: Only factory allowed!");
+    function updateValue(
+        uint256 epoch,
+        uint256 key,
+        bytes32 value
+    ) external {
+        require(msg.sender == _factory, "Governance: Only factory allowed!");
         emit ValueUpdated(epoch, key, value, msg.sender);
     }
 }

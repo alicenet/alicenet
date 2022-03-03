@@ -1,8 +1,7 @@
-import { env } from "./constants";
-import { task, types } from "hardhat/config";
-import fs from "fs";
-
 import { BigNumber } from "ethers";
+import fs from "fs";
+import { task, types } from "hardhat/config";
+import { env } from "./constants";
 
 export async function getTokenIdFromTx(ethers: any, tx: any) {
   let abi = [
@@ -113,7 +112,7 @@ task("registerValidators", "registers validators")
     console.log("Starting the registration process...");
 
     // mint StakeNFT positions to validators
-    for (let i=0; i<validatorAddresses.length; i++) {
+    for (let i = 0; i < validatorAddresses.length; i++) {
       let tx = await stakeNFT
         .connect(admin)
         .mintTo(factory.address, stakeAmountMadWei, lockTime);
@@ -130,12 +129,9 @@ task("registerValidators", "registers validators")
         validatorPool.address,
         tokenId,
       ]);
-      tx = await factory
-        .connect(admin)
-        .callAny(stakeNFT.address, 0, input);
+      tx = await factory.connect(admin).callAny(stakeNFT.address, 0, input);
 
       await tx.wait();
-
 
       console.log(`Approved tokenID:${tokenId} to ValidatorPool`);
     }

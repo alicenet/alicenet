@@ -1,15 +1,9 @@
-import { MadnetFactory } from '../../typechain-types/MadnetFactory';
-import { ContractFactory, ContractTransaction } from 'ethers';
 //const { contracts } from"@openzeppelin/cli/lib/prompts/choices");
 import { expect } from "chai";
-import { BytesLike } from "ethers";
+import { BytesLike, ContractFactory, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
-import {
-  MOCK,
-  END_POINT,
-  MADNET_FACTORY,
-} from '../../scripts/lib/constants';
-
+import { END_POINT, MADNET_FACTORY, MOCK } from "../../scripts/lib/constants";
+import { MadnetFactory } from "../../typechain-types/MadnetFactory";
 
 export async function getAccounts() {
   let signers = await ethers.getSigners();
@@ -82,7 +76,9 @@ export async function proxyMockLogicTest(
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
   let txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
-  await expect(txRes).to.be.revertedWith("reverted with an unrecognized custom error");
+  await expect(txRes).to.be.revertedWith(
+    "reverted with an unrecognized custom error"
+  );
   //unlock the proxy
   txResponse = await mockProxy.unlock();
   receipt = await txResponse.wait();
@@ -119,28 +115,34 @@ export async function metaMockLogicTest(
   expect(i.toNumber()).to.equal(2);
 }
 
-export async function getEventVar(txResponse: ContractTransaction, eventName: string, varName: string) {
-  let result:any;
+export async function getEventVar(
+  txResponse: ContractTransaction,
+  eventName: string,
+  varName: string
+) {
+  let result: any;
   let receipt = await txResponse.wait();
   if (receipt.events !== undefined) {
-    let events = receipt.events
+    let events = receipt.events;
     for (let i = 0; i < events.length; i++) {
       //look for the event
       if (events[i].event === eventName) {
         if (events[i].args !== undefined) {
-          let args = events[i].args
+          let args = events[i].args;
           //extract the deployed mock logic contract address from the event
           result = args !== undefined ? args[varName] : undefined;
           if (result !== undefined) {
             return result;
           }
         } else {
-          throw new Error(`failed to extract ${varName} from event: ${eventName}`)
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
         }
       }
     }
   }
-  throw new Error(`failed to find event: ${eventName}`)
+  throw new Error(`failed to find event: ${eventName}`);
 }
 
 export async function expectTxSuccess(txResponse: ContractTransaction) {
@@ -220,9 +222,16 @@ export async function deployFactory() {
   return factory;
 }
 
-export async function deployCreate2Initable(factory: MadnetFactory, salt:BytesLike) {
-  let mockInitFactory = await ethers.getContractFactory("MockInitializable")
-  let txResponse = await factory.deployCreate2(0, salt, mockInitFactory.bytecode)
+export async function deployCreate2Initable(
+  factory: MadnetFactory,
+  salt: BytesLike
+) {
+  let mockInitFactory = await ethers.getContractFactory("MockInitializable");
+  let txResponse = await factory.deployCreate2(
+    0,
+    salt,
+    mockInitFactory.bytecode
+  );
   return txResponse;
 }
 

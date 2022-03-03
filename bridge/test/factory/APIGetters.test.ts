@@ -1,22 +1,17 @@
 import { ethers } from "hardhat";
+import { END_POINT, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
 import {
   deployStatic,
   deployUpgradeable,
-  upgradeProxy
+  upgradeProxy,
 } from "../../scripts/lib/MadnetFactory";
 import { MadnetFactory, Utils } from "../../typechain-types";
 import { assert, expect } from "../chai-setup";
 import {
-  END_POINT,
-  MOCK,
-  PROXY,
-  UTILS
-} from '../../scripts/lib/constants';
-import {
   bytes32ArrayToStringArray,
   deployFactory,
   getAccounts,
-  getMetamorphicAddress
+  getMetamorphicAddress,
 } from "./Setup";
 process.env.silencer = "true";
 
@@ -58,10 +53,12 @@ describe("Madnetfactory API test", async () => {
 
   it("deploy Upgradeable", async () => {
     let res = await deployUpgradeable(MOCK, factory.address, ["2", "s"]);
-    const Proxy = await ethers.getContractFactory(PROXY)
-    const proxy = Proxy.attach(res.proxyAddress)
-    expect(await proxy.getImplementationAddress()).to.be.equal(res.logicAddress)
-    assert(res !== undefined, "Couldn't deploy upgradable contract")
+    const Proxy = await ethers.getContractFactory(PROXY);
+    const proxy = Proxy.attach(res.proxyAddress);
+    expect(await proxy.getImplementationAddress()).to.be.equal(
+      res.logicAddress
+    );
+    assert(res !== undefined, "Couldn't deploy upgradable contract");
     let cSize = await utilsContract.getCodeSize(res.logicAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
     cSize = await utilsContract.getCodeSize(res.proxyAddress);
@@ -70,13 +67,20 @@ describe("Madnetfactory API test", async () => {
 
   it("upgrade deployment", async () => {
     let res = await deployUpgradeable(MOCK, factory.address, ["2", "s"]);
-    const Proxy = await ethers.getContractFactory(PROXY)
-    const proxy = Proxy.attach(res.proxyAddress)
-    expect(await proxy.getImplementationAddress()).to.be.equal(res.logicAddress)
-    assert(res !== undefined, "Couldn't deploy upgradable contract")
+    const Proxy = await ethers.getContractFactory(PROXY);
+    const proxy = Proxy.attach(res.proxyAddress);
+    expect(await proxy.getImplementationAddress()).to.be.equal(
+      res.logicAddress
+    );
+    assert(res !== undefined, "Couldn't deploy upgradable contract");
     let res2 = await upgradeProxy(MOCK, factory.address, ["2", "s"]);
-    expect(await proxy.getImplementationAddress()).to.be.equal(res2.logicAddress)
-    assert(res2.logicAddress != res.logicAddress, "Logic address should be different after updateProxy!")
+    expect(await proxy.getImplementationAddress()).to.be.equal(
+      res2.logicAddress
+    );
+    assert(
+      res2.logicAddress != res.logicAddress,
+      "Logic address should be different after updateProxy!"
+    );
   });
 
   it("deploystatic", async () => {

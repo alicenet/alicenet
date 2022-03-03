@@ -1,17 +1,16 @@
-import { validators4 } from "../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
 import { BigNumberish } from "ethers";
+import { getValidatorEthAccount } from "../../setup";
+import { validators4 } from "../assets/4-validators-successful-case";
 import {
   assertETHDKGPhase,
-  Phase,
-  submitValidatorsKeyShares,
-  startAtSubmitKeyShares,
-  waitNextPhaseStartDelay,
-  startAtMPKSubmission,
   assertEventMPKSet,
   expect,
+  Phase,
+  startAtMPKSubmission,
+  startAtSubmitKeyShares,
+  submitValidatorsKeyShares,
+  waitNextPhaseStartDelay,
 } from "../setup";
-import { getValidatorEthAccount } from "../../setup";
 
 describe("ETHDKG: Submit Master Public Key", () => {
   it("should not allow submission of master public key when not in MPKSubmission phase", async () => {

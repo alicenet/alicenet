@@ -2,10 +2,9 @@
 pragma solidity ^0.8.11;
 
 contract Utils {
-
     function getCodeSize(address target) public view returns (uint256) {
         uint256 csize;
-        assembly{
+        assembly {
             csize := extcodesize(target)
         }
         return csize;
@@ -26,5 +25,4 @@ contract Utils {
             extcodecopy(_addr, add(o_code, 0x20), 0, size)
         }
     }
-
 }

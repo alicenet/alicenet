@@ -12,11 +12,7 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading data from
     /// @return val a uint32
     /// @dev ~559 gas
-    function extractUInt32(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (uint32 val)
-    {
+    function extractUInt32(bytes memory src, uint256 offset) internal pure returns (uint32 val) {
         require(
             offset + 4 > offset,
             "BaseParserLibrary: An overflow happened with the offset parameter!"
@@ -30,10 +26,7 @@ library BaseParserLibrary {
             val := shr(sub(256, 32), mload(add(add(src, 0x20), offset)))
             val := or(
                 or(
-                    or(
-                        shr(24, and(val, 0xff000000)),
-                        shr(8, and(val, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val, 0xff000000)), shr(8, and(val, 0x00ff0000))),
                     shl(8, and(val, 0x0000ff00))
                 ),
                 shl(24, and(val, 0x000000ff))
@@ -46,11 +39,7 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading data from
     /// @return val a uint16
     /// @dev ~204 gas
-    function extractUInt16(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (uint16 val)
-    {
+    function extractUInt16(bytes memory src, uint256 offset) internal pure returns (uint16 val) {
         require(
             offset + 2 > offset,
             "BaseParserLibrary: Error extracting uin16! An overflow happened with the offset parameter!"
@@ -62,10 +51,7 @@ library BaseParserLibrary {
 
         assembly {
             val := shr(sub(256, 16), mload(add(add(src, 0x20), offset)))
-            val := or(
-                        shr(8, and(val, 0xff00)),
-                        shl(8, and(val, 0x00ff))
-            )
+            val := or(shr(8, and(val, 0xff00)), shl(8, and(val, 0x00ff)))
         }
     }
 
@@ -98,11 +84,7 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading data from
     /// @return a bool
     /// @dev ~204 gas
-    function extractBool(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (bool)
-    {
+    function extractBool(bytes memory src, uint256 offset) internal pure returns (bool) {
         require(
             offset + 1 > offset,
             "BaseParserLibrary: Error extracting bool! An overflow happened with the offset parameter!"
@@ -124,11 +106,7 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading data from
     /// @return val a uint256
     /// @dev ~5155 gas
-    function extractUInt256(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (uint256 val)
-    {
+    function extractUInt256(bytes memory src, uint256 offset) internal pure returns (uint256 val) {
         require(
             offset + 31 > offset,
             "BaseParserLibrary: An overflow happened with the offset parameter!"
@@ -185,98 +163,67 @@ library BaseParserLibrary {
 
             val0 := or(
                 or(
-                    or(
-                        shr(24, and(val0, 0xff000000)),
-                        shr(8, and(val0, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val0, 0xff000000)), shr(8, and(val0, 0x00ff0000))),
                     shl(8, and(val0, 0x0000ff00))
                 ),
                 shl(24, and(val0, 0x000000ff))
             )
             val1 := or(
                 or(
-                    or(
-                        shr(24, and(val1, 0xff000000)),
-                        shr(8, and(val1, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val1, 0xff000000)), shr(8, and(val1, 0x00ff0000))),
                     shl(8, and(val1, 0x0000ff00))
                 ),
                 shl(24, and(val1, 0x000000ff))
             )
             val2 := or(
                 or(
-                    or(
-                        shr(24, and(val2, 0xff000000)),
-                        shr(8, and(val2, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val2, 0xff000000)), shr(8, and(val2, 0x00ff0000))),
                     shl(8, and(val2, 0x0000ff00))
                 ),
                 shl(24, and(val2, 0x000000ff))
             )
             val3 := or(
                 or(
-                    or(
-                        shr(24, and(val3, 0xff000000)),
-                        shr(8, and(val3, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val3, 0xff000000)), shr(8, and(val3, 0x00ff0000))),
                     shl(8, and(val3, 0x0000ff00))
                 ),
                 shl(24, and(val3, 0x000000ff))
             )
             val4 := or(
                 or(
-                    or(
-                        shr(24, and(val4, 0xff000000)),
-                        shr(8, and(val4, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val4, 0xff000000)), shr(8, and(val4, 0x00ff0000))),
                     shl(8, and(val4, 0x0000ff00))
                 ),
                 shl(24, and(val4, 0x000000ff))
             )
             val5 := or(
                 or(
-                    or(
-                        shr(24, and(val5, 0xff000000)),
-                        shr(8, and(val5, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val5, 0xff000000)), shr(8, and(val5, 0x00ff0000))),
                     shl(8, and(val5, 0x0000ff00))
                 ),
                 shl(24, and(val5, 0x000000ff))
             )
             val6 := or(
                 or(
-                    or(
-                        shr(24, and(val6, 0xff000000)),
-                        shr(8, and(val6, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val6, 0xff000000)), shr(8, and(val6, 0x00ff0000))),
                     shl(8, and(val6, 0x0000ff00))
                 ),
                 shl(24, and(val6, 0x000000ff))
             )
             val7 := or(
                 or(
-                    or(
-                        shr(24, and(val7, 0xff000000)),
-                        shr(8, and(val7, 0x00ff0000))
-                    ),
+                    or(shr(24, and(val7, 0xff000000)), shr(8, and(val7, 0x00ff0000))),
                     shl(8, and(val7, 0x0000ff00))
                 ),
                 shl(24, and(val7, 0x000000ff))
             )
 
-            val :=
-            or(
+            val := or(
                 or(
                     or(
                         or(
                             or(
-                                or(
-                                    or(
-                                        shl(224, val0),
-                                        shl(192, val1)
-                                    ),
-                                    shl(160, val2)
-                                ),
+                                or(or(shl(224, val0), shl(192, val1)), shl(160, val2)),
                                 shl(128, val3)
                             ),
                             shl(96, val4)
@@ -294,11 +241,7 @@ library BaseParserLibrary {
     /// @param orig the binary data
     /// @return reversed the reverted bytes array
     /// @dev ~13832 gas
-    function reverse(bytes memory orig)
-        internal
-        pure
-        returns (bytes memory reversed)
-    {
+    function reverse(bytes memory orig) internal pure returns (bytes memory reversed) {
         reversed = new bytes(orig.length);
         for (uint256 idx = 0; idx < orig.length; idx++) {
             reversed[orig.length - idx - 1] = orig[idx];
@@ -378,19 +321,12 @@ library BaseParserLibrary {
     /// @param offset where to start extracting from
     /// @return out the bytes32 data extracted from `src`
     /// @dev ~439 gas
-    function extractBytes32(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (bytes32 out)
-    {
+    function extractBytes32(bytes memory src, uint256 offset) internal pure returns (bytes32 out) {
         require(
             offset + 32 > offset,
             "BaseParserLibrary: An overflow happened with the offset parameter!"
         );
-        require(
-            src.length >= (offset + 32),
-            "BaseParserLibrary: not enough bytes to extract"
-        );
+        require(src.length >= (offset + 32), "BaseParserLibrary: not enough bytes to extract");
         assembly {
             out := mload(add(add(src, BYTES_HEADER_SIZE), offset))
         }

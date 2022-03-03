@@ -4,7 +4,6 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/MadnetFactoryBase.sol";
 
-
 /// @custom:salt MadnetFactory
 /// @custom:deploy-type factory
 contract MadnetFactory is MadnetFactoryBase {

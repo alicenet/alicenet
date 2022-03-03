@@ -1,14 +1,15 @@
-import {
-  DEPLOYED_PROXY,
-  DEPLOYED_RAW,
-  CONTRACT_ADDR,
-  MADNET_FACTORY,
-  DEPLOY_CREATE,
-  DEPLOYED_STATIC,
-  PROXY,
-} from "./constants";
+import { BytesLike, ContractFactory, ContractReceipt } from "ethers";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import {
+  CONTRACT_ADDR,
+  DEPLOYED_PROXY,
+  DEPLOYED_RAW,
+  DEPLOYED_STATIC,
+  DEPLOY_CREATE,
+  MADNET_FACTORY,
+  PROXY,
+} from "./constants";
 import {
   DeployCreateData,
   FactoryConfig,
@@ -23,7 +24,6 @@ import {
   updateProxyList,
   updateTemplateList,
 } from "./factoryStateUtils";
-import { BytesLike, ContractFactory, ContractReceipt } from "ethers";
 
 type DeployProxyMCArgs = {
   contractName: string;
@@ -45,49 +45,49 @@ export type Args = {
   salt?: BytesLike;
   initCallData?: string;
   constructorArgs?: any;
-}
+};
 
 task("getSalt", "gets salt from contract")
   .addParam("contractName", "test contract")
   .setAction(async (taskArgs, hre) => {
     let salt = await getSalt(taskArgs.contractName, hre);
-    await showState(salt)
+    await showState(salt);
   });
 
 task("getBytes32Salt", "gets the bytes32 version of salt from contract")
   .addParam("contractName", "test contract")
   .setAction(async (taskArgs, hre) => {
     let salt = await getBytes32Salt(taskArgs.contractName, hre);
-    await showState(salt)
+    await showState(salt);
   });
 
 task(
   "deployFactory",
   "Deploys an instance of a factory contract specified by its name"
-)
-  .setAction(async (taskArgs, hre) => {
-
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
-    const accounts = await getAccounts(hre);
-    let txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
-    //calculate the factory address for the constructor arg
-    let futureFactoryAddress = hre.ethers.utils.getContractAddress({
-      from: accounts[0],
-      nonce: txCount,
-    });
-    let deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
-    let gasCost = await hre.ethers.provider.estimateGas(deployTX);
-    //deploys the factory
-    let factory = await factoryBase.deploy(futureFactoryAddress);
-    //record the data in a json file to be used in other tasks
-    let factoryData: FactoryData = {
-      address: factory.address,
-      gas: gasCost.toNumber(),
-    };
-    await updateDefaultFactoryData(factoryData);
-    await showState(`Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`)
-    return factory.address;
+).setAction(async (taskArgs, hre) => {
+  const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+  const accounts = await getAccounts(hre);
+  let txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
+  //calculate the factory address for the constructor arg
+  let futureFactoryAddress = hre.ethers.utils.getContractAddress({
+    from: accounts[0],
+    nonce: txCount,
   });
+  let deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
+  let gasCost = await hre.ethers.provider.estimateGas(deployTX);
+  //deploys the factory
+  let factory = await factoryBase.deploy(futureFactoryAddress);
+  //record the data in a json file to be used in other tasks
+  let factoryData: FactoryData = {
+    address: factory.address,
+    gas: gasCost.toNumber(),
+  };
+  await updateDefaultFactoryData(factoryData);
+  await showState(
+    `Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`
+  );
+  return factory.address;
+});
 
 task(
   "deployUpgradeableProxy",
@@ -120,14 +120,18 @@ task(
     };
     //deploy create the logic contract
     let result: DeployCreateData = await hre.run("deployCreate", callArgs);
-    let initCallData = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+    let initCallData =
+      taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
     let mcCallArgs: DeployProxyMCArgs = {
       contractName: taskArgs.contractName,
       logicAddress: result.address,
       initCallData: initCallData,
     };
 
-    let proxyData:ProxyData = await hre.run("multiCallDeployProxy", mcCallArgs);
+    let proxyData: ProxyData = await hre.run(
+      "multiCallDeployProxy",
+      mcCallArgs
+    );
     return proxyData;
   });
 
@@ -160,7 +164,9 @@ task(
     let templateAddress = await hre.run("deployTemplate", callArgs);
     callArgs = await getDeployStaticSubtaskArgs(taskArgs);
     let metaContractData = await hre.run("deployStatic", callArgs);
-    await showState(`Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with logic from, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`)
+    await showState(
+      `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with logic from, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
+    );
     return metaContractData;
   });
 
@@ -180,7 +186,8 @@ task("deployCreate", "deploys a contract from the factory using create")
     let logicContract: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
-    let constructorArgs = taskArgs.constructor === undefined ? [] : taskArgs.constructorArgs
+    let constructorArgs =
+      taskArgs.constructor === undefined ? [] : taskArgs.constructorArgs;
     //encode deployBcode
     let deployTx = logicContract.getDeployTransaction(...constructorArgs);
     if (deployTx.data !== undefined) {
@@ -194,10 +201,14 @@ task("deployCreate", "deploys a contract from the factory using create")
         constructorArgs: taskArgs?.constructorArgs,
       };
       await updateDeployCreateList(deployCreateData);
-      await showState(`[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`)
+      await showState(
+        `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
+      );
       return deployCreateData;
     } else {
-      throw new Error(`failed to get deployment bytecode for ${taskArgs.contractName}`)
+      throw new Error(
+        `failed to get deployment bytecode for ${taskArgs.contractName}`
+      );
     }
   });
 
@@ -209,7 +220,10 @@ task("upgradeDeployedProxy", "deploys a contract from the factory using create")
     "logicAddress",
     "address of the new logic contract to upgrade the proxy to"
   )
-  .addOptionalParam("initCallData", "data used to initialize initializable contracts")
+  .addOptionalParam(
+    "initCallData",
+    "data used to initialize initializable contracts"
+  )
   .setAction(async (taskArgs, hre) => {
     let factoryAddress = await getFactoryAddress(taskArgs);
     let MadnetFactory = await hre.ethers.getContractFactory(MADNET_FACTORY);
@@ -220,7 +234,8 @@ task("upgradeDeployedProxy", "deploys a contract from the factory using create")
       taskArgs.contractName
     );
     const factory = await MadnetFactory.attach(factoryAddress);
-    let initCallData: string = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+    let initCallData: string =
+      taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
     let txResponse = await factory.upgradeProxy(
       Salt,
       taskArgs.logicAddress,
@@ -254,29 +269,35 @@ task(
   "deploys a template contract with the universal code copy constructor that deploys"
 )
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("factoryAddress", "optional factory address, defaults to config address")
+  .addOptionalParam(
+    "factoryAddress",
+    "optional factory address, defaults to config address"
+  )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "input constructor args at the end of call"
   )
   .setAction(async (taskArgs, hre) => {
     let factoryAddress = await getFactoryAddress(taskArgs);
-    let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY)
+    let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
     let logicContract: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     let deployTxReq =
-      taskArgs.constructorArgs === undefined ?
-        logicContract.getDeployTransaction() : logicContract.getDeployTransaction(...taskArgs.constructorArgs);
+      taskArgs.constructorArgs === undefined
+        ? logicContract.getDeployTransaction()
+        : logicContract.getDeployTransaction(...taskArgs.constructorArgs);
     if (deployTxReq.data !== undefined) {
       let deployBytecode = deployTxReq.data;
       //get a factory instance connected to the factory addr
       const factory = factoryBase.attach(factoryAddress);
-      if (hre.network.name === "hardhat"){
+      if (hre.network.name === "hardhat") {
         // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
         // being sent as input to the function (the contract bytecode), so we need to increase the block
         // gas limit temporally in order to deploy the template
-        await hre.network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+        await hre.network.provider.send("evm_setBlockGasLimit", [
+          "0x3000000000000000",
+        ]);
       }
       let txResponse = await factory.deployTemplate(deployBytecode);
       let receipt = await txResponse.wait();
@@ -289,11 +310,13 @@ task(
       if (taskArgs.constructorArgs !== undefined) {
         templateData.constructorArgs = taskArgs.constructorArgs;
       }
-    //   await showState(`Subtask deployedTemplate for ${taskArgs.contractName} contract at ${templateData.address}, gas: ${receipt.gasUsed}`);
+      //   await showState(`Subtask deployedTemplate for ${taskArgs.contractName} contract at ${templateData.address}, gas: ${receipt.gasUsed}`);
       updateTemplateList(templateData);
       return templateData;
     } else {
-      throw new Error(`failed to get contract bytecode for ${taskArgs.contractName}`);
+      throw new Error(
+        `failed to get contract bytecode for ${taskArgs.contractName}`
+      );
     }
   });
 
@@ -310,8 +333,9 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     let factoryAddress = await getFactoryAddress(taskArgs);
-    let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY)
-    let initCallData = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+    let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    let initCallData =
+      taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
     let Salt = await getBytes32Salt(taskArgs.contractName, hre);
     //get a factory instance connected to the factory addr
     const factory = factoryBase.attach(factoryAddress);
@@ -319,11 +343,7 @@ task(
     let tmplAddress = await factory.callStatic.getImplementation();
     let txResponse = await factory.deployStatic(Salt, initCallData);
     let receipt = await txResponse.wait();
-    let contractAddr = getEventVar(
-      receipt,
-      DEPLOYED_STATIC,
-      CONTRACT_ADDR
-    );
+    let contractAddr = getEventVar(receipt, DEPLOYED_STATIC, CONTRACT_ADDR);
     // await showState(`Subtask deployStatic, ${taskArgs.contractName}, contract at ${contractAddr}, gas: ${receipt.gasUsed}`);
     let outputData: MetaContractData = {
       metaAddress: contractAddr,
@@ -353,16 +373,23 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     "initCallData",
     "call data used to initialize initializable contracts"
   )
-  .addOptionalParam("salt", "unique salt for specifying proxy defaults to salt specified in logic contract")
+  .addOptionalParam(
+    "salt",
+    "unique salt for specifying proxy defaults to salt specified in logic contract"
+  )
   .setAction(async (taskArgs, hre) => {
     let gas = 0;
     let factoryAddress = await getFactoryAddress(taskArgs);
-    let initCallData = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+    let initCallData =
+      taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
     let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
     //factory interface pointed to deployed factory contract
     let factory = factoryBase.attach(factoryAddress);
     //get the 32byte salt from logic contract file
-    let salt: BytesLike = taskArgs.salt === undefined ? await getBytes32Salt(taskArgs.contractName, hre) : hre.ethers.utils.formatBytes32String(taskArgs.salt);
+    let salt: BytesLike =
+      taskArgs.salt === undefined
+        ? await getBytes32Salt(taskArgs.contractName, hre)
+        : hre.ethers.utils.formatBytes32String(taskArgs.salt);
     //get the multi call arguements as [deployProxy, upgradeProxy]
     let multiCallArgs = await getProxyMultiCallArgs(salt, taskArgs, hre);
     //send the multicall transaction with deployProxy and upgradeProxy
@@ -374,44 +401,72 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
       logicName: taskArgs.contractName,
       logicAddress: taskArgs.logicAddress,
       salt: salt,
-      proxyAddress: getEventVar(
-        receipt,
-        DEPLOYED_PROXY,
-        CONTRACT_ADDR
-      ),
+      proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
       gas: receipt.gasUsed.toNumber(),
       initCallData: initCallData,
     };
-    await showState(`Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`);
+    await showState(
+      `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+    );
     updateProxyList(proxyData);
     return proxyData;
   });
 
-task("multiCallUpgradeProxy", "multi call to deploy logic and upgrade proxy through factory")
+task(
+  "multiCallUpgradeProxy",
+  "multi call to deploy logic and upgrade proxy through factory"
+)
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("initCallData", "abi encoded initialization data with selector")
-  .addOptionalParam("salt", "unique salt for specifying proxy defaults to salt specified in logic contract")
+  .addOptionalParam(
+    "initCallData",
+    "abi encoded initialization data with selector"
+  )
+  .addOptionalParam(
+    "salt",
+    "unique salt for specifying proxy defaults to salt specified in logic contract"
+  )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
     let factoryAddress = await getFactoryAddress(taskArgs);
     const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
-    const factory = factoryBase.attach(factoryAddress)
-    const logicFactory: ContractFactory = await hre.ethers.getContractFactory(taskArgs.contractName)
-    let initCallData = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
-    let deployTx = logicFactory.getDeployTransaction(...taskArgs.constructorArgs);
-    let deployCreate = factoryBase.interface.encodeFunctionData(DEPLOY_CREATE, [deployTx.data]);
-    let salt: string = taskArgs.salt === undefined ? await getBytes32Salt(taskArgs.contractName, hre) : hre.ethers.utils.formatBytes32String(taskArgs.salt);;
-    let txCount = await hre.ethers.provider.getTransactionCount(factory.address)
-    let implAddress = hre.ethers.utils.getContractAddress({ from: factory.address, nonce: txCount });
-    let upgradeProxy = factoryBase.interface.encodeFunctionData(DEPLOY_CREATE, [salt, implAddress, initCallData]);
-    const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY)
-    let proxyAddress = getMetamorphicAddress(factoryAddress, salt, hre)
-    let proxyContract = await PROXY_FACTORY.attach(proxyAddress)
-    let oldImpl = await proxyContract.getImplementationAddress()
+    const factory = factoryBase.attach(factoryAddress);
+    const logicFactory: ContractFactory = await hre.ethers.getContractFactory(
+      taskArgs.contractName
+    );
+    let initCallData =
+      taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+    let deployTx = logicFactory.getDeployTransaction(
+      ...taskArgs.constructorArgs
+    );
+    let deployCreate = factoryBase.interface.encodeFunctionData(DEPLOY_CREATE, [
+      deployTx.data,
+    ]);
+    let salt: string =
+      taskArgs.salt === undefined
+        ? await getBytes32Salt(taskArgs.contractName, hre)
+        : hre.ethers.utils.formatBytes32String(taskArgs.salt);
+    let txCount = await hre.ethers.provider.getTransactionCount(
+      factory.address
+    );
+    let implAddress = hre.ethers.utils.getContractAddress({
+      from: factory.address,
+      nonce: txCount,
+    });
+    let upgradeProxy = factoryBase.interface.encodeFunctionData(DEPLOY_CREATE, [
+      salt,
+      implAddress,
+      initCallData,
+    ]);
+    const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY);
+    let proxyAddress = getMetamorphicAddress(factoryAddress, salt, hre);
+    let proxyContract = await PROXY_FACTORY.attach(proxyAddress);
+    let oldImpl = await proxyContract.getImplementationAddress();
     let txResponse = await factory.multiCall([deployCreate, upgradeProxy]);
     let receipt = await txResponse.wait();
-    await showState(`Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} from ${oldImpl} to ${implAddress}, gasCost: ${receipt.gasUsed}`);
-    return receipt
+    await showState(
+      `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} from ${oldImpl} to ${implAddress}, gasCost: ${receipt.gasUsed}`
+    );
+    return receipt;
   });
 
 async function getFactoryAddress(taskArgs: any) {
@@ -453,7 +508,8 @@ async function getProxyMultiCallArgs(
 ): Promise<BytesLike[]> {
   //get factory object from ethers for encoding function calls
   let factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
-  let initCallData: BytesLike = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+  let initCallData: BytesLike =
+    taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
   //encode the deployProxy function call with Salt as arg
   let deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
     "deployProxy",
@@ -490,7 +546,8 @@ async function getDeployTemplateArgs(taskArgs: any) {
  */
 async function getDeployStaticSubtaskArgs(taskArgs: any) {
   let factoryAddress = await getFactoryAddress(taskArgs);
-  let initCallData = taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
+  let initCallData =
+    taskArgs.initCallData === undefined ? "0x" : taskArgs.initCallData;
   return <DeployArgs>{
     contractName: taskArgs.contractName,
     factoryAddress: factoryAddress,
@@ -545,27 +602,33 @@ function extractPath(qualifiedName: string) {
  * @param varName
  * @returns
  */
-function getEventVar(receipt: ContractReceipt, eventName: string, varName: string) {
+function getEventVar(
+  receipt: ContractReceipt,
+  eventName: string,
+  varName: string
+) {
   let result = "0x";
   if (receipt.events !== undefined) {
-    let events = receipt.events
+    let events = receipt.events;
     for (let i = 0; i < events.length; i++) {
       //look for the event
       if (events[i].event === eventName) {
         if (events[i].args !== undefined) {
-          let args = events[i].args
+          let args = events[i].args;
           //extract the deployed mock logic contract address from the event
           result = args !== undefined ? args[varName] : undefined;
           if (result !== undefined) {
             return result;
           }
         } else {
-          throw new Error(`failed to extract ${varName} from event: ${eventName}`)
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
         }
       }
     }
   }
-  throw new Error(`failed to find event: ${eventName}`)
+  throw new Error(`failed to find event: ${eventName}`);
 }
 /**
  * @description extracts the value specified by custom:salt from the contracts artifacts
@@ -631,8 +694,8 @@ function getMetamorphicAddress(
   );
 }
 
-export const showState = async (message:string):Promise<void> => {
+export const showState = async (message: string): Promise<void> => {
   if (process.env.silencer === undefined || process.env.silencer === "false") {
     console.log(message);
   }
-}
+};

@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
-
 abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool {
-
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
@@ -25,7 +22,11 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool {
 
     mapping(uint256 => Snapshot) internal _snapshots;
 
-    constructor(uint256 chainId_, uint256 epochLength_) ImmutableFactory(msg.sender) ImmutableETHDKG() ImmutableValidatorPool() {
+    constructor(uint256 chainId_, uint256 epochLength_)
+        ImmutableFactory(msg.sender)
+        ImmutableETHDKG()
+        ImmutableValidatorPool()
+    {
         _chainId = chainId_;
         _epochLength = epochLength_;
     }

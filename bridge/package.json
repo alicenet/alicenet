@@ -6,7 +6,8 @@
     "test": "npx hardhat test --show-stack-traces",
     "test-parallel": "npx hardhat test --parallel --show-stack-traces",
     "clean": "mkdir -p typechain-types && rm -rf typechain-types && npx hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
-    "build": "npx hardhat compile && npx hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh"
+    "build": "npx hardhat compile && npx hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
+    "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
@@ -42,8 +43,10 @@
     "hardhat-gas-reporter": "^1.0.8",
     "mocha": "^9.2.1",
     "prettier": "^2.5.1",
+    "prettier-plugin-organize-imports": "^2.3.4",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.7",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.20",
     "ts-node": "^10.5.0",
     "typechain": "^7.0.0",

@@ -14,6 +14,7 @@ interface IMockEndPointLockable {
 
     function factory() external returns (address);
 }
+
 /// @custom:salt MockEndPointLockable
 contract MockEndPointLockable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
     address private immutable factory_;

@@ -12,11 +12,18 @@ contract ValidatorNFT is StakeNFTBase {
     function initialize() public initializer onlyFactory {
         __StakeNFTBase_init("MNVSNFT", "MNVS");
     }
+
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
     /// MadToken into this contract. This function will fail if the circuit
     /// breaker is tripped.
-    function mint(uint256 amount_) public override withCircuitBreaker onlyValidatorPool returns (uint256 tokenID) {
+    function mint(uint256 amount_)
+        public
+        override
+        withCircuitBreaker
+        onlyValidatorPool
+        returns (uint256 tokenID)
+    {
         return _mintNFT(msg.sender, amount_);
     }
 

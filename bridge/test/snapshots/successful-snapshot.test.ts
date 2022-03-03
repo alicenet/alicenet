@@ -1,17 +1,15 @@
-import { Fixture, getFixture, getValidatorEthAccount } from "../setup";
 import { ethers } from "hardhat";
+import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
-import { BigNumber } from "ethers";
+import { Fixture, getFixture, getValidatorEthAccount } from "../setup";
 import {
-  validatorsSnapshots,
-  validSnapshot1024,
   invalidSnapshot500,
   invalidSnapshotChainID2,
   invalidSnapshotIncorrectSig,
-  validSnapshot2048,
+  validatorsSnapshots,
+  validSnapshot1024,
 } from "./assets/4-validators-snapshots-1";
-import { Snapshots } from "../../typechain-types";
 
 describe("Snapshots: With successful ETHDKG round completed", () => {
   let fixture: Fixture;

@@ -1,21 +1,16 @@
-import { expect, assert } from "../chai-setup";
+import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
-import {
-  BigNumber,
-  BigNumberish,
-  ContractTransaction,
-} from "ethers";
 import {
   ETHDKG,
   ValidatorPool,
   ValidatorPoolMock,
 } from "../../typechain-types";
+import { assert, expect } from "../chai-setup";
 import { getFixture, getValidatorEthAccount, mineBlocks } from "../setup";
-import { factoryCallAny } from "../setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export { expect, assert } from "../chai-setup";
+export { assert, expect } from "../chai-setup";
 
 export enum Phase {
   RegistrationOpen,
@@ -235,7 +230,10 @@ export const assertEqEncryptedShares = (
   expectedEncryptedShares: BigNumberish[]
 ) => {
   actualEncryptedShares.forEach((element, i) => {
-    assert(BigNumber.from(element).eq(expectedEncryptedShares[i]), "Incorrect encrypted shares!");
+    assert(
+      BigNumber.from(element).eq(expectedEncryptedShares[i]),
+      "Incorrect encrypted shares!"
+    );
   });
 };
 
@@ -244,8 +242,14 @@ export const assertEqCommitments = (
   expectedCommitments: [BigNumberish, BigNumberish][]
 ) => {
   actualCommitments.forEach((element, i) => {
-    assert(BigNumber.from(element[0]).eq(expectedCommitments[i][0]), "Incorrect commitments[0]");
-    assert(BigNumber.from(element[1]).eq(expectedCommitments[i][1]), "Incorrect commitments[1]");
+    assert(
+      BigNumber.from(element[0]).eq(expectedCommitments[i][0]),
+      "Incorrect commitments[0]"
+    );
+    assert(
+      BigNumber.from(element[1]).eq(expectedCommitments[i][1]),
+      "Incorrect commitments[1]"
+    );
   });
 };
 
@@ -253,18 +257,36 @@ export const assertEqKeyShareG1 = (
   actualKeySharesG1: [BigNumberish, BigNumberish],
   expectedKeySharesG1: [BigNumberish, BigNumberish]
 ) => {
-  assert(BigNumber.from(actualKeySharesG1[0]).eq(expectedKeySharesG1[0]), "Incorrect encryptedKeys[0]");
-  assert(BigNumber.from(actualKeySharesG1[1]).eq(expectedKeySharesG1[1]), "Incorrect encryptedKeys[1]");
+  assert(
+    BigNumber.from(actualKeySharesG1[0]).eq(expectedKeySharesG1[0]),
+    "Incorrect encryptedKeys[0]"
+  );
+  assert(
+    BigNumber.from(actualKeySharesG1[1]).eq(expectedKeySharesG1[1]),
+    "Incorrect encryptedKeys[1]"
+  );
 };
 
 export const assertEqKeyShareG2 = (
   actualKeySharesG2: [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
   expectedKeySharesG2: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
-  assert(BigNumber.from(actualKeySharesG2[0]).eq(expectedKeySharesG2[0]), "Incorrect actualKeySharesG2[0]");
-  assert(BigNumber.from(actualKeySharesG2[1]).eq(expectedKeySharesG2[1]), "Incorrect actualKeySharesG2[1]");
-  assert(BigNumber.from(actualKeySharesG2[2]).eq(expectedKeySharesG2[2]), "Incorrect actualKeySharesG2[2]");
-  assert(BigNumber.from(actualKeySharesG2[3]).eq(expectedKeySharesG2[3]), "Incorrect actualKeySharesG2[3]");
+  assert(
+    BigNumber.from(actualKeySharesG2[0]).eq(expectedKeySharesG2[0]),
+    "Incorrect actualKeySharesG2[0]"
+  );
+  assert(
+    BigNumber.from(actualKeySharesG2[1]).eq(expectedKeySharesG2[1]),
+    "Incorrect actualKeySharesG2[1]"
+  );
+  assert(
+    BigNumber.from(actualKeySharesG2[2]).eq(expectedKeySharesG2[2]),
+    "Incorrect actualKeySharesG2[2]"
+  );
+  assert(
+    BigNumber.from(actualKeySharesG2[3]).eq(expectedKeySharesG2[3]),
+    "Incorrect actualKeySharesG2[3]"
+  );
 };
 
 export const assertETHDKGPhase = async (
@@ -324,9 +346,7 @@ export const initializeETHDKG = async (
   validatorPool: ValidatorPoolMock | ValidatorPool
 ) => {
   let nonce = await ethdkg.getNonce();
-  await expect(
-    validatorPool.initializeETHDKG()
-  ).to.emit(
+  await expect(validatorPool.initializeETHDKG()).to.emit(
     ethdkg,
     "RegistrationOpened"
   );
@@ -345,7 +365,7 @@ export const registerValidators = async (
     let numParticipantsBefore = await ethdkg.getNumParticipants();
     let tx = ethdkg
       .connect(await getValidatorEthAccount(validator))
-      .register(validator.madNetPublicKey)
+      .register(validator.madNetPublicKey);
     let receipt = await tx;
     let participant = await ethdkg.getParticipantInternalState(
       validator.address
@@ -652,8 +672,8 @@ export const completeETHDKGRound = async (
     contracts
   );
   let _expectedEpoch = 0;
-  if (typeof(expectedEpoch) !== "undefined") {
-    _expectedEpoch = expectedEpoch
+  if (typeof expectedEpoch !== "undefined") {
+    _expectedEpoch = expectedEpoch;
   }
   const expectedMadHeight = 0;
   // Submit GPKj for all validators
@@ -685,4 +705,3 @@ export const completeETHDKGRound = async (
     expectedMadHeight,
   ];
 };
-

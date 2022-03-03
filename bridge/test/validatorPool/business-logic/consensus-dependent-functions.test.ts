@@ -1,15 +1,15 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
-import { completeETHDKGRound } from "../../ethdkg/setup";
+import { BigNumber, Signer } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
+import { completeETHDKGRound } from "../../ethdkg/setup";
+import {
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import { validatorsSnapshots as validatorsSnapshots2 } from "../../snapshots/assets/4-validators-snapshots-2";
-import { BigNumber, Signer } from "ethers";
-import { SnapshotsMock } from "../../../typechain-types";
 import {
   claimPosition,
   commitSnapshots,
@@ -18,8 +18,6 @@ import {
   showState,
   stakeValidators,
 } from "../setup";
-import { ethers } from "hardhat";
-import { exit } from "process";
 
 describe("ValidatorPool: Consensus dependent logic ", async () => {
   let fixture: Fixture;

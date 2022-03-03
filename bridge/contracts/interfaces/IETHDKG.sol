@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 
 interface IETHDKG {
-
     function setPhaseLength(uint16 phaseLength_) external;
 
     function setConfirmationLength(uint16 confirmationLength_) external;
@@ -38,7 +37,7 @@ interface IETHDKG {
 
     function getMasterPublicKey() external view returns (uint256[4] memory);
 
-    function tryGetParticipantIndex(address participant) external view returns(bool, uint256);
+    function tryGetParticipantIndex(address participant) external view returns (bool, uint256);
 
     function initializeETHDKG() external;
 

@@ -8,7 +8,7 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
     uint256 public v;
     uint256 public i;
     address public immutable factoryAddress = 0x0BBf39118fF9dAfDC8407c507068D47572623069;
-   /**
+    /**
      * @dev Indicates that the contract has been initialized.
      */
     bool private _initialized;
@@ -25,7 +25,10 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
         // If the contract is initializing we ignore whether _initialized is set in order to support multiple
         // inheritance patterns, but we only do this in the context of a constructor, because in other contexts the
         // contract may have been reentered.
-        require(_initializing ? _isConstructor() : !_initialized, "Initializable: contract is already initialized");
+        require(
+            _initializing ? _isConstructor() : !_initialized,
+            "Initializable: contract is already initialized"
+        );
 
         bool isTopLevelCall = !_initializing;
         if (isTopLevelCall) {
@@ -48,6 +51,7 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
         require(_initializing, "Initializable: contract is not initializing");
         _;
     }
+
     function isContract(address account) internal view returns (bool) {
         // This method relies on extcodesize/address.code.length, which returns 0
         // for contracts in construction, since the code is only stored at the end
@@ -60,7 +64,7 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
         return !isContract(address(this));
     }
 
-    function initialize(uint256 _i) public virtual initializer{
+    function initialize(uint256 _i) public virtual initializer {
         __Mock_init(_i);
     }
 
@@ -69,7 +73,7 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
     }
 
     function __Mock_init_unchained(uint256 _i) internal onlyInitializing {
-       i = _i;
+        i = _i;
         factory_ = msg.sender;
     }
 
@@ -88,6 +92,7 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
     function setFactory(address _factory) public {
         factory_ = _factory;
     }
+
     function getFactory() external view returns (address) {
         return factory_;
     }

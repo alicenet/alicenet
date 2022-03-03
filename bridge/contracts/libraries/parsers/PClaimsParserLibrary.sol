@@ -27,12 +27,8 @@ library PClaimsParserLibrary {
     /// @param src Binary data containing a RCert serialized struct with Capn Proto headers
     /// @return pClaims the PClaims struct
     /// @dev Execution cost: 7725 gas
-    function extractPClaims(bytes memory src)
-        internal
-        pure
-        returns (PClaims memory pClaims)
-    {
-        (pClaims,) = extractInnerPClaims(src, CAPNPROTO_HEADER_SIZE);
+    function extractPClaims(bytes memory src) internal pure returns (PClaims memory pClaims) {
+        (pClaims, ) = extractInnerPClaims(src, CAPNPROTO_HEADER_SIZE);
     }
 
     /**
@@ -60,13 +56,20 @@ library PClaimsParserLibrary {
             dataOffset + PCLAIMS_SIZE > dataOffset,
             "PClaimsParserLibrary: Overflow on the dataOffset parameter"
         );
-        uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(src, dataOffset + 4);
+        uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
+            src,
+            dataOffset + 4
+        );
         pClaimsBinarySize = PCLAIMS_SIZE - pointerOffsetAdjustment;
         require(
             src.length >= dataOffset + pClaimsBinarySize,
             "PClaimsParserLibrary: Not enough bytes to extract PClaims"
         );
-        pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(src, dataOffset + 16, pointerOffsetAdjustment);
+        pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(
+            src,
+            dataOffset + 16,
+            pointerOffsetAdjustment
+        );
         pClaims.rCert = RCertParserLibrary.extractInnerRCert(
             src,
             dataOffset + 16 + BClaimsParserLibrary.BCLAIMS_SIZE - pointerOffsetAdjustment

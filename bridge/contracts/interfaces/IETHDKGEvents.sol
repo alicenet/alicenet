@@ -2,8 +2,13 @@
 pragma solidity ^0.8.11;
 
 interface IETHDKGEvents {
-
-    event RegistrationOpened(uint256 startBlock, uint256 numberValidators, uint256 nonce, uint256 phaseLength, uint256 confirmationLength);
+    event RegistrationOpened(
+        uint256 startBlock,
+        uint256 numberValidators,
+        uint256 nonce,
+        uint256 phaseLength,
+        uint256 confirmationLength
+    );
 
     event AddressRegistered(address account, uint256 index, uint256 nonce, uint256[2] publicKey);
 

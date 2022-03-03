@@ -59,11 +59,7 @@ library RCertParserLibrary {
     /// @param src Binary data containing a RCert serialized struct with Capn Proto headers
     /// @return the RCert struct
     /// @dev Execution cost: 4076 gas
-    function extractRCert(bytes memory src)
-        internal
-        pure
-        returns (RCert memory)
-    {
+    function extractRCert(bytes memory src) internal pure returns (RCert memory) {
         return extractInnerRCert(src, CAPNPROTO_HEADER_SIZE);
     }
 

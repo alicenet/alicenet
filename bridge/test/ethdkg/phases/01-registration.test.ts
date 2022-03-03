@@ -1,12 +1,7 @@
-import { validators4 } from "../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import {
-  addValidators,
-  initializeETHDKG,
-  expect,
-} from "../setup";
 import { getFixture, getValidatorEthAccount } from "../../setup";
+import { validators4 } from "../assets/4-validators-successful-case";
+import { addValidators, expect, initializeETHDKG } from "../setup";
 
 describe("ETHDKG: Registration Open", () => {
   it("does not let registrations before ETHDKG Registration is open", async function () {
@@ -63,13 +58,17 @@ describe("ETHDKG: Registration Open", () => {
       ethdkg
         .connect(signer0)
         .register([BigNumber.from("0"), BigNumber.from("1")])
-    ).to.be.revertedWith("ETHDKG: Registration failed - pubKey should be different from 0!");
+    ).to.be.revertedWith(
+      "ETHDKG: Registration failed - pubKey should be different from 0!"
+    );
 
     await expect(
       ethdkg
         .connect(signer0)
         .register([BigNumber.from("1"), BigNumber.from("0")])
-    ).to.be.revertedWith("ETHDKG: Registration failed - pubKey should be different from 0!");
+    ).to.be.revertedWith(
+      "ETHDKG: Registration failed - pubKey should be different from 0!"
+    );
 
     await expect(
       ethdkg
@@ -93,7 +92,9 @@ describe("ETHDKG: Registration Open", () => {
     await expect(
       ethdkg
         .connect(
-          await getValidatorEthAccount("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac")
+          await getValidatorEthAccount(
+            "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac"
+          )
         )
         .register([BigNumber.from("0"), BigNumber.from("0")])
     ).to.be.revertedWith("ETHDKG: Only validators allowed!");

@@ -28,11 +28,7 @@ library TXInPreImageParserLibrary {
     /// @param src Binary data containing a TXInPreImage serialized struct with Capn Proto headers
     /// @dev Execution cost: 1120 gas
     /// @return a TXInPreImage struct
-    function extractTXInPreImage(bytes memory src)
-        internal
-        pure
-        returns (TXInPreImage memory)
-    {
+    function extractTXInPreImage(bytes memory src) internal pure returns (TXInPreImage memory) {
         return extractInnerTXInPreImage(src, CAPNPROTO_HEADER_SIZE);
     }
 
@@ -60,7 +56,10 @@ library TXInPreImageParserLibrary {
             "TXInPreImageParserLibrary: Not enough bytes to extract TXInPreImage"
         );
         txInPreImage.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
-        require(txInPreImage.chainId > 0, "TXInPreImageParserLibrary: Invalid parsing. The chainId should be greater than 0!");
+        require(
+            txInPreImage.chainId > 0,
+            "TXInPreImageParserLibrary: Invalid parsing. The chainId should be greater than 0!"
+        );
         txInPreImage.consumedTxIdx = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         txInPreImage.consumedTxHash = BaseParserLibrary.extractBytes32(src, dataOffset + 16);
     }

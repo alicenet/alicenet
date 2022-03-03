@@ -101,8 +101,9 @@ export async function updateDeployCreateList(data: DeployCreateData) {
   //fetch whats in the factory config file
   //It is safe to use as
   let config = await readFactoryStateData();
-  config.rawDeployments = config.rawDeployments === undefined ? [] : config.rawDeployments;
-  config.rawDeployments.push(data)
+  config.rawDeployments =
+    config.rawDeployments === undefined ? [] : config.rawDeployments;
+  config.rawDeployments.push(data);
   // write new data to config file
   await writeFactoryConfig(config);
 }
@@ -134,7 +135,8 @@ export async function updateProxyList(data: ProxyData) {
 export async function updateMetaList(data: MetaContractData) {
   //fetch whats in the factory config file
   let config = await readFactoryStateData();
-  config.staticContracts = config.staticContracts === undefined ? [] : config.staticContracts;
+  config.staticContracts =
+    config.staticContracts === undefined ? [] : config.staticContracts;
   config.staticContracts.push(data);
   // write new data to config file
   await writeFactoryConfig(config);
