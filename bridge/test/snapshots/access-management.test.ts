@@ -1,13 +1,11 @@
+import { Signer } from "ethers";
+import { expect } from "../chai-setup";
 import {
+  factoryCallAny,
   Fixture,
   getFixture,
   getValidatorEthAccount,
-  factoryCallAny,
 } from "../setup";
-
-import { expect } from "../chai-setup";
-
-import { Signer } from "ethers";
 
 describe("Snapshots: Access control methods", () => {
   let fixture: Fixture;

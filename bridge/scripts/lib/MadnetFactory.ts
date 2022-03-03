@@ -9,7 +9,7 @@
 
 //return the logs
 import { BytesLike, ContractReceipt } from "ethers";
-import { ethers, artifacts } from "hardhat";
+import { artifacts, ethers } from "hardhat";
 import { MadnetFactory } from "../../typechain-types";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
 const defaultFactoryName = "MadnetFactory";
@@ -35,7 +35,7 @@ export async function deployUpgradeable(
   //get the deployment bytecode from the interface
   let deployTxReq = await logicFactory.getDeployTransaction(...constructorArgs);
   let deployBytecode = deployTxReq.data;
-  if(deployBytecode !== undefined){
+  if (deployBytecode !== undefined) {
     //deploy the bytecode using the factory
     let txResponse = await factory.deployCreate(deployBytecode);
     let receipt = await txResponse.wait();
@@ -46,10 +46,10 @@ export async function deployUpgradeable(
         proxyAddress: string;
         proxySalt: string;
       }
-      >{
-        logicAddress: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
-        proxySalt: proxySalt,
-      };
+    >{
+      logicAddress: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+      proxySalt: proxySalt,
+    };
     if (proxySalt !== undefined) {
       //multicall deployProxy. upgradeProxy
       let multiCallArgs = await getDeployUpgradeableMultiCallArgs(
@@ -84,22 +84,16 @@ export async function upgradeProxy(
   let logicContractFactory = await ethers.getContractFactory(contractName);
   let deployBCode: BytesLike;
   if (typeof constructorArgs !== "undefined" && constructorArgs.length >= 0) {
-    deployBCode = logicContractFactory.getDeployTransaction(
-      ...constructorArgs
-    ).data as BytesLike;
-  } else {
-    deployBCode = logicContractFactory.getDeployTransaction()
+    deployBCode = logicContractFactory.getDeployTransaction(...constructorArgs)
       .data as BytesLike;
+  } else {
+    deployBCode = logicContractFactory.getDeployTransaction().data as BytesLike;
   }
   //instantiate the return object
   let txResponse = await factory.deployCreate(deployBCode);
   let receipt = await txResponse.wait();
   let res = {
-    logicAddress: await getEventVar(
-      receipt,
-      DeployedRawEvent,
-      contractAddrVar
-    ),
+    logicAddress: await getEventVar(receipt, DeployedRawEvent, contractAddrVar),
     proxySalt: await getSalt(contractName),
   };
   //upgrade the proxy
@@ -158,20 +152,30 @@ function extractPath(qualifiedName: string) {
   return qualifiedName.split(":")[0];
 }
 
-
-
 async function getDeployUpgradeableMultiCallArgs(
   factoryName: string,
   Salt: BytesLike,
   logicAddress: BytesLike,
-  initCallData?: BytesLike,
+  initCallData?: BytesLike
 ) {
   let factoryBase = await ethers.getContractFactory(factoryName);
-  let deployProxy:BytesLike = factoryBase.interface.encodeFunctionData("deployProxy", [Salt]);
-  let upgradeProxy: BytesLike = initCallData !== undefined ? 
-    factoryBase.interface.encodeFunctionData("upgradeProxy", [Salt, logicAddress, initCallData]) 
-    : factoryBase.interface.encodeFunctionData("upgradeProxy", [Salt, logicAddress, "0x"]); 
-  
+  let deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
+    "deployProxy",
+    [Salt]
+  );
+  let upgradeProxy: BytesLike =
+    initCallData !== undefined
+      ? factoryBase.interface.encodeFunctionData("upgradeProxy", [
+          Salt,
+          logicAddress,
+          initCallData,
+        ])
+      : factoryBase.interface.encodeFunctionData("upgradeProxy", [
+          Salt,
+          logicAddress,
+          "0x",
+        ]);
+
   return [deployProxy, upgradeProxy];
 }
 
@@ -205,26 +209,31 @@ async function getDeployTypeWithContractName(contractName: string) {
   return deployType.devdoc["custom:deploy-type"];
 }
 
-function getEventVar(receipt: ContractReceipt, eventName: string, varName: string) {
+function getEventVar(
+  receipt: ContractReceipt,
+  eventName: string,
+  varName: string
+) {
   let result = "0x";
   if (receipt.events !== undefined) {
-    let events = receipt.events
+    let events = receipt.events;
     for (let i = 0; i < events.length; i++) {
       //look for the event
       if (events[i].event === eventName) {
         if (events[i].args !== undefined) {
-          let args = events[i].args
+          let args = events[i].args;
           //extract the deployed mock logic contract address from the event
           result = args !== undefined ? args[varName] : undefined;
           if (result !== undefined) {
             return result;
           }
         } else {
-          throw new Error(`failed to extract ${varName} from event: ${eventName}`)
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
         }
       }
     }
   }
-  throw new Error(`failed to find event: ${eventName}`)
+  throw new Error(`failed to find event: ${eventName}`);
 }
-

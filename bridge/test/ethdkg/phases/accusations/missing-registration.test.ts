@@ -1,16 +1,16 @@
-import { validators4 } from "../../assets/4-validators-successful-case";
+import { getFixture, getValidatorEthAccount } from "../../../setup";
 import { validators10 } from "../../assets/10-validators-successful-case";
+import { validators4 } from "../../assets/4-validators-successful-case";
 import {
   addValidators,
-  initializeETHDKG,
-  registerValidators,
-  endCurrentPhase,
   assertETHDKGPhase,
-  Phase,
   endCurrentAccusationPhase,
+  endCurrentPhase,
   expect,
+  initializeETHDKG,
+  Phase,
+  registerValidators,
 } from "../../setup";
-import { getFixture, getValidatorEthAccount } from "../../../setup";
 
 describe("ETHDKG: Missing registration Accusation", () => {
   it("allows accusation of all missing validators after ETHDKG registration", async function () {
@@ -278,7 +278,9 @@ describe("ETHDKG: Missing registration Accusation", () => {
       ethdkg.accuseParticipantNotRegistered([
         "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
       ])
-    ).to.be.rejectedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -347,7 +349,9 @@ describe("ETHDKG: Missing registration Accusation", () => {
         validators4[3].address,
         "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
       ])
-    ).to.be.rejectedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -477,7 +481,9 @@ describe("ETHDKG: Missing registration Accusation", () => {
         validators4[2].address,
         validators4[2].address,
       ])
-    ).to.be.rejectedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });

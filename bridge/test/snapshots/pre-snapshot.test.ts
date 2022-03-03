@@ -1,12 +1,12 @@
+import { Signer } from "ethers";
+import { ethers } from "hardhat";
+import { expect } from "../chai-setup";
 import {
   Fixture,
   getFixture,
   getTokenIdFromTx,
   getValidatorEthAccount,
 } from "../setup";
-import { ethers } from "hardhat";
-import { expect } from "../chai-setup";
-import { Signer } from "ethers";
 import { validatorsSnapshots } from "./assets/4-validators-snapshots-1";
 
 describe("Snapshots: Tests Snapshots methods", () => {

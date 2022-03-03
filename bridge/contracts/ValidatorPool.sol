@@ -31,9 +31,7 @@ contract ValidatorPool is
 {
     using CustomEnumerableMaps for ValidatorDataMap;
 
-    constructor() ValidatorPoolStorage() {
-
-    }
+    constructor() ValidatorPoolStorage() {}
 
     modifier onlyValidator() {
         require(_isValidator(msg.sender), "ValidatorPool: Only validators allowed!");
@@ -631,6 +629,5 @@ contract ValidatorPool is
         delete _exitingValidatorsData[validator_];
     }
 
-    receive() external payable onlyValidatorNFT() {
-    }
+    receive() external payable onlyValidatorNFT {}
 }

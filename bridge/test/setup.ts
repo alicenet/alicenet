@@ -1,20 +1,4 @@
-import { ethers, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-
-import {
-  MadToken,
-  MadByte,
-  StakeNFT,
-  ValidatorNFT,
-  ETHDKG,
-  ValidatorPool,
-  Snapshots,
-  ValidatorPoolMock,
-  MadnetFactory,
-  SnapshotsMock,
-  //Factory,
-} from "../typechain-types";
-
 import {
   BigNumber,
   BigNumberish,
@@ -25,11 +9,24 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
+import { ethers, network } from "hardhat";
+import {
+  ETHDKG,
+  MadByte,
+  MadnetFactory,
+  MadToken,
+  Snapshots,
+  SnapshotsMock,
+  StakeNFT,
+  ValidatorNFT,
+  ValidatorPool,
+  ValidatorPoolMock,
+} from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export { expect, assert } from "./chai-setup";
+export { assert, expect } from "./chai-setup";
 
 export interface Snapshot {
   BClaims: string;

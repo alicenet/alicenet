@@ -9,7 +9,7 @@ contract MockSelfDestruct is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
     uint256 public v;
     uint256 public immutable i;
 
-    constructor(uint256 _i, bytes memory ) {
+    constructor(uint256 _i, bytes memory) {
         i = _i;
         factory_ = msg.sender;
     }
@@ -29,6 +29,7 @@ contract MockSelfDestruct is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
     function setFactory(address _factory) public {
         factory_ = _factory;
     }
+
     function getFactory() external view returns (address) {
         return factory_;
     }

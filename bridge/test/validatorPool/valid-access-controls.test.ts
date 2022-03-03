@@ -1,7 +1,7 @@
-import { Fixture, getFixture, factoryCallAny } from "../setup";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { factoryCallAny, Fixture, getFixture } from "../setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
   let fixture: Fixture;

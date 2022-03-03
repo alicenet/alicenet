@@ -1,16 +1,15 @@
-import { validators4 } from "../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import { getFixture, getValidatorEthAccount } from "../../setup";
+import { validators4 } from "../assets/4-validators-successful-case";
 import {
   addValidators,
-  initializeETHDKG,
-  registerValidators,
   assertEventSharesDistributed,
   distributeValidatorsShares,
-  startAtDistributeShares,
   expect,
+  initializeETHDKG,
+  registerValidators,
+  startAtDistributeShares,
 } from "../setup";
-import { getFixture, getValidatorEthAccount } from "../../setup";
 
 describe("ETHDKG: Distribute Shares", () => {
   it("does not let distribute shares before Distribute Share Phase is open", async function () {
@@ -52,7 +51,9 @@ describe("ETHDKG: Distribute Shares", () => {
     await expect(
       ethdkg
         .connect(
-          await getValidatorEthAccount("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac")
+          await getValidatorEthAccount(
+            "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac"
+          )
         )
         .distributeShares(
           [BigNumber.from("0")],
@@ -118,7 +119,9 @@ describe("ETHDKG: Distribute Shares", () => {
           [BigNumber.from("0"), BigNumber.from("0")],
           [BigNumber.from("0"), BigNumber.from("0")],
         ])
-    ).to.be.rejectedWith("ETHDKG: Key sharing failed - commitment not on elliptic curve!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Key sharing failed - commitment not on elliptic curve!"
+    );
 
     // the user can send empty encrypted shares on this phase, the accusation window will be
     // handling this!

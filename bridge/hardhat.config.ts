@@ -1,18 +1,17 @@
-import "@typechain/hardhat";
-import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-waffle";
-import "hardhat-contract-sizer";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
 import "@nomiclabs/hardhat-truffle5";
-import 'hardhat-abi-exporter';
+import "@nomiclabs/hardhat-waffle";
+import "@typechain/hardhat";
+import "hardhat-abi-exporter";
+import "hardhat-contract-sizer";
+import "hardhat-deploy";
+import "hardhat-gas-reporter";
+import { HardhatUserConfig, task } from "hardhat/config";
+import os from "os";
+import "solidity-coverage";
+import "./scripts/lib/gogogen";
 import "./scripts/lib/madnetFactoryTasks";
 import "./scripts/lib/madnetTasks";
-import "./scripts/lib/gogogen";
-import os from "os";
-import { getSystemErrorMap } from "util";
 require("dotenv").config();
 
 /**
@@ -52,7 +51,9 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
       gas: "auto",
       gasPrice: "auto",
-      accounts: ["0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"],
+      accounts: [
+        "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
+      ],
     },
     ropsten: {
       url: "https://testnet.eth.mnexplore.com/",
@@ -220,24 +221,24 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 120000,
-    jobs: (os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1), 
+    jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
   },
 
   abiExporter: {
-    path: './bindings/bindings-artifacts',
+    path: "./bindings/bindings-artifacts",
     runOnCompile: true,
     clear: true,
     flat: true,
     only: [
-    "MadnetFactory",
-    "ETHDKG",
-    "ValidatorPool",
-    "Snapshots",
-    "MadByte",
-    "MadToken",
-    "StakeNFT",
-    "ValidatorNFT",
-    "Governance",
+      "MadnetFactory",
+      "ETHDKG",
+      "ValidatorPool",
+      "Snapshots",
+      "MadByte",
+      "MadToken",
+      "StakeNFT",
+      "ValidatorNFT",
+      "Governance",
     ],
     except: [
       "I[A-Z].*",
@@ -250,7 +251,7 @@ const config: HardhatUserConfig = {
     ],
     spacing: 2,
     pretty: false,
-  }
+  },
 };
 
 export default config;

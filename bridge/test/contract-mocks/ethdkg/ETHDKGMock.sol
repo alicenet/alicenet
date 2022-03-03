@@ -11,7 +11,6 @@ import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
-
 contract ETHDKGMock is
     ETHDKGStorage,
     IETHDKG,
@@ -382,6 +381,4 @@ contract ETHDKGMock is
     function setConsensusRunning() external {
         IValidatorPool(_ValidatorPoolAddress()).completeETHDKG();
     }
-
-
 }

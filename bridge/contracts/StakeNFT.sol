@@ -12,15 +12,14 @@ import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/INFTStake.sol";
 
 abstract contract StakeNFTStorage {
-
-      // _MAX_MINT_LOCK describes the maximum interval a Position may be locked
+    // _MAX_MINT_LOCK describes the maximum interval a Position may be locked
     // during a call to mintTo
-    uint256 constant internal _MAX_MINT_LOCK = 1051200;
+    uint256 internal constant _MAX_MINT_LOCK = 1051200;
     // 10**18
-    uint256 constant internal _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
+    uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
     // constants for the cb state
-    bool constant internal CIRCUIT_BREAKER_OPENED = true;
-    bool constant internal CIRCUIT_BREAKER_CLOSED = false;
+    bool internal constant CIRCUIT_BREAKER_OPENED = true;
+    bool internal constant CIRCUIT_BREAKER_CLOSED = false;
 
     // Position describes a staked position
     struct Position {
@@ -91,23 +90,34 @@ abstract contract StakeNFTBase is
     ImmutableFactory,
     ImmutableValidatorPool,
     ImmutableMadToken,
-    ImmutableGovernance {
-
-    constructor() ImmutableFactory(msg.sender) ImmutableMadToken() ImmutableGovernance() ImmutableValidatorPool() {
-       //IERC20Transferable(_MadTokenAddress())
-       //IERC20Transferable(_GovernanceAddress())
+    ImmutableGovernance
+{
+    constructor()
+        ImmutableFactory(msg.sender)
+        ImmutableMadToken()
+        ImmutableGovernance()
+        ImmutableValidatorPool()
+    {
+        //IERC20Transferable(_MadTokenAddress())
+        //IERC20Transferable(_GovernanceAddress())
         // _madToken = IERC20Transferable(getMetamorphicContractAddress(0x4d6164546f6b656e000000000000000000000000000000000000000000000000, _factory));
         // _governance = getMetamorphicContractAddress(0x476f7665726e616e636500000000000000000000000000000000000000000000, _factory);
     }
 
-    function __StakeNFTBase_init(string memory name_, string memory symbol_) internal onlyInitializing {
+    function __StakeNFTBase_init(string memory name_, string memory symbol_)
+        internal
+        onlyInitializing
+    {
         __ERC721_init(name_, symbol_);
     }
 
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
     modifier withCircuitBreaker() {
-        require(_circuitBreaker == CIRCUIT_BREAKER_CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
+        require(
+            _circuitBreaker == CIRCUIT_BREAKER_CLOSED,
+            "CircuitBreaker: The Circuit breaker is opened!"
+        );
         _;
     }
 
@@ -115,7 +125,7 @@ abstract contract StakeNFTBase is
     //     return _isAllowedProposal(addr);
     // }
 
-    function circuitBreakerState() public view returns(bool) {
+    function circuitBreakerState() public view returns (bool) {
         return _circuitBreaker;
     }
 
@@ -221,14 +231,14 @@ abstract contract StakeNFTBase is
         return _lockPosition(tokenID_, lockDuration_);
     }
 
-
     /// This function will lock an owned Position for up to _maxGovernanceLock. This method may
     /// only be called by the owner of the Position. This function will fail if the circuit breaker
     /// is tripped
-    function lockOwnPosition(
-        uint256 tokenID_,
-        uint256 lockDuration_
-    ) public withCircuitBreaker returns (uint256) {
+    function lockOwnPosition(uint256 tokenID_, uint256 lockDuration_)
+        public
+        withCircuitBreaker
+        returns (uint256)
+    {
         require(
             msg.sender == ownerOf(tokenID_),
             "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
@@ -265,7 +275,11 @@ abstract contract StakeNFTBase is
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
-    function depositToken(uint8 magic_, uint256 amount_) public withCircuitBreaker checkMagic(magic_) {
+    function depositToken(uint8 magic_, uint256 amount_)
+        public
+        withCircuitBreaker
+        checkMagic(magic_)
+    {
         // collect tokens
         _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
         // update state
@@ -699,12 +713,18 @@ abstract contract StakeNFTBase is
     // }
 
     function _tripCB() internal {
-        require(_circuitBreaker == CIRCUIT_BREAKER_CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
+        require(
+            _circuitBreaker == CIRCUIT_BREAKER_CLOSED,
+            "CircuitBreaker: The Circuit breaker is opened!"
+        );
         _circuitBreaker = CIRCUIT_BREAKER_OPENED;
     }
 
     function _resetCB() internal {
-        require(_circuitBreaker == CIRCUIT_BREAKER_OPENED, "CircuitBreaker: The Circuit breaker is closed!");
+        require(
+            _circuitBreaker == CIRCUIT_BREAKER_OPENED,
+            "CircuitBreaker: The Circuit breaker is closed!"
+        );
         _circuitBreaker = CIRCUIT_BREAKER_CLOSED;
     }
 
@@ -719,13 +739,13 @@ abstract contract StakeNFTBase is
     function _getCount() internal view returns (uint256) {
         return _counter;
     }
-
 }
 
 /// @custom:salt StakeNFT
 /// @custom:deploy-type deployStatic
 contract StakeNFT is StakeNFTBase {
     constructor() StakeNFTBase() {}
+
     function initialize() public onlyFactory initializer {
         __StakeNFTBase_init("MNSNFT", "MNS");
     }

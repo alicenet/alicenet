@@ -1,13 +1,13 @@
 import fs from "fs";
 import { env } from "./lib/constants";
 import {
-  getAllContracts,
-  getDeployType,
-  getConstructorArgsABI,
   ArgData,
+  getAllContracts,
+  getConstructorArgsABI,
+  getDeployType,
   getInitializerArgsABI,
-  parseArgsArray,
   InitData,
+  parseArgsArray,
 } from "./lib/deploymentUtils";
 
 async function main() {

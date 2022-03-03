@@ -10,9 +10,7 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 /// @custom:salt ETHDKGAccusations
 /// @custom:deploy-type deployUpgradeable
 contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
-
-    constructor() ETHDKGStorage(){
-    }
+    constructor() ETHDKGStorage() {}
 
     function accuseParticipantNotRegistered(address[] memory dishonestAddresses) external {
         require(
@@ -87,7 +85,6 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
         _badParticipants = badParticipants;
     }
-
 
     function accuseParticipantDistributedBadShares(
         address dishonestAddress,
@@ -312,7 +309,8 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         uint16 badParticipants = _badParticipants;
         // n is total _participants;
         // t is threshold, so that t+1 is BFT majority.
-        uint256 numParticipants = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount() + badParticipants;
+        uint256 numParticipants = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount() +
+            badParticipants;
         uint256 threshold = _getThreshold(numParticipants);
 
         // Begin initial check
@@ -440,7 +438,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (!isValid) {
             IValidatorPool(_ValidatorPoolAddress()).majorSlash(dishonestAddress, msg.sender);
         } else {
-           IValidatorPool(_ValidatorPoolAddress()).majorSlash(msg.sender, dishonestAddress);
+            IValidatorPool(_ValidatorPoolAddress()).majorSlash(msg.sender, dishonestAddress);
         }
         badParticipants++;
         _badParticipants = badParticipants;

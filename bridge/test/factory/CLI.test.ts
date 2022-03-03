@@ -2,10 +2,7 @@ import { expect } from "chai";
 import { run } from "hardhat";
 import { MOCK } from "../../scripts/lib/constants";
 import { getDefaultFactoryAddress } from "../../scripts/lib/factoryStateUtils";
-import {
-  getAccounts,
-  predictFactoryAddress
-} from "./Setup";
+import { getAccounts, predictFactoryAddress } from "./Setup";
 
 describe("Cli tasks", async () => {
   let firstOwner: string;
@@ -29,11 +26,10 @@ describe("Cli tasks", async () => {
     expect(defaultFactoryAddress).to.equal(factoryAddress);
   });
 
-
   xit("deploy mock with deploystatic", async () => {
     await run("deployMetamorphic", {
       contractName: MOCK,
-      constructorArgs: ["2", "s"]
+      constructorArgs: ["2", "s"],
     });
   });
 });

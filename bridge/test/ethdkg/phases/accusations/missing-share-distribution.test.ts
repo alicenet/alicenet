@@ -1,13 +1,12 @@
-import { validators4 } from "../../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
-import {
-  endCurrentPhase,
-  endCurrentAccusationPhase,
-  distributeValidatorsShares,
-  startAtDistributeShares,
-  expect,
-} from "../../setup";
 import { getValidatorEthAccount } from "../../../setup";
+import { validators4 } from "../../assets/4-validators-successful-case";
+import {
+  distributeValidatorsShares,
+  endCurrentAccusationPhase,
+  endCurrentPhase,
+  expect,
+  startAtDistributeShares,
+} from "../../setup";
 
 describe("ETHDKG: Missing distribute share accusation", () => {
   it("allows accusation of all missing validators after distribute shares Phase", async function () {
@@ -278,7 +277,9 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ethdkg.accuseParticipantDidNotDistributeShares([
         "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
       ])
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -366,7 +367,9 @@ describe("ETHDKG: Missing distribute share accusation", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(1);
   });

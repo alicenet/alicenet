@@ -1,13 +1,13 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
+import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
+import {
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
 import {
   commitSnapshots,
   createValidators,
@@ -46,9 +46,15 @@ describe("ValidatorPool: Slashing logic", async () => {
       stakingTokenIds,
     ]);
     let expectedState = await getCurrentState(fixture, validators);
-    await showState("After registering", await getCurrentState(fixture, validators));
+    await showState(
+      "After registering",
+      await getCurrentState(fixture, validators)
+    );
     await ethdkg.minorSlash(validators[0], validators[1]);
-    await showState("After minor slashing", await getCurrentState(fixture, validators));
+    await showState(
+      "After minor slashing",
+      await getCurrentState(fixture, validators)
+    );
     let currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT -= 1;
@@ -83,7 +89,10 @@ describe("ValidatorPool: Slashing logic", async () => {
     ]);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
-    await showState("After major slashing", await getCurrentState(fixture, validators));
+    await showState(
+      "After major slashing",
+      await getCurrentState(fixture, validators)
+    );
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT -= 1;
     // Expect reward to be transferred from ValidatorNFT to disputer
@@ -130,9 +139,15 @@ describe("ValidatorPool: Slashing logic", async () => {
       stakingTokenIds,
     ]);
     let expectedState = await getCurrentState(fixture, validators);
-    await showState("After registering", await getCurrentState(fixture, validators));
+    await showState(
+      "After registering",
+      await getCurrentState(fixture, validators)
+    );
     await ethdkg.minorSlash(infringer, disputer);
-    await showState("After minor slashing", await getCurrentState(fixture, validators));
+    await showState(
+      "After minor slashing",
+      await getCurrentState(fixture, validators)
+    );
     await commitSnapshots(fixture, 4);
     // Prepare arrays for re-registering
     validatorsSnapshots.length = 1;
@@ -141,7 +156,10 @@ describe("ValidatorPool: Slashing logic", async () => {
       let claimTx = (await fixture.validatorPool
         .connect(await getValidatorEthAccount(validator))
         .claimExitingNFTPosition()) as ContractTransaction;
-      await showState("After claiming", await getCurrentState(fixture, validators));
+      await showState(
+        "After claiming",
+        await getCurrentState(fixture, validators)
+      );
       let receipt = await ethers.provider.getTransactionReceipt(claimTx.hash);
       //When a token is claimed it gets burned an minted so validator gets a new tokenId so we need to update array for re-registration
       const tokenId = BigNumber.from(receipt.logs[0].topics[3]);
@@ -150,7 +168,10 @@ describe("ValidatorPool: Slashing logic", async () => {
       await fixture.stakeNFT
         .connect(await getValidatorEthAccount(validator))
         .transferFrom(validator.address, fixture.factory.address, tokenId);
-      await showState("After transferring", await getCurrentState(fixture, validators));
+      await showState(
+        "After transferring",
+        await getCurrentState(fixture, validators)
+      );
       // Approve new tokensIds
       await factoryCallAny(fixture, "stakeNFT", "approve", [
         fixture.validatorPool.address,

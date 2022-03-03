@@ -28,11 +28,7 @@ library RClaimsParserLibrary {
     */
     /// @param src Binary data containing a RClaims serialized struct with Capn Proto headers
     /// @dev Execution cost: 1506 gas
-    function extractRClaims(bytes memory src)
-        internal
-        pure
-        returns (RClaims memory rClaims)
-    {
+    function extractRClaims(bytes memory src) internal pure returns (RClaims memory rClaims) {
         return extractInnerRClaims(src, CAPNPROTO_HEADER_SIZE);
     }
 
@@ -59,14 +55,20 @@ library RClaimsParserLibrary {
             "RClaimsParserLibrary: Not enough bytes to extract RClaims"
         );
         rClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
-        require(rClaims.chainId > 0, "RClaimsParserLibrary: Invalid parsing. The chainId should be greater than 0!");
-        rClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
-        require(rClaims.height > 0, "RClaimsParserLibrary: Invalid parsing. The height should be greater than 0!");
-        rClaims.round = BaseParserLibrary.extractUInt32(src, dataOffset + 8);
-        require(rClaims.round > 0, "RClaimsParserLibrary: Invalid parsing. The round should be greater than 0!");
-        rClaims.prevBlock = BaseParserLibrary.extractBytes32(
-            src,
-            dataOffset + 24
+        require(
+            rClaims.chainId > 0,
+            "RClaimsParserLibrary: Invalid parsing. The chainId should be greater than 0!"
         );
+        rClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
+        require(
+            rClaims.height > 0,
+            "RClaimsParserLibrary: Invalid parsing. The height should be greater than 0!"
+        );
+        rClaims.round = BaseParserLibrary.extractUInt32(src, dataOffset + 8);
+        require(
+            rClaims.round > 0,
+            "RClaimsParserLibrary: Invalid parsing. The round should be greater than 0!"
+        );
+        rClaims.prevBlock = BaseParserLibrary.extractBytes32(src, dataOffset + 24);
     }
 }

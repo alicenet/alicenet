@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-
 abstract contract Admin {
-
     // _admin is a privileged role
     address internal _admin;
 
@@ -23,7 +21,7 @@ abstract contract Admin {
     }
 
     /// @dev getAdmin returns the current _admin
-    function getAdmin() public view returns(address) {
+    function getAdmin() public view returns (address) {
         return _admin;
     }
 

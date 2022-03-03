@@ -29,12 +29,16 @@ struct Participant {
     uint256[4] gpkj;
 }
 
-abstract contract ETHDKGStorage is Initializable, ImmutableFactory, ImmutableSnapshots, ImmutableValidatorPool {
-
+abstract contract ETHDKGStorage is
+    Initializable,
+    ImmutableFactory,
+    ImmutableSnapshots,
+    ImmutableValidatorPool
+{
     // ISnapshots internal immutable _snapshots;
     // IValidatorPool internal immutable _validatorPool;
     //address internal immutable _factory;
-    uint256 internal constant  MIN_VALIDATOR = 4;
+    uint256 internal constant MIN_VALIDATOR = 4;
 
     uint64 internal _nonce;
     uint64 internal _phaseStartBlock;
@@ -55,6 +59,5 @@ abstract contract ETHDKGStorage is Initializable, ImmutableFactory, ImmutableSna
 
     mapping(address => Participant) internal _participants;
 
-    constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() ImmutableValidatorPool() {
-    }
+    constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() ImmutableValidatorPool() {}
 }

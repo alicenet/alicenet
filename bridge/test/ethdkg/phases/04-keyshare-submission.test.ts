@@ -1,15 +1,14 @@
-import { validators4 } from "../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
 import { BigNumberish } from "ethers";
+import { getValidatorEthAccount } from "../../setup";
+import { validators4 } from "../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
-  startAtDistributeShares,
-  submitValidatorsKeyShares,
-  startAtSubmitKeyShares,
-  waitNextPhaseStartDelay,
   expect,
+  startAtDistributeShares,
+  startAtSubmitKeyShares,
+  submitValidatorsKeyShares,
+  waitNextPhaseStartDelay,
 } from "../setup";
-import { getValidatorEthAccount } from "../../setup";
 
 describe("ETHDKG: Submit Key share", () => {
   it("should not allow submission of key shares when not in KeyShareSubmission phase", async () => {
@@ -122,7 +121,9 @@ describe("ETHDKG: Submit Key share", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"])
-    ).to.be.rejectedWith("ETHDKG: Key share submission failed - invalid key share G1!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Key share submission failed - invalid key share G1!"
+    );
 
     await expect(
       ethdkg
@@ -132,7 +133,9 @@ describe("ETHDKG: Submit Key share", () => {
           ["0", "0"],
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith("ETHDKG: Key share submission failed - invalid key share G1!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Key share submission failed - invalid key share G1!"
+    );
 
     await expect(
       ethdkg
@@ -142,6 +145,8 @@ describe("ETHDKG: Submit Key share", () => {
           validators4[0].keyShareG1CorrectnessProof,
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith("ETHDKG: Key share submission failed - invalid key share G2!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Key share submission failed - invalid key share G2!"
+    );
   });
 });

@@ -1,12 +1,12 @@
+import { BigNumber, ContractTransaction } from "ethers";
+import { ethers } from "hardhat";
+import { ValidatorRawData } from "../ethdkg/setup";
 import {
-  getTokenIdFromTx,
-  getValidatorEthAccount,
   factoryCallAny,
   Fixture,
+  getTokenIdFromTx,
+  getValidatorEthAccount,
 } from "../setup";
-import { ValidatorRawData } from "../ethdkg/setup";
-import { ethers } from "hardhat";
-import { BigNumber, ContractTransaction } from "ethers";
 
 interface Contract {
   StakeNFT: number;
@@ -235,7 +235,7 @@ export const stakeValidators = async (
   let [adminSigner] = await ethers.getSigners();
   let stakeAmountMadWei = await fixture.validatorPool.getStakeAmount();
   let lockTime = 1;
-  for (let i=0; i< validators.length ; i++) {
+  for (let i = 0; i < validators.length; i++) {
     // Stake all MAD tokens
     let tx = await fixture.stakeNFT
       .connect(adminSigner)
@@ -249,7 +249,7 @@ export const stakeValidators = async (
     ]);
   }
   await showState("After staking:", await getCurrentState(fixture, validators));
-  return stakingTokenIds
+  return stakingTokenIds;
 };
 
 export const claimPosition = async (
