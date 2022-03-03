@@ -3,6 +3,7 @@ package dkgevents
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
@@ -70,11 +71,14 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	state.EthDKG.IsValidator = amIaValidator
 
 	// get validators from ValidatorPool
-	ctx := context.Background()
+	ctx, cf := context.WithTimeout(context.Background(), 7*time.Second)
+	defer cf()
+
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "ProcessRegistrationOpened(): Unable to get validatorAddresses from ValidatorPool: %v", err)
+		return err
+		// return dkg.LogReturnErrorf(logger, "ProcessRegistrationOpened(): Unable to get validatorAddresses from ValidatorPool: %v", err)
 	}
 	state.EthDKG.ValidatorAddresses = validatorAddresses
 	state.EthDKG.NumberOfValidators = len(validatorAddresses)

@@ -404,29 +404,13 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 
 		logs := logsList[i]
 
-		// Check all the logs for an event we want to process
-		for _, log := range logs {
-
-			eventID := log.Topics[0].String()
-			logEntry := logEntry.WithField("EventID", eventID)
-
-			info, present := eventMap.Lookup(eventID)
-			if present {
-				logEntry = logEntry.WithField("Event", info.Name)
-				if info.Processor != nil {
-					err := info.Processor(eth, logEntry, monitorState, log)
-					if err != nil {
-						logEntry.Errorf("Failed processing event: %v", err)
-						return err
-					}
-				} else {
-					logEntry.Info("No processor configured.")
-				}
-
-			} else {
-				logEntry.Debug("Found unknown event")
+		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
+		var forceExit bool
+		if err != nil {
+			if !errors.Is(err, context.DeadlineExceeded) {
+				return err
 			}
-
+			forceExit = true
 		}
 
 		// Check if any tasks are scheduled
@@ -450,11 +434,42 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			logEntry.Warnf("Error retrieving scheduled task: %v", err)
 		}
 		processed = currentBlock
+
+		if forceExit {
+			break
+		}
 	}
 
 	// Only after batch is processed do we update monitor State
 	monitorState.HighestBlockProcessed = processed
 	return nil
+}
+
+func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
+	logEntry := logger.WithField("Block", currentBlock)
+
+	// Check all the logs for an event we want to process
+	for _, log := range logs {
+
+		eventID := log.Topics[0].String()
+		logEntry := logEntry.WithField("EventID", eventID)
+
+		info, present := eventMap.Lookup(eventID)
+		if present {
+			logEntry = logEntry.WithField("Event", info.Name)
+			if info.Processor != nil {
+				err := info.Processor(eth, logEntry, monitorState, log)
+				if err != nil {
+					logEntry.Errorf("Failed processing event: %v", err)
+					return currentBlock - 1, err
+				}
+			} else {
+				panic(fmt.Errorf("no processor configured for %v", info.Name))
+			}
+		}
+	}
+
+	return currentBlock, nil
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
