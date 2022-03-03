@@ -9,14 +9,18 @@ NOCOL=\033[31;0m
 
 all: test build
 
-build: 
-	$(GOCMD) build -o $(BINARY_NAME) ./cmd/main.go
+build:
+	$(GOCMD) mod tidy; \
+	$(GOCMD) build -o $(BINARY_NAME) ./cmd/main.go;
 
 race:
-	$(GOCMD) build -o $(RACE_DETECTOR) -race ./cmd/main.go
+	$(GOCMD) mod tidy; \
+	$(GOCMD) build -o $(RACE_DETECTOR) -race ./cmd/main.go;
 
 generate:
 	@ set -eu && \
+	$(GOCMD) mod tidy; \
+	cd bridge && npm i && npm run clean && npm run build && cd ..; \
 	DOCKER_BUILDKIT=1 docker build . -f dockerfiles/generate/Dockerfile -t madnet-go-generate; \
 	EXISTING=$$(docker ps -a --filter name=madnet-go-generate --format {{.Image}}); \
 	\

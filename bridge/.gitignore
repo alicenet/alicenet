@@ -28,4 +28,4 @@ bin
 deployments/*
 bindings/*
 bindings-artifacts/*
-generate.go
+bindings/generate.go

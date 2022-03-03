@@ -224,7 +224,7 @@ const config: HardhatUserConfig = {
   },
 
   abiExporter: {
-    path: './bindings-artifacts',
+    path: './bindings/bindings-artifacts',
     runOnCompile: true,
     clear: true,
     flat: true,
@@ -237,8 +237,11 @@ const config: HardhatUserConfig = {
     "MadToken",
     "StakeNFT",
     "ValidatorNFT",
+    "Governance",
     ],
     except: [
+      "I[A-Z].*",
+      "Immutable.*",
       ".*Mock",
       ".*Base",
       ".*Storage",

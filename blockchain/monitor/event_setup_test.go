@@ -7,7 +7,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/bridge/bindings"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +19,7 @@ func TestRegisteringETHDKGEvents(t *testing.T) {
 
 	monitor.RegisterETHDKGEvents(em, adminHandler)
 
-	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.IETHDKGEventsMetaData.ABI))
+	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {
 		t.Fatal(err)
 	}

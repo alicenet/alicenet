@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	// github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
-	github.com/MadBase/bridge v0.9.0
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/elazarl/go-bindata-assetfs v1.0.1
@@ -36,7 +35,10 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
-require google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
+require (
+	github.com/vburenin/ifacemaker v1.1.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
+)
 
 require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
@@ -61,6 +63,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jessevdk/go-flags v1.4.1-0.20181029123624-5de817a9aa20 // indirect
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
@@ -91,5 +94,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
-
-replace github.com/MadBase/bridge => ../bridge

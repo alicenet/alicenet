@@ -13,7 +13,7 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
-	"github.com/MadBase/bridge/bindings"
+	"github.com/MadBase/MadNet/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
@@ -45,7 +45,7 @@ func (ah *adminHandlerMock) AddPrivateKey([]byte, constants.CurveSpec) error {
 	return nil
 }
 
-func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool, bool) error {
+func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool) error {
 	ah.snapshotCalled = true
 	return nil
 }

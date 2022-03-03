@@ -164,7 +164,7 @@ func (ah *mockAdminHandler) AddPrivateKey([]byte, constants.CurveSpec) error {
 	return nil
 }
 
-func (ah *mockAdminHandler) AddSnapshot(*objs.BlockHeader, bool, bool) error {
+func (ah *mockAdminHandler) AddSnapshot(*objs.BlockHeader, bool) error {
 	return nil
 }
 func (ah *mockAdminHandler) AddValidatorSet(*objs.ValidatorSet) error {

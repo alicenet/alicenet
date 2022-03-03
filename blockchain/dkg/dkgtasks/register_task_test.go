@@ -9,7 +9,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 
-	"github.com/MadBase/bridge/bindings"
+	"github.com/MadBase/MadNet/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"

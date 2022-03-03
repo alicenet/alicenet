@@ -5,8 +5,8 @@
     "init": "npx hardhat typechain",
     "test": "npx hardhat test --show-stack-traces",
     "test-parallel": "npx hardhat test --parallel --show-stack-traces",
-    "clean": "rm -rf typechain-types && npx hardhat clean",
-    "build": "npx hardhat compile && npx hardhat go-go-gen --out bindings --pkg bindings --in bindings-artifacts"
+    "clean": "mkdir -p typechain-types && rm -rf typechain-types && npx hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
+    "build": "npx hardhat compile && npx hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",

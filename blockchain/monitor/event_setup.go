@@ -8,15 +8,15 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/monevents"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 func GetETHDKGEvents() map[string]abi.Event {
-	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.IETHDKGEventsMetaData.ABI))
+	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}

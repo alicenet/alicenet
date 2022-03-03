@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MadBase/bridge/bindings"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/common"
 )
 
