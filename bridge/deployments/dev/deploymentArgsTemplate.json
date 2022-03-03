@@ -12,7 +12,7 @@
         "type": "uint256"
       },
       {
-        "epochLength_": "16",
+        "epochLength_": "1024",
         "type": "uint256"
       }
     ]
