@@ -10,13 +10,12 @@ geth \
   \
   --mine \
   --miner.threads 1 \
-  --miner.gasprice 0 \
-  --txpool.pricelimit 0 \
+  --miner.gasprice 1 \
+  --txpool.pricelimit 1 \
   --miner.gaslimit 10000000 \
   --miner.etherbase 546f99f244b7b58b855330ae0e2bc1b30b41302f \
   \
   --nodiscover \
-  --txpool.nolocals \
   --maxpeers 0 \
   \
   --ws \

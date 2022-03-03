@@ -79,6 +79,7 @@ task(
     let gasCost = await hre.ethers.provider.estimateGas(deployTX);
     //deploys the factory
     let factory = await factoryBase.deploy(futureFactoryAddress);
+    await factory.deployTransaction.wait()
     //record the data in a json file to be used in other tasks
     let factoryData: FactoryData = {
       address: factory.address,
