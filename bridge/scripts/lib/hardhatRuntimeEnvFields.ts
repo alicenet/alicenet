@@ -1,4 +1,4 @@
 export type defaultFactoryField = {
-      name:string; 
-      address:string;
-    }
+  name: string;
+  address: string;
+};

@@ -1,20 +1,19 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
-import { completeETHDKGRound } from "../../ethdkg/setup";
+import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
+import { completeETHDKGRound } from "../../ethdkg/setup";
+import {
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
-import { BigNumber, Signer } from "ethers";
 import {
   createValidators,
   getCurrentState,
   showState,
   stakeValidators,
-  commitSnapshots,
 } from "../setup";
 
 describe("ValidatorPool: Collecting logic", async function () {

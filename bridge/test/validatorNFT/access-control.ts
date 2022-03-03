@@ -1,10 +1,9 @@
-import { Fixture, getFixture } from "../setup";
-import { ethers } from "hardhat";
-import { expect } from "../chai-setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { BigNumberish } from "ethers";
+import { ethers } from "hardhat";
 import { ValidatorPoolMock } from "../../typechain-types";
+import { expect } from "../chai-setup";
+import { Fixture, getFixture } from "../setup";
 
 describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
   let fixture: Fixture;

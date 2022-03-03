@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-
 abstract contract CircuitBreaker {
-
     bool constant open = true;
     bool constant closed = false;
 
@@ -18,7 +16,7 @@ abstract contract CircuitBreaker {
         _;
     }
 
-    function cbState() public view returns(bool) {
+    function cbState() public view returns (bool) {
         return _cb;
     }
 
@@ -31,5 +29,4 @@ abstract contract CircuitBreaker {
         require(_cb == open, "CircuitBreaker: The Circuit breaker is closed!");
         _cb = closed;
     }
-
 }

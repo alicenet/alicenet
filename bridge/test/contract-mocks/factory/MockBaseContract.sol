@@ -9,8 +9,9 @@ contract MockBaseContract is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
     uint256 public v;
     uint256 public immutable i;
     string p;
+
     constructor(uint256 _i, string memory _p) {
-        p= _p;
+        p = _p;
         i = _i;
         factory_ = msg.sender;
     }
@@ -30,10 +31,12 @@ contract MockBaseContract is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
     function setFactory(address _factory) public {
         factory_ = _factory;
     }
+
     function getFactory() external view returns (address) {
         return factory_;
     }
 }
+
 interface IMockBaseContract {
     function v() external returns (uint256);
 

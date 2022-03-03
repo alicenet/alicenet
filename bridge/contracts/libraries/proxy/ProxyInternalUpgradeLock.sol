@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-
 abstract contract ProxyInternalUpgradeLock {
     function __lockImplementation() internal {
         assembly {
@@ -16,5 +15,3 @@ abstract contract ProxyInternalUpgradeLock {
         }
     }
 }
-
-

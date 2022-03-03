@@ -43,11 +43,18 @@ library MerkleProofParserLibrary {
         );
         mProof.included = BaseParserLibrary.extractBool(src, 0);
         mProof.keyHeight = BaseParserLibrary.extractUInt16FromBigEndian(src, 1);
-        require(mProof.keyHeight >= 0 && mProof.keyHeight <= 256, "MerkleProofParserLibrary: keyHeight should be in the range [0, 256]");
+        require(
+            mProof.keyHeight >= 0 && mProof.keyHeight <= 256,
+            "MerkleProofParserLibrary: keyHeight should be in the range [0, 256]"
+        );
         mProof.key = BaseParserLibrary.extractBytes32(src, 3);
         mProof.proofKey = BaseParserLibrary.extractBytes32(src, 35);
         mProof.proofValue = BaseParserLibrary.extractBytes32(src, 67);
         mProof.bitmap = BaseParserLibrary.extractBytes(src, 103, bitmapLength);
-        mProof.auditPath = BaseParserLibrary.extractBytes(src, 103 + bitmapLength, auditPathLength*32);
+        mProof.auditPath = BaseParserLibrary.extractBytes(
+            src,
+            103 + bitmapLength,
+            auditPathLength * 32
+        );
     }
 }

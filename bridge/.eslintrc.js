@@ -16,7 +16,10 @@ module.exports = {
     ecmaVersion: 12,
   },
   rules: {
-    "no-unused-vars": ["warning", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false }],
+    "no-unused-vars": [
+      "warning",
+      { vars: "all", args: "after-used", ignoreRestSiblings: false },
+    ],
     "node/no-unsupported-features/es-syntax": [
       "error",
       { ignores: ["modules"] },

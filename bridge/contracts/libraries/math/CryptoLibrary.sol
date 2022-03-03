@@ -18,7 +18,6 @@ pragma solidity ^0.8.11;
 //       some of them may not be if there are attempts they are called with
 //       invalid points.
 library CryptoLibrary {
-
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //// CRYPTOGRAPHIC CONSTANTS
 
@@ -27,15 +26,17 @@ library CryptoLibrary {
     ////////
 
     // GROUP_ORDER is the are the number of group elements in the groups G1, G2, and GT.
-    uint256 constant GROUP_ORDER   = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant GROUP_ORDER =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
     // FIELD_MODULUS is the prime number over which the elliptic curves are based.
-    uint256 constant FIELD_MODULUS = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant FIELD_MODULUS =
+        21888242871839275222246405745257275088696311157297823662689037894645226208583;
     // curveB is the constant of the elliptic curve for G1:
     //
     //      y^2 == x^3 + curveB,
     //
     // with curveB == 3.
-    uint256 constant curveB        = 3;
+    uint256 constant curveB = 3;
 
     // G1 == (G1x, G1y) is the standard generator for group G1.
     // uint256 constant G1x  = 1;
@@ -47,8 +48,10 @@ library CryptoLibrary {
     // In the future, the specific value of H1 could be changed every time
     // there is a change in validator set. For right now, though, this will
     // be a fixed constant.
-    uint256 constant H1x  =  2788159449993757418373833378244720686978228247930022635519861138679785693683;
-    uint256 constant H1y  = 12344898367754966892037554998108864957174899548424978619954608743682688483244;
+    uint256 constant H1x =
+        2788159449993757418373833378244720686978228247930022635519861138679785693683;
+    uint256 constant H1y =
+        12344898367754966892037554998108864957174899548424978619954608743682688483244;
 
     // H2 == ([H2xi, H2x], [H2yi, H2y]) is the *negation* of the
     // standard generator of group G2.
@@ -70,35 +73,44 @@ library CryptoLibrary {
     // This is equivalent to
     //
     //      e(sig, H2) * e(H(msg), pubK) == 1.
-    uint256 constant H2xi = 11559732032986387107991004021392285783925812861821192530917403151452391805634;
-    uint256 constant H2x  = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
-    uint256 constant H2yi = 17805874995975841540914202342111839520379459829704422454583296818431106115052;
-    uint256 constant H2y  = 13392588948715843804641432497768002650278120570034223513918757245338268106653;
+    uint256 constant H2xi =
+        11559732032986387107991004021392285783925812861821192530917403151452391805634;
+    uint256 constant H2x =
+        10857046999023057135944570762232829481370756359578518086990519993285655852781;
+    uint256 constant H2yi =
+        17805874995975841540914202342111839520379459829704422454583296818431106115052;
+    uint256 constant H2y =
+        13392588948715843804641432497768002650278120570034223513918757245338268106653;
 
-    uint256 constant G1x  = 1;
-    uint256 constant G1y  = 2;
+    uint256 constant G1x = 1;
+    uint256 constant G1y = 2;
 
     // two256modP == 2^256 mod FIELD_MODULUS;
     // this is used in hashToBase to obtain a more uniform hash value.
-    uint256 constant two256modP = 6350874878119819312338956282401532409788428879151445726012394534686998597021;
+    uint256 constant two256modP =
+        6350874878119819312338956282401532409788428879151445726012394534686998597021;
 
     // pMinus1 == -1 mod FIELD_MODULUS;
     // this is used in sign0 and all ``negative'' values have this sign value.
-    uint256 constant pMinus1 = 21888242871839275222246405745257275088696311157297823662689037894645226208582;
+    uint256 constant pMinus1 =
+        21888242871839275222246405745257275088696311157297823662689037894645226208582;
 
     // pMinus2 == FIELD_MODULUS - 2;
     // this is the exponent used in finite field inversion.
-    uint256 constant pMinus2 = 21888242871839275222246405745257275088696311157297823662689037894645226208581;
+    uint256 constant pMinus2 =
+        21888242871839275222246405745257275088696311157297823662689037894645226208581;
 
     // pMinus1Over2 == (FIELD_MODULUS - 1) / 2;
     // this is the exponent used in computing the Legendre symbol and is
     // also used in sign0 as the cutoff point between ``positive'' and
     // ``negative'' numbers.
-    uint256 constant pMinus1Over2 = 10944121435919637611123202872628637544348155578648911831344518947322613104291;
+    uint256 constant pMinus1Over2 =
+        10944121435919637611123202872628637544348155578648911831344518947322613104291;
 
     // pPlus1Over4 == (FIELD_MODULUS + 1) / 4;
     // this is the exponent used in computing finite field square roots.
-    uint256 constant pPlus1Over4 = 5472060717959818805561601436314318772174077789324455915672259473661306552146;
+    uint256 constant pPlus1Over4 =
+        5472060717959818805561601436314318772174077789324455915672259473661306552146;
 
     // baseToG1 constants
     //
@@ -106,24 +118,25 @@ library CryptoLibrary {
     // All of these constants are computed modulo FIELD_MODULUS.
     //
     // (-1 + sqrt(-3))/2
-    uint256 constant hashConst1 =                    2203960485148121921418603742825762020974279258880205651966;
+    uint256 constant hashConst1 = 2203960485148121921418603742825762020974279258880205651966;
     // sqrt(-3)
-    uint256 constant hashConst2 =                    4407920970296243842837207485651524041948558517760411303933;
+    uint256 constant hashConst2 = 4407920970296243842837207485651524041948558517760411303933;
     // 1/3
-    uint256 constant hashConst3 = 14592161914559516814830937163504850059130874104865215775126025263096817472389;
+    uint256 constant hashConst3 =
+        14592161914559516814830937163504850059130874104865215775126025263096817472389;
     // 1 + curveB (curveB == 3)
-    uint256 constant hashConst4 =                                                                             4;
+    uint256 constant hashConst4 = 4;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //// HELPER FUNCTIONS
 
     function dleq_verify(
-        uint256[2] memory x1, uint256[2] memory y1,
-        uint256[2] memory x2, uint256[2] memory y2,
+        uint256[2] memory x1,
+        uint256[2] memory y1,
+        uint256[2] memory x2,
+        uint256[2] memory y2,
         uint256[2] memory proof
-    )
-    internal view returns (bool proof_is_valid)
-    {
+    ) internal view returns (bool proof_is_valid) {
         uint256[2] memory tmp1;
         uint256[2] memory tmp2;
 
@@ -140,25 +153,18 @@ library CryptoLibrary {
     }
 
     // TODO: identity (0, 0) should be considered a valid point
-    function bn128_is_on_curve(uint256[2] memory point)
-    internal pure returns(bool)
-    {
+    function bn128_is_on_curve(uint256[2] memory point) internal pure returns (bool) {
         // check if the provided point is on the bn128 curve (y**2 = x**3 + 3)
         return
             mulmod(point[1], point[1], FIELD_MODULUS) ==
             addmod(
-                mulmod(
-                    point[0],
-                    mulmod(point[0], point[0], FIELD_MODULUS),
-                    FIELD_MODULUS
-                ),
+                mulmod(point[0], mulmod(point[0], point[0], FIELD_MODULUS), FIELD_MODULUS),
                 3,
                 FIELD_MODULUS
             );
     }
 
-    function bn128_add(uint256[4] memory input)
-    internal view returns (uint256[2] memory result) {
+    function bn128_add(uint256[4] memory input) internal view returns (uint256[2] memory result) {
         // computes P + Q
         // input: 4 values of 256 bit each
         //  *) x-coordinate of point P
@@ -167,7 +173,8 @@ library CryptoLibrary {
         //  *) y-coordinate of point Q
 
         bool success;
-        assembly { // solium-disable-line
+        assembly {
+            // solium-disable-line
             // 0x06     id of precompiled bn256Add contract
             // 0        number of ether to transfer
             // 128      size of call parameters, i.e. 128 bytes total
@@ -178,7 +185,10 @@ library CryptoLibrary {
     }
 
     function bn128_multiply(uint256[3] memory input)
-    internal view returns (uint256[2] memory result) {
+        internal
+        view
+        returns (uint256[2] memory result)
+    {
         // computes P*x
         // input: 3 values of 256 bit each
         //  *) x-coordinate of point P
@@ -186,7 +196,8 @@ library CryptoLibrary {
         //  *) scalar x
 
         bool success;
-        assembly { // solium-disable-line
+        assembly {
+            // solium-disable-line
             // 0x07     id of precompiled bn256ScalarMul contract
             // 0        number of ether to transfer
             // 96       size of call parameters, i.e. 96 bytes total (256 bit for x, 256 bit for y, 256 bit for scalar)
@@ -196,11 +207,11 @@ library CryptoLibrary {
         require(success, "elliptic curve multiplication failed");
     }
 
-    function bn128_check_pairing(uint256[12] memory input)
-    internal view returns (bool) {
+    function bn128_check_pairing(uint256[12] memory input) internal view returns (bool) {
         uint256[1] memory result;
         bool success;
-        assembly { // solium-disable-line
+        assembly {
+            // solium-disable-line
             // 0x08     id of precompiled bn256Pairing contract     (checking the elliptic curve pairings)
             // 0        number of ether to transfer
             // 384       size of call parameters, i.e. 12*256 bits == 384 bytes
@@ -218,19 +229,23 @@ library CryptoLibrary {
     // Copied from
     //      https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
     // and slightly modified
-    function expmod(uint256 base, uint256 e, uint256 m)
-    internal view returns (uint256 result) {
+    function expmod(
+        uint256 base,
+        uint256 e,
+        uint256 m
+    ) internal view returns (uint256 result) {
         bool success;
-        assembly { // solium-disable-line
+        assembly {
+            // solium-disable-line
             // define pointer
             let p := mload(0x40)
             // store data assembly-favouring ways
-            mstore(p, 0x20)             // Length of Base
-            mstore(add(p, 0x20), 0x20)  // Length of Exponent
-            mstore(add(p, 0x40), 0x20)  // Length of Modulus
-            mstore(add(p, 0x60), base)  // Base
-            mstore(add(p, 0x80), e)     // Exponent
-            mstore(add(p, 0xa0), m)     // Modulus
+            mstore(p, 0x20) // Length of Base
+            mstore(add(p, 0x20), 0x20) // Length of Exponent
+            mstore(add(p, 0x40), 0x20) // Length of Modulus
+            mstore(add(p, 0x60), base) // Base
+            mstore(add(p, 0x80), e) // Exponent
+            mstore(add(p, 0xa0), m) // Modulus
             // 0x05           id of precompiled modular exponentiation contract
             // 0xc0 == 192    size of call parameters
             // 0x20 ==  32    size of result
@@ -245,7 +260,10 @@ library CryptoLibrary {
     // It then calls HashToG1 with message as input and performs scalar
     // multiplication to produce the resulting signature.
     function Sign(bytes memory message, uint256 privK)
-    internal view returns (uint256[2] memory sig) {
+        internal
+        view
+        returns (uint256[2] memory sig)
+    {
         uint256[2] memory hashPoint;
         hashPoint = HashToG1(message);
         sig = bn128_multiply([hashPoint[0], hashPoint[1], privK]);
@@ -254,16 +272,29 @@ library CryptoLibrary {
     // Verify takes byte slice message, signature sig (element of G1),
     // public key pubK (element of G2), and checks that sig is a valid
     // signature for pubK for message. Also look at the definition of H2.
-    function Verify(bytes memory message, uint256[2] memory sig, uint256[4] memory pubK)
-    internal view returns (bool v) {
+    function Verify(
+        bytes memory message,
+        uint256[2] memory sig,
+        uint256[4] memory pubK
+    ) internal view returns (bool v) {
         uint256[2] memory hashPoint;
         hashPoint = HashToG1(message);
-        v = bn128_check_pairing([
-                sig[0], sig[1],
-                H2xi, H2x, H2yi, H2y,
-                hashPoint[0], hashPoint[1],
-                pubK[0], pubK[1], pubK[2], pubK[3]
-            ]);
+        v = bn128_check_pairing(
+            [
+                sig[0],
+                sig[1],
+                H2xi,
+                H2x,
+                H2yi,
+                H2y,
+                hashPoint[0],
+                hashPoint[1],
+                pubK[0],
+                pubK[1],
+                pubK[2],
+                pubK[3]
+            ]
+        );
     }
 
     // HashToG1 takes byte slice message and outputs an element of G1.
@@ -292,8 +323,7 @@ library CryptoLibrary {
     // resulting points, we have an actual hash function to G1.
     // For more information relating to the hash-to-curve theory,
     // see the FT 2012 paper.
-    function HashToG1(bytes memory message)
-    internal view returns (uint256[2] memory h) {
+    function HashToG1(bytes memory message) internal view returns (uint256[2] memory h) {
         uint256 t0 = hashToBase(message, 0x00, 0x01);
         uint256 t1 = hashToBase(message, 0x02, 0x03);
 
@@ -305,14 +335,8 @@ library CryptoLibrary {
         // Again, this is to ensure that even if something strange happens, we
         // will not return an invalid curvepoint.
         h = bn128_add([h0[0], h0[1], h1[0], h1[1]]);
-        require(
-            bn128_is_on_curve(h),
-            "Invalid hash point: not on elliptic curve"
-        );
-        require(
-            safeSigningPoint(h),
-            "Dangerous hash point: not safe for signing"
-            );
+        require(bn128_is_on_curve(h), "Invalid hash point: not on elliptic curve");
+        require(safeSigningPoint(h), "Dangerous hash point: not safe for signing");
     }
 
     // hashToBase takes in a byte slice message and bytes c0 and c1 for
@@ -344,8 +368,11 @@ library CryptoLibrary {
     // distribution is ~1e-77. This is a *signficant* improvement from s0 mod p.
     // For all practical purposes, there is no difference from a
     // uniform distribution.
-    function hashToBase(bytes memory message, bytes1 c0, bytes1 c1)
-    internal pure returns (uint256 t) {
+    function hashToBase(
+        bytes memory message,
+        bytes1 c0,
+        bytes1 c1
+    ) internal pure returns (uint256 t) {
         uint256 s0 = uint256(keccak256(abi.encodePacked(c0, message)));
         uint256 s1 = uint256(keccak256(abi.encodePacked(c1, message)));
         t = addmod(mulmod(s0, two256modP, FIELD_MODULUS), s1, FIELD_MODULUS);
@@ -372,8 +399,7 @@ library CryptoLibrary {
     // In our construction, the above s value will always be nonzero, so we will
     // always have a solution. This means that baseToG1 is a deterministic
     // map from the base field to the elliptic curve.
-    function baseToG1(uint256 t)
-    internal view returns (uint256[2] memory h) {
+    function baseToG1(uint256 t) internal view returns (uint256[2] memory h) {
         // ap1 and ap2 are temporary variables, originally named to represent
         // alpha part 1 and alpha part 2. Now they are somewhat general purpose
         // variables due to using too many variables on stack.
@@ -480,18 +506,16 @@ library CryptoLibrary {
         int256 residue2 = legendre(y);
 
         // i is the index which gives us the correct x value (x1, x2, or x3)
-        int256 i = (residue1-1)*(residue2-3)/4 + 1;
+        int256 i = ((residue1 - 1) * (residue2 - 3)) / 4 + 1;
 
         // This is the simplest way to determine which x value is correct
         // but is not secure. If possible, we should improve this.
         uint256 x;
         if (i == 1) {
             x = x1;
-        }
-        else if (i == 2) {
+        } else if (i == 2) {
             x = x2;
-        }
-        else {
+        } else {
             x = x3;
         }
 
@@ -530,10 +554,7 @@ library CryptoLibrary {
         // From Fouque-Tibouchi 2012, the only way to get an invalid point is
         // when t == 0, but we have already taken care of that to ensure that
         // when t == 0, we still return a valid curve point.
-        require(
-            bn128_is_on_curve([x,y]),
-            "Invalid point: not on elliptic curve"
-        );
+        require(bn128_is_on_curve([x, y]), "Invalid point: not on elliptic curve");
 
         h[0] = x;
         h[1] = y;
@@ -541,15 +562,13 @@ library CryptoLibrary {
 
     // invert computes the multiplicative inverse of t modulo FIELD_MODULUS.
     // When t == 0, s == 0.
-    function invert(uint256 t)
-    internal view returns (uint256 s) {
+    function invert(uint256 t) internal view returns (uint256 s) {
         s = expmod(t, pMinus2, FIELD_MODULUS);
     }
 
     // sqrt computes the multiplicative square root of t modulo FIELD_MODULUS.
     // sqrt does not check that a square root is possible; see legendre.
-    function sqrt(uint256 t)
-    internal view returns (uint256 s) {
+    function sqrt(uint256 t) internal view returns (uint256 s) {
         s = expmod(t, pPlus1Over4, FIELD_MODULUS);
     }
 
@@ -557,24 +576,20 @@ library CryptoLibrary {
     // That is, legendre(t) == 1 when a square root of t exists modulo
     // FIELD_MODULUS, legendre(t) == -1 when a square root of t does not exist
     // modulo FIELD_MODULUS, and legendre(t) == 0 when t == 0 mod FIELD_MODULUS.
-    function legendre(uint256 t)
-    internal view returns (int256 chi) {
+    function legendre(uint256 t) internal view returns (int256 chi) {
         uint256 s = expmod(t, pMinus1Over2, FIELD_MODULUS);
         if (s != 0) {
-            chi = 2*int256(s&1)-1;
-        }
-        else {
+            chi = 2 * int256(s & 1) - 1;
+        } else {
             chi = 0;
         }
     }
 
     // neg computes the additive inverse (the negative) modulo FIELD_MODULUS.
-    function neg(uint256 t)
-    internal pure returns (uint256 s) {
+    function neg(uint256 t) internal pure returns (uint256 s) {
         if (t == 0) {
             s = 0;
-        }
-        else {
+        } else {
             s = FIELD_MODULUS - t;
         }
     }
@@ -582,8 +597,7 @@ library CryptoLibrary {
     // sign0 computes the sign of a finite field element.
     // sign0 is used instead of legendre in baseToG1 from the suggestion
     // of WB 2019.
-    function sign0(uint256 t)
-    internal pure returns (uint256 s) {
+    function sign0(uint256 t) internal pure returns (uint256 s) {
         s = 1;
         if (t > pMinus1Over2) {
             s = pMinus1;
@@ -595,12 +609,10 @@ library CryptoLibrary {
     // element) or the standard curve generator (curveGen) or its negation.
     //
     // TODO: may want to confirm point is valid first as well as reducing mod field prime
-    function safeSigningPoint(uint256[2] memory input)
-    internal pure returns (bool) {
+    function safeSigningPoint(uint256[2] memory input) internal pure returns (bool) {
         if (input[0] == 0 || input[0] == 1) {
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
@@ -620,8 +632,12 @@ library CryptoLibrary {
     // One advantage to how this function is designed is that we do not need
     // to know the number of participants, as we only require inverses which
     // will be required as deteremined by indices.
-    function AggregateSignatures(uint256[2][] memory sigs, uint256[] memory indices, uint256 threshold, uint256[] memory invArray)
-    internal view returns (uint256[2] memory) {
+    function AggregateSignatures(
+        uint256[2][] memory sigs,
+        uint256[] memory indices,
+        uint256 threshold,
+        uint256[] memory invArray
+    ) internal view returns (uint256[2] memory) {
         require(
             sigs.length == indices.length,
             "Mismatch between length of signatures and index array"
@@ -631,18 +647,14 @@ library CryptoLibrary {
             "Failed to meet required number of signatures for threshold"
         );
         uint256 maxIndex = computeArrayMax(indices);
-        require(
-            checkInverses(invArray, maxIndex),
-            "invArray does not include correct inverses"
-        );
+        require(checkInverses(invArray, maxIndex), "invArray does not include correct inverses");
         uint256[2] memory grpsig;
         grpsig = LagrangeInterpolationG1(sigs, indices, threshold, invArray);
         return grpsig;
     }
 
     // computeArrayMax computes the maximum uin256 element of uint256Array
-    function computeArrayMax(uint256[] memory uint256Array)
-    internal pure returns (uint256) {
+    function computeArrayMax(uint256[] memory uint256Array) internal pure returns (uint256) {
         uint256 curVal;
         uint256 maxVal = uint256Array[0];
         for (uint256 i = 1; i < uint256Array.length; i++) {
@@ -654,12 +666,15 @@ library CryptoLibrary {
         return maxVal;
     }
 
-        // checkIndices determines whether or not each of these arrays contain
+    // checkIndices determines whether or not each of these arrays contain
     // unique indices. There is no reason any index should appear twice.
     // All indices should be in {1, 2, ..., n} and this function ensures this.
     // n is the total number of participants; that is, n == addresses.length.
-    function checkIndices(uint256[] memory honestIndices, uint256[] memory dishonestIndices, uint256 n)
-    internal pure returns (bool validIndices) {
+    function checkIndices(
+        uint256[] memory honestIndices,
+        uint256[] memory dishonestIndices,
+        uint256 n
+    ) internal pure returns (bool validIndices) {
         validIndices = true;
         uint256 k;
         uint256 f;
@@ -677,8 +692,8 @@ library CryptoLibrary {
                 break;
             }
             // Only check for equality with previous indices
-            if ((f & (1<<cur_idx)) == 0) {
-                f |= 1<<cur_idx;
+            if ((f & (1 << cur_idx)) == 0) {
+                f |= 1 << cur_idx;
             } else {
                 // We have seen this index before; invalid index sets
                 validIndices = false;
@@ -699,8 +714,8 @@ library CryptoLibrary {
                 break;
             }
             // Only check for equality with previous indices
-            if ((f & (1<<cur_idx)) == 0) {
-                f |= 1<<cur_idx;
+            if ((f & (1 << cur_idx)) == 0) {
+                f |= 1 << cur_idx;
             } else {
                 // We have seen this index before; invalid index sets
                 validIndices = false;
@@ -714,17 +729,20 @@ library CryptoLibrary {
     // (used in AggregateSignatures) and checks that all of the necessary
     // multiplicative inverses in invArray are correct and present.
     function checkInverses(uint256[] memory invArray, uint256 maxIndex)
-    internal pure returns (bool) {
+        internal
+        pure
+        returns (bool)
+    {
         uint256 k;
         uint256 kInv;
         uint256 res;
         bool validInverses = true;
         require(
-            (maxIndex-1) <= invArray.length,
+            (maxIndex - 1) <= invArray.length,
             "checkInverses: insufficient inverses for group signature calculation"
         );
         for (k = 1; k < maxIndex; k++) {
-            kInv = invArray[k-1];
+            kInv = invArray[k - 1];
             res = mulmod(k, kInv, GROUP_ORDER);
             if (res != 1) {
                 validInverses = false;
@@ -738,12 +756,13 @@ library CryptoLibrary {
     // of pointsG1 using indices as the point location in the finite field.
     // This is an efficient method of Lagrange interpolation as we assume
     // finite field inverses are in invArray.
-    function LagrangeInterpolationG1(uint256[2][] memory pointsG1, uint256[] memory indices, uint256 threshold, uint256[] memory invArray)
-    internal view returns (uint256[2] memory) {
-        require(
-            pointsG1.length == indices.length,
-            "Mismatch between pointsG1 and indices arrays"
-        );
+    function LagrangeInterpolationG1(
+        uint256[2][] memory pointsG1,
+        uint256[] memory indices,
+        uint256 threshold,
+        uint256[] memory invArray
+    ) internal view returns (uint256[2] memory) {
+        require(pointsG1.length == indices.length, "Mismatch between pointsG1 and indices arrays");
         uint256[2] memory val;
         val[0] = 0;
         val[1] = 0;
@@ -780,24 +799,22 @@ library CryptoLibrary {
 
     // liRjPartialConst computes the partial constants of Rj in Lagrange
     // interpolation based on the the multiplicative inverses in invArray.
-    function liRjPartialConst(uint256 k, uint256 j, uint256[] memory invArray)
-    internal pure returns (uint256) {
-        require(
-            k != j,
-            "Must have k != j when computing Rj partial constants"
-        );
+    function liRjPartialConst(
+        uint256 k,
+        uint256 j,
+        uint256[] memory invArray
+    ) internal pure returns (uint256) {
+        require(k != j, "Must have k != j when computing Rj partial constants");
         uint256 tmp1 = k;
         uint256 tmp2;
         if (k > j) {
             tmp2 = k - j;
-        }
-        else {
-            tmp1 = mulmod(tmp1, GROUP_ORDER-1, GROUP_ORDER);
+        } else {
+            tmp1 = mulmod(tmp1, GROUP_ORDER - 1, GROUP_ORDER);
             tmp2 = j - k;
         }
-        tmp2 = invArray[tmp2-1];
+        tmp2 = invArray[tmp2 - 1];
         tmp2 = mulmod(tmp1, tmp2, GROUP_ORDER);
         return tmp2;
     }
-
 }

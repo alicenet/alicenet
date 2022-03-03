@@ -1,4 +1,4 @@
-import 'process';
+import "process";
 
 //deployment Types
 export const staticDeployment: string = "deployStatic";
@@ -28,9 +28,9 @@ export const DEPLOY_STATIC = "deployStatic";
 export const UPGRADE_PROXY = "upgradeProxy";
 export const PROXY = "Proxy";
 export const env = (): string => {
-    let _env = process.env["DEPLOYMENT_ENVIRONMENT"]
-    if (typeof _env === "undefined") {
-        _env = "dev"
-    }
-    return _env
-}
+  let _env = process.env["DEPLOYMENT_ENVIRONMENT"];
+  if (typeof _env === "undefined") {
+    _env = "dev";
+  }
+  return _env;
+};

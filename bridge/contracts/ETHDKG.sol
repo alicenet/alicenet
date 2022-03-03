@@ -14,11 +14,18 @@ import "contracts/interfaces/IProxy.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
-contract ETHDKG is ETHDKGStorage, IETHDKG, IETHDKGEvents, ETHDKGUtils, ImmutableETHDKGAccusations, ImmutableETHDKGPhases {
+contract ETHDKG is
+    ETHDKGStorage,
+    IETHDKG,
+    IETHDKGEvents,
+    ETHDKGUtils,
+    ImmutableETHDKGAccusations,
+    ImmutableETHDKGPhases
+{
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
 
-    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases(){
+    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
         // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
         address ethdkgPhases = IProxy(_ETHDKGPhasesAddress()).getImplementationAddress();
         assembly {
@@ -45,7 +52,10 @@ contract ETHDKG is ETHDKGStorage, IETHDKG, IETHDKGEvents, ETHDKGUtils, Immutable
     }
 
     modifier onlyValidator() {
-        require(IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender), "ETHDKG: Only validators allowed!");
+        require(
+            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
+            "ETHDKG: Only validators allowed!"
+        );
         _;
     }
 

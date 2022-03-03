@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/utils/DeterministicAddress.sol";
 
 /**
-*@notice RUN OPTIMIZER OFF
+ *@notice RUN OPTIMIZER OFF
  */
 /**
  * @notice Proxy is a delegatecall reverse proxy implementation
@@ -22,13 +22,20 @@ import "contracts/utils/DeterministicAddress.sol";
  */
 contract Proxy {
     address private immutable factory_;
+
     constructor() {
         factory_ = msg.sender;
     }
 
-    function getImplementationAddress() public view returns(address) {
+    function getImplementationAddress() public view returns (address) {
         assembly {
-            mstore(0x00, and(sload(not(0x00)), 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff))
+            mstore(
+                0x00,
+                and(
+                    sload(not(0x00)),
+                    0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                )
+            )
             return(0x00, 0x20)
         }
     }
@@ -59,14 +66,7 @@ contract Proxy {
                 mstore(0x40, add(_ptr, calldatasize()))
                 // copy calldata into memory
                 calldatacopy(_ptr, 0x00, calldatasize())
-                let ret := delegatecall(
-                    gas(),
-                    sload(not(0x00)),
-                    _ptr,
-                    calldatasize(),
-                    0x00,
-                    0x00
-                )
+                let ret := delegatecall(gas(), sload(not(0x00)), _ptr, calldatasize(), 0x00, 0x00)
                 returndatacopy(_ptr, 0x00, returndatasize())
                 if iszero(ret) {
                     revert(_ptr, returndatasize())

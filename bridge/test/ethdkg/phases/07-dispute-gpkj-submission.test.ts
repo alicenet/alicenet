@@ -1,25 +1,25 @@
-import { validators4 } from "../assets/4-validators-successful-case";
+import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
+import { getValidatorEthAccount, mineBlocks } from "../../setup";
+import { validators10BadGPKJSubmission } from "../assets/10-validators-1-bad-gpkj-submission";
+import { validators10_2BadGPKJSubmission } from "../assets/10-validators-2-bad-gpkj-submission";
+import { validators4BadGPKJSubmission } from "../assets/4-validators-1-bad-gpkj-submission";
+import { validators4 } from "../assets/4-validators-successful-case";
 import {
-  endCurrentPhase,
-  distributeValidatorsShares,
-  startAtDistributeShares,
-  expect,
-  startAtGPKJ,
   assertETHDKGPhase,
   completeETHDKG,
+  distributeValidatorsShares,
+  endCurrentPhase,
+  expect,
   Phase,
   PLACEHOLDER_ADDRESS,
+  startAtDistributeShares,
+  startAtGPKJ,
   submitMasterPublicKey,
   submitValidatorsGPKJ,
   submitValidatorsKeyShares,
   waitNextPhaseStartDelay,
 } from "../setup";
-import { BigNumberish } from "ethers";
-import { validators4BadGPKJSubmission } from "../assets/4-validators-1-bad-gpkj-submission";
-import { validators10BadGPKJSubmission } from "../assets/10-validators-1-bad-gpkj-submission";
-import { validators10_2BadGPKJSubmission } from "../assets/10-validators-2-bad-gpkj-submission";
-import { getValidatorEthAccount, mineBlocks } from "../../setup";
 
 describe("ETHDKG: Dispute GPKj", () => {
   it("accuse good and bad participants of sending bad gpkj shares with 4 validators", async function () {
@@ -160,7 +160,6 @@ describe("ETHDKG: Dispute GPKj", () => {
     expect(await validatorPool.isValidator(validators[2].address)).to.equal(
       true
     );
-
   });
 
   it("accuse good and bad participants of sending bad gpkj shares with 10 validators", async function () {
@@ -297,7 +296,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
   });
 
   it("should not allow accusations unless in DisputeGPKJSubmission phase, or expired GPKJSubmission phase", async function () {
@@ -317,7 +318,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     // distribute shares
     await distributeValidatorsShares(
@@ -350,7 +353,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     //await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
@@ -365,7 +370,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     // submit MPK
     await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
@@ -383,7 +390,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     // submit GPKj
     await submitValidatorsGPKJ(
@@ -406,7 +415,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     await endCurrentPhase(ethdkg);
 
@@ -420,7 +431,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
 
     // complete ethdkg
     await completeETHDKG(ethdkg, validators4, expectedNonce, 0, 0);
@@ -437,7 +450,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+    );
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
@@ -629,7 +644,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           ],
           validators4[0].address
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Invalid or duplicated participant address!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Invalid or duplicated participant address!"
+    );
   });
 
   it("should not allow accusation with repeated addresses", async function () {
@@ -666,7 +683,9 @@ describe("ETHDKG: Dispute GPKj", () => {
           validators[0].groupCommitments as [BigNumberish, BigNumberish][][],
           validators[validators.length - 1].address
         )
-    ).to.be.revertedWith("ETHDKG: Dispute Failed! Invalid or duplicated participant address!");
+    ).to.be.revertedWith(
+      "ETHDKG: Dispute Failed! Invalid or duplicated participant address!"
+    );
   });
 
   it("do not allow validators to proceed to the next phase if a validator was valid accused", async function () {
@@ -767,6 +786,8 @@ describe("ETHDKG: Dispute GPKj", () => {
           validators[0].groupCommitments as [BigNumberish, BigNumberish][][],
           validators[3].address
         )
-    ).to.be.rejectedWith("ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!");
+    ).to.be.rejectedWith(
+      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    );
   });
 });

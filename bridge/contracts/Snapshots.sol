@@ -162,7 +162,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             );
 
             require(
-                CryptoLibrary.Verify(abi.encodePacked(keccak256(bClaims_)), signature, masterPublicKey),
+                CryptoLibrary.Verify(
+                    abi.encodePacked(keccak256(bClaims_)),
+                    signature,
+                    masterPublicKey
+                ),
                 "Snapshots: Signature verification failed!"
             );
         }

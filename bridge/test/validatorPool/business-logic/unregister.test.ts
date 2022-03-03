@@ -1,14 +1,14 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
-import { completeETHDKGRound } from "../../ethdkg/setup";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
+import { completeETHDKGRound } from "../../ethdkg/setup";
+import {
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
-import { BigNumber } from "ethers";
 import {
   createValidators,
   getCurrentState,
@@ -32,7 +32,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    let newValidators = validators
+    let newValidators = validators;
     //Set a non validator address in the middle of array for un-registering
     newValidators[1] = "0x000000000000000000000000000000000000dEaD";
     await expect(
@@ -118,8 +118,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
     validators.map((_, index) => {
       expectedState.ValidatorPool.StakeNFT++;
       expectedState.Factory.StakeNFT--;
-      expectedState.validators[index].Acc = true
-      expectedState.validators[index].ExQ = true
+      expectedState.validators[index].Acc = true;
+      expectedState.validators[index].ExQ = true;
     });
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
@@ -151,8 +151,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
     validators.map((_, index) => {
       expectedState.ValidatorPool.StakeNFT++;
       expectedState.Factory.StakeNFT--;
-      expectedState.validators[index].Acc = true
-      expectedState.validators[index].ExQ = true
+      expectedState.validators[index].Acc = true;
+      expectedState.validators[index].ExQ = true;
     });
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
@@ -194,7 +194,10 @@ describe("ValidatorPool: Unregistration logic", async () => {
     });
     await fixture.madToken
       .connect(adminSigner)
-      .approve(fixture.validatorNFT.address, ethers.utils.parseEther(mads.toString()));
+      .approve(
+        fixture.validatorNFT.address,
+        ethers.utils.parseEther(mads.toString())
+      );
     await fixture.validatorNFT
       .connect(adminSigner)
       .depositToken(42, ethers.utils.parseEther(mads.toString()));

@@ -1,12 +1,11 @@
-import { validators4 } from "../assets/4-validators-successful-case";
-import { ethers } from "hardhat";
-import {
-  startAtMPKSubmission,
-  startAtGPKJ,
-  submitValidatorsGPKJ,
-  expect,
-} from "../setup";
 import { getValidatorEthAccount } from "../../setup";
+import { validators4 } from "../assets/4-validators-successful-case";
+import {
+  expect,
+  startAtGPKJ,
+  startAtMPKSubmission,
+  submitValidatorsGPKJ,
+} from "../setup";
 
 describe("ETHDKG: GPKj submission", () => {
   it("should not allow GPKj submission outside of GPKjSubmission phase", async () => {

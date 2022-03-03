@@ -1,4 +1,4 @@
-import { run, artifacts, ethers } from "hardhat";
+import { artifacts, ethers, run } from "hardhat";
 import { BuildInfo } from "hardhat/types";
 import {
   getDeploymentConstructorArgs,

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-
 abstract contract ProxyUpgrader {
     function __upgrade(address _proxy, address _newImpl) internal {
         bytes memory cdata = abi.encodeWithSelector(0xca11c0de, _newImpl);

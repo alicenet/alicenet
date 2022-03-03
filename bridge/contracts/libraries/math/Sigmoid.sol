@@ -1,33 +1,49 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-
 abstract contract Sigmoid {
-    
-    function _fx(uint256 x) internal pure returns(uint256) {
-      return 201*x + 504975246918103897890400 - _sqrt(200**2*((_safeAbsSub(2500000000000000000000, x))**2 + 125000000000000005611050234958650739260304));
+    function _fx(uint256 x) internal pure returns (uint256) {
+        return
+            201 *
+            x +
+            504975246918103897890400 -
+            _sqrt(
+                200**2 *
+                    ((_safeAbsSub(2500000000000000000000, x))**2 +
+                        125000000000000005611050234958650739260304)
+            );
     }
 
-    function _fp(uint256 p) internal pure returns(uint256) {
-      return (201*p + _sqrt(200**2*(p**2 + 1015056498152694417606544040542564448516855541904 - 2014950493836207795780800*p)) - 201500024630538883475970400)/401;
+    function _fp(uint256 p) internal pure returns (uint256) {
+        return
+            (201 *
+                p +
+                _sqrt(
+                    200**2 *
+                        (p**2 +
+                            1015056498152694417606544040542564448516855541904 -
+                            2014950493836207795780800 *
+                            p)
+                ) -
+                201500024630538883475970400) / 401;
     }
 
-    function _safeAbsSub(uint256 a, uint256 b) internal pure returns(uint256) {
-      return _max(a,b)- _min(a,b);
+    function _safeAbsSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return _max(a, b) - _min(a, b);
     }
 
-    function _min(uint256 a_, uint256 b_) internal pure returns(uint256) {
-      if (a_ <= b_) {
-        return a_;
-      }
-      return b_;
+    function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
+        if (a_ <= b_) {
+            return a_;
+        }
+        return b_;
     }
 
-    function _max(uint256 a_, uint256 b_) internal pure returns(uint256) {
-      if (a_ >= b_) {
-        return a_;
-      }
-      return b_;
+    function _max(uint256 a_, uint256 b_) internal pure returns (uint256) {
+        if (a_ >= b_) {
+            return a_;
+        }
+        return b_;
     }
 
     /// @notice Calculates the square root of x, rounding down.
@@ -87,5 +103,4 @@ abstract contract Sigmoid {
             return result >= roundedDownResult ? roundedDownResult : result;
         }
     }
-
 }

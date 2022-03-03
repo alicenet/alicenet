@@ -1,12 +1,12 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
-import { expect } from "../../chai-setup";
-import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import { BigNumber, Signer } from "ethers";
+import { expect } from "../../chai-setup";
+import {
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
+import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
   commitSnapshots,
   createValidators,

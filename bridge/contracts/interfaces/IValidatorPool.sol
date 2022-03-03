@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 import "contracts/utils/CustomEnumerableMaps.sol";
 
 interface IValidatorPool {
-
     event ValidatorJoined(address indexed account, uint256 validatorNFT);
     event ValidatorLeft(address indexed account, uint256 stakeNFT);
     event ValidatorMinorSlashed(address indexed account, uint256 stakeNFT);
@@ -31,13 +30,20 @@ interface IValidatorPool {
 
     function getLocations(address[] calldata validators_) external view returns (string[] memory);
 
-    function getStakeAmount() external view returns(uint256) ;
+    function getStakeAmount() external view returns (uint256);
 
-    function getMaxNumValidators() external view returns(uint256);
+    function getMaxNumValidators() external view returns (uint256);
 
-    function getDisputerReward() external view returns(uint256);
+    function getDisputerReward() external view returns (uint256);
 
-    function tryGetTokenID(address account_) external view returns(bool, address, uint256);
+    function tryGetTokenID(address account_)
+        external
+        view
+        returns (
+            bool,
+            address,
+            uint256
+        );
 
     function isValidator(address participant) external view returns (bool);
 

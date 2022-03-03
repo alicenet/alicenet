@@ -1,17 +1,21 @@
-import {
-  Fixture,
-  getValidatorEthAccount,
-  getFixture,
-  factoryCallAny,
-} from "../../setup";
-import { completeETHDKGRound } from "../../ethdkg/setup";
+import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
+import { completeETHDKGRound } from "../../ethdkg/setup";
 import {
-  validatorsSnapshots,
-} from "../../snapshots/assets/4-validators-snapshots-1";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
-import { commitSnapshots, createValidators, getCurrentState, showState, stakeValidators } from "../setup";
+  factoryCallAny,
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+} from "../../setup";
+import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
+import {
+  commitSnapshots,
+  createValidators,
+  getCurrentState,
+  showState,
+  stakeValidators,
+} from "../setup";
 
 describe("ValidatorPool: Registration logic", async () => {
   let fixture: Fixture;
@@ -143,8 +147,11 @@ describe("ValidatorPool: Registration logic", async () => {
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    showState("after un-registering", await getCurrentState(fixture, validators));
-    let newValidators= await createValidators(fixture, validatorsSnapshots);
+    showState(
+      "after un-registering",
+      await getCurrentState(fixture, validators)
+    );
+    let newValidators = await createValidators(fixture, validatorsSnapshots);
     let newTokensIds = await stakeValidators(fixture, newValidators);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -162,8 +169,8 @@ describe("ValidatorPool: Registration logic", async () => {
     validators.map((_, index) => {
       expectedState.Factory.StakeNFT--;
       expectedState.ValidatorPool.ValNFT++;
-      expectedState.validators[index].Acc = true
-      expectedState.validators[index].Reg = true
+      expectedState.validators[index].Acc = true;
+      expectedState.validators[index].Reg = true;
     });
     //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
     expectedState.StakeNFT.MAD -= stakeAmount * validators.length;
