@@ -23,6 +23,10 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 
 	logger.Info("ProcessDepositReceived() ...")
 
+	if !state.EthDKG.IsValidator {
+		return nil
+	}
+
 	event, err := eth.Contracts().MadByte().ParseDepositReceived(log)
 	if err != nil {
 		return err
@@ -65,6 +69,10 @@ func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 	adminHandler interfaces.AdminHandler) error {
 
 	logger.Info("ProcessValueUpdated() ...")
+
+	if !state.EthDKG.IsValidator {
+		return nil
+	}
 
 	event, err := eth.Contracts().Governance().ParseValueUpdated(log)
 	if err != nil {
@@ -135,11 +143,49 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 
 	// send the reconstituted header to a handler
 	logger.Debugf("invoking adminHandler.AddSnapshot")
-	// todo: critical! get validatorsChanged flag
 	err = adminHandler.AddSnapshot(header, safeToProceedConsensus)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+// ProcessValidatorMinorSlashed handles the Minor Slash event
+func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessValidatorMinorSlashed() ...")
+
+	event, err := eth.Contracts().ValidatorPool().ParseValidatorMinorSlashed(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":          event.Account.String(),
+		"StakeNFT.TokenID": event.StakeNFT.Uint64(),
+	})
+
+	logger.Infof("ValidatorMinorSlashed")
+
+	return nil
+}
+
+// ProcessValidatorMajorSlashed handles the Major Slash event
+func ProcessValidatorMajorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessValidatorMajorSlashed() ...")
+
+	event, err := eth.Contracts().ValidatorPool().ParseValidatorMajorSlashed(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account": event.Account.String(),
+	})
+
+	logger.Infof("ValidatorMajorSlashed")
 
 	return nil
 }

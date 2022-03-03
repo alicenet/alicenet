@@ -51,16 +51,6 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	logger.Info("RegisterTask Initialize()")
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
-
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "RegisterTask.Initialize(): Unable to get validatorAddresses from ValidatorPool: %v", err)
-	}
-
-	t.State.ValidatorAddresses = validatorAddresses
-	t.State.NumberOfValidators = len(validatorAddresses)
-
 	priv, pub, err := math.GenerateKeys()
 	if err != nil {
 		return err
