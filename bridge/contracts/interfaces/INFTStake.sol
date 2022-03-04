@@ -2,22 +2,6 @@
 pragma solidity ^0.8.11;
 
 interface INFTStake {
-    function getAccumulatorScaleFactor() external view returns (uint256);
-
-    function getTotalShares() external view returns (uint256);
-
-    function getTotalReserveEth() external view returns (uint256);
-
-    function getTotalReserveMadToken() external view returns (uint256);
-
-    function estimateEthCollection(uint256 tokenID_) external view returns (uint256 payout);
-
-    function estimateTokenCollection(uint256 tokenID_) external view returns (uint256 payout);
-
-    function estimateExcessToken() external view returns (uint256 excess);
-
-    function estimateExcessEth() external view returns (uint256 excess);
-
     function skimExcessEth(address to_) external returns (uint256 excess);
 
     function skimExcessToken(address to_) external returns (uint256 excess);
@@ -68,6 +52,22 @@ interface INFTStake {
             uint256 accumulatorEth,
             uint256 accumulatorToken
         );
+
+    function getAccumulatorScaleFactor() external view returns (uint256);
+
+    function getTotalShares() external view returns (uint256);
+
+    function getTotalReserveEth() external view returns (uint256);
+
+    function getTotalReserveMadToken() external view returns (uint256);
+
+    function estimateEthCollection(uint256 tokenID_) external view returns (uint256 payout);
+
+    function estimateTokenCollection(uint256 tokenID_) external view returns (uint256 payout);
+
+    function estimateExcessToken() external view returns (uint256 excess);
+
+    function estimateExcessEth() external view returns (uint256 excess);
 
     function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush);
 

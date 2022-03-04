@@ -10,19 +10,19 @@ contract Utils {
         return csize;
     }
 
-    function getCode(address _addr) public view returns (bytes memory o_code) {
+    function getCode(address addr_) public view returns (bytes memory outputCode) {
         assembly {
             // retrieve the size of the code, this needs assembly
-            let size := extcodesize(_addr)
+            let size := extcodesize(addr_)
             // allocate output byte array - this could also be done without assembly
-            // by using o_code = new bytes(size)
-            o_code := mload(0x40)
+            // by using outputCode = new bytes(size)
+            outputCode := mload(0x40)
             // new "memory end" including padding
-            mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+            mstore(0x40, add(outputCode, and(add(add(size, 0x20), 0x1f), not(0x1f))))
             // store length in memory
-            mstore(o_code, size)
+            mstore(outputCode, size)
             // actually retrieve the code, this needs assembly
-            extcodecopy(_addr, add(o_code, 0x20), 0, size)
+            extcodecopy(addr_, add(outputCode, 0x20), 0, size)
         }
     }
 }

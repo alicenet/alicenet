@@ -21,7 +21,7 @@ contract MockEndPointLockable is ProxyInternalUpgradeLock, ProxyInternalUpgradeU
     address public owner;
     uint256 public i;
     modifier onlyOwner() {
-        requireAuth(msg.sender == owner);
+        _requireAuth(msg.sender == owner);
         _;
     }
     event addedOne(uint256 indexed i);
@@ -53,7 +53,7 @@ contract MockEndPointLockable is ProxyInternalUpgradeLock, ProxyInternalUpgradeU
         emit upgradeUnlocked(false);
     }
 
-    function requireAuth(bool _ok) internal pure {
+    function _requireAuth(bool _ok) internal pure {
         require(_ok, "unauthorized");
     }
 }

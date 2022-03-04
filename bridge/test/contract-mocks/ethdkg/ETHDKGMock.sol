@@ -157,7 +157,7 @@ contract ETHDKGMock is
     }
 
     function getMinValidators() public pure returns (uint256) {
-        return MIN_VALIDATOR;
+        return _MIN_VALIDATORS;
     }
 
     function getParticipantInternalState(address participant)
@@ -230,7 +230,7 @@ contract ETHDKGMock is
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount();
         require(
-            numberValidators >= MIN_VALIDATOR,
+            numberValidators >= _MIN_VALIDATORS,
             "ETHDKG: Minimum number of validators staked not met!"
         );
 

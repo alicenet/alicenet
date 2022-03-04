@@ -38,7 +38,7 @@ abstract contract ETHDKGStorage is
     // ISnapshots internal immutable _snapshots;
     // IValidatorPool internal immutable _validatorPool;
     //address internal immutable _factory;
-    uint256 internal constant MIN_VALIDATOR = 4;
+    uint256 internal constant _MIN_VALIDATORS = 4;
 
     uint64 internal _nonce;
     uint64 internal _phaseStartBlock;

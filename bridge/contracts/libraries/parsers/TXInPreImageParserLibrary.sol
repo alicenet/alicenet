@@ -5,18 +5,17 @@ import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the TXInPreImage structure from a blob of capnproto data
 library TXInPreImageParserLibrary {
-    /** @dev size in bytes of a TXInPreImage cap'npro structure without the cap'n
-      proto header bytes*/
-    uint256 internal constant TX_IN_PRE_IMAGE_SIZE = 48;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
-      header */
-    uint256 internal constant CAPNPROTO_HEADER_SIZE = 8;
-
     struct TXInPreImage {
         uint32 chainId;
         uint32 consumedTxIdx;
         bytes32 consumedTxHash; //todo: is always 32 bytes?
     }
+    /** @dev size in bytes of a TXInPreImage cap'npro structure without the cap'n
+      proto header bytes*/
+    uint256 internal constant _TX_IN_PRE_IMAGE_SIZE = 48;
+    /** @dev Number of bytes of a capnproto header, the data starts after the
+      header */
+    uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
     @notice This function is for deserializing data directly from capnproto
@@ -29,7 +28,7 @@ library TXInPreImageParserLibrary {
     /// @dev Execution cost: 1120 gas
     /// @return a TXInPreImage struct
     function extractTXInPreImage(bytes memory src) internal pure returns (TXInPreImage memory) {
-        return extractInnerTXInPreImage(src, CAPNPROTO_HEADER_SIZE);
+        return extractInnerTXInPreImage(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /**
@@ -48,11 +47,11 @@ library TXInPreImageParserLibrary {
         returns (TXInPreImage memory txInPreImage)
     {
         require(
-            dataOffset + TX_IN_PRE_IMAGE_SIZE > dataOffset,
+            dataOffset + _TX_IN_PRE_IMAGE_SIZE > dataOffset,
             "TXInPreImageParserLibrary: Overflow on the dataOffset parameter"
         );
         require(
-            src.length >= dataOffset + TX_IN_PRE_IMAGE_SIZE,
+            src.length >= dataOffset + _TX_IN_PRE_IMAGE_SIZE,
             "TXInPreImageParserLibrary: Not enough bytes to extract TXInPreImage"
         );
         txInPreImage.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);

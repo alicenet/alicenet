@@ -12,10 +12,6 @@ import "contracts/utils/ETHDKGUtils.sol";
 contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     constructor() ETHDKGStorage() {}
 
-    function getMyAddress() public view returns (address) {
-        return address(this);
-    }
-
     function register(uint256[2] memory publicKey) external {
         require(
             _ethdkgPhase == Phase.RegistrationOpen &&
@@ -342,6 +338,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _masterPublicKey[2],
             _masterPublicKey[3]
         );
+    }
+
+    function getMyAddress() public view returns (address) {
+        return address(this);
     }
 
     function _setPhase(Phase phase_) internal {

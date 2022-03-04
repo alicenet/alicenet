@@ -20,9 +20,13 @@ interface ISnapshots {
 
     function setSnapshotDesperationDelay(uint32 desperationDelay_) external;
 
-    function getSnapshotDesperationDelay() external view returns (uint256);
-
     function setSnapshotDesperationFactor(uint32 desperationFactor_) external;
+
+    function snapshot(bytes calldata signatureGroup_, bytes calldata bClaims_)
+        external
+        returns (bool);
+
+    function getSnapshotDesperationDelay() external view returns (uint256);
 
     function getSnapshotDesperationFactor() external view returns (uint256);
 
@@ -57,10 +61,6 @@ interface ISnapshots {
     function getSnapshot(uint256 epoch_) external view returns (Snapshot memory);
 
     function getLatestSnapshot() external view returns (Snapshot memory);
-
-    function snapshot(bytes calldata signatureGroup_, bytes calldata bClaims_)
-        external
-        returns (bool);
 
     function mayValidatorSnapshot(
         uint256 numValidators,

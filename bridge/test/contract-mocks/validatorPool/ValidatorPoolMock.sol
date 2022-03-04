@@ -21,9 +21,9 @@ contract ValidatorPoolMock is
 {
     using CustomEnumerableMaps for ValidatorDataMap;
 
-    uint256 public constant _positionLockPeriod = 3; // Actual is 172800
+    uint256 public constant POSITION_LOCK_PERIOD = 3; // Actual is 172800
 
-    uint256 public constant _maxIntervalWithoutSnapshot = 0; // Actual is 8192
+    uint256 public constant MAX_INTERVAL_WITHOUT_SNAPSHOTS = 0; // Actual is 8192
 
     uint256 internal _tokenIDCounter;
     //IETHDKG immutable internal _ethdkg;
@@ -257,7 +257,7 @@ contract ValidatorPoolMock is
         require(
             block.number >
                 ISnapshots(_SnapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    _maxIntervalWithoutSnapshot,
+                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
             "ValidatorPool: Condition not met to stop consensus!"
         );
         _isConsensusRunning = false;

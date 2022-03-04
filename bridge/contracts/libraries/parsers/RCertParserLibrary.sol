@@ -6,20 +6,20 @@ import "./RClaimsParserLibrary.sol";
 
 /// @title Library to parse the RCert structure from a blob of capnproto data
 library RCertParserLibrary {
-    /** @dev size in bytes of a RCert cap'npro structure without the cap'n proto
-      header bytes */
-    uint256 internal constant RCERT_SIZE = 264;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
-      header */
-    uint256 internal constant CAPNPROTO_HEADER_SIZE = 8;
-    /** @dev Number of Bytes of the sig group array */
-    uint256 internal constant SIG_GROUP_SIZE = 192;
-
     struct RCert {
         RClaimsParserLibrary.RClaims rClaims;
         uint256[4] sigGroupPublicKey;
         uint256[2] sigGroupSignature;
     }
+
+    /** @dev size in bytes of a RCert cap'npro structure without the cap'n proto
+      header bytes */
+    uint256 internal constant _RCERT_SIZE = 264;
+    /** @dev Number of bytes of a capnproto header, the data starts after the
+      header */
+    uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
+    /** @dev Number of Bytes of the sig group array */
+    uint256 internal constant _SIG_GROUP_SIZE = 192;
 
     /// @notice Extracts the signature group out of a Capn Proto blob.
     /// @param src Binary data containing signature group data
@@ -33,14 +33,14 @@ library RCertParserLibrary {
         returns (uint256[4] memory publicKey, uint256[2] memory signature)
     {
         require(
-            dataOffset + RCertParserLibrary.SIG_GROUP_SIZE > dataOffset,
+            dataOffset + RCertParserLibrary._SIG_GROUP_SIZE > dataOffset,
             "RClaimsParserLibrary: Overflow on the dataOffset parameter"
         );
         require(
-            src.length >= dataOffset + RCertParserLibrary.SIG_GROUP_SIZE,
+            src.length >= dataOffset + RCertParserLibrary._SIG_GROUP_SIZE,
             "RCertParserLibrary: Not enough bytes to extract"
         );
-        // SIG_GROUP_SIZE = 192 bytes -> size in bytes of 6 uint256/bytes32 elements (6*32)
+        // _SIG_GROUP_SIZE = 192 bytes -> size in bytes of 6 uint256/bytes32 elements (6*32)
         publicKey[0] = BaseParserLibrary.extractUInt256(src, dataOffset + 0);
         publicKey[1] = BaseParserLibrary.extractUInt256(src, dataOffset + 32);
         publicKey[2] = BaseParserLibrary.extractUInt256(src, dataOffset + 64);
@@ -60,7 +60,7 @@ library RCertParserLibrary {
     /// @return the RCert struct
     /// @dev Execution cost: 4076 gas
     function extractRCert(bytes memory src) internal pure returns (RCert memory) {
-        return extractInnerRCert(src, CAPNPROTO_HEADER_SIZE);
+        return extractInnerRCert(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /**
@@ -79,11 +79,11 @@ library RCertParserLibrary {
         returns (RCert memory rCert)
     {
         require(
-            dataOffset + RCERT_SIZE > dataOffset,
+            dataOffset + _RCERT_SIZE > dataOffset,
             "RCertParserLibrary: Overflow on the dataOffset parameter"
         );
         require(
-            src.length >= dataOffset + RCERT_SIZE,
+            src.length >= dataOffset + _RCERT_SIZE,
             "RCertParserLibrary: Not enough bytes to extract RCert"
         );
         rCert.rClaims = RClaimsParserLibrary.extractInnerRClaims(src, dataOffset + 16);
