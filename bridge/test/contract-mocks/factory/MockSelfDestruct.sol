@@ -5,16 +5,20 @@ import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
 contract MockSelfDestruct is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
-    address factory_;
+    address internal _factory;
     uint256 public v;
     uint256 public immutable i;
 
     constructor(uint256 _i, bytes memory) {
         i = _i;
-        factory_ = msg.sender;
+        _factory = msg.sender;
     }
 
-    function setv(uint256 _v) public {
+    function getFactory() external view returns (address) {
+        return _factory;
+    }
+
+    function setV(uint256 _v) public {
         v = _v;
     }
 
@@ -26,11 +30,7 @@ contract MockSelfDestruct is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
         __unlockImplementation();
     }
 
-    function setFactory(address _factory) public {
-        factory_ = _factory;
-    }
-
-    function getFactory() external view returns (address) {
-        return factory_;
+    function setFactory(address factory_) public {
+        _factory = factory_;
     }
 }

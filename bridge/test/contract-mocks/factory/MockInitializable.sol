@@ -3,10 +3,16 @@ pragma solidity ^0.8.11;
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
-contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
-    address factory_;
-    uint256 public v;
-    uint256 public i;
+import "test/contract-mocks/factory/MockBaseContract.sol";
+
+contract MockInitializable is
+    ProxyInternalUpgradeLock,
+    ProxyInternalUpgradeUnlock,
+    IMockBaseContract
+{
+    address internal _factory;
+    uint256 internal _var;
+    uint256 internal _imut;
     address public immutable factoryAddress = 0x0BBf39118fF9dAfDC8407c507068D47572623069;
     /**
      * @dev Indicates that the contract has been initialized.
@@ -52,33 +58,20 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
         _;
     }
 
-    function isContract(address account) internal view returns (bool) {
-        // This method relies on extcodesize/address.code.length, which returns 0
-        // for contracts in construction, since the code is only stored at the end
-        // of the constructor execution.
-
-        return account.code.length > 0;
+    function getFactory() external view returns (address) {
+        return _factory;
     }
 
-    function _isConstructor() private view returns (bool) {
-        return !isContract(address(this));
+    function initialize(uint256 i_) public virtual initializer {
+        __mockInit(i_);
     }
 
-    function initialize(uint256 _i) public virtual initializer {
-        __Mock_init(_i);
+    function setFactory(address factory_) public {
+        _factory = factory_;
     }
 
-    function __Mock_init(uint256 _i) internal onlyInitializing {
-        __Mock_init_unchained(_i);
-    }
-
-    function __Mock_init_unchained(uint256 _i) internal onlyInitializing {
-        i = _i;
-        factory_ = msg.sender;
-    }
-
-    function setv(uint256 _v) public {
-        v = _v;
+    function setV(uint256 _v) public {
+        _var = _v;
     }
 
     function lock() public {
@@ -89,11 +82,36 @@ contract MockInitializable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlo
         __unlockImplementation();
     }
 
-    function setFactory(address _factory) public {
-        factory_ = _factory;
+    function getVar() public view returns (uint256) {
+        return _var;
     }
 
-    function getFactory() external view returns (address) {
-        return factory_;
+    function getImut() public view returns (uint256) {
+        return _imut;
+    }
+
+    function fail() public pure {
+        require(false == true, "Failed!");
+    }
+
+    function __mockInit(uint256 i_) internal onlyInitializing {
+        __mockInitUnchained(i_);
+    }
+
+    function __mockInitUnchained(uint256 i_) internal onlyInitializing {
+        _imut = i_;
+        _factory = msg.sender;
+    }
+
+    function _isContract(address account) internal view returns (bool) {
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
+
+        return account.code.length > 0;
+    }
+
+    function _isConstructor() private view returns (bool) {
+        return !_isContract(address(this));
     }
 }

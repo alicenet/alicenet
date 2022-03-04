@@ -6,54 +6,64 @@ import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
 interface IMockEndPointLockable {
-    function i() external view returns (uint256);
-
     function addOne() external;
 
     function addTwo() external;
 
     function factory() external returns (address);
+
+    function i() external view returns (uint256);
 }
 
 /// @custom:salt MockEndPointLockable
-contract MockEndPointLockable is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
-    address private immutable factory_;
+contract MockEndPointLockable is
+    ProxyInternalUpgradeLock,
+    ProxyInternalUpgradeUnlock,
+    IMockEndPointLockable
+{
+    address private immutable _factory;
     address public owner;
     uint256 public i;
+
+    event AddedOne(uint256 indexed i);
+    event AddedTwo(uint256 indexed i);
+    event UpgradeLocked(bool indexed lock);
+    event UpgradeUnlocked(bool indexed lock);
+
     modifier onlyOwner() {
-        requireAuth(msg.sender == owner);
+        _requireAuth(msg.sender == owner);
         _;
     }
-    event addedOne(uint256 indexed i);
-    event addedTwo(uint256 indexed i);
-    event upgradeLocked(bool indexed lock);
-    event upgradeUnlocked(bool indexed lock);
 
     constructor(address f) {
-        factory_ = f;
+        _factory = f;
     }
 
     function addOne() public {
         i++;
-        emit addedOne(i);
+        emit AddedOne(i);
     }
 
     function addTwo() public {
         i = i + 2;
-        emit addedTwo(i);
+        emit AddedTwo(i);
     }
 
     function upgradeLock() public {
         __lockImplementation();
-        emit upgradeLocked(true);
+        emit UpgradeLocked(true);
     }
 
     function upgradeUnlock() public {
         __unlockImplementation();
-        emit upgradeUnlocked(false);
+        emit UpgradeUnlocked(false);
     }
 
-    function requireAuth(bool _ok) internal pure {
-        require(_ok, "unauthorized");
+    function factory() public view returns (address) {
+        return _factory;
+    }
+
+    function _requireAuth(bool isOk_) internal pure {
+        require(isOk_, "unauthorized");
     }
 }

@@ -24,25 +24,17 @@ contract MadByte is
     ImmutableStakeNFTLP,
     ImmutableFoundation
 {
-    // multiply factor for the selling/minting bonding curve
-    uint256 internal constant _MARKET_SPREAD = 4;
-
-    // Scaling factor to get the staking percentages
-    uint256 internal constant _MAD_UNIT_ONE = 1000;
-
-    /// @notice Event emitted when a deposit is received
-    event DepositReceived(
-        uint256 indexed depositID,
-        uint8 indexed accountType,
-        address indexed depositor,
-        uint256 amount
-    );
-
     struct Deposit {
         uint8 accountType;
         address account;
         uint256 value;
     }
+
+    // multiply factor for the selling/minting bonding curve
+    uint256 internal constant _MARKET_SPREAD = 4;
+
+    // Scaling factor to get the staking percentages
+    uint256 internal constant _MAD_UNIT_ONE = 1000;
 
     // Balance in ether that is hold in the contract after minting and burning
     uint256 internal _poolBalance;
@@ -65,6 +57,14 @@ contract MadByte is
     // Tracks the amount of each deposit. Key is deposit id, value is amount
     // deposited.
     mapping(uint256 => Deposit) internal _deposits;
+
+    /// @notice Event emitted when a deposit is received
+    event DepositReceived(
+        uint256 indexed depositID,
+        uint8 indexed accountType,
+        address indexed depositor,
+        uint256 amount
+    );
 
     constructor()
         Admin(msg.sender)
@@ -90,50 +90,6 @@ contract MadByte is
         uint256 protocolFee_
     ) public onlyAdmin {
         _setSplitsInternal(minerStakingSplit_, madStakingSplit_, lpStakingSplit_, protocolFee_);
-    }
-
-    /// Converts an amount of Madbytes in ether given a point in the bonding
-    /// curve (poolbalance and totalsupply at given time).
-    /// @param poolBalance_ The pool balance (in ether) at a given moment
-    /// where we want to compute the amount of ether.
-    /// @param totalSupply_ The total supply of MadBytes at a given moment
-    /// where we want to compute the amount of ether.
-    /// @param numMB_ Amount of Madbytes that we want to convert in ether
-    function MBtoEth(
-        uint256 poolBalance_,
-        uint256 totalSupply_,
-        uint256 numMB_
-    ) public pure returns (uint256 numEth) {
-        return _MBtoEth(poolBalance_, totalSupply_, numMB_);
-    }
-
-    /// Converts an amount of ether in Madbytes given a point in the bonding
-    /// curve (poolbalance at given time).
-    /// @param poolBalance_ The pool balance (in ether) at a given moment
-    /// where we want to compute the amount of madbytes.
-    /// @param numEth_ Amount of ether that we want to convert in MadBytes
-    function EthtoMB(uint256 poolBalance_, uint256 numEth_) public pure returns (uint256) {
-        return _EthtoMB(poolBalance_, numEth_);
-    }
-
-    /// Gets the pool balance in ether
-    function getPoolBalance() public view returns (uint256) {
-        return _poolBalance;
-    }
-
-    /// Gets the total amount of MadBytes that were deposited in the Madnet
-    /// blockchain. Since MadBytes are burned when deposited, this value will be
-    /// different from the total supply of MadBytes.
-    function getTotalMadBytesDeposited() public view returns (uint256) {
-        return _totalDeposited;
-    }
-
-    /// Gets the deposited amount given a depositID.
-    /// @param depositID The Id of the deposit
-    function getDeposit(uint256 depositID) public view returns (Deposit memory) {
-        Deposit memory d = _deposits[depositID];
-        require(d.account != address(uint160(0x00)), "MadByte: Invalid deposit ID!");
-        return d;
     }
 
     /// Distributes the yields of the MadBytes sale to all stakeholders
@@ -253,6 +209,50 @@ contract MadByte is
         return numEth;
     }
 
+    /// Gets the pool balance in ether
+    function getPoolBalance() public view returns (uint256) {
+        return _poolBalance;
+    }
+
+    /// Gets the total amount of MadBytes that were deposited in the Madnet
+    /// blockchain. Since MadBytes are burned when deposited, this value will be
+    /// different from the total supply of MadBytes.
+    function getTotalMadBytesDeposited() public view returns (uint256) {
+        return _totalDeposited;
+    }
+
+    /// Gets the deposited amount given a depositID.
+    /// @param depositID The Id of the deposit
+    function getDeposit(uint256 depositID) public view returns (Deposit memory) {
+        Deposit memory d = _deposits[depositID];
+        require(d.account != address(uint160(0x00)), "MadByte: Invalid deposit ID!");
+        return d;
+    }
+
+    /// Converts an amount of Madbytes in ether given a point in the bonding
+    /// curve (poolbalance and totalsupply at given time).
+    /// @param poolBalance_ The pool balance (in ether) at a given moment
+    /// where we want to compute the amount of ether.
+    /// @param totalSupply_ The total supply of MadBytes at a given moment
+    /// where we want to compute the amount of ether.
+    /// @param numMB_ Amount of Madbytes that we want to convert in ether
+    function madByteToEth(
+        uint256 poolBalance_,
+        uint256 totalSupply_,
+        uint256 numMB_
+    ) public pure returns (uint256 numEth) {
+        return _madByteToEth(poolBalance_, totalSupply_, numMB_);
+    }
+
+    /// Converts an amount of ether in Madbytes given a point in the bonding
+    /// curve (poolbalance at given time).
+    /// @param poolBalance_ The pool balance (in ether) at a given moment
+    /// where we want to compute the amount of madbytes.
+    /// @param numEth_ Amount of ether that we want to convert in MadBytes
+    function ethToMadByte(uint256 poolBalance_, uint256 numEth_) public pure returns (uint256) {
+        return _ethToMadByte(poolBalance_, numEth_);
+    }
+
     /// Distributes the yields from the MadBytes minting to all stake holders.
     function _distribute()
         internal
@@ -293,21 +293,12 @@ contract MadByte is
         return (minerAmount, stakingAmount, lpStakingAmount, foundationAmount);
     }
 
-    // Check if addr_ is EOA (Externally Owned Account) or a contract.
-    function _isContract(address addr_) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr_)
-        }
-        return size > 0;
-    }
-
     // Burn the tokens during deposits without sending ether back to user as the
     // normal burn function. The ether will be distributed in the distribute
     // method.
     function _destroyTokens(uint256 nuMB_) internal returns (bool) {
         require(nuMB_ != 0, "MadByte: The number of MadBytes to be burn should be greater than 0!");
-        _poolBalance -= _MBtoEth(_poolBalance, totalSupply(), nuMB_);
+        _poolBalance -= _madByteToEth(_poolBalance, totalSupply(), nuMB_);
         ERC20Upgradeable._burn(msg.sender, nuMB_);
         return true;
     }
@@ -350,7 +341,7 @@ contract MadByte is
         require(!_isContract(to_), "MadByte: Contracts cannot make MadBytes deposits!");
         require(numEth_ >= _MARKET_SPREAD, "MadByte: requires at least 4 WEI");
         numEth_ = numEth_ / _MARKET_SPREAD;
-        uint256 amount_ = _EthtoMB(_poolBalance, numEth_);
+        uint256 amount_ = _ethToMadByte(_poolBalance, numEth_);
         require(
             amount_ >= minMB_,
             "MadByte: could not mint deposit with minimum MadBytes given the ether sent!"
@@ -381,7 +372,7 @@ contract MadByte is
         require(numEth_ >= _MARKET_SPREAD, "MadByte: requires at least 4 WEI");
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 poolBalance = _poolBalance;
-        nuMB = _EthtoMB(poolBalance, numEth_);
+        nuMB = _ethToMadByte(poolBalance, numEth_);
         require(nuMB >= minMB_, "MadByte: could not mint minimum MadBytes");
         poolBalance += numEth_;
         _poolBalance = poolBalance;
@@ -399,7 +390,7 @@ contract MadByte is
     ) internal returns (uint256 numEth) {
         require(nuMB_ != 0, "MadByte: The number of MadBytes to be burn should be greater than 0!");
         uint256 poolBalance = _poolBalance;
-        numEth = _MBtoEth(poolBalance, totalSupply(), nuMB_);
+        numEth = _madByteToEth(poolBalance, totalSupply(), nuMB_);
         require(numEth >= minEth_, "MadByte: Couldn't burn the minEth amount");
         poolBalance -= numEth;
         _poolBalance = poolBalance;
@@ -408,15 +399,40 @@ contract MadByte is
         return numEth;
     }
 
+    function _setSplitsInternal(
+        uint256 minerStakingSplit_,
+        uint256 madStakingSplit_,
+        uint256 lpStakingSplit_,
+        uint256 protocolFee_
+    ) internal {
+        require(
+            minerStakingSplit_ + madStakingSplit_ + lpStakingSplit_ + protocolFee_ == _MAD_UNIT_ONE,
+            "MadByte: All the split values must sum to _MAD_UNIT_ONE!"
+        );
+        _minerStakingSplit = minerStakingSplit_;
+        _madStakingSplit = madStakingSplit_;
+        _lpStakingSplit = lpStakingSplit_;
+        _protocolFee = protocolFee_;
+    }
+
+    // Check if addr_ is EOA (Externally Owned Account) or a contract.
+    function _isContract(address addr_) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr_)
+        }
+        return size > 0;
+    }
+
     // Internal function that converts an ether amount into MadByte tokens
     // following the bounding price curve.
-    function _EthtoMB(uint256 poolBalance_, uint256 numEth_) internal pure returns (uint256) {
+    function _ethToMadByte(uint256 poolBalance_, uint256 numEth_) internal pure returns (uint256) {
         return _fx(poolBalance_ + numEth_) - _fx(poolBalance_);
     }
 
     // Internal function that converts a MadByte amount into ether following the
     // bounding price curve.
-    function _MBtoEth(
+    function _madByteToEth(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numMB_
@@ -435,21 +451,5 @@ contract MadByte is
     ) internal pure returns (Deposit memory) {
         Deposit memory d = Deposit(accountType_, account_, value_);
         return d;
-    }
-
-    function _setSplitsInternal(
-        uint256 minerStakingSplit_,
-        uint256 madStakingSplit_,
-        uint256 lpStakingSplit_,
-        uint256 protocolFee_
-    ) internal {
-        require(
-            minerStakingSplit_ + madStakingSplit_ + lpStakingSplit_ + protocolFee_ == _MAD_UNIT_ONE,
-            "MadByte: All the split values must sum to _MAD_UNIT_ONE!"
-        );
-        _minerStakingSplit = minerStakingSplit_;
-        _madStakingSplit = madStakingSplit_;
-        _lpStakingSplit = lpStakingSplit_;
-        _protocolFee = protocolFee_;
     }
 }

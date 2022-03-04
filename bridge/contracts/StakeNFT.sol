@@ -12,15 +12,6 @@ import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/INFTStake.sol";
 
 abstract contract StakeNFTStorage {
-    // _MAX_MINT_LOCK describes the maximum interval a Position may be locked
-    // during a call to mintTo
-    uint256 internal constant _MAX_MINT_LOCK = 1051200;
-    // 10**18
-    uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
-    // constants for the cb state
-    bool internal constant CIRCUIT_BREAKER_OPENED = true;
-    bool internal constant CIRCUIT_BREAKER_CLOSED = false;
-
     // Position describes a staked position
     struct Position {
         // number of madToken
@@ -46,6 +37,15 @@ abstract contract StakeNFTStorage {
         // slush stores division remainders until they may be distributed evenly
         uint256 slush;
     }
+
+    // _MAX_MINT_LOCK describes the maximum interval a Position may be locked
+    // during a call to mintTo
+    uint256 internal constant _MAX_MINT_LOCK = 1051200;
+    // 10**18
+    uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
+    // constants for the cb state
+    bool internal constant _CIRCUIT_BREAKER_OPENED = true;
+    bool internal constant _CIRCUIT_BREAKER_CLOSED = false;
 
     // monotonically increasing counter
     uint256 internal _counter;
@@ -92,93 +92,33 @@ abstract contract StakeNFTBase is
     ImmutableMadToken,
     ImmutableGovernance
 {
-    constructor()
-        ImmutableFactory(msg.sender)
-        ImmutableMadToken()
-        ImmutableGovernance()
-        ImmutableValidatorPool()
-    {
-        //IERC20Transferable(_MadTokenAddress())
-        //IERC20Transferable(_GovernanceAddress())
-        // _madToken = IERC20Transferable(getMetamorphicContractAddress(0x4d6164546f6b656e000000000000000000000000000000000000000000000000, _factory));
-        // _governance = getMetamorphicContractAddress(0x476f7665726e616e636500000000000000000000000000000000000000000000, _factory);
-    }
-
-    function __StakeNFTBase_init(string memory name_, string memory symbol_)
-        internal
-        onlyInitializing
-    {
-        __ERC721_init(name_, symbol_);
-    }
-
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
     modifier withCircuitBreaker() {
         require(
-            _circuitBreaker == CIRCUIT_BREAKER_CLOSED,
+            _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
             "CircuitBreaker: The Circuit breaker is opened!"
         );
         _;
     }
 
-    // function isAllowedProposal(address addr) public view returns(bool) {
-    //     return _isAllowedProposal(addr);
-    // }
+    constructor()
+        ImmutableFactory(msg.sender)
+        ImmutableMadToken()
+        ImmutableGovernance()
+        ImmutableValidatorPool()
+    {}
 
-    function circuitBreakerState() public view returns (bool) {
-        return _circuitBreaker;
+    /// gets the current value for the Eth accumulator
+    function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush) {
+        accumulator = _ethState.accumulator;
+        slush = _ethState.slush;
     }
 
-    /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
-    /// deposited on this contract to reduce the integer division errors.
-    function getAccumulatorScaleFactor() public pure returns (uint256) {
-        return _ACCUMULATOR_SCALE_FACTOR;
-    }
-
-    /// gets the total amount of MadToken staked in contract
-    function getTotalShares() public view returns (uint256) {
-        return _shares;
-    }
-
-    /// gets the total amount of Ether staked in contract
-    function getTotalReserveEth() public view returns (uint256) {
-        return _reserveEth;
-    }
-
-    /// gets the total amount of MadToken staked in contract
-    function getTotalReserveMadToken() public view returns (uint256) {
-        return _reserveToken;
-    }
-
-    /// estimateEthCollection returns the amount of eth a tokenID may withdraw
-    function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
-        Position memory p = _positions[tokenID_];
-        (, , , payout) = _collect(_shares, _ethState, p, p.accumulatorEth);
-        return payout;
-    }
-
-    /// estimateTokenCollection returns the amount of MadToken a tokenID may withdraw
-    function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
-        Position memory p = _positions[tokenID_];
-        (, , , payout) = _collect(_shares, _tokenState, p, p.accumulatorToken);
-        return payout;
-    }
-
-    /// estimateExcessToken returns the amount of MadToken that is held in the
-    /// name of this contract. The value returned is the value that would be
-    /// returned by a call to skimExcessToken.
-    function estimateExcessToken() public view returns (uint256 excess) {
-        (, excess) = _estimateExcessToken();
-        return excess;
-    }
-
-    /// estimateExcessEth returns the amount of Eth that is held in the name of
-    /// this contract. The value returned is the value that would be returned by
-    /// a call to skimExcessEth.
-    function estimateExcessEth() public view returns (uint256 excess) {
-        return _estimateExcessEth();
+    /// gets the current value for the Token accumulator
+    function getTokenAccumulator() external view returns (uint256 accumulator, uint256 slush) {
+        accumulator = _tokenState.accumulator;
+        slush = _tokenState.slush;
     }
 
     /// @dev tripCB opens the circuit breaker may only be called by _admin
@@ -205,15 +145,15 @@ abstract contract StakeNFTBase is
     /// this contract in error by a user. This method can not return any funds
     /// sent to the contract via the depositToken method.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
-        IERC20Transferable MadToken;
-        (MadToken, excess) = _estimateExcessToken();
-        _safeTransferERC20(MadToken, to_, excess);
+        IERC20Transferable madToken;
+        (madToken, excess) = _estimateExcessToken();
+        _safeTransferERC20(madToken, to_, excess);
         return excess;
     }
 
     /// lockPosition is called by governance system when a governance
     /// vote is cast. This function will lock the specified Position for up to
-    /// _maxGovernanceLock. This method may only be called by the governance
+    /// _MAX_GOVERNANCE_LOCK. This method may only be called by the governance
     /// contract. This function will fail if the circuit breaker is tripped
     function lockPosition(
         address caller_,
@@ -225,13 +165,13 @@ abstract contract StakeNFTBase is
             "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
-            lockDuration_ <= _maxGovernanceLock,
+            lockDuration_ <= _MAX_GOVERNANCE_LOCK,
             "StakeNFT: Lock Duration is greater than the amount allowed!"
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
 
-    /// This function will lock an owned Position for up to _maxGovernanceLock. This method may
+    /// This function will lock an owned Position for up to _MAX_GOVERNANCE_LOCK. This method may
     /// only be called by the owner of the Position. This function will fail if the circuit breaker
     /// is tripped
     function lockOwnPosition(uint256 tokenID_, uint256 lockDuration_)
@@ -244,14 +184,14 @@ abstract contract StakeNFTBase is
             "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
-            lockDuration_ <= _maxGovernanceLock,
+            lockDuration_ <= _MAX_GOVERNANCE_LOCK,
             "StakeNFT: Lock Duration is greater than the amount allowed!"
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
 
     /// This function will lock withdraws on the specified Position for up to
-    /// _maxGovernanceLock. This function will fail if the circuit breaker is tripped
+    /// _MAX_GOVERNANCE_LOCK. This function will fail if the circuit breaker is tripped
     function lockWithdraw(uint256 tokenID_, uint256 lockDuration_)
         public
         withCircuitBreaker
@@ -262,7 +202,7 @@ abstract contract StakeNFTBase is
             "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
-            lockDuration_ <= _maxGovernanceLock,
+            lockDuration_ <= _MAX_GOVERNANCE_LOCK,
             "StakeNFT: Lock Duration is greater than the amount allowed!"
         );
         return _lockWithdraw(tokenID_, lockDuration_);
@@ -425,6 +365,56 @@ abstract contract StakeNFTBase is
         return payout;
     }
 
+    function circuitBreakerState() public view returns (bool) {
+        return _circuitBreaker;
+    }
+
+    /// gets the total amount of MadToken staked in contract
+    function getTotalShares() public view returns (uint256) {
+        return _shares;
+    }
+
+    /// gets the total amount of Ether staked in contract
+    function getTotalReserveEth() public view returns (uint256) {
+        return _reserveEth;
+    }
+
+    /// gets the total amount of MadToken staked in contract
+    function getTotalReserveMadToken() public view returns (uint256) {
+        return _reserveToken;
+    }
+
+    /// estimateEthCollection returns the amount of eth a tokenID may withdraw
+    function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
+        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
+        Position memory p = _positions[tokenID_];
+        (, , , payout) = _collect(_shares, _ethState, p, p.accumulatorEth);
+        return payout;
+    }
+
+    /// estimateTokenCollection returns the amount of MadToken a tokenID may withdraw
+    function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
+        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
+        Position memory p = _positions[tokenID_];
+        (, , , payout) = _collect(_shares, _tokenState, p, p.accumulatorToken);
+        return payout;
+    }
+
+    /// estimateExcessToken returns the amount of MadToken that is held in the
+    /// name of this contract. The value returned is the value that would be
+    /// returned by a call to skimExcessToken.
+    function estimateExcessToken() public view returns (uint256 excess) {
+        (, excess) = _estimateExcessToken();
+        return excess;
+    }
+
+    /// estimateExcessEth returns the amount of Eth that is held in the name of
+    /// this contract. The value returned is the value that would be returned by
+    /// a call to skimExcessEth.
+    function estimateExcessEth() public view returns (uint256 excess) {
+        return _estimateExcessEth();
+    }
+
     /// gets the position struct given a tokenID. The tokenId must
     /// exist.
     function getPosition(uint256 tokenID_)
@@ -447,16 +437,17 @@ abstract contract StakeNFTBase is
         accumulatorToken = p.accumulatorToken;
     }
 
-    /// gets the current value for the Eth accumulator
-    function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush) {
-        accumulator = _ethState.accumulator;
-        slush = _ethState.slush;
+    /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
+    /// deposited on this contract to reduce the integer division errors.
+    function getAccumulatorScaleFactor() public pure returns (uint256) {
+        return _ACCUMULATOR_SCALE_FACTOR;
     }
 
-    /// gets the current value for the Token accumulator
-    function getTokenAccumulator() external view returns (uint256 accumulator, uint256 slush) {
-        accumulator = _tokenState.accumulator;
-        slush = _tokenState.slush;
+    function __stakeNFTBaseInit(string memory name_, string memory symbol_)
+        internal
+        onlyInitializing
+    {
+        __ERC721_init(name_, symbol_);
     }
 
     // _lockPosition prevents a position from being burned for duration_ number
@@ -563,36 +554,6 @@ abstract contract StakeNFTBase is
         return (payoutEth, payoutToken);
     }
 
-    // _estimateExcessEth returns the amount of Eth that is held in the name of
-    // this contract
-    function _estimateExcessEth() internal view returns (uint256 excess) {
-        uint256 reserve = _reserveEth;
-        uint256 balance = address(this).balance;
-        require(
-            balance >= reserve,
-            "StakeNFT: The balance of the contract is less then the tracked reserve!"
-        );
-        excess = balance - reserve;
-    }
-
-    // _estimateExcessToken returns the amount of MadToken that is held in the
-    // name of this contract
-    function _estimateExcessToken()
-        internal
-        view
-        returns (IERC20Transferable MadToken, uint256 excess)
-    {
-        uint256 reserve = _reserveToken;
-        MadToken = IERC20Transferable(_MadTokenAddress());
-        uint256 balance = MadToken.balanceOf(address(this));
-        require(
-            balance >= reserve,
-            "StakeNFT: The balance of the contract is less then the tracked reserve!"
-        );
-        excess = balance - reserve;
-        return (MadToken, excess);
-    }
-
     function _collectToken(uint256 shares_, Position memory p_)
         internal
         returns (Position memory p, uint256 payout)
@@ -613,6 +574,64 @@ abstract contract StakeNFTBase is
         (_ethState, p, acc, payout) = _collect(shares_, _ethState, p_, p_.accumulatorEth);
         p.accumulatorEth = acc;
         return (p, payout);
+    }
+
+    function _tripCB() internal {
+        require(
+            _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
+            "CircuitBreaker: The Circuit breaker is opened!"
+        );
+        _circuitBreaker = _CIRCUIT_BREAKER_OPENED;
+    }
+
+    function _resetCB() internal {
+        require(
+            _circuitBreaker == _CIRCUIT_BREAKER_OPENED,
+            "CircuitBreaker: The Circuit breaker is closed!"
+        );
+        _circuitBreaker = _CIRCUIT_BREAKER_CLOSED;
+    }
+
+    // _newTokenID increments the counter and returns the new value
+    function _increment() internal returns (uint256 count) {
+        count = _counter;
+        count += 1;
+        _counter = count;
+        return count;
+    }
+
+    // _estimateExcessEth returns the amount of Eth that is held in the name of
+    // this contract
+    function _estimateExcessEth() internal view returns (uint256 excess) {
+        uint256 reserve = _reserveEth;
+        uint256 balance = address(this).balance;
+        require(
+            balance >= reserve,
+            "StakeNFT: The balance of the contract is less then the tracked reserve!"
+        );
+        excess = balance - reserve;
+    }
+
+    // _estimateExcessToken returns the amount of MadToken that is held in the
+    // name of this contract
+    function _estimateExcessToken()
+        internal
+        view
+        returns (IERC20Transferable madToken, uint256 excess)
+    {
+        uint256 reserve = _reserveToken;
+        madToken = IERC20Transferable(_MadTokenAddress());
+        uint256 balance = madToken.balanceOf(address(this));
+        require(
+            balance >= reserve,
+            "StakeNFT: The balance of the contract is less then the tracked reserve!"
+        );
+        excess = balance - reserve;
+        return (madToken, excess);
+    }
+
+    function _getCount() internal view returns (uint256) {
+        return _counter;
     }
 
     // _collect performs calculations necessary to determine any distributions
@@ -707,38 +726,6 @@ abstract contract StakeNFTBase is
         }
         return (accumulator_, slush_);
     }
-
-    // function _isAllowedProposal(address addr) internal view returns(bool) {
-    //     return IGovernanceManager(_GovernanceAddress()).allowedProposal() == addr;
-    // }
-
-    function _tripCB() internal {
-        require(
-            _circuitBreaker == CIRCUIT_BREAKER_CLOSED,
-            "CircuitBreaker: The Circuit breaker is opened!"
-        );
-        _circuitBreaker = CIRCUIT_BREAKER_OPENED;
-    }
-
-    function _resetCB() internal {
-        require(
-            _circuitBreaker == CIRCUIT_BREAKER_OPENED,
-            "CircuitBreaker: The Circuit breaker is closed!"
-        );
-        _circuitBreaker = CIRCUIT_BREAKER_CLOSED;
-    }
-
-    // _newTokenID increments the counter and returns the new value
-    function _increment() internal returns (uint256 count) {
-        count = _counter;
-        count += 1;
-        _counter = count;
-        return count;
-    }
-
-    function _getCount() internal view returns (uint256) {
-        return _counter;
-    }
 }
 
 /// @custom:salt StakeNFT
@@ -747,6 +734,6 @@ contract StakeNFT is StakeNFTBase {
     constructor() StakeNFTBase() {}
 
     function initialize() public onlyFactory initializer {
-        __StakeNFTBase_init("MNSNFT", "MNS");
+        __stakeNFTBaseInit("MNSNFT", "MNS");
     }
 }

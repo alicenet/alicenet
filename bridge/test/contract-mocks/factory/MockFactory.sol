@@ -7,24 +7,24 @@ contract MockFactory is DeterministicAddress, ProxyUpgrader {
     /**
     @dev owner role for priveledged access to functions
     */
-    address private owner_;
+    address private _owner;
 
     /**
     @dev delegator role for priveledged access to delegateCallAny
     */
-    address private delegator_;
+    address private _delegator;
 
     /**
     @dev array to store list of contract salts
     */
-    bytes32[] private contracts_;
+    bytes32[] private _contracts;
 
     /**
     @dev slot for storing implementation address
     */
-    address private implementation_;
+    address private _implementation;
 
-    function setOwner(address _new) public {
-        owner_ = _new;
+    function setOwner(address new_) public {
+        _owner = new_;
     }
 }

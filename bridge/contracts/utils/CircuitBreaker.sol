@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 abstract contract CircuitBreaker {
-    bool constant open = true;
-    bool constant closed = false;
+    bool internal constant _OPEN = true;
+    bool internal constant _CLOSED = false;
 
     // cb is the circuit breaker
     // cb is a set only object
-    bool _cb = closed;
+    bool internal _cb = _CLOSED;
 
     // withCB is a modifier to enforce the CB must
     // be set for a call to succeed
     modifier withCB() {
-        require(_cb == closed, "CircuitBreaker: The Circuit breaker is opened!");
+        require(_cb == _CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
         _;
     }
 
@@ -21,12 +21,12 @@ abstract contract CircuitBreaker {
     }
 
     function _tripCB() internal {
-        require(_cb == closed, "CircuitBreaker: The Circuit breaker is opened!");
-        _cb = open;
+        require(_cb == _CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
+        _cb = _OPEN;
     }
 
     function _resetCB() internal {
-        require(_cb == open, "CircuitBreaker: The Circuit breaker is closed!");
-        _cb = closed;
+        require(_cb == _OPEN, "CircuitBreaker: The Circuit breaker is CLOSED!");
+        _cb = _CLOSED;
     }
 }

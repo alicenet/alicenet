@@ -13,15 +13,15 @@ abstract contract ValidatorPoolStorage is
     ImmutableValidatorNFT,
     ImmutableMadToken
 {
-    // _positionLockPeriod describes the maximum interval a STAKENFT Position may be locked after
+    // POSITION_LOCK_PERIOD describes the maximum interval a STAKENFT Position may be locked after
     // being given back to validator exiting the pool
-    uint256 public constant _positionLockPeriod = 172800;
+    uint256 public constant POSITION_LOCK_PERIOD = 172800;
     // Interval in Madnet Epochs that a validator exiting the pool should before claiming is
     // STAKENFT position
-    uint256 public constant _claimPeriod = 3;
+    uint256 public constant CLAIM_PERIOD = 3;
 
     // Maximum number the ethereum blocks allowed without a validator committing a snapshot
-    uint256 public constant _maxIntervalWithoutSnapshot = 8192;
+    uint256 public constant MAX_INTERVAL_WITHOUT_SNAPSHOTS = 8192;
 
     // address internal immutable _factory;
     // INFTStake internal immutable _stakeNFT;
@@ -48,7 +48,7 @@ abstract contract ValidatorPoolStorage is
     ValidatorDataMap internal _validators;
 
     // Mapping that keeps track of the validators leaving the Pool. Validators assets are hold by
-    // `_claimPeriod` epochs before the user being able to claim the assets back in the form a new
+    // `CLAIM_PERIOD` epochs before the user being able to claim the assets back in the form a new
     // STAKENFT position.
     mapping(address => ExitingValidatorData) internal _exitingValidatorsData;
 

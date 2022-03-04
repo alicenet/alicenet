@@ -53,7 +53,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("Pause consensus after 1.5 days without snapshot.", async function () {
-    // Simulating in mock with _maxIntervalWithoutSnapshot = 0 instead of 8192
+    // Simulating in mock with MAX_INTERVAL_WITHOUT_SNAPSHOTS = 0 instead of 8192
     fixture = await getFixture(true, true, true);
     await factoryCallAny(
       fixture,
@@ -64,7 +64,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("After 1.5 days without snapshots, replace validators and run ETHDKG to completion.", async function () {
-    // Simulating in mock with _maxIntervalWithoutSnapshot = 0 instead of 8192
+    // Simulating in mock with MAX_INTERVAL_WITHOUT_SNAPSHOTS = 0 instead of 8192
     fixture = await getFixture(true, true, true);
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);

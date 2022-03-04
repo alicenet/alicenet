@@ -31,8 +31,6 @@ contract ValidatorPool is
 {
     using CustomEnumerableMaps for ValidatorDataMap;
 
-    constructor() ValidatorPoolStorage() {}
-
     modifier onlyValidator() {
         require(_isValidator(msg.sender), "ValidatorPool: Only validators allowed!");
         _;
@@ -50,6 +48,10 @@ contract ValidatorPool is
         );
         _;
     }
+
+    constructor() ValidatorPoolStorage() {}
+
+    receive() external payable onlyValidatorNFT {}
 
     function initialize(
         uint256 stakeAmount_,
@@ -75,6 +77,211 @@ contract ValidatorPool is
 
     function setLocation(string calldata ip_) public onlyValidator {
         _ipLocations[msg.sender] = ip_;
+    }
+
+    function scheduleMaintenance() public onlyFactory {
+        _isMaintenanceScheduled = true;
+        emit MaintenanceScheduled();
+    }
+
+    function initializeETHDKG()
+        public
+        onlyFactory
+        assertNotETHDKGRunning
+        assertNotConsensusRunning
+    {
+        IETHDKG(_ETHDKGAddress()).initializeETHDKG();
+    }
+
+    function completeETHDKG() public onlyETHDKG {
+        _isMaintenanceScheduled = false;
+        _isConsensusRunning = true;
+    }
+
+    // todo: check async in Madnet
+    function pauseConsensus() public onlySnapshots {
+        _isConsensusRunning = false;
+    }
+
+    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight_) public onlyFactory {
+        require(
+            block.number >
+                ISnapshots(_SnapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
+                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
+            "ValidatorPool: Condition not met to stop consensus!"
+        );
+        _isConsensusRunning = false;
+        IETHDKG(_ETHDKGAddress()).setCustomMadnetHeight(madnetHeight_);
+    }
+
+    function registerValidators(address[] memory validators_, uint256[] memory stakerTokenIDs_)
+        public
+        onlyFactory
+        assertNotETHDKGRunning
+        assertNotConsensusRunning
+    {
+        require(
+            validators_.length + _validators.length() <= _maxNumValidators,
+            "ValidatorPool: There are not enough free spots for all new validators!"
+        );
+        require(
+            validators_.length == stakerTokenIDs_.length,
+            "ValidatorPool: Both input array should have same length!"
+        );
+
+        for (uint256 i = 0; i < validators_.length; i++) {
+            require(
+                msg.sender == IERC721(_StakeNFTAddress()).ownerOf(stakerTokenIDs_[i]),
+                "ValidatorPool: The factory should be the owner of the StakeNFT position!"
+            );
+            _registerValidator(validators_[i], stakerTokenIDs_[i]);
+        }
+    }
+
+    function unregisterValidators(address[] memory validators_)
+        public
+        onlyFactory
+        assertNotETHDKGRunning
+        assertNotConsensusRunning
+    {
+        require(
+            validators_.length <= _validators.length(),
+            "ValidatorPool: There are not enough validators to be removed!"
+        );
+        for (uint256 i = 0; i < validators_.length; i++) {
+            _unregisterValidator(validators_[i]);
+        }
+    }
+
+    function unregisterAllValidators()
+        public
+        onlyFactory
+        assertNotETHDKGRunning
+        assertNotConsensusRunning
+    {
+        while (_validators.length() > 0) {
+            address validator = _validators.at(_validators.length() - 1)._address;
+            _unregisterValidator(validator);
+        }
+    }
+
+    function collectProfits()
+        public
+        onlyValidator
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        require(
+            _isConsensusRunning,
+            "ValidatorPool: Profits can only be claimable when consensus is running!"
+        );
+
+        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
+            address(this)
+        );
+        uint256 balanceBeforeEth = address(this).balance;
+
+        uint256 validatorTokenID = _validators.get(msg.sender)._tokenID;
+        payoutEth = INFTStake(_ValidatorNFTAddress()).collectEthTo(msg.sender, validatorTokenID);
+        payoutToken = INFTStake(_ValidatorNFTAddress()).collectTokenTo(
+            msg.sender,
+            validatorTokenID
+        );
+
+        require(
+            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
+            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+        );
+        require(
+            balanceBeforeEth == address(this).balance,
+            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+        );
+
+        return (payoutEth, payoutToken);
+    }
+
+    function claimExitingNFTPosition() public returns (uint256) {
+        ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
+        require(data._freeAfter > 0, "ValidatorPool: Address not in the exitingQueue!");
+        require(
+            ISnapshots(_SnapshotsAddress()).getEpoch() > data._freeAfter,
+            "ValidatorPool: The waiting period is not over yet!"
+        );
+
+        _removeExitingQueueData(msg.sender);
+
+        INFTStake(_StakeNFTAddress()).lockOwnPosition(data._tokenID, POSITION_LOCK_PERIOD);
+
+        IERC721Transferable(_StakeNFTAddress()).safeTransferFrom(
+            address(this),
+            msg.sender,
+            data._tokenID
+        );
+
+        return data._tokenID;
+    }
+
+    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
+            address(this)
+        );
+        uint256 balanceBeforeEth = address(this).balance;
+
+        (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
+        // deciding which state to clean based if the accusable person was a active validator or was
+        // in the exiting line
+        if (isValidator(dishonestValidator_)) {
+            _removeValidatorData(dishonestValidator_);
+        } else {
+            _removeExitingQueueData(dishonestValidator_);
+        }
+        // redistribute the dishonest staking equally with the other validators
+
+        IERC20Transferable(_MadTokenAddress()).approve(_ValidatorNFTAddress(), minerShares);
+        INFTStake(_ValidatorNFTAddress()).depositToken(_getMagic(), minerShares);
+        // transfer to the disputer any profit that the dishonestValidator had when his
+        // position was burned + the disputerReward
+        _transferEthAndTokens(disputer_, payoutEth, payoutToken);
+
+        require(
+            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
+            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+        );
+        require(
+            balanceBeforeEth == address(this).balance,
+            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+        );
+
+        emit ValidatorMajorSlashed(dishonestValidator_);
+    }
+
+    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
+            address(this)
+        );
+        uint256 balanceBeforeEth = address(this).balance;
+
+        (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
+        uint256 stakeTokenID;
+        // In case there's not enough shares to create a new stakeNFT position, state is just
+        // cleaned and the rest of the funds is sent to the disputer
+        if (minerShares > 0) {
+            stakeTokenID = _mintStakeNFTPosition(minerShares);
+            _moveToExitingQueue(dishonestValidator_, stakeTokenID);
+        } else {
+            _removeExitingQueueData(dishonestValidator_);
+        }
+        _transferEthAndTokens(disputer_, payoutEth, payoutToken);
+
+        require(
+            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
+            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+        );
+        require(
+            balanceBeforeEth == address(this).balance,
+            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+        );
+
+        emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 
     function getStakeAmount() public view returns (uint256) {
@@ -160,223 +367,6 @@ contract ValidatorPool is
 
     function isConsensusRunning() public view returns (bool) {
         return _isConsensusRunning;
-    }
-
-    function scheduleMaintenance() public onlyFactory {
-        _isMaintenanceScheduled = true;
-        emit MaintenanceScheduled();
-    }
-
-    function initializeETHDKG()
-        public
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
-        IETHDKG(_ETHDKGAddress()).initializeETHDKG();
-    }
-
-    function completeETHDKG() public onlyETHDKG {
-        _isMaintenanceScheduled = false;
-        _isConsensusRunning = true;
-    }
-
-    // todo: check async in Madnet
-    function pauseConsensus() public onlySnapshots {
-        _isConsensusRunning = false;
-    }
-
-    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_SnapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    _maxIntervalWithoutSnapshot,
-            "ValidatorPool: Condition not met to stop consensus!"
-        );
-        _isConsensusRunning = false;
-        IETHDKG(_ETHDKGAddress()).setCustomMadnetHeight(madnetHeight_);
-    }
-
-    function registerValidators(address[] calldata validators_, uint256[] calldata stakerTokenIDs_)
-        external
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
-        require(
-            validators_.length + _validators.length() <= _maxNumValidators,
-            "ValidatorPool: There are not enough free spots for all new validators!"
-        );
-        require(
-            validators_.length == stakerTokenIDs_.length,
-            "ValidatorPool: Both input array should have same length!"
-        );
-
-        for (uint256 i = 0; i < validators_.length; i++) {
-            require(
-                msg.sender == IERC721(_StakeNFTAddress()).ownerOf(stakerTokenIDs_[i]),
-                "ValidatorPool: The factory should be the owner of the StakeNFT position!"
-            );
-            _registerValidator(validators_[i], stakerTokenIDs_[i]);
-        }
-    }
-
-    function unregisterValidators(address[] calldata validators_)
-        external
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
-        require(
-            validators_.length <= _validators.length(),
-            "ValidatorPool: There are not enough validators to be removed!"
-        );
-        for (uint256 i = 0; i < validators_.length; i++) {
-            _unregisterValidator(validators_[i]);
-        }
-    }
-
-    function unregisterAllValidators()
-        external
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
-        while (_validators.length() > 0) {
-            address validator = _validators.at(_validators.length() - 1)._address;
-            _unregisterValidator(validator);
-        }
-    }
-
-    function collectProfits()
-        external
-        onlyValidator
-        returns (uint256 payoutEth, uint256 payoutToken)
-    {
-        require(
-            _isConsensusRunning,
-            "ValidatorPool: Profits can only be claimable when consensus is running!"
-        );
-
-        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
-            address(this)
-        );
-        uint256 balanceBeforeEth = address(this).balance;
-
-        uint256 validatorTokenID = _validators.get(msg.sender)._tokenID;
-        payoutEth = INFTStake(_ValidatorNFTAddress()).collectEthTo(msg.sender, validatorTokenID);
-        payoutToken = INFTStake(_ValidatorNFTAddress()).collectTokenTo(
-            msg.sender,
-            validatorTokenID
-        );
-
-        require(
-            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
-        );
-
-        return (payoutEth, payoutToken);
-    }
-
-    function claimExitingNFTPosition() public returns (uint256) {
-        ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
-        require(data._freeAfter > 0, "ValidatorPool: Address not in the exitingQueue!");
-        require(
-            ISnapshots(_SnapshotsAddress()).getEpoch() > data._freeAfter,
-            "ValidatorPool: The waiting period is not over yet!"
-        );
-
-        _removeExitingQueueData(msg.sender);
-
-        INFTStake(_StakeNFTAddress()).lockOwnPosition(data._tokenID, _positionLockPeriod);
-
-        IERC721Transferable(_StakeNFTAddress()).safeTransferFrom(
-            address(this),
-            msg.sender,
-            data._tokenID
-        );
-
-        return data._tokenID;
-    }
-
-    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
-            address(this)
-        );
-        uint256 balanceBeforeEth = address(this).balance;
-
-        (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
-        // deciding which state to clean based if the accusable person was a active validator or was
-        // in the exiting line
-        if (isValidator(dishonestValidator_)) {
-            _removeValidatorData(dishonestValidator_);
-        } else {
-            _removeExitingQueueData(dishonestValidator_);
-        }
-        // redistribute the dishonest staking equally with the other validators
-
-        IERC20Transferable(_MadTokenAddress()).approve(_ValidatorNFTAddress(), minerShares);
-        INFTStake(_ValidatorNFTAddress()).depositToken(_getMagic(), minerShares);
-        // transfer to the disputer any profit that the dishonestValidator had when his
-        // position was burned + the disputerReward
-        _transferEthAndTokens(disputer_, payoutEth, payoutToken);
-
-        require(
-            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
-        );
-
-        emit ValidatorMajorSlashed(dishonestValidator_);
-    }
-
-    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
-            address(this)
-        );
-        uint256 balanceBeforeEth = address(this).balance;
-
-        (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
-        uint256 stakeTokenID;
-        // In case there's not enough shares to create a new stakeNFT position, state is just
-        // cleaned and the rest of the funds is sent to the disputer
-        if (minerShares > 0) {
-            stakeTokenID = _mintStakeNFTPosition(minerShares);
-            _moveToExitingQueue(dishonestValidator_, stakeTokenID);
-        } else {
-            _removeExitingQueueData(dishonestValidator_);
-        }
-        _transferEthAndTokens(disputer_, payoutEth, payoutToken);
-
-        require(
-            balanceBeforeToken == IERC20Transferable(_MadTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
-        );
-
-        emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
-    }
-
-    function _isValidator(address account_) internal view returns (bool) {
-        return _validators.contains(account_);
-    }
-
-    function _isInExitingQueue(address account_) internal view returns (bool) {
-        return _exitingValidatorsData[account_]._freeAfter > 0;
-    }
-
-    function _isAccusable(address account_) internal view returns (bool) {
-        return _isValidator(account_) || _isInExitingQueue(account_);
     }
 
     function _transferEthAndTokens(
@@ -616,7 +606,7 @@ contract ValidatorPool is
         }
         _exitingValidatorsData[validator_] = ExitingValidatorData(
             uint128(stakeTokenID_),
-            uint128(ISnapshots(_SnapshotsAddress()).getEpoch() + _claimPeriod)
+            uint128(ISnapshots(_SnapshotsAddress()).getEpoch() + CLAIM_PERIOD)
         );
     }
 
@@ -629,5 +619,15 @@ contract ValidatorPool is
         delete _exitingValidatorsData[validator_];
     }
 
-    receive() external payable onlyValidatorNFT {}
+    function _isValidator(address account_) internal view returns (bool) {
+        return _validators.contains(account_);
+    }
+
+    function _isInExitingQueue(address account_) internal view returns (bool) {
+        return _exitingValidatorsData[account_]._freeAfter > 0;
+    }
+
+    function _isAccusable(address account_) internal view returns (bool) {
+        return _isValidator(account_) || _isInExitingQueue(account_);
+    }
 }
