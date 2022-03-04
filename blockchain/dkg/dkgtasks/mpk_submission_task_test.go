@@ -200,3 +200,24 @@ func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
 		assert.True(t, shouldRetry)
 	}
 }
+
+func TestMPKSubmission_LeaderElection(t *testing.T) {
+	n := 4
+	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
+	ctx := context.Background()
+	eth := suite.eth
+	logger := logging.GetLogger("test").WithField("Validator", "")
+	leaders := 0
+	// Do MPK Submission task
+	tasks := suite.mpkSubmissionTasks
+	for idx := 0; idx < n; idx++ {
+		tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
+
+		if tasks[idx].AmILeading(ctx, eth, logger) {
+			leaders++
+		}
+	}
+
+	assert.Greater(t, 0, leaders)
+}

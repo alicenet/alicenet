@@ -158,6 +158,9 @@ case $1 in
     unregister)
         ./scripts/base-scripts/unregister.sh
     ;;
+    hardhat_node)
+        ./scripts/base-scripts/hardhat_node.sh
+    ;;
     list)
         LIST
     ;;
@@ -169,7 +172,7 @@ case $1 in
     ;;
     *)
         echo -e "Unknown argument!"
-        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | register | unregister | list | status | clean"
+        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | register | unregister | hardhat_node | list | status | clean"
         exit 1;
 esac
 exit 0

@@ -12,7 +12,7 @@
         "type": "uint256"
       },
       {
-        "epochLength_": "1024",
+        "epochLength_": "16",
         "type": "uint256"
       }
     ]
@@ -20,11 +20,11 @@
   "initializerArgs": {
     "contracts/ETHDKG.sol:ETHDKG": [
       {
-        "phaseLength_": "20",
+        "phaseLength_": "40",
         "type": "uint256"
       },
       {
-        "confirmationLength_": "4",
+        "confirmationLength_": "6",
         "type": "uint256"
       }
     ],

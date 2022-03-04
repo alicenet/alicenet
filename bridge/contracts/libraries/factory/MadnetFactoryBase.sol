@@ -90,15 +90,9 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**
      * @dev lookup allows anyone interacting with the contract to
      * get the address of contract specified by its _name
-     * @param _name: Custom NatSpec tag @custom:salt at the top of the contract
-     * solidity file
      */
-    function lookup(string memory _name) public view returns (address addr) {
-        bytes32 salt;
-        assembly {
-            salt := mload(add(_name, 32))
-        }
-        addr = getMetamorphicContractAddress(salt, address(this));
+    function lookup(bytes32 _salt) public view returns (address addr) {
+        addr = getMetamorphicContractAddress(_salt, address(this));
     }
 
     function getImplementation() public view returns (address) {

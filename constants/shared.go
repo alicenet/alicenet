@@ -4,7 +4,7 @@ import "time"
 
 const (
 	// EpochLength is the number of blocks in an epoch for MadNet
-	EpochLength uint32 = 1024
+	EpochLength uint32 = 16
 
 	// HashLen specifies the length of a hash in bytes
 	HashLen = 32
@@ -16,7 +16,7 @@ const (
 	MaxUint64 uint64 = 18446744073709551615
 
 	// ETHDKGDesperationDelay is after how many Etereum blocks more validators will start being allowed. Highly dependent on EpochLength
-	ETHDKGDesperationDelay int = 10 // 600
+	ETHDKGDesperationDelay int = 6
 
 	// ETHDKGDesperationFactor determines how quickly more
 	// validators will be allowed to perform unique ETHDKG

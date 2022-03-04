@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -122,6 +123,11 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return nil
 	}
 
+	// submit if I'm a leader for this task
+	if !t.AmILeading(ctx, eth, logger) {
+		return errors.New("not leading MPK submission yet")
+	}
+
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
@@ -197,15 +203,16 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.
 		return false
 	}
 
-	// submit if I'm a leader for this task
+	return !isMPKSet
+}
+
+func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
+	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
-		return true
+		return false
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes())
-
-	logger.Infof("amILeading MPK: %v", amILeading)
-	return amILeading
+	return dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes())
 }

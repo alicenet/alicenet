@@ -2,12 +2,17 @@ package blockchain
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -17,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -122,10 +126,14 @@ func NewEthereumSimulator(
 		genAlloc[address] = core.GenesisAccount{Balance: wei}
 	}
 
-	gasLimit := uint64(150000000)
-	sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
-	eth.client = sim
-	eth.queue = NewTxnQueue(sim, eth.selectors, timeout)
+	// gasLimit := uint64(150000000)
+	// sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
+	client, err := ethclient.Dial("http://127.0.0.1:8545")
+	if err != nil {
+		panic(err)
+	}
+	eth.client = client
+	eth.queue = NewTxnQueue(client, eth.selectors, timeout)
 	eth.queue.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
@@ -137,15 +145,85 @@ func NewEthereumSimulator(
 	}
 
 	eth.close = func() error {
+		if eth.close != nil {
+			err := eth.close()
+			if err != nil {
+				return err
+			}
+		}
 		os.RemoveAll(pathKeystore)
-		return sim.Close()
+		client.Close()
+		return nil
 	}
 
 	eth.commit = func() {
-		sim.Commit()
+		c := http.Client{}
+		msg := &JsonrpcMessage{
+			Version: "2.0",
+			ID:      []byte("1"),
+			Method:  "hardhat_mine",
+			Params:  make([]byte, 0),
+		}
+
+		if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+			panic(err)
+		}
+
+		var buff bytes.Buffer
+		err := json.NewEncoder(&buff).Encode(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		reader := bytes.NewReader(buff.Bytes())
+
+		resp, err := c.Post(
+			"http://127.0.0.1:8545",
+			"application/json",
+			reader,
+		)
+
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		//fmt.Println(string(bytes))
+		//client.Commit()
 	}
 
 	return eth, nil
+}
+
+func (eth *EthereumDetails) SetContractFactory(ctx context.Context, contractFactoryAddress common.Address) error {
+	c := &ContractDetails{eth: eth}
+	err := c.LookupContracts(ctx, contractFactoryAddress)
+	if err != nil {
+		return err
+	}
+
+	eth.contracts = c
+	return nil
+}
+
+// A value of this type can a JSON-RPC request, notification, successful response or
+// error response. Which one it is depends on the fields.
+type JsonrpcMessage struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   *jsonError      `json:"error,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+}
+
+type jsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 // NewEthereumEndpoint creates a new Ethereum abstraction
@@ -240,6 +318,23 @@ func (eth *EthereumDetails) KnownSelectors() interfaces.SelectorMap {
 func (eth *EthereumDetails) Close() error {
 	eth.queue.Close()
 	return eth.close()
+}
+
+func (eth *EthereumDetails) SetClose(fn func() error) {
+	if eth.close != nil {
+		eth.close = func() error {
+			err := eth.close()
+			if err != nil {
+				return err
+			}
+
+			return fn()
+		}
+
+		return
+	}
+
+	eth.close = fn
 }
 
 func (eth *EthereumDetails) Commit() {

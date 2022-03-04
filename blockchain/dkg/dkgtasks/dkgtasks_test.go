@@ -1,15 +1,26 @@
 package dkgtasks_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"math"
 	"math/big"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
@@ -73,17 +84,7 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		big.NewInt(math.MaxInt64))
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
-	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
-
-	// Mine a block once a second
-	if blockInterval > 1*time.Millisecond {
-		go func() {
-			for {
-				time.Sleep(blockInterval)
-				eth.Commit()
-			}
-		}()
-	}
+	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -95,7 +96,39 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 
 	// Deploy all the contracts
 	c := eth.Contracts()
-	panic("missing deploy step")
+	// c.DeployContracts()
+	// panic("missing deploy step")
+
+	err = startHardHatNode(eth)
+	if err != nil {
+		t.Fatalf("error starting hardhat node: %v", err)
+	}
+
+	t.Logf("waiting on hardhat node to start...")
+
+	err = waitForHardHatNode(ctx)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	// Mine a block once a second
+	if blockInterval > 1*time.Millisecond {
+		go func() {
+			for {
+				time.Sleep(blockInterval)
+				eth.Commit()
+			}
+		}()
+	}
+
+	t.Logf("deploying contracts...")
+
+	err = startDeployScripts(eth, ctx)
+	if err != nil {
+		t.Fatalf("error deploying: %v", err)
+	}
+	//t.Logf("deploy output: %v", out)
+
 	// _, _, err = c.DeployContracts(ctx, deployAccount)
 	// assert.Nil(t, err, "Failed to deploy contracts...")
 
@@ -152,6 +185,176 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	}
 
 	return eth
+}
+
+func startHardHatNode(eth *blockchain.EthereumDetails) error {
+
+	_, b, _, _ := runtime.Caller(0)
+
+	// Root folder of this project
+	root := filepath.Join(filepath.Dir(b), "../../../")
+	pathNodes := filepath.SplitList(root)
+	rootPath := make([]string, 0)
+
+	for i := 0; i < len(pathNodes); i++ {
+		rootPath = append(rootPath, pathNodes[i])
+
+		if pathNodes[i] == "MadNet" {
+			break
+		}
+	}
+
+	rootDir := filepath.Join(rootPath...)
+	rootPath = append(rootPath, "scripts")
+	rootPath = append(rootPath, "main.sh")
+	scriptPath := filepath.Join(rootPath...)
+	fmt.Println("root: ", scriptPath)
+
+	cmd := exec.Cmd{
+		Path:   scriptPath,
+		Args:   []string{scriptPath, "hardhat_node"},
+		Dir:    rootDir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Start()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not run hardhat node: %s", err)
+	}
+
+	eth.SetClose(func() error {
+		err := cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
+
+		_, err = cmd.Process.Wait()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return nil
+}
+
+func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
+
+	_, b, _, _ := runtime.Caller(0)
+
+	// Root folder of this project
+	root := filepath.Join(filepath.Dir(b), "../../../")
+	pathNodes := filepath.SplitList(root)
+	rootPath := make([]string, 0)
+
+	for i := 0; i < len(pathNodes); i++ {
+		rootPath = append(rootPath, pathNodes[i])
+
+		if pathNodes[i] == "MadNet" {
+			break
+		}
+	}
+
+	rootDir := filepath.Join(rootPath...)
+	rootPath = append(rootPath, "scripts")
+	rootPath = append(rootPath, "main.sh")
+	scriptPath := filepath.Join(rootPath...)
+	fmt.Println("root: ", scriptPath)
+
+	cmd := exec.Cmd{
+		Path:   scriptPath,
+		Args:   []string{scriptPath, "deploy", "hardhat"},
+		Dir:    rootDir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Run()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not execute deploy script: %s", err)
+	}
+
+	eth.SetClose(func() error {
+		err := cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
+
+		_, err = cmd.Process.Wait()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// inits contracts
+	var factory string = config.Configuration.Ethereum.RegistryAddress
+	addr := common.Address{}
+	copy(addr[:], common.FromHex(factory))
+	err = eth.SetContractFactory(ctx, addr)
+	if err != nil {
+		return err
+	}
+
+	//eth.Contracts().ContractFactory()
+
+	return nil
+}
+
+func waitForHardHatNode(ctx context.Context) error {
+	c := http.Client{}
+	msg := &blockchain.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  "eth_chainId",
+		Params:  make([]byte, 0),
+	}
+	var err error
+	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+		panic(err)
+	}
+
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(msg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		reader := bytes.NewReader(buff.Bytes())
+
+		resp, err := c.Post(
+			"http://127.0.0.1:8545",
+			"application/json",
+			reader,
+		)
+
+		if err != nil {
+			continue
+		}
+
+		_, err = io.ReadAll(resp.Body)
+		if err == nil {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+
+	return err
 }
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
