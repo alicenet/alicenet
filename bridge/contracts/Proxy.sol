@@ -27,7 +27,6 @@ contract Proxy {
         _factory = msg.sender;
     }
 
-    //todo: discuss with Hunter
     receive() external payable {
         _fallback();
     }
