@@ -25,6 +25,14 @@ contract ETHDKG is
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
 
+    modifier onlyValidator() {
+        require(
+            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
+            "ETHDKG: Only validators allowed!"
+        );
+        _;
+    }
+
     constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
         // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
         address ethdkgPhases = IProxy(_ETHDKGPhasesAddress()).getImplementationAddress();
@@ -46,20 +54,16 @@ contract ETHDKG is
         _ethdkgAccusations = ethdkgAccusations;
     }
 
-    function initialize(uint256 phaseLength_, uint256 confirmationLength_) public initializer {
+    function initialize(uint256 phaseLength_, uint256 confirmationLength_)
+        public
+        initializer
+        onlyFactory
+    {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
 
-    modifier onlyValidator() {
-        require(
-            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
-            "ETHDKG: Only validators allowed!"
-        );
-        _;
-    }
-
-    function setPhaseLength(uint16 phaseLength_) external onlyFactory {
+    function setPhaseLength(uint16 phaseLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
             "ETHDKG: This variable cannot be set if an ETHDKG round is running!"
@@ -67,7 +71,7 @@ contract ETHDKG is
         _phaseLength = phaseLength_;
     }
 
-    function setConfirmationLength(uint16 confirmationLength_) external onlyFactory {
+    function setConfirmationLength(uint16 confirmationLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
             "ETHDKG: This variable cannot be set if an ETHDKG round is running!"
@@ -75,7 +79,7 @@ contract ETHDKG is
         _confirmationLength = confirmationLength_;
     }
 
-    function setCustomMadnetHeight(uint256 madnetHeight) external onlyValidatorPool {
+    function setCustomMadnetHeight(uint256 madnetHeight) public onlyValidatorPool {
         _customMadnetHeight = madnetHeight;
         emit ValidatorSetCompleted(
             0,
@@ -90,38 +94,138 @@ contract ETHDKG is
         );
     }
 
-    function isETHDKGRunning() public view returns (bool) {
-        return _isETHDKGRunning();
+    function initializeETHDKG() public onlyValidatorPool {
+        _initializeETHDKG();
     }
 
-    function _isETHDKGRunning() internal view returns (bool) {
-        // Handling initial case
-        if (_phaseStartBlock == 0) {
-            return false;
-        }
-        return !_isETHDKGCompleted() && !_isETHDKGHalted();
+    function register(uint256[2] memory publicKey) public onlyValidator {
+        _callPhaseContract(abi.encodeWithSignature("register(uint256[2])", publicKey));
+    }
+
+    function accuseParticipantNotRegistered(address[] memory dishonestAddresses) public {
+        _callAccusationContract(
+            abi.encodeWithSignature("accuseParticipantNotRegistered(address[])", dishonestAddresses)
+        );
+    }
+
+    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
+        public
+        onlyValidator
+    {
+        _callPhaseContract(
+            abi.encodeWithSignature(
+                "distributeShares(uint256[],uint256[2][])",
+                encryptedShares,
+                commitments
+            )
+        );
+    }
+
+    ///
+    function accuseParticipantDidNotDistributeShares(address[] memory dishonestAddresses) public {
+        _callAccusationContract(
+            abi.encodeWithSignature(
+                "accuseParticipantDidNotDistributeShares(address[])",
+                dishonestAddresses
+            )
+        );
+    }
+
+    // Someone sent bad shares
+    function accuseParticipantDistributedBadShares(
+        address dishonestAddress,
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments,
+        uint256[2] memory sharedKey,
+        uint256[2] memory sharedKeyCorrectnessProof
+    ) public onlyValidator {
+        _callAccusationContract(
+            abi.encodeWithSignature(
+                "accuseParticipantDistributedBadShares(address,uint256[],uint256[2][],uint256[2],uint256[2])",
+                dishonestAddress,
+                encryptedShares,
+                commitments,
+                sharedKey,
+                sharedKeyCorrectnessProof
+            )
+        );
+    }
+
+    function submitKeyShare(
+        uint256[2] memory keyShareG1,
+        uint256[2] memory keyShareG1CorrectnessProof,
+        uint256[4] memory keyShareG2
+    ) public onlyValidator {
+        _callPhaseContract(
+            abi.encodeWithSignature(
+                "submitKeyShare(uint256[2],uint256[2],uint256[4])",
+                keyShareG1,
+                keyShareG1CorrectnessProof,
+                keyShareG2
+            )
+        );
+    }
+
+    function accuseParticipantDidNotSubmitKeyShares(address[] memory dishonestAddresses) public {
+        _callAccusationContract(
+            abi.encodeWithSignature(
+                "accuseParticipantDidNotSubmitKeyShares(address[])",
+                dishonestAddresses
+            )
+        );
+    }
+
+    function submitMasterPublicKey(uint256[4] memory masterPublicKey_) public {
+        _callPhaseContract(
+            abi.encodeWithSignature("submitMasterPublicKey(uint256[4])", masterPublicKey_)
+        );
+    }
+
+    function submitGPKJ(uint256[4] memory gpkj) public onlyValidator {
+        _callPhaseContract(abi.encodeWithSignature("submitGPKJ(uint256[4])", gpkj));
+    }
+
+    function accuseParticipantDidNotSubmitGPKJ(address[] memory dishonestAddresses) public {
+        _callAccusationContract(
+            abi.encodeWithSignature(
+                "accuseParticipantDidNotSubmitGPKJ(address[])",
+                dishonestAddresses
+            )
+        );
+    }
+
+    function accuseParticipantSubmittedBadGPKJ(
+        address[] memory validators,
+        bytes32[] memory encryptedSharesHash,
+        uint256[2][][] memory commitments,
+        address dishonestAddress
+    ) public onlyValidator {
+        _callAccusationContract(
+            abi.encodeWithSignature(
+                "accuseParticipantSubmittedBadGPKJ(address[],bytes32[],uint256[2][][],address)",
+                validators,
+                encryptedSharesHash,
+                commitments,
+                dishonestAddress
+            )
+        );
+    }
+
+    // Successful_Completion should be called at the completion of the DKG algorithm.
+    function complete() public onlyValidator {
+        _callPhaseContract(abi.encodeWithSignature("complete()"));
+    }
+
+    function isETHDKGRunning() public view returns (bool) {
+        return _isETHDKGRunning();
     }
 
     function isETHDKGCompleted() public view returns (bool) {
         return _isETHDKGCompleted();
     }
 
-    function _isETHDKGCompleted() internal view returns (bool) {
-        return _ethdkgPhase == Phase.Completion;
-    }
-
     function isETHDKGHalted() public view returns (bool) {
         return _isETHDKGHalted();
-    }
-
-    // todo: generate truth table
-    function _isETHDKGHalted() internal view returns (bool) {
-        bool ethdkgFailedInDisputePhase = (_ethdkgPhase == Phase.DisputeShareDistribution ||
-            _ethdkgPhase == Phase.DisputeGPKJSubmission) &&
-            block.number >= _phaseStartBlock + _phaseLength &&
-            _badParticipants != 0;
-        bool ethdkgFailedInNormalPhase = block.number >= _phaseStartBlock + 2 * _phaseLength;
-        return ethdkgFailedInNormalPhase || ethdkgFailedInDisputePhase;
     }
 
     function isMasterPublicKeySet() public view returns (bool) {
@@ -159,10 +263,6 @@ contract ETHDKG is
         return _badParticipants;
     }
 
-    function getMinValidators() public pure returns (uint256) {
-        return MIN_VALIDATOR;
-    }
-
     function getParticipantInternalState(address participant)
         public
         view
@@ -197,8 +297,8 @@ contract ETHDKG is
         return _masterPublicKey;
     }
 
-    function initializeETHDKG() external onlyValidatorPool {
-        _initializeETHDKG();
+    function getMinValidators() public pure returns (uint256) {
+        return _MIN_VALIDATORS;
     }
 
     function _callAccusationContract(bytes memory callData) internal returns (bytes memory) {
@@ -233,7 +333,7 @@ contract ETHDKG is
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount();
         require(
-            numberValidators >= MIN_VALIDATOR,
+            numberValidators >= _MIN_VALIDATORS,
             "ETHDKG: Minimum number of validators staked not met!"
         );
 
@@ -255,121 +355,25 @@ contract ETHDKG is
         );
     }
 
-    function register(uint256[2] memory publicKey) external onlyValidator {
-        _callPhaseContract(abi.encodeWithSignature("register(uint256[2])", publicKey));
+    function _isETHDKGCompleted() internal view returns (bool) {
+        return _ethdkgPhase == Phase.Completion;
     }
 
-    function accuseParticipantNotRegistered(address[] memory dishonestAddresses) external {
-        _callAccusationContract(
-            abi.encodeWithSignature("accuseParticipantNotRegistered(address[])", dishonestAddresses)
-        );
+    function _isETHDKGRunning() internal view returns (bool) {
+        // Handling initial case
+        if (_phaseStartBlock == 0) {
+            return false;
+        }
+        return !_isETHDKGCompleted() && !_isETHDKGHalted();
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        external
-        onlyValidator
-    {
-        _callPhaseContract(
-            abi.encodeWithSignature(
-                "distributeShares(uint256[],uint256[2][])",
-                encryptedShares,
-                commitments
-            )
-        );
-    }
-
-    ///
-    function accuseParticipantDidNotDistributeShares(address[] memory dishonestAddresses) external {
-        _callAccusationContract(
-            abi.encodeWithSignature(
-                "accuseParticipantDidNotDistributeShares(address[])",
-                dishonestAddresses
-            )
-        );
-    }
-
-    // Someone sent bad shares
-    function accuseParticipantDistributedBadShares(
-        address dishonestAddress,
-        uint256[] memory encryptedShares,
-        uint256[2][] memory commitments,
-        uint256[2] memory sharedKey,
-        uint256[2] memory sharedKeyCorrectnessProof
-    ) external onlyValidator {
-        _callAccusationContract(
-            abi.encodeWithSignature(
-                "accuseParticipantDistributedBadShares(address,uint256[],uint256[2][],uint256[2],uint256[2])",
-                dishonestAddress,
-                encryptedShares,
-                commitments,
-                sharedKey,
-                sharedKeyCorrectnessProof
-            )
-        );
-    }
-
-    function submitKeyShare(
-        uint256[2] memory keyShareG1,
-        uint256[2] memory keyShareG1CorrectnessProof,
-        uint256[4] memory keyShareG2
-    ) external onlyValidator {
-        _callPhaseContract(
-            abi.encodeWithSignature(
-                "submitKeyShare(uint256[2],uint256[2],uint256[4])",
-                keyShareG1,
-                keyShareG1CorrectnessProof,
-                keyShareG2
-            )
-        );
-    }
-
-    function accuseParticipantDidNotSubmitKeyShares(address[] memory dishonestAddresses) external {
-        _callAccusationContract(
-            abi.encodeWithSignature(
-                "accuseParticipantDidNotSubmitKeyShares(address[])",
-                dishonestAddresses
-            )
-        );
-    }
-
-    function submitMasterPublicKey(uint256[4] memory masterPublicKey_) external {
-        _callPhaseContract(
-            abi.encodeWithSignature("submitMasterPublicKey(uint256[4])", masterPublicKey_)
-        );
-    }
-
-    function submitGPKJ(uint256[4] memory gpkj) external onlyValidator {
-        _callPhaseContract(abi.encodeWithSignature("submitGPKJ(uint256[4])", gpkj));
-    }
-
-    function accuseParticipantDidNotSubmitGPKJ(address[] memory dishonestAddresses) external {
-        _callAccusationContract(
-            abi.encodeWithSignature(
-                "accuseParticipantDidNotSubmitGPKJ(address[])",
-                dishonestAddresses
-            )
-        );
-    }
-
-    function accuseParticipantSubmittedBadGPKJ(
-        address[] memory validators,
-        bytes32[] memory encryptedSharesHash,
-        uint256[2][][] memory commitments,
-        address dishonestAddress
-    ) external onlyValidator {
-        _callAccusationContract(
-            abi.encodeWithSignature(
-                "accuseParticipantSubmittedBadGPKJ(address[],bytes32[],uint256[2][][],address)",
-                validators,
-                encryptedSharesHash,
-                commitments,
-                dishonestAddress
-            )
-        );
-    }
-
-    // Successful_Completion should be called at the completion of the DKG algorithm.
-    function complete() external onlyValidator {
-        _callPhaseContract(abi.encodeWithSignature("complete()"));
+    // todo: generate truth table
+    function _isETHDKGHalted() internal view returns (bool) {
+        bool ethdkgFailedInDisputePhase = (_ethdkgPhase == Phase.DisputeShareDistribution ||
+            _ethdkgPhase == Phase.DisputeGPKJSubmission) &&
+            block.number >= _phaseStartBlock + _phaseLength &&
+            _badParticipants != 0;
+        bool ethdkgFailedInNormalPhase = block.number >= _phaseStartBlock + 2 * _phaseLength;
+        return ethdkgFailedInNormalPhase || ethdkgFailedInDisputePhase;
     }
 }

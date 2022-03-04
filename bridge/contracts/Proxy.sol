@@ -21,10 +21,18 @@ import "contracts/utils/DeterministicAddress.sol";
  * the higher order bits to lock the upgrade capability of the proxy.
  */
 contract Proxy {
-    address private immutable factory_;
+    address private immutable _factory;
 
     constructor() {
-        factory_ = msg.sender;
+        _factory = msg.sender;
+    }
+
+    receive() external payable {
+        _fallback();
+    }
+
+    fallback() external payable {
+        _fallback();
     }
 
     function getImplementationAddress() public view returns (address) {
@@ -40,10 +48,10 @@ contract Proxy {
         }
     }
 
-    fallback() external payable {
+    function _fallback() internal {
         // make local copy of factory since immutables
         // are not accessable in assembly as of yet
-        address factory = factory_;
+        address factory = _factory;
         assembly {
             // admin is the builtin logic to change the implementation
             function admin() {

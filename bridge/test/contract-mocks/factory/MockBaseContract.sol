@@ -3,21 +3,39 @@ pragma solidity ^0.8.11;
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
-/// @custom:salt Mock
-contract MockBaseContract is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
-    address factory_;
-    uint256 public v;
-    uint256 public immutable i;
-    string p;
+interface IMockBaseContract {
+    function setV(uint256 _v) external;
 
-    constructor(uint256 _i, string memory _p) {
-        p = _p;
-        i = _i;
-        factory_ = msg.sender;
+    function lock() external;
+
+    function unlock() external;
+
+    function fail() external;
+
+    function getVar() external view returns (uint256);
+
+    function getImut() external view returns (uint256);
+}
+
+/// @custom:salt Mock
+contract MockBaseContract is
+    ProxyInternalUpgradeLock,
+    ProxyInternalUpgradeUnlock,
+    IMockBaseContract
+{
+    address internal _factory;
+    uint256 internal _var;
+    uint256 internal immutable _imut;
+    string internal _pString;
+
+    constructor(uint256 imut_, string memory pString_) {
+        _pString = pString_;
+        _imut = imut_;
+        _factory = msg.sender;
     }
 
-    function setv(uint256 _v) public {
-        v = _v;
+    function setV(uint256 _v) public {
+        _var = _v;
     }
 
     function lock() public {
@@ -28,25 +46,23 @@ contract MockBaseContract is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnloc
         __unlockImplementation();
     }
 
-    function setFactory(address _factory) public {
-        factory_ = _factory;
+    function setFactory(address factory_) public {
+        _factory = factory_;
     }
 
-    function getFactory() external view returns (address) {
-        return factory_;
+    function getFactory() public view returns (address) {
+        return _factory;
     }
-}
 
-interface IMockBaseContract {
-    function v() external returns (uint256);
+    function getImut() public view returns (uint256) {
+        return _imut;
+    }
 
-    function i() external returns (uint256);
+    function getVar() public view returns (uint256) {
+        return _var;
+    }
 
-    function setv(uint256 _v) external;
-
-    function lock() external;
-
-    function unlock() external;
-
-    function fail() external;
+    function fail() public pure {
+        require(false == true, "Failed!");
+    }
 }

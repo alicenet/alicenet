@@ -5,10 +5,6 @@ import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the MerkleProof structure from a blob of binary data
 library MerkleProofParserLibrary {
-    /** @dev minimum size in bytes of a MerkleProof binary structure
-      (without proofs and bitmap) */
-    uint256 internal constant MERKLE_PROOF_SIZE = 103;
-
     struct MerkleProof {
         bool included;
         uint16 keyHeight;
@@ -18,6 +14,9 @@ library MerkleProofParserLibrary {
         bytes bitmap;
         bytes auditPath;
     }
+    /** @dev minimum size in bytes of a MerkleProof binary structure
+      (without proofs and bitmap) */
+    uint256 internal constant _MERKLE_PROOF_SIZE = 103;
 
     /**
     @notice This function is for deserializing the MerkleProof struct from a
@@ -32,13 +31,13 @@ library MerkleProofParserLibrary {
         returns (MerkleProof memory mProof)
     {
         require(
-            src.length >= MERKLE_PROOF_SIZE,
+            src.length >= _MERKLE_PROOF_SIZE,
             "MerkleProofParserLibrary: Not enough bytes to extract a minimum MerkleProof"
         );
         uint16 bitmapLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 99);
         uint16 auditPathLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 101);
         require(
-            src.length >= MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32,
+            src.length >= _MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32,
             "MerkleProofParserLibrary: Not enough bytes to extract MerkleProof"
         );
         mProof.included = BaseParserLibrary.extractBool(src, 0);

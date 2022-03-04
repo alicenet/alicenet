@@ -8,126 +8,148 @@ import "contracts/libraries/factory/MadnetFactoryBase.sol";
 /// @custom:deploy-type factory
 contract MadnetFactory is MadnetFactoryBase {
     /**
-     * @dev The constructor encodes the proxy deploy byte code with the universal deploycode at
-     * the head and the factory address at the tail, and deploys the proxy byte code using create
-     * The result of this deployment will be a contract with the proxy contract deployment bytecode
-     * with its constructor at the head, runtime code in the body and constructor args at the tail.
-     * the constructor then sets proxyTemplate_ state var to the deployed proxy template address
-     * the deploy account will be set as the first owner of the factory.
-     * @param selfAddr_ is the factory contracts address (address of itself)
+     * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
+     * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
+     * The result of this deployment will be a contract with the proxy contract deployment bytecode with
+     * its constructor at the head, runtime code in the body and constructor args at the tail. The
+     * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
+     * account will be set as the first owner of the factory.
+     * @param selfAddr_ is the factory contracts
+     * address (address of itself)
      */
     constructor(address selfAddr_) MadnetFactoryBase(selfAddr_) {}
 
     /**
-     * @dev deployCreate allows the owner to deploy raw contracts through the factory
-     * @param _deployCode bytecode to deploy using create
+     * @dev callAny allows EOA to call function impersonating the factory address
+     * @param target_: the address of the contract to be called
+     * @param value_: value in WEIs to send together the call
+     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
      */
-    function deployCreate(bytes calldata _deployCode)
+    function callAny(
+        address target_,
+        uint256 value_,
+        bytes calldata cdata_
+    ) public onlyOwner {
+        bytes memory cdata = cdata_;
+        _callAny(target_, value_, cdata);
+        _returnAvailableData();
+    }
+
+    /**
+     * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
+     * @param target_: the address of the contract to be called
+     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
+     */
+    function delegateCallAny(address target_, bytes calldata cdata_) public onlyOwnerOrDelegator {
+        bytes memory cdata = cdata_;
+        _delegateCallAny(target_, cdata);
+        _returnAvailableData();
+    }
+
+    /**
+     * @dev deployCreate allows the owner to deploy raw contracts through the factory using
+     * non-deterministic address generation (create OpCode)
+     * @param deployCode_ Hex encoded data with the deployment code of the contract to be deployed +
+     * constructors' args (if any)
+     * @return contractAddr the deployed contract address
+     */
+    function deployCreate(bytes calldata deployCode_)
         public
         onlyOwner
         returns (address contractAddr)
     {
-        return deployCreateInternal(_deployCode);
+        return _deployCreate(deployCode_);
     }
 
     /**
      * @dev deployCreate2 allows the owner to deploy contracts with deterministic address
      * through the factory
-     * @param _value endowment value for created contract
-     * @param _salt salt for create2 deployment, used to distinguish contracts deployed from this factory
-     * @param _deployCode bytecode to deploy using create2
+     * @param value_ endowment value in WEIS for the created contract
+     * @param salt_ salt used to determine the final determinist address for the deployed contract
+     * @param deployCode_ Hex encoded data with the deployment code of the contract to be deployed +
+     * constructors' args (if any)
+     * @return contractAddr the deployed contract address
      */
     function deployCreate2(
-        uint256 _value,
-        bytes32 _salt,
-        bytes calldata _deployCode
+        uint256 value_,
+        bytes32 salt_,
+        bytes calldata deployCode_
     ) public payable onlyOwner returns (address contractAddr) {
-        contractAddr = deployCreate2Internal(_value, _salt, _deployCode);
+        contractAddr = _deployCreate2(value_, salt_, deployCode_);
     }
 
-    function initializeContract(address _contract, bytes calldata _initCallData)
+    /**
+     * @dev deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
+     * @param salt_ salt used to determine the final determinist address for the deployed contract
+     */
+    function deployProxy(bytes32 salt_) public onlyOwner returns (address contractAddr) {
+        contractAddr = _deployProxy(salt_);
+    }
+
+    /**
+     * @dev deployStatic finishes the deployment started with the deployTemplate of a contract with
+     * determinist address. This function call any initialize() function in the deployed contract
+     * in case the arguments are provided. Should be called after deployTemplate.
+     * @param salt_ salt used to determine the final determinist address for the deployed contract
+     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the deployed contract
+     * @return contractAddr the address of the deployed template contract
+     */
+    function deployStatic(bytes32 salt_, bytes calldata initCallData_)
+        public
+        onlyOwner
+        returns (address contractAddr)
+    {
+        contractAddr = _deployStatic(salt_, initCallData_);
+    }
+
+    /**
+     * @dev deployTemplate deploys a template contract with the universal code copy constructor that
+     * deploys the contract+constructorArgs defined in the deployCode_ as the contracts runtime code.
+     * @param deployCode_ Hex encoded data with the deploymentCode + (constructor args appended if any)
+     * @return contractAddr the address of the deployed template contract
+     */
+    function deployTemplate(bytes calldata deployCode_)
+        public
+        onlyOwner
+        returns (address contractAddr)
+    {
+        contractAddr = _deployTemplate(deployCode_);
+    }
+
+    /**
+     * @dev initializeContract allows the owner/delegator to initialize contracts deployed via factory
+     * @param contract_ address of the contract that will be initialized
+     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
+     * deployed contract
+     */
+    function initializeContract(address contract_, bytes calldata initCallData_)
         public
         onlyOwnerOrDelegator
     {
-        initializeContractInternal(_contract, _initCallData);
+        _initializeContract(contract_, initCallData_);
     }
 
     /**
-     * @dev deployTemplate deploys a template contract with the universal code copy constructor that deploys
-     * the deploycode as the contracts runtime code.
-     * @param _deployCode the deploycode with the constructor args appended if any
-     * @return contractAddr the address of the deployed template contract
+     * @dev multiCall allows EOA to make multiple function calls within a single transaction
+     * impersonating the factory
+     * @param cdata_: array of hex encoded data with the function calls (function signature + arguments)
      */
-    function deployTemplate(bytes calldata _deployCode)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = deployTemplateInternal(_deployCode);
+    function multiCall(bytes[] calldata cdata_) public onlyOwner {
+        _multiCall(cdata_);
     }
 
     /**
-     * @dev deployStatic deploys a template contract with the universal code copy constructor that deploys
-     * the deploycode as the contracts runtime code.
-     * @param _salt sda
-     * @return contractAddr the address of the deployed template contract
+     * @dev upgradeProxy updates the implementation/logic address of an already deployed proxy contract.
+     * @param salt_ salt used to determine the final determinist address for the deployed proxy contract
+     * @param newImpl_ address of the new contract that contains the new implementation logic
+     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
+     * new implementation contract
      */
-    function deployStatic(bytes32 _salt, bytes calldata _initCallData)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = deployStaticInternal(_salt, _initCallData);
-    }
-
-    /**
-     *
-     */
-    function deployProxy(bytes32 _salt) public onlyOwner returns (address contractAddr) {
-        contractAddr = deployProxyInternal(_salt);
-    }
-
     function upgradeProxy(
-        bytes32 _salt,
-        address _newImpl,
-        bytes calldata _initCallData
+        bytes32 salt_,
+        address newImpl_,
+        bytes calldata initCallData_
     ) public onlyOwner {
-        upgradeProxyInternal(_salt, _newImpl, _initCallData);
-    }
-
-    /**
-     * @dev delegateCallAny is a access restricted wrapper function for delegateCallAnyInternal
-     * @param _target: the address of the contract to call
-     * @param _cdata: the call data for the delegate call
-     */
-    function delegateCallAny(address _target, bytes calldata _cdata) public onlyOwnerOrDelegator {
-        bytes memory cdata = _cdata;
-        delegateCallAnyInternal(_target, cdata);
-        returnAvailableData();
-    }
-
-    /**
-     * @dev callAny is a access restricted wrapper function for callAnyInternal
-     * @param _target: the address of the contract to call
-     * @param _value: value to send with the call
-     * @param _cdata: the call data for the delegate call
-     */
-    function callAny(
-        address _target,
-        uint256 _value,
-        bytes calldata _cdata
-    ) public onlyOwner {
-        bytes memory cdata = _cdata;
-        callAnyInternal(_target, _value, cdata);
-        returnAvailableData();
-    }
-
-    /**
-     * @dev multiCall allows EOA to make multiple function calls within a single transaction **in this contract**, and only returns the result of the last call
-     * @param _cdata: array of function calls
-     * returns the result of the last call
-     */
-    function multiCall(bytes[] calldata _cdata) public onlyOwner {
-        multiCallInternal(_cdata);
+        _upgradeProxy(salt_, newImpl_, initCallData_);
     }
 }
