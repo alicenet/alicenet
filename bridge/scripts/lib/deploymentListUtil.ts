@@ -17,7 +17,6 @@ export interface DeploymentGroupIndexList {
 }
 
 export async function getDeploymentList() {
-  let order = ["general", "ethdkg"]
   let config: any = readBaseConfig();
   let deploymentList: Array<string> = config.deploymentList; 
   return deploymentList;
