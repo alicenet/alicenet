@@ -14,6 +14,8 @@ import "contracts/interfaces/IProxy.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-group ethdkg
+/// @custom:deploy-group-index 2
 contract ETHDKG is
     ETHDKGStorage,
     IETHDKG,

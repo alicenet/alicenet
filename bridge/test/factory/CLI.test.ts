@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { run } from "hardhat";
 import { MOCK } from "../../scripts/lib/constants";
-import { getDefaultFactoryAddress } from "../../scripts/lib/factoryStateUtils";
+import { getDefaultFactoryAddress } from "../../scripts/lib/factoryStateUtil";
 import { getAccounts, predictFactoryAddress } from "./Setup";
 
 describe("Cli tasks", async () => {

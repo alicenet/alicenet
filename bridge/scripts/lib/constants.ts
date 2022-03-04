@@ -1,9 +1,10 @@
 import "process";
 
 //deployment Types
-export const staticDeployment: string = "deployStatic";
-export const upgradeableDeployment: string = "deployUpgradeable";
-export const factoryDeployment: string = "factory";
+
+export const STATIC_DEPLOYMENT: string = "deployStatic";
+export const UPGRADEABLE_DEPLOYMENT: string = "deployUpgradeable";
+export const FACTORY_DEPLOYMENT: string = "factory";
 export const MOCK_INITIALIZABLE = "MockInitializable";
 export const MOCK_FACTORY = "MockFactory";
 export const LOGIC_ADDR = "LogicAddress";

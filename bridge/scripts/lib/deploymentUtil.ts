@@ -1,9 +1,8 @@
 import { artifacts, ethers, run } from "hardhat";
-import { BuildInfo } from "hardhat/types";
 import {
   getDeploymentConstructorArgs,
   getDeploymentInitializerArgs,
-} from "./deployArgUtils";
+} from "./deployArgUtil";
 
 export interface InitData {
   constructorArgs: { [key: string]: any };
@@ -34,7 +33,7 @@ export async function deployStatic(fullyQualifiedName: string) {
 
   let hasConArgs = await hasConstructorArgs(fullyQualifiedName);
   let constructorArgs = hasConArgs
-    ? (await getDeploymentConstructorArgs(fullyQualifiedName))
+    ? await getDeploymentConstructorArgs(fullyQualifiedName)
     : [];
   return await run("deployMetamorphic", {
     contractName: extractName(fullyQualifiedName),
@@ -203,31 +202,38 @@ export function extractName(fullName: string) {
   return fullName.split(":")[1];
 }
 
-export async function getDeployType(fullName: string) {
-  let buildInfo = await artifacts.getBuildInfo(fullName);
+export async function getCustomNSTag(
+  fullyQaulifiedContractName: string,
+  tagName: string
+): Promise<string> {
+  let buildInfo = await artifacts.getBuildInfo(fullyQaulifiedContractName);
   if (buildInfo !== undefined) {
-    let name = extractName(fullName);
-    let path = extractPath(fullName);
+    let name = extractName(fullyQaulifiedContractName);
+    let path = extractPath(fullyQaulifiedContractName);
     let info: any = buildInfo?.output.contracts[path][name];
-    return info["devdoc"]["custom:deploy-type"];
+    return info["devdoc"][`custom:${tagName}`];
+  } else {
+    throw new Error(`Failed to get natspec tag`);
   }
 }
 
 export async function getSalt(fullName: string) {
-  let buildInfo: BuildInfo = (await artifacts.getBuildInfo(
-    fullName
-  )) as BuildInfo;
-  if (buildInfo === undefined) {
-    console.error();
-  }
-  let name = extractName(fullName);
-  let path = extractPath(fullName);
-  let info: any = buildInfo.output.contracts[path][name];
-  //console.log(info)
-  return info["devdoc"]["custom:salt"];
+  return await getCustomNSTag(fullName, "salt");
 }
 
 export async function getBytes32Salt(contractName: string) {
   let salt: string = await getSalt(contractName);
   return ethers.utils.formatBytes32String(salt);
+}
+
+export async function getDeployType(fullName: string) {
+  return await getCustomNSTag(fullName, "deploy-type");
+}
+
+export async function getDeployGroup(fullName: string) {
+  return await getCustomNSTag(fullName, "deploy-group");
+}
+
+export async function getDeployGroupIndex(fullName: string) {
+  return await getCustomNSTag(fullName, "deploy-group-index");
 }

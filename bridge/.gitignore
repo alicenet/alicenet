@@ -12,7 +12,6 @@ outTests/*
 truffle_output/*
 
 node_modules/*
-lib/*
 artifacts/*
 cache/*
 typechain-types/*

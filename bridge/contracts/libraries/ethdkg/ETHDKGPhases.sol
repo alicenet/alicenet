@@ -7,8 +7,10 @@ import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 
-///@custom:salt ETHDKGPhases
-///@custom:deploy-type deployUpgradeable
+/// @custom:salt ETHDKGPhases
+/// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-group ethdkg
+/// @custom:deploy-group-index 1
 contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     constructor() ETHDKGStorage() {}
 

@@ -1,9 +1,24 @@
 logging = "main=info,ethereum=info,consensus=debug"
+deploymentList = [
+  "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations",
+  "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases",
+  "contracts/ETHDKG.sol:ETHDKG",
+  "contracts/Foundation.sol:Foundation",
+  "contracts/Governance.sol:Governance",
+  "contracts/MadByte.sol:MadByte",
+  "contracts/MadToken.sol:MadToken",
+  "contracts/MadnetFactory.sol:MadnetFactory",
+  "contracts/Snapshots.sol:Snapshots",
+  "contracts/StakeNFT.sol:StakeNFT",
+  "contracts/StakeNFTLP.sol:StakeNFTLP",
+  "contracts/ValidatorNFT.sol:ValidatorNFT",
+  "contracts/ValidatorPool.sol:ValidatorPool"
+]
 
 [loglevel]
-blockchain="debug"
-consensus="debug"
-admin="debug"
+blockchain = "debug"
+consensus = "debug"
+admin = "debug"
 
 [chain]
 id = 42
@@ -19,7 +34,7 @@ listeningAddress = ""
 cacheSize = 20
 
 [transport]
-upnp=false
+upnp = false
 originLimit = 50
 privateKey = ""
 bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
@@ -30,7 +45,7 @@ peerLimitMax = 24
 peerLimitMin = 3
 
 [monitor]
-batchSize = 1000
+batchSize = 1_000
 interval = "7s"
 timeout = "1h"
 

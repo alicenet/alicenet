@@ -1,33 +1,44 @@
+import toml from "@iarna/toml";
 import fs from "fs";
-import { env } from "./constants";
-export type DeployList = {
-  deployments: Array<string>;
-};
+import { ethers } from "hardhat";
+import { readBaseConfig, BASE_CONFIG_PATH } from "./baseConfigUtil";
 
-export async function readDeploymentList() {
-  //this output object allows dynamic addition of fields
-  let outputObj = <DeployList>{};
-  //if there is a file or directory at that location
-  if (fs.existsSync(`./deployments/${env()}/deployList.json`)) {
-    let rawData = fs.readFileSync(`./deployments/${env()}/deployList.json`);
-    const output = await JSON.parse(rawData.toString("utf8"));
-    outputObj = output;
-  }
-  return outputObj;
+export type DeploymentList = {
+  [key: string]: Array<ContractDeploymentInfo>;
+}
+
+export interface ContractDeploymentInfo {
+  contract : string
+  index: number
+}
+
+export interface DeploymentGroupIndexList {
+  [key: string]: number[];
 }
 
 export async function getDeploymentList() {
-  let deployList = await readDeploymentList();
-  return deployList.deployments;
+  let order = ["general", "ethdkg"]
+  let config: any = readBaseConfig();
+  let deploymentList: Array<string> = config.deploymentList; 
+  return deploymentList;
+}
+export async function transformDeploymentList(deploymentlist: DeploymentList) {
+  let list: Array<string> = [];
+  for( let group in deploymentlist){
+    for(let item of deploymentlist[group]){
+      list.push(item.contract)
+    }
+  }
+  return list;
 }
 
-export async function writeDeploymentList(newFactoryConfig: DeployList) {
-  let jsonString = JSON.stringify(newFactoryConfig, null, 2);
-  if (!fs.existsSync(`./deployments/`)) {
-    fs.mkdirSync(`./deployments/`);
+export async function writeDeploymentList(list: Array<string>) {
+  let config:any = readBaseConfig();
+  if (config !== undefined) {
+    config.deploymentList = list;
+    let data = toml.stringify(config);
+    fs.writeFileSync(BASE_CONFIG_PATH, data);
+  } else {
+    throw new Error(`deployment list not found`);
   }
-  if (!fs.existsSync(`./deployments/${env()}/`)) {
-    fs.mkdirSync(`./deployments/${env()}/`);
-  }
-  fs.writeFileSync(`./deployments/${env()}/deployList.json`, jsonString);
 }

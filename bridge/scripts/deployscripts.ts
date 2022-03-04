@@ -1,11 +1,11 @@
-import { staticDeployment, upgradeableDeployment } from "./lib/constants";
+import { STATIC_DEPLOYMENT, UPGRADEABLE_DEPLOYMENT } from "./lib/constants";
 import { getDeploymentList } from "./lib/deploymentListUtil";
 import {
   deployFactory,
   deployStatic,
   deployUpgradeableProxy,
   getDeployType,
-} from "./lib/deploymentUtils";
+} from "./lib/deploymentUtil";
 
 async function main() {
   //deploy the factory firts
@@ -18,10 +18,10 @@ async function main() {
     //check the contract for the @custom:deploy-type tag
     let deployType = await getDeployType(fullyQualifiedName);
     switch (deployType) {
-      case staticDeployment:
+      case STATIC_DEPLOYMENT:
         await deployStatic(fullyQualifiedName);
         break;
-      case upgradeableDeployment:
+      case UPGRADEABLE_DEPLOYMENT:
         await deployUpgradeableProxy(fullyQualifiedName);
         break;
       default:

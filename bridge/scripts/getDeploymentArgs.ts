@@ -8,7 +8,7 @@ import {
   getInitializerArgsABI,
   InitData,
   parseArgsArray,
-} from "./lib/deploymentUtils";
+} from "./lib/deploymentUtil";
 
 async function main() {
   let outputData = <InitData>{

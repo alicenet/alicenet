@@ -3,7 +3,7 @@
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": "error",
-    "reason-string": ["warn", { "maxLength": 80 }],
+    "reason-string": ["warn", {"maxLength": 80}],
     "compiler-version": "off",
     "no-inline-assembly": "off"
   }

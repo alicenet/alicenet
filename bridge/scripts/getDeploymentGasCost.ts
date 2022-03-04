@@ -1,5 +1,5 @@
 import fs from "fs";
-import { FactoryData } from "./lib/factoryStateUtils";
+import { FactoryData } from "./lib/factoryStateUtil";
 
 async function main() {
   //read the file

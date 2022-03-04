@@ -23,7 +23,7 @@ import {
   updateMetaList,
   updateProxyList,
   updateTemplateList,
-} from "./factoryStateUtils";
+} from "./factoryStateUtil";
 
 type DeployProxyMCArgs = {
   contractName: string;
@@ -64,29 +64,30 @@ task("getBytes32Salt", "gets the bytes32 version of salt from contract")
 task(
   "deployFactory",
   "Deploys an instance of a factory contract specified by its name"
-)
-  .setAction(async (taskArgs, hre) => {
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
-    const accounts = await getAccounts(hre);
-    let txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
-    //calculate the factory address for the constructor arg
-    let futureFactoryAddress = hre.ethers.utils.getContractAddress({
-      from: accounts[0],
-      nonce: txCount,
-    });
-    let deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
-    let gasCost = await hre.ethers.provider.estimateGas(deployTX);
-    //deploys the factory
-    let factory = await factoryBase.deploy(futureFactoryAddress);
-    await factory.deployTransaction.wait()
-    //record the data in a json file to be used in other tasks
-    let factoryData: FactoryData = {
-      address: factory.address,
-      gas: gasCost.toNumber(),
-    };
-    await updateDefaultFactoryData(factoryData);
-    await showState(`Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`)
-    return factory.address;
+).setAction(async (taskArgs, hre) => {
+  const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+  const accounts = await getAccounts(hre);
+  let txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
+  //calculate the factory address for the constructor arg
+  let futureFactoryAddress = hre.ethers.utils.getContractAddress({
+    from: accounts[0],
+    nonce: txCount,
+  });
+  let deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
+  let gasCost = await hre.ethers.provider.estimateGas(deployTX);
+  //deploys the factory
+  let factory = await factoryBase.deploy(futureFactoryAddress);
+  await factory.deployTransaction.wait();
+  //record the data in a json file to be used in other tasks
+  let factoryData: FactoryData = {
+    address: factory.address,
+    gas: gasCost.toNumber(),
+  };
+  await updateDefaultFactoryData(factoryData);
+  await showState(
+    `Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`
+  );
+  return factory.address;
 });
 
 task(
