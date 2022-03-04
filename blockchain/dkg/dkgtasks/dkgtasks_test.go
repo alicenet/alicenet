@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
-	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
@@ -95,7 +94,6 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	assert.Nil(t, err, "Failed to unlock default account")
 
 	// Deploy all the contracts
-	c := eth.Contracts()
 	// c.DeployContracts()
 	// panic("missing deploy step")
 
@@ -127,10 +125,8 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	if err != nil {
 		t.Fatalf("error deploying: %v", err)
 	}
-	//t.Logf("deploy output: %v", out)
 
-	// _, _, err = c.DeployContracts(ctx, deployAccount)
-	// assert.Nil(t, err, "Failed to deploy contracts...")
+	c := eth.Contracts()
 
 	// For each address passed set them up as a validator
 	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
@@ -268,7 +264,7 @@ func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 
 	cmd := exec.Cmd{
 		Path:   scriptPath,
-		Args:   []string{scriptPath, "deploy", "hardhat"},
+		Args:   []string{scriptPath, "deploy"},
 		Dir:    rootDir,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -297,7 +293,8 @@ func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	})
 
 	// inits contracts
-	var factory string = config.Configuration.Ethereum.RegistryAddress
+	// var factory string = config.Configuration.Ethereum.RegistryAddress
+	var factory string = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
 	addr := common.Address{}
 	copy(addr[:], common.FromHex(factory))
 	err = eth.SetContractFactory(ctx, addr)
