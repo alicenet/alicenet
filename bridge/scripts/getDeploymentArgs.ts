@@ -1,11 +1,9 @@
 import fs from "fs";
 import { env } from "./lib/constants";
+import { ArgData, getConstructorArgsABI, getInitializerArgsABI, parseArgsArray } from "./lib/deployArgUtils";
 import {
-  ArgData,
   getAllContracts,
-  getConstructorArgsABI,
-  getDeployType,
-  getInitializerArgsABI,
+  getDeployType, 
   InitData,
   parseArgsArray,
 } from "./lib/deploymentUtil";
