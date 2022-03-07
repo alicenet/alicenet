@@ -183,10 +183,10 @@ Now that MadNet is successfully running on your machine, connect it with [Madnet
 - [x] Do we want wallet instruction here or justa the link to the repo? (also is this the right
    repo https://github.com/MadBase/MadNetWallet-v2) 
 - [x] Do we want the docker compose readme? is it working?
-- [] Do we want to run wallet tests here or in the wallet repo?
-- [] Inject DataStore Test section I think I am missing something becuase nothing happen (also missing context maybe)
-- [] Spam Transactions Test missing what are the flags for
-- [] Kill N-Nodes and Restart is it still something we want to test
+- [ ] Do we want to run wallet tests here or in the wallet repo?
+- [ ] Inject DataStore Test section I think I am missing something becuase nothing happen (also missing context maybe)
+- [ ] Spam Transactions Test missing what are the flags for
+- [ ] Kill N-Nodes and Restart is it still something we want to test
 
 ## Test Sequences
 
