@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { run } from "hardhat";
+import { config, ethers, run } from "hardhat";
 import { MOCK } from "../../scripts/lib/constants";
 import { getDefaultFactoryAddress } from "../../scripts/lib/factoryStateUtil";
 import { getAccounts, predictFactoryAddress } from "./Setup";
@@ -22,7 +22,8 @@ describe("Cli tasks", async () => {
     let factoryAddress = await run("deployFactory");
     //check if the address is the predicted
     expect(factoryAddress).to.equal(futureFactoryAddress);
-    let defaultFactoryAddress = await getDefaultFactoryAddress();
+    let network = ethers.provider.network.name
+    let defaultFactoryAddress = await getDefaultFactoryAddress(network);
     expect(defaultFactoryAddress).to.equal(factoryAddress);
   });
 
