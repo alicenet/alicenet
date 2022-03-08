@@ -2,8 +2,7 @@
 
 ## Requirements
 
-* [Docker v20.x.x](https://docs.docker.com/get-docker)
-* [Docker Compose v2.2.3](https://docs.docker.com/compose/install/)
+* [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
 * [Go 1.17](https://go.dev/dl/)
 * [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
 * [Node 16](https://nodejs.org/en/download/)
