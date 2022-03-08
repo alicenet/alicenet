@@ -1,7 +1,8 @@
 import toml from "@iarna/toml";
 import fs from "fs";
 import { ethers } from "hardhat";
-import { readBaseConfig, BASE_CONFIG_PATH } from "./baseConfigUtil";
+import { readBaseConfig } from "./baseConfigUtil";
+import { BASE_CONFIG_PATH } from "./constants";
 
 export type DeploymentList = {
   [key: string]: Array<ContractDeploymentInfo>;
@@ -17,7 +18,7 @@ export interface DeploymentGroupIndexList {
 }
 
 export async function getDeploymentList() {
-  let config: any = readBaseConfig();
+  let config: any = await readBaseConfig();
   let deploymentList: Array<string> = config.deploymentList; 
   return deploymentList;
 }
@@ -32,7 +33,7 @@ export async function transformDeploymentList(deploymentlist: DeploymentList) {
 }
 
 export async function writeDeploymentList(list: Array<string>) {
-  let config:any = readBaseConfig();
+  let config:any = await readBaseConfig();
   if (config !== undefined) {
     config.deploymentList = list;
     let data = toml.stringify(config);

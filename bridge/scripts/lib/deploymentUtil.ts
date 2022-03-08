@@ -8,10 +8,7 @@ export interface InitData {
   constructorArgs: { [key: string]: any };
   initializerArgs: { [key: string]: any };
 }
-export interface ArgTemplate {
-  [key: string]: any;
-  type: string;
-}
+
 
 //function to deploy the factory
 export async function deployFactory() {

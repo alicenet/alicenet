@@ -1,7 +1,9 @@
 import "process";
 
 //deployment Types
-
+export const FACTORY_STATE_CONFIG_PATH = `../scripts/base-files/factoryStateConfig`;
+export const DEPLOYMENT_CONFIG_PATH = `../scripts/base-files/deploymentConfig`;
+export const BASE_CONFIG_PATH = `../scripts/base-files/baseConfig`;
 export const STATIC_DEPLOYMENT: string = "deployStatic";
 export const UPGRADEABLE_DEPLOYMENT: string = "deployUpgradeable";
 export const FACTORY_DEPLOYMENT: string = "factory";

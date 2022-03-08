@@ -1,42 +1,33 @@
 import fs from "fs";
 import { env } from "./lib/constants";
-import { ArgData, getConstructorArgsABI, getInitializerArgsABI, parseArgsArray } from "./lib/deployArgUtils";
+import { ArgData, ContractArgs, DeploymentArgs, getConstructorArgsABI, getInitializerArgsABI, parseArgsArray, writeDeploymentArgs } from "./lib/deployArgUtil";
+import { getDeploymentList } from "./lib/deploymentListUtil";
 import {
   getAllContracts,
   getDeployType, 
   InitData,
-  parseArgsArray,
 } from "./lib/deploymentUtil";
 
 async function main() {
-  let outputData = <InitData>{
-    constructorArgs: {},
-    initializerArgs: {},
-  };
   //get an array of all contracts in the artifacts
-  let contracts = await getAllContracts();
-
+  let contracts = await getDeploymentList();
+  let deploymentArgs:DeploymentArgs = {
+    constructor: {},
+    initializer: {}
+  };
   for (let contract of contracts) {
-    let deployType = await getDeployType(contract);
-    if (deployType !== undefined) {
-      //check each contract for a constructor and
-      let cArgs: Array<ArgData> = await getConstructorArgsABI(contract);
-      let iArgs: Array<ArgData> = await getInitializerArgsABI(contract);
-      let cTemplate = parseArgsArray(cArgs);
-      let iTemplate = parseArgsArray(iArgs);
-      if (cArgs.length != 0) {
-        outputData.constructorArgs[contract] = cTemplate;
-      }
-      if (iArgs.length != 0) {
-        outputData.initializerArgs[contract] = iTemplate;
-      }
+    //check each contract for a constructor and
+    let cArgs: Array<ArgData> = await getConstructorArgsABI(contract);
+    let iArgs: Array<ArgData> = await getInitializerArgsABI(contract);
+    if (cArgs.length != 0) {
+      deploymentArgs.constructor[contract] = cArgs;
+    }
+    if (iArgs.length != 0) {
+      deploymentArgs.initializer[contract] = iArgs;
     }
   }
+  writeDeploymentArgs(deploymentArgs)
 
-  fs.writeFileSync(
-    `./deployments/${env()}/deploymentArgsTemplate.json`,
-    JSON.stringify(outputData, null, 2)
-  );
 }
 
 main()

@@ -1,0 +1,32 @@
+[[constructor."contracts/MadnetFactory.sol:MadnetFactory"]]
+selfAddr_ = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+chainID_ = "42"
+
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+epochLength_ = "1024"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+phaseLength_ = "20"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+confirmationLength_ = "4"
+
+[[initializer."contracts/MadToken.sol:MadToken"]]
+owner_ = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationDelay_ = "10"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationFactor_ = "40"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+stakeAmount_ = "1"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+maxNumValidators_ = "10"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+disputerReward_ = "1"

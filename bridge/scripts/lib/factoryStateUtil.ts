@@ -1,8 +1,11 @@
 import { BigNumberish, BytesLike } from "ethers";
-import fs from "fs";
-import { env } from "./constants";
+import fs, { write } from "fs";
+import { DEPLOYMENT_CONFIG_PATH, FACTORY_STATE_CONFIG_PATH} from "./constants";
+import toml from"@iarna/toml"
+import { readDeploymentConfig, readFactoryStateData } from "./baseConfigUtil";
 export type FactoryData = {
   address: string;
+  owner?: string;
   gas?: number;
 };
 
@@ -43,78 +46,63 @@ export type ProxyData = {
   initCallData?: BytesLike;
 };
 
-export async function getDefaultFactoryAddress(): Promise<string> {
+
+
+export async function getDefaultFactoryAddress(network:string): Promise<string> {
   //fetch whats in the factory config file
   let config = await readFactoryStateData();
-  return config.defaultFactoryData.address;
+  return config[network].defaultFactoryData.address;
 }
 
-export async function readFactoryStateData() {
-  //this output object allows dynamic addition of fields
-  let outputObj: FactoryConfig = {};
-  //if there is a file or directory at that location
-  if (fs.existsSync(`./deployments/${env()}/factoryState.json`)) {
-    let rawData = fs.readFileSync(`./deployments/${env()}/factoryState.json`);
-    const output = await JSON.parse(rawData.toString("utf8"));
-    outputObj = output;
-  }
-  return outputObj;
-}
 
-async function writeFactoryConfig(
-  newFactoryConfig: FactoryConfig,
-  lastFactoryConfig?: FactoryConfig
-) {
-  let jsonString = JSON.stringify(newFactoryConfig, null, 2);
-  if (lastFactoryConfig !== undefined) {
-    let date = new Date();
-    let timestamp = date.toUTCString().replace(" ", "_").replace(",", "");
-    if (!fs.existsSync(`./deployments/${env()}/archive`)) {
-      fs.mkdirSync(`./deployments/${env()}/archive`);
+
+async function writeFactoryConfig(network: string, fieldName: string, fieldData: any){
+  let factoryStateConfig
+  if(fs.existsSync(FACTORY_STATE_CONFIG_PATH)){
+    factoryStateConfig = await readFactoryStateData();
+    factoryStateConfig[network] = factoryStateConfig[network] === undefined ? {} : factoryStateConfig[network];
+    factoryStateConfig[network][fieldName] = fieldData;
+  }else{
+    factoryStateConfig = {
+      network: {
+        [fieldName]: fieldData
+      }
     }
-    fs.writeFileSync(
-      `./deployments/${env()}/archive/${timestamp}_factoryState.json`,
-      jsonString
-    );
   }
-  fs.writeFileSync(`./deployments/${env()}/factoryState.json`, jsonString);
-}
-async function getLastConfig(config: FactoryConfig) {
-  if (
-    config.defaultFactoryData !== undefined &&
-    Object.keys(config.defaultFactoryData).length > 0
-  ) {
-    return config;
-  } else {
-    return undefined;
-  }
+  let data = toml.stringify(factoryStateConfig)
+  fs.writeFileSync(FACTORY_STATE_CONFIG_PATH, data);
 }
 
-export async function updateDefaultFactoryData(input: FactoryData) {
-  let state = await readFactoryStateData();
-  let lastConfig = await getLastConfig(state);
-  state.defaultFactoryData = input;
-  await writeFactoryConfig(state, lastConfig);
+export async function updateDefaultFactoryData(network: string, data: FactoryData) {
+  await writeFactoryConfig(network, "defaultFactoryData", data)
+  await writeFactoryConfig(network, "defaultFactoryAddress", data.address)
+  let deploymentConfig:any = readDeploymentConfig();
+  for(let i in deploymentConfig){
+    //network
+    for(let j in deploymentConfig[i]){
+      //args
+      for(let k = 0; k< deploymentConfig[i][j].length; k++){
+        let name = Object.keys(deploymentConfig[i][j][k])[0]
+        if(name === "selfAddr_" || name === "owner_" || name === "factoryAddr_"){
+          if(name === "owner_" && data.owner !== undefined){
+            deploymentConfig[i][j][k][name] = data.owner   
+          } else {
+            deploymentConfig[i][j][k][name] = data.address 
+          }
+        }
+      }  
+    }  
+  }  
+  let input = toml.stringify(deploymentConfig)
+  fs.writeFileSync(DEPLOYMENT_CONFIG_PATH, input);
 }
 
-export async function updateDeployCreateList(data: DeployCreateData) {
-  //fetch whats in the factory config file
-  //It is safe to use as
-  let config = await readFactoryStateData();
-  config.rawDeployments =
-    config.rawDeployments === undefined ? [] : config.rawDeployments;
-  config.rawDeployments.push(data);
-  // write new data to config file
-  await writeFactoryConfig(config);
+export async function updateDeployCreateList(network: string, data: DeployCreateData) {
+  await updateList(network, "rawDeployments", data)
 }
 
-export async function updateTemplateList(data: TemplateData) {
-  //fetch whats in the factory config file
-  let config = await readFactoryStateData();
-  config.templates = config.templates === undefined ? [] : config.templates;
-  config.templates.push(data);
-  // write new data to config file
-  await writeFactoryConfig(config);
+export async function updateTemplateList(network: string, data: TemplateData) {
+  await updateList(network, "templates", data);
 }
 
 /**
@@ -123,21 +111,17 @@ export async function updateTemplateList(data: TemplateData) {
  * @param data object that contains the proxies
  * logic contract name, address, and proxy address
  */
-export async function updateProxyList(data: ProxyData) {
-  //fetch whats in the factory config file
-  let config = await readFactoryStateData();
-  config.proxies = config.proxies === undefined ? [] : config.proxies;
-  config.proxies.push(data);
-  // write new data to config file
-  await writeFactoryConfig(config);
+export async function updateProxyList(network: string, data: ProxyData) {
+  await updateList(network, "proxies", data);
 }
 
-export async function updateMetaList(data: MetaContractData) {
-  //fetch whats in the factory config file
-  let config = await readFactoryStateData();
-  config.staticContracts =
-    config.staticContracts === undefined ? [] : config.staticContracts;
-  config.staticContracts.push(data);
+export async function updateMetaList(network: string, data: MetaContractData) {
+  await updateList(network, "staticContracts", data)
+}
+export async function updateList(network: string, fieldName: string, data: object){
+  let factoryStateConfig = await readFactoryStateData();
+  let output:Array<any> = factoryStateConfig[network][fieldName] === undefined ?  [] : factoryStateConfig[network][fieldName]   
+  output.push(data)
   // write new data to config file
-  await writeFactoryConfig(config);
+  await writeFactoryConfig(network, fieldName, output);
 }
