@@ -44,7 +44,7 @@ make build
 ## Environment Setup
 
 In order to initialize a chain with all validators online we need to generate the configuration files, keystores, geth
-genesis file, and password files. To do this execute:
+genesis file, and password files run this command (if already executed, run `./scripts/main.sh clean` first)
 
 ```
 ./scripts/main.sh init {# of validators 4-32}
@@ -52,13 +52,13 @@ genesis file, and password files. To do this execute:
 
 This will generate all necessary files for the local chain inside: `./scripts/generated`
 
-Open a terminal and start geth:
+Open now a new terminal to start geth with
 
 ```
 ./scripts/main.sh geth
 ```
 
-Open another terminal and start the bootnode:
+Open another terminal to start the bootnode with
 
 ```
 ./scripts/main.sh bootnode
@@ -66,7 +66,8 @@ Open another terminal and start the bootnode:
 
 Open now another terminal to deploy the contracts and transfer tokens needed for validators.
 [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING)
-```shell
+
+```
 ./scripts/main.sh deploy
 ```
 
@@ -133,13 +134,10 @@ At this point, the testnet should now be ready to run the standard tests.
 
 To list other commands from the script, run the script with no arguments.
 
-
-
-
 # TROUBLESHOOTING
 
 1. `go mod tidy`
-It is actually in place a fix for the following error
+   It is actually in place a fix for the following error
 
 ``` bash
 ./scripts/main.sh init 5
@@ -153,7 +151,8 @@ localrpc/local.go:12:2: no required module provides package github.com/MadBase/M
 make: *** [build] Error 1
 ```
 
-2. `./scripts/main.sh deploy` 
+2. `./scripts/main.sh deploy`
+
 ```
 + npx hardhat --network dev --show-stack-traces updateDeploymentArgsWithFactory
   Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
@@ -163,6 +162,7 @@ make: *** [build] Error 1
   Deployed: MadnetFactory, at address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
   Error: cannot estimate gas; transaction may fail or may require manual gas limit
 ```
+
 > Assuming you have `bridge/deployments/dev/deployList.json` defined, otherwise read [bridge documentation](bridge/README.md) file and then apply these changes
 >```shell
 >  cd bridge
@@ -171,113 +171,43 @@ make: *** [build] Error 1
 >```
 > now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
 
+# WHAT'S NEXT
 
-# NEXT
+Now that MadNet is successfully running on your machine, connect it
+with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 
-Now that MadNet is successfully running on your machine, connect it with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2). 
+# TEST
 
-
-
-# QUESTIONS
-
-- [x] Do we want wallet instruction here or justa the link to the repo? (also is this the right
-   repo https://github.com/MadBase/MadNetWallet-v2) 
-- [x] Do we want the docker compose readme? is it working?
-- [ ] Do we want to run wallet tests here or in the wallet repo?
-- [ ] Inject DataStore Test section I think I am missing something becuase nothing happen (also missing context maybe)
-- [ ] Spam Transactions Test missing what are the flags for
-- [ ] Kill N-Nodes and Restart is it still something we want to test
-
-## Test Sequences
-
-In order to run the Wallet-JS and standard MadNet tests, ensure the Test Environment is set up according to
-[Environment Setup](#environment-setup). The ETHDKG Test runs the entire distributed key generation procedure and has
-its own protocol.
-
-### Wallet-JS Tests
-
-First, ensure the wallet has been compiled. In the root of the Wallet repository, run the following:
-
-```
-npm test
-```
-
-Use `mocha` to run a specific subset of tests. For example, execute the following to run the Account tests:
-
-```
-npx mocha --timeout 45000 tests/account.js
-```
-
-### Standard MadNet Tests
-
-First, run the Wallet-JS tests; only run these MadNet tests if all the wallet tests pass.
-
-#### Inject DataStore Test
-
-The first test we run is to inject datastores into MadNet. Go to `./cmd/testutils/inject/` and run the following
-command:
-
-```
-go run . -d -m=<message> -i=<index>
-```
-
-As noted in the test setup, deposits to MadNet are required in order for the datastore tests to succeed. Successful
-completion of this test requires that the datastores be consumed upon expiration; datastore expiration and consumption
-is discussed
-[below](#datastore-consumption-test)
-and is not considered part of this test. We describe how to interact with MadNet in order to view the contents of a
-DataStore [here](#view-datastore).
-
-#### Spam Transactions Test
-
-Upon successful completion of DataStore injection, we proceed to inject many transactions to Madnet:
-
-```
-go run . -b <baseIdx> -n <numChildren>
-```
-
-`numChildren` will specify the number of the transactions that are submitted every second.
-
-#### Random Kill and Restart
+### Random Kill and Restart
 
 Randomly kill and restart the individual validators. There should be no noticeable change in the behavior of the other
 validators and MadNet consensus should not be affected.
 
-#### Extended Kill and Restart
+### Extended Kill and Restart
 
 Randomly kill one validator for an extended period; in particular, let at least 10 blocks pass before restarting the
 killed validator. This will cause the validator to be out of sync. The validator should be able to rejoin and resync
 without much delay.
 
-#### Kill Half Nodes and Restart
+### Kill Half Nodes and Restart
 
 Kill half the validators. This will cause the remaining validators to stop because they are unable to reach consensus
 due to a lack of validators. After waiting for at least 20 seconds, restart the killed validators. After
 resynchronizing, consensus should continue as before and blocks should be mined.
 
-#### Kill All Nodes and Restart
+### Kill All Nodes and Restart
 
 Shut down all the validators. Wait at least 20 seconds and restart all of them. Once the validators are resynchronized,
 blocks should continue to be mined as though the shutdown did not occur.
 
-#### DataStore Consumption Test
+### DataStore Consumption Test
 
 There are 1024 blocks per epoch; this is defined in
 `./constants/shared.go` as `EpochLength = 1024`. Blocks are mined approximately every 6 seconds, so one epoch lasts over
 one hour. The DataStore test stores the datastore for 5 epochs, implying the data would be stored for over 8.5 hours. To
-make this test more reasonable and ensure that datastores are consumed, change
-`EpochLength = 16`.
+make this test more reasonable and ensure that datastore are consumed, change `EpochLength = 16`.
 
-## Interaction
-
-### API Docs and Limited GUI
-
-The swagger-ui for the localRPC of a validator may be found at
-http://localhost:8885 ; the default port for validator4 is 8888. Thus, you may speak to validator 4 (a non-mining node)
-at
-http://localhost:8888/swagger/ .
-
-#### View DataStore
+### View DataStore
 
 Tests involving datastores require being able to determine whether the datastores are present. One way to ensure this is
 using the Swagger API.
@@ -285,9 +215,8 @@ using the Swagger API.
 To understand how to run through this, we run an example. We assume that the test environment has been successfully
 setup and that the Swagger API is available. Furthermore, validator4 must be running.
 
-We submit
-
 ```
+cd ./cmd/testutils/inject/
 go run . -d -m=hello -i=foo
 ```
 
@@ -369,10 +298,13 @@ This matches `Rawdata` from the transaction and decodes to
 If a DataStore is not present, then a "Key not found"
 error will be returned; this error will happen when the DataStore is consumed.
 
+# Interaction
+
+### API Docs and Limited GUI
+
+The swagger-ui for the localRPC of a validator may be found at `http://localhost:8885/swagger`. The default port for
+`validator4` is `8888`. Thus, you may speak to validator 4 (a non-mining node) at `http://localhost:8888`
+
 ### Programmatic Interaction
 
 The localRPC directory contains a client library that abstracts the localRPC system for easier development.
-
-### Graphical Wallet
-
-Coming soon
