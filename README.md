@@ -126,12 +126,14 @@ to inject datastores.
 ./scripts/main.sh deposit
 ```
 
-Note that DataStores are injected in the Wallet-JS
-[tests](#wallet-js-tests), so submitting these deposits are required for the tests to be successful.
-
+Note that DataStores are injected in the [Wallet-JS tests](https://github.com/MadBase/MadNetWallet-v2), so submitting 
+these deposits are required for the tests to be successful. 
 At this point, the testnet should now be ready to run the standard tests.
 
-To list other commands from the script, run the script with no arguments.
+To list other commands from the script simply run 
+```
+./scripts/main.sh 
+```
 
 # TROUBLESHOOTING
 
