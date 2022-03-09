@@ -154,12 +154,12 @@ function getBytes32Salt(contractName: string) {
   return ethers.utils.formatBytes32String(contractName);
 }
 
-async function deployStaticWithFactory(
+export const deployStaticWithFactory = async (
   factory: MadnetFactory,
   contractName: string,
   initCallData?: any[],
   constructorArgs?: any[]
-): Promise<Contract> {
+): Promise<Contract>  => {
   const _Contract = await ethers.getContractFactory(contractName);
   let contractTx;
   if (constructorArgs !== undefined) {
