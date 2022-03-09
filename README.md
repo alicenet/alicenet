@@ -34,7 +34,7 @@ make generate
 
 This generates all protobuf, capnproto, grpcs, and swagger files that the project depends on. Any time you make changes
 to any of the source files of these, this command needs to be rerun. Once completed it is now possible to compile an
-executable [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING)
+executable. If you are having problems in this step, check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
 
 ```
 make build
@@ -63,8 +63,8 @@ Open another terminal to start the bootnode with
 ./scripts/main.sh bootnode
 ```
 
-Open now another terminal to deploy the contracts and transfer tokens needed for validators.
-[POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING)
+Open now another terminal to deploy the contracts. If you are having problems in this step, 
+check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
 
 ```
 ./scripts/main.sh deploy
