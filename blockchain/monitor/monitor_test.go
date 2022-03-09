@@ -46,8 +46,8 @@ func setupEthereum(t *testing.T, mineInterval time.Duration) interfaces.Ethereum
 		time.Second*5,
 		0,
 		big.NewInt(math.MaxInt64),
-		big.NewInt(50),
-		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
 		5*time.Second,
 		30*time.Second)
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
@@ -320,12 +320,12 @@ func (eth *mockEthereum) Contracts() interfaces.Contracts {
 	return nil
 }
 
-func (eth *mockEthereum) GetTxFeePercentageToIncrease() *big.Int {
-	return big.NewInt(50)
+func (eth *mockEthereum) GetTxFeePercentageToIncrease() int {
+	return 50
 }
 
-func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() *big.Int {
-	return big.NewInt(math.MaxInt64)
+func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() uint64 {
+	return math.MaxInt64
 }
 
 func (eth *mockEthereum) GetTxCheckFrequency() time.Duration {

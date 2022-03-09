@@ -91,19 +91,8 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 			"Hash":      t.TxReplOpts.TxHash.Hex(),
 		}).Info("missing share dispute fees")
 
-		// Waiting for receipt
-		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error waiting for receipt failed: %v", err)
-		}
-		if receipt == nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error missing share dispute receipt")
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			return dkg.LogReturnErrorf(logger, "missing share distribution dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		}
+		// Queue transaction
+		eth.Queue().QueueTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing distributed shares")
 	}

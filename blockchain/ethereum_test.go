@@ -115,8 +115,8 @@ func setupEthereum(t *testing.T, n int) (interfaces.Ethereum, error) {
 		time.Second*5,
 		0,
 		big.NewInt(math.MaxInt64),
-		big.NewInt(50),
-		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
 		5*time.Second,
 		30*time.Second)
 	assert.Nil(t, err)

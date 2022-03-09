@@ -20,6 +20,8 @@ var (
 	ErrUnknownTaskType = errors.New("unknown task type")
 )
 
+const NonceToLowError = "nonce too low"
+
 func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}) error {
 
 	wg.Add(1)
@@ -34,6 +36,17 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 			"RetryDelay": retryDelay,
 		}).Info("StartTask()...")
 
+		var dkgTask *dkgtasks.DkgTask
+		var dkgTaskImpl dkgtasks.DkgTaskIfase
+		dkgTaskIfase := reflect.TypeOf((*dkgtasks.DkgTaskIfase)(nil)).Elem()
+		isDkgTask := reflect.TypeOf(task).Implements(dkgTaskIfase)
+		if !isDkgTask {
+			panic(ErrUnknownTaskType.Error())
+		}
+
+		dkgTaskImpl = task.(dkgtasks.DkgTaskIfase)
+		dkgTask = dkgTaskImpl.GetDkgTask()
+
 		// Setup
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -46,14 +59,14 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 		}
 
 		workLogger := logger.WithField("Method", "DoWork")
-		err = executeTask(ctx, workLogger, eth, task, retryCount, retryDelay)
+		err = executeTask(ctx, workLogger, eth, task, dkgTask, retryCount, retryDelay)
 		if err != nil {
 			workLogger.Error("Failed to execute task ", err)
 			return
 		}
 
 		dkgLogger := logger.WithField("Method", "handleExecutedTask")
-		err = handleExecutedTask(ctx, dkgLogger, eth, task)
+		err = handleExecutedTask(ctx, dkgLogger, eth, task, dkgTask)
 		if err != nil {
 			dkgLogger.Error("Failed to execute handleExecutedTask ", err)
 		}
@@ -86,18 +99,18 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Et
 }
 
 // executeTask execute the Task and retry needed
-func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, retryCount int, retryDelay time.Duration) error {
+func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, retryCount int, retryDelay time.Duration) error {
 	err := task.DoWork(ctx, logger, eth)
 	if err != nil {
 		retryLogger := logger.WithField("Method", "DoRetry")
-		err = retryTask(ctx, retryLogger, eth, task, retryCount, retryDelay)
+		err = retryTask(ctx, retryLogger, eth, task, dkgTask, retryCount, retryDelay)
 	}
 
 	return err
 }
 
 // retryTask retry the Task
-func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, retryCount int, retryDelay time.Duration) error {
+func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
 	for count < retryCount && task.ShouldRetry(ctx, logger, eth) {
@@ -111,6 +124,10 @@ func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 			break
 		} else if errors.Is(err, objects.ErrCanNotContinue) {
 			return err
+		} else if err.Error() == NonceToLowError {
+			// if we receive "nonce too low" it means that the tx was already mined
+			// as a success or fail. If is a fail we should restart with a new nonce
+			dkgTask.Clear()
 		}
 		count++
 	}
@@ -141,7 +158,7 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 		"TxHash":    dkgTask.TxReplOpts.TxHash.Hex(),
 	}).Info("retryTaskWithFeeReplacement2")
 
-	return retryTask(ctx, logger, eth, task, retryCount, retryDelay)
+	return retryTask(ctx, logger, eth, task, dkgTask, retryCount, retryDelay)
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {
@@ -157,18 +174,7 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 // if the Tx was mined wait for FinalityDelay to confirm the Tx
 // if the Tx wasn't mined during the txTimeoutForReplacement we increase the Fee
 // to make sure the Tx has priority for the next mined blocks
-func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task) error {
-	var dkgTask *dkgtasks.DkgTask
-	var dkgTaskImpl dkgtasks.DkgTaskIfase
-	dkgTaskIfase := reflect.TypeOf((*dkgtasks.DkgTaskIfase)(nil)).Elem()
-	isDkgTask := reflect.TypeOf(task).Implements(dkgTaskIfase)
-	if !isDkgTask {
-		panic(ErrUnknownTaskType.Error())
-	}
-
-	dkgTaskImpl = task.(dkgtasks.DkgTaskIfase)
-	dkgTask = dkgTaskImpl.GetDkgTask()
-
+func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask) error {
 	// TxReplOpts or TxHash are empty means that no tx was queued, this could happen
 	// if there's nobody to accuse during the bad submission dispute
 	var emptyHash [32]byte
@@ -185,7 +191,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 	retryDelay := eth.RetryDelay()
 	txCheckFrequency := eth.GetTxCheckFrequency()
 	txTimeoutForReplacement := eth.GetTxTimeoutForReplacement()
-	txReplacement := time.Now().Add(txTimeoutForReplacement)
+	txReplacement := getTxReplacementTime(txTimeoutForReplacement)
 	dkgTaskEnd := dkgTask.End
 
 	logger.WithFields(logrus.Fields{
@@ -227,7 +233,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 					return dkg.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", dkgTask.TxReplOpts.TxHash.Hex(), err)
 				}
 				// set new Tx replacement time
-				txReplacement = time.Now().Add(txTimeoutForReplacement)
+				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
 			}
 		} else {
 			//if tx was mined we can check the receipt
@@ -248,10 +254,12 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 
 				// Clearing TxReplOpts used for tx gas ana nonce replacement
 				dkgTask.Clear()
-				err = executeTask(ctx, logger, eth, task, retryCount, retryDelay)
+				err = executeTask(ctx, logger, eth, task, dkgTask, retryCount, retryDelay)
 				if err != nil {
 					return dkg.LogReturnErrorf(logger, "failed to retry task with error %v", err)
 				}
+				// set new Tx replacement time
+				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
 			} else {
 				// the transaction was successful and mined
 				txMinedInBlock = receipt.BlockNumber.Uint64()
@@ -343,4 +351,8 @@ func isMinedTx(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 	}
 
 	return true
+}
+
+func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
+	return time.Now().Add(timeoutForReplacement)
 }
