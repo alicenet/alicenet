@@ -165,19 +165,8 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 			"Hash":      t.TxReplOpts.TxHash.Hex(),
 		}).Info("bad gpkj dispute fees")
 
-		// Waiting for receipt
-		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-		}
-		if receipt == nil {
-			return dkg.LogReturnErrorf(logger, "missing receipt")
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			return dkg.LogReturnErrorf(logger, "bad gpkj error (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		}
+		// Queue transaction
+		eth.Queue().QueueTransaction(ctx, txn)
 	}
 
 	t.Success = true

@@ -4,6 +4,8 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+	"math/rand"
+	"time"
 )
 
 type DkgTask struct {
@@ -42,4 +44,12 @@ func NewDkgTask(state *objects.DkgState, start uint64, end uint64) *DkgTask {
 		Success:    false,
 		TxReplOpts: &TxReplOpts{},
 	}
+}
+
+func GetRandomBool() bool {
+	rand.Seed(time.Now().UnixNano())
+	min := 1
+	max := 5
+
+	return rand.Intn(max-min+1)+min == 3
 }

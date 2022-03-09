@@ -160,21 +160,8 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 			"Hash":      t.TxReplOpts.TxHash.Hex(),
 		}).Info("bad share dispute fees")
 
-		//TODO: add retry logic, add timeout
-
-		// Waiting for receipt
-		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-		}
-		if receipt == nil {
-			return dkg.LogReturnErrorf(logger, "missing share dispute receipt")
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			return dkg.LogReturnErrorf(logger, "share dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		}
+		// Queue transaction
+		eth.Queue().QueueTransaction(ctx, txn)
 	}
 
 	t.Success = true

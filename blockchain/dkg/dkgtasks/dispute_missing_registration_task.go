@@ -91,19 +91,8 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 			"Hash":      t.TxReplOpts.TxHash.Hex(),
 		}).Info("missing registration dispute fees")
 
-		// Waiting for receipt
-		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error waiting for receipt failed: %v", err)
-		}
-		if receipt == nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error missing share dispute receipt")
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			return dkg.LogReturnErrorf(logger, "missing registration dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		}
+		// Queue transaction
+		eth.Queue().QueueTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing registrations")
 	}
