@@ -6,10 +6,7 @@ import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "hardhat/console.sol";
-
-contract ATokenMinter is Initializable, ImmutableAToken {
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+contract ATokenMinter is ImmutableAToken {
     address internal _admin;
     address internal _minter;
 
