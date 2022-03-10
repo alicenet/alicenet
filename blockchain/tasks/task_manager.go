@@ -176,7 +176,7 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 // to make sure the Tx has priority for the next mined blocks
 func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask) error {
 	// TxReplOpts or TxHash are empty means that no tx was queued, this could happen
-	// if there's nobody to accuse during the bad submission dispute
+	// if there's nobody to accuse during the dispute
 	var emptyHash [32]byte
 	if dkgTask.TxReplOpts == nil || dkgTask.TxReplOpts.TxHash == emptyHash {
 		return nil
@@ -184,7 +184,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "failed to get current height ", err)
+		return dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
 	}
 
 	retryCount := eth.RetryCount()
@@ -278,7 +278,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 		//update the currentBlock
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		if err != nil {
-			return dkg.LogReturnErrorf(logger, "failed to get current height ", err)
+			return dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
 		}
 	}
 
@@ -309,7 +309,7 @@ func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfa
 		//update the currentBlock
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		if err != nil {
-			return false, dkg.LogReturnErrorf(logger, "failed to get current height ", err)
+			return false, dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
 		}
 	}
 

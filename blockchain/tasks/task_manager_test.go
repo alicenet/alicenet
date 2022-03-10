@@ -3,11 +3,12 @@ package tasks_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/bridge/bindings"
-	"math"
+	"github.com/stretchr/testify/mock"
 	"math/big"
 	"reflect"
 	"sync"
@@ -19,12 +20,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -71,150 +67,6 @@ func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ether
 	return false
 }
 
-//
-// Mock implementation of interfaces.Ethereum
-//
-type mockEthereum struct {
-}
-
-func (eth *mockEthereum) ChainID() *big.Int {
-	return nil
-}
-
-func (eth *mockEthereum) GetFinalityDelay() uint64 {
-	return 12
-}
-
-func (eth *mockEthereum) Close() error {
-	return nil
-}
-
-func (eth *mockEthereum) Commit() {
-
-}
-
-func (eth *mockEthereum) IsEthereumAccessible() bool {
-	return false
-}
-
-func (eth *mockEthereum) GetCallOpts(context.Context, accounts.Account) *bind.CallOpts {
-	return nil
-}
-
-func (eth *mockEthereum) GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) LoadAccounts(string) {}
-
-func (eth *mockEthereum) LoadPasscodes(string) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccount(accounts.Account) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccountWithPasscode(accounts.Account, string) error {
-	return nil
-}
-
-func (eth *mockEthereum) TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetAccount(addr common.Address) (accounts.Account, error) {
-	return accounts.Account{Address: addr}, nil
-}
-func (eth *mockEthereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetBalance(common.Address) (*big.Int, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetGethClient() interfaces.GethClient {
-	return nil
-}
-
-func (eth *mockEthereum) GetCoinbaseAddress() common.Address {
-	return eth.GetDefaultAccount().Address
-}
-
-func (eth *mockEthereum) GetCurrentHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-
-func (eth *mockEthereum) GetDefaultAccount() accounts.Account {
-	return accounts.Account{}
-}
-func (eth *mockEthereum) GetEndpoint() string {
-	return "na"
-}
-func (eth *mockEthereum) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetFinalizedHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetPeerCount(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetSnapshot() ([]byte, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetSyncProgress() (bool, *ethereum.SyncProgress, error) {
-	return false, nil, nil
-}
-func (eth *mockEthereum) GetTimeoutContext() (context.Context, context.CancelFunc) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetValidators(context.Context) ([]common.Address, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetKnownAccounts() []accounts.Account {
-	return []accounts.Account{}
-}
-
-func (eth *mockEthereum) KnownSelectors() interfaces.SelectorMap {
-	return nil
-}
-
-func (eth *mockEthereum) Queue() interfaces.TxnQueue {
-	return nil
-}
-
-func (eth *mockEthereum) RetryCount() int {
-	return 0
-}
-func (eth *mockEthereum) RetryDelay() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Timeout() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Contracts() interfaces.Contracts {
-	return nil
-}
-
-func (eth *mockEthereum) GetTxFeePercentageToIncrease() int {
-	return 50
-}
-
-func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() uint64 {
-	return math.MaxInt64
-}
-
-func (eth *mockEthereum) GetTxCheckFrequency() time.Duration {
-	return 5 * time.Second
-}
-
-func (eth *mockEthereum) GetTxTimeoutForReplacement() time.Duration {
-	return 30 * time.Second
-}
-
 func TestFoo(t *testing.T) {
 	var s map[string]string
 
@@ -255,8 +107,8 @@ func TestSharedState(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	tasks.StartTask(logger.WithField("Task", 0), &wg, &mockEthereum{}, task0, state)
-	tasks.StartTask(logger.WithField("Task", 1), &wg, &mockEthereum{}, task1, state)
+	tasks.StartTask(logger.WithField("Task", 0), &wg, &interfaces.EthereumMock{}, task0, state)
+	tasks.StartTask(logger.WithField("Task", 1), &wg, &interfaces.EthereumMock{}, task1, state)
 
 	wg.Wait()
 
@@ -334,4 +186,99 @@ func TestRegistrationOpenPhase(t *testing.T) {
 
 	err = tasks.StartTask(logger, &sync.WaitGroup{}, eth, regTasks[0], nil)
 	assert.Nil(t, err)
+}
+
+func TestStartTask_initializeTask_Error(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
+
+	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("initialize error"))
+
+	wg := sync.WaitGroup{}
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, &interfaces.EthereumMock{}, dkgTask, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTask.Success)
+}
+
+func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTask.TxReplOpts = &dkgtasks.TxReplOpts{
+		Nonce: big.NewInt(1),
+	}
+
+	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTask.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("DoWork_error"))
+	dkgTask.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTask.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(errors.New(tasks.NonceToLowError))
+
+	wg := sync.WaitGroup{}
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, &interfaces.EthereumMock{}, dkgTask, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTask.Success)
+	assert.Nil(t, dkgTask.TxReplOpts.Nonce)
+}
+
+func TestStartTask_handleExecutedTask_returnsNonceTooLowError(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTask.TxReplOpts = &dkgtasks.TxReplOpts{
+		Nonce: big.NewInt(1),
+	}
+
+	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTask.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("DoWork_error"))
+	dkgTask.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTask.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(errors.New(tasks.NonceToLowError))
+
+	wg := sync.WaitGroup{}
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, &interfaces.EthereumMock{}, dkgTask, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTask.Success)
+	assert.Nil(t, dkgTask.TxReplOpts.Nonce)
+}
+
+func TestStartTask_handleExecutedTask_TxMined(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.TxReplOpts = &dkgtasks.TxReplOpts{
+		Nonce: big.NewInt(1),
+	}
+
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("DoWork_error"))
+	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(errors.New(tasks.NonceToLowError))
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(nil, false, nil)
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.Nil(t, dkgTaskMock.TxReplOpts.Nonce)
 }
