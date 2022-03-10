@@ -21,8 +21,7 @@ describe("ValidatorPool: Registration logic", async () => {
   let fixture: Fixture;
   let adminSigner: Signer;
   let maxNumValidators = 4; //default number
-  let stakeAmount = 20000;
-  let stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
+  let stakeAmount: bigint;
   let validators: string[];
   let stakingTokenIds: BigNumber[];
   let dummyAddress = "0x000000000000000000000000000000000000dEaD";
@@ -33,6 +32,7 @@ describe("ValidatorPool: Registration logic", async () => {
     adminSigner = await getValidatorEthAccount(admin.address);
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
+    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
   });
 
   it("Should not allow registering validators if the STAKENFT position doesn’t have enough MADTokens staked", async function () {
@@ -40,7 +40,7 @@ describe("ValidatorPool: Registration logic", async () => {
       fixture,
       "validatorPool",
       "setStakeAmount",
-      [stakeAmountMadWei.add(1)]
+      [stakeAmount + BigInt(1)]
     ); //Add 1 to max amount allowed
     expect(rcpt.status).to.equal(1);
     await expect(
@@ -68,12 +68,18 @@ describe("ValidatorPool: Registration logic", async () => {
   });
 
   it("Should not allow registering validators if the size of the input data is not correct", async function () {
-    validators.length = maxNumValidators;
-    stakingTokenIds.length = maxNumValidators - 1;
+    await expect(
+      factoryCallAny(fixture, "validatorPool", "registerValidators", [
+        validators.slice(0, 3),
+        stakingTokenIds,
+      ])
+    ).to.be.revertedWith(
+      "ValidatorPool: Both input array should have same length!"
+    );
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
         validators,
-        stakingTokenIds,
+        stakingTokenIds.slice(0, 3),
       ])
     ).to.be.revertedWith(
       "ValidatorPool: Both input array should have same length!"
@@ -87,6 +93,12 @@ describe("ValidatorPool: Registration logic", async () => {
     ]);
     // Complete ETHDKG Round
     await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await expect(
+      factoryCallAny(fixture, "validatorPool", "registerValidators", [
+        validators,
+        stakingTokenIds,
+      ])
+    ).to.be.revertedWith("ValidatorPool: There's an ETHDKG round running!");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -126,7 +138,7 @@ describe("ValidatorPool: Registration logic", async () => {
     //Approve first validator for twice the amount
     await fixture.madToken
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .approve(fixture.stakeNFT.address, stakeAmountMadWei.mul(2));
+      .approve(fixture.stakeNFT.address, stakeAmount * BigInt(2));
     await stakeValidators(fixture, newValidators);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -143,14 +155,9 @@ describe("ValidatorPool: Registration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    showState("after registering", await getCurrentState(fixture, validators));
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    showState(
-      "after un-registering",
-      await getCurrentState(fixture, validators)
-    );
     let newValidators = await createValidators(fixture, validatorsSnapshots);
     let newTokensIds = await stakeValidators(fixture, newValidators);
     await expect(
@@ -173,8 +180,8 @@ describe("ValidatorPool: Registration logic", async () => {
       expectedState.validators[index].Reg = true;
     });
     //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
-    expectedState.StakeNFT.MAD -= stakeAmount * validators.length;
-    expectedState.ValidatorNFT.MAD += stakeAmount * validators.length;
+    expectedState.StakeNFT.MAD -= stakeAmount * BigInt(validators.length);
+    expectedState.ValidatorNFT.MAD += stakeAmount * BigInt(validators.length);
     // Register validators
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
