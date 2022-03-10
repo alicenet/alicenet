@@ -2,55 +2,46 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./utils/Admin.sol";
 import "./utils/ImmutableAuth.sol";
 import "hardhat/console.sol";
+import "contracts/interfaces/IAToken.sol";
 
 /// @custom:salt AToken
 /// @custom:deploy-type deployStatic
-contract AToken is ERC20Upgradeable, ImmutableFactory {
-    address internal immutable _oldMadToken = address(this);
+contract AToken is
+    IAToken,
+    ERC20Upgradeable,
+    ImmutableFactory,
+    ImmutableATokenMinter,
+    ImmutableATokenBurner
+{
+    address internal immutable _legacyToken;
 
-    address internal _legacyToken;
-    address internal _minter;
-    address internal _burner;
-
-    constructor() ImmutableFactory(msg.sender) {
-    }
-
-    function initialize(address legacyToken_) public onlyFactory initializer {
-        __ERC20_init("AToken", "ATK");
+    constructor(address legacyToken_)
+        ImmutableFactory(msg.sender)
+        ImmutableATokenMinter()
+        ImmutableATokenBurner()
+    {
         _legacyToken = legacyToken_;
     }
 
+    function initialize() public onlyFactory initializer {
+        __ERC20_init("AToken", "ATK");
+    }
+
     function migrate(uint256 amount) public {
-        ERC20Upgradeable(_legacyToken).transferFrom(msg.sender, address(this), amount);
+        IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, amount);
     }
 
-    function setMinter(address minter_) public onlyFactory {
-        _minter = minter_;
-    }
-
-    function setBurner(address burner_) public onlyFactory {
-        _burner = burner_;
-    }
-
-    function externalMint(address to, uint256 amount) public onlyMinter {
+    function externalMint(address to, uint256 amount) public onlyATokenMinter {
         _mint(to, amount);
     }
 
-    function externalBurn(address from, uint256 amount) public onlyBurner {
+    function externalBurn(address from, uint256 amount) public onlyATokenBurner {
+        //add require
         _burn(from, amount);
-    }
-
-    modifier onlyMinter() {
-        require(msg.sender == _minter, "onlyMinter role allowed");
-        _;
-    }
-
-    modifier onlyBurner() {
-        require(msg.sender == _burner, "onlyBurner role allowed");
-        _;
     }
 }

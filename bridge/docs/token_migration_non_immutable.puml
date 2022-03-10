@@ -1,0 +1,47 @@
+@startuml name
+Actor Admin
+Actor User
+' Participant "MadnetFactory" as MadnetFactory #lightgreen
+Participant "AToken\n(New ERC20Upgradeable)" as NewToken #lightgreen
+Participant "MadToken\n(Legacy ERC20)" as MadToken #orange
+Participant ATokenMinter #yellow
+Participant ATokenBurner #yellow
+title Token Migration With External Helper
+
+group setup    [onlyAdmin]
+    Admin -> NewToken : grantRole(ADMIN,newToken)                       [onlyDefaultAdmin]
+    Admin -> NewToken : grantRole(MINTER,migrationHelper)               [onlyAdmin]
+    Admin -> NewToken : grantRole(BURNER,migrationHelper)               [onlyAdmin]
+    Admin -> NewToken : setLegacyToken(madToken)                        [onlyAdmin]
+    Admin -> NewToken : setMigrationHelper(migrationHelper,madToken)    [onlyAdmin]
+end
+User -> MadToken : approve(newToken,amount)
+User -> NewToken : migrate(amount)
+group migrate
+    group burn       
+        NewToken -> MadToken : transferFrom(user,NewToken,amount)
+        MadToken -> NewToken: MadToken amount
+    end
+    group mint        
+        NewToken -> NewToken : mint(user, amount)
+        NewToken -> User: NewToken amount
+    end
+end
+User -> ATokenBurner : burn(user,amount)
+
+    group burn       
+        ATokenBurner -> NewToken : externalBurn(user, amount) 
+        NewToken -> NewToken : burn(user, amount)  [onlyMinter]
+        NewToken -> NewToken : mint(user, amount)
+        NewToken -> User: NewToken amount
+    end
+User -> ATokenMint : mint(user,amount)
+    group mint        
+        NewToken -> MigrationHelper : burnLegacy(user, amount) 
+        MigrationHelper -> NewToken : burnLegacy(user, amount) [onlyBurner]
+        NewToken -> MadToken : transferFrom(user,deadAddress,amount)
+        User -> DeadAddress: MadToken amount
+    end
+@enduml
+
+
