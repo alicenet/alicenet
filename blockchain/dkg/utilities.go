@@ -135,7 +135,7 @@ func WaitConfirmations(txHash common.Hash, ctx context.Context, logger *logrus.E
 	return nil
 }
 
-func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int) (*big.Int, *big.Int) {
+func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int, threshold uint64) (*big.Int, *big.Int) {
 	// calculate percentage% increase in GasFeeCap
 	var gasFeeCapPercent = (&big.Int{}).Mul(gasFeeCap, big.NewInt(int64(percentage)))
 	gasFeeCapPercent = (&big.Int{}).Div(gasFeeCapPercent, big.NewInt(100))
@@ -152,7 +152,9 @@ func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int) (*big.I
 	// because of rounding errors
 	resultTipCap = (&big.Int{}).Add(resultTipCap, gasTipCapRemainder)
 
-	//TODO: apply max threshold for FEE
+	if resultFeeCap.Uint64() > threshold {
+		resultFeeCap = big.NewInt(int64(threshold))
+	}
 
 	return resultFeeCap, resultTipCap
 }

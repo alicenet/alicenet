@@ -17,10 +17,11 @@ type DkgTask struct {
 }
 
 type TxReplOpts struct {
-	TxHash    common.Hash
-	Nonce     *big.Int
-	GasFeeCap *big.Int
-	GasTipCap *big.Int
+	TxHash       common.Hash
+	Nonce        *big.Int
+	GasFeeCap    *big.Int
+	GasTipCap    *big.Int
+	MinedInBlock uint64
 }
 
 type DkgTaskIfase interface {
@@ -34,6 +35,7 @@ func (d *DkgTask) Clear() {
 	d.TxReplOpts.Nonce = nil
 	d.TxReplOpts.GasFeeCap = nil
 	d.TxReplOpts.GasTipCap = nil
+	d.TxReplOpts.MinedInBlock = uint64(0)
 }
 
 func NewDkgTask(state *objects.DkgState, start uint64, end uint64) *DkgTask {
