@@ -1,7 +1,6 @@
 package tasks_test
 
 import (
-	"context"
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,51 +17,8 @@ import (
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
-
-//
-// Mock implementation of interfaces.Task
-//
-type mockState struct {
-	sync.Mutex
-	count int
-}
-
-type mockTask struct {
-	DoneCalled bool
-	State      *mockState
-}
-
-func (mt *mockTask) DoDone(logger *logrus.Entry) {
-	mt.DoneCalled = true
-}
-
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, interfaces.Ethereum) error {
-	return nil
-}
-
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, interfaces.Ethereum) error {
-	return nil
-}
-
-func (mt *mockTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState := state.(*mockState)
-
-	mt.State = dkgState
-
-	mt.State.Lock()
-	defer mt.State.Unlock()
-
-	mt.State.count += 1
-
-	return nil
-}
-
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ethereum) bool {
-	return false
-}
 
 func TestIsAdminClient(t *testing.T) {
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
