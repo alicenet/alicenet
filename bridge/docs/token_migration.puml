@@ -5,7 +5,7 @@ Participant "AToken\n(New ERC20Upgradeable)" as AToken #LightGreen
 Participant "MadToken\n(Legacy ERC20)" as MadToken #Orange
 Participant "ATokenMinter" as ATokenMinter #LightCoral
 Participant "ATokenBurner" as ATokenBurner #LightCyan
-title Token Migration With External Helper
+title New ERC20Upgradeable AToken with External Minter/Burner Helper
 
 group setup    [onlyFactory]
     MadnetFactory -> AToken : new AToken(MadToken)

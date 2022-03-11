@@ -380,13 +380,6 @@ export const getFixture = async (
   let aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
     madToken.address,
   ])) as AToken;
-  // Left just in case there is decision of using non deterministic version of AToken
-  // let aToken = (await deployStaticWithFactory(
-  //   factory,
-  //   "ATokenNotImmutable",
-  //   undefined,
-  //   [madToken.address]
-  // )) as ATokenNotImmutable;
   let aTokenMinter = (await deployUpgradeableWithFactory(
     factory,
     "ATokenMinter",

@@ -22,87 +22,82 @@ describe("Testing AToken", async () => {
     expectedState = await getState(fixture);
   });
 
-  describe("Testing AToken Immutable Version (deterministic)", async () => {
-    describe("Testing minting operation", async () => {
-      describe("Methods with onlyFactory modifier", async () => {
-        it("Should not be able to set admin when not impersonating factory", async function () {
-          await expect(
-            fixture.aTokenMinter.connect(admin).setAdmin(user.address)
-          ).to.be.revertedWith("onlyFactory");
-        });
-        it("Should be able set admin when impersonating factory", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
-            admin.address,
-          ]);
-          await fixture.aTokenMinter.connect(admin).setMinter(user.address);
-        });
+  describe("Testing minting operation", async () => {
+    describe("Methods with onlyFactory modifier", async () => {
+      it("Should not be able to set admin when not impersonating factory", async function () {
+        await expect(
+          fixture.aTokenMinter.connect(admin).setAdmin(user.address)
+        ).to.be.revertedWith("onlyFactory");
+      });
+      it("Should be able set admin when impersonating factory", async function () {
+        await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
+          admin.address,
+        ]);
+        await fixture.aTokenMinter.connect(admin).setMinter(user.address);
+      });
+    });
+
+    describe("Methods with onlyATokenMinter modifier", async () => {
+      it("Should not mint when called by external address not identified as minter", async function () {
+        await expect(
+          fixture.aToken.externalMint(user.address, amount)
+        ).to.be.revertedWith("onlyATokenMinter");
+      });
+    });
+
+    describe("Methods with onlyAdmin modifier", async () => {
+      it("Should not be able to set minter if not admin", async function () {
+        await expect(
+          fixture.aTokenMinter.connect(admin).setMinter(user.address)
+        ).to.be.revertedWith("onlyAdmin");
+      });
+      it("Should be able set minter if admin", async function () {
+        await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
+          admin.address,
+        ]);
+        await fixture.aTokenMinter.connect(admin).setMinter(user.address);
+      });
+    });
+
+    describe.skip("Business methods with onlyFactory modifier", async () => {
+      it("Should mint when called by external identified as minter impersonating factory", async function () {
+        factoryCallAny(fixture, "aTokenMinter", "mint", [user.address, amount]);
+        expectedState.Balances.aToken.user += amount;
+        currentState = await getState(fixture);
+        expect(currentState).to.be.deep.eq(expectedState);
       });
 
-      describe("Methods with onlyATokenMinter modifier", async () => {
-        it("Should not mint when called by external address not identified as minter", async function () {
-          await expect(
-            fixture.aToken.externalMint(user.address, amount)
-          ).to.be.revertedWith("onlyATokenMinter");
-        });
+      it("Should not mint when called by external identified as minter not impersonating factory", async function () {
+        await expect(
+          fixture.aTokenMinter.mint(user.address, amount)
+        ).to.be.revertedWith("onlyFactory");
+      });
+    });
+
+    describe("Methods with onlyMinter modifier", async () => {
+      it("Should mint when called by external identified as minter with user in minter role", async function () {
+        await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
+          admin.address,
+        ]);
+        await fixture.aTokenMinter.connect(admin).setMinter(user.address);
+        await fixture.aTokenMinter.connect(user).mint(user.address, amount);
+        expectedState.Balances.aToken.user += amount;
+        currentState = await getState(fixture);
+        expect(currentState).to.be.deep.eq(expectedState);
       });
 
-      describe("Methods with onlyAdmin modifier", async () => {
-        it("Should not be able to set minter if not admin", async function () {
-          await expect(
-            fixture.aTokenMinter.connect(admin).setMinter(user.address)
-          ).to.be.revertedWith("onlyAdmin");
-        });
-        it("Should be able set minter if admin", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
-            admin.address,
-          ]);
-          await fixture.aTokenMinter.connect(admin).setMinter(user.address);
-        });
+      it("Should not mint when called by external identified as minter with user not in minter role", async function () {
+        await expect(
+          fixture.aTokenMinter.connect(user).mint(user.address, amount)
+        ).to.be.revertedWith("onlyMinter");
       });
+    });
 
-      describe.skip("Business methods with onlyFactory modifier", async () => {
-        it("Should mint when called by external identified as minter impersonating factory", async function () {
-          factoryCallAny(fixture, "aTokenMinter", "mint", [
-            user.address,
-            amount,
-          ]);
-          expectedState.Balances.aToken.user += amount;
-          currentState = await getState(fixture);
-          expect(currentState).to.be.deep.eq(expectedState);
-        });
-
-        it("Should not mint when called by external identified as minter not impersonating factory", async function () {
-          await expect(
-            fixture.aTokenMinter.mint(user.address, amount)
-          ).to.be.revertedWith("onlyFactory");
-        });
-      });
-
-      describe("Methods with onlyMinter modifier", async () => {
-        it("Should mint when called by external identified as minter with user in minter role", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
-            admin.address,
-          ]);
-          await fixture.aTokenMinter.connect(admin).setMinter(user.address);
-          await fixture.aTokenMinter.connect(user).mint(user.address, amount);
-          expectedState.Balances.aToken.user += amount;
-          currentState = await getState(fixture);
-          expect(currentState).to.be.deep.eq(expectedState);
-        });
-
-        it("Should not mint when called by external identified as minter with user not in minter role", async function () {
-          await expect(
-            fixture.aTokenMinter.connect(user).mint(user.address, amount)
-          ).to.be.revertedWith("onlyMinter");
-        });
-      });
-
-      describe("Testing Access Control with onlyATokenMinter modifier", async () => {
-        it("Should not mint when called by external address not identified as minter", async function () {
-          await expect(
-            fixture.aToken.externalMint(user.address, amount)
-          ).to.be.revertedWith("onlyATokenMinter");
-        });
+    describe("Testing Access Control with onlyATokenMinter modifier", async () => {
+      it("Should not mint when called by external address not identified as minter", async function () {
+        await expect(
+          fixture.aToken.externalMint(user.address, amount)
+        ).to.be.revertedWith("onlyATokenMinter");
       });
     });
   });

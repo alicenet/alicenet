@@ -22,34 +22,32 @@ describe("Testing AToken", async () => {
     expectedState = await getState(fixture);
   });
 
-  describe("Testing AToken Immutable Version (deterministic)", async () => {
-    describe("Testing Access Control operation", async () => {
-      describe("Methods with onlyFactory modifier", async () => {
-        it("Should not be able to set admin when not impersonating factory", async function () {
-          await expect(
-            fixture.aTokenMinter.connect(admin).setAdmin(user.address)
-          ).to.be.revertedWith("onlyFactory");
-        });
-        it("Should be able set admin when impersonating factory", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
-            admin.address,
-          ]);
-          await fixture.aTokenMinter.connect(admin).setMinter(user.address);
-        });
+  describe("Testing Access Control operation", async () => {
+    describe("Methods with onlyFactory modifier", async () => {
+      it("Should not be able to set admin when not impersonating factory", async function () {
+        await expect(
+          fixture.aTokenMinter.connect(admin).setAdmin(user.address)
+        ).to.be.revertedWith("onlyFactory");
       });
+      it("Should be able set admin when impersonating factory", async function () {
+        await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
+          admin.address,
+        ]);
+        await fixture.aTokenMinter.connect(admin).setMinter(user.address);
+      });
+    });
 
-      describe("Methods with onlyAdmin modifier", async () => {
-        it("Should not be able to set minter if not admin", async function () {
-          await expect(
-            fixture.aTokenMinter.connect(admin).setMinter(user.address)
-          ).to.be.revertedWith("onlyAdmin");
-        });
-        it("Should be able set minter if admin", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
-            admin.address,
-          ]);
-          await fixture.aTokenMinter.connect(admin).setMinter(user.address);
-        });
+    describe("Methods with onlyAdmin modifier", async () => {
+      it("Should not be able to set minter if not admin", async function () {
+        await expect(
+          fixture.aTokenMinter.connect(admin).setMinter(user.address)
+        ).to.be.revertedWith("onlyAdmin");
+      });
+      it("Should be able set minter if admin", async function () {
+        await factoryCallAny(fixture, "aTokenMinter", "setAdmin", [
+          admin.address,
+        ]);
+        await fixture.aTokenMinter.connect(admin).setMinter(user.address);
       });
     });
   });

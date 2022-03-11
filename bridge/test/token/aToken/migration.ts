@@ -22,19 +22,17 @@ describe("Testing AToken", async () => {
     expectedState = await getState(fixture);
   });
 
-  describe("Testing AToken Immutable Version (deterministic)", async () => {
-    describe("Testing Migrate operation", async () => {
-      it("Should migrate user legacy tokens", async function () {
-        await fixture.madToken
-          .connect(user)
-          .approve(fixture.aToken.address, amount);
-        await fixture.aToken.connect(user).migrate(amount);
-        expectedState.Balances.madToken.user -= amount;
-        expectedState.Balances.aToken.user += amount;
-        expectedState.Balances.madToken.aToken += amount;
-        currentState = await getState(fixture);
-        expect(currentState).to.be.deep.eq(expectedState);
-      });
+  describe("Testing Migrate operation", async () => {
+    it("Should migrate user legacy tokens", async function () {
+      await fixture.madToken
+        .connect(user)
+        .approve(fixture.aToken.address, amount);
+      await fixture.aToken.connect(user).migrate(amount);
+      expectedState.Balances.madToken.user -= amount;
+      expectedState.Balances.aToken.user += amount;
+      expectedState.Balances.madToken.aToken += amount;
+      currentState = await getState(fixture);
+      expect(currentState).to.be.deep.eq(expectedState);
     });
   });
 });
