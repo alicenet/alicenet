@@ -1,0 +1,1383 @@
+[network.defaultFactoryData]
+address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+owner = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+gas = 1_220_119
+
+[hardhat]
+defaultFactoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+
+  [hardhat.defaultFactoryData]
+  address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  owner = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+  gas = 1_220_119
+
+  [[hardhat.rawDeployments]]
+  name = "MockInitializable"
+  address = "0x9Ba664DCb8aA54e52e1605FD12C392Baf2EE266A"
+  factoryAddress = "0x77D7c620E3d913AA78a71acffA006fc1Ae178b66"
+  gas = 270_235
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x1db68ee81c815e2df378bb1f6f2bada4c378d070fb5abd5f9926161b006a22f0"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x1db68ee81c815e2df378bb1f6f2bada4c378d070fb5abd5f9926161b006a22f0"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x1db68ee81c815e2df378bb1f6f2bada4c378d070fb5abd5f9926161b006a22f0"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x6afe44876b62a2270138183020a8b17d4bb1ea7dd709c38a4a06a5d2f9774a23"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x6afe44876b62a2270138183020a8b17d4bb1ea7dd709c38a4a06a5d2f9774a23"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x6afe44876b62a2270138183020a8b17d4bb1ea7dd709c38a4a06a5d2f9774a23"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x3056987d5debd13172b1a3512a047db46061e03c145cfb73ce04f2321117a9c8"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3056987d5debd13172b1a3512a047db46061e03c145cfb73ce04f2321117a9c8"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3056987d5debd13172b1a3512a047db46061e03c145cfb73ce04f2321117a9c8"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x3eaa86e9f8c8a7c8f74530787637511f6fc42a221aac6d57fa951da2cc5afd7a"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3eaa86e9f8c8a7c8f74530787637511f6fc42a221aac6d57fa951da2cc5afd7a"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3eaa86e9f8c8a7c8f74530787637511f6fc42a221aac6d57fa951da2cc5afd7a"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x4f2cde0fcb1d90308ad5f4be7f2e5315807f2cea663da332f31bff44519e4735"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x4f2cde0fcb1d90308ad5f4be7f2e5315807f2cea663da332f31bff44519e4735"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x4f2cde0fcb1d90308ad5f4be7f2e5315807f2cea663da332f31bff44519e4735"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x33a7a2f2d3975b803cc22d4dde0d5919744d7492f77335b4a29f87368cdc052c"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x33a7a2f2d3975b803cc22d4dde0d5919744d7492f77335b4a29f87368cdc052c"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x33a7a2f2d3975b803cc22d4dde0d5919744d7492f77335b4a29f87368cdc052c"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x3b57d145538d000bdd28c07b1cdbf33cf57be5f1412149e26e04b36200a6b055"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3b57d145538d000bdd28c07b1cdbf33cf57be5f1412149e26e04b36200a6b055"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x3b57d145538d000bdd28c07b1cdbf33cf57be5f1412149e26e04b36200a6b055"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0xe57ce9a96ce40a9cf29db9c5daa1ca0090efd27c5a5f20a4bec01939d9aba705"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0xe57ce9a96ce40a9cf29db9c5daa1ca0090efd27c5a5f20a4bec01939d9aba705"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0xe57ce9a96ce40a9cf29db9c5daa1ca0090efd27c5a5f20a4bec01939d9aba705"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGPhases"
+  address = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 2_960_328
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0xfaff74c3bd8a3508624cc561aa0ff4d263c70694714bc133756504ee3dc20a01"
+    transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+    blockNumber = 4
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0xfaff74c3bd8a3508624cc561aa0ff4d263c70694714bc133756504ee3dc20a01"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5ef3259b"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0xfaff74c3bd8a3508624cc561aa0ff4d263c70694714bc133756504ee3dc20a01"
+      args = [ "0x156e396a81A47eDC91DFb1621f2c82544eBD3558" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x6256b7d47438edec528aeae2bc457fcb6d23b8d341c8e3ac3d71fac94c9ec595"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x6256b7d47438edec528aeae2bc457fcb6d23b8d341c8e3ac3d71fac94c9ec595"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x6256b7d47438edec528aeae2bc457fcb6d23b8d341c8e3ac3d71fac94c9ec595"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGPhases"
+  address = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 2_960_328
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0xc30c57cfe8b156e0bf5921035e973085f39e250d0cbfa2fffe0141a7eac4300c"
+    transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+    blockNumber = 4
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0xc30c57cfe8b156e0bf5921035e973085f39e250d0cbfa2fffe0141a7eac4300c"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5ef3259b"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0xc30c57cfe8b156e0bf5921035e973085f39e250d0cbfa2fffe0141a7eac4300c"
+      args = [ "0x156e396a81A47eDC91DFb1621f2c82544eBD3558" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKG"
+  address = "0x8738d2981Ed661d4D6bD6b986EBb3c5667A0F2E0"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 2_334_647
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x73813bfefff2503a326d48add3437204d5304bbaa56429fe28ac471fe75d3287"
+    transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+    blockNumber = 6
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x239fb7"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 6
+      transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000008738d2981ed661d4d6bd6b986ebb3c5667a0f2e0"
+      logIndex = 0
+      blockHash = "0x73813bfefff2503a326d48add3437204d5304bbaa56429fe28ac471fe75d3287"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x239fb7"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x56aa7024"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 6
+      transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000008738d2981ed661d4d6bd6b986ebb3c5667a0f2e0"
+      logIndex = 0
+      blockHash = "0x73813bfefff2503a326d48add3437204d5304bbaa56429fe28ac471fe75d3287"
+      args = [ "0x8738d2981Ed661d4D6bD6b986EBb3c5667A0F2E0" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGAccusations"
+  address = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 3_825_200
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x004ed37729485409a0a4180dd1e16c194ac34b071bfd15447f02b0af8b87e595"
+    transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+    blockNumber = 2
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x004ed37729485409a0a4180dd1e16c194ac34b071bfd15447f02b0af8b87e595"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x3a5e30"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x69c50d66"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 2
+      transactionHash = "0x115e96a066d945819e0b7dd5b263fb6bc582ced44e48d47e49daedcf1bc3e30a"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000003bfded457d9f230a91e6735771113478791c09c1"
+      logIndex = 0
+      blockHash = "0x004ed37729485409a0a4180dd1e16c194ac34b071bfd15447f02b0af8b87e595"
+      args = [ "0x3bfdED457D9F230a91e6735771113478791C09C1" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKGPhases"
+  address = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 2_960_328
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x395848da83886b2525ed6572851cbbb0c4115e8d44b7c55a38dc911f7408446b"
+    transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+    blockNumber = 4
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0x395848da83886b2525ed6572851cbbb0c4115e8d44b7c55a38dc911f7408446b"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x2d2bc8"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5ef3259b"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 4
+      transactionHash = "0x4c97105529ab5f153bb68b0705d194db311e0c14247c3539724d8aa64cdd3093"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x000000000000000000000000156e396a81a47edc91dfb1621f2c82544ebd3558"
+      logIndex = 0
+      blockHash = "0x395848da83886b2525ed6572851cbbb0c4115e8d44b7c55a38dc911f7408446b"
+      args = [ "0x156e396a81A47eDC91DFb1621f2c82544eBD3558" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.rawDeployments]]
+  name = "ETHDKG"
+  address = "0x8738d2981Ed661d4D6bD6b986EBb3c5667A0F2E0"
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  gas = 2_334_647
+  constructorArgs = [ ]
+
+    [hardhat.rawDeployments.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002040002000"
+    blockHash = "0x6e035ba98294d998223697e19cdc9768d292a878ec5531cf58c441362270c4ac"
+    transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+    blockNumber = 6
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.rawDeployments.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x239fb7"
+
+      [[hardhat.rawDeployments.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 6
+      transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000008738d2981ed661d4d6bd6b986ebb3c5667a0f2e0"
+      logIndex = 0
+      blockHash = "0x6e035ba98294d998223697e19cdc9768d292a878ec5531cf58c441362270c4ac"
+
+      [hardhat.rawDeployments.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x239fb7"
+
+      [hardhat.rawDeployments.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x56aa7024"
+
+      [[hardhat.rawDeployments.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 6
+      transactionHash = "0x7b704c37c93d9e6e4bd18b7cc3bb9b53e760f6d0e69ccdbf4cebdd2c0e321e00"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0xd3acf0da590cfcd8f020afd7f40b7e6e4c8bd2fc9eb7aec9836837b667685b3a"
+]
+      data = "0x0000000000000000000000008738d2981ed661d4d6bd6b986ebb3c5667a0f2e0"
+      logIndex = 0
+      blockHash = "0x6e035ba98294d998223697e19cdc9768d292a878ec5531cf58c441362270c4ac"
+      args = [ "0x8738d2981Ed661d4D6bD6b986EBb3c5667A0F2E0" ]
+      decode = { }
+      event = "DeployedRaw"
+      eventSignature = "DeployedRaw(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x77D7c620E3d913AA78a71acffA006fc1Ae178b66"
+  logicName = "MockInitializable"
+  logicAddress = "0x9Ba664DCb8aA54e52e1605FD12C392Baf2EE266A"
+  salt = "0x4d6f636b496e697469616c697a61626c65000000000000000000000000000000"
+  proxyAddress = "0x94319711aaA4FAf98bB871DD58E06C6F7737363C"
+  gas = 232_230
+  initCallData = "0x"
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGAccusations"
+  logicAddress = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  salt = "0x455448444b4741636375736174696f6e73000000000000000000000000000000"
+  proxyAddress = "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD"
+  gas = 232_230
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0x1431e9f0589688b646eab1112937b016a0935494cb670d003a8b13af44960260"
+    transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+    blockNumber = 3
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0x1431e9f0589688b646eab1112937b016a0935494cb670d003a8b13af44960260"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x63ffc4fa"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0x1431e9f0589688b646eab1112937b016a0935494cb670d003a8b13af44960260"
+      args = [ "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGPhases"
+  logicAddress = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  salt = "0x455448444b475068617365730000000000000000000000000000000000000000"
+  proxyAddress = "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f"
+  gas = 195_110
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0x12dfa64c8e4c50bcacc39465c518b71c87649c6fab319a0e813ae50694614f0f"
+    transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+    blockNumber = 5
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0x12dfa64c8e4c50bcacc39465c518b71c87649c6fab319a0e813ae50694614f0f"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5a881a28"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0x12dfa64c8e4c50bcacc39465c518b71c87649c6fab319a0e813ae50694614f0f"
+      args = [ "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGAccusations"
+  logicAddress = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  salt = "0x455448444b4741636375736174696f6e73000000000000000000000000000000"
+  proxyAddress = "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD"
+  gas = 232_230
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0xbdb92376ebc6890b9303e73899ce36dd3b558452a0204736f0c6d4ce020af2ee"
+    transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+    blockNumber = 3
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0xbdb92376ebc6890b9303e73899ce36dd3b558452a0204736f0c6d4ce020af2ee"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x63ffc4fa"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0xbdb92376ebc6890b9303e73899ce36dd3b558452a0204736f0c6d4ce020af2ee"
+      args = [ "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGPhases"
+  logicAddress = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  salt = "0x455448444b475068617365730000000000000000000000000000000000000000"
+  proxyAddress = "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f"
+  gas = 195_110
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0xcc76ad3965f6fcc4e3c80a0555648e52613f094bdb70e984e9f68f062928bf03"
+    transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+    blockNumber = 5
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0xcc76ad3965f6fcc4e3c80a0555648e52613f094bdb70e984e9f68f062928bf03"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5a881a28"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0xcc76ad3965f6fcc4e3c80a0555648e52613f094bdb70e984e9f68f062928bf03"
+      args = [ "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGAccusations"
+  logicAddress = "0x3bfdED457D9F230a91e6735771113478791C09C1"
+  salt = "0x455448444b4741636375736174696f6e73000000000000000000000000000000"
+  proxyAddress = "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD"
+  gas = 232_230
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0x954acc3288426be4cbad111e8cf0cee5249c4d2f84755668b17b3fa6c42dfd92"
+    transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+    blockNumber = 3
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0x954acc3288426be4cbad111e8cf0cee5249c4d2f84755668b17b3fa6c42dfd92"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x038b26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x63ffc4fa"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 3
+      transactionHash = "0x6e3fd304e0472c5b12f13a9ba70c0d6f790f92299e459059ce271e5928dcbd85"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000167eb24b7b51f9322a4a2efcc849310550be86cd"
+      logIndex = 0
+      blockHash = "0x954acc3288426be4cbad111e8cf0cee5249c4d2f84755668b17b3fa6c42dfd92"
+      args = [ "0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }
+
+  [[hardhat.proxies]]
+  factoryAddress = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+  logicName = "ETHDKGPhases"
+  logicAddress = "0x156e396a81A47eDC91DFb1621f2c82544eBD3558"
+  salt = "0x455448444b475068617365730000000000000000000000000000000000000000"
+  proxyAddress = "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f"
+  gas = 195_110
+  initCallData = "0x"
+
+    [hardhat.proxies.receipt]
+    to = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    from = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    transactionIndex = 0
+    logsBloom = "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000100000"
+    blockHash = "0x5505a40091922a454a211513b0654961f2c62dd671b0d600838ab60691ff7b12"
+    transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+    blockNumber = 5
+    confirmations = 1
+    status = 1
+    type = 2
+    byzantium = true
+
+      [hardhat.proxies.receipt.gasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [[hardhat.proxies.receipt.logs]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0x5505a40091922a454a211513b0654961f2c62dd671b0d600838ab60691ff7b12"
+
+      [hardhat.proxies.receipt.cumulativeGasUsed]
+      type = "BigNumber"
+      hex = "0x02fa26"
+
+      [hardhat.proxies.receipt.effectiveGasPrice]
+      type = "BigNumber"
+      hex = "0x5a881a28"
+
+      [[hardhat.proxies.receipt.events]]
+      transactionIndex = 0
+      blockNumber = 5
+      transactionHash = "0x0670b5e11e69186defb3962a6ce103f595bc29edc7ae74c8698e7c49f174ef5f"
+      address = "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      topics = [
+  "0x06690e5b52be10a3d5820ec875c3dd3327f3077954a09f104201e40e5f7082c6"
+]
+      data = "0x000000000000000000000000b701ce9aaf414beb3ed11422eea6d1f08c5e995f"
+      logIndex = 0
+      blockHash = "0x5505a40091922a454a211513b0654961f2c62dd671b0d600838ab60691ff7b12"
+      args = [ "0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f" ]
+      decode = { }
+      event = "DeployedProxy"
+      eventSignature = "DeployedProxy(address)"
+      removeListener = { }
+      getBlock = { }
+      getTransaction = { }
+      getTransactionReceipt = { }

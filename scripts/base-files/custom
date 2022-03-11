@@ -1,0 +1,7 @@
+constructor = { }
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+phaseLength_ = "2"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+confirmationLength_ = "10"

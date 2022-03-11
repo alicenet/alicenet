@@ -1,0 +1,26 @@
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+chainID_ = "UNDEFINED"
+
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+epochLength_ = "UNDEFINED"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+phaseLength_ = "UNDEFINED"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+confirmationLength_ = "UNDEFINED"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationDelay_ = "UNDEFINED"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationFactor_ = "UNDEFINED"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+stakeAmount_ = "UNDEFINED"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+maxNumValidators_ = "UNDEFINED"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+disputerReward_ = "UNDEFINED"
