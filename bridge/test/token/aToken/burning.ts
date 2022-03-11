@@ -23,44 +23,6 @@ describe("Testing AToken", async () => {
   });
 
   describe("Testing burning operation", async () => {
-    describe("Methods with onlyBurner modifier", async () => {
-      it("Should burn when called by external identified as burner and user in burner role", async function () {
-        await fixture.madToken
-          .connect(user)
-          .approve(fixture.aToken.address, amount);
-        await fixture.aToken.connect(user).migrate(amount);
-        expectedState = await getState(fixture);
-        await factoryCallAny(fixture, "aTokenBurner", "setAdmin", [
-          admin.address,
-        ]);
-        await fixture.aTokenBurner.connect(admin).setBurner(user.address);
-        await fixture.aTokenBurner.connect(user).burn(user.address, amount);
-        expectedState.Balances.aToken.user -= amount;
-        currentState = await getState(fixture);
-        expect(currentState).to.be.deep.eq(expectedState);
-      });
-
-      it("Should not burn when called by external identified as burner with user not in burner role", async function () {
-        await expect(
-          fixture.aTokenBurner.connect(user).burn(user.address, amount)
-        ).to.be.revertedWith("onlyBurner");
-      });
-    });
-
-    describe("Methods with onlyAdmin modifier", async () => {
-      it("Should not be able to set burner if not admin", async function () {
-        await expect(
-          fixture.aTokenBurner.connect(admin).setBurner(user.address)
-        ).to.be.revertedWith("onlyAdmin");
-      });
-      it("Should be able set burner if admin", async function () {
-        await factoryCallAny(fixture, "aTokenBurner", "setAdmin", [
-          admin.address,
-        ]);
-        await fixture.aTokenBurner.connect(admin).setBurner(user.address);
-      });
-    });
-
     describe.skip("Business methods with onlyFactory modifier", async () => {
       it("Should burn when called by external identified as burner impersonating factory", async function () {
         factoryCallAny(fixture, "aTokenBurn", "burn", [user.address, amount]);
@@ -73,30 +35,6 @@ describe("Testing AToken", async () => {
         await expect(
           fixture.aTokenBurner.burn(user.address, amount)
         ).to.be.revertedWith("onlyFactory");
-      });
-    });
-
-    describe("Methods with onlyBurner modifier", async () => {
-      it("Should burn when called by external identified as burner with user in burner role", async function () {
-        await fixture.madToken
-          .connect(user)
-          .approve(fixture.aToken.address, amount);
-        await fixture.aToken.connect(user).migrate(amount);
-        expectedState = await getState(fixture);
-        await factoryCallAny(fixture, "aTokenBurner", "setAdmin", [
-          admin.address,
-        ]);
-        await fixture.aTokenBurner.connect(admin).setBurner(user.address);
-        await fixture.aTokenBurner.connect(user).burn(user.address, amount);
-        expectedState.Balances.aToken.user -= amount;
-        currentState = await getState(fixture);
-        expect(currentState).to.be.deep.eq(expectedState);
-      });
-
-      it("Should not mint when called by external identified as burner with user not in minter role", async function () {
-        await expect(
-          fixture.aTokenBurner.connect(user).burn(user.address, amount)
-        ).to.be.revertedWith("onlyBurner");
       });
     });
 
