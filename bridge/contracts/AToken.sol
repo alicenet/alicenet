@@ -41,7 +41,6 @@ contract AToken is
     }
 
     function externalBurn(address from, uint256 amount) public onlyATokenBurner {
-        //add require
         _burn(from, amount);
     }
 }

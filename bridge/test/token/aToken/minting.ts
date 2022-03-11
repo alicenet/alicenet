@@ -32,7 +32,7 @@ describe("Testing AToken", async () => {
         });
       });
 
-      describe.skip("Business methods with onlyFactory modifier", async () => {
+      describe("Business methods with onlyFactory modifier", async () => {
         it("Should mint when called by external identified as minter impersonating factory", async function () {
           factoryCallAny(fixture, "aTokenMinter", "mint", [
             user.address,
@@ -43,18 +43,11 @@ describe("Testing AToken", async () => {
           expect(currentState).to.be.deep.eq(expectedState);
         });
 
-        it("Should not mint when called by external identified as minter not impersonating factory", async function () {
-          await expect(
-            fixture.aTokenMinter.mint(user.address, amount)
-          ).to.be.revertedWith("onlyFactory");
-        });
-      });
-
-      describe("Testing Access Control with onlyATokenMinter modifier", async () => {
-        it("Should not mint when called by external address not identified as minter", async function () {
-          await expect(
-            fixture.aToken.externalMint(user.address, amount)
-          ).to.be.revertedWith("onlyATokenMinter");
+        it("Should mint when called by external identified as minter not impersonating factory", async function () {
+          fixture.aTokenMinter.mint(user.address, amount);
+          expectedState.Balances.aToken.user += amount;
+          currentState = await getState(fixture);
+          expect(currentState).to.be.deep.eq(expectedState);
         });
       });
     });
