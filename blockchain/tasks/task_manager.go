@@ -76,7 +76,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 	return nil
 }
 
-// initializeTask initialize the Task and retry needed
+// initializeTask initialize the Task and retry if needed
 func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, state interface{}, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
@@ -99,7 +99,7 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Et
 	return err
 }
 
-// executeTask execute the Task and retry needed
+// executeTask execute the Task and retry if needed
 func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, retryCount int, retryDelay time.Duration) error {
 	// Clearing TxReplOpts used for tx gas and nonce replacement
 	dkgTask.Clear()
@@ -112,7 +112,6 @@ func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ether
 	return err
 }
 
-// retryTask retry the Task
 func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, dkgTask *dkgtasks.DkgTask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
@@ -209,8 +208,8 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 		"TxHash":                  dkgTask.TxReplOpts.TxHash.Hex(),
 	}).Info("handleExecutedTask()...")
 
-	var txConfirmed bool
-	for currentBlock < dkgTaskEnd && dkgTask.TxReplOpts.TxHash != emptyHash && !txConfirmed {
+	var isTxConfirmed bool
+	for currentBlock < dkgTaskEnd && dkgTask.TxReplOpts.TxHash != emptyHash && !isTxConfirmed {
 		err = sleepWithContext(ctx, txCheckFrequency)
 		if err != nil {
 			return err
@@ -222,11 +221,11 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 			dkgTask.TxReplOpts.MinedInBlock = receipt.BlockNumber.Uint64()
 			logger.Infof("the tx %s was mined on height %d", dkgTask.TxReplOpts.TxHash.Hex(), dkgTask.TxReplOpts.MinedInBlock)
 
-			txConfirmed, err = waitForFinalityDelay(ctx, logger, eth, dkgTask.TxReplOpts.TxHash, eth.GetFinalityDelay(), dkgTask.TxReplOpts.MinedInBlock, txCheckFrequency)
+			isTxConfirmed, err = waitForFinalityDelay(ctx, logger, eth, dkgTask.TxReplOpts.TxHash, eth.GetFinalityDelay(), dkgTask.TxReplOpts.MinedInBlock, txCheckFrequency)
 			if err != nil {
 				return dkg.LogReturnErrorf(logger, "failed to retry task with error %v", err)
 			}
-			if txConfirmed {
+			if isTxConfirmed {
 				break
 			}
 
@@ -269,7 +268,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 		}
 	}
 
-	logger.Infof("the tx %s was confirmed %t", dkgTask.TxReplOpts.TxHash.Hex(), txConfirmed)
+	logger.Infof("the tx %s was confirmed %t", dkgTask.TxReplOpts.TxHash.Hex(), isTxConfirmed)
 
 	return nil
 }
@@ -309,13 +308,13 @@ func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfa
 
 func isTxMined(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, txHash common.Hash) (bool, *types.Receipt) {
 	//check tx is pending
-	_, txPending, err := eth.GetGethClient().TransactionByHash(ctx, txHash)
+	_, isTxPending, err := eth.GetGethClient().TransactionByHash(ctx, txHash)
 	if err != nil {
 		logger.Errorf("failed to get tx with hash %s wit error %v", txHash.Hex(), err)
 		return false, nil
 	}
 
-	if txPending {
+	if isTxPending {
 		return false, nil
 	}
 
@@ -330,8 +329,6 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 		logger.Errorf("missing receipt for tx %s", txHash.Hex())
 		return false, nil
 	}
-
-	logger.Infof("the tx %s receipt not nil", txHash.Hex())
 
 	// Check receipt to confirm we were successful
 	if receipt.Status != uint64(1) {
