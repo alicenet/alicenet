@@ -669,7 +669,7 @@ export const completeETHDKGRound = async (
   },
   expectedEpoch?: number,
   expectedMadHeight?: number,
-  computeExpectedEthHeight?: number
+  expectedEthHeight?: number
 ): Promise<
   [ETHDKG, ValidatorPoolMock | ValidatorPool, number, number, number]
 > => {
@@ -705,7 +705,7 @@ export const completeETHDKGRound = async (
     expectedNonce,
     _expectedEpoch,
     _expectedMadHeight,
-    computeExpectedEthHeight
+    expectedEthHeight
   );
   return [
     ethdkg,

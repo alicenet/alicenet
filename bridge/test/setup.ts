@@ -359,7 +359,7 @@ export const getFixture = async (
       factory,
       "SnapshotsMock",
       "Snapshots",
-      undefined,
+      [10, 40],
       [1, 1]
     )) as Snapshots;
   } else {
@@ -367,8 +367,8 @@ export const getFixture = async (
     snapshots = (await deployUpgradeableWithFactory(
       factory,
       "Snapshots",
-      undefined,
-      undefined,
+      "Snapshots",
+      [10, 40],
       [1, 1024]
     )) as Snapshots;
   }
