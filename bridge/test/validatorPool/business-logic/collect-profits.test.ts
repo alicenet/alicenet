@@ -10,6 +10,7 @@ import {
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
+  burnStakeTo,
   createValidators,
   getCurrentState,
   showState,
@@ -31,6 +32,42 @@ describe("ValidatorPool: Collecting logic", async function () {
   });
 
   it("Should successfully collect profit of validators", async function () {
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    let eths = ethers.utils.parseEther("4.0").toBigInt();
+    let expectedState = await getCurrentState(fixture, validators);
+    await fixture.validatorNFT.connect(adminSigner).depositEth(42, {
+      value: eths,
+    });
+    //Expect ValidatorNFT balance to increment by earnings
+    expectedState.ValidatorNFT.ETH += eths;
+    // Complete ETHDKG Round
+    await showState("After deposit:", expectedState);
+    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await completeETHDKGRound(validatorsSnapshots, {
+      ethdkg: fixture.ethdkg,
+      validatorPool: fixture.validatorPool,
+    });
+    await fixture.validatorPool
+      .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
+      .collectProfits();
+    // Expect that a fraction of the earnings (1/4 validators) to be transfer from ValidatorNFT to collecting validator
+    expectedState.ValidatorNFT.ETH -= eths / BigInt(4);
+    let currentState = await getCurrentState(fixture, validators);
+    await showState("Expected state after collect profit", expectedState);
+    await showState("Current state after collect profit", currentState);
+    expect(currentState).to.be.deep.equal(expectedState);
+  });
+
+  it("Should successfully collect profit of validators even with excess of Eth and Tokens", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
@@ -105,42 +142,6 @@ describe("ValidatorPool: Collecting logic", async function () {
     currentState = await getCurrentState(fixture, validators);
     await showState("Expected state after collect profit", expectedState);
     await showState("Current state after collect profit", currentState);
-    expect(currentState).to.be.deep.equal(expectedState);
-  });
-
-  xit("Skim excess of tokens end ether in the contract", async function () {
-    let expectedState = await getCurrentState(fixture, validators);
-    // await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-    //   validators,
-    //   stakingTokenIds,
-    // ]);
-    // await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-    //   validators,
-    // ]);
-    // await commitSnapshots(fixture, 4);
-    // for (const validator of validatorsSnapshots) {
-    //   await fixture.validatorPool
-    //     .connect(await getValidatorEthAccount(validator))
-    //     .claimExitingNFTPosition();
-    // }
-    await showState(
-      "After claiming:",
-      await getCurrentState(fixture, validators)
-    );
-    console.log(
-      await fixture.stakeNFT
-        .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-        .ownerOf(1)
-    );
-
-    await fixture.stakeNFT
-      .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .collectEthTo(validatorsSnapshots[0].address, 1);
-    console.log(1);
-    await fixture.stakeNFT.collectTokenTo(validatorsSnapshots[1].address, 2);
-    let currentState = await getCurrentState(fixture, validators);
-    await showState("Expected state", expectedState);
-    await showState("Current state", currentState);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 });

@@ -9,7 +9,12 @@ import {
   getValidatorEthAccount,
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
-import { createValidators, getCurrentState, stakeValidators } from "../setup";
+import {
+  burnStakeTo,
+  createValidators,
+  getCurrentState,
+  stakeValidators,
+} from "../setup";
 
 describe("ValidatorPool: Unregistration logic", async () => {
   let fixture: Fixture;
@@ -106,6 +111,33 @@ describe("ValidatorPool: Unregistration logic", async () => {
 
   it("Should successfully unregister validators if all conditions are met", async function () {
     let expectedState = await getCurrentState(fixture, validators);
+    //Expect that NFT are transferred from ValidatorPool to Factory
+    for (let index = 0; index < validators.length; index++) {
+      expectedState.ValidatorPool.StakeNFT++;
+      expectedState.Factory.StakeNFT--;
+      expectedState.validators[index].Acc = true;
+      expectedState.validators[index].ExQ = true;
+    }
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
+      validators,
+    ]);
+    let currentState = await getCurrentState(fixture, validators);
+    expect(currentState).to.be.deep.equal(expectedState);
+  });
+
+  it("Should successfully unregister validators if all conditions are met and there are excess of Eth and Tokens", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+
+    let expectedState = await getCurrentState(fixture, validators);
+    expectedState.StakeNFT.ETH = BigInt(0);
     //Expect that NFT are transferred from ValidatorPool to Factory
     for (let index = 0; index < validators.length; index++) {
       expectedState.ValidatorPool.StakeNFT++;
