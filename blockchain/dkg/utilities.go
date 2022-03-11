@@ -139,18 +139,12 @@ func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int, thresho
 	// calculate percentage% increase in GasFeeCap
 	var gasFeeCapPercent = (&big.Int{}).Mul(gasFeeCap, big.NewInt(int64(percentage)))
 	gasFeeCapPercent = (&big.Int{}).Div(gasFeeCapPercent, big.NewInt(100))
-	gasFeeCapRemainder := (&big.Int{}).Mod(gasFeeCapPercent, big.NewInt(100))
 	resultFeeCap := (&big.Int{}).Add(gasFeeCap, gasFeeCapPercent)
-	// because of rounding errors
-	resultFeeCap = (&big.Int{}).Add(resultFeeCap, gasFeeCapRemainder)
 
 	// calculate percentage% increase in GasTipCap
 	var gasTipCapPercent = (&big.Int{}).Mul(gasTipCap, big.NewInt(int64(percentage)))
 	gasTipCapPercent = (&big.Int{}).Div(gasTipCapPercent, big.NewInt(100))
-	gasTipCapRemainder := (&big.Int{}).Mod(gasTipCapPercent, big.NewInt(100))
 	resultTipCap := (&big.Int{}).Add(gasTipCap, gasTipCapPercent)
-	// because of rounding errors
-	resultTipCap = (&big.Int{}).Add(resultTipCap, gasTipCapRemainder)
 
 	if resultFeeCap.Uint64() > threshold {
 		resultFeeCap = big.NewInt(int64(threshold))

@@ -181,7 +181,7 @@ func (eth *EthereumMock) GetTxFeePercentageToIncrease() int {
 
 func (eth *EthereumMock) GetTxMaxFeeThresholdInGwei() uint64 {
 	args := eth.Called()
-	return uint64(args.Int(0))
+	return args.Get(0).(uint64)
 }
 
 func (eth *EthereumMock) GetTxCheckFrequency() time.Duration {

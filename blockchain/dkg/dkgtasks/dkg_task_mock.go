@@ -32,12 +32,27 @@ func (d *DkgTaskMock) DoDone(logger *logrus.Entry) {
 }
 
 func (d *DkgTaskMock) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	d.TxReplOpts.TxHash = common.BigToHash(big.NewInt(131231214123871239))
+	if d.TxReplOpts.GasFeeCap == nil {
+		d.TxReplOpts.GasFeeCap = big.NewInt(142356)
+	}
+	if d.TxReplOpts.GasTipCap == nil {
+		d.TxReplOpts.GasTipCap = big.NewInt(37)
+	}
+
 	args := d.Called(ctx, logger, eth)
 	return args.Error(0)
 }
 
 func (d *DkgTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	d.TxReplOpts.TxHash = common.BigToHash(big.NewInt(131231214123871239))
+	if d.TxReplOpts.GasFeeCap == nil {
+		d.TxReplOpts.GasFeeCap = big.NewInt(142356)
+	}
+	if d.TxReplOpts.GasTipCap == nil {
+		d.TxReplOpts.GasTipCap = big.NewInt(37)
+	}
+
 	args := d.Called(ctx, logger, eth)
 	return args.Error(0)
 }
