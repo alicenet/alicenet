@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"math"
 	"math/big"
 	"sync"
@@ -135,6 +136,7 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 type mockTask struct {
 	DoneCalled bool
 	State      *objects.DkgState
+	DkgTask    *dkgtasks.ExecutionData
 }
 
 func (mt *mockTask) DoDone(logger *logrus.Entry) {
@@ -155,6 +157,10 @@ func (mt *mockTask) Initialize(context.Context, *logrus.Entry, interfaces.Ethere
 
 func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ethereum) bool {
 	return false
+}
+
+func (mt *mockTask) GetExecutionData() interface{} {
+	return mt.DkgTask
 }
 
 //
@@ -386,21 +392,24 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	assert.Nil(t, err)
 	populateMonitor(mon.State, addr0, EPOCH)
 
+	mockTsk := &mockTask{
+		DkgTask: dkgtasks.NewDkgTask(nil, 1, 40),
+	}
 	// Schedule some tasks
-	_, err = mon.State.Schedule.Schedule(1, 2, &mockTask{})
+	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)
 	assert.Nil(t, err)
 
-	_, err = mon.State.Schedule.Schedule(3, 4, &mockTask{})
+	_, err = mon.State.Schedule.Schedule(3, 4, mockTsk)
 	assert.Nil(t, err)
 
-	_, err = mon.State.Schedule.Schedule(5, 6, &mockTask{})
+	_, err = mon.State.Schedule.Schedule(5, 6, mockTsk)
 	assert.Nil(t, err)
 
-	_, err = mon.State.Schedule.Schedule(7, 8, &mockTask{})
+	_, err = mon.State.Schedule.Schedule(7, 8, mockTsk)
 	assert.Nil(t, err)
 
 	// Marshal
-	mon.TypeRegistry.RegisterInstanceType(&mockTask{})
+	mon.TypeRegistry.RegisterInstanceType(mockTsk)
 	raw, err := json.Marshal(mon)
 	assert.Nil(t, err)
 	t.Logf("RawData:%v", string(raw))
@@ -409,7 +418,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
-	newMon.TypeRegistry.RegisterInstanceType(&mockTask{})
+	newMon.TypeRegistry.RegisterInstanceType(mockTsk)
 	err = json.Unmarshal(raw, newMon)
 	assert.Nil(t, err)
 

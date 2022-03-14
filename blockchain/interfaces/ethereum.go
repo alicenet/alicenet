@@ -160,6 +160,7 @@ type Task interface {
 	DoWork(context.Context, *logrus.Entry, Ethereum) error
 	Initialize(context.Context, *logrus.Entry, Ethereum, interface{}) error
 	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
+	GetExecutionData() interface{}
 }
 
 type AdminClient interface {

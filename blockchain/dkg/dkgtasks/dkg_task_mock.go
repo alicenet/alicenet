@@ -11,18 +11,18 @@ import (
 )
 
 type DkgTaskMock struct {
-	*DkgTask
+	*ExecutionData
 	mock.Mock
 }
 
 func NewDkgTaskMock(state *objects.DkgState, start uint64, end uint64) *DkgTaskMock {
 	dkgTaskMock := &DkgTaskMock{}
-	dkgTaskMock.DkgTask = &DkgTask{
-		Start:      start,
-		End:        end,
-		State:      state,
-		Success:    false,
-		TxReplOpts: &TxReplOpts{},
+	dkgTaskMock.ExecutionData = &ExecutionData{
+		Start:   start,
+		End:     end,
+		State:   state,
+		Success: false,
+		TxOpts:  &TxOpts{},
 	}
 
 	return dkgTaskMock
@@ -32,12 +32,12 @@ func (d *DkgTaskMock) DoDone(logger *logrus.Entry) {
 }
 
 func (d *DkgTaskMock) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	d.TxReplOpts.TxHash = common.BigToHash(big.NewInt(131231214123871239))
-	if d.TxReplOpts.GasFeeCap == nil {
-		d.TxReplOpts.GasFeeCap = big.NewInt(142356)
+	d.TxOpts.TxHashes = append(d.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))
+	if d.TxOpts.GasFeeCap == nil {
+		d.TxOpts.GasFeeCap = big.NewInt(142356)
 	}
-	if d.TxReplOpts.GasTipCap == nil {
-		d.TxReplOpts.GasTipCap = big.NewInt(37)
+	if d.TxOpts.GasTipCap == nil {
+		d.TxOpts.GasTipCap = big.NewInt(37)
 	}
 
 	args := d.Called(ctx, logger, eth)
@@ -45,12 +45,12 @@ func (d *DkgTaskMock) DoRetry(ctx context.Context, logger *logrus.Entry, eth int
 }
 
 func (d *DkgTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	d.TxReplOpts.TxHash = common.BigToHash(big.NewInt(131231214123871239))
-	if d.TxReplOpts.GasFeeCap == nil {
-		d.TxReplOpts.GasFeeCap = big.NewInt(142356)
+	d.TxOpts.TxHashes = append(d.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))
+	if d.TxOpts.GasFeeCap == nil {
+		d.TxOpts.GasFeeCap = big.NewInt(142356)
 	}
-	if d.TxReplOpts.GasTipCap == nil {
-		d.TxReplOpts.GasTipCap = big.NewInt(37)
+	if d.TxOpts.GasTipCap == nil {
+		d.TxOpts.GasTipCap = big.NewInt(37)
 	}
 
 	args := d.Called(ctx, logger, eth)
@@ -67,10 +67,6 @@ func (d *DkgTaskMock) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth
 	return args.Bool(0)
 }
 
-func (d *DkgTaskMock) GetDkgTask() *DkgTask {
-	return d.DkgTask
-}
-
-func (d *DkgTaskMock) SetDkgTask(dkgTask *DkgTask) {
-	d.DkgTask = dkgTask
+func (d *DkgTaskMock) GetExecutionData() interface{} {
+	return d.ExecutionData
 }

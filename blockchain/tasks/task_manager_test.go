@@ -55,7 +55,7 @@ func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
 
 	state := objects.NewDkgState(accounts.Account{})
 	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTask.TxReplOpts = &dkgtasks.TxReplOpts{
+	dkgTask.TxOpts = &dkgtasks.TxOpts{
 		Nonce: big.NewInt(1),
 	}
 
@@ -75,7 +75,7 @@ func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
 	wg.Wait()
 
 	assert.False(t, dkgTask.Success)
-	assert.Nil(t, dkgTask.TxReplOpts.Nonce)
+	assert.Nil(t, dkgTask.TxOpts.Nonce)
 }
 
 // Happy path with mined tx present after finality delay
@@ -84,7 +84,7 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 
 	state := objects.NewDkgState(accounts.Account{})
 	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.TxReplOpts.TxHash = common.BigToHash(big.NewInt(123871239))
+	dkgTaskMock.TxOpts.TxHashes = append(dkgTaskMock.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
@@ -121,9 +121,8 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 	wg.Wait()
 
 	assert.False(t, dkgTaskMock.Success)
-	var emptyHash [32]byte
-	assert.NotEqual(t, emptyHash, dkgTaskMock.TxReplOpts.TxHash)
-	assert.Equal(t, uint64(1), dkgTaskMock.TxReplOpts.MinedInBlock)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(1), dkgTaskMock.TxOpts.MinedInBlock)
 }
 
 // Tx was mined, but it's not present after finality delay
@@ -182,9 +181,8 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	wg.Wait()
 
 	assert.False(t, dkgTaskMock.Success)
-	var emptyHash [32]byte
-	assert.NotEqual(t, emptyHash, dkgTaskMock.TxReplOpts.TxHash)
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxReplOpts.MinedInBlock)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
 }
 
 // Tx was mined after a retry because of a failed receipt
@@ -243,9 +241,8 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	wg.Wait()
 
 	assert.False(t, dkgTaskMock.Success)
-	var emptyHash [32]byte
-	assert.NotEqual(t, emptyHash, dkgTaskMock.TxReplOpts.TxHash)
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxReplOpts.MinedInBlock)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
@@ -307,11 +304,10 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	wg.Wait()
 
 	assert.False(t, dkgTaskMock.Success)
-	var emptyHash [32]byte
-	assert.NotEqual(t, emptyHash, dkgTaskMock.TxReplOpts.TxHash)
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxReplOpts.MinedInBlock)
-	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxReplOpts.GasFeeCap)
-	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxReplOpts.GasTipCap)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
@@ -373,9 +369,8 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	wg.Wait()
 
 	assert.False(t, dkgTaskMock.Success)
-	var emptyHash [32]byte
-	assert.NotEqual(t, emptyHash, dkgTaskMock.TxReplOpts.TxHash)
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxReplOpts.MinedInBlock)
-	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxReplOpts.GasFeeCap)
-	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxReplOpts.GasTipCap)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
 }

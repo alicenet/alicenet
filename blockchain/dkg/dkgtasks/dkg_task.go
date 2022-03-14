@@ -5,46 +5,48 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"math/rand"
+	"strings"
 	"time"
 )
 
-type DkgTask struct {
-	Start      uint64
-	End        uint64
-	State      *objects.DkgState
-	Success    bool
-	TxReplOpts *TxReplOpts
+type ExecutionData struct {
+	Start   uint64
+	End     uint64
+	State   *objects.DkgState
+	Success bool
+	TxOpts  *TxOpts
 }
 
-type TxReplOpts struct {
-	TxHash       common.Hash
+type TxOpts struct {
+	TxHashes     []common.Hash
 	Nonce        *big.Int
 	GasFeeCap    *big.Int
 	GasTipCap    *big.Int
 	MinedInBlock uint64
 }
 
-type DkgTaskIfase interface {
-	GetDkgTask() *DkgTask
-	SetDkgTask(*DkgTask)
+func (d *ExecutionData) Clear() {
+	d.TxOpts = &TxOpts{
+		TxHashes: make([]common.Hash, 0),
+	}
 }
 
-func (d *DkgTask) Clear() {
-	var emptyHash [32]byte
-	d.TxReplOpts.TxHash = emptyHash
-	d.TxReplOpts.Nonce = nil
-	d.TxReplOpts.GasFeeCap = nil
-	d.TxReplOpts.GasTipCap = nil
-	d.TxReplOpts.MinedInBlock = uint64(0)
+func (t *TxOpts) GetHexTxsHashes() string {
+	var hashes strings.Builder
+	for _, txHash := range t.TxHashes {
+		hashes.WriteString(txHash.Hex())
+		hashes.WriteString(" ")
+	}
+	return hashes.String()
 }
 
-func NewDkgTask(state *objects.DkgState, start uint64, end uint64) *DkgTask {
-	return &DkgTask{
-		State:      state,
-		Start:      start,
-		End:        end,
-		Success:    false,
-		TxReplOpts: &TxReplOpts{},
+func NewDkgTask(state *objects.DkgState, start uint64, end uint64) *ExecutionData {
+	return &ExecutionData{
+		State:   state,
+		Start:   start,
+		End:     end,
+		Success: false,
+		TxOpts:  &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
 }
 
