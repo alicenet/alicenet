@@ -340,7 +340,7 @@ export const getFixture = async (
   const stakeNFTPositionDescriptor = (await deployUpgradeableWithFactory(
     factory,
     "StakeNFTPositionDescriptor"
-  )) as StakeNFTPositionDescriptor;
+  ));
 
   // ETHDKG Phases
   await deployUpgradeableWithFactory(factory, "ETHDKGPhases");

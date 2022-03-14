@@ -11,10 +11,9 @@ import { StakeNFT, StakeNFTPositionDescriptor } from "../../typechain-types"
 
 describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods", async () => {
   let fixture: Fixture
-  let randomerSigner: Signer
   let adminSigner: Signer
   let stakeNFT: StakeNFT
-  let stakeNFTPositionDescriptor: StakeNFTPositionDescriptor
+
   let stakeAmount = 20000
   let stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18)
   let lockTime = 1
@@ -23,12 +22,10 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
   beforeEach(async function () {
     fixture = await getFixture(true, true)
 
-    const [admin, , , , , randomer] = fixture.namedSigners
+    const [admin] = fixture.namedSigners
     adminSigner = await getValidatorEthAccount(admin.address)
-    randomerSigner = await getValidatorEthAccount(randomer.address)
-    stakeNFT = fixture.stakeNFT
 
-    stakeNFTPositionDescriptor = fixture.stakeNFTPositionDescriptor
+    stakeNFT = fixture.stakeNFT
 
     await fixture.madToken.approve(
       fixture.stakeNFT.address,
