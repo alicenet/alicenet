@@ -1,5 +1,6 @@
-import { Artifacts, HardhatEthersHelpers, RunTaskFunction} from "hardhat/types";
-import { INITIALIZER } from "../constants";
+import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
+import { Artifacts, RunTaskFunction} from "hardhat/types";
+import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 
 type Ethers = typeof import("/home/zj/work/mn/MadNet/bridge/node_modules/ethers/lib/ethers") & HardhatEthersHelpers
@@ -27,13 +28,12 @@ export async function deployFactory(run: RunTaskFunction) {
   return await run("deployFactory");
 }
 
-export async function deployStatic(fullyQualifiedName: string, artifacts: Artifacts, ethers: Ethers, run: RunTaskFunction, usrPath?: string) {
-  let initializerArgs: Array<string> = [];
-  let initCallData = "0x";
+export async function deployStatic(fullyQualifiedName: string, artifacts: Artifacts, ethers: Ethers, run: RunTaskFunction, configDirPath?: string) {
+  let initCallData
   //check if contract needs to be initialized
   let initAble = await isInitializable(fullyQualifiedName, artifacts);
   if (initAble) {
-    initializerArgs = await getDeploymentInitializerArgs(fullyQualifiedName, usrPath);
+    let initializerArgs = await getDeploymentInitializerArgs(fullyQualifiedName, configDirPath);
     initCallData = await getEncodedInitCallData(initializerArgs);
   }
 
@@ -48,17 +48,16 @@ export async function deployStatic(fullyQualifiedName: string, artifacts: Artifa
   });
 }
 
-export async function deployUpgradeableProxy(fullyQualifiedName: string, artifacts: Artifacts, ethers: Ethers, run: RunTaskFunction, usrPath?: string) {
-  let initializerArgs: Array<string> = [];
+export async function deployUpgradeableProxy(fullyQualifiedName: string, artifacts: Artifacts, ethers: Ethers, run: RunTaskFunction, configDirPath?: string) {
   let initCallData = undefined
   let initAble = await isInitializable(fullyQualifiedName, artifacts);
   if(initAble) {
-    initializerArgs = await getDeploymentInitializerArgs(fullyQualifiedName, usrPath);
+    let initializerArgs = await getDeploymentInitializerArgs(fullyQualifiedName, configDirPath);
     initCallData = await getEncodedInitCallData(initializerArgs);
   }
   let hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   let constructorArgs = hasConArgs
-    ? await getDeploymentConstructorArgs(fullyQualifiedName, usrPath)
+    ? await getDeploymentConstructorArgs(fullyQualifiedName, configDirPath)
     : [];
   return await run("deployUpgradeableProxy", {
     contractName: extractName(fullyQualifiedName),
@@ -94,9 +93,11 @@ export async function hasConstructorArgs(fullName: string, artifacts: Artifacts)
 }
 
 export async function getEncodedInitCallData(
-  args: Array<string>
-): Promise<string> {
-  return args.toString().replace(",", ", ")
+  args: Array<string> | undefined
+): Promise<string | undefined> {
+  if(args !== undefined){
+    return args.toString().replace(",", ", ")
+  }
 }
 
 export async function getContract(name: string, artifacts: Artifacts) {
@@ -138,10 +139,11 @@ export async function getCustomNSTag(
 }
 
 // return a list of constructor inputs for each contract
-export async function getDeploymentConstructorArgs(fullName: string, usrPath?: string) {
+export async function getDeploymentConstructorArgs(fullName: string, configDirPath?: string) {
   let output: Array<string> = [];
   //get the deployment args
-  let deploymentConfig:any = readDeploymentArgs(usrPath);
+  let path = configDirPath === undefined ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate" : configDirPath + "/deploymentArgsTemplate";
+  let deploymentConfig:any = readDeploymentArgs(path);
   if(deploymentConfig !== undefined){
     let deploymentArgs: DeploymentArgs = {
       constructor: deploymentConfig.constructor,
@@ -167,20 +169,17 @@ export function extractArgs(input: Array<ArgData>){
 }
 
 // return a list of initializer inputs for each contract 
-export async function getDeploymentInitializerArgs(fullName: string, usrPath?: string) {
-  let output: Array<string> = [];
-  //get the deployment args
-  let deploymentConfig:any = readDeploymentArgs(usrPath);
+export async function getDeploymentInitializerArgs(fullName: string, configDirPath?: string) {
+  let output: Array<string> | undefined
+  let path = configDirPath === undefined ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate" : configDirPath + "/deploymentArgsTemplate";
+  let deploymentConfig:any = await readDeploymentArgs(path);
   if(deploymentConfig !== undefined){
-    let deploymentArgs: DeploymentArgs = {
-      constructor: deploymentConfig.constructor,
-      initializer: deploymentConfig.initializer
-    };
+    let deploymentArgs: DeploymentArgs = deploymentConfig
     if(deploymentArgs.initializer !== undefined && deploymentArgs.initializer[fullName] !== undefined){
       output = extractArgs(deploymentArgs.initializer[fullName]) 
     }
   } else {
-    output = [];
+    output = undefined
   }
   return output;
 }

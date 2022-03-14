@@ -1,30 +1,21 @@
 import toml from "@iarna/toml";
 import fs from "fs";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
-import { DEPLOYMENT_ARG_PATH } from "../constants";
+import { DEPLOYMENT_ARGS_TEMPLATE_FPATH, DEPLOYMENT_ARG_PATH } from "../constants";
 import { ArgData, DeploymentArgs, extractName, extractPath } from "./deploymentUtil";
 import { Artifacts } from "hardhat/types";
 
 
-export async function writeDeploymentArgs(deploymentArgs: DeploymentArgs, usrPath?: string){
-  let path = usrPath === undefined ? DEPLOYMENT_ARG_PATH : usrPath;
-  if(deploymentArgs !== undefined){
-    let config:any = deploymentArgs
-    // let config:any = readDeploymentConfig();
-    // if(deploymentArgs.initializer !== undefined){
-    //   config.initializer = deploymentArgs.initializer;
-    // }
-    // if(deploymentArgs.constructor !== undefined){
-    //   config.constructor = deploymentArgs.constructor;
-    // }
-    let data = toml.stringify(config)
-    fs.writeFileSync(path, data)
-    // let output = fs.readFileSync(path).toString().split("\n");
-    // output.unshift(
-    //   "# WARNING: DO NOT CHANGE THE GENERATED DEFAULT LIST \n# TO ADD A CUSTOM LIST COPY THE FORMAT OF THE DEFAULT LIST WITH DIFFERENT FIELD NAME"
-    // );
-    // fs.writeFileSync(path, output.join("\n"));
-  }
+export async function writeDeploymentArgs(deploymentArgs: DeploymentArgs, configDirPath?: string){
+  let path = configDirPath === undefined ? DEPLOYMENT_ARG_PATH + DEPLOYMENT_ARGS_TEMPLATE_FPATH : configDirPath + DEPLOYMENT_ARGS_TEMPLATE_FPATH;
+  let config:any = deploymentArgs
+  let data = toml.stringify(config)
+  fs.writeFileSync(path, data)
+  // let output = fs.readFileSync(path).toString().split("\n");
+  // output.unshift(
+  //   "# WARNING: DO NOT CHANGE THE GENERATED DEFAULT LIST \n# TO ADD A CUSTOM LIST COPY THE FORMAT OF THE DEFAULT LIST WITH DIFFERENT FIELD NAME"
+  // );
+  // fs.writeFileSync(path, output.join("\n"));
 }
 
 export async function generateDeployArgTemplate(list: Array<string>, artifacts: Artifacts): Promise<DeploymentArgs>{

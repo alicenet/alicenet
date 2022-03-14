@@ -4,7 +4,7 @@ import { DEPLOYMENT_ARG_PATH, DEPLOYMENT_LIST_PATH, FACTORY_STATE_PATH } from ".
 import { FactoryConfig } from "./factoryStateUtil";
 
 export async function readDeploymentList(usrPath?: string) {
-  return await readTOML(DEPLOYMENT_LIST_PATH)
+  return await readTOML(DEPLOYMENT_LIST_PATH, usrPath)
 }
 
 export async function readDeploymentArgs(usrPath?: string) {

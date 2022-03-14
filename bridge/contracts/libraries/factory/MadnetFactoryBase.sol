@@ -394,7 +394,7 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**
      * @dev _multiCall allows EOA to make multiple function calls within a single transaction
      * impersonating the factory
-     * @param cdata_: array of hex encoded data with the function calls (function signature + arguments)
+     * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
     function _multiCall(bytes[] calldata cdata_) internal {
         for (uint256 i = 0; i < cdata_.length; i++) {

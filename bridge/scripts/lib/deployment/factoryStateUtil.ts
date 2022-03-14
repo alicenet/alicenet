@@ -41,13 +41,13 @@ export interface FactoryConfig {
   [key: string]: any;
 }
 export type ProxyData = {
-  proxyAddress: BytesLike;
+  proxyAddress: string;
   salt: BytesLike;
-  logicName: string;
-  logicAddress: BytesLike;
-  factoryAddress: BytesLike;
-  gas: BigNumberish;
-  receipt: ContractReceipt;
+  logicName?: string;
+  logicAddress?: string;
+  factoryAddress: string;
+  gas?: BigNumberish;
+  receipt?: ContractReceipt;
   initCallData?: BytesLike;
 };
 
@@ -55,8 +55,6 @@ export async function getDefaultFactoryAddress(network:string, fileName?:string)
   let path = fileName === undefined ? FACTORY_STATE_PATH : FACTORY_STATE_PATH.split("factoryState")[0] + fileName;
   //fetch whats in the factory config file
   let config = await readFactoryState(path);
-  console.log(config)
-  console.log(network)
   return config[network].defaultFactoryAddress;
 }
 
@@ -69,7 +67,7 @@ async function writeFactoryState(network: string, fieldName: string, fieldData: 
     factoryStateConfig[network][fieldName] = fieldData;
   }else{
     factoryStateConfig = {
-      network: {
+      [network]: {
         [fieldName]: fieldData
       }
     }

@@ -1,7 +1,7 @@
 import toml from "@iarna/toml";
 import fs from "fs";
 import { Artifact, Artifacts } from "hardhat/types";
-import { DEPLOYMENT_LIST_PATH } from "../constants";
+import { DEFAULT_CONFIG_OUTPUT_DIR, DEPLOYMENT_ARGS_TEMPLATE_FPATH, DEPLOYMENT_LIST_FPATH, DEPLOYMENT_LIST_PATH } from "../constants";
 import { readDeploymentList } from "./deploymentConfigUtil";
 import { getDeployType, getDeployGroup, getDeployGroupIndex } from "./deploymentUtil";
 
@@ -18,15 +18,14 @@ export interface DeploymentGroupIndexList {
   [key: string]: number[];
 }
 
-export async function getDeploymentList(listName?: string, usrPath?: string) {
-  let lName = listName === undefined ? "default" : listName;
-  let path = usrPath === undefined ? DEPLOYMENT_LIST_PATH : usrPath;
-  let config: any = await readDeploymentList(path);
+export async function getDeploymentList(configDirPath?: string) {
+  let path = configDirPath === undefined ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH : configDirPath + DEPLOYMENT_LIST_FPATH;
+  let config: {deploymentList: Array<string>} = await readDeploymentList(path);
   let deploymentList: Array<string>;
-  if (config[lName] === undefined) {
-    throw new Error(`failed to locate list with name: ${lName}`);
+  if (config.deploymentList === undefined) {
+    throw new Error(`failed to fetch deployment list at path ${path}`);
   } else {
-    deploymentList = config[lName];
+    deploymentList = config["deploymentList"];
   }
   return deploymentList;
 }
@@ -79,15 +78,12 @@ export async function getSortedDeployList(contracts: Array<string>, artifacts: A
 
 export async function writeDeploymentList(
   list: Array<string>,
-  listName?: string,
-  usrPath?: string
+  configDirPath?: string
 ) {
-  let lName = listName === undefined ? "default" : listName;
-  let path = usrPath === undefined ? DEPLOYMENT_LIST_PATH : usrPath;
-  let isNew = fs.existsSync(path) === false ? true : false;
-  let config: any = await readDeploymentList();
-  config[lName] = config[lName] === undefined ? {} : config[lName];
-  config[lName] = list;
+  let path = configDirPath === undefined ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH : configDirPath + DEPLOYMENT_LIST_FPATH;
+  let config: {deploymentList: Array<string>} = await readDeploymentList(path);
+  config.deploymentList = config.deploymentList === undefined ? [] : config.deploymentList;
+  config.deploymentList = list
   let data = toml.stringify(config);
   fs.writeFileSync(path, data);
   let output = fs.readFileSync(path).toString().split("\n");

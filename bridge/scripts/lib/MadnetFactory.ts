@@ -179,7 +179,7 @@ async function getDeployUpgradeableMultiCallArgs(
   return [deployProxy, upgradeProxy];
 }
 
-async function getSalt(contractName: string) {
+export async function getSalt(contractName: string) {
   let qualifiedName: any = await getFullyQualifiedName(contractName);
   let buildInfo = await artifacts.getBuildInfo(qualifiedName);
   let contractOutput: any;
@@ -194,7 +194,7 @@ async function getSalt(contractName: string) {
       return ethers.utils.formatBytes32String(salt);
     }
   } else {
-    console.error("Missing custom:salt");
+    throw new Error("Missing custom:salt");
   }
 }
 

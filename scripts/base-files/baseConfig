@@ -1,19 +1,4 @@
 logging = "main=info,ethereum=info,consensus=debug"
-deploymentList = [
-  "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations",
-  "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases",
-  "contracts/ETHDKG.sol:ETHDKG",
-  "contracts/Foundation.sol:Foundation",
-  "contracts/Governance.sol:Governance",
-  "contracts/MadByte.sol:MadByte",
-  "contracts/MadToken.sol:MadToken",
-  "contracts/MadnetFactory.sol:MadnetFactory",
-  "contracts/Snapshots.sol:Snapshots",
-  "contracts/StakeNFT.sol:StakeNFT",
-  "contracts/StakeNFTLP.sol:StakeNFTLP",
-  "contracts/ValidatorNFT.sol:ValidatorNFT",
-  "contracts/ValidatorPool.sol:ValidatorPool"
-]
 
 [loglevel]
 blockchain = "debug"
