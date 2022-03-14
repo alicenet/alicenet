@@ -11,7 +11,7 @@ import (
 func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
 	n := 10
 	unsubmittedKeyShares := 4
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	suite := StartFromShareDistributionPhase(t, n, []int{0, 1, 2, 3}, []int{}, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()

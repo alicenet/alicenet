@@ -155,6 +155,9 @@ case $1 in
     register)
         ./scripts/base-scripts/register.sh
     ;;
+    register_test)
+        ./scripts/base-scripts/register_test.sh "${@:2}"
+    ;;
     unregister)
         ./scripts/base-scripts/unregister.sh
     ;;

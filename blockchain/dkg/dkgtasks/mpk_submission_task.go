@@ -56,7 +56,8 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		return fmt.Errorf("MPKSubmissionTask.Initialize(): error getting block by number: %v", err)
 	}
 
-	t.StartBlockHash = block.Hash()
+	logger.Infof("block hash: %v\n", block.Hash())
+	t.StartBlockHash.SetBytes(block.Hash().Bytes())
 
 	// prepare MPK
 	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
@@ -120,6 +121,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	logger.Info("MPKSubmissionTask doTask()")
 
 	if !t.shouldSubmitMPK(ctx, eth, logger) {
+		t.Success = true
 		return nil
 	}
 
@@ -214,5 +216,11 @@ func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ether
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	return dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes())
+	logger.WithFields(logrus.Fields{
+		"currentHeight":                    currentHeight,
+		"t.Start":                          t.Start,
+		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
+		"blocksSinceDesperation":           blocksSinceDesperation,
+	}).Infof("before dkg.AmILeading")
+	return dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
 }

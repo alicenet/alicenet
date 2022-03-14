@@ -2,17 +2,13 @@ package blockchain
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"math/big"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -144,55 +140,52 @@ func NewEthereumSimulator(
 		return nil, nil
 	}
 
-	eth.close = func() error {
-		if eth.close != nil {
-			err := eth.close()
-			if err != nil {
-				return err
-			}
-		}
+	eth.SetClose(func() error {
 		os.RemoveAll(pathKeystore)
 		client.Close()
 		return nil
-	}
+	})
+
+	// eth.commit = func() {
+	// 	c := http.Client{}
+	// 	msg := &JsonrpcMessage{
+	// 		Version: "2.0",
+	// 		ID:      []byte("1"),
+	// 		Method:  "evm_mine",
+	// 		Params:  make([]byte, 0),
+	// 	}
+
+	// 	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	var buff bytes.Buffer
+	// 	err := json.NewEncoder(&buff).Encode(msg)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	reader := bytes.NewReader(buff.Bytes())
+
+	// 	resp, err := c.Post(
+	// 		"http://127.0.0.1:8545",
+	// 		"application/json",
+	// 		reader,
+	// 	)
+
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	_, err = io.ReadAll(resp.Body)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	//fmt.Println(string(bytes))
+	// 	//client.Commit()
+	// }
 
 	eth.commit = func() {
-		c := http.Client{}
-		msg := &JsonrpcMessage{
-			Version: "2.0",
-			ID:      []byte("1"),
-			Method:  "hardhat_mine",
-			Params:  make([]byte, 0),
-		}
-
-		if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
-			panic(err)
-		}
-
-		var buff bytes.Buffer
-		err := json.NewEncoder(&buff).Encode(msg)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		reader := bytes.NewReader(buff.Bytes())
-
-		resp, err := c.Post(
-			"http://127.0.0.1:8545",
-			"application/json",
-			reader,
-		)
-
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		//fmt.Println(string(bytes))
-		//client.Commit()
 	}
 
 	return eth, nil
@@ -322,19 +315,18 @@ func (eth *EthereumDetails) Close() error {
 
 func (eth *EthereumDetails) SetClose(fn func() error) {
 	if eth.close != nil {
+		var prevClose (func() error) = eth.close
 		eth.close = func() error {
-			err := eth.close()
+			err := prevClose()
 			if err != nil {
 				return err
 			}
 
 			return fn()
 		}
-
-		return
+	} else {
+		eth.close = fn
 	}
-
-	eth.close = fn
 }
 
 func (eth *EthereumDetails) Commit() {

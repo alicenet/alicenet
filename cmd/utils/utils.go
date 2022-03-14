@@ -2,13 +2,13 @@ package utils
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
 	"strings"
 
 	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/config"
@@ -536,21 +536,9 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 		return 1
 	}
 
-	//
-	// c.ValidatorPool().InitializeETHDKG(txnOpts)
-	bs, err := hex.DecodeString("57b51c9c")
+	_, rcpt, err := dkg.InitializeETHDKG(eth, txnOpts, ctx)
 	if err != nil {
-		panic(err)
-	}
-	txn, err := c.ContractFactory().CallAny(txnOpts, c.ValidatorPoolAddress(), big.NewInt(0), []byte(bs))
-	if err != nil {
-		logger.Errorf("Could not initialize ethdkg: %v", err)
-		return 1
-	}
-
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Error("Failed looking for transaction events.")
+		logger.Errorf("could not initialize ETHDKG: %v", err)
 		return 1
 	}
 
@@ -567,12 +555,13 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 	for _, log := range logs {
 		if log.Topics[0].Hex() == regOpenedEvent.ID.Hex() {
 			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
-			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
-				event.StartBlock,
-				event.Nonce)
 			if err != nil {
 				logger.Warnf("Could not parse RegistrationOpen event: %v", err)
 			}
+
+			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
+				event.StartBlock,
+				event.Nonce)
 		}
 	}
 

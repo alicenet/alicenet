@@ -2,10 +2,12 @@ package dkgtasks_test
 
 import (
 	"context"
+	"math"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -27,22 +29,38 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
+	callerIdx := -1
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 		err = tasks[idx].DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
+		if amILeading {
+			callerIdx = idx
+			assert.Nil(t, err)
+		} else {
+			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+
+		}
 
 		eth.Commit()
 
 		//This is because the MPK submission task should be
 		//executed only by 1 validator
-		if idx == 0 {
+		if idx == callerIdx {
 			assert.True(t, tasks[idx].Success)
 		} else {
-			assert.False(t, tasks[idx].Success)
+			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.False(t, tasks[idx].Success)
+			} else {
+				assert.True(t, tasks[idx].Success)
+			}
 		}
 	}
 
@@ -105,7 +123,7 @@ func TestMPKSubmissionBad1(t *testing.T) {
 // This is caused by submitting invalid state information (state is nil).
 func TestMPKSubmissionBad2(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -130,7 +148,7 @@ func TestMPKSubmissionBad2(t *testing.T) {
 // completing KeyShareSubmission phase.
 func TestMPKSubmissionBad4(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -212,12 +230,65 @@ func TestMPKSubmission_LeaderElection(t *testing.T) {
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
+		tasks[idx].Initialize(ctx, logger, eth, suite.dkgStates[idx])
+		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
 
 		if tasks[idx].AmILeading(ctx, eth, logger) {
 			leaders++
 		}
 	}
 
-	assert.Greater(t, 0, leaders)
+	assert.Greater(t, leaders, 0)
+}
+
+func TestGeth(t *testing.T) {
+	privateKeys, _ := dtest.InitializePrivateKeysAndAccounts(4)
+
+	eth, err := blockchain.NewEthereumSimulator(
+		privateKeys,
+		6,
+		10*time.Second,
+		30*time.Second,
+		0,
+		big.NewInt(math.MaxInt64))
+	defer func() {
+		err := eth.Close()
+		if err != nil {
+			t.Logf("error closing eth: %v", err)
+		}
+	}()
+
+	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
+	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Unlock the default account and use it to deploy contracts
+	deployAccount := eth.GetDefaultAccount()
+	err = eth.UnlockAccount(deployAccount)
+	assert.Nil(t, err, "Failed to unlock default account")
+
+	t.Logf("deploy account: %v", deployAccount.Address.String())
+	// t.Logf("all accounts: %v", eth.GetKnownAccounts())
+
+	// Deploy all the contracts
+	// c.DeployContracts()
+	// panic("missing deploy step")
+
+	err = startHardHatNode(eth)
+	if err != nil {
+		t.Fatalf("error starting hardhat node: %v", err)
+	}
+
+	t.Logf("waiting on hardhat node to start...")
+
+	err = waitForHardHatNode(ctx)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	// <-time.After(10 * time.Second)
+	t.Logf("done testing")
+
 }

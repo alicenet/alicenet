@@ -1,10 +1,7 @@
 package blockchain_test
 
 import (
-	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAccuse(t *testing.T) {
@@ -12,7 +9,7 @@ func TestAccuse(t *testing.T) {
 
 }
 
-func TestRegistration(t *testing.T) {
+/* func TestRegistration(t *testing.T) {
 	eth, err := setupEthereum(t, 4)
 	if err != nil {
 		t.Fatal(err)
@@ -25,3 +22,4 @@ func TestRegistration(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("submitMPKAddress:%v", submitMPKAddress.Hex())
 }
+*/

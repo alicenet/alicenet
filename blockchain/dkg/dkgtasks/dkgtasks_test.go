@@ -14,11 +14,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -77,8 +78,8 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	eth, err := blockchain.NewEthereumSimulator(
 		privateKeys,
 		6,
-		1*time.Second,
-		5*time.Second,
+		10*time.Second,
+		30*time.Second,
 		0,
 		big.NewInt(math.MaxInt64))
 
@@ -93,12 +94,16 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	err = eth.UnlockAccount(deployAccount)
 	assert.Nil(t, err, "Failed to unlock default account")
 
+	t.Logf("deploy account: %v", deployAccount.Address.String())
+	// t.Logf("all accounts: %v", eth.GetKnownAccounts())
+
 	// Deploy all the contracts
 	// c.DeployContracts()
 	// panic("missing deploy step")
 
 	err = startHardHatNode(eth)
 	if err != nil {
+		eth.Close()
 		t.Fatalf("error starting hardhat node: %v", err)
 	}
 
@@ -106,6 +111,7 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 
 	err = waitForHardHatNode(ctx)
 	if err != nil {
+		eth.Close()
 		t.Fatalf("error: %v", err)
 	}
 
@@ -123,93 +129,82 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 
 	err = startDeployScripts(eth, ctx)
 	if err != nil {
+		eth.Close()
 		t.Fatalf("error deploying: %v", err)
 	}
 
-	c := eth.Contracts()
-
-	// For each address passed set them up as a validator
-	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
-	assert.Nil(t, err, "Failed to create txn opts")
-
-	accountList := eth.GetKnownAccounts()
-	for idx, acct := range accountList {
-		//	for idx := 1; idx < len(accountAddresses); idx++ {
-		// acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-		//assert.Nil(t, err)
-		err = eth.UnlockAccount(acct)
-		assert.Nil(t, err)
-
-		eth.Commit()
-		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
-
-		// 1. Give 'acct' tokens
-		txn, err := c.StakeNFT().MintTo(txnOpts, acct.Address, big.NewInt(10_000_000), big.NewInt(0))
-		assert.Nilf(t, err, "Failed on transfer %v", idx)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-		tokenID := txn.Value()
-
-		o, err := eth.GetTransactionOpts(ctx, acct)
-		assert.Nil(t, err)
-
-		// 2. Allow system to take tokens from 'acct' for staking
-		txn, err = c.StakeNFT().Approve(o, c.ValidatorPoolAddress(), big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on approval %v", idx)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		// 3. Tell system to take tokens from 'acct' for staking
-		// txn, err = c.StakeNFT().LockStake(o, big.NewInt(1_000_000))
-		// assert.Nilf(t, err, "Failed on lock %v", idx)
-		// eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		txn, err = c.ValidatorPool().RegisterValidators(o, []common.Address{acct.Address}, []*big.Int{tokenID})
-		assert.Nilf(t, err, "Failed on register %v", idx)
-		assert.NotNil(t, txn)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-		t.Logf("Finished loop %v of %v", idx+1, len(accountList))
-		eth.Commit()
+	validatorAddresses := make([]string, 0)
+	for _, acct := range eth.GetKnownAccounts() {
+		validatorAddresses = append(validatorAddresses, acct.Address.String())
 	}
 
-	// Wait for all transactions for all accounts to complete
-	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
+	err = registerValidators(eth, validatorAddresses)
 	assert.Nil(t, err)
 
-	// Make sure all transactions were successful
-	t.Logf("# rcpts: %v", len(rcpts))
-	for _, rcpt := range rcpts {
-		assert.Equal(t, uint64(1), rcpt.Status)
+	// unlock accounts
+	for _, account := range eth.GetKnownAccounts() {
+		err := eth.UnlockAccount(account)
+		assert.Nil(t, err)
+	}
+
+	// fund accounts
+	for _, account := range eth.GetKnownAccounts()[1:] {
+		txn, err := eth.TransferEther(deployAccount.Address, account.Address, big.NewInt(100000000000000000))
+		assert.Nil(t, err)
+		assert.NotNil(t, txn)
+		if txn == nil {
+			// this shouldn't be needed, but is
+			eth.Close()
+			t.Fatal("could not transfer ether")
+		}
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		assert.Nil(t, err)
+		assert.NotNil(t, rcpt)
 	}
 
 	return eth
 }
 
-func startHardHatNode(eth *blockchain.EthereumDetails) error {
-
-	_, b, _, _ := runtime.Caller(0)
-
-	// Root folder of this project
-	root := filepath.Join(filepath.Dir(b), "../../../")
-	pathNodes := filepath.SplitList(root)
-	rootPath := make([]string, 0)
-
-	for i := 0; i < len(pathNodes); i++ {
-		rootPath = append(rootPath, pathNodes[i])
-
-		if pathNodes[i] == "MadNet" {
-			break
-		}
+/*
+func getStakeNFTTokenIDFromLogs(eth interfaces.Ethereum, logs []*types.Log) (*big.Int, error) {
+	events := monitor.GetStakeNFTEvents()
+	_, ok := events["Transfer"]
+	if !ok {
+		return nil, errors.New("no event defined StakeNFT.Transfer")
 	}
 
-	rootDir := filepath.Join(rootPath...)
-	rootPath = append(rootPath, "scripts")
-	rootPath = append(rootPath, "main.sh")
-	scriptPath := filepath.Join(rootPath...)
-	fmt.Println("root: ", scriptPath)
+	var event *bindings.StakeNFTTransfer
+	for _, log := range logs {
+		var l types.Log = *log
+		ev, err := eth.Contracts().StakeNFT().ParseTransfer(l)
+		if err != nil {
+			continue
+		}
+		event = ev
+	}
+
+	if event == nil {
+		return nil, errors.New("could not find StakeNFT.Transfer event")
+	}
+
+	return event.TokenId, nil
+}
+*/
+
+func startHardHatNode(eth *blockchain.EthereumDetails) error {
+
+	rootPath := dtest.GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "base-scripts")
+	scriptPath = append(scriptPath, "geth-local.sh")
+	//scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined2: ", scriptPathJoined)
 
 	cmd := exec.Cmd{
-		Path:   scriptPath,
-		Args:   []string{scriptPath, "hardhat_node"},
-		Dir:    rootDir,
+		Path:   scriptPathJoined,
+		Args:   []string{scriptPathJoined},
+		Dir:    filepath.Join(rootPath...),
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -223,7 +218,10 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 	}
 
 	eth.SetClose(func() error {
-		err := cmd.Process.Kill()
+		fmt.Printf("closing geth %v..\n", cmd.Process.Pid)
+		err := cmd.Process.Signal(syscall.SIGTERM)
+
+		// err := cmd.Process.Kill()
 		if err != nil {
 			return err
 		}
@@ -233,6 +231,7 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 			return err
 		}
 
+		fmt.Printf("geth closed\n")
 		return nil
 	})
 
@@ -241,31 +240,16 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 
 func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
 
-	_, b, _, _ := runtime.Caller(0)
-
-	// Root folder of this project
-	root := filepath.Join(filepath.Dir(b), "../../../")
-	pathNodes := filepath.SplitList(root)
-	rootPath := make([]string, 0)
-
-	for i := 0; i < len(pathNodes); i++ {
-		rootPath = append(rootPath, pathNodes[i])
-
-		if pathNodes[i] == "MadNet" {
-			break
-		}
-	}
-
-	rootDir := filepath.Join(rootPath...)
-	rootPath = append(rootPath, "scripts")
-	rootPath = append(rootPath, "main.sh")
-	scriptPath := filepath.Join(rootPath...)
-	fmt.Println("root: ", scriptPath)
+	rootPath := dtest.GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined: ", scriptPathJoined)
 
 	cmd := exec.Cmd{
-		Path:   scriptPath,
-		Args:   []string{scriptPath, "deploy"},
-		Dir:    rootDir,
+		Path:   scriptPathJoined,
+		Args:   []string{scriptPathJoined, "deploy"},
+		Dir:    filepath.Join(rootPath...),
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -278,19 +262,19 @@ func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 		return fmt.Errorf("could not execute deploy script: %s", err)
 	}
 
-	eth.SetClose(func() error {
-		err := cmd.Process.Kill()
-		if err != nil {
-			return err
-		}
+	// eth.SetClose(func() error {
+	// 	err := cmd.Process.Kill()
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		_, err = cmd.Process.Wait()
-		if err != nil {
-			return err
-		}
+	// 	_, err = cmd.Process.Wait()
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
 	// inits contracts
 	// var factory string = config.Configuration.Ethereum.RegistryAddress
@@ -354,6 +338,106 @@ func waitForHardHatNode(ctx context.Context) error {
 	return err
 }
 
+func registerValidators(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
+
+	rootPath := dtest.GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined: ", scriptPathJoined)
+
+	args := []string{
+		scriptPathJoined,
+		"register_test",
+		eth.Contracts().ContractFactoryAddress().String(),
+	}
+	args = append(args, validatorAddresses...)
+
+	cmd := exec.Cmd{
+		Path:   scriptPathJoined,
+		Args:   args,
+		Dir:    filepath.Join(rootPath...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Run()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not execute deploy script: %s", err)
+	}
+
+	// eth.SetClose(func() error {
+	// 	err := cmd.Process.Kill()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	_, err = cmd.Process.Wait()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	return nil
+	// })
+
+	return nil
+}
+
+/* func registerValidatorsOld(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
+
+	rootPath := getMadnetRootPath()
+	rootPath = append(rootPath, "bridge")
+	// scriptPath := append(rootPath, "scripts")
+	// scriptPath = append(scriptPath, "main.sh")
+	// scriptPathJoined := filepath.Join(scriptPath...)
+	// fmt.Println("scriptPathJoined: ", scriptPathJoined)
+
+	args := []string{
+		"hardhat",
+		"registerValidators",
+		"--nework",
+		"dev",
+		"--show-stack-traces",
+		"--factory-address",
+		eth.Contracts().ContractFactoryAddress().String(),
+	}
+	args = append(args, validatorAddresses...)
+
+	fmt.Printf("register rootPath %v\n", rootPath)
+
+	cmd := exec.Command("npx", args...)
+	cmd.Dir = filepath.Join(rootPath...)
+	//var out bytes.Buffer
+	//cmd.Stdout = &out
+
+	out, err := cmd.Output()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not execute register script: %s. %v", err, out)
+	}
+
+	eth.SetClose(func() error {
+		err := cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
+
+		_, err = cmd.Process.Wait()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return nil
+} */
+
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
 	defer wg.Done()
 
@@ -415,7 +499,7 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
 
-func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
+/* func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
 	height, err := eth.GetFinalizedHeight(context.Background())
 	assert.Nil(t, err)
 
@@ -423,6 +507,17 @@ func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
 
 	for i := uint64(0); i < distance; i++ {
 		eth.Commit()
+	}
+} */
+
+func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
+	distance := int64(target)
+	for distance > 0 {
+		height, err := eth.GetFinalizedHeight(context.Background())
+		assert.Nil(t, err)
+
+		distance = int64(target) - int64(height)
+		<-time.After(100 * time.Millisecond)
 	}
 }
 
@@ -454,8 +549,6 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := eth.Contracts()
-
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
 	assert.Nil(t, err)
 
@@ -464,7 +557,7 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	tr := &objects.TypeRegistry{}
 	adminHandlers := make([]*adminHandlerMock, len(accountList))
 	SetupTasks(tr)
-	//	for i := 1; i < len(accountList); i++ {
+
 	for i, account := range accountList {
 		adminHandlers[i] = new(adminHandlerMock)
 		wg.Add(1)
@@ -472,13 +565,11 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg().SetPhaseLength(txnOpts, 10)
+	_, _, err = dkg.SetETHDKGPhaseLength(20, eth, txnOpts, ctx)
 	assert.Nil(t, err)
-	eth.Queue().QueueAndWait(ctx, txn)
 
-	txn, err = c.Ethdkg().InitializeETHDKG(txnOpts)
+	_, _, err = dkg.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
-	eth.Queue().QueueAndWait(ctx, txn)
 
 	// Now we know ethdkg is running, let's find out when registration has to happen
 	// TODO this should be based on an OpenRegistration event
@@ -523,18 +614,14 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, phaseLength)
-	assert.Nil(t, err)
-	_, err = eth.Queue().QueueAndWait(ctx, txn)
+	_, _, err = dkg.SetETHDKGPhaseLength(20, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
+	// init ETHDKG on ValidatorPool, through ContractFactory
+	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	eth.Commit()
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-	assert.Nil(t, err)
-
+	// todo: make a function -> ev, err := GetETHDKGEvent("RegistrationOpen")
 	eventMap := monitor.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {
@@ -550,19 +637,41 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	}
 	assert.NotNil(t, event)
 
+	// get validators from ValidatorPool
+	//ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
+	//defer cf()
+	// ctx = context.Background()
+
+	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	assert.Nil(t, err)
+
+	//callOpts = eth.GetCallOpts(ctx, accounts[0])
+	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, uint8(objects.RegistrationOpen), phase)
+
+	valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(n), valCount.Uint64())
+
 	// Do Register task
 	regTasks := make([]*dkgtasks.RegisterTask, n)
 	dispMissingRegTasks := make([]*dkgtasks.DisputeMissingRegistrationTask, n)
 	dkgStates := make([]*objects.DkgState, n)
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < n; idx++ {
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		// Set Registration success to true
 		state, _, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
 			accounts[idx],
 			event.StartBlock.Uint64(),
 			event.PhaseLength.Uint64(),
 			event.ConfirmationLength.Uint64(),
-			event.Nonce.Uint64())
+			event.Nonce.Uint64(),
+			true,
+			validatorAddresses,
+		)
 
 		dkgStates[idx] = state
 		regTasks[idx] = regTask
@@ -574,18 +683,9 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 			continue
 		}
 
-		callOpts := eth.GetCallOpts(ctx, accounts[0])
-		phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
-		assert.Nil(t, err)
-		assert.Equal(t, uint8(objects.RegistrationOpen), phase)
-
 		nVal, err := eth.Contracts().Ethdkg().GetNumParticipants(callOpts)
 		assert.Nil(t, err)
 		assert.Equal(t, uint64(idx), nVal.Uint64())
-
-		valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
-		assert.Nil(t, err)
-		assert.Equal(t, uint64(n), valCount.Uint64())
 
 		err = regTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -647,6 +747,11 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	callOpts := suite.eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount())
+	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, phase, uint8(objects.ShareDistribution))
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
@@ -811,13 +916,18 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 	eth := suite.eth
 
 	// Do MPK Submission task (once is enough)
-	task := suite.mpkSubmissionTasks[0]
-	state := dkgStates[0]
 
-	err := task.Initialize(ctx, logger, eth, state)
-	assert.Nil(t, err)
-	err = task.DoWork(ctx, logger, eth)
-	assert.Nil(t, err)
+	for idx := 0; idx < n; idx++ {
+		task := suite.mpkSubmissionTasks[idx]
+		state := dkgStates[idx]
+
+		err := task.Initialize(ctx, logger, eth, state)
+		assert.Nil(t, err)
+		if task.AmILeading(ctx, eth, logger) {
+			err = task.DoWork(ctx, logger, eth)
+			assert.Nil(t, err)
+		}
+	}
 
 	eth.Commit()
 

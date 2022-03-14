@@ -2,9 +2,16 @@ package dtest
 
 import (
 	"crypto/ecdsa"
+	"fmt"
+	"io/ioutil"
 	"math/big"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 
 	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/etest"
@@ -257,9 +264,61 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 	}
 }
 
-func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Account) {
-	ecdsaPrivateKeys := etest.SetupPrivateKeys(n)
-	accounts := etest.SetupAccounts(ecdsaPrivateKeys)
+func GetMadnetRootPath() []string {
+	_, b, _, _ := runtime.Caller(0)
 
-	return ecdsaPrivateKeys, accounts
+	// Root folder of this project
+	root := filepath.Dir(b)
+	pathNodes := strings.Split(root, string(os.PathSeparator))
+	rootPath := []string{string(os.PathSeparator)}
+	//rootPath[0] = string(os.PathSeparator)
+
+	for _, node := range pathNodes {
+		rootPath = append(rootPath, node)
+
+		if node == "MadNet" {
+			break
+		}
+	}
+
+	return rootPath
+}
+
+func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Account) {
+	rootPath := GetMadnetRootPath()
+	jsonPath := append(rootPath, "scripts")
+	jsonPath = append(jsonPath, "base-files")
+	jsonPath = append(jsonPath, "0x546f99f244b7b58b855330ae0e2bc1b30b41302f")
+	jsonPathJoined := filepath.Join(jsonPath...)
+	fmt.Println("jsonPathJoined: ", jsonPathJoined)
+
+	//file := "../../../scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
+	dir, err := ioutil.TempDir("/tmp", "ks")
+	if err != nil {
+		panic(err)
+	}
+	ks := keystore.NewKeyStore(dir, keystore.StandardScryptN, keystore.StandardScryptP)
+	jsonBytes, err := ioutil.ReadFile(jsonPathJoined)
+	if err != nil {
+		panic(err)
+	}
+
+	password := "abc123"
+	_, err = ks.Import(jsonBytes, password, password)
+	if err != nil {
+		panic(err)
+	}
+
+	key, err := keystore.DecryptKey(jsonBytes, password)
+	if err != nil {
+		panic(err)
+	}
+
+	//t.Logf("owner: %v, pvKey: %v", account.Address.String(), key.PrivateKey)
+	privateKeys := []*ecdsa.PrivateKey{key.PrivateKey}
+	randomPrivateKeys := etest.SetupPrivateKeys(n - 1)
+	privateKeys = append(privateKeys, randomPrivateKeys...)
+	accounts := etest.SetupAccounts(privateKeys)
+
+	return privateKeys, accounts
 }

@@ -16,12 +16,14 @@ const (
 	MaxUint64 uint64 = 18446744073709551615
 
 	// ETHDKGDesperationDelay is after how many Etereum blocks more validators will start being allowed. Highly dependent on EpochLength
-	ETHDKGDesperationDelay int = 6
+	ETHDKGDesperationDelay int = 8
 
 	// ETHDKGDesperationFactor determines how quickly more
 	// validators will be allowed to perform unique ETHDKG
-	// actions on MPKSubmission and Completion phases
-	ETHDKGDesperationFactor int = 40 // 100
+	// actions on MPKSubmission and Completion phases.
+	// The lower this factor is, the quicker more validators
+	// are elected as leaders.
+	ETHDKGDesperationFactor int = 8
 )
 
 // CurveSpec specifies the particular elliptic curve we are dealing with

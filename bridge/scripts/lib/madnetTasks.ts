@@ -69,17 +69,17 @@ task("registerValidators", "registers validators")
 
     const madToken = await hre.ethers.getContractAt(
       "MadToken",
-      await factory.lookup("MadToken")
+      await factory.lookup(hre.ethers.utils.formatBytes32String("MadToken"))
     );
     console.log(`MadToken Address: ${madToken.address}`);
     const stakeNFT = await hre.ethers.getContractAt(
       "StakeNFT",
-      await factory.lookup("StakeNFT")
+      await factory.lookup(hre.ethers.utils.formatBytes32String("StakeNFT"))
     );
     console.log(`stakeNFT Address: ${stakeNFT.address}`);
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
-      await factory.lookup("ValidatorPool")
+      await factory.lookup(hre.ethers.utils.formatBytes32String("ValidatorPool"))
     );
     console.log(`validatorPool Address: ${validatorPool.address}`);
 
