@@ -3,8 +3,28 @@
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": "error",
-    "reason-string": ["warn", { "maxLength": 80 }],
+    "max-states-count": ["warn", 20],
+    "no-empty-blocks": "off",
+    "no-unused-vars": "warn",
+    "payable-fallback": "warn",
+    "reason-string": ["warn", {"maxLength": 100}],
+    "quotes": ["warn","double"],
+    "const-name-snakecase": "warn",
+    "contract-name-camelcase": "warn",
+    "event-name-camelcase": "warn",
+    "func-name-mixedcase": "warn",
+    "func-param-name-mixedcase": "warn",
+    "modifier-name-mixedcase": "warn",
+    "private-vars-leading-underscore": "warn",
+    "use-forbidden-name": "warn",
+    "var-name-mixedcase": "warn",
+    "imports-on-top": "warn",
+    "ordering": "warn",
+    "visibility-modifier-order": "warn",
+    "func-visibility": ["warn", {"ignoreConstructors": true}],
     "compiler-version": "off",
-    "no-inline-assembly": "off"
+    "no-inline-assembly": "off",
+    "avoid-low-level-calls": "off",
+    "no-complex-fallback": "off"
   }
 }

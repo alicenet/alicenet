@@ -10,7 +10,7 @@ contract ValidatorNFT is StakeNFTBase {
     constructor() StakeNFTBase() {}
 
     function initialize() public initializer onlyFactory {
-        __StakeNFTBase_init("MNVSNFT", "MNVS");
+        __stakeNFTBaseInit("MNVSNFT", "MNVS");
     }
 
     /// mint allows a staking position to be opened. This function

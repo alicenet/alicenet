@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+/* solhint-disable */
 /*
     Author: Philipp Schindler
     Source code and documentation available on Github: https://github.com/PhilippSchindler/ethdkg
@@ -818,3 +819,4 @@ library CryptoLibrary {
         return tmp2;
     }
 }
+/* solhint-enable */

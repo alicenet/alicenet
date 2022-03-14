@@ -29,76 +29,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationDelay = desperationDelay_;
     }
 
-    function getSnapshotDesperationDelay() public view returns (uint256) {
-        return _snapshotDesperationDelay;
-    }
-
     function setSnapshotDesperationFactor(uint32 desperationFactor_) public onlyFactory {
         _snapshotDesperationFactor = desperationFactor_;
-    }
-
-    function getSnapshotDesperationFactor() public view returns (uint256) {
-        return _snapshotDesperationFactor;
-    }
-
-    function getChainId() public view returns (uint256) {
-        return _chainId;
-    }
-
-    function getEpoch() public view returns (uint256) {
-        return _epoch;
-    }
-
-    function getEpochLength() public view returns (uint256) {
-        return _epochLength;
-    }
-
-    function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.chainId;
-    }
-
-    function getChainIdFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.chainId;
-    }
-
-    function getBlockClaimsFromSnapshot(uint256 epoch_)
-        public
-        view
-        returns (BClaimsParserLibrary.BClaims memory)
-    {
-        return _snapshots[epoch_].blockClaims;
-    }
-
-    function getBlockClaimsFromLatestSnapshot()
-        public
-        view
-        returns (BClaimsParserLibrary.BClaims memory)
-    {
-        return _snapshots[_epoch].blockClaims;
-    }
-
-    function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].committedAt;
-    }
-
-    function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].committedAt;
-    }
-
-    function getMadnetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.height;
-    }
-
-    function getMadnetHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.height;
-    }
-
-    function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
-        return _snapshots[epoch_];
-    }
-
-    function getLatestSnapshot() public view returns (Snapshot memory) {
-        return _snapshots[_epoch];
     }
 
     /// @notice Saves next snapshot
@@ -121,6 +53,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         (bool success, uint256 validatorIndex) = IETHDKG(_ETHDKGAddress()).tryGetParticipantIndex(
             msg.sender
         );
+        //todo:remove this, dummy operation only to silence linter
+        validatorIndex;
         require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
         // todo: critical! add eth min blocks between snapshots
 
@@ -200,6 +134,74 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             groupSignature_
         );
         return isSafeToProceedConsensus;
+    }
+
+    function getSnapshotDesperationFactor() public view returns (uint256) {
+        return _snapshotDesperationFactor;
+    }
+
+    function getSnapshotDesperationDelay() public view returns (uint256) {
+        return _snapshotDesperationDelay;
+    }
+
+    function getChainId() public view returns (uint256) {
+        return _chainId;
+    }
+
+    function getEpoch() public view returns (uint256) {
+        return _epoch;
+    }
+
+    function getEpochLength() public view returns (uint256) {
+        return _epochLength;
+    }
+
+    function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
+        return _snapshots[epoch_].blockClaims.chainId;
+    }
+
+    function getChainIdFromLatestSnapshot() public view returns (uint256) {
+        return _snapshots[_epoch].blockClaims.chainId;
+    }
+
+    function getBlockClaimsFromSnapshot(uint256 epoch_)
+        public
+        view
+        returns (BClaimsParserLibrary.BClaims memory)
+    {
+        return _snapshots[epoch_].blockClaims;
+    }
+
+    function getBlockClaimsFromLatestSnapshot()
+        public
+        view
+        returns (BClaimsParserLibrary.BClaims memory)
+    {
+        return _snapshots[_epoch].blockClaims;
+    }
+
+    function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
+        return _snapshots[epoch_].committedAt;
+    }
+
+    function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
+        return _snapshots[_epoch].committedAt;
+    }
+
+    function getMadnetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
+        return _snapshots[epoch_].blockClaims.height;
+    }
+
+    function getMadnetHeightFromLatestSnapshot() public view returns (uint256) {
+        return _snapshots[_epoch].blockClaims.height;
+    }
+
+    function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
+        return _snapshots[epoch_];
+    }
+
+    function getLatestSnapshot() public view returns (Snapshot memory) {
+        return _snapshots[_epoch];
     }
 
     function mayValidatorSnapshot(

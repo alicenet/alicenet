@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "contracts/utils/Admin.sol";
 
 abstract contract MadTokenBase is ERC20Upgradeable, Admin {
-    function __MadTokenBase_init() internal onlyInitializing {
+    function __madTokenBaseInit() internal onlyInitializing {
         __ERC20_init("MadToken", "MT");
     }
 }
@@ -21,7 +21,7 @@ contract MadToken is MadTokenBase {
     constructor() Admin(msg.sender) {}
 
     function initialize(address owner_) public onlyAdmin initializer {
-        __MadTokenBase_init();
+        __madTokenBaseInit();
         _mint(owner_, 220000000 * 10**decimals());
     }
 

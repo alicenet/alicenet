@@ -2,12 +2,13 @@
   "name": "bridge",
   "version": "0.1.0",
   "scripts": {
-    "init": "npx hardhat typechain",
-    "test": "npx hardhat test --show-stack-traces",
-    "test-parallel": "npx hardhat test --parallel --show-stack-traces",
-    "clean": "mkdir -p typechain-types && rm -rf typechain-types && npx hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
-    "build": "npx hardhat compile && npx hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
-    "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'"
+    "init": "hardhat typechain",
+    "test": "hardhat test --show-stack-traces",
+    "test-parallel": "hardhat test --parallel --show-stack-traces",
+    "clean": "mkdir -p typechain-types && rm -rf typechain-types && hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
+    "build": "hardhat compile && hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
+    "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
+    "linter": "solhint 'contracts/**/*.sol' 'test/**/*.sol'"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",

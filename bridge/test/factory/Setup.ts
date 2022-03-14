@@ -42,12 +42,12 @@ export async function proxyMockLogicTest(
   await expectTxSuccess(txResponse);
   let fa = await mockProxy.callStatic.getFactory();
   expect(fa).to.equal(factoryAddress);
-  txResponse = await mockProxy.setv(testArg);
+  txResponse = await mockProxy.setV(testArg);
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
-  let v = await mockProxy.callStatic.v();
+  let v = await mockProxy.callStatic.getVar();
   expect(v.toNumber()).to.equal(testArg);
-  let i = await mockProxy.callStatic.i();
+  let i = await mockProxy.callStatic.getImut();
   expect(i.toNumber()).to.equal(2);
   //upgrade the proxy
   txResponse = await factory.upgradeProxy(salt, endPointAddr, "0x");
@@ -55,20 +55,20 @@ export async function proxyMockLogicTest(
   await expectTxSuccess(txResponse);
   //endpoint interface connected to proxy address
   let proxyEndpoint = endPointFactory.attach(proxyAddress);
-  i = await proxyEndpoint.callStatic.i();
+  i = await proxyEndpoint.i();
   let num = i.toNumber() + 2;
   txResponse = await proxyEndpoint.addTwo();
   receipt = await txResponse.wait();
-  let test = await getEventVar(txResponse, "addedTwo", "i");
+  let test = await getEventVar(txResponse, "AddedTwo", "i");
   expect(test.toNumber()).to.equal(num);
   //lock the proxy upgrade
   txResponse = await factory.upgradeProxy(salt, mockLogicAddr, "0x");
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
-  txResponse = await mockProxy.setv(testArg + 2);
+  txResponse = await mockProxy.setV(testArg + 2);
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
-  v = await mockProxy.callStatic.v();
+  v = await mockProxy.getVar();
   receipt = await txResponse.wait();
   expect(v.toNumber()).to.equal(testArg + 2);
   //lock the upgrade functionality
@@ -86,11 +86,11 @@ export async function proxyMockLogicTest(
   txResponse = await factory.upgradeProxy(salt, endPointAddr, "0x");
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
-  i = await proxyEndpoint.callStatic.i();
+  i = await proxyEndpoint.i();
   num = i.toNumber() + 2;
   txResponse = await proxyEndpoint.addTwo();
   receipt = await txResponse.wait();
-  test = await getEventVar(txResponse, "addedTwo", "i");
+  test = await getEventVar(txResponse, "AddedTwo", "i");
   expect(test.toNumber()).to.equal(num);
 }
 
@@ -106,12 +106,12 @@ export async function metaMockLogicTest(
   await expectTxSuccess(txResponse);
   let fa = await Contract.getFactory.call();
   expect(fa).to.equal(factoryAddress);
-  txResponse = await Contract.setv(test);
+  txResponse = await Contract.setV(test);
   receipt = await txResponse.wait();
   await expectTxSuccess(txResponse);
-  let v = await Contract.callStatic.v();
+  let v = await Contract.getVar();
   expect(v.toNumber()).to.equal(test);
-  let i = await Contract.callStatic.i();
+  let i = await Contract.getImut();
   expect(i.toNumber()).to.equal(2);
 }
 
@@ -201,7 +201,7 @@ export async function getDeployStaticArgs(
 export async function checkMockInit(target: string, initVal: number) {
   let mockFactory = await ethers.getContractFactory(MOCK);
   let mock = await mockFactory.attach(target);
-  let i = await mock.callStatic.i();
+  let i = await mock.getImut();
   expect(i.toNumber()).to.equal(initVal);
 }
 

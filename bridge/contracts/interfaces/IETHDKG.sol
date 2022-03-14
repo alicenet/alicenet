@@ -10,35 +10,6 @@ interface IETHDKG {
 
     function setCustomMadnetHeight(uint256 madnetHeight) external;
 
-    function isETHDKGRunning() external view returns (bool);
-
-    function isMasterPublicKeySet() external view returns (bool);
-
-    function getNonce() external view returns (uint256);
-
-    function getPhaseStartBlock() external view returns (uint256);
-
-    function getPhaseLength() external view returns (uint256);
-
-    function getConfirmationLength() external view returns (uint256);
-
-    function getETHDKGPhase() external view returns (Phase);
-
-    function getNumParticipants() external view returns (uint256);
-
-    function getBadParticipants() external view returns (uint256);
-
-    function getMinValidators() external view returns (uint256);
-
-    function getParticipantInternalState(address participant)
-        external
-        view
-        returns (Participant memory);
-
-    function getMasterPublicKey() external view returns (uint256[4] memory);
-
-    function tryGetParticipantIndex(address participant) external view returns (bool, uint256);
-
     function initializeETHDKG() external;
 
     function register(uint256[2] memory publicKey) external;
@@ -80,4 +51,33 @@ interface IETHDKG {
         uint256[2][][] memory commitments,
         address dishonestAddress
     ) external;
+
+    function isETHDKGRunning() external view returns (bool);
+
+    function isMasterPublicKeySet() external view returns (bool);
+
+    function getNonce() external view returns (uint256);
+
+    function getPhaseStartBlock() external view returns (uint256);
+
+    function getPhaseLength() external view returns (uint256);
+
+    function getConfirmationLength() external view returns (uint256);
+
+    function getETHDKGPhase() external view returns (Phase);
+
+    function getNumParticipants() external view returns (uint256);
+
+    function getBadParticipants() external view returns (uint256);
+
+    function getMinValidators() external view returns (uint256);
+
+    function getParticipantInternalState(address participant)
+        external
+        view
+        returns (Participant memory);
+
+    function getMasterPublicKey() external view returns (uint256[4] memory);
+
+    function tryGetParticipantIndex(address participant) external view returns (bool, uint256);
 }

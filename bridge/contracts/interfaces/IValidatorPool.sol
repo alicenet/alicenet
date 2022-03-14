@@ -18,6 +18,31 @@ interface IValidatorPool {
 
     function setLocation(string calldata ip) external;
 
+    function scheduleMaintenance() external;
+
+    function initializeETHDKG() external;
+
+    function completeETHDKG() external;
+
+    function pauseConsensus() external;
+
+    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight) external;
+
+    function registerValidators(address[] calldata validators, uint256[] calldata stakerTokenIDs)
+        external;
+
+    function unregisterValidators(address[] calldata validators) external;
+
+    function unregisterAllValidators() external;
+
+    function collectProfits() external returns (uint256 payoutEth, uint256 payoutToken);
+
+    function claimExitingNFTPosition() external returns (uint256);
+
+    function majorSlash(address dishonestValidator_, address disputer_) external;
+
+    function minorSlash(address dishonestValidator_, address disputer_) external;
+
     function getValidatorsCount() external view returns (uint256);
 
     function getValidatorsAddresses() external view returns (address[] memory);
@@ -52,31 +77,6 @@ interface IValidatorPool {
     function isAccusable(address participant) external view returns (bool);
 
     function isMaintenanceScheduled() external view returns (bool);
-
-    function scheduleMaintenance() external;
-
-    function initializeETHDKG() external;
-
-    function completeETHDKG() external;
-
-    function pauseConsensus() external;
-
-    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight) external;
-
-    function registerValidators(address[] calldata validators, uint256[] calldata stakerTokenIDs)
-        external;
-
-    function unregisterValidators(address[] calldata validators) external;
-
-    function unregisterAllValidators() external;
-
-    function collectProfits() external returns (uint256 payoutEth, uint256 payoutToken);
-
-    function claimExitingNFTPosition() external returns (uint256);
-
-    function majorSlash(address dishonestValidator_, address disputer_) external;
-
-    function minorSlash(address dishonestValidator_, address disputer_) external;
 
     function isConsensusRunning() external view returns (bool);
 }

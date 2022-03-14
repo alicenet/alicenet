@@ -21,6 +21,11 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
     address internal _admin;
     uint256 internal immutable _chainId;
 
+    modifier onlyAdmin() {
+        require(msg.sender == _admin, "Snapshots: Only admin allowed!");
+        _;
+    }
+
     constructor(uint32 chainID_, uint32 epochLength_)
         ImmutableFactory(msg.sender)
         ImmutableValidatorPool()
@@ -28,11 +33,6 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
         _admin = msg.sender;
         _chainId = chainID_;
         _epochLength = epochLength_;
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == _admin, "Snapshots: Only admin allowed!");
-        _;
     }
 
     function setEpochLength(uint32 epochLength_) external {
@@ -43,12 +43,33 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
         _snapshotDesperationDelay = desperationDelay_;
     }
 
-    function getSnapshotDesperationDelay() public view returns (uint256) {
-        return _snapshotDesperationDelay;
-    }
-
     function setSnapshotDesperationFactor(uint32 desperationFactor_) public onlyAdmin {
         _snapshotDesperationFactor = desperationFactor_;
+    }
+
+    function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
+        public
+        returns (bool)
+    {
+        bool isSafeToProceedConsensus = true;
+        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
+            isSafeToProceedConsensus = false;
+            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
+        }
+        // dummy to silence compiling warnings
+        groupSignature_;
+        bClaims_;
+        _epoch++;
+        return true;
+    }
+
+    function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
+        _snapshots[_epoch].committedAt = height_;
+        return height_;
+    }
+
+    function getSnapshotDesperationDelay() public view returns (uint256) {
+        return _snapshotDesperationDelay;
     }
 
     function getSnapshotDesperationFactor() public view returns (uint256) {
@@ -115,29 +136,8 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
         return _snapshots[_epoch];
     }
 
-    function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        returns (bool)
-    {
-        bool isSafeToProceedConsensus = true;
-        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
-            isSafeToProceedConsensus = false;
-            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
-        }
-        // dummy to silence compiling warnings
-        groupSignature_;
-        bClaims_;
-        _epoch++;
-        return true;
-    }
-
     function isMock() public pure returns (bool) {
         return true;
-    }
-
-    function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
-        _snapshots[_epoch].committedAt = height_;
-        return height_;
     }
 
     function mayValidatorSnapshot(

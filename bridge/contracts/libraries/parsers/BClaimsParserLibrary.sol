@@ -5,13 +5,6 @@ import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the BClaims structure from a blob of capnproto data
 library BClaimsParserLibrary {
-    /** @dev size in bytes of a BCLAIMS cap'npro structure without the cap'n
-      proto header bytes*/
-    uint256 internal constant BCLAIMS_SIZE = 176;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
-      header */
-    uint256 internal constant CAPNPROTO_HEADER_SIZE = 8;
-
     struct BClaims {
         uint32 chainId;
         uint32 height;
@@ -21,6 +14,13 @@ library BClaimsParserLibrary {
         bytes32 stateRoot;
         bytes32 headerRoot;
     }
+
+    /** @dev size in bytes of a BCLAIMS cap'npro structure without the cap'n
+      proto header bytes*/
+    uint256 internal constant _BCLAIMS_SIZE = 176;
+    /** @dev Number of bytes of a capnproto header, the data starts after the
+      header */
+    uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
     @notice This function computes the offset adjustment in the pointer section
@@ -67,7 +67,7 @@ library BClaimsParserLibrary {
     /// @return bClaims the BClaims struct
     /// @dev Execution cost: 2484 gas
     function extractBClaims(bytes memory src) internal pure returns (BClaims memory bClaims) {
-        return extractInnerBClaims(src, CAPNPROTO_HEADER_SIZE, getPointerOffsetAdjustment(src, 4));
+        return extractInnerBClaims(src, _CAPNPROTO_HEADER_SIZE, getPointerOffsetAdjustment(src, 4));
     }
 
     /**
@@ -87,11 +87,11 @@ library BClaimsParserLibrary {
         uint16 pointerOffsetAdjustment
     ) internal pure returns (BClaims memory bClaims) {
         require(
-            dataOffset + BCLAIMS_SIZE - pointerOffsetAdjustment > dataOffset,
+            dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment > dataOffset,
             "BClaimsParserLibrary: Invalid parsing. Overflow on the dataOffset parameter"
         );
         require(
-            src.length >= dataOffset + BCLAIMS_SIZE - pointerOffsetAdjustment,
+            src.length >= dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment,
             "BClaimsParserLibrary: Invalid parsing. Not enough bytes to extract BClaims"
         );
 

@@ -36,7 +36,7 @@ describe("Madnetfactory API test", async () => {
 
   it("getters", async () => {
     await deployStatic(END_POINT, factory.address);
-    let implAddr = await factory.implementation();
+    let implAddr = await factory.getImplementation();
     expect(implAddr).to.not.be.undefined;
     let saltsArray = await factory.contracts();
     expect(saltsArray.length).to.be.greaterThan(0);

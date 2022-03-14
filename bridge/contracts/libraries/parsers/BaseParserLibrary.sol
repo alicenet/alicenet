@@ -3,9 +3,9 @@ pragma solidity ^0.8.11;
 
 library BaseParserLibrary {
     // Size of a word, in bytes.
-    uint256 internal constant WORD_SIZE = 32;
+    uint256 internal constant _WORD_SIZE = 32;
     // Size of the header of a 'bytes' array.
-    uint256 internal constant BYTES_HEADER_SIZE = 32;
+    uint256 internal constant _BYTES_HEADER_SIZE = 32;
 
     /// @notice Extracts a uint32 from a little endian bytes array.
     /// @param src the binary data
@@ -46,7 +46,7 @@ library BaseParserLibrary {
         );
         require(
             src.length >= offset + 2,
-            "BaseParserLibrary: Error extracting uin16! Trying to read an offset out of boundaries in the src binary!"
+            "BaseParserLibrary: UINT16 ERROR! Trying to read an offset out of boundaries!"
         );
 
         assembly {
@@ -67,11 +67,11 @@ library BaseParserLibrary {
     {
         require(
             offset + 2 > offset,
-            "BaseParserLibrary: Error extracting uin16! An overflow happened with the offset parameter!"
+            "BaseParserLibrary: UINT16 ERROR! An overflow happened with the offset parameter!"
         );
         require(
             src.length >= offset + 2,
-            "BaseParserLibrary: Error extracting uin16! Trying to read an offset out of boundaries in the src binary!"
+            "BaseParserLibrary: UINT16 ERROR! Trying to read an offset out of boundaries!"
         );
 
         assembly {
@@ -85,13 +85,10 @@ library BaseParserLibrary {
     /// @return a bool
     /// @dev ~204 gas
     function extractBool(bytes memory src, uint256 offset) internal pure returns (bool) {
-        require(
-            offset + 1 > offset,
-            "BaseParserLibrary: Error extracting bool! An overflow happened with the offset parameter!"
-        );
+        require(offset + 1 > offset, "BaseParserLibrary: BOOL ERROR: OVERFLOW!");
         require(
             src.length >= offset + 1,
-            "BaseParserLibrary: Error extracting bool! Trying to read an offset out of boundaries in the src binary!"
+            "BaseParserLibrary: BOOL ERROR: OFFSET OUT OF BOUNDARIES!"
         );
         uint256 val;
         assembly {
@@ -258,19 +255,19 @@ library BaseParserLibrary {
         uint256 len
     ) internal pure {
         // Copy word-length chunks while possible
-        for (; len >= WORD_SIZE; len -= WORD_SIZE) {
+        for (; len >= _WORD_SIZE; len -= _WORD_SIZE) {
             assembly {
                 mstore(dest, mload(src))
             }
-            dest += WORD_SIZE;
-            src += WORD_SIZE;
+            dest += _WORD_SIZE;
+            src += _WORD_SIZE;
         }
         // Returning earlier if there's no leftover bytes to copy
         if (len == 0) {
             return;
         }
         // Copy remaining bytes
-        uint256 mask = 256**(WORD_SIZE - len) - 1;
+        uint256 mask = 256**(_WORD_SIZE - len) - 1;
         assembly {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
@@ -283,7 +280,7 @@ library BaseParserLibrary {
     /// @return addr the pointer to the `bts` bytes array
     function dataPtr(bytes memory bts) internal pure returns (uint256 addr) {
         assembly {
-            addr := add(bts, BYTES_HEADER_SIZE)
+            addr := add(bts, _BYTES_HEADER_SIZE)
         }
     }
 
@@ -310,7 +307,7 @@ library BaseParserLibrary {
         uint256 start;
 
         assembly {
-            start := add(add(src, offset), BYTES_HEADER_SIZE)
+            start := add(add(src, offset), _BYTES_HEADER_SIZE)
         }
 
         copy(start, dataPtr(out), howManyBytes);
@@ -328,7 +325,7 @@ library BaseParserLibrary {
         );
         require(src.length >= (offset + 32), "BaseParserLibrary: not enough bytes to extract");
         assembly {
-            out := mload(add(add(src, BYTES_HEADER_SIZE), offset))
+            out := mload(add(add(src, _BYTES_HEADER_SIZE), offset))
         }
     }
 }

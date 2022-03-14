@@ -7,17 +7,16 @@ import "./RCertParserLibrary.sol";
 
 /// @title Library to parse the PClaims structure from a blob of capnproto data
 library PClaimsParserLibrary {
-    /** @dev size in bytes of a PCLAIMS cap'npro structure without the cap'n
-      proto header bytes*/
-    uint256 internal constant PCLAIMS_SIZE = 456;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
-      header */
-    uint256 internal constant CAPNPROTO_HEADER_SIZE = 8;
-
     struct PClaims {
         BClaimsParserLibrary.BClaims bClaims;
         RCertParserLibrary.RCert rCert;
     }
+    /** @dev size in bytes of a PCLAIMS cap'npro structure without the cap'n
+      proto header bytes*/
+    uint256 internal constant _PCLAIMS_SIZE = 456;
+    /** @dev Number of bytes of a capnproto header, the data starts after the
+      header */
+    uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
     @notice This function is for deserializing data directly from capnproto
@@ -28,7 +27,7 @@ library PClaimsParserLibrary {
     /// @return pClaims the PClaims struct
     /// @dev Execution cost: 7725 gas
     function extractPClaims(bytes memory src) internal pure returns (PClaims memory pClaims) {
-        (pClaims, ) = extractInnerPClaims(src, CAPNPROTO_HEADER_SIZE);
+        (pClaims, ) = extractInnerPClaims(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /**
@@ -53,14 +52,14 @@ library PClaimsParserLibrary {
         returns (PClaims memory pClaims, uint256 pClaimsBinarySize)
     {
         require(
-            dataOffset + PCLAIMS_SIZE > dataOffset,
+            dataOffset + _PCLAIMS_SIZE > dataOffset,
             "PClaimsParserLibrary: Overflow on the dataOffset parameter"
         );
         uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
             src,
             dataOffset + 4
         );
-        pClaimsBinarySize = PCLAIMS_SIZE - pointerOffsetAdjustment;
+        pClaimsBinarySize = _PCLAIMS_SIZE - pointerOffsetAdjustment;
         require(
             src.length >= dataOffset + pClaimsBinarySize,
             "PClaimsParserLibrary: Not enough bytes to extract PClaims"
@@ -72,7 +71,7 @@ library PClaimsParserLibrary {
         );
         pClaims.rCert = RCertParserLibrary.extractInnerRCert(
             src,
-            dataOffset + 16 + BClaimsParserLibrary.BCLAIMS_SIZE - pointerOffsetAdjustment
+            dataOffset + 16 + BClaimsParserLibrary._BCLAIMS_SIZE - pointerOffsetAdjustment
         );
     }
 }

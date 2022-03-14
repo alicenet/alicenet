@@ -5,19 +5,19 @@ import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the RClaims structure from a blob of capnproto data
 library RClaimsParserLibrary {
-    /** @dev size in bytes of a RCLAIMS cap'npro structure without the cap'n
-      proto header bytes*/
-    uint256 internal constant RCLAIMS_SIZE = 56;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
-      header */
-    uint256 internal constant CAPNPROTO_HEADER_SIZE = 8;
-
     struct RClaims {
         uint32 chainId;
         uint32 height;
         uint32 round;
         bytes32 prevBlock;
     }
+
+    /** @dev size in bytes of a RCLAIMS cap'npro structure without the cap'n
+      proto header bytes*/
+    uint256 internal constant _RCLAIMS_SIZE = 56;
+    /** @dev Number of bytes of a capnproto header, the data starts after the
+      header */
+    uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
     @notice This function is for deserializing data directly from capnproto
@@ -29,7 +29,7 @@ library RClaimsParserLibrary {
     /// @param src Binary data containing a RClaims serialized struct with Capn Proto headers
     /// @dev Execution cost: 1506 gas
     function extractRClaims(bytes memory src) internal pure returns (RClaims memory rClaims) {
-        return extractInnerRClaims(src, CAPNPROTO_HEADER_SIZE);
+        return extractInnerRClaims(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /**
@@ -47,11 +47,11 @@ library RClaimsParserLibrary {
         returns (RClaims memory rClaims)
     {
         require(
-            dataOffset + RCLAIMS_SIZE > dataOffset,
+            dataOffset + _RCLAIMS_SIZE > dataOffset,
             "RClaimsParserLibrary: Overflow on the dataOffset parameter"
         );
         require(
-            src.length >= dataOffset + RCLAIMS_SIZE,
+            src.length >= dataOffset + _RCLAIMS_SIZE,
             "RClaimsParserLibrary: Not enough bytes to extract RClaims"
         );
         rClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
