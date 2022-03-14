@@ -1,4 +1,4 @@
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { ValidatorRawData } from "../ethdkg/setup";
 import {
@@ -243,4 +243,50 @@ export const getStakeNFTFromMinorSlashEvent = async (
   let topics = receipt.logs[receipt.logs.length - 1].topics;
   let event = intrface.decodeEventLog("ValidatorMinorSlashed", data, topics);
   return event.stakeNFT;
+};
+
+/**
+ * Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+ * itself, this is a method to send eth accidentally to the validatorPool contract
+ * @param fixture
+ * @param etherAmount
+ * @param madTokenAmount
+ * @param adminSigner
+ */
+export const burnStakeTo = async (
+  fixture: Fixture,
+  etherAmount: BigNumber,
+  madTokenAmount: BigNumber,
+  adminSigner: Signer
+) => {
+  await fixture.madToken
+    .connect(adminSigner)
+    .approve(fixture.stakeNFT.address, madTokenAmount);
+  let tx = await fixture.stakeNFT.connect(adminSigner).mint(madTokenAmount);
+  let tokenID = await getTokenIdFromTx(tx);
+  await fixture.stakeNFT.depositEth(42, {
+    value: etherAmount,
+  });
+  await fixture.stakeNFT
+    .connect(adminSigner)
+    .burnTo(fixture.validatorPool.address, tokenID);
+};
+
+/**
+ * Mint a stakeNFT
+ * @param fixture
+ * @param etherAmount
+ * @param madTokenAmount
+ * @param adminSigner
+ */
+export const mintStakeNFT = async (
+  fixture: Fixture,
+  madTokenAmount: BigNumber,
+  adminSigner: Signer
+) => {
+  await fixture.madToken
+    .connect(adminSigner)
+    .approve(fixture.stakeNFT.address, madTokenAmount);
+  let tx = await fixture.stakeNFT.connect(adminSigner).mint(madTokenAmount);
+  return await getTokenIdFromTx(tx);
 };

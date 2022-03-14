@@ -10,6 +10,7 @@ import {
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
+  burnStakeTo,
   commitSnapshots,
   createValidators,
   getCurrentState,
@@ -181,6 +182,38 @@ describe("ValidatorPool: Registration logic", async () => {
     });
     //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
     expectedState.StakeNFT.MAD -= stakeAmount * BigInt(validators.length);
+    expectedState.ValidatorNFT.MAD += stakeAmount * BigInt(validators.length);
+    // Register validators
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    let currentState = await getCurrentState(fixture, validators);
+    await showState("after registering", currentState);
+    await showState("Expected state after registering", expectedState);
+    await showState("Current state after registering", currentState);
+
+    expect(currentState).to.be.deep.equal(expectedState);
+  });
+
+  it("Should be able to register validators even if the contract has excess of Tokens and eth", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+
+    let expectedState = await getCurrentState(fixture, validators);
+    //Expect that NFTs are transferred from each validator to ValidatorPool sd ValidatorNFTs
+    validators.map((_, index) => {
+      expectedState.Factory.StakeNFT--;
+      expectedState.ValidatorPool.ValNFT++;
+      expectedState.validators[index].Acc = true;
+      expectedState.validators[index].Reg = true;
+    });
+    //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
+    expectedState.StakeNFT.MAD -= stakeAmount * BigInt(validators.length);
+    expectedState.StakeNFT.ETH = BigInt(0);
     expectedState.ValidatorNFT.MAD += stakeAmount * BigInt(validators.length);
     // Register validators
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [

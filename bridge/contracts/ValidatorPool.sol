@@ -301,6 +301,28 @@ contract ValidatorPool is
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 
+    /// skimExcessEth will allow the Admin role to refund any Eth sent to this contract in error by a
+    /// user. This function should only be necessary if a user somehow manages to accidentally
+    /// selfDestruct a contract with this contract as the recipient or use the stakeNFT burnTo with the
+    /// address of this contract.
+    function skimExcessEth(address to_) public onlyFactory returns (uint256 excess) {
+        // This contract shouldn't held any eth balance.
+        // todo: revisit this when we have the dutch auction
+        excess = address(this).balance;
+        _safeTransferEth(to_, excess);
+        return excess;
+    }
+
+    /// skimExcessToken will allow the Admin role to refund any MadToken sent to this contract in error
+    /// by a user.
+    function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
+        // This contract shouldn't held any token balance.
+        IERC20Transferable madToken = IERC20Transferable(_MadTokenAddress());
+        excess = madToken.balanceOf(address(this));
+        _safeTransferERC20(madToken, to_, excess);
+        return excess;
+    }
+
     function getStakeAmount() public view returns (uint256) {
         return _stakeAmount;
     }

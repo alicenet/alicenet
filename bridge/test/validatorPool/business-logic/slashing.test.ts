@@ -9,6 +9,7 @@ import {
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
+  burnStakeTo,
   commitSnapshots,
   createValidators,
   getCurrentState,
@@ -150,6 +151,74 @@ describe("ValidatorPool: Slashing logic", async () => {
   });
 
   it("Minor slash a validator then major slash it", async function () {
+    let reward = ethers.utils.parseEther("10000").toBigInt();
+    //Set reward to 1 MadToken
+    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+      reward,
+    ]);
+    // Obtain ETHDKG Mock
+    const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
+    let ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    let expectedState = await getCurrentState(fixture, validators);
+    let tx = await ethdkg.minorSlash(validators[0], validators[1]);
+    let newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
+    expect(newStakeNFT).to.be.gt(
+      BigInt(0),
+      "New StakeNFT position was not created properly!"
+    );
+    let currentState = await getCurrentState(fixture, validators);
+    // Expect infringer validator position to be unregister
+    expectedState.ValidatorPool.ValNFT--;
+    expectedState.ValidatorPool.StakeNFT++;
+
+    // Expect infringer to loose the validator position
+    expectedState.StakeNFT.MAD += stakeAmount - reward;
+    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    // Expect infringer to loose reward on his staking position and be transferred to accusator
+    expectedState.validators[1].MAD += reward;
+    expectedState.validators[0].Acc = true;
+    expectedState.validators[0].ExQ = true;
+    expectedState.validators[0].Reg = false;
+    await showState("Expected state", expectedState);
+    await showState("Current state", currentState);
+    expect(currentState).to.be.deep.equal(
+      expectedState,
+      "Failed assert after minor slash"
+    );
+
+    expectedState = await getCurrentState(fixture, validators);
+    await ethdkg.majorSlash(validators[0], validators[2]);
+    currentState = await getCurrentState(fixture, validators);
+    // Expect infringer unregister the validator position
+    expectedState.ValidatorPool.StakeNFT--;
+    // Expect reward to be transferred from ValidatorNFT to disputer
+    expectedState.StakeNFT.MAD -= stakeAmount - reward;
+    // the stakeamount minus the 2 rewards given to the 2 accusators should be redistributed to all
+    // validators
+    expectedState.ValidatorNFT.MAD += stakeAmount - BigInt(2) * reward;
+    expectedState.validators[2].MAD += reward;
+    // Expect infringer to be unregistered, not in exiting queue and not accusable
+    expectedState.validators[0].Reg = false;
+    expectedState.validators[0].ExQ = false;
+    expectedState.validators[0].Acc = false;
+
+    expect(currentState).to.be.deep.equal(
+      expectedState,
+      "Failed checking state after major slashing!"
+    );
+  });
+
+  it("Should be able to Minor slash and major slash even with excess of eth and Token", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+
     let reward = ethers.utils.parseEther("10000").toBigInt();
     //Set reward to 1 MadToken
     await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [

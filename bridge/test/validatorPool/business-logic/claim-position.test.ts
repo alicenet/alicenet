@@ -1,4 +1,5 @@
 import { BigNumber, Signer } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import {
   factoryCallAny,
@@ -8,6 +9,7 @@ import {
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
+  burnStakeTo,
   commitSnapshots,
   createValidators,
   getCurrentState,
@@ -38,6 +40,36 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.Factory.StakeNFT--;
       expectedState.validators[index].NFT++;
     });
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
+      validators,
+    ]);
+    await commitSnapshots(fixture, 4);
+    for (const validatorsSnapshot of validatorsSnapshots) {
+      await fixture.validatorPool
+        .connect(await getValidatorEthAccount(validatorsSnapshot))
+        .claimExitingNFTPosition();
+    }
+    let currentState = await getCurrentState(fixture, validators);
+    expect(currentState).to.be.deep.equal(expectedState);
+  });
+
+  it("Should successfully claim exiting NFT positions of all validators even with excess of ETH and tokens", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+    //As this is a complete cycle, expect the initial state to be exactly the same as the final state
+    let expectedState = await getCurrentState(fixture, validators);
+    validators.map((element, index) => {
+      expectedState.Factory.StakeNFT--;
+      expectedState.validators[index].NFT++;
+    });
+    expectedState.StakeNFT.ETH = BigInt(0);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
