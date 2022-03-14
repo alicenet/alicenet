@@ -35,17 +35,23 @@ export interface Snapshot {
   validatorIndex: number;
 }
 
-export interface Fixture {
+export interface BaseFixture {
+  factory: MadnetFactory;
+  [key: string]: any;
+}
+
+export interface BaseTokensFixture extends BaseFixture {
   madToken: MadToken;
   madByte: MadByte;
   stakeNFT: StakeNFT;
+}
+
+export interface Fixture extends BaseTokensFixture {
   validatorNFT: ValidatorNFT;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
-  factory: MadnetFactory;
   namedSigners: SignerWithAddress[];
-  [key: string]: any;
 }
 
 /**
@@ -258,31 +264,10 @@ async function deployUpgradeableWithFactory(
   );
 }
 
-export const getFixture = async (
-  mockValidatorPool?: boolean,
-  mockSnapshots?: boolean,
-  mockETHDKG?: boolean
-): Promise<Fixture> => {
-  await network.provider.send("evm_setAutomine", [true]);
-  // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-  // being sent as input to the function (the contract bytecode), so we need to increase the block
-  // gas limit temporally in order to deploy the template
-  await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
-
-  const namedSigners = await ethers.getSigners();
-  const [admin] = namedSigners;
-
-  let txCount = await ethers.provider.getTransactionCount(admin.address);
-  //calculate the factory address for the constructor arg
-  let futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
-  const Factory = await ethers.getContractFactory("MadnetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
-  await factory.deployed();
-
+export const deployFactoryAndBaseTokens = async (
+  admin: SignerWithAddress
+): Promise<BaseTokensFixture> => {
+  let factory = await deployMadnetFactory(admin);
   // MadToken
   const madToken = (await deployStaticWithFactory(factory, "MadToken", [
     admin.address,
@@ -300,7 +285,64 @@ export const getFixture = async (
     "StakeNFT"
   )) as StakeNFT;
 
-  // ValidatorNFT
+  return {
+    factory,
+    madToken,
+    madByte,
+    stakeNFT,
+  };
+};
+export const deployMadnetFactory = async (
+  admin: SignerWithAddress
+): Promise<MadnetFactory> => {
+  let txCount = await ethers.provider.getTransactionCount(admin.address);
+  //calculate the factory address for the constructor arg
+  let futureFactoryAddress = ethers.utils.getContractAddress({
+    from: admin.address,
+    nonce: txCount,
+  });
+
+  const Factory = await ethers.getContractFactory("MadnetFactory");
+  const factory = await Factory.deploy(futureFactoryAddress);
+  await factory.deployed();
+  return factory;
+};
+
+export const preFixtureSetup = async () => {
+  await network.provider.send("evm_setAutomine", [true]);
+  // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+  // being sent as input to the function (the contract bytecode), so we need to increase the block
+  // gas limit temporally in order to deploy the template
+  await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+};
+
+export const posFixtureSetup = async () => {
+  // finish workaround, putting the blockgas limit to the previous value 30_000_000
+  await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
+};
+
+export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
+  await preFixtureSetup();
+  const [admin] = await ethers.getSigners();
+  // MadToken
+  let fixture = await deployFactoryAndBaseTokens(admin);
+  await posFixtureSetup();
+  return fixture;
+};
+
+export const getFixture = async (
+  mockValidatorPool?: boolean,
+  mockSnapshots?: boolean,
+  mockETHDKG?: boolean
+): Promise<Fixture> => {
+  await preFixtureSetup();
+  const namedSigners = await ethers.getSigners();
+  const [admin] = namedSigners;
+  // Deploy the base tokens
+  const { factory, madToken, madByte, stakeNFT } =
+    await deployFactoryAndBaseTokens(admin);
+
+  // ValidatorNFT is not considered a base token since is only used by validators
   const validatorNFT = (await deployStaticWithFactory(
     factory,
     "ValidatorNFT"
@@ -373,9 +415,9 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
-  // finish workaround, putting the blockgas limit to the previous value 30_000_000
-  await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
+  await posFixtureSetup();
 
+  // work around to make sure that we always start the chain after the PhaseLength number of blocks
   let blockNumber = BigInt(await ethers.provider.getBlockNumber());
   let phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -409,13 +451,13 @@ export async function getTokenIdFromTx(tx: any) {
 }
 
 export async function factoryCallAny(
-  fixture: Fixture,
+  fixture: BaseFixture,
   contractName: string,
   functionName: string,
   args?: Array<any>
 ) {
   let factory = fixture.factory;
-  let contract = fixture[contractName];
+  let contract: Contract = fixture[contractName];
   if (args === undefined) {
     args = [];
   }

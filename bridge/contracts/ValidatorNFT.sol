@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import "contracts/StakeNFT.sol";
+import "contracts/libraries/NFTStake/NFTStakeBase.sol";
 
 /// @custom:salt ValidatorNFT
 /// @custom:deploy-type deployStatic
-contract ValidatorNFT is StakeNFTBase {
+contract ValidatorNFT is NFTStakeBase {
     // solhint-disable no-empty-blocks
-    constructor() StakeNFTBase() {}
+    constructor() NFTStakeBase() {}
 
     function initialize() public initializer onlyFactory {
         __stakeNFTBaseInit("MNVSNFT", "MNVS");
