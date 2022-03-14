@@ -8,7 +8,7 @@
     "no-unused-vars": "warn",
     "payable-fallback": "warn",
     "reason-string": ["warn", {"maxLength": 100}],
-    "quotes": ["warn","double"],
+    "quotes": ["warn", "double"],
     "const-name-snakecase": "warn",
     "contract-name-camelcase": "warn",
     "event-name-camelcase": "warn",

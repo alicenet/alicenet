@@ -9,11 +9,9 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   let notAdmin1Signer: SignerWithAddress;
   let maxNumValidators = 5;
   let stakeAmount = 20000;
-  let validators = new Array();
   let stakingTokenIds = new Array();
 
   beforeEach(async function () {
-    validators = [];
     stakingTokenIds = [];
     fixture = await getFixture();
     const [admin, notAdmin1, , ,] = fixture.namedSigners;

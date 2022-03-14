@@ -307,4 +307,77 @@ abstract contract ImmutableFoundation is ImmutableFactory {
         return 0x466f756e646174696f6e00000000000000000000000000000000000000000000;
     }
 }
+
+abstract contract ImmutableAToken is ImmutableFactory {
+    address private immutable _AToken;
+
+    constructor() {
+        _AToken = getMetamorphicContractAddress(
+            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    modifier onlyAToken() {
+        require(msg.sender == _AToken, "onlyAToken");
+        _;
+    }
+
+    function _ATokenAddress() internal view returns (address) {
+        return _AToken;
+    }
+
+    function _saltForAToken() internal pure returns (bytes32) {
+        return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableATokenBurner is ImmutableFactory {
+    address private immutable _ATokenBurner;
+
+    constructor() {
+        _ATokenBurner = getMetamorphicContractAddress(
+            0x41546f6b656e4275726e65720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    modifier onlyATokenBurner() {
+        require(msg.sender == _ATokenBurner, "onlyATokenBurner");
+        _;
+    }
+
+    function _ATokenBurnerAddress() internal view returns (address) {
+        return _ATokenBurner;
+    }
+
+    function _saltForATokenBurner() internal pure returns (bytes32) {
+        return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableATokenMinter is ImmutableFactory {
+    address private immutable _ATokenMinter;
+
+    constructor() {
+        _ATokenMinter = getMetamorphicContractAddress(
+            0x41546f6b656e4d696e7465720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    modifier onlyATokenMinter() {
+        require(msg.sender == _ATokenMinter, "onlyATokenMinter");
+        _;
+    }
+
+    function _ATokenMinterAddress() internal view returns (address) {
+        return _ATokenMinter;
+    }
+
+    function _saltForATokenMinter() internal pure returns (bytes32) {
+        return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
+    }
+}
+
 /* solhint-enable */
