@@ -38,3 +38,7 @@ func (ph *PlaceHolder) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 func (ph *PlaceHolder) DoDone(logger *logrus.Entry) {
 	logger.Infof("ph done")
 }
+
+func (ph *PlaceHolder) GetExecutionData() interface{} {
+	return nil
+}

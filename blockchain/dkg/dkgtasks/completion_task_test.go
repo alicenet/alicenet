@@ -221,6 +221,7 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 	err = completionTasks[0].DoWork(ctx, logger, eth)
 	assert.Nil(t, err)
 
+	eth.Commit()
 	shouldRetry := completionTasks[0].ShouldRetry(ctx, logger, eth)
 	assert.False(t, shouldRetry)
 }

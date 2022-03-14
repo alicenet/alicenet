@@ -13,19 +13,16 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	*DkgTask
+	*ExecutionData
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &ShareDistributionTask{}
 
-// asserting that ShareDistributionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &ShareDistributionTask{}
-
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		DkgTask: NewDkgTask(state, start, end),
+		ExecutionData: NewDkgTask(state, start, end),
 	}
 }
 
@@ -90,13 +87,13 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
 	// we increase the Gas to have priority for the next blocks
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Distribute shares
@@ -105,16 +102,15 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
 	}
-	t.TxReplOpts.TxHash = txn.Hash()
-	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplOpts.GasFeeCap,
-		"GasTipCap": t.TxReplOpts.GasTipCap,
-		"Nonce":     t.TxReplOpts.Nonce,
-		"Hash":      t.TxReplOpts.TxHash.Hex(),
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
 	}).Info("share distribution fees")
 
 	// Queue transaction
@@ -171,10 +167,6 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
 }
 
-func (t *ShareDistributionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *ShareDistributionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *ShareDistributionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

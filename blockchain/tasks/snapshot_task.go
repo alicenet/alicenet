@@ -22,6 +22,9 @@ type SnapshotTask struct {
 	rawSigGroup []byte
 }
 
+// asserting that SnapshotTask struct implements interface interfaces.Task
+var _ interfaces.Task = &SnapshotTask{}
+
 func NewSnapshotTask(account accounts.Account) *SnapshotTask {
 	return &SnapshotTask{
 		acct: account,
@@ -214,4 +217,8 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 }
 
 func (*SnapshotTask) DoDone(logger *logrus.Entry) {
+}
+
+func (*SnapshotTask) GetExecutionData() interface{} {
+	return nil
 }

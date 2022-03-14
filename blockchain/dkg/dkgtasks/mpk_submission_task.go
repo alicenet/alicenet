@@ -13,19 +13,16 @@ import (
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	*DkgTask
+	*ExecutionData
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &MPKSubmissionTask{}
 
-// asserting that MPKSubmissionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &MPKSubmissionTask{}
-
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		DkgTask: NewDkgTask(state, start, end),
+		ExecutionData: NewDkgTask(state, start, end),
 	}
 }
 
@@ -112,13 +109,13 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
 	// we increase the Gas to have priority for the next blocks
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Submit MPK
@@ -127,16 +124,15 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxReplOpts.TxHash = txn.Hash()
-	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplOpts.GasFeeCap,
-		"GasTipCap": t.TxReplOpts.GasTipCap,
-		"Nonce":     t.TxReplOpts.Nonce,
-		"Hash":      t.TxReplOpts.TxHash.Hex(),
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
 	}).Info("MPK submission fees")
 
 	// Queue transaction
@@ -175,12 +171,8 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
 }
 
-func (t *MPKSubmissionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *MPKSubmissionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *MPKSubmissionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }
 
 func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum) bool {

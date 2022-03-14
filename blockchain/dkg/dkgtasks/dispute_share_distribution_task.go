@@ -17,19 +17,16 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	*DkgTask
+	*ExecutionData
 }
 
 // asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &DisputeShareDistributionTask{}
 
-// asserting that DisputeShareDistributionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &DisputeShareDistributionTask{}
-
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		DkgTask: NewDkgTask(state, start, end),
+		ExecutionData: NewDkgTask(state, start, end),
 	}
 }
 
@@ -99,13 +96,13 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
 	// we increase the Gas to have priority for the next blocks
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	for _, participant := range t.State.BadShares {
@@ -148,16 +145,15 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}
-		t.TxReplOpts.TxHash = txn.Hash()
-		t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-		t.TxReplOpts.GasTipCap = txn.GasTipCap()
-		t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+		t.TxOpts.GasFeeCap = txn.GasFeeCap()
+		t.TxOpts.GasTipCap = txn.GasTipCap()
+		t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 		logger.WithFields(logrus.Fields{
-			"GasFeeCap": t.TxReplOpts.GasFeeCap,
-			"GasTipCap": t.TxReplOpts.GasTipCap,
-			"Nonce":     t.TxReplOpts.Nonce,
-			"Hash":      t.TxReplOpts.TxHash.Hex(),
+			"GasFeeCap": t.TxOpts.GasFeeCap,
+			"GasTipCap": t.TxOpts.GasTipCap,
+			"Nonce":     t.TxOpts.Nonce,
 		}).Info("bad share dispute fees")
 
 		// Queue transaction
@@ -211,10 +207,6 @@ func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Info("DisputeShareDistributionTask done")
 }
 
-func (t *DisputeShareDistributionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *DisputeShareDistributionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *DisputeShareDistributionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

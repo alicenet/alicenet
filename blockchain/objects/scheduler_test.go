@@ -350,3 +350,7 @@ func (ph *adminTaskMock) DoDone(logger *logrus.Entry) {
 
 func (ph *adminTaskMock) SetAdminHandler(adminHandler *admin.Handlers) {
 }
+
+func (ph *adminTaskMock) GetExecutionData() interface{} {
+	return nil
+}

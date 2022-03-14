@@ -14,21 +14,18 @@ import (
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	*DkgTask
+	*ExecutionData
 	adminHandler interfaces.AdminHandler
 }
 
 // asserting that GPKjSubmissionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &GPKjSubmissionTask{}
 
-// asserting that GPKjSubmissionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &GPKjSubmissionTask{}
-
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		DkgTask:      NewDkgTask(state, start, end),
-		adminHandler: adminHandler,
+		ExecutionData: NewDkgTask(state, start, end),
+		adminHandler:  adminHandler,
 	}
 }
 
@@ -95,13 +92,13 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
 	// we increase the Gas to have priority for the next blocks
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Do it
@@ -109,16 +106,15 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxReplOpts.TxHash = txn.Hash()
-	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplOpts.GasFeeCap,
-		"GasTipCap": t.TxReplOpts.GasTipCap,
-		"Nonce":     t.TxReplOpts.Nonce,
-		"Hash":      t.TxReplOpts.TxHash.Hex(),
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
 	}).Info("GPKj submission fees")
 
 	// Queue transaction
@@ -172,10 +168,6 @@ func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandle
 	t.adminHandler = adminHandler
 }
 
-func (t *GPKjSubmissionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *GPKjSubmissionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *GPKjSubmissionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

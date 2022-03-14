@@ -12,19 +12,16 @@ import (
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	*DkgTask
+	*ExecutionData
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &CompletionTask{}
 
-// asserting that CompletionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &CompletionTask{}
-
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		DkgTask: NewDkgTask(state, start, end),
+		ExecutionData: NewDkgTask(state, start, end),
 	}
 }
 
@@ -70,18 +67,12 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
-
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": txnOpts.GasFeeCap,
-		"GasTipCap": txnOpts.GasTipCap,
-		"Nonce":     txnOpts.Nonce,
-	}).Info("complete fees")
 
 	// Register
 	txn, err := c.Ethdkg().Complete(txnOpts)
@@ -89,17 +80,16 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
-	t.TxReplOpts.TxHash = txn.Hash()
-	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplOpts.GasFeeCap,
-		"GasTipCap": t.TxReplOpts.GasTipCap,
-		"Nonce":     t.TxReplOpts.Nonce,
-		"Hash":      t.TxReplOpts.TxHash.Hex(),
-	}).Info("complete fees2")
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("complete fees")
 
 	logger.Info("CompletionTask sent completed call")
 
@@ -147,12 +137,8 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
 }
 
-func (t *CompletionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *CompletionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *CompletionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }
 
 func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {

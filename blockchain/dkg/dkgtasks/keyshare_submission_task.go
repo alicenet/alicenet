@@ -12,19 +12,16 @@ import (
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
-	*DkgTask
+	*ExecutionData
 }
 
 // asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
 var _ interfaces.Task = &KeyshareSubmissionTask{}
 
-// asserting that KeyshareSubmissionTask struct implements DkgTaskIfase
-var _ DkgTaskIfase = &KeyshareSubmissionTask{}
-
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		DkgTask: NewDkgTask(state, start, end),
+		ExecutionData: NewDkgTask(state, start, end),
 	}
 }
 
@@ -79,13 +76,13 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	// If the TxReplOpts exists, meaning the Tx replacement timeout was reached,
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
 	// we increase the Gas to have priority for the next blocks
-	if t.TxReplOpts != nil && t.TxReplOpts.Nonce != nil {
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxReplOpts.Nonce
-		txnOpts.GasFeeCap = t.TxReplOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxReplOpts.GasTipCap
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Submit Keyshares
@@ -101,16 +98,15 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
-	t.TxReplOpts.TxHash = txn.Hash()
-	t.TxReplOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxReplOpts.GasTipCap = txn.GasTipCap()
-	t.TxReplOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxReplOpts.GasFeeCap,
-		"GasTipCap": t.TxReplOpts.GasTipCap,
-		"Nonce":     t.TxReplOpts.Nonce,
-		"Hash":      t.TxReplOpts.TxHash.Hex(),
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
 	}).Info("key share submission fees")
 
 	// Queue transaction
@@ -172,10 +168,6 @@ func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
 }
 
-func (t *KeyshareSubmissionTask) GetDkgTask() *DkgTask {
-	return t.DkgTask
-}
-
-func (t *KeyshareSubmissionTask) SetDkgTask(dkgTask *DkgTask) {
-	t.DkgTask = dkgTask
+func (t *KeyshareSubmissionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }
