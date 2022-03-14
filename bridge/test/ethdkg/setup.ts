@@ -320,7 +320,7 @@ export const endCurrentPhase = async (ethdkg: ETHDKG) => {
   let bn = await ethers.provider.getBlockNumber();
   let endBlock = phaseStart.add(phaseLength);
   let blocksToMine = endBlock.sub(bn);
-  await mineBlocks(blocksToMine.toNumber());
+  await mineBlocks(blocksToMine.toBigInt());
 };
 
 export const endCurrentAccusationPhase = async (ethdkg: ETHDKG) => {
@@ -330,15 +330,15 @@ export const endCurrentAccusationPhase = async (ethdkg: ETHDKG) => {
   let bn = await ethers.provider.getBlockNumber();
   let endBlock = phaseStart.add(phaseLength.mul(2));
   let blocksToMine = endBlock.sub(bn);
-  await mineBlocks(blocksToMine.toNumber());
+  await mineBlocks(blocksToMine.toBigInt());
 };
 
 export const waitNextPhaseStartDelay = async (ethdkg: ETHDKG) => {
   // advance enough blocks to timeout a phase
-  let phaseStart = await ethdkg.getPhaseStartBlock();
-  let bn = await ethers.provider.getBlockNumber();
-  let blocksToMine = phaseStart.sub(bn).add(1);
-  await mineBlocks(blocksToMine.toNumber());
+  let phaseStart = (await ethdkg.getPhaseStartBlock()).toBigInt();
+  let bn = BigInt(await ethers.provider.getBlockNumber());
+  let blocksToMine = phaseStart - bn + BigInt(1);
+  await mineBlocks(blocksToMine);
 };
 
 export const initializeETHDKG = async (
@@ -539,19 +539,24 @@ export const completeETHDKG = async (
   validators: ValidatorRawData[],
   expectedNonce: number,
   expectedEpoch: number,
-  expectedMadHeight: number
+  expectedMadHeight: number,
+  expectedEthHeight?: number
 ) => {
   // choose an random validator from the list to send the mpk
   var index = Math.floor(Math.random() * validators.length);
   let tx = await ethdkg
     .connect(await getValidatorEthAccount(validators[index]))
     .complete();
+  let _expectedEthHeight = 0;
+  if (typeof expectedEthHeight !== "undefined") {
+    _expectedEthHeight = expectedEthHeight;
+  }
   await assertEventValidatorSetCompleted(
     tx,
     validators.length,
     expectedNonce,
     expectedEpoch,
-    0,
+    _expectedEthHeight,
     expectedMadHeight,
     validators[index].mpk
   );
@@ -633,7 +638,6 @@ export const startAtMPKSubmission = async (
     validators,
     expectedNonce
   );
-
   await waitNextPhaseStartDelay(ethdkg);
   await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
   return [ethdkg, validatorPool, expectedNonce];
@@ -663,7 +667,9 @@ export const completeETHDKGRound = async (
     ethdkg: ETHDKG;
     validatorPool: ValidatorPoolMock | ValidatorPool;
   },
-  expectedEpoch?: number
+  expectedEpoch?: number,
+  expectedMadHeight?: number,
+  computeExpectedEthHeight?: number
 ): Promise<
   [ETHDKG, ValidatorPoolMock | ValidatorPool, number, number, number]
 > => {
@@ -675,7 +681,10 @@ export const completeETHDKGRound = async (
   if (typeof expectedEpoch !== "undefined") {
     _expectedEpoch = expectedEpoch;
   }
-  const expectedMadHeight = 0;
+  let _expectedMadHeight = 0;
+  if (typeof expectedMadHeight !== "undefined") {
+    _expectedMadHeight = expectedMadHeight;
+  }
   // Submit GPKj for all validators
   await submitValidatorsGPKJ(
     ethdkg,
@@ -695,13 +704,14 @@ export const completeETHDKGRound = async (
     validators,
     expectedNonce,
     _expectedEpoch,
-    expectedMadHeight
+    _expectedMadHeight,
+    computeExpectedEthHeight
   );
   return [
     ethdkg,
     validatorPool,
     expectedNonce,
     _expectedEpoch,
-    expectedMadHeight,
+    _expectedMadHeight,
   ];
 };

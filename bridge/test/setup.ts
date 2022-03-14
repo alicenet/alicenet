@@ -64,12 +64,11 @@ export function shuffle(a: ValidatorRawData[]) {
   return a;
 }
 
-export const mineBlocks = async (nBlocks: number) => {
-  while (nBlocks > 0) {
-    nBlocks--;
-    await network.provider.request({
-      method: "evm_mine",
-    });
+export const mineBlocks = async (nBlocks: bigint) => {
+  if (nBlocks > BigInt(0)) {
+    await network.provider.send("hardhat_mine", [
+      ethers.utils.hexValue(nBlocks),
+    ]);
   }
 };
 
@@ -393,10 +392,10 @@ export const getFixture = async (
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
 
-  let blockNumber = await ethers.provider.getBlockNumber();
-  let phaseLength = await ethdkg.getPhaseLength();
-  if (phaseLength.toNumber() >= blockNumber) {
-    await mineBlocks(phaseLength.toNumber());
+  let blockNumber = BigInt(await ethers.provider.getBlockNumber());
+  let phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
+  if (phaseLength >= blockNumber) {
+    await mineBlocks(phaseLength);
   }
 
   return {

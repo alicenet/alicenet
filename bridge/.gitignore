@@ -32,3 +32,4 @@ bindings/generate.go
 !deployments/dev/deploymentArgsTemplate.json
 !deployments/dev/deployList.json
 package-lock.json
+**/generated/*
