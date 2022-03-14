@@ -51,7 +51,12 @@ contract ValidatorPool is
 
     constructor() ValidatorPoolStorage() {}
 
-    receive() external payable onlyValidatorNFT {}
+    receive() external payable {
+        require(
+            msg.sender == _ValidatorNFTAddress() || msg.sender == _StakeNFTAddress(),
+            "Only NFT contracts allowed to send ethereum!"
+        );
+    }
 
     function initialize(
         uint256 stakeAmount_,
@@ -221,6 +226,10 @@ contract ValidatorPool is
     }
 
     function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+        require(
+            _isAccusable(dishonestValidator_),
+            "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
+        );
         uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
             address(this)
         );
@@ -255,6 +264,10 @@ contract ValidatorPool is
     }
 
     function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+        require(
+            _isAccusable(dishonestValidator_),
+            "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
+        );
         uint256 balanceBeforeToken = IERC20Transferable(_MadTokenAddress()).balanceOf(
             address(this)
         );
@@ -268,7 +281,11 @@ contract ValidatorPool is
             stakeTokenID = _mintStakeNFTPosition(minerShares);
             _moveToExitingQueue(dishonestValidator_, stakeTokenID);
         } else {
-            _removeExitingQueueData(dishonestValidator_);
+            if (isValidator(dishonestValidator_)) {
+                _removeValidatorData(dishonestValidator_);
+            } else {
+                _removeExitingQueueData(dishonestValidator_);
+            }
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 

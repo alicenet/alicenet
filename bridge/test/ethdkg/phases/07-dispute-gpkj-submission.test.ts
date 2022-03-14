@@ -375,7 +375,7 @@ describe("ETHDKG: Dispute GPKj", () => {
     );
 
     // submit MPK
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await submitMasterPublicKey(ethdkg, validators4, expectedNonce);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -533,7 +533,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     //await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // length based tests
 

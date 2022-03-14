@@ -9,24 +9,31 @@ import {
 } from "../setup";
 
 interface Contract {
-  StakeNFT: number;
-  ValNFT: number;
-  MAD: number;
-  ETH: number;
+  StakeNFT: bigint;
+  ValNFT: bigint;
+  MAD: bigint;
+  ETH: bigint;
+  Addr: string;
+}
+
+interface Admin {
+  StakeNFT: bigint;
+  ValNFT: bigint;
+  MAD: bigint;
   Addr: string;
 }
 
 interface Validator {
-  NFT: number;
-  MAD: number;
-  ETH: number;
+  NFT: bigint;
+  MAD: bigint;
   Addr: string;
   Reg: boolean;
   ExQ: boolean;
   Acc: boolean;
+  Idx: number;
 }
 interface State {
-  Admin: Contract;
+  Admin: Admin;
   StakeNFT: Contract;
   ValidatorNFT: Contract;
   ValidatorPool: Contract;
@@ -45,101 +52,71 @@ export const commitSnapshots = async (
 
 export const getCurrentState = async (
   fixture: Fixture,
-  validators: string[]
+  _validators: string[]
 ): Promise<State> => {
   // System state
   let state: State = {
     Admin: {
-      StakeNFT: 0,
-      ValNFT: 0,
-      MAD: 0,
-      ETH: 0,
+      StakeNFT: BigInt(0),
+      ValNFT: BigInt(0),
+      MAD: BigInt(0),
       Addr: "0x0",
     },
     StakeNFT: {
-      StakeNFT: 0,
-      ValNFT: 0,
-      MAD: 0,
-      ETH: 0,
+      StakeNFT: BigInt(0),
+      ValNFT: BigInt(0),
+      MAD: BigInt(0),
+      ETH: BigInt(0),
       Addr: "0x0",
     },
     ValidatorNFT: {
-      StakeNFT: 0,
-      ValNFT: 0,
-      MAD: 0,
-      ETH: 0,
+      StakeNFT: BigInt(0),
+      ValNFT: BigInt(0),
+      MAD: BigInt(0),
+      ETH: BigInt(0),
       Addr: "0x0",
     },
     ValidatorPool: {
-      StakeNFT: 0,
-      ValNFT: 0,
-      MAD: 0,
-      ETH: 0,
+      StakeNFT: BigInt(0),
+      ValNFT: BigInt(0),
+      MAD: BigInt(0),
+      ETH: BigInt(0),
       Addr: "0x0",
     },
     Factory: {
-      StakeNFT: 0,
-      ValNFT: 0,
-      MAD: 0,
-      ETH: 0,
+      StakeNFT: BigInt(0),
+      ValNFT: BigInt(0),
+      MAD: BigInt(0),
+      ETH: BigInt(0),
       Addr: "0x0",
     },
     validators: [],
   };
   let [adminSigner] = await ethers.getSigners();
   // Get state for admin
-  state.Admin.StakeNFT = parseFloat(
-    (
-      await fixture.stakeNFT.balanceOf(await adminSigner.getAddress())
-    ).toString()
-  );
-  state.Admin.ValNFT = parseFloat(
-    (
-      await fixture.validatorNFT.balanceOf(await adminSigner.getAddress())
-    ).toString()
-  );
-  state.Admin.MAD = parseFloat(
-    ethers.utils.formatEther(
-      await fixture.madToken.balanceOf(await adminSigner.getAddress())
-    )
-  );
-  state.Admin.ETH = parseFloat(
-    (+ethers.utils.formatEther(
-      await ethers.provider.getBalance(await adminSigner.getAddress())
-    )).toFixed(0)
-  );
-  state.Admin.Addr = (await adminSigner.getAddress()).slice(-4);
-  let maxNumValidators = await fixture.validatorPool.getMaxNumValidators();
+  state.Admin.StakeNFT = (
+    await fixture.stakeNFT.balanceOf(adminSigner.address)
+  ).toBigInt();
+  state.Admin.ValNFT = (
+    await fixture.validatorNFT.balanceOf(adminSigner.address)
+  ).toBigInt();
+  state.Admin.MAD = (
+    await fixture.madToken.balanceOf(adminSigner.address)
+  ).toBigInt();
+  state.Admin.Addr = adminSigner.address;
+
   // Get state for validators
-  for (let i = 0; i < maxNumValidators.toNumber(); i++) {
-    if (typeof validators[i] !== undefined && validators[i]) {
-      let validator: Validator = {
-        NFT: parseFloat(
-          (await fixture.stakeNFT.balanceOf(validators[i])).toString()
-        ),
-        MAD: parseFloat(
-          ethers.utils.formatEther(
-            await fixture.madToken.balanceOf(validators[i])
-          )
-        ),
-        ETH: parseFloat(
-          (+ethers.utils.formatEther(
-            await ethers.provider.getBalance(validators[i])
-          )).toFixed(0)
-        ),
-        Addr: validators[i].slice(-4),
-        Reg: await fixture.validatorPool.isValidator(validators[i]),
-        ExQ: await fixture.validatorPool.isInExitingQueue(validators[i]),
-        Acc: await fixture.validatorPool.isAccusable(validators[i]),
-      };
-      state.validators.push(validator);
-    }
-    // state.validators[i].NFT = parseFloat((await fixture.stakeNFT.balanceOf(
-    //   validators[i])).toString())
-    // state.validators[i].MAD = parseFloat(ethers.utils.formatEther(await fixture.madToken.balanceOf(
-    //   validators[i])))
-    // state.validators[i].ETH = parseFloat((+ethers.utils.formatEther(await ethers.provider.getBalance(validators[i]))).toFixed(0))
-    // state.validators[i].Addr = validators[i].slice(-4)
+  for (let i = 0; i < _validators.length; i++) {
+    let validator: Validator = {
+      Idx: i,
+      NFT: (await fixture.stakeNFT.balanceOf(_validators[i])).toBigInt(),
+      MAD: (await fixture.madToken.balanceOf(_validators[i])).toBigInt(),
+      Addr: _validators[i],
+      Reg: await fixture.validatorPool.isValidator(_validators[i]),
+      ExQ: await fixture.validatorPool.isInExitingQueue(_validators[i]),
+      Acc: await fixture.validatorPool.isAccusable(_validators[i]),
+    };
+    state.validators.push(validator);
   }
   // Contract data
   let contractData = [
@@ -162,28 +139,19 @@ export const getCurrentState = async (
   ];
   // Get state for contracts
   for (let i = 0; i < contractData.length; i++) {
-    contractData[i].contractState.StakeNFT = parseInt(
-      (
-        await fixture.stakeNFT.balanceOf(contractData[i].contractAddress)
-      ).toString()
-    );
-    contractData[i].contractState.ValNFT = parseInt(
-      (
-        await fixture.validatorNFT.balanceOf(contractData[i].contractAddress)
-      ).toString()
-    );
-    contractData[i].contractState.MAD = parseFloat(
-      ethers.utils.formatEther(
-        await fixture.madToken.balanceOf(contractData[i].contractAddress)
-      )
-    );
-    contractData[i].contractState.ETH = parseFloat(
-      (+ethers.utils.formatEther(
-        await ethers.provider.getBalance(contractData[i].contractAddress)
-      )).toFixed(0)
-    );
-    contractData[i].contractState.Addr =
-      contractData[i].contractAddress.slice(-4);
+    contractData[i].contractState.StakeNFT = (
+      await fixture.stakeNFT.balanceOf(contractData[i].contractAddress)
+    ).toBigInt();
+    contractData[i].contractState.ValNFT = (
+      await fixture.validatorNFT.balanceOf(contractData[i].contractAddress)
+    ).toBigInt();
+    contractData[i].contractState.MAD = (
+      await fixture.madToken.balanceOf(contractData[i].contractAddress)
+    ).toBigInt();
+    contractData[i].contractState.ETH = (
+      await ethers.provider.getBalance(contractData[i].contractAddress)
+    ).toBigInt();
+    contractData[i].contractState.Addr = contractData[i].contractAddress;
   }
   return state;
 };
@@ -208,7 +176,8 @@ export const createValidators = async (
     fixture.validatorPool.address,
     stakeAmountMadWei.mul(_validatorsSnapshots.length)
   );
-  for (const validator of _validatorsSnapshots) {
+  for (let i = 0; i < _validatorsSnapshots.length; i++) {
+    let validator = _validatorsSnapshots[i];
     await getValidatorEthAccount(validator);
     validators.push(validator.address);
     // Send MAD tokens to each validator
@@ -261,4 +230,17 @@ export const claimPosition = async (
     .claimExitingNFTPosition()) as ContractTransaction;
   let receipt = await ethers.provider.getTransactionReceipt(claimTx.hash);
   return BigNumber.from(receipt.logs[0].topics[3]);
+};
+
+export const getStakeNFTFromMinorSlashEvent = async (
+  tx: ContractTransaction
+): Promise<bigint> => {
+  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  let intrface = new ethers.utils.Interface([
+    "event ValidatorMinorSlashed(address indexed account, uint256 stakeNFT)",
+  ]);
+  let data = receipt.logs[receipt.logs.length - 1].data;
+  let topics = receipt.logs[receipt.logs.length - 1].topics;
+  let event = intrface.decodeEventLog("ValidatorMinorSlashed", data, topics);
+  return event.stakeNFT;
 };

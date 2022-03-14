@@ -35,14 +35,13 @@ describe("ValidatorPool: Collecting logic", async function () {
       validators,
       stakingTokenIds,
     ]);
+    let eths = ethers.utils.parseEther("4.0").toBigInt();
     let expectedState = await getCurrentState(fixture, validators);
-    //Simulate 4 ETH from admin earned by pool after validators registration
-    expectedState.Admin.ETH -= 4;
     await fixture.validatorNFT.connect(adminSigner).depositEth(42, {
-      value: ethers.utils.parseEther("4.0"),
+      value: eths,
     });
     //Expect ValidatorNFT balance to increment by earnings
-    expectedState.ValidatorNFT.ETH += 4;
+    expectedState.ValidatorNFT.ETH += eths;
     // Complete ETHDKG Round
     await showState("After deposit:", expectedState);
     await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
@@ -54,8 +53,7 @@ describe("ValidatorPool: Collecting logic", async function () {
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
       .collectProfits();
     // Expect that a fraction of the earnings (1/4 validators) to be transfer from ValidatorNFT to collecting validator
-    expectedState.ValidatorNFT.ETH -= 1;
-    expectedState.validators[0].ETH += 1;
+    expectedState.ValidatorNFT.ETH -= eths / BigInt(4);
     let currentState = await getCurrentState(fixture, validators);
     await showState("Expected state after collect profit", expectedState);
     await showState("Current state after collect profit", currentState);
@@ -69,22 +67,19 @@ describe("ValidatorPool: Collecting logic", async function () {
     ]);
     let expectedState = await getCurrentState(fixture, validators);
     let maxNumValidators = validatorsSnapshots.length;
-    let eths = 4;
-    let mads = 4;
+    let eths = ethers.utils.parseEther(`4`).toBigInt();
+    let mads = ethers.utils.parseEther(`4`).toBigInt();
     await fixture.validatorNFT.connect(adminSigner).depositEth(42, {
-      value: ethers.utils.parseEther(`${eths}`),
+      value: eths,
     });
     await fixture.madToken
       .connect(adminSigner)
-      .approve(fixture.validatorNFT.address, ethers.utils.parseEther("4"));
-    await fixture.validatorNFT
-      .connect(adminSigner)
-      .depositToken(42, ethers.utils.parseEther(`${mads}`));
+      .approve(fixture.validatorNFT.address, mads);
+    await fixture.validatorNFT.connect(adminSigner).depositToken(42, mads);
     //Expect ValidatorNFT balance to increment by earnings
-    expectedState.ValidatorNFT.ETH += 4;
-    expectedState.ValidatorNFT.MAD += 4;
-    expectedState.Admin.MAD -= 4;
-    expectedState.Admin.ETH -= 4;
+    expectedState.ValidatorNFT.ETH += eths;
+    expectedState.ValidatorNFT.MAD += mads;
+    expectedState.Admin.MAD -= mads;
     // Complete ETHDKG Round
     let currentState = await getCurrentState(fixture, validators);
     await showState("Expected state after deposit", expectedState);
@@ -101,10 +96,9 @@ describe("ValidatorPool: Collecting logic", async function () {
         .collectProfits();
     }
     validators.map((_, index) => {
-      expectedState.ValidatorNFT.ETH -= eths / maxNumValidators;
-      expectedState.validators[index].ETH += eths / maxNumValidators;
-      expectedState.ValidatorNFT.MAD -= mads / maxNumValidators;
-      expectedState.validators[index].MAD += mads / maxNumValidators;
+      expectedState.ValidatorNFT.ETH -= eths / BigInt(maxNumValidators);
+      expectedState.ValidatorNFT.MAD -= mads / BigInt(maxNumValidators);
+      expectedState.validators[index].MAD += mads / BigInt(maxNumValidators);
       expectedState.validators[index].Reg = true;
       expectedState.validators[index].Acc = true;
     });
