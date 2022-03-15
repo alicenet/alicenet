@@ -7,18 +7,6 @@
 * [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
 * [Node 16](https://nodejs.org/en/download/)
 
-In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
-version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
-
-```shell
-$ npm prefix --global
-$ sudo npm install -g n
-$ echo $PATH
-$ command -v n
-$ n --version
-$ n i lts
-```
-
 ## Build MadNet
 First, this repository needs to be cloned, and be the current working dir.
 
@@ -203,6 +191,19 @@ make: *** [build] Error 1
 >  cd ..
 >```
 > now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
+
+# Different Node versions
+In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
+version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
+
+```shell
+$ npm prefix --global
+$ sudo npm install -g n
+$ echo $PATH
+$ command -v n
+$ n --version
+$ n i lts
+```
 
 # WHAT'S NEXT
 
