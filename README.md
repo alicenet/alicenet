@@ -1,12 +1,12 @@
 # MadNet
 
 ## Requirements
-### Always required
+#### Always required
 * [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
-### Required for working on the Golang client (until it is Dockerized)
+#### Required for working on the Golang client (until it is Dockerized)
 * [Go 1.17](https://go.dev/dl/)
 * [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
-### Required for working on Solidity contracts
+#### Required for working on Solidity contracts
 * [Node 16](https://nodejs.org/en/download/)
 
 ## Build MadNet
