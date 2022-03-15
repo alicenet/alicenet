@@ -630,7 +630,6 @@ func (c *ContractDetails) DepositAddress() common.Address {
 	return c.depositAddress
 }
 
->>>>>>> bcf7c9e (more tests and details)
 func (c *ContractDetails) Ethdkg() *bindings.ETHDKG {
 	return c.ethdkg
 }
