@@ -1,20 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2018",
-    "module": "commonjs",
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
-    //"moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "resolveJsonModule": true,
     "declaration": true
   },
   "include": [
-    "./deploy",
-    "test",
+    "./test",
     "./scripts",
-    "./src/**/*",
+    "./contracts/**/*",
     "./typechain-types/**/*",
     "**/*.ts",
     "./decs.d.ts"
