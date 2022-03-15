@@ -48,7 +48,7 @@ describe("Testing AToken", async () => {
         expect(currentState).to.be.deep.eq(expectedState);
       });
 
-      it.only("Should burn when called by external identified as burner not impersonating factory", async function () {
+      it("Should burn when called by external identified as burner not impersonating factory", async function () {
         //migrate some tokens for burning
         await fixture.madToken
           .connect(user)
