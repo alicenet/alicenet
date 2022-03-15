@@ -11,6 +11,9 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  AToken,
+  ATokenBurner,
+  ATokenMinter,
   ETHDKG,
   MadByte,
   MadnetFactory,
@@ -61,12 +64,11 @@ export function shuffle(a: ValidatorRawData[]) {
   return a;
 }
 
-export const mineBlocks = async (nBlocks: number) => {
-  while (nBlocks > 0) {
-    nBlocks--;
-    await network.provider.request({
-      method: "evm_mine",
-    });
+export const mineBlocks = async (nBlocks: bigint) => {
+  if (nBlocks > BigInt(0)) {
+    await network.provider.send("hardhat_mine", [
+      ethers.utils.hexValue(nBlocks),
+    ]);
   }
 };
 
@@ -154,17 +156,17 @@ function getBytes32Salt(contractName: string) {
   return ethers.utils.formatBytes32String(contractName);
 }
 
-async function deployStaticWithFactory(
+export const deployStaticWithFactory = async (
   factory: MadnetFactory,
   contractName: string,
   initCallData?: any[],
   constructorArgs?: any[]
-): Promise<Contract> {
+): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
   let contractTx;
   if (constructorArgs !== undefined) {
     contractTx = await factory.deployTemplate(
-      _Contract.getDeployTransaction(constructorArgs).data as BytesLike
+      _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
     );
   } else {
     contractTx = await factory.deployTemplate(
@@ -195,7 +197,7 @@ async function deployStaticWithFactory(
   }
 
   return _Contract.attach(await getContractAddressFromDeployedStaticEvent(tx));
-}
+};
 
 async function deployUpgradeableWithFactory(
   factory: MadnetFactory,
@@ -360,7 +362,7 @@ export const getFixture = async (
       factory,
       "SnapshotsMock",
       "Snapshots",
-      undefined,
+      [10, 40],
       [1, 1]
     )) as Snapshots;
   } else {
@@ -368,19 +370,32 @@ export const getFixture = async (
     snapshots = (await deployUpgradeableWithFactory(
       factory,
       "Snapshots",
-      undefined,
-      undefined,
+      "Snapshots",
+      [10, 40],
       [1, 1024]
     )) as Snapshots;
   }
 
+  let aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
+    madToken.address,
+  ])) as AToken;
+  let aTokenMinter = (await deployUpgradeableWithFactory(
+    factory,
+    "ATokenMinter",
+    undefined
+  )) as ATokenMinter;
+  let aTokenBurner = (await deployUpgradeableWithFactory(
+    factory,
+    "ATokenBurner"
+  )) as ATokenBurner;
+
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
 
-  let blockNumber = await ethers.provider.getBlockNumber();
-  let phaseLength = await ethdkg.getPhaseLength();
-  if (phaseLength.toNumber() >= blockNumber) {
-    await mineBlocks(phaseLength.toNumber());
+  let blockNumber = BigInt(await ethers.provider.getBlockNumber());
+  let phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
+  if (phaseLength >= blockNumber) {
+    await mineBlocks(phaseLength);
   }
 
   return {
@@ -393,6 +408,9 @@ export const getFixture = async (
     ethdkg,
     factory,
     namedSigners,
+    aToken,
+    aTokenMinter,
+    aTokenBurner,
   };
 };
 

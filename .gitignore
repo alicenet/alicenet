@@ -30,3 +30,6 @@ localstate.swagger.json
 **/*.pb.gw.go
 **/*_mngen.go
 **/*_mngen_test.go
+node_modules/
+**/package-lock.json
+package.json
