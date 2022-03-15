@@ -67,6 +67,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
 	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
 		logger.Info("txnOpts Replaced")
 		txnOpts.Nonce = t.TxOpts.Nonce
