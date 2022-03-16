@@ -42,10 +42,8 @@ const config: HardhatUserConfig = {
     validator9: 9,
     validator10: 10,
     user: 11,
-    // "user": 2
   },
-  //unnamedAccounts: [],
-  //defaultNetwork: "ganache",
+
   networks: {
     dev: {
       url: "http://127.0.0.1:8545",
@@ -74,7 +72,6 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: false,
       mining: {
         auto: true,
-        //interval: 15000,
       },
       accounts: [
         {

@@ -6,23 +6,21 @@ import { getAccounts, predictFactoryAddress } from "./Setup";
 
 describe("Cli tasks", async () => {
   let firstOwner: string;
-  let firstDelegator: string;
   let accounts: Array<string> = [];
 
   beforeEach(async () => {
     accounts = await getAccounts();
     process.env.silencer = "true";
-    //set owner and delegator
+    // set owner and delegator
     firstOwner = accounts[0];
-    firstDelegator = accounts[1];
   });
 
   xit("deploy factory with cli", async () => {
-    let futureFactoryAddress = await predictFactoryAddress(firstOwner);
-    let factoryAddress = await run("deployFactory");
-    //check if the address is the predicted
+    const futureFactoryAddress = await predictFactoryAddress(firstOwner);
+    const factoryAddress = await run("deployFactory");
+    // check if the address is the predicted
     expect(factoryAddress).to.equal(futureFactoryAddress);
-    let defaultFactoryAddress = await getDefaultFactoryAddress();
+    const defaultFactoryAddress = await getDefaultFactoryAddress();
     expect(defaultFactoryAddress).to.equal(factoryAddress);
   });
 
