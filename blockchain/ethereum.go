@@ -186,6 +186,22 @@ func NewEthereumSimulator(
 	// }
 
 	eth.commit = func() {
+		ctx := context.Background()
+		height, err := eth.GetCurrentHeight(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		initialHeight := height
+
+		for initialHeight >= height {
+			height, err = eth.GetCurrentHeight(ctx)
+			if err != nil {
+				panic(err)
+			}
+
+			<-time.After(1 * time.Second)
+		}
 	}
 
 	return eth, nil

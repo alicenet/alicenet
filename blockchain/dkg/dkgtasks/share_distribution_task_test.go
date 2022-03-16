@@ -105,7 +105,7 @@ func TestShareDistributionBad1(t *testing.T) {
 // One validator attempts to submit invalid commitments (identity element).
 // This should result in a failed submission.
 func TestShareDistributionBad2(t *testing.T) {
-	n := 5
+	n := 4
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()

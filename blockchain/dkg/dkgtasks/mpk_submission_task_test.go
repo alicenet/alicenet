@@ -29,7 +29,6 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
-	callerIdx := -1
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
@@ -38,29 +37,17 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		if amILeading {
-			callerIdx = idx
 			assert.Nil(t, err)
-		} else {
-			if tasks[idx].ShouldRetry(ctx, logger, eth) {
-				assert.NotNil(t, err)
-			} else {
-				assert.Nil(t, err)
-			}
-
-		}
-
-		eth.Commit()
-
-		//This is because the MPK submission task should be
-		//executed only by 1 validator
-		if idx == callerIdx {
 			assert.True(t, tasks[idx].Success)
 		} else {
 			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.NotNil(t, err)
 				assert.False(t, tasks[idx].Success)
 			} else {
+				assert.Nil(t, err)
 				assert.True(t, tasks[idx].Success)
 			}
+
 		}
 	}
 
@@ -183,21 +170,18 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 		err = tasks[idx].DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		eth.Commit()
-
-		//This is because the MPK submission task should be
-		//executed only by 1 validator
-		if idx == 0 {
-			assert.True(t, tasks[idx].Success)
+		if amILeading {
+			assert.Nil(t, err)
 		} else {
-			assert.False(t, tasks[idx].Success)
-		}
+			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
 
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
-		assert.False(t, shouldRetry)
+		}
 	}
 }
 

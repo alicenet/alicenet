@@ -53,17 +53,38 @@ func TestCompletionAllGood(t *testing.T) {
 
 	// Advance to Completion phase
 	advanceTo(t, eth, completionStart)
-	eth.Commit()
 
-	// Do bad Completion task; this should fail because we are past
-	state := dkgStates[0]
+	for idx := 0; idx < n; idx++ {
+		state := dkgStates[idx]
 
-	err = completionTasks[0].Initialize(ctx, logger, eth, state)
-	if err != nil {
-		t.Fatal(err)
+		err := completionTasks[idx].Initialize(ctx, logger, eth, state)
+		assert.Nil(t, err)
+		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger)
+		err = completionTasks[idx].DoWork(ctx, logger, eth)
+		if amILeading {
+			assert.Nil(t, err)
+			assert.True(t, completionTasks[idx].Success)
+		} else {
+			if completionTasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.NotNil(t, err)
+				assert.False(t, completionTasks[idx].Success)
+			} else {
+				assert.Nil(t, err)
+				assert.True(t, completionTasks[idx].Success)
+			}
+
+		}
 	}
-	err = completionTasks[0].DoWork(ctx, logger, eth)
-	assert.Nil(t, err)
+
+	// state := dkgStates[0]
+
+	// err = completionTasks[0].Initialize(ctx, logger, eth, state)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	// err = completionTasks[0].DoWork(ctx, logger, eth)
+	// assert.Nil(t, err)
 }
 
 // We begin by submitting invalid information.
@@ -71,7 +92,7 @@ func TestCompletionAllGood(t *testing.T) {
 // for the Ethereum interface.
 func TestCompletionBad1(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -94,7 +115,7 @@ func TestCompletionBad1(t *testing.T) {
 // We test to ensure that everything behaves correctly.
 func TestCompletionBad2(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)

@@ -153,6 +153,7 @@ func TestRegistrationGood2(t *testing.T) {
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
+	// todo: replace with GetETHDKGEvent("RegOpen", logs)
 	eventMap := monitor.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {

@@ -58,7 +58,7 @@ func TestGPKjSubmissionGoodAllValid(t *testing.T) {
 // this should raise an error.
 func TestGPKjSubmissionBad1(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -84,7 +84,7 @@ func TestGPKjSubmissionBad1(t *testing.T) {
 // the key share submission phase.
 func TestGPKjSubmissionBad2(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
