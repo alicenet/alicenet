@@ -42,16 +42,16 @@ const config: HardhatUserConfig = {
     validator9: 9,
     validator10: 10,
     user: 11,
-    // "user": 2
   },
-  //unnamedAccounts: [],
-  //defaultNetwork: "ganache",
+
   networks: {
     dev: {
       url: "http://127.0.0.1:8545",
       gas: "auto",
       gasPrice: "auto",
-      accounts: ["0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"],
+      accounts: [
+        "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
+      ],
       gasMultiplier: 2,
     },
     ropsten: {
@@ -72,7 +72,6 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: false,
       mining: {
         auto: true,
-        //interval: 15000,
       },
       accounts: [
         {

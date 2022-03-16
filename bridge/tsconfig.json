@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "module": "es2022",
+    "module": "commonjs",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
@@ -13,7 +13,7 @@
   "include": [
     "./test",
     "./scripts",
-    "./contracts/**/*",
+    "./contracts",
     "./typechain-types/**/*",
     "**/*.ts",
     "./decs.d.ts"

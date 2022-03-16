@@ -5,19 +5,15 @@ import { Fixture, getFixture } from "../setup";
 
 describe("ValidatorPool Access Control: An user without admin role should not be able to:", async function () {
   let fixture: Fixture;
-  let adminSigner: SignerWithAddress;
   let notAdmin1Signer: SignerWithAddress;
-  let maxNumValidators = 5;
-  let stakeAmount = 20000;
-  let validators = new Array();
-  let stakingTokenIds = new Array();
+  const maxNumValidators = 5;
+  const stakeAmount = 20000;
+  const validators: any[] = [];
+  const stakingTokenIds: any[] = [];
 
   beforeEach(async function () {
-    validators = [];
-    stakingTokenIds = [];
     fixture = await getFixture();
-    const [admin, notAdmin1, , ,] = fixture.namedSigners;
-    adminSigner = await ethers.getSigner(admin.address);
+    const [, notAdmin1, , ,] = fixture.namedSigners;
     notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
   });
 
