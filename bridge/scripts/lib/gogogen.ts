@@ -1,6 +1,5 @@
 import fs from "fs";
 import { task } from "hardhat/config";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 task("go-go-gen", "Builds generate.go file from all json files in path")
   .addParam("in", "relative path of the output files")

@@ -46,7 +46,7 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
-    function setEpochLength(uint32 epochLength_) external {
+    function setEpochLength(uint32 epochLength_) public {
         _epochLength = epochLength_;
     }
 

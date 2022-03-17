@@ -40,7 +40,9 @@ describe("Madnetfactory API test", async () => {
     expect(numContracts.toNumber()).to.equal(saltsArray.length);
     const saltStrings = bytes32ArrayToStringArray(saltsArray);
     for (let i = 0; i < saltStrings.length; i++) {
-      const address = await factory.lookup(ethers.utils.formatBytes32String( saltStrings[i]));
+      const address = await factory.lookup(
+        ethers.utils.formatBytes32String(saltStrings[i])
+      );
       expect(address).to.equal(
         getMetamorphicAddress(factory.address, saltsArray[i])
       );
