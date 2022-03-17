@@ -69,7 +69,7 @@ describe("Cli tasks", async () => {
 
   it("deploys mock contract with deployTemplate then deploys a metamorphic contract", async () => {
     await cliDeployFactory()
-    let testVar1 = "1"
+    let testVar1 = "14"
     let testVar2 = "s"
     let templateData = await cliDeployTemplate(MOCK, undefined, [testVar1, testVar2]);
     let metaData = await cliDeployStatic(MOCK, undefined, undefined);

@@ -26,7 +26,7 @@ task("go-go-gen", "Builds generate.go file from all json files in path")
       outpath = "";
     }
     fs.readdirSync(taskArgs.in).forEach((file) => {
-      let source = file.replace(".json", "");
+      const source = file.replace(".json", "");
       outputData =
         outputData +
         `abigen --abi ${taskArgs.in}/${source}.json --pkg ${taskArgs.pkg} --type ${source} --out ${outpath}${source}.go\n`;

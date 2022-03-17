@@ -1,25 +1,25 @@
 import fs from "fs";
-import { FactoryData } from "./lib/factoryStateUtil";
+import { FactoryData } from "./lib/deployment/factoryStateUtil";
 
 async function main() {
-  //read the file
-  let rawData = fs.readFileSync("./deployments/testnet/factoryState.json");
-  let State = await JSON.parse(rawData.toString("utf8"));
+  // read the file
+  const rawData = fs.readFileSync("./deployments/testnet/factoryState.json");
+  const State = await JSON.parse(rawData.toString("utf8"));
   let gas = 0;
-  let defaultFactory: FactoryData = State.defaultFactoryData;
+  const defaultFactory: FactoryData = State.defaultFactoryData;
   if (defaultFactory.gas !== undefined) {
     gas += defaultFactory.gas;
   }
-  for (let contract of State.templates) {
+  for (const contract of State.templates) {
     gas += contract.gas;
   }
-  for (let contract of State.staticContracts) {
+  for (const contract of State.staticContracts) {
     gas += contract.gas;
   }
-  for (let contract of State.deployCreates) {
+  for (const contract of State.deployCreates) {
     gas += contract.gas;
   }
-  for (let contract of State.proxies) {
+  for (const contract of State.proxies) {
     gas += contract.gas;
   }
   console.log(gas);
@@ -29,5 +29,5 @@ main()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
-    process.exit(1);
+    throw new Error("unexpected issues");
   });
