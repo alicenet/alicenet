@@ -99,7 +99,7 @@ CHECK_EXISTING() {
         echo -e "Invalid number"
         exit 1
     fi
-    if [ ! -f "./scripts/generated/config/validator$1"]; then
+    if [ ! -f "./scripts/generated/config/validator$1.toml"]; then
         echo -e "Validator $1 does not exist"
         exit 1
     fi
@@ -162,7 +162,13 @@ case $1 in
         ./scripts/base-scripts/unregister.sh
     ;;
     hardhat_node)
-        ./scripts/base-scripts/hardhat_node.sh
+        ./scripts/base-scripts/hardhat_node.sh &
+        GETH_PID="$!"
+
+        # trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
+        trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
+
+        wait
     ;;
     list)
         LIST

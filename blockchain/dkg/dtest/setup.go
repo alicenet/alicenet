@@ -292,6 +292,7 @@ func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Ac
 	jsonPathJoined := filepath.Join(jsonPath...)
 	fmt.Println("jsonPathJoined: ", jsonPathJoined)
 
+	// config.Configuration.Ethereum.DefaultAccount
 	//file := "../../../scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
 	dir, err := ioutil.TempDir("/tmp", "ks")
 	if err != nil {

@@ -2,13 +2,17 @@ package blockchain
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -146,61 +150,39 @@ func NewEthereumSimulator(
 		return nil
 	})
 
-	// eth.commit = func() {
-	// 	c := http.Client{}
-	// 	msg := &JsonrpcMessage{
-	// 		Version: "2.0",
-	// 		ID:      []byte("1"),
-	// 		Method:  "evm_mine",
-	// 		Params:  make([]byte, 0),
-	// 	}
-
-	// 	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	var buff bytes.Buffer
-	// 	err := json.NewEncoder(&buff).Encode(msg)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-
-	// 	reader := bytes.NewReader(buff.Bytes())
-
-	// 	resp, err := c.Post(
-	// 		"http://127.0.0.1:8545",
-	// 		"application/json",
-	// 		reader,
-	// 	)
-
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	_, err = io.ReadAll(resp.Body)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	//fmt.Println(string(bytes))
-	// 	//client.Commit()
-	// }
-
 	eth.commit = func() {
-		ctx := context.Background()
-		height, err := eth.GetCurrentHeight(ctx)
-		if err != nil {
+		c := http.Client{}
+		msg := &JsonrpcMessage{
+			Version: "2.0",
+			ID:      []byte("1"),
+			Method:  "evm_mine",
+			Params:  make([]byte, 0),
+		}
+
+		if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
 			panic(err)
 		}
 
-		initialHeight := height
+		var buff bytes.Buffer
+		err := json.NewEncoder(&buff).Encode(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		for initialHeight >= height {
-			height, err = eth.GetCurrentHeight(ctx)
-			if err != nil {
-				panic(err)
-			}
+		reader := bytes.NewReader(buff.Bytes())
+		resp, err := c.Post(
+			"http://127.0.0.1:8545",
+			"application/json",
+			reader,
+		)
 
-			<-time.After(1 * time.Second)
+		if err != nil {
+			log.Fatalf("error calling evm_mine rpc: %v", err)
+		}
+
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("error reading response from evm_mine rpc: %v", err)
 		}
 	}
 
@@ -638,10 +620,14 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	bm := new(big.Int).SetInt64(bmi64)
 	bf := new(big.Int).Set(baseFee)
 	baseFee2x := new(big.Int).Mul(bm, bf)
+
+	//eth.client.SuggestGasTipCap(subCtx)
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		tipCap = big.NewInt(1)
+		// return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 	}
+	// tipCap := big.NewInt(1)
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
 	opts.Context = ctx
@@ -696,8 +682,10 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 	baseFee2x := new(big.Int).Mul(bm, bf)
 	tipCap, err := eth.client.SuggestGasTipCap(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		tipCap = big.NewInt(1)
+		// return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 	}
+	// tipCap := big.NewInt(1)
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
 	txRough := &types.DynamicFeeTx{}

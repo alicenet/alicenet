@@ -20,6 +20,7 @@ import (
 func TestShareDisputeGoodAllValid(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 
@@ -66,6 +67,7 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 
@@ -148,7 +150,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 // for the Ethereum interface.
 func TestShareDisputeBad1(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -175,7 +177,7 @@ func TestShareDisputeBad1(t *testing.T) {
 // ShareDistribution phase.
 func TestShareDisputeBad2(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
 	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
@@ -204,6 +206,7 @@ func TestShareDisputeBad2(t *testing.T) {
 func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.eth.Close()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
@@ -248,6 +251,7 @@ func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 func TestDisputeShareDistributionTask_DoRetry_returnsTrue(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.eth.Close()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	accounts := suite.eth.GetKnownAccounts()

@@ -71,10 +71,11 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
     },
     hardhat: {
+      chainId: 1337,
       allowUnlimitedContractSize: false,
       mining: {
         auto: true,
-        //interval: 15000,
+        interval: 0,
       },
       accounts: [
         {

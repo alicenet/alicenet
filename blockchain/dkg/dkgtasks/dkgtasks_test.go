@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 	"testing"
@@ -116,16 +117,16 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	}
 
 	// Mine a block once a second
-	if blockInterval > 1*time.Millisecond {
-		go func() {
-			for {
-				time.Sleep(blockInterval)
-				eth.Commit()
-			}
-		}()
-	}
+	// if blockInterval > 1*time.Millisecond {
+	// 	go func() {
+	// 		for {
+	// 			time.Sleep(blockInterval)
+	// 			eth.Commit()
+	// 		}
+	// 	}()
+	// }
 
-	t.Logf("deploying contracts...")
+	t.Logf("deploying contracts..")
 
 	err = startDeployScripts(eth, ctx)
 	if err != nil {
@@ -195,15 +196,15 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 
 	rootPath := dtest.GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
-	scriptPath = append(scriptPath, "base-scripts")
-	scriptPath = append(scriptPath, "geth-local.sh")
-	//scriptPath = append(scriptPath, "main.sh")
+	//scriptPath = append(scriptPath, "base-scripts")
+	//scriptPath = append(scriptPath, "geth-local.sh")
+	scriptPath = append(scriptPath, "main.sh")
 	scriptPathJoined := filepath.Join(scriptPath...)
 	fmt.Println("scriptPathJoined2: ", scriptPathJoined)
 
 	cmd := exec.Cmd{
 		Path:   scriptPathJoined,
-		Args:   []string{scriptPathJoined},
+		Args:   []string{scriptPathJoined, "hardhat_node"},
 		Dir:    filepath.Join(rootPath...),
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -218,7 +219,7 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 	}
 
 	eth.SetClose(func() error {
-		fmt.Printf("closing geth %v..\n", cmd.Process.Pid)
+		fmt.Printf("closing hardhat node %v..\n", cmd.Process.Pid)
 		err := cmd.Process.Signal(syscall.SIGTERM)
 
 		// err := cmd.Process.Kill()
@@ -231,7 +232,7 @@ func startHardHatNode(eth *blockchain.EthereumDetails) error {
 			return err
 		}
 
-		fmt.Printf("geth closed\n")
+		fmt.Printf("hardhat node closed\n")
 		return nil
 	})
 
@@ -262,21 +263,8 @@ func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 		return fmt.Errorf("could not execute deploy script: %s", err)
 	}
 
-	// eth.SetClose(func() error {
-	// 	err := cmd.Process.Kill()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	_, err = cmd.Process.Wait()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return nil
-	// })
-
 	// inits contracts
+	// todo: fix this
 	// var factory string = config.Configuration.Ethereum.RegistryAddress
 	var factory string = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
 	addr := common.Address{}
@@ -285,8 +273,6 @@ func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	if err != nil {
 		return err
 	}
-
-	//eth.Contracts().ContractFactory()
 
 	return nil
 }
@@ -368,20 +354,6 @@ func registerValidators(eth *blockchain.EthereumDetails, validatorAddresses []st
 	if err != nil {
 		return fmt.Errorf("could not execute deploy script: %s", err)
 	}
-
-	// eth.SetClose(func() error {
-	// 	err := cmd.Process.Kill()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	_, err = cmd.Process.Wait()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return nil
-	// })
 
 	return nil
 }
@@ -499,25 +471,72 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
 
-/* func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-	height, err := eth.GetFinalizedHeight(context.Background())
-	assert.Nil(t, err)
+// func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
+// 	height, err := eth.GetFinalizedHeight(context.Background())
+// 	assert.Nil(t, err)
 
-	distance := target - height
+// 	distance := target - height
 
-	for i := uint64(0); i < distance; i++ {
-		eth.Commit()
-	}
-} */
+// 	for i := uint64(0); i < distance; i++ {
+// 		eth.Commit()
+// 	}
+// }
+
+// func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
+// 	distance := int64(target)
+// 	for distance > 0 {
+// 		height, err := eth.GetFinalizedHeight(context.Background())
+// 		assert.Nil(t, err)
+
+// 		distance = int64(target) - int64(height)
+// 		<-time.After(100 * time.Millisecond)
+// 	}
+// }
 
 func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-	distance := int64(target)
-	for distance > 0 {
-		height, err := eth.GetFinalizedHeight(context.Background())
-		assert.Nil(t, err)
+	currentBlock, err := eth.GetCurrentHeight(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
-		distance = int64(target) - int64(height)
-		<-time.After(100 * time.Millisecond)
+	c := http.Client{}
+	msg := &blockchain.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  "hardhat_mine",
+		Params:  make([]byte, 0),
+	}
+
+	blocksToMine := target - currentBlock
+	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+
+	if msg.Params, err = json.Marshal([]string{blocksToMineString}); err != nil {
+		panic(err)
+	}
+
+	log.Printf("hardhat_mine %v blocks to target height %v", blocksToMine, target)
+
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(msg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reader := bytes.NewReader(buff.Bytes())
+
+	resp, err := c.Post(
+		"http://127.0.0.1:8545",
+		"application/json",
+		reader,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -621,7 +640,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	// todo: make a function -> ev, err := GetETHDKGEvent("RegistrationOpen")
+	// todo: make a function -> ev, err := GetETHDKGEvent("RegistrationOpen", logs)
 	eventMap := monitor.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {
@@ -744,7 +763,6 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 
 func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, n, 0, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 

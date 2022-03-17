@@ -274,5 +274,4 @@ func TestGeth(t *testing.T) {
 
 	// <-time.After(10 * time.Second)
 	t.Logf("done testing")
-
 }
