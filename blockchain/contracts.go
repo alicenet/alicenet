@@ -64,7 +64,8 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 
 		// Just a help for looking up other contracts
 		lookup := func(name string) (common.Address, error) {
-			addr, err := contractFactory.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), name)
+			salt := StringToBytes32(name)
+			addr, err := contractFactory.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), salt)
 			if err != nil {
 				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
 			} else {

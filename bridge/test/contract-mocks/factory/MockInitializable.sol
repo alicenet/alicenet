@@ -5,6 +5,7 @@ import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
 import "test/contract-mocks/factory/MockBaseContract.sol";
 
+/// @custom:salt MockInitializable
 contract MockInitializable is
     ProxyInternalUpgradeLock,
     ProxyInternalUpgradeUnlock,
