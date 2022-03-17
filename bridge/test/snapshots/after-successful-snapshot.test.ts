@@ -37,7 +37,7 @@ describe("Snapshots: With successful snapshot completed", () => {
   });
 
   it("Should succeed doing a valid snapshot for next epoch", async function () {
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
@@ -49,7 +49,7 @@ describe("Snapshots: With successful snapshot completed", () => {
   });
 
   it("Should not allow committing a snapshot for next epoch before time", async function () {
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
     await expect(
       fixture.snapshots
@@ -62,7 +62,7 @@ describe("Snapshots: With successful snapshot completed", () => {
   });
 
   it("Does not allow snapshot with data from previous snapshot", async function () {
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
@@ -82,9 +82,9 @@ describe("Snapshots: With successful snapshot completed", () => {
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
       .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims);
     await fixture.validatorPool.initializeETHDKG();
-    let junkData =
+    const junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
     ).to.be.revertedWith(`Snapshots: Consensus is not running!`);

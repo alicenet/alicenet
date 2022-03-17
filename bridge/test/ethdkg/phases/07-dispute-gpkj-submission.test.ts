@@ -24,8 +24,10 @@ import {
 describe("ETHDKG: Dispute GPKj", () => {
   it("accuse good and bad participants of sending bad gpkj shares with 4 validators", async function () {
     // last validator is the bad one
-    let validators = validators4BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators4BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -84,8 +86,10 @@ describe("ETHDKG: Dispute GPKj", () => {
 
   it("accuse multiple bad participants of sending bad gpkj shares with 10 validators", async function () {
     // last 2 validators are the bad ones
-    let validators = validators10_2BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators10_2BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -164,8 +168,10 @@ describe("ETHDKG: Dispute GPKj", () => {
 
   it("accuse good and bad participants of sending bad gpkj shares with 10 validators", async function () {
     // last validator is the bad one
-    let validators = validators10BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators10BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -225,8 +231,10 @@ describe("ETHDKG: Dispute GPKj", () => {
 
   it("accuse a missing participant and bad participant at the same time ", async function () {
     // last validator is the bad one
-    let validators = validators10BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators10BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -282,7 +290,9 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusations before time", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators4
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -302,9 +312,8 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusations unless in DisputeGPKJSubmission phase, or expired GPKJSubmission phase", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -357,7 +366,7 @@ describe("ETHDKG: Dispute GPKj", () => {
       "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
     );
 
-    //await endCurrentPhase(ethdkg)
+    // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
 
     // try accusing bad GPKj
@@ -456,7 +465,9 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators4
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -487,7 +498,9 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusation from a non-participating validator", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators4
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -518,7 +531,9 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusation with incorrect data length, or all zeros", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators4
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -531,7 +546,7 @@ describe("ETHDKG: Dispute GPKj", () => {
       0
     );
 
-    //await endCurrentPhase(ethdkg)
+    // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
@@ -650,8 +665,10 @@ describe("ETHDKG: Dispute GPKj", () => {
   });
 
   it("should not allow accusation with repeated addresses", async function () {
-    let validators = validators4BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators4BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -690,8 +707,10 @@ describe("ETHDKG: Dispute GPKj", () => {
 
   it("do not allow validators to proceed to the next phase if a validator was valid accused", async function () {
     // last validator is the bad one
-    let validators = validators4BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators4BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -738,8 +757,10 @@ describe("ETHDKG: Dispute GPKj", () => {
 
   it("do not allow a bad validator being accused more than once", async function () {
     // last validator is the bad one
-    let validators = validators4BadGPKJSubmission;
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators);
+    const validators = validators4BadGPKJSubmission;
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 

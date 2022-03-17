@@ -21,9 +21,8 @@ import {
 
 describe("ETHDKG: Dispute bad shares", () => {
   it("should not allow accusations before time", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -44,9 +43,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -101,7 +99,7 @@ describe("ETHDKG: Dispute bad shares", () => {
       "ETHDKG: Dispute failed! Contract is not in dispute phase!"
     );
 
-    //await endCurrentPhase(ethdkg)
+    // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
 
     // try accusing bad shares
@@ -205,9 +203,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -238,9 +235,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow accusation from a non-participating validator", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -271,9 +267,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow accusation with an incorrect index", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -287,13 +282,12 @@ describe("ETHDKG: Dispute bad shares", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
-    //await endCurrentPhase(ethdkg)
+    // await endCurrentPhase(ethdkg)
   });
 
   it("should not allow accusation with incorrect encrypted shares or commitments", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -324,9 +318,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow double accusation of a validator on two separate calls", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4BadDistributeShares
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4BadDistributeShares);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -389,9 +382,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow double accusation of a validator on two separate calls, with a different index order", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4BadDistributeSharesLast
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4BadDistributeSharesLast);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -460,9 +452,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow proceeding to next phase (KeyShareSubmission) after accusations take place", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4BadDistributeShares
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4BadDistributeShares);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -522,9 +513,8 @@ describe("ETHDKG: Dispute bad shares", () => {
   });
 
   it("should not allow proceeding to next phase (KeyShareSubmission) after bad shares accusations take place, along with accusations of non-participant validators", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4BadDistributeShares
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4BadDistributeShares);
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
@@ -538,7 +528,7 @@ describe("ETHDKG: Dispute bad shares", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
     await endCurrentPhase(ethdkg);
-    //await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt())
+    // await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt())
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     // accuse the 1st validator of bad shares using valid encrypted shares and commitments

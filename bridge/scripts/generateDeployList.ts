@@ -19,7 +19,9 @@ async function main() {
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(() => {
+    return 0;
+  })
   .catch((error) => {
     console.error(error);
     throw new Error("unexpected error");

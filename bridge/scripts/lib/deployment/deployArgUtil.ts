@@ -48,10 +48,10 @@ export async function generateDeployArgTemplate(
       contract,
       artifacts
     );
-    if (cArgs.length != 0) {
+    if (cArgs.length !== 0) {
       deploymentArgs.constructor[contract] = cArgs;
     }
-    if (iArgs.length != 0) {
+    if (iArgs.length !== 0) {
       deploymentArgs.initializer[contract] = iArgs;
     }
   }

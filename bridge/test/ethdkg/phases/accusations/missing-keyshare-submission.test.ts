@@ -10,7 +10,7 @@ import {
 
 describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   it("allows accusation of all missing validators after Key share phase", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -45,7 +45,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("allows accusation of some missing validators after Key share phase", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -83,7 +83,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("do not allow validators to proceed to the next phase if not all validators submitted their key shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -108,7 +108,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -128,7 +128,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow validators who did not submit key shares in time to submit on the accusation phase", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -166,7 +166,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow accusation of not submitting key shares of validators submitted their key shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -193,7 +193,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow accusation of not submitting key shares for non-validators", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -223,7 +223,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow not submitted key shares accusations after accusation window has finished", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -251,7 +251,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow accusing a user that submitted the key shares in the middle of the ones that did not", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -279,7 +279,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
   });
 
   it("should not allow double accusation of a user that did not submit his key shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 

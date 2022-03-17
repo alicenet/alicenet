@@ -8,16 +8,13 @@ import {
   getDeployGroupIndex,
   getDeployType,
 } from "./deploymentUtil";
-
-export type DeploymentList = {
-  [key: string]: Array<ContractDeploymentInfo>;
-};
-
 export interface ContractDeploymentInfo {
   contract: string;
   index: number;
 }
-
+export type DeploymentList = {
+  [key: string]: Array<ContractDeploymentInfo>;
+};
 export interface DeploymentGroupIndexList {
   [key: string]: number[];
 }
@@ -67,12 +64,16 @@ export async function getSortedDeployList(
         artifacts
       );
       if (indexString === undefined) {
-        throw "If deploy-group-index is specified a deploy-group-index also should be!";
+        throw new Error(
+          "If deploy-group-index is specified a deploy-group-index also should be!"
+        );
       }
       try {
         index = parseInt(indexString);
       } catch (error) {
-        throw `Failed to convert deploy-group-index for contract ${contract}! deploy-group-index should be an integer!`;
+        throw new Error(
+          `Failed to convert deploy-group-index for contract ${contract}! deploy-group-index should be an integer!`
+        );
       }
     } else {
       group = "general";

@@ -7,8 +7,8 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   let fixture: Fixture;
   let adminSigner: SignerWithAddress;
   let notAdmin1Signer: SignerWithAddress;
-  let maxNumValidators = 5;
-  let stakeAmount = 20000;
+  const maxNumValidators = 5;
+  const stakeAmount = 20000;
   let stakingTokenIds = new Array();
 
   beforeEach(async function () {
@@ -20,7 +20,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Set a minimum stake", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "setStakeAmount",
@@ -30,7 +30,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Set a maximum number of validators", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "setMaxNumValidators",
@@ -40,7 +40,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Schedule maintenance", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "scheduleMaintenance"

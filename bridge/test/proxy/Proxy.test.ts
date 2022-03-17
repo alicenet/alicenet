@@ -11,48 +11,48 @@ import {
 
 describe("PROXY", async () => {
   it("deploy proxy through factory", async () => {
-    let factory = await deployFactory();
-    let salt = getSalt();
-    let txResponse = await factory.deployProxy(salt);
+    const factory = await deployFactory();
+    const salt = getSalt();
+    const txResponse = await factory.deployProxy(salt);
     expectTxSuccess(txResponse);
   });
 
   it("deploy proxy raw and upgrades to endPointLockable logic", async () => {
-    let accounts = await getAccounts();
-    let proxyFactory = await ethers.getContractFactory(PROXY);
-    let proxy = await proxyFactory.deploy();
-    let endPointLockableFactory = await ethers.getContractFactory(
+    const accounts = await getAccounts();
+    const proxyFactory = await ethers.getContractFactory(PROXY);
+    const proxy = await proxyFactory.deploy();
+    const endPointLockableFactory = await ethers.getContractFactory(
       "MockEndPointLockable"
     );
-    let endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
+    const endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
     expect(proxy.deployed());
-    let abicoder = new ethers.utils.AbiCoder();
-    let encodedAddress = abicoder.encode(
+    const abicoder = new ethers.utils.AbiCoder();
+    const encodedAddress = abicoder.encode(
       ["address"],
       [endPointLockable.address]
     );
-    let txReq: TransactionRequest = {
+    const txReq: TransactionRequest = {
       data: "0xca11c0de" + encodedAddress.substring(2),
     };
-    let txResponse = await proxy.fallback(txReq);
-    let receipt = await txResponse.wait();
+    const txResponse = await proxy.fallback(txReq);
+    const receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    let proxyImplAddr = await proxy.callStatic.getImplementationAddress();
+    const proxyImplAddr = await proxy.callStatic.getImplementationAddress();
     expect(proxyImplAddr).to.equal(endPointLockable.address);
   });
 
   it("locks the proxy upgradeability, prevents the proxy from being updated", async () => {
-    let accounts = await getAccounts();
-    let proxyFactory = await ethers.getContractFactory(PROXY);
-    let proxy = await proxyFactory.deploy();
-    let endPointLockableFactory = await ethers.getContractFactory(
+    const accounts = await getAccounts();
+    const proxyFactory = await ethers.getContractFactory(PROXY);
+    const proxy = await proxyFactory.deploy();
+    const endPointLockableFactory = await ethers.getContractFactory(
       "MockEndPointLockable"
     );
-    let endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
-    let endPointFactory = await ethers.getContractFactory(END_POINT);
-    let endPoint = await endPointFactory.deploy(accounts[0]);
+    const endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
+    const endPointFactory = await ethers.getContractFactory(END_POINT);
+    const endPoint = await endPointFactory.deploy(accounts[0]);
     expect(proxy.deployed());
-    let abicoder = new ethers.utils.AbiCoder();
+    const abicoder = new ethers.utils.AbiCoder();
     let encodedAddress = abicoder.encode(
       ["address"],
       [endPointLockable.address]
@@ -63,11 +63,11 @@ describe("PROXY", async () => {
     let txResponse = await proxy.fallback(txReq);
     let receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    let proxyImplAddr = await proxy.callStatic.getImplementationAddress();
+    const proxyImplAddr = await proxy.callStatic.getImplementationAddress();
     expect(proxyImplAddr).to.equal(endPointLockable.address);
-    //interface of logic connected to logic contract
-    let proxyContract = endPointLockableFactory.attach(proxy.address);
-    //lock the implementation
+    // interface of logic connected to logic contract
+    const proxyContract = endPointLockableFactory.attach(proxy.address);
+    // lock the implementation
     txResponse = await proxyContract.upgradeLock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
@@ -75,7 +75,7 @@ describe("PROXY", async () => {
     txReq = {
       data: "0xca11c0de" + encodedAddress.substring(2),
     };
-    let response = proxy.fallback(txReq);
+    const response = proxy.fallback(txReq);
     await expect(response).to.be.revertedWith(
       "reverted with an unrecognized custom error"
     );

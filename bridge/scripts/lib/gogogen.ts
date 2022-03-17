@@ -6,7 +6,7 @@ task("go-go-gen", "Builds generate.go file from all json files in path")
   .addParam("in", "relative path of the output files")
   .addParam("out", "relative path of the output files")
   .addParam("pkg", "pkg the go generate command should use")
-  .setAction(async (taskArgs, hre: HardhatRuntimeEnvironment) => {
+  .setAction(async (taskArgs) => {
     let outputData = `#! /bin/bash\n`;
     outputData =
       outputData +

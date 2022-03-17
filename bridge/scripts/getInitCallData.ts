@@ -8,8 +8,10 @@ async function main() {
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(() => {
+    return 0;
+  })
   .catch((error) => {
     console.error(error);
-    process.exit(1);
+    throw new Error("unexpected error");
   });

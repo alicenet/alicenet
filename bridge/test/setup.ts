@@ -89,7 +89,7 @@ export const getValidatorEthAccount = async (
   if (typeof validator === "string") {
     return ethers.getSigner(validator);
   } else {
-    let balance = await ethers.provider.getBalance(validator.address);
+    const balance = await ethers.provider.getBalance(validator.address);
     if (balance.eq(0)) {
       await (
         await ethers.getSigner("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -108,24 +108,24 @@ export const getValidatorEthAccount = async (
 async function getContractAddressFromDeployedStaticEvent(
   tx: ContractTransaction
 ): Promise<string> {
-  let eventSignature = "event DeployedStatic(address contractAddr)";
-  let eventName = "DeployedStatic";
+  const eventSignature = "event DeployedStatic(address contractAddr)";
+  const eventName = "DeployedStatic";
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
 async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
-  let eventSignature = "event DeployedProxy(address contractAddr)";
-  let eventName = "DeployedProxy";
+  const eventSignature = "event DeployedProxy(address contractAddr)";
+  const eventName = "DeployedProxy";
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
 async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
-  let eventSignature = "event DeployedRaw(address contractAddr)";
-  let eventName = "DeployedRaw";
+  const eventSignature = "event DeployedRaw(address contractAddr)";
+  const eventName = "DeployedRaw";
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
@@ -134,13 +134,13 @@ async function getContractAddressFromEventLog(
   eventSignature: string,
   eventName: string
 ): Promise<string> {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([eventSignature]);
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([eventSignature]);
   let result = "";
-  for (let log of receipt.logs) {
-    let topics = log.topics;
-    let data = log.data;
-    let topicHash = intrface.getEventTopic(intrface.getEvent(eventName));
+  for (const log of receipt.logs) {
+    const topics = log.topics;
+    const data = log.data;
+    const topicHash = intrface.getEventTopic(intrface.getEvent(eventName));
     if (!isHexString(topics[0], 32) || topics[0].toLowerCase() !== topicHash) {
       continue;
     }
@@ -187,7 +187,7 @@ export const deployStaticWithFactory = async (
   } catch (error) {
     initCallDataBin = "0x";
   }
-  let tx = await factory.deployStatic(
+  const tx = await factory.deployStatic(
     getBytes32Salt(contractName),
     initCallDataBin
   );
@@ -223,12 +223,12 @@ async function deployUpgradeableWithFactory(
   if (receipt.gasUsed.gt(10_000_000)) {
     throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
   }
-  let transaction = await factory.deployCreate(deployCode);
+  const transaction = await factory.deployCreate(deployCode);
   receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
     throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
   }
-  let logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
+  const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
   let saltBytes;
   if (salt === undefined) {
     saltBytes = getBytes32Salt(contractName);
@@ -236,7 +236,7 @@ async function deployUpgradeableWithFactory(
     saltBytes = getBytes32Salt(salt);
   }
 
-  let transaction2 = await factory.deployProxy(saltBytes);
+  const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
     throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
@@ -275,9 +275,9 @@ export const getFixture = async (
   const namedSigners = await ethers.getSigners();
   const [admin] = namedSigners;
 
-  let txCount = await ethers.provider.getTransactionCount(admin.address);
-  //calculate the factory address for the constructor arg
-  let futureFactoryAddress = ethers.utils.getContractAddress({
+  const txCount = await ethers.provider.getTransactionCount(admin.address);
+  // calculate the factory address for the constructor arg
+  const futureFactoryAddress = ethers.utils.getContractAddress({
     from: admin.address,
     nonce: txCount,
   });
@@ -297,7 +297,7 @@ export const getFixture = async (
     "MadByte"
   )) as MadByte;
 
-  //StakeNFT
+  // StakeNFT
   const stakeNFT = (await deployStaticWithFactory(
     factory,
     "StakeNFT"
@@ -376,15 +376,15 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
-  let aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
+  const aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
     madToken.address,
   ])) as AToken;
-  let aTokenMinter = (await deployUpgradeableWithFactory(
+  const aTokenMinter = (await deployUpgradeableWithFactory(
     factory,
     "ATokenMinter",
     undefined
   )) as ATokenMinter;
-  let aTokenBurner = (await deployUpgradeableWithFactory(
+  const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner"
   )) as ATokenBurner;
@@ -392,8 +392,8 @@ export const getFixture = async (
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
 
-  let blockNumber = BigInt(await ethers.provider.getBlockNumber());
-  let phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
+  const blockNumber = BigInt(await ethers.provider.getBlockNumber());
+  const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
     await mineBlocks(phaseLength);
   }
@@ -415,14 +415,14 @@ export const getFixture = async (
 };
 
 export async function getTokenIdFromTx(tx: any) {
-  let abi = [
+  const abi = [
     "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
   ];
-  let iface = new ethers.utils.Interface(abi);
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let logs =
+  const iface = new ethers.utils.Interface(abi);
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const logs =
     typeof receipt.logs[2] !== "undefined" ? receipt.logs[2] : receipt.logs[0];
-  let log = iface.parseLog(logs);
+  const log = iface.parseLog(logs);
   const { from, to, tokenId } = log.args;
   return tokenId;
 }
@@ -433,16 +433,16 @@ export async function factoryCallAny(
   functionName: string,
   args?: Array<any>
 ) {
-  let factory = fixture.factory;
-  let contract = fixture[contractName];
+  const factory = fixture.factory;
+  const contract = fixture[contractName];
   if (args === undefined) {
     args = [];
   }
-  let txResponse = await factory.callAny(
+  const txResponse = await factory.callAny(
     contract.address,
     0,
     contract.interface.encodeFunctionData(functionName, args)
   );
-  let receipt = await txResponse.wait();
+  const receipt = await txResponse.wait();
   return receipt;
 }

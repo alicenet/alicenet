@@ -1,3 +1,4 @@
+import { artifacts } from "hardhat";
 import {
   getConstructorArgsABI,
   getInitializerArgsABI,
@@ -15,20 +16,28 @@ async function main() {
   };
   for (const contract of contracts) {
     // check each contract for a constructor and
-    const cArgs: Array<ArgData> = await getConstructorArgsABI(contract);
-    const iArgs: Array<ArgData> = await getInitializerArgsABI(contract);
-    if (cArgs.length != 0) {
+    const cArgs: Array<ArgData> = await getConstructorArgsABI(
+      contract,
+      artifacts
+    );
+    const iArgs: Array<ArgData> = await getInitializerArgsABI(
+      contract,
+      artifacts
+    );
+    if (cArgs.length !== 0) {
       deploymentArgs.constructor[contract] = cArgs;
     }
-    if (iArgs.length != 0) {
+    if (iArgs.length !== 0) {
       deploymentArgs.initializer[contract] = iArgs;
     }
   }
-  writeDeploymentArgs(deploymentArgs);
+  await writeDeploymentArgs(deploymentArgs);
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(() => {
+    return 0;
+  })
   .catch((error) => {
     console.error(error);
     throw new Error("unexpected error");

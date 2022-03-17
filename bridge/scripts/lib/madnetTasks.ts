@@ -20,7 +20,9 @@ task(
 ).setAction(async (taskArgs, hre) => {
   const path: string = `./deployments/${env()}/deploymentArgsTemplate.json`;
   if (!fs.existsSync(path)) {
-    throw "Error: Could not find deployment Args file expected at " + path;
+    throw new Error(
+      `Error: Could not find deployment Args file expected at ${path}`
+    );
   }
   console.log(`Loading deploymentArgs from: ${path}`);
   const rawData = fs.readFileSync(path);

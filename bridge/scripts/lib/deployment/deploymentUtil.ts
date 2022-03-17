@@ -7,16 +7,15 @@ type Ethers =
   typeof import("/home/zj/work/mn/MadNet/bridge/node_modules/ethers/lib/ethers") &
     HardhatEthersHelpers;
 
-export interface DeploymentArgs {
-  constructor: ContractArgs;
-  initializer: ContractArgs;
+export interface ArgData {
+  [key: string]: string;
 }
-
 export interface ContractArgs {
   [key: string]: Array<ArgData>;
 }
-export interface ArgData {
-  [key: string]: string;
+export interface DeploymentArgs {
+  constructor: ContractArgs;
+  initializer: ContractArgs;
 }
 
 export interface InitData {

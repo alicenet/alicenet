@@ -124,8 +124,6 @@ task(
       gas: gasCost.toNumber(),
     };
     const network = hre.network.name;
-    const fileName =
-      process.env.test === "true" ? "testFactoryState" : undefined;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
       `Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`
@@ -343,10 +341,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     // deploy create the logic contract
-    const templateData: TemplateData = await hre.run(
-      "deployTemplate",
-      callArgs
-    );
+    await hre.run("deployTemplate", callArgs);
     callArgs = {
       contractName: taskArgs.contractName,
       factoryAddress,
@@ -702,7 +697,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     await showState(
       `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
     );
-    updateProxyList(network, proxyData, taskArgs.outputFolder);
+    await updateProxyList(network, proxyData, taskArgs.outputFolder);
     return proxyData;
   });
 
@@ -825,31 +820,6 @@ async function getFactoryAddress(network: string, taskArgs: any) {
     );
   }
   return factoryAddress;
-}
-
-// 0x39cab472536e617073686f74730000000000000000000000000000000000000000000000;
-
-/**
- * @description parses config and task args for deployTemplate subtask call args
- * @param taskArgs arguements provided to the task
- * @returns object with call data for deployTemplate subtask
- */
-async function getDeployTemplateArgs(network: string, taskArgs: any) {
-  const factoryAddress = await getFactoryAddress(network, taskArgs);
-  return <DeployArgs>{
-    contractName: taskArgs.contractName,
-    factoryAddress,
-    constructorArgs: taskArgs?.constructorArgs,
-  };
-}
-
-function getConstructorArgCount(contract: any) {
-  for (const funcObj of contract.abi) {
-    if (funcObj.type === "constructor") {
-      return funcObj.inputs.length;
-    }
-  }
-  return 0;
 }
 
 async function getAccounts(hre: HardhatRuntimeEnvironment) {
