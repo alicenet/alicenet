@@ -128,12 +128,10 @@ task("registerValidators", "registers validators")
     console.log("Starting the registration process...");
     // mint StakeNFT positions to validators
     for (let i = 0; i < validatorAddresses.length; i++) {
-      console.log(1);
       let tx = await stakeNFT
         .connect(admin)
         .mintTo(factory.address, stakeAmountMadWei, lockTime);
       await tx.wait();
-      console.log(2);
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
       console.log(`Minted StakeNFT.tokenID ${tokenId}`);
       stakingTokenIds.push(tokenId);
