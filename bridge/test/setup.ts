@@ -10,6 +10,7 @@ import {
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
+import { INITIALIZER } from "../scripts/lib/constants";
 import {
   AToken,
   ATokenBurner,
@@ -185,6 +186,8 @@ export const deployStaticWithFactory = async (
       initCallData
     );
   } catch (error) {
+    console.log(`Warning couldnt get init call data for contract: ${contractName}`)
+    console.log(error)
     initCallDataBin = "0x";
   }
   const tx = await factory.deployStatic(
@@ -287,9 +290,7 @@ export const getFixture = async (
   await factory.deployed();
 
   // MadToken
-  const madToken = (await deployStaticWithFactory(factory, "MadToken", [
-    admin.address,
-  ])) as MadToken;
+  const madToken = (await deployStaticWithFactory(factory, "MadToken")) as MadToken;
 
   // MadByte
   const madByte = (await deployStaticWithFactory(
@@ -391,7 +392,7 @@ export const getFixture = async (
 
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
-
+  await factory.callAny(madToken.address, 0, madToken.interface.encodeFunctionData("transfer", [admin.address, ethers.utils.parseEther("100000000")]))
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
