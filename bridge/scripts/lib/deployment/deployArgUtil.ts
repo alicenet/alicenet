@@ -23,11 +23,6 @@ export async function writeDeploymentArgs(
   const config: any = deploymentArgs;
   const data = toml.stringify(config);
   fs.writeFileSync(path, data);
-  // let output = fs.readFileSync(path).toString().split("\n");
-  // output.unshift(
-  //   "# WARNING: DO NOT CHANGE THE GENERATED DEFAULT LIST \n# TO ADD A CUSTOM LIST COPY THE FORMAT OF THE DEFAULT LIST WITH DIFFERENT FIELD NAME"
-  // );
-  // fs.writeFileSync(path, output.join("\n"));
 }
 
 export async function generateDeployArgTemplate(
