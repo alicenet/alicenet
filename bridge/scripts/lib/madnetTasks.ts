@@ -62,7 +62,6 @@ task("registerValidators", "registers validators")
       "MadnetFactory",
       taskArgs.factoryAddress
     );
-    console.log(taskArgs.addresses);
     const lockTime = 1;
     const validatorAddresses: string[] = taskArgs.addresses;
     const stakingTokenIds: BigNumber[] = [];
