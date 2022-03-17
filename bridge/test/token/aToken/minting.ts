@@ -12,7 +12,7 @@ describe("Testing AToken", async () => {
   let user: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
-  const amount = 1000;
+  let amount = 1000;
   let fixture: Fixture;
 
   beforeEach(async function () {

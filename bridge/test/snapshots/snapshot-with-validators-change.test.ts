@@ -24,10 +24,10 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
     let expectedEpoch = 1;
     let expectedHeight = validSnapshot1024.height as number;
     let expectedSafeToProceedConsensus = false;
-    const fixture = await getFixture();
-    const snapshots = fixture.snapshots as Snapshots;
-    const validators = await createValidators(fixture, validatorsSnapshots1);
-    const stakingTokenIds = await stakeValidators(fixture, validators);
+    let fixture = await getFixture();
+    let snapshots = fixture.snapshots as Snapshots;
+    let validators = await createValidators(fixture, validatorsSnapshots1);
+    let stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
@@ -59,9 +59,9 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
       validators,
     ]);
 
-    // registering the new validators
-    const newValidators = await createValidators(fixture, validatorsSnapshots2);
-    const newStakingTokenIds = await stakeValidators(fixture, newValidators);
+    //registering the new validators
+    let newValidators = await createValidators(fixture, validatorsSnapshots2);
+    let newStakingTokenIds = await stakeValidators(fixture, newValidators);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       newValidators,
       newStakingTokenIds,

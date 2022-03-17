@@ -24,7 +24,7 @@ export interface state {
 
 export async function getState(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
-  const state: state = {
+  let state: state = {
     Balances: {
       madToken: {
         address: fixture.madToken.address.slice(-4),
@@ -59,7 +59,7 @@ export function format(number: BigNumber) {
 }
 
 export function getUserNotInRoleReason(address: string, role: string) {
-  const reason =
+  let reason =
     "AccessControl: account " +
     address.toLowerCase() +
     " is missing role " +

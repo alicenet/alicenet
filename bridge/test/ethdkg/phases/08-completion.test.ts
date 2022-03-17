@@ -13,9 +13,7 @@ import {
 
 describe("ETHDKG: ETHDKG Completion", () => {
   it("should not allow completion until after the DisputeGPKj phase", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
-    );
+    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
     await submitValidatorsGPKJ(
@@ -36,7 +34,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
-    const tx = await ethdkg
+    let tx = await ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
       .complete();
 
@@ -52,9 +50,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow non-validators to complete ETHDKG", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
-    );
+    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
     await submitValidatorsGPKJ(
@@ -88,9 +84,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow double completion of ETHDKG", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
-    );
+    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
     await submitValidatorsGPKJ(
@@ -111,7 +105,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
-    const tx = await ethdkg
+    let tx = await ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
       .complete();
 
@@ -134,9 +128,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow validators to participate in previous phases", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
-    );
+    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
     await submitValidatorsGPKJ(
@@ -157,7 +149,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
-    const tx = await ethdkg
+    let tx = await ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
       .complete();
 

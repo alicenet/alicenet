@@ -23,35 +23,35 @@ describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => 
   });
 
   it("Should mint a token and sender should be the payer and owner", async function () {
-    const madBalanceBefore = await fixture.madToken.balanceOf(
+    let madBalanceBefore = await fixture.madToken.balanceOf(
       adminSigner.address
     );
-    const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
+    let nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       validatorPool.address
     );
-    const rcpt = await (await validatorPool.mintValidatorNFT()).wait();
+    let rcpt = await (await validatorPool.mintValidatorNFT()).wait();
     expect(rcpt.status).to.be.equal(1);
     expect(await fixture.validatorNFT.ownerOf(1)).to.be.eq(
       validatorPool.address
     );
     expect(
-      await fixture.validatorNFT // NFT +1
+      await fixture.validatorNFT //NFT +1
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.add(1));
     expect(
-      await fixture.madToken // MAD -= amount
+      await fixture.madToken //MAD -= amount
         .balanceOf(adminSigner.address)
     ).to.equal(madBalanceBefore.sub(amount));
   });
 
   it("Should burn a token and sender should receive funds", async function () {
     let tx = await validatorPool.mintValidatorNFT();
-    const rcpt = await tx.wait();
+    let rcpt = await tx.wait();
     expect(rcpt.status).to.be.equal(1);
-    const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
+    let nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       validatorPool.address
     );
-    const madBalanceBefore = await fixture.madToken.balanceOf(
+    let madBalanceBefore = await fixture.madToken.balanceOf(
       validatorPool.address
     );
     tx = await validatorPool.burnValidatorNFT(1);
@@ -60,54 +60,54 @@ describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => 
       amount
     );
     expect(
-      await fixture.validatorNFT // NFT -1
+      await fixture.validatorNFT //NFT -1
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.sub(1));
     expect(
-      await fixture.madToken // MAD +=amount
+      await fixture.madToken //MAD +=amount
         .balanceOf(validatorPool.address)
     ).to.equal(madBalanceBefore.add(amount));
   });
 
   it("Should mint a token to an address and send staking funds from sender address", async function () {
-    const madBalanceBefore = await fixture.madToken.balanceOf(
+    let madBalanceBefore = await fixture.madToken.balanceOf(
       adminSigner.address
     );
-    const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
+    let nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       notAdminSigner.address
     );
-    const rcpt = await (
+    let rcpt = await (
       await validatorPool.mintToValidatorNFT(notAdminSigner.address)
     ).wait();
     expect(rcpt.status).to.be.equal(1);
     expect(
-      await fixture.validatorNFT // NFT +1
+      await fixture.validatorNFT //NFT +1
         .balanceOf(notAdminSigner.address)
     ).to.equal(nftBalanceBefore.add(1));
     expect(
-      await fixture.madToken // MAD -= amount
+      await fixture.madToken //MAD -= amount
         .balanceOf(adminSigner.address)
     ).to.equal(madBalanceBefore.sub(amount));
   });
 
   it("Should burn a token from an address and return staking funds", async function () {
     let tx = await validatorPool.mintValidatorNFT();
-    const rcpt = await tx.wait();
+    let rcpt = await tx.wait();
     expect(rcpt.status).to.be.equal(1);
-    const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
+    let nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       validatorPool.address
     );
-    const madBalanceBefore = await fixture.madToken.balanceOf(
+    let madBalanceBefore = await fixture.madToken.balanceOf(
       notAdminSigner.address
     );
     tx = await validatorPool.burnToValidatorNFT(1, notAdminSigner.address);
     expect((await tx.wait()).status).to.be.equal(1);
     expect(
-      await fixture.validatorNFT // NFT -1
+      await fixture.validatorNFT //NFT -1
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.sub(1));
     expect(
-      await fixture.madToken // MAD +=amount
+      await fixture.madToken //MAD +=amount
         .balanceOf(notAdminSigner.address)
     ).to.equal(madBalanceBefore.add(amount));
   });

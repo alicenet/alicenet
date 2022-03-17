@@ -37,8 +37,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    const newValidators = validators;
-    // Set a non validator address in the middle of array for un-registering
+    let newValidators = validators;
+    //Set a non validator address in the middle of array for un-registering
     newValidators[1] = "0x000000000000000000000000000000000000dEaD";
     await expect(
       factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
@@ -77,7 +77,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    // Add an extra validator to unregister array
+    //Add an extra validator to unregister array
     validators.push("0x000000000000000000000000000000000000dEaD");
     stakingTokenIds.push(BigNumber.from(0));
     await expect(
@@ -97,8 +97,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    const newValidators = await createValidators(fixture, validatorsSnapshots);
-    const newStakeNFTIds = await stakeValidators(fixture, newValidators);
+    let newValidators = await createValidators(fixture, validatorsSnapshots);
+    let newStakeNFTIds = await stakeValidators(fixture, newValidators);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
         validators,
@@ -110,8 +110,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
   });
 
   it("Should successfully unregister validators if all conditions are met", async function () {
-    const expectedState = await getCurrentState(fixture, validators);
-    // Expect that NFT are transferred from ValidatorPool to Factory
+    let expectedState = await getCurrentState(fixture, validators);
+    //Expect that NFT are transferred from ValidatorPool to Factory
     for (let index = 0; index < validators.length; index++) {
       expectedState.ValidatorPool.StakeNFT++;
       expectedState.Factory.StakeNFT--;
@@ -125,20 +125,20 @@ describe("ValidatorPool: Unregistration logic", async () => {
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    const currentState = await getCurrentState(fixture, validators);
+    let currentState = await getCurrentState(fixture, validators);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 
   it("Should successfully unregister validators if all conditions are met and there are excess of Eth and Tokens", async function () {
     // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
-    const etherAmount = ethers.utils.parseEther("1");
-    const madTokenAmount = ethers.utils.parseEther("2");
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
     await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
 
-    const expectedState = await getCurrentState(fixture, validators);
+    let expectedState = await getCurrentState(fixture, validators);
     expectedState.StakeNFT.ETH = BigInt(0);
-    // Expect that NFT are transferred from ValidatorPool to Factory
+    //Expect that NFT are transferred from ValidatorPool to Factory
     for (let index = 0; index < validators.length; index++) {
       expectedState.ValidatorPool.StakeNFT++;
       expectedState.Factory.StakeNFT--;
@@ -152,7 +152,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    const currentState = await getCurrentState(fixture, validators);
+    let currentState = await getCurrentState(fixture, validators);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 
@@ -161,8 +161,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    const eths = ethers.utils.parseEther("4").toBigInt();
-    const mads = ethers.utils.parseEther("4").toBigInt();
+    let eths = ethers.utils.parseEther("4").toBigInt();
+    let mads = ethers.utils.parseEther("4").toBigInt();
     await fixture.validatorNFT.connect(adminSigner).depositEth(42, {
       value: eths,
     });
@@ -170,7 +170,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       .connect(adminSigner)
       .approve(fixture.validatorNFT.address, mads);
     await fixture.validatorNFT.connect(adminSigner).depositToken(42, mads);
-    const expectedState = await getCurrentState(fixture, validators);
+    let expectedState = await getCurrentState(fixture, validators);
 
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
@@ -188,7 +188,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
     expectedState.ValidatorPool.ValNFT -= BigInt(validators.length);
     expectedState.ValidatorPool.StakeNFT += BigInt(validators.length);
 
-    const currentState = await getCurrentState(fixture, validators);
+    let currentState = await getCurrentState(fixture, validators);
 
     expect(currentState).to.be.deep.equal(expectedState);
   });

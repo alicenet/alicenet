@@ -12,7 +12,7 @@ describe("Testing AToken", async () => {
   let user: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
-  const amount = 1000;
+  let amount = 1000;
   let fixture: Fixture;
 
   beforeEach(async function () {
@@ -32,13 +32,13 @@ describe("Testing AToken", async () => {
     });
     describe("Business methods with onlyFactory modifier", async () => {
       it("Should burn when called by external identified as burner impersonating factory", async function () {
-        // migrate some tokens for burning
+        //migrate some tokens for burning
         await fixture.madToken
           .connect(user)
           .approve(fixture.aToken.address, amount);
         await fixture.aToken.connect(user).migrate(amount);
         expectedState = await getState(fixture);
-        // burn
+        //burn
         await factoryCallAny(fixture, "aTokenBurner", "burn", [
           user.address,
           amount,
@@ -49,13 +49,13 @@ describe("Testing AToken", async () => {
       });
 
       it("Should burn when called by external identified as burner not impersonating factory", async function () {
-        // migrate some tokens for burning
+        //migrate some tokens for burning
         await fixture.madToken
           .connect(user)
           .approve(fixture.aToken.address, amount);
         await fixture.aToken.connect(user).migrate(amount);
         expectedState = await getState(fixture);
-        // burn
+        //burn
         fixture.aTokenBurner.burn(user.address, amount);
         expectedState.Balances.aToken.user -= amount;
         currentState = await getState(fixture);

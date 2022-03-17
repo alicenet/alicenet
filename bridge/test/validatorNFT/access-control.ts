@@ -8,7 +8,7 @@ import { Fixture, getFixture } from "../setup";
 describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
   let fixture: Fixture;
   let notAdminSigner: SignerWithAddress;
-  const lockTime = 1;
+  let lockTime = 1;
   let amount: BigNumberish;
   let validatorPool: ValidatorPoolMock;
 
@@ -23,7 +23,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
   describe("A user with admin role should be able to:", async () => {
     it("Mint a token", async function () {
-      const rcpt = await (await validatorPool.mintValidatorNFT()).wait();
+      let rcpt = await (await validatorPool.mintValidatorNFT()).wait();
       expect(rcpt.status).to.be.equal(1);
       expect(await fixture.validatorNFT.ownerOf(1)).to.be.eq(
         validatorPool.address
@@ -32,7 +32,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
     it("Burn a token", async function () {
       await (await validatorPool.mintValidatorNFT()).wait();
-      const rcpt = await (await validatorPool.burnValidatorNFT(1)).wait();
+      let rcpt = await (await validatorPool.burnValidatorNFT(1)).wait();
       expect(rcpt.status).to.be.equal(1);
       expect(await fixture.madToken.balanceOf(validatorPool.address)).to.be.eq(
         amount
@@ -40,7 +40,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
     });
 
     it("Mint a token to an address", async function () {
-      const rcpt = await (
+      let rcpt = await (
         await validatorPool.mintToValidatorNFT(notAdminSigner.address)
       ).wait();
       expect(rcpt.status).to.be.equal(1);
@@ -51,7 +51,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
     it("Burn a token from an address", async function () {
       await (await validatorPool.mintValidatorNFT()).wait();
-      const rcpt = await (
+      let rcpt = await (
         await validatorPool.burnToValidatorNFT(1, notAdminSigner.address)
       ).wait();
       expect(rcpt.status).to.be.equal(1);
@@ -70,7 +70,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
     it("Burn a token", async function () {
       expect(
-        fixture.validatorNFT.connect(notAdminSigner).burn(42) // nonexistent
+        fixture.validatorNFT.connect(notAdminSigner).burn(42) //nonexistent
       ).to.be.revertedWith("onlyValidatorPool");
     });
 
@@ -86,7 +86,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
       expect(
         fixture.validatorNFT
           .connect(notAdminSigner)
-          .burnTo(notAdminSigner.address, 42) // nonexistent
+          .burnTo(notAdminSigner.address, 42) //nonexistent
       ).to.be.revertedWith("onlyValidatorPool");
     });
   });

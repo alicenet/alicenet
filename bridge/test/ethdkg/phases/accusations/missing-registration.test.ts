@@ -145,7 +145,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // validator0 should not be able to distribute shares
-    const signer0 = await getValidatorEthAccount(validators4[0].address);
+    let signer0 = await getValidatorEthAccount(validators4[0].address);
     await expect(
       ethdkg
         .connect(signer0)
@@ -208,7 +208,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // validator2 should not be able to distribute shares
-    const signer2 = await getValidatorEthAccount(validators4[2].address);
+    let signer2 = await getValidatorEthAccount(validators4[2].address);
     await expect(
       ethdkg
         .connect(signer2)

@@ -78,13 +78,13 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         ).toBigInt() + BigInt(1)
       ),
     ]);
-    const tx = await factoryCallAny(
+    let tx = await factoryCallAny(
       fixture,
       "validatorPool",
       "pauseConsensusOnArbitraryHeight",
       [1]
     );
-    const receipt = await ethers.provider.getTransaction(tx.transactionHash);
+    let receipt = await ethers.provider.getTransaction(tx.transactionHash);
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.false;
     // special event to halt consensus in the side chain
     await assertEventValidatorSetCompleted(
@@ -119,16 +119,14 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         ).toBigInt() + BigInt(1)
       ),
     ]);
-    const arbitraryMadnetHeight = 42;
-    const tx = await factoryCallAny(
+    let arbitraryMadnetHeight = 42;
+    let tx = await factoryCallAny(
       fixture,
       "validatorPool",
       "pauseConsensusOnArbitraryHeight",
       [arbitraryMadnetHeight]
     );
-    const transaction = await ethers.provider.getTransaction(
-      tx.transactionHash
-    );
+    let transaction = await ethers.provider.getTransaction(tx.transactionHash);
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.false;
     // special event to halt consensus in the side chain
     await assertEventValidatorSetCompleted(
@@ -144,8 +142,8 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       validators,
     ]);
 
-    const newValidators = await createValidators(fixture, validatorsSnapshots2);
-    const newStakingTokenIds = await stakeValidators(fixture, validators);
+    let newValidators = await createValidators(fixture, validatorsSnapshots2);
+    let newStakingTokenIds = await stakeValidators(fixture, validators);
 
     // set consensus running
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -205,7 +203,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg", async function () {
-    const fixture = await getFixture();
+    let fixture = await getFixture();
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -231,8 +229,8 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     );
 
     await factoryCallAny(fixture, "validatorPool", "unregisterAllValidators");
-    const newValidators = await createValidators(fixture, validatorsSnapshots2);
-    const newStakingTokenIds = await stakeValidators(fixture, newValidators);
+    let newValidators = await createValidators(fixture, validatorsSnapshots2);
+    let newStakingTokenIds = await stakeValidators(fixture, newValidators);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       newValidators,
       newStakingTokenIds,

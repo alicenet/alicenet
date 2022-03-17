@@ -22,9 +22,9 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
   });
 
   it("Factory should be able to skim excess of tokens eth sent to contract", async function () {
-    const etherAmount = ethers.utils.parseEther("1");
-    const madTokenAmount = ethers.utils.parseEther("2");
-    const testAddress = ethers.Wallet.createRandom().address;
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    let testAddress = ethers.Wallet.createRandom().address;
 
     await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
 
@@ -69,7 +69,7 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
   });
 
   it("Non authorized user should not be able to skim excess of tokens eth sent to contract", async function () {
-    const validatorPool = fixture.validatorPool as ValidatorPool;
+    let validatorPool = fixture.validatorPool as ValidatorPool;
     await expect(
       validatorPool.skimExcessEth(validatorsSnapshots[0].address)
     ).to.be.rejectedWith("onlyFactory");

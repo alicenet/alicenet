@@ -14,9 +14,9 @@ describe("Snapshots: Tests Snapshots methods", () => {
   let adminSigner: Signer;
   let notAdmin1Signer: Signer;
   let randomerSigner: Signer;
-  const stakeAmount = 20000;
-  const stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
-  const lockTime = 1;
+  let stakeAmount = 20000;
+  let stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
+  let lockTime = 1;
   let validators = new Array();
   let stakingTokenIds = new Array();
 
@@ -43,10 +43,10 @@ describe("Snapshots: Tests Snapshots methods", () => {
     );
 
     for (const validator of validatorsSnapshots) {
-      const tx = await fixture.stakeNFT
+      let tx = await fixture.stakeNFT
         .connect(adminSigner)
         .mintTo(validator.address, stakeAmountMadWei, lockTime);
-      const tokenId = getTokenIdFromTx(tx);
+      let tokenId = getTokenIdFromTx(tx);
       stakingTokenIds.push(tokenId);
       await fixture.stakeNFT
         .connect(await getValidatorEthAccount(validator))
@@ -59,7 +59,7 @@ describe("Snapshots: Tests Snapshots methods", () => {
   });
 
   it("Does not allow snapshot if sender is not validator", async function () {
-    const junkData =
+    let junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
     await expect(
       fixture.snapshots.connect(randomerSigner).snapshot(junkData, junkData)
@@ -67,9 +67,9 @@ describe("Snapshots: Tests Snapshots methods", () => {
   });
 
   it("Does not allow snapshot consensus is not running", async function () {
-    const junkData =
+    let junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
-    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
     ).to.be.revertedWith(`Snapshots: Consensus is not running!`);

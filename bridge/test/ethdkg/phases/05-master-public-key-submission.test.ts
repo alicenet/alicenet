@@ -14,7 +14,7 @@ import {
 
 describe("ETHDKG: Submit Master Public Key", () => {
   it("should not allow submission of master public key when not in MPKSubmission phase", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
     // distribute shares for all but 1 validators
@@ -39,7 +39,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
   });
 
   it("should allow submission of master public key by a non-validator", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
       validators4
     );
 
@@ -56,7 +56,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
   });
 
   it("should not allow submission of master public key more than once", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
       validators4
     );
 
@@ -81,7 +81,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
   });
 
   it("should not allow submission of empty master public key", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
       validators4
     );
 

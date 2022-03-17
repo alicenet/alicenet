@@ -7,8 +7,8 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   let fixture: Fixture;
   let adminSigner: SignerWithAddress;
   let notAdmin1Signer: SignerWithAddress;
-  const maxNumValidators = 5;
-  const stakeAmount = 20000;
+  let maxNumValidators = 5;
+  let stakeAmount = 20000;
   let validators = new Array();
   let stakingTokenIds = new Array();
 

@@ -12,8 +12,9 @@ import {
 
 describe("ETHDKG: Submit Key share", () => {
   it("should not allow submission of key shares when not in KeyShareSubmission phase", async () => {
-    const [ethdkg, validatorPool, expectedNonce] =
-      await startAtDistributeShares(validators4);
+    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
+      validators4
+    );
     // distribute shares for all validators
     await distributeValidatorsShares(
       ethdkg,
@@ -35,7 +36,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should allow submission of key shares", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
     // Submit the Key shares for all validators
@@ -49,7 +50,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow non-validator to submit key shares", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
@@ -87,7 +88,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
     // Submit the Key shares for all validators
@@ -111,7 +112,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow submission of key shares with empty input data", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
 
