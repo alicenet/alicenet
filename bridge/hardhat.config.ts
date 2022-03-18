@@ -52,7 +52,9 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
       gas: "auto",
       gasPrice: "auto",
-      accounts: ["0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"],
+      accounts: [
+        "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
+      ],
       gasMultiplier: 2,
     },
     ropsten: {

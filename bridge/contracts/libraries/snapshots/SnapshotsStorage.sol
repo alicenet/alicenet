@@ -12,6 +12,11 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool {
 
     uint32 internal _epoch;
 
+    // Number of ethereum blocks that we should wait between snapshots. Mainly used to prevent the
+    // submission of snapshots in short amount of time by validators that could be potentially being
+    // malicious
+    uint32 internal _minimumIntervalBetweenSnapshots;
+
     // after how many eth blocks of not having a snapshot will we start allowing more validators to
     // make it
     uint32 internal _snapshotDesperationDelay;

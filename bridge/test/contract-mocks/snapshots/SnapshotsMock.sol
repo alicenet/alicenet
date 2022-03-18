@@ -5,7 +5,9 @@ import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
-contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
     uint32 internal _epoch;
     uint32 internal _epochLength;
 
@@ -20,6 +22,7 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
 
     address internal _admin;
     uint256 internal immutable _chainId;
+    uint256 internal _minimumIntervalBetweenSnapshots;
 
     modifier onlyAdmin() {
         require(msg.sender == _admin, "Snapshots: Only admin allowed!");
@@ -35,7 +38,15 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
         _epochLength = epochLength_;
     }
 
-    function setEpochLength(uint32 epochLength_) external {
+    function initialize(uint32 desperationDelay_, uint32 desperationFactor_) public initializer {
+        // considering that in optimum conditions 1 Sidechain block is at every 3 seconds and 1 block at
+        // ethereum is approx at 13 seconds
+        _minimumIntervalBetweenSnapshots = 0;
+        _snapshotDesperationDelay = desperationDelay_;
+        _snapshotDesperationFactor = desperationFactor_;
+    }
+
+    function setEpochLength(uint32 epochLength_) public {
         _epochLength = epochLength_;
     }
 
@@ -45,6 +56,10 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
 
     function setSnapshotDesperationFactor(uint32 desperationFactor_) public onlyAdmin {
         _snapshotDesperationFactor = desperationFactor_;
+    }
+
+    function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_) public {
+        _minimumIntervalBetweenSnapshots = minimumIntervalBetweenSnapshots_;
     }
 
     function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
@@ -74,6 +89,10 @@ contract SnapshotsMock is ImmutableValidatorPool, ISnapshots {
 
     function getSnapshotDesperationFactor() public view returns (uint256) {
         return _snapshotDesperationFactor;
+    }
+
+    function getMinimumIntervalBetweenSnapshots() public view returns (uint256) {
+        return _minimumIntervalBetweenSnapshots;
     }
 
     function getChainId() public view returns (uint256) {

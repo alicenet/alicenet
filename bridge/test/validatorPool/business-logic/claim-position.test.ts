@@ -1,4 +1,5 @@
 import { BigNumber, Signer } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import {
   factoryCallAny,
@@ -8,6 +9,7 @@ import {
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
+  burnStakeTo,
   commitSnapshots,
   createValidators,
   getCurrentState,
@@ -17,7 +19,7 @@ import {
 
 describe("ValidatorPool: Claiming logic", async () => {
   let fixture: Fixture;
-  let stakeAmount = 20000;
+  let stakeAmount: bigint;
   let validators: string[];
   let stakingTokenIds: BigNumber[];
   let adminSigner: Signer;
@@ -28,6 +30,7 @@ describe("ValidatorPool: Claiming logic", async () => {
     adminSigner = await getValidatorEthAccount(admin.address);
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
+    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
   });
 
   it("Should successfully claim exiting NFT positions of all validators", async function () {
@@ -51,14 +54,36 @@ describe("ValidatorPool: Claiming logic", async () => {
         .claimExitingNFTPosition();
     }
     let currentState = await getCurrentState(fixture, validators);
-    await showState(
-      "Expected state after claiming exiting NFT position",
-      expectedState
-    );
-    await showState(
-      "Current state after claiming exiting NFT position",
-      currentState
-    );
+    expect(currentState).to.be.deep.equal(expectedState);
+  });
+
+  it("Should successfully claim exiting NFT positions of all validators even with excess of ETH and tokens", async function () {
+    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // itself, this is a method to send eth accidentally to the validatorPool contract
+    let etherAmount = ethers.utils.parseEther("1");
+    let madTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+    //As this is a complete cycle, expect the initial state to be exactly the same as the final state
+    let expectedState = await getCurrentState(fixture, validators);
+    validators.map((element, index) => {
+      expectedState.Factory.StakeNFT--;
+      expectedState.validators[index].NFT++;
+    });
+    expectedState.StakeNFT.ETH = BigInt(0);
+    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      validators,
+      stakingTokenIds,
+    ]);
+    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
+      validators,
+    ]);
+    await commitSnapshots(fixture, 4);
+    for (const validatorsSnapshot of validatorsSnapshots) {
+      await fixture.validatorPool
+        .connect(await getValidatorEthAccount(validatorsSnapshot))
+        .claimExitingNFTPosition();
+    }
+    let currentState = await getCurrentState(fixture, validators);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 
@@ -72,10 +97,10 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.validators[index].Acc = true;
       expectedState.validators[index].Reg = true;
       //Validators already start with stakeAmount (see test config)
-      expectedState.validators[index].MAD = stakeAmount * 2;
+      expectedState.validators[index].MAD = stakeAmount * BigInt(2);
       //New Staking
       expectedState.ValidatorPool.ValNFT++;
-      expectedState.Admin.MAD -= stakeAmount * 2;
+      expectedState.Admin.MAD -= stakeAmount * BigInt(2);
     });
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
@@ -103,15 +128,8 @@ describe("ValidatorPool: Claiming logic", async () => {
     ]);
     let currentState = await getCurrentState(fixture, validators);
     //Expect that validators funds are transferred again to ValidatorNFT
-    expectedState.ValidatorNFT.MAD += stakeAmount * validators.length;
-    await showState(
-      "Expected state after claiming exiting NFT position",
-      expectedState
-    );
-    await showState(
-      "Current state after claiming exiting NFT position",
-      currentState
-    );
+    expectedState.ValidatorNFT.MAD +=
+      BigInt(stakeAmount) * BigInt(validators.length);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 
@@ -132,49 +150,6 @@ describe("ValidatorPool: Claiming logic", async () => {
         "ValidatorPool: The waiting period is not over yet!"
       );
     }
-  });
-
-  it("After the claim period, the user should be able to claim its stakenft position", async function () {
-    fixture = await getFixture(true, true, true);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
-    await showState(
-      "After un -registering",
-      await getCurrentState(fixture, validators)
-    );
-    let expectedState = await getCurrentState(fixture, validators);
-    validators.map((_, index) => {
-      //New Staking
-      // expectedState.ValidatorPool.StakeNFT--;
-      // expectedState.Factory.StakeNFT--;
-    });
-    await commitSnapshots(fixture, 4);
-    for (const validator of validatorsSnapshots) {
-      await fixture.validatorPool
-        .connect(await getValidatorEthAccount(validator))
-        .claimExitingNFTPosition();
-    }
-    await showState(
-      "After claiming",
-      await getCurrentState(fixture, validators)
-    );
-    let currentState = await getCurrentState(fixture, validators);
-    await showState(
-      "Expected state after claiming exiting NFT position",
-      expectedState
-    );
-    await showState(
-      "Current state after claiming exiting NFT position",
-      currentState
-    );
-    expect(currentState).to.be.deep.equal(expectedState);
   });
 
   it("Should not allow a non-owner try to get stakenft position in the exitingQueue", async function () {

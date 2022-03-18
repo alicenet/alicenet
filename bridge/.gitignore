@@ -12,7 +12,6 @@ outTests/*
 truffle_output/*
 
 node_modules/*
-lib/*
 artifacts/*
 cache/*
 typechain-types/*
@@ -31,3 +30,5 @@ bindings-artifacts/*
 bindings/generate.go
 !deployments/dev/deploymentArgsTemplate.json
 !deployments/dev/deployList.json
+package-lock.json
+**/generated/*

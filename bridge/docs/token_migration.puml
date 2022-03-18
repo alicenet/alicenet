@@ -1,0 +1,39 @@
+@startuml name
+Actor User
+Participant "MadnetFactory" as MadnetFactory #LightBlue
+Participant "AToken\n(New ERC20Upgradeable)" as AToken #LightGreen
+Participant "MadToken\n(Legacy ERC20)" as MadToken #Orange
+Participant "ATokenMinter" as ATokenMinter #LightCoral
+Participant "ATokenBurner" as ATokenBurner #LightCyan
+title New ERC20Upgradeable AToken with External Minter/Burner Helper
+
+group setup    [onlyFactory]
+    MadnetFactory -> AToken : new AToken(MadToken)
+end
+User -> MadToken : approve(AToken,amount)
+User -> AToken : migrate(amount)
+group migrate
+    group burn       
+        AToken -> MadToken : transferFrom\n(user,AToken,amount)
+        MadToken --> AToken: MadToken amount
+    end
+    group mint        
+        AToken -> AToken : _mint(user, amount)
+        AToken --> User: AToken amount
+    end
+end
+User -> ATokenBurner : burn(user,amount) [onlyFactory]
+group externalBurn       
+    ATokenBurner -> AToken : externalBurn(user, amount)\n[onlyATokenBurner]
+    AToken -> AToken : _burn(user, amount)  
+    User --> AToken: AToken amount
+end
+User -> ATokenMinter : mint(user,amount) [onlyFactory]
+group externalMint        
+    ATokenMinter -> AToken : externalMint(user, amount)\n[onlyATokenMinter]
+    AToken -> AToken : _mint(user, amount) 
+    AToken --> User: AToken amount
+end
+@enduml
+
+

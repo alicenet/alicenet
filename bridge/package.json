@@ -1,8 +1,11 @@
 {
   "name": "bridge",
   "version": "0.1.0",
+  "engines": {
+    "node": "^16.0.0"
+  },
   "scripts": {
-    "init": "hardhat typechain",
+    "typechain": "hardhat typechain",
     "test": "hardhat test --show-stack-traces",
     "test-parallel": "hardhat test --parallel --show-stack-traces",
     "clean": "mkdir -p typechain-types && rm -rf typechain-types && hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
@@ -11,6 +14,7 @@
     "linter": "solhint 'contracts/**/*.sol' 'test/**/*.sol'"
   },
   "devDependencies": {
+    "@iarna/toml": "^2.2.5",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-truffle5": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",

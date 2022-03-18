@@ -120,7 +120,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     // submit MPK
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await submitMasterPublicKey(ethdkg, validators4, expectedNonce);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -286,7 +286,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     //await endCurrentPhase(ethdkg)
   });
 
@@ -305,7 +305,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // try accusing the 1st validator of bad shares using incorrect encrypted shares and commitments
     await expect(
@@ -338,7 +338,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // try accusing the 1st validator of bad shares using valid encrypted shares and commitments
     await ethdkg
@@ -403,7 +403,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // try accusing the 4th validator of bad shares using valid encrypted shares and commitments
     await ethdkg
@@ -474,7 +474,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // try accusing the 1st validator of bad shares using valid encrypted shares and commitments
     await ethdkg
@@ -503,7 +503,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     // try moving into the next phase - KeyShareSubmission
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
     await endCurrentPhase(ethdkg);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
 
     await expect(
@@ -538,7 +538,7 @@ describe("ETHDKG: Dispute bad shares", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
     await endCurrentPhase(ethdkg);
-    //await mineBlocks((await ethdkg.getConfirmationLength()).toNumber())
+    //await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt())
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     // accuse the 1st validator of bad shares using valid encrypted shares and commitments
@@ -599,7 +599,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     // try moving into the next phase - KeyShareSubmission
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
     await endCurrentPhase(ethdkg);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     await expect(
@@ -640,7 +640,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     await endCurrentAccusationPhase(ethdkg);
-    await mineBlocks((await ethdkg.getConfirmationLength()).toNumber());
+    await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     await expect(

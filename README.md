@@ -1,233 +1,226 @@
 # MadNet
-Mad Network Layer 1
-
 
 ## Requirements
-* Recent version of Docker (with docker compose)
-* Go 1.17
-* Geth 1.10.8
+
+* [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
+* [Go 1.17](https://go.dev/dl/)
+* [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
+* [Node 16](https://nodejs.org/en/download/)
+
+In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
+version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
+
+```shell
+$ npm prefix --global
+$ sudo npm install -g n
+$ echo $PATH
+$ command -v n
+$ n --version
+$ n i lts
+```
 
 ## Build MadNet
+
 First, this repository needs to be cloned, and be the current working dir.
 
 <br />
 
-Then to perform all code auto generation (run with `sudo` if your `docker` is only installed for `root`):
+Then to perform all code auto generation (run with `sudo` if your `docker` is only installed for `root`). Double check
+you meet the requirements in the bridge [README.md](bridge/README.md)
+
 ```
 make generate
 ```
-This generates all protobuf, capnproto, grpcs, and swagger files that the project depends on. Any time you make changes to any of the source files of these, this command needs to be rerun.
 
-<br />
+This generates all protobuf, capnproto, grpcs, and swagger files that the project depends on. Any time you make changes
+to any of the source files of these, this command needs to be rerun. Once completed it is now possible to compile an
+executable. If you are having problems in this step, check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
 
-Finally, to compile an executable:
 ```
 make build
 ```
 
-## Build Wallet
+## Environment Setup
 
-### Install NodeJS
-Run the following commands to install `NodeJS`:
-```
-sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-This is required to build the wallet.
+In order to initialize a chain with all validators online we need to generate the configuration files, keystores, geth
+genesis file, and password files run this command (if already executed, run `./scripts/main.sh clean` first)
 
-### Install Wallet
-Inside the MadNetWallet-JS repository,
-execute the following to build the wallet:
-```
-npm install
-```
-In the same repository, we now need to create
-`./tests/.env` with the following contents:
-```
-PRIVATE_KEY="6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"
-CHAIN_ID="42"
-RPC="http://127.0.0.1:8888/v1/"
-```
-This is required for the tests to run.
-
-## Setup Test Environment
-
-### Local execution
-
-In order to initialize a chain with all validators
-online we need to generate the configuration files, keystores, geth genesis file, and password files.
-To do this execute:
 ```
 ./scripts/main.sh init {# of validators 4-32}
 ```
+
 This will generate all necessary files for the local chain inside: `./scripts/generated`
 
-Open a terminal and start geth:
+Open now a new terminal to start geth with
+
 ```
 ./scripts/main.sh geth
 ```
 
-Open another terminal and start the bootnode:
+Open another terminal to start the bootnode with
+
 ```
 ./scripts/main.sh bootnode
 ```
 
-Open another terminal and deploy the contracts and transfer tokens needed for validators:
+Open now another terminal to deploy the contracts. If you are having problems in this step, 
+check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
+
 ```
 ./scripts/main.sh deploy
 ```
 
-Once this has finished, turn on each of the validators, each in its own terminal:
+When the script has been successfully executed it will log the Future Factory address, needed to run other commands. Go
+through the log and copy that value in the clipboard e.g.
+
+```shell
+...
+Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
+Future factory Address: 0x0b1F9c2b7bED6Db83295c7B5158EXAMPLE      <- THIS VALUE
+...
+```
+
+Now that you have the Future factory Address it is possible to register the validators
+
+```
+FACTORY_ADDRESS=0x0b1F9c2b7bED6Db83295c7B5158EXAMPLE ./scripts/main.sh register
+```
+
+Once this has finished, turn on each of the validators, each in its own terminal shell
+
 ```
 ./scripts/main.sh validator {# for the validator you want to start}
 ```
 
-Wait until all of the validators have peered together (TODO: how can we know when this is done?) and then start ethDKG:
+In the validators shell, there is this log looking like `Peers=24/x/3/0`, which gives you an idea on how many validator
+have been discovered in the network for the selected validator. You will see the `x`
+value increasing overtime . Eg if you initialized 5 validator the Peers value looks like
+
+```shell
+...
+Peers=24/1/3/0
+...
+Peers=24/2/3/0
+...
+Peers=24/3/3/0
+...
+Peers=24/4/3/0
+```
+
+Once all the validators discovered the others and have peered together, then start ethDKG:
+
 ```
 ./scripts/main.sh ethdkg
 ```
 
-This will print out blocks at which ethDKG events will happen. 
+This will print out blocks at which ethDKG events will happen.
+> For a quicker local setup, you might want to change the `scripts/base-files/baseConfig` template and
+> set `finalityDelay` from `6` -> `1` to speed up the ethdkg process.
+
 Once it has been completed and MadNet starts mining blocks, the system is ready.
 
-Deposits are required in order to submit DataStores.
-Run the following at least 4 times in order to deposit enough funds
+Deposits are required in order to submit DataStores. Run the following at least 4 times in order to deposit enough funds
 to inject datastores.
+
 ```
 ./scripts/main.sh deposit
 ```
-Note that DataStores are injected in the Wallet-JS
-[tests](#wallet-js-tests),
-so submitting these deposits are required for the
-tests to be successful.
 
+Note that DataStores are injected in the [Wallet-JS tests](https://github.com/MadBase/MadNetWallet-v2), so submitting 
+these deposits are required for the tests to be successful. 
 At this point, the testnet should now be ready to run the standard tests.
 
-To list other commands from the script, run the script with no arguments.
-
-### With Docker Compose
-
-A local test cluster can be started with Docker Compose. Open a new terminal and run:
+To list other commands from the script simply run 
 ```
-docker-compose up
+./scripts/main.sh 
 ```
 
-This will build the docker images for `geth` and `madnet`, and start geth, the bootnode and validators.
-The five validators are performing the same task as with the local execution and mount their configuration
-from `assets/config`. They do bind the P2P poers on the bost machine.
+# TROUBLESHOOTING
 
+1. `go mod tidy`
+   It is actually in place a fix for the following error
 
-## Test Sequences
-In order to run the Wallet-JS and standard MadNet
-tests, ensure the Test Environment is set up according to
-[Setup Test Environment](#setup-test-environment).
-The ETHDKG Test runs the entire distributed key generation
-procedure and has its own protocol.
-
-### Wallet-JS Tests
-First, ensure the wallet has been compiled.
-In the root of the Wallet repository, run the following:
-```
-npm test
-```
-Use `mocha` to run a specific subset of tests.
-For example, execute the following to run the Account tests:
-```
-npx mocha --timeout 45000 tests/account.js
+``` bash
+./scripts/main.sh init 5
+go mod tidy; \
+	go build -o madnet ./cmd/main.go;
+go: finding module for package github.com/MadBase/MadNet/localrpc/swagger-bindata
+github.com/MadBase/MadNet/localrpc imports
+	github.com/MadBase/MadNet/localrpc/swagger-bindata: no matching versions for query "latest"
+localrpc/local.go:12:2: no required module provides package github.com/MadBase/MadNet/localrpc/swagger-bindata; to add it:
+	go get github.com/MadBase/MadNet/localrpc/swagger-bindata
+make: *** [build] Error 1
 ```
 
-### Standard MadNet Tests
-First, run the Wallet-JS tests; only run these MadNet tests
-if all the wallet tests pass.
+2. `./scripts/main.sh deploy`
 
-#### Inject DataStore Test
-The first test we run is to inject datastores into MadNet.
-Go to `./cmd/testutils/inject/` and run the following command:
 ```
-go run . -d -m=<message> -i=<index>
++ npx hardhat --network dev --show-stack-traces updateDeploymentArgsWithFactory
+  Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
+  Future factory Address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
+  Saving file at: ./deployments/dev/deploymentArgsTemplate.json
++ npx hardhat run scripts/deployscripts.ts --no-compile --network dev --show-stack-traces
+  Deployed: MadnetFactory, at address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
+  Error: cannot estimate gas; transaction may fail or may require manual gas limit
 ```
-As noted in the test setup, deposits to MadNet are required in
-order for the datastore tests to succeed.
-Successful completion of this test requires that the
-datastores be consumed upon expiration;
-datastore expiration and consumption is discussed
-[below](#datastore-consumption-test)
-and is not considered part of this test.
-We describe how to interact with MadNet in order to view the contents
-of a DataStore [here](#view-datastore).
 
-#### Spam Transactions Test
-Upon successful completion of DataStore injection, we proceed
-to inject many transactions to Madnet:
-```
-go run . -b <baseIdx> -n <numChildren>
-```
-`numChildren` will specify the number of the transactions
-that are submitted every second.
+> Assuming you have `bridge/deployments/dev/deployList.json` defined, otherwise read [bridge documentation](bridge/README.md) file and then apply these changes
+>```shell
+>  cd bridge
+>  npx hardhat run ./scripts/getDeployList.ts 
+>  cd ..
+>```
+> now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
 
-#### Random Kill and Restart
-Randomly kill and restart the individual validators.
-There should be no noticeable change in the behavior of
-the other validators and MadNet consensus should not be affected.
+# WHAT'S NEXT
 
-#### Extended Kill and Restart
-Randomly kill one validator for an extended period;
-in particular, let at least 10 blocks pass before restarting
-the killed validator.
-This will cause the validator to be out of sync.
-The validator should be able to rejoin and resync without
-much delay.
+Now that MadNet is successfully running on your machine, connect it
+with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 
-#### Kill Half Nodes and Restart
-Kill half the validators.
-This will cause the remaining validators to stop because
-they are unable to reach consensus due to a lack of validators.
-After waiting for at least 20 seconds, restart the killed validators.
-After resynchronizing, consensus should continue as before
-and blocks should be mined.
+# TEST
 
-#### Kill All Nodes and Restart
-Shut down all the validators.
-Wait at least 20 seconds and restart all of them.
-Once the validators are resynchronized, blocks should continue
-to be mined as though the shutdown did not occur.
+### Random Kill and Restart
 
-#### DataStore Consumption Test
+Randomly kill and restart the individual validators. There should be no noticeable change in the behavior of the other
+validators and MadNet consensus should not be affected.
+
+### Extended Kill and Restart
+
+Randomly kill one validator for an extended period; in particular, let at least 10 blocks pass before restarting the
+killed validator. This will cause the validator to be out of sync. The validator should be able to rejoin and resync
+without much delay.
+
+### Kill Half Nodes and Restart
+
+Kill half the validators. This will cause the remaining validators to stop because they are unable to reach consensus
+due to a lack of validators. After waiting for at least 20 seconds, restart the killed validators. After
+resynchronizing, consensus should continue as before and blocks should be mined.
+
+### Kill All Nodes and Restart
+
+Shut down all the validators. Wait at least 20 seconds and restart all of them. Once the validators are resynchronized,
+blocks should continue to be mined as though the shutdown did not occur.
+
+### DataStore Consumption Test
+
 There are 1024 blocks per epoch; this is defined in
-`./constants/shared.go` as `EpochLength = 1024`.
-Blocks are mined approximately every 6 seconds,
-so one epoch lasts over one hour.
-The DataStore test stores the datastore for 5 epochs,
-implying the data would be stored for over 8.5 hours.
-To make this test more reasonable and
-ensure that datastores are consumed, change
-`EpochLength = 16`.
+`./constants/shared.go` as `EpochLength = 1024`. Blocks are mined approximately every 6 seconds, so one epoch lasts over
+one hour. The DataStore test stores the datastore for 5 epochs, implying the data would be stored for over 8.5 hours. To
+make this test more reasonable and ensure that datastore are consumed, change `EpochLength = 16`.
 
+### View DataStore
 
-## Interaction
+Tests involving datastores require being able to determine whether the datastores are present. One way to ensure this is
+using the Swagger API.
 
-### API Docs and Limited GUI
-The swagger-ui for the localRPC of a validator may be found at
-http://localhost:####/swagger/ ;
-the default port for validator4 is 8888.
-Thus, you may speak to validator 4 (a non-mining node) at
-http://localhost:8888/swagger/ .
+To understand how to run through this, we run an example. We assume that the test environment has been successfully
+setup and that the Swagger API is available. Furthermore, validator4 must be running.
 
-#### View DataStore
-Tests involving datastores require being able to determine
-whether the datastores are present.
-One way to ensure this is using the Swagger API.
-
-To understand how to run through this, we run an example.
-We assume that the test environment has been successfully
-setup and that the Swagger API is available.
-Furthermore, validator4 must be running.
-
-We submit
 ```
+cd ./cmd/testutils/inject/
 go run . -d -m=hello -i=foo
 ```
+
 This test submits a DataStore of message `hello` at index `foo`
 and then overwrites the DataStore, setting the value to `hello-two`
 Here is a truncation of the output:
@@ -254,14 +247,12 @@ GetMinedTransaction Tx  err: <nil>
 
 Here, `d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5`
 (64 hex characters on the fourth-from-bottom line)
-is the TxHash of the transaction of which overwrote the original
-transaction we submitted.
-As noted above, the original message is `hello` and the new message
-is `hello-two`
+is the TxHash of the transaction of which overwrote the original transaction we submitted. As noted above, the original
+message is `hello` and the new message is `hello-two`
 In the Swagger API, if we click on `get-mined-transaction`
 and set the TxHash value to
-`d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5`.
-Here is a portion of the transaction:
+`d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5`. Here is a portion of the transaction:
+
 ```
 "DataStore": {
   "DSLinker": {
@@ -279,19 +270,13 @@ Here is a portion of the transaction:
 }
 ```
 
-Although we could use the value of `Rawdata` to obtain its value,
-we will use another Swagger API call.
-This is useful because upon consumption, `Rawdata` will not be
-present and this will ensure that the DataStore was consumed
-as expected.
-Instead, we will use `get-data`, which requires the `CurveSpec`,
-`Account`, and `Index`.
-We have `CurveSpec = 1` because the test uses the `Secp256k1`
-elliptic curve.
-The value for `Account` comes from removing the first 4 characters
-of the `Owner` hexidecimal string.
-`Index` can be copied directly from above.
-Thus, we enter
+Although we could use the value of `Rawdata` to obtain its value, we will use another Swagger API call. This is useful
+because upon consumption, `Rawdata` will not be present and this will ensure that the DataStore was consumed as
+expected. Instead, we will use `get-data`, which requires the `CurveSpec`,
+`Account`, and `Index`. We have `CurveSpec = 1` because the test uses the `Secp256k1`
+elliptic curve. The value for `Account` comes from removing the first 4 characters of the `Owner` hexidecimal string.
+`Index` can be copied directly from above. Thus, we enter
+
 ```
 {
   "CurveSpec": 1,
@@ -301,21 +286,26 @@ Thus, we enter
 ```
 
 Upon execution, we have
+
 ```
 {
   "Rawdata": "68656c6c6f2d74776f"
 }
 ```
+
 This matches `Rawdata` from the transaction and decodes to
 `hello-two`, as expected.
 
 If a DataStore is not present, then a "Key not found"
-error will be returned;
-this error will happen when the DataStore is consumed.
+error will be returned; this error will happen when the DataStore is consumed.
+
+# Interaction
+
+### API Docs and Limited GUI
+
+The swagger-ui for the localRPC of a validator may be found at `http://localhost:8885/swagger`. The default port for
+`validator4` is `8888`. Thus, you may speak to validator 4 (a non-mining node) at `http://localhost:8888`
 
 ### Programmatic Interaction
-The localRPC directory contains a client library that abstracts the localRPC system for easier
-development.
 
-### Graphical Wallet
-Coming soon
+The localRPC directory contains a client library that abstracts the localRPC system for easier development.

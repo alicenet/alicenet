@@ -93,6 +93,9 @@ def run():
         ("Snapshots", "Snapshots"),
         ("ETHDKGPhases", "ETHDKGPhases"),
         ("StakeNFTLP", "StakeNFTLP"),
+        ("AToken", "AToken"),
+        ("ATokenBurner", "ATokenBurner"),
+        ("ATokenMinter", "ATokenMinter"),
         ("Foundation", "Foundation")
     ]
     c=make(clst)
