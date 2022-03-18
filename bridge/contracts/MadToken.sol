@@ -20,9 +20,9 @@ contract MadToken is MadTokenBase {
 
     constructor() Admin(msg.sender) {}
 
-    function initialize(address owner_) public onlyAdmin initializer {
+    function initialize() public onlyAdmin initializer {
         __madTokenBaseInit();
-        _mint(owner_, 220000000 * 10**decimals());
+        _mint(msg.sender, 220000000 * 10**decimals());
     }
 
     /*

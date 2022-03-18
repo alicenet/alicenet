@@ -9,6 +9,8 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 
 /// @custom:salt ETHDKGAccusations
 /// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-group ethdkg
+/// @custom:deploy-group-index 0
 contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     constructor() ETHDKGStorage() {}
 

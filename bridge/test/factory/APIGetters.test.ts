@@ -20,6 +20,7 @@ describe("Madnetfactory API test", async () => {
 
   beforeEach(async () => {
     const utilsBase = await ethers.getContractFactory(UTILS);
+    // set owner and delegator
     utilsContract = await utilsBase.deploy();
     factory = await deployFactory();
     const cSize = await utilsContract.getCodeSize(factory.address);
@@ -29,14 +30,16 @@ describe("Madnetfactory API test", async () => {
   it("getters", async () => {
     await deployStatic(END_POINT, factory.address);
     const implAddr = await factory.getImplementation();
-    expect(implAddr).to.not.be.equals(undefined);
+    expect(implAddr).to.not.equal(undefined);
     const saltsArray = await factory.contracts();
     expect(saltsArray.length).to.be.greaterThan(0);
     const numContracts = await factory.getNumContracts();
     expect(numContracts.toNumber()).to.equal(saltsArray.length);
     const saltStrings = bytes32ArrayToStringArray(saltsArray);
     for (let i = 0; i < saltStrings.length; i++) {
-      const address = await factory.lookup(saltStrings[i]);
+      const address = await factory.lookup(
+        ethers.utils.formatBytes32String(saltStrings[i])
+      );
       expect(address).to.equal(
         getMetamorphicAddress(factory.address, saltsArray[i])
       );
