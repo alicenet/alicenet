@@ -50,7 +50,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 	// setup leader election
 	block, err := eth.GetGethClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
 	if err != nil {
-		return fmt.Errorf("MPKSubmissionTask.Initialize(): error getting block by number: %v", err)
+		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
 	}
 
 	logger.Infof("block hash: %v\n", block.Hash())
@@ -83,7 +83,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	// submit if I'm a leader for this task
 	if !t.AmILeading(ctx, eth, logger) {
-		return errors.New("not leading Completion submission yet")
+		return errors.New("not leading Completion yet")
 	}
 
 	// Setup
@@ -144,9 +144,11 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		logger.WithFields(logrus.Fields{
 			"t.State.Phase":      t.State.Phase,
 			"t.State.PhaseStart": t.State.PhaseStart,
-		}).Info("CompletionTask ShouldRetry - will not retry")
+		}).Info("CompletionTask ShouldRetry - will not retry because it's done")
 		return false
 	}
+
+	logger.Info("CompletionTask ShouldRetry() will retry")
 
 	return true
 }
@@ -177,11 +179,15 @@ func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
+	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,
 		"t.Start":                          t.Start,
 		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
 		"blocksSinceDesperation":           blocksSinceDesperation,
-	}).Infof("before dkg.AmILeading")
-	return dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
 }

@@ -282,7 +282,7 @@ func TestShareDistributionBad6(t *testing.T) {
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -306,7 +306,7 @@ func TestShareDistributionBad7(t *testing.T) {
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -344,14 +344,6 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}
-
-	// for idx := 0; idx < n; idx++ {
-	// 	logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-	// 	task := suite.shareDistTasks[idx]
-	// 	task.State.Account.Address = common.Address{}
-	// 	shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
-	// 	assert.True(t, shouldRetry)
-	// }
 }
 
 func TestShareDistributionShouldRetryFalse(t *testing.T) {

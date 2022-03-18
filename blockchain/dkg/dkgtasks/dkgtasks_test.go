@@ -5,18 +5,12 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
-	"math"
 	"math/big"
 	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strconv"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -37,7 +31,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -74,341 +67,6 @@ func (ah *adminHandlerMock) RegisterSnapshotCallback(func(*objs.BlockHeader) err
 func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
-
-func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
-	eth, err := blockchain.NewEthereumSimulator(
-		privateKeys,
-		6,
-		10*time.Second,
-		30*time.Second,
-		0,
-		big.NewInt(math.MaxInt64))
-
-	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
-	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Unlock the default account and use it to deploy contracts
-	deployAccount := eth.GetDefaultAccount()
-	err = eth.UnlockAccount(deployAccount)
-	assert.Nil(t, err, "Failed to unlock default account")
-
-	t.Logf("deploy account: %v", deployAccount.Address.String())
-	// t.Logf("all accounts: %v", eth.GetKnownAccounts())
-
-	// Deploy all the contracts
-	// c.DeployContracts()
-	// panic("missing deploy step")
-
-	err = startHardHatNode(eth)
-	if err != nil {
-		eth.Close()
-		t.Fatalf("error starting hardhat node: %v", err)
-	}
-
-	t.Logf("waiting on hardhat node to start...")
-
-	err = waitForHardHatNode(ctx)
-	if err != nil {
-		eth.Close()
-		t.Fatalf("error: %v", err)
-	}
-
-	// Mine a block once a second
-	// if blockInterval > 1*time.Millisecond {
-	// 	go func() {
-	// 		for {
-	// 			time.Sleep(blockInterval)
-	// 			eth.Commit()
-	// 		}
-	// 	}()
-	// }
-
-	t.Logf("deploying contracts..")
-
-	err = startDeployScripts(eth, ctx)
-	if err != nil {
-		eth.Close()
-		t.Fatalf("error deploying: %v", err)
-	}
-
-	validatorAddresses := make([]string, 0)
-	for _, acct := range eth.GetKnownAccounts() {
-		validatorAddresses = append(validatorAddresses, acct.Address.String())
-	}
-
-	err = registerValidators(eth, validatorAddresses)
-	assert.Nil(t, err)
-
-	// unlock accounts
-	for _, account := range eth.GetKnownAccounts() {
-		err := eth.UnlockAccount(account)
-		assert.Nil(t, err)
-	}
-
-	// fund accounts
-	for _, account := range eth.GetKnownAccounts()[1:] {
-		txn, err := eth.TransferEther(deployAccount.Address, account.Address, big.NewInt(100000000000000000))
-		assert.Nil(t, err)
-		assert.NotNil(t, txn)
-		if txn == nil {
-			// this shouldn't be needed, but is
-			eth.Close()
-			t.Fatal("could not transfer ether")
-		}
-		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-		assert.Nil(t, err)
-		assert.NotNil(t, rcpt)
-	}
-
-	return eth
-}
-
-/*
-func getStakeNFTTokenIDFromLogs(eth interfaces.Ethereum, logs []*types.Log) (*big.Int, error) {
-	events := monitor.GetStakeNFTEvents()
-	_, ok := events["Transfer"]
-	if !ok {
-		return nil, errors.New("no event defined StakeNFT.Transfer")
-	}
-
-	var event *bindings.StakeNFTTransfer
-	for _, log := range logs {
-		var l types.Log = *log
-		ev, err := eth.Contracts().StakeNFT().ParseTransfer(l)
-		if err != nil {
-			continue
-		}
-		event = ev
-	}
-
-	if event == nil {
-		return nil, errors.New("could not find StakeNFT.Transfer event")
-	}
-
-	return event.TokenId, nil
-}
-*/
-
-func startHardHatNode(eth *blockchain.EthereumDetails) error {
-
-	rootPath := dtest.GetMadnetRootPath()
-	scriptPath := append(rootPath, "scripts")
-	//scriptPath = append(scriptPath, "base-scripts")
-	//scriptPath = append(scriptPath, "geth-local.sh")
-	scriptPath = append(scriptPath, "main.sh")
-	scriptPathJoined := filepath.Join(scriptPath...)
-	fmt.Println("scriptPathJoined2: ", scriptPathJoined)
-
-	cmd := exec.Cmd{
-		Path:   scriptPathJoined,
-		Args:   []string{scriptPathJoined, "hardhat_node"},
-		Dir:    filepath.Join(rootPath...),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	err := cmd.Start()
-
-	// if there is an error with our execution
-	// handle it here
-	if err != nil {
-		return fmt.Errorf("could not run hardhat node: %s", err)
-	}
-
-	eth.SetClose(func() error {
-		fmt.Printf("closing hardhat node %v..\n", cmd.Process.Pid)
-		err := cmd.Process.Signal(syscall.SIGTERM)
-
-		// err := cmd.Process.Kill()
-		if err != nil {
-			return err
-		}
-
-		_, err = cmd.Process.Wait()
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("hardhat node closed\n")
-		return nil
-	})
-
-	return nil
-}
-
-func startDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
-
-	rootPath := dtest.GetMadnetRootPath()
-	scriptPath := append(rootPath, "scripts")
-	scriptPath = append(scriptPath, "main.sh")
-	scriptPathJoined := filepath.Join(scriptPath...)
-	fmt.Println("scriptPathJoined: ", scriptPathJoined)
-
-	cmd := exec.Cmd{
-		Path:   scriptPathJoined,
-		Args:   []string{scriptPathJoined, "deploy"},
-		Dir:    filepath.Join(rootPath...),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	err := cmd.Run()
-
-	// if there is an error with our execution
-	// handle it here
-	if err != nil {
-		return fmt.Errorf("could not execute deploy script: %s", err)
-	}
-
-	// inits contracts
-	// todo: fix this
-	// var factory string = config.Configuration.Ethereum.RegistryAddress
-	var factory string = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
-	addr := common.Address{}
-	copy(addr[:], common.FromHex(factory))
-	err = eth.SetContractFactory(ctx, addr)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func waitForHardHatNode(ctx context.Context) error {
-	c := http.Client{}
-	msg := &blockchain.JsonrpcMessage{
-		Version: "2.0",
-		ID:      []byte("1"),
-		Method:  "eth_chainId",
-		Params:  make([]byte, 0),
-	}
-	var err error
-	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
-		panic(err)
-	}
-
-	var buff bytes.Buffer
-	err = json.NewEncoder(&buff).Encode(msg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for {
-		reader := bytes.NewReader(buff.Bytes())
-
-		resp, err := c.Post(
-			"http://127.0.0.1:8545",
-			"application/json",
-			reader,
-		)
-
-		if err != nil {
-			continue
-		}
-
-		_, err = io.ReadAll(resp.Body)
-		if err == nil {
-			break
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(50 * time.Millisecond):
-		}
-	}
-
-	return err
-}
-
-func registerValidators(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
-
-	rootPath := dtest.GetMadnetRootPath()
-	scriptPath := append(rootPath, "scripts")
-	scriptPath = append(scriptPath, "main.sh")
-	scriptPathJoined := filepath.Join(scriptPath...)
-	fmt.Println("scriptPathJoined: ", scriptPathJoined)
-
-	args := []string{
-		scriptPathJoined,
-		"register_test",
-		eth.Contracts().ContractFactoryAddress().String(),
-	}
-	args = append(args, validatorAddresses...)
-
-	cmd := exec.Cmd{
-		Path:   scriptPathJoined,
-		Args:   args,
-		Dir:    filepath.Join(rootPath...),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	err := cmd.Run()
-
-	// if there is an error with our execution
-	// handle it here
-	if err != nil {
-		return fmt.Errorf("could not execute deploy script: %s", err)
-	}
-
-	return nil
-}
-
-/* func registerValidatorsOld(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
-
-	rootPath := getMadnetRootPath()
-	rootPath = append(rootPath, "bridge")
-	// scriptPath := append(rootPath, "scripts")
-	// scriptPath = append(scriptPath, "main.sh")
-	// scriptPathJoined := filepath.Join(scriptPath...)
-	// fmt.Println("scriptPathJoined: ", scriptPathJoined)
-
-	args := []string{
-		"hardhat",
-		"registerValidators",
-		"--nework",
-		"dev",
-		"--show-stack-traces",
-		"--factory-address",
-		eth.Contracts().ContractFactoryAddress().String(),
-	}
-	args = append(args, validatorAddresses...)
-
-	fmt.Printf("register rootPath %v\n", rootPath)
-
-	cmd := exec.Command("npx", args...)
-	cmd.Dir = filepath.Join(rootPath...)
-	//var out bytes.Buffer
-	//cmd.Stdout = &out
-
-	out, err := cmd.Output()
-
-	// if there is an error with our execution
-	// handle it here
-	if err != nil {
-		return fmt.Errorf("could not execute register script: %s. %v", err, out)
-	}
-
-	eth.SetClose(func() error {
-		err := cmd.Process.Kill()
-		if err != nil {
-			return err
-		}
-
-		_, err = cmd.Process.Wait()
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	return nil
-} */
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
 	defer wg.Done()
@@ -550,7 +208,7 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
 
 	accountList := eth.GetKnownAccounts()
@@ -622,7 +280,7 @@ type TestSuite struct {
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()
@@ -633,7 +291,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = dkg.SetETHDKGPhaseLength(20, eth, ownerOpts, ctx)
+	_, _, err = dkg.SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// init ETHDKG on ValidatorPool, through ContractFactory
@@ -770,6 +428,10 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, phase, uint8(objects.ShareDistribution))
+
+	height, err := suite.eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+	assert.GreaterOrEqual(t, height, suite.shareDistTasks[0].Start)
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
@@ -1061,6 +723,15 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
 	}
+
+	return suite
+}
+
+func StartFromCompletion(t *testing.T, n int, phaseLength uint16) *TestSuite {
+	suite := StartFromGPKjPhase(t, n, []int{}, []int{}, phaseLength)
+
+	// move to Completion phase
+	advanceTo(t, suite.eth, suite.completionTasks[0].Start+suite.dkgStates[0].ConfirmationLength)
 
 	return suite
 }

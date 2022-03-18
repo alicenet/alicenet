@@ -216,11 +216,15 @@ func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ether
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
+	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,
 		"t.Start":                          t.Start,
 		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
 		"blocksSinceDesperation":           blocksSinceDesperation,
-	}).Infof("before dkg.AmILeading")
-	return dkg.AmILeading(t.State.NumberOfValidators, t.State.Index, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
 }

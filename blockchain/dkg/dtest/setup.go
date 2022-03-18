@@ -1,20 +1,36 @@
 package dtest
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
+	"math"
 	"math/big"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/MadBase/MadNet/blockchain"
 	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/etest"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -285,27 +301,73 @@ func GetMadnetRootPath() []string {
 }
 
 func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Account) {
+	_, pKey, err := GetOwnerAccount()
+	if err != nil {
+		panic(err)
+	}
+
+	//t.Logf("owner: %v, pvKey: %v", account.Address.String(), key.PrivateKey)
+	privateKeys := []*ecdsa.PrivateKey{pKey}
+	randomPrivateKeys := etest.SetupPrivateKeys(n - 1)
+	privateKeys = append(privateKeys, randomPrivateKeys...)
+	accounts := etest.SetupAccounts(privateKeys)
+
+	return privateKeys, accounts
+}
+
+func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
 	rootPath := GetMadnetRootPath()
-	jsonPath := append(rootPath, "scripts")
-	jsonPath = append(jsonPath, "base-files")
-	jsonPath = append(jsonPath, "0x546f99f244b7b58b855330ae0e2bc1b30b41302f")
-	jsonPathJoined := filepath.Join(jsonPath...)
-	fmt.Println("jsonPathJoined: ", jsonPathJoined)
 
-	// config.Configuration.Ethereum.DefaultAccount
-	//file := "../../../scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
-	dir, err := ioutil.TempDir("/tmp", "ks")
+	// open config file owner.toml
+	ownerTomlPath := append(rootPath, "scripts")
+	ownerTomlPath = append(ownerTomlPath, "base-files")
+	ownerTomlPath = append(ownerTomlPath, "owner.toml")
+	ownerTomlFullPath := filepath.Join(ownerTomlPath...)
+
+	f, err := os.Open(ownerTomlFullPath)
 	if err != nil {
 		panic(err)
 	}
-	ks := keystore.NewKeyStore(dir, keystore.StandardScryptN, keystore.StandardScryptP)
-	jsonBytes, err := ioutil.ReadFile(jsonPathJoined)
+	defer f.Close()
+
+	// Splits on newlines by default.
+	scanner := bufio.NewScanner(f)
+	var defaultAccount string
+
+	// https://golang.org/pkg/bufio/#Scanner.Scan
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "defaultAccount") {
+			defaultAccount = scanner.Text()
+			break
+		}
+	}
+
+	splits := strings.Split(defaultAccount, "=")
+	acctAddress := strings.Trim(splits[1], " \"")
+	acctAddressLowerCase := strings.ToLower(acctAddress)
+
+	// open password file
+	passwordPath := append(rootPath, "scripts")
+	passwordPath = append(passwordPath, "base-files")
+	passwordPath = append(passwordPath, "passwordFile")
+	passwordFullPath := filepath.Join(passwordPath...)
+
+	fileContent, err := ioutil.ReadFile(passwordFullPath)
 	if err != nil {
+		//log.Errorf("error opening passsword file: %v", err)
 		panic(err)
 	}
 
-	password := "abc123"
-	_, err = ks.Import(jsonBytes, password, password)
+	// Convert []byte to string
+	password := string(fileContent)
+
+	// open wallet json file
+	walletPath := append(rootPath, "scripts")
+	walletPath = append(walletPath, "base-files")
+	walletPath = append(walletPath, acctAddressLowerCase)
+	walletFullPath := filepath.Join(walletPath...)
+
+	jsonBytes, err := ioutil.ReadFile(walletFullPath)
 	if err != nil {
 		panic(err)
 	}
@@ -315,11 +377,255 @@ func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Ac
 		panic(err)
 	}
 
-	//t.Logf("owner: %v, pvKey: %v", account.Address.String(), key.PrivateKey)
-	privateKeys := []*ecdsa.PrivateKey{key.PrivateKey}
-	randomPrivateKeys := etest.SetupPrivateKeys(n - 1)
-	privateKeys = append(privateKeys, randomPrivateKeys...)
-	accounts := etest.SetupAccounts(privateKeys)
+	return &key.Address, key.PrivateKey, nil
+}
 
-	return privateKeys, accounts
+func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
+	eth, err := blockchain.NewEthereumSimulator(
+		privateKeys,
+		6,
+		10*time.Second,
+		30*time.Second,
+		0,
+		big.NewInt(math.MaxInt64))
+
+	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
+	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Unlock the default account and use it to deploy contracts
+	deployAccount := eth.GetDefaultAccount()
+	err = eth.UnlockAccount(deployAccount)
+	assert.Nil(t, err, "Failed to unlock default account")
+
+	t.Logf("deploy account: %v", deployAccount.Address.String())
+
+	err = StartHardHatNode(eth)
+	if err != nil {
+		eth.Close()
+		t.Fatalf("error starting hardhat node: %v", err)
+	}
+
+	t.Logf("waiting on hardhat node to start...")
+
+	err = WaitForHardHatNode(ctx)
+	if err != nil {
+		eth.Close()
+		t.Fatalf("error: %v", err)
+	}
+
+	// Mine a block once a second
+	// if blockInterval > 1*time.Millisecond {
+	// 	go func() {
+	// 		for {
+	// 			time.Sleep(blockInterval)
+	// 			eth.Commit()
+	// 		}
+	// 	}()
+	// }
+
+	t.Logf("deploying contracts..")
+
+	err = StartDeployScripts(eth, ctx)
+	if err != nil {
+		eth.Close()
+		t.Fatalf("error deploying: %v", err)
+	}
+
+	validatorAddresses := make([]string, 0)
+	for _, acct := range eth.GetKnownAccounts() {
+		validatorAddresses = append(validatorAddresses, acct.Address.String())
+	}
+
+	err = RegisterValidators(eth, validatorAddresses)
+	assert.Nil(t, err)
+
+	// unlock accounts
+	for _, account := range eth.GetKnownAccounts() {
+		err := eth.UnlockAccount(account)
+		assert.Nil(t, err)
+	}
+
+	// fund accounts
+	for _, account := range eth.GetKnownAccounts()[1:] {
+		txn, err := eth.TransferEther(deployAccount.Address, account.Address, big.NewInt(100000000000000000))
+		assert.Nil(t, err)
+		assert.NotNil(t, txn)
+		if txn == nil {
+			// this shouldn't be needed, but is
+			eth.Close()
+			t.Fatal("could not transfer ether")
+		}
+		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		assert.Nil(t, err)
+		assert.NotNil(t, rcpt)
+	}
+
+	return eth
+}
+
+func StartHardHatNode(eth *blockchain.EthereumDetails) error {
+
+	rootPath := GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined2: ", scriptPathJoined)
+
+	cmd := exec.Cmd{
+		Path:   scriptPathJoined,
+		Args:   []string{scriptPathJoined, "hardhat_node"},
+		Dir:    filepath.Join(rootPath...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Start()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not run hardhat node: %s", err)
+	}
+
+	eth.SetClose(func() error {
+		fmt.Printf("closing hardhat node %v..\n", cmd.Process.Pid)
+		err := cmd.Process.Signal(syscall.SIGTERM)
+
+		// err := cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
+
+		_, err = cmd.Process.Wait()
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("hardhat node closed\n")
+		return nil
+	})
+
+	return nil
+}
+
+func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
+
+	rootPath := GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined: ", scriptPathJoined)
+
+	cmd := exec.Cmd{
+		Path:   scriptPathJoined,
+		Args:   []string{scriptPathJoined, "deploy"},
+		Dir:    filepath.Join(rootPath...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Run()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not execute deploy script: %s", err)
+	}
+
+	// inits contracts
+	// todo: fix this
+	// var factory string = config.Configuration.Ethereum.RegistryAddress
+	var factory string = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+	addr := common.Address{}
+	copy(addr[:], common.FromHex(factory))
+	err = eth.SetContractFactory(ctx, addr)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WaitForHardHatNode(ctx context.Context) error {
+	c := http.Client{}
+	msg := &blockchain.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  "eth_chainId",
+		Params:  make([]byte, 0),
+	}
+	var err error
+	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+		panic(err)
+	}
+
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(msg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		reader := bytes.NewReader(buff.Bytes())
+
+		resp, err := c.Post(
+			"http://127.0.0.1:8545",
+			"application/json",
+			reader,
+		)
+
+		if err != nil {
+			continue
+		}
+
+		_, err = io.ReadAll(resp.Body)
+		if err == nil {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+
+	return err
+}
+
+func RegisterValidators(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
+
+	rootPath := GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined: ", scriptPathJoined)
+
+	args := []string{
+		scriptPathJoined,
+		"register_test",
+		eth.Contracts().ContractFactoryAddress().String(),
+	}
+	args = append(args, validatorAddresses...)
+
+	cmd := exec.Cmd{
+		Path:   scriptPathJoined,
+		Args:   args,
+		Dir:    filepath.Join(rootPath...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Run()
+
+	// if there is an error with our execution
+	// handle it here
+	if err != nil {
+		return fmt.Errorf("could not execute deploy script: %s", err)
+	}
+
+	return nil
 }
