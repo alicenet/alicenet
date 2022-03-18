@@ -12,6 +12,7 @@ import "solidity-coverage";
 import "./scripts/lib/gogogen";
 import "./scripts/lib/madnetFactoryTasks";
 import "./scripts/lib/madnetTasks";
+import "./scripts/generateImmutableAuth";
 require("dotenv").config();
 
 /**
