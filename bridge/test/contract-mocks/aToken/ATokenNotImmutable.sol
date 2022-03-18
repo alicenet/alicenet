@@ -9,7 +9,6 @@ import "contracts/interfaces/IAToken.sol";
 
 import "hardhat/console.sol";
 
-
 contract ATokenNotImmutable is IAToken, ERC20Upgradeable, ImmutableFactory {
     address internal immutable _oldMadToken;
 

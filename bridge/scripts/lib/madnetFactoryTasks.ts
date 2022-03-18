@@ -216,9 +216,6 @@ task("deployContracts", "runs the initial deployment of all madnet contracts")
     "deployFactory",
     "flag to indicate deployment, will deploy the factory first if set"
   )
-  .addOptionalParam("factoryAddress", 
-    "if defined the contracts will be deployed with factory specified and initial factory deployment will be skipped"
-  )
   .addOptionalParam("inputFolder", "path to location containing deploymentArgsTemplate, and deploymentList")
   .addOptionalParam(
     "outputFolder",

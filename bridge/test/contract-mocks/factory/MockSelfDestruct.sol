@@ -3,6 +3,7 @@ pragma solidity ^0.8.11;
 
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
+
 /// @custom:salt MockSelfDestruct
 contract MockSelfDestruct is ProxyInternalUpgradeLock, ProxyInternalUpgradeUnlock {
     address internal _factory;

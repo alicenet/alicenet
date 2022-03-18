@@ -16,13 +16,8 @@ const defaultFactoryName = "MadnetFactory";
 const DeployedRawEvent = "DeployedRaw";
 const contractAddrVar = "contractAddr";
 const DeployedProxyEvent = "DeployedProxy";
-const logicAddrKey = "LogicAddress";
-const ProxyAddrKey = "ProxyAddress";
 const deployedStaticEvent = "DeployedStatic";
 const deployedTemplateEvent = "DeployedTemplate";
-const MetaAddrKey = "MetaAddress";
-const templateAddrKey = "TemplateAddress";
-
 export async function deployUpgradeable(
   contractName: string,
   factoryAddress: string,
@@ -124,7 +119,7 @@ export async function deployStatic(
   );
   const metaSalt = await getSalt(contractName);
   if (typeof metaSalt === "undefined") {
-    throw "Couldn't get the salt for:" + contractName;
+    throw new Error(`Couldn't get the salt for: ${contractName}`);
   }
   txResponse = await factory.deployStatic(metaSalt, "0x");
   receipt = await txResponse.wait();
@@ -198,17 +193,6 @@ export async function getSalt(contractName: string) {
   } else {
     throw new Error("Missing custom:salt");
   }
-}
-
-async function getDeployTypeWithContractName(contractName: string) {
-  const qualifiedName: any = await getFullyQualifiedName(contractName);
-  const buildInfo = await artifacts.getBuildInfo(qualifiedName);
-  let deployType: any;
-  if (buildInfo !== undefined) {
-    const path = extractPath(qualifiedName);
-    deployType = buildInfo?.output.contracts[path][contractName];
-  }
-  return deployType.devdoc["custom:deploy-type"];
 }
 
 function getEventVar(

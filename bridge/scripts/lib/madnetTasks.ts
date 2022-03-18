@@ -20,7 +20,9 @@ task(
 ).setAction(async (taskArgs, hre) => {
   const path: string = `./deployments/${env()}/deploymentArgsTemplate.json`;
   if (!fs.existsSync(path)) {
-    throw "Error: Could not find deployment Args file expected at " + path;
+    throw new Error(
+      `Error: Could not find deployment Args file expected at ${path}`
+    );
   }
   console.log(`Loading deploymentArgs from: ${path}`);
   const rawData = fs.readFileSync(path);
@@ -60,7 +62,6 @@ task("registerValidators", "registers validators")
       "MadnetFactory",
       taskArgs.factoryAddress
     );
-    console.log(taskArgs.addresses);
     const lockTime = 1;
     const validatorAddresses: string[] = taskArgs.addresses;
     const stakingTokenIds: BigNumber[] = [];
@@ -126,12 +127,10 @@ task("registerValidators", "registers validators")
     console.log("Starting the registration process...");
     // mint StakeNFT positions to validators
     for (let i = 0; i < validatorAddresses.length; i++) {
-      console.log(1);
       let tx = await stakeNFT
         .connect(admin)
         .mintTo(factory.address, stakeAmountMadWei, lockTime);
       await tx.wait();
-      console.log(2);
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
       console.log(`Minted StakeNFT.tokenID ${tokenId}`);
       stakingTokenIds.push(tokenId);

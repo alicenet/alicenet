@@ -24,10 +24,11 @@ async function main() {
   }
   console.log(gas);
 }
-
 main()
-  .then(() => process.exit(0))
+  .then(() => {
+    return 0;
+  })
   .catch((error) => {
     console.error(error);
-    throw new Error("unexpected issues");
+    throw new Error("unexpected error");
   });
