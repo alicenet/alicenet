@@ -6,14 +6,15 @@ import { getPosition, newPosition } from "../setup";
 
 describe("StakeNFT: Basics", async () => {
   let fixture: BaseTokensFixture;
-  let notAdminSigner: SignerWithAddress;
   let adminSigner: SignerWithAddress;
+  let blockNumber: bigint;
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+    [adminSigner] = await ethers.getSigners();
     await fixture.madToken.approve(fixture.stakeNFT.address, 1000);
-    await fixture.stakeNFT.connect(adminSigner).mint(1000);
+    const tx = await fixture.stakeNFT.connect(adminSigner).mint(1000);
+    blockNumber = BigInt(tx.blockNumber as number);
   });
   it("Check ERC721 name and symbol", async function () {
     expect(await fixture.stakeNFT.name()).to.be.equals("MNSNFT");
@@ -21,12 +22,12 @@ describe("StakeNFT: Basics", async () => {
   });
 
   it("Should be able to get information about a valid position", async function () {
-    let expectedPosition = newPosition(
-      BigInt(1000),
-      BigInt(1),
-      BigInt(1),
-      BigInt(0),
-      BigInt(0)
+    const expectedPosition = newPosition(
+      1000n,
+      blockNumber + 1n,
+      blockNumber + 1n,
+      0n,
+      0n
     );
     expect(await getPosition(fixture.stakeNFT, 1)).to.be.deep.equals(
       expectedPosition

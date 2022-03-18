@@ -11,6 +11,9 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  AToken,
+  ATokenBurner,
+  ATokenMinter,
   ETHDKG,
   MadByte,
   MadnetFactory,
@@ -427,6 +430,19 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
+  const aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
+    madToken.address,
+  ])) as AToken;
+  const aTokenMinter = (await deployUpgradeableWithFactory(
+    factory,
+    "ATokenMinter",
+    undefined
+  )) as ATokenMinter;
+  const aTokenBurner = (await deployUpgradeableWithFactory(
+    factory,
+    "ATokenBurner"
+  )) as ATokenBurner;
+
   await posFixtureSetup();
 
   // work around to make sure that we always start the chain after the PhaseLength number of blocks
@@ -482,4 +498,25 @@ export async function factoryCallAny(
   );
   const receipt = await txResponse.wait();
   return receipt;
+}
+
+export async function callFunctionAndGetReturnValues(
+  contract: Contract,
+  functionName: any,
+  account: SignerWithAddress,
+  inputParamerters: any[]
+): Promise<[any, ContractTransaction]> {
+  try {
+    const returnValues = await contract
+      .connect(account)
+      .callStatic[functionName](...inputParamerters);
+    const tx = await contract
+      .connect(account)
+      [functionName](...inputParamerters);
+    return [returnValues, tx];
+  } catch (error) {
+    throw new Error(
+      `Couldn't call function '${functionName}' with account '${account.address}' and input parameters '${inputParamerters}'\n${error}`
+    );
+  }
 }

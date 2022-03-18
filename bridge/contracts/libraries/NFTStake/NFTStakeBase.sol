@@ -12,6 +12,7 @@ import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/INFTStake.sol";
 
+
 abstract contract NFTStakeBase is
     Initializable,
     ERC721Upgradeable,
@@ -378,6 +379,12 @@ abstract contract NFTStakeBase is
         return _ACCUMULATOR_SCALE_FACTOR;
     }
 
+    /// gets the _MAX_MINT_LOCK value. This value is the maximum duration of blocks that we allow a
+    /// position to be locked
+    function getMaxMintLock() public pure returns (uint256) {
+        return _MAX_MINT_LOCK;
+    }
+
     function __stakeNFTBaseInit(string memory name_, string memory symbol_)
         internal
         onlyInitializing
@@ -435,8 +442,8 @@ abstract contract NFTStakeBase is
         _shares = shares;
         _positions[tokenID] = Position(
             uint224(amount_),
-            1,
-            1,
+            uint32(block.number) + 1,
+            uint32(block.number) + 1,
             ethState.accumulator,
             tokenState.accumulator
         );

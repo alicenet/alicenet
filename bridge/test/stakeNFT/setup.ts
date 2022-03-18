@@ -29,7 +29,7 @@ export const getPosition = async (
   contract: Contract,
   tokenID: BigNumberish
 ): Promise<Position> => {
-  let [
+  const [
     _shares,
     _freeAfter,
     _withdrawFreeAfter,
@@ -51,15 +51,64 @@ export const assertTotalReserveAndZeroExcess = async (
   reserveAmountEth: bigint
 ) => {
   expect((await contract.getTotalReserveMadToken()).toBigInt()).to.be.equals(
-    reserveAmountToken
+    reserveAmountToken,
+    "Total reserve tokens don't match expected value!"
   );
   expect((await contract.getTotalReserveEth()).toBigInt()).to.be.equals(
-    reserveAmountEth
+    reserveAmountEth,
+    "Total reserve eth don't match expected value!"
   );
   expect((await contract.estimateExcessToken()).toBigInt()).to.be.equals(
-    BigInt(0)
+    BigInt(0),
+    "Excess token is not 0!"
   );
   expect((await contract.estimateExcessEth()).toBigInt()).to.be.equals(
-    BigInt(0)
+    BigInt(0),
+    "Excess eth is not 0!"
+  );
+};
+
+export const assertPositions = async (
+  contract: Contract,
+  tokenID: number,
+  expectedPosition: Position,
+  ownerAddress?: string,
+  expectedBalance?: bigint,
+  reserveAmountToken?: bigint,
+  reserveAmountEth?: bigint
+) => {
+  expect(await getPosition(contract, tokenID)).to.be.deep.equals(
+    expectedPosition,
+    "Actual position didn't match expected position!"
+  );
+  if (ownerAddress !== undefined) {
+    expect((await contract.ownerOf(tokenID)).toLowerCase()).to.be.equals(
+      ownerAddress.toLowerCase(),
+      "Owner address didn't match expected address!"
+    );
+    if (expectedBalance !== undefined) {
+      expect((await contract.balanceOf(ownerAddress)).toBigInt()).to.be.equals(
+        expectedBalance,
+        "Balance didn't match the expected amount!"
+      );
+    }
+  }
+  if (reserveAmountToken !== undefined && reserveAmountEth !== undefined) {
+    await assertTotalReserveAndZeroExcess(
+      contract,
+      reserveAmountToken,
+      reserveAmountEth
+    );
+  }
+};
+
+export const assertERC20Balance = async (
+  contract: Contract,
+  ownerAddress: string,
+  expectedAmount: bigint
+) => {
+  expect((await contract.balanceOf(ownerAddress)).toBigInt()).to.be.equals(
+    expectedAmount,
+    "ERC20 Balance didn't match the expected amount!"
   );
 };
