@@ -30,15 +30,9 @@ import {
 } from "./Setup";
 
 describe("Cli tasks", async () => {
-  let firstOwner: string;
-  let firstDelegator: string;
-  const accounts: Array<string> = [];
-
   beforeEach(async () => {
     process.env.test = "true";
     process.env.silencer = "true";
-    // set owner and delegator
-    firstOwner = accounts[0];
   });
 
   it("deploys factory with cli and checks if the default factory is updated in factory state toml file", async () => {
@@ -77,7 +71,7 @@ describe("Cli tasks", async () => {
 
   it("deploys MockInitializable contract with deployCreate", async () => {
     await cliDeployFactory();
-    const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE);
+    await cliDeployCreate(MOCK_INITIALIZABLE);
   });
 
   it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initCallData", async () => {
@@ -85,7 +79,7 @@ describe("Cli tasks", async () => {
     const test = "1";
     const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE);
     const salt = (await getSalt(MOCK_INITIALIZABLE)) as string;
-    const proxyData = await cliDeployProxy(salt);
+    await cliDeployProxy(salt);
     const logicFactory = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const upgradedProxyData = await cliUpgradeDeployedProxy(
       MOCK_INITIALIZABLE,
@@ -102,10 +96,7 @@ describe("Cli tasks", async () => {
     await cliDeployFactory();
     const testVar1 = "14";
     const testVar2 = "s";
-    const templateData = await cliDeployTemplate(MOCK, undefined, [
-      testVar1,
-      testVar2,
-    ]);
+    await cliDeployTemplate(MOCK, undefined, [testVar1, testVar2]);
     const metaData = await cliDeployStatic(MOCK, undefined, undefined);
     const logicFactory = await ethers.getContractFactory(MOCK);
     const mockContract = logicFactory.attach(metaData.metaAddress);
@@ -118,7 +109,7 @@ describe("Cli tasks", async () => {
   it("deploys mockInitializable with deployCreate, then deploy and upgrades a proxy with multiCallDeployProxy", async () => {
     await cliDeployFactory();
     const logicData = await cliDeployCreate(MOCK_INITIALIZABLE);
-    const proxyData = await cliMultiCallDeployProxy(
+    await cliMultiCallDeployProxy(
       MOCK_INITIALIZABLE,
       logicData.address,
       undefined,
@@ -128,8 +119,8 @@ describe("Cli tasks", async () => {
 
   it("deploys mock with deployCreate", async () => {
     await cliDeployFactory();
-    const factory = await deployFactory(run);
-    const deployCreateData = await cliDeployCreate(MOCK, undefined, ["2", "s"]);
+    await deployFactory(run);
+    await cliDeployCreate(MOCK, undefined, ["2", "s"]);
   });
 });
 
