@@ -12,9 +12,10 @@
     "build": "hardhat compile && hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
     "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
     "lint-solidity": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
-    "lint": "eslint test/**/*.ts --fix"
+    "lint": "eslint test/**/*.ts scripts/**/*.ts contracts/**/*.ts --fix"
   },
   "devDependencies": {
+    "@iarna/toml": "^2.2.5",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-truffle5": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
@@ -38,7 +39,7 @@
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-import-resolver-typescript": "^2.5.0",
     "eslint-plugin-import": "^2.25.4",
-    "eslint-plugin-n": "^15.0.1",
+    "eslint-plugin-n": "^14.0.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-promise": "^6.0.0",

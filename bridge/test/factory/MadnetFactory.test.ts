@@ -32,7 +32,6 @@ describe("Madnet Contract Factory", () => {
   let firstOwner: string;
   let firstDelegator: string;
   let accounts: Array<string> = [];
-
   beforeEach(async () => {
     process.env.silencer = "true";
     accounts = await getAccounts();
