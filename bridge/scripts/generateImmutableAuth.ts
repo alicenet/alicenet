@@ -1,4 +1,81 @@
 import {task} from "hardhat/config";
+import fs from "fs";
+
+
+interface DeployList {
+    deployments: string[];
+}
+
+task
+("generate-immutable-auth-contract", "Generate contracts")
+    .addOptionalParam("path", "file that contains the list of contracts")
+    .setAction(async ({path}) => {
+
+        let contractNameSaltMap = []
+        let deployList : DeployList
+
+        // file not defined,
+        if (path == null) {
+            console.log("UNDEFINED")
+            console.log(process.cwd())
+            const defaultPathForContracts = 'deployments/dev/deployList.json'
+            // If deployments/dev/deployList.json exists then go on, otherwise return error with suggestion to run npx hardhat run ./scripts/getDeployList.ts
+            if (fs.existsSync(defaultPathForContracts)) {
+                try {
+                    const jsonContent = fs.readFileSync(defaultPathForContracts).toString()
+                    deployList = JSON.parse(jsonContent);
+                } catch (err) {
+                    throw new Error("Error parsing JSON file.");
+                }
+
+                for (let contract of deployList.deployments){
+                    contractNameSaltMap.push([contract,contract])
+                }
+                console.log(contractNameSaltMap)
+
+            } else {
+                throw new Error(
+                    "The default 'deployList.json' file do not exists. " +
+                    "Run the following command and then try again \n\n npx hardhat run ./scripts/getDeployList.ts\n\n "
+                );
+            }
+        } else {
+            console.log("defined  -  ", path)
+        }
+
+        //
+        // contractNameSaltMap = [
+        //     ["ValidatorNFT", "ValidatorNFT"],
+        //     ['MadToken', 'MadToken'],
+        //     ['StakeNFT', 'StakeNFT'],
+        //     ['MadByte', 'MadByte'],
+        //     ['Governance', 'Governance'],
+        //     ['ValidatorPool', 'ValidatorPool'],
+        //     ['ETHDKG', 'ETHDKG'],
+        //     ['ETHDKGAccusations', 'ETHDKGAccusations'],
+        //     ['Snapshots', 'Snapshots'],
+        //     ['ETHDKGPhases', 'ETHDKGPhases'],
+        //     ['StakeNFTLP', 'StakeNFTLP'],
+        //     ['Foundation', 'Foundation'],
+        // ];
+        //
+        // console.log(templateSalt)
+        // for (const contractNameSalt of contractNameSaltMap) {
+        //     let name = contractNameSalt[0];
+        //     let salt = contractNameSalt[1];
+        //
+        //     const saltEncoded = Buffer.from(salt, 'utf8');
+        //     const zeroByteBuffer = new Buffer(32)
+        //     zeroByteBuffer.fill("00", 0, zeroByteBuffer.length, 'hex')
+        //     const bufferArray = [saltEncoded, zeroByteBuffer];
+        //     const saltBuffer = Buffer.concat(bufferArray).slice(0, 32);
+        //     salt = Buffer.from(saltBuffer).toString('hex')
+        //
+        //     let c = new Contract(name, salt);
+        //     let render = templateContract(c)
+        //     console.log(render)
+        // }
+    });
 
 export class Contract {
     name: string;
@@ -63,40 +140,3 @@ function templateContract(contract: Contract): string {
     `;
 }
 
-task
-("generate-immutable-auth-contract", "Generate contracts")
-    // .addParam("in", "nothing really necessary at this point")
-    .setAction(async (taskArgs) => {
-
-        let contractNameSaltMap = [
-            ["ValidatorNFT", "ValidatorNFT"],
-            ['MadToken', 'MadToken'],
-            ['StakeNFT', 'StakeNFT'],
-            ['MadByte', 'MadByte'],
-            ['Governance', 'Governance'],
-            ['ValidatorPool', 'ValidatorPool'],
-            ['ETHDKG', 'ETHDKG'],
-            ['ETHDKGAccusations', 'ETHDKGAccusations'],
-            ['Snapshots', 'Snapshots'],
-            ['ETHDKGPhases', 'ETHDKGPhases'],
-            ['StakeNFTLP', 'StakeNFTLP'],
-            ['Foundation', 'Foundation'],
-        ];
-
-        console.log(templateSalt)
-        for (const contractNameSalt of contractNameSaltMap) {
-            let name = contractNameSalt[0];
-            let salt = contractNameSalt[1];
-
-            const saltEncoded = Buffer.from(salt, 'utf8');
-            const zeroByteBuffer = new Buffer(32)
-            zeroByteBuffer.fill("00", 0, zeroByteBuffer.length, 'hex')
-            const bufferArray = [saltEncoded, zeroByteBuffer];
-            const saltBuffer = Buffer.concat(bufferArray).slice(0, 32);
-            salt = Buffer.from(saltBuffer).toString('hex')
-
-            let c = new Contract(name, salt);
-            let render = templateContract(c)
-            console.log(render)
-        }
-    });
