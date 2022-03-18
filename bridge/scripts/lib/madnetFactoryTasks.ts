@@ -124,8 +124,6 @@ task(
       gas: gasCost.toNumber(),
     };
     const network = hre.network.name;
-    const fileName =
-      process.env.test === "true" ? "testFactoryState" : undefined;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
       `Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`
@@ -218,10 +216,13 @@ task("deployContracts", "runs the initial deployment of all madnet contracts")
     "deployFactory",
     "flag to indicate deployment, will deploy the factory first if set"
   )
-  .addOptionalParam("inputFolder", "location for inputs")
+  .addOptionalParam("factoryAddress", 
+    "if defined the contracts will be deployed with factory specified and initial factory deployment will be skipped"
+  )
+  .addOptionalParam("inputFolder", "path to location containing deploymentArgsTemplate, and deploymentList")
   .addOptionalParam(
     "outputFolder",
-    "output folder path to save deployment arg template and list"
+    "output folder path to save factory state"
   )
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
@@ -277,7 +278,7 @@ task(
   )
   .addOptionalParam(
     "factoryAddress",
-    "address of the factory deploying the contract"
+    "the default factory address from factoryState will be used if not set"
   )
   .addOptionalParam(
     "initCallData",
@@ -322,7 +323,7 @@ task(
   )
   .addOptionalParam(
     "factoryAddress",
-    "address of the factory deploying the contract"
+    "the default factory address from factoryState will be used if not set"
   )
   .addOptionalParam(
     "initCallData",
@@ -343,10 +344,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     // deploy create the logic contract
-    const templateData: TemplateData = await hre.run(
-      "deployTemplate",
-      callArgs
-    );
+    await hre.run("deployTemplate", callArgs);
     callArgs = {
       contractName: taskArgs.contractName,
       factoryAddress,
@@ -363,8 +361,8 @@ task(
 // factoryName param doesnt do anything right now
 task(DEPLOY_CREATE, "deploys a contract from the factory using create")
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("factoryAddress", "factory deploying the contract")
-  .addOptionalParam("outputFolder", "")
+  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "array that holds all arguments for constructor"
@@ -423,7 +421,7 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     "salt",
     "salt used to specify logicContract and proxy address calculation"
   )
-  .addOptionalParam("factoryAddress")
+  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryAddress = await getFactoryAddress(network, taskArgs);
@@ -455,7 +453,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
   )
   .addOptionalParam(
     "outputFolder",
-    "output folder path to save deployment arg template and list"
+    "output folder path to save factory state"
   )
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
@@ -520,7 +518,7 @@ task(
   )
   .addOptionalParam(
     "outputFolder",
-    "output folder path to save deployment arg template and list"
+    "output folder path to save factory state"
   )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
@@ -580,7 +578,7 @@ task(
   )
   .addOptionalParam(
     "outputFolder",
-    "output folder path to save deployment arg template and list"
+    "output folder path to save factoryState"
   )
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
@@ -641,7 +639,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
   )
   .addOptionalParam(
     "outputFolder",
-    "output folder path to save deployment arg template and list"
+    "output folder path to save factoryState"
   )
   .addOptionalParam(
     "salt",
@@ -702,7 +700,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     await showState(
       `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
     );
-    updateProxyList(network, proxyData, taskArgs.outputFolder);
+    await updateProxyList(network, proxyData, taskArgs.outputFolder);
     return proxyData;
   });
 
@@ -711,7 +709,7 @@ task(
   "multi call to deploy logic and upgrade proxy through factory"
 )
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("factoryAddress", "factory deploying the contract")
+  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
   .addOptionalParam(
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
@@ -825,31 +823,6 @@ async function getFactoryAddress(network: string, taskArgs: any) {
     );
   }
   return factoryAddress;
-}
-
-// 0x39cab472536e617073686f74730000000000000000000000000000000000000000000000;
-
-/**
- * @description parses config and task args for deployTemplate subtask call args
- * @param taskArgs arguements provided to the task
- * @returns object with call data for deployTemplate subtask
- */
-async function getDeployTemplateArgs(network: string, taskArgs: any) {
-  const factoryAddress = await getFactoryAddress(network, taskArgs);
-  return <DeployArgs>{
-    contractName: taskArgs.contractName,
-    factoryAddress,
-    constructorArgs: taskArgs?.constructorArgs,
-  };
-}
-
-function getConstructorArgCount(contract: any) {
-  for (const funcObj of contract.abi) {
-    if (funcObj.type === "constructor") {
-      return funcObj.inputs.length;
-    }
-  }
-  return 0;
 }
 
 async function getAccounts(hre: HardhatRuntimeEnvironment) {
