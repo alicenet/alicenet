@@ -83,6 +83,7 @@ task
             ['Foundation', 'Foundation'],
         ];
 
+        console.log(templateSalt)
         for (const contractNameSalt of contractNameSaltMap) {
             let name = contractNameSalt[0];
             let salt = contractNameSalt[1];
