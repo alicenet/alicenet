@@ -520,19 +520,29 @@ export async function callFunctionAndGetReturnValues(
   contract: Contract,
   functionName: any,
   account: SignerWithAddress,
-  inputParamerters: any[]
+  inputParameters: any[],
+  messageValue?: BigNumber
 ): Promise<[any, ContractTransaction]> {
   try {
-    const returnValues = await contract
-      .connect(account)
-      .callStatic[functionName](...inputParamerters);
-    const tx = await contract
-      .connect(account)
-      [functionName](...inputParamerters);
+    let returnValues;
+    let tx;
+    if (messageValue !== undefined) {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParameters, { value: messageValue });
+      tx = await contract
+        .connect(account)
+        [functionName](...inputParameters, { value: messageValue });
+    } else {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParameters);
+      tx = await contract.connect(account)[functionName](...inputParameters);
+    }
     return [returnValues, tx];
   } catch (error) {
     throw new Error(
-      `Couldn't call function '${functionName}' with account '${account.address}' and input parameters '${inputParamerters}'\n${error}`
+      `Couldn't call function '${functionName}' with account '${account.address}' and input parameters '${inputParameters}'\n${error}`
     );
   }
 }
