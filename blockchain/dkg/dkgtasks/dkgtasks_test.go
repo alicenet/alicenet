@@ -19,8 +19,6 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
-	"github.com/MadBase/MadNet/bridge/bindings"
-
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
@@ -298,26 +296,9 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	// todo: make a function -> ev, err := GetETHDKGEvent("RegistrationOpen", logs)
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-		}
-	}
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	assert.Nil(t, err)
 	assert.NotNil(t, event)
-
-	// get validators from ValidatorPool
-	//ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
-	//defer cf()
-	// ctx = context.Background()
 
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())

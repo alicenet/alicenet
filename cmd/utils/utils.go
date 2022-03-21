@@ -2,15 +2,14 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"os"
 	"strings"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -526,8 +525,6 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 
 	// Ethereum setup
 	acct := eth.GetDefaultAccount()
-	c := eth.Contracts()
-
 	ctx := context.Background()
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
@@ -546,23 +543,10 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 
 	logger.Infof("Found %v log events after initializing ethdkg", len(logs))
 
-	ethDkgEvents := monitor.GetETHDKGEvents()
-	regOpenedEvent, ok := ethDkgEvents["RegistrationOpened"]
-	if !ok {
-		panic(fmt.Errorf("could not find event named RegistrationOpened"))
-	}
-
-	for _, log := range logs {
-		if log.Topics[0].Hex() == regOpenedEvent.ID.Hex() {
-			event, err := c.Ethdkg().ParseRegistrationOpened(*log)
-			if err != nil {
-				logger.Warnf("Could not parse RegistrationOpen event: %v", err)
-			}
-
-			logger.Infof("ETHDKG registration is now open...\nDkgStarts:%v\nNonce:%v",
-				event.StartBlock,
-				event.Nonce)
-		}
+	_, err = dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	if err != nil {
+		logger.Errorf("could not get ETHDKG RegistrationOpened event: %v", err)
+		return 1
 	}
 
 	return 0

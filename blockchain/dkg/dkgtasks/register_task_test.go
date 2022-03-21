@@ -8,9 +8,6 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/monitor"
-
-	"github.com/MadBase/MadNet/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
@@ -72,25 +69,9 @@ func TestRegisterTask(t *testing.T) {
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	// todo: replace with GetETHDKGEvent("RegistrationOpened")
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var openLog *types.Log
-	for _, log := range rcpt.Logs {
-		eventSelector := log.Topics[0].String()
-		if eventSelector == eventInfo.ID.String() {
-			openLog = log
-		}
-	}
-
-	// Make sure we found the open event
-	assert.NotNil(t, openLog)
-	openEvent, err := c.Ethdkg().ParseRegistrationOpened(*openLog)
+	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
+	assert.NotNil(t, openEvent)
 
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
@@ -153,21 +134,8 @@ func TestRegistrationGood2(t *testing.T) {
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
-	// todo: replace with GetETHDKGEvent("RegOpen", logs)
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-		}
-	}
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// get validator addresses
@@ -246,20 +214,8 @@ func TestRegistrationBad1(t *testing.T) {
 	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-		}
-	}
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// get validator addresses
@@ -316,20 +272,8 @@ func TestRegistrationBad2(t *testing.T) {
 	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-		}
-	}
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// get validator addresses
@@ -415,24 +359,8 @@ func TestRegistrationBad5(t *testing.T) {
 	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	// todo: use function GetETHDKGEvent("RegistrationOpened", rcpt)
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-			//for _, dkgState := range dkgStates {
-			//	dkgevents.PopulateSchedule(dkgState, event)
-			//}
-		}
-	}
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// Do share distribution; afterward, we confirm who is valid and who is not
@@ -497,13 +425,13 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	txnOpts, err := eth.GetTransactionOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
 
-	var (
-		txn  *types.Transaction
-		rcpt *types.Receipt
-	)
+	// var (
+	// 	txn  *types.Transaction
+	// 	rcpt *types.Receipt
+	// )
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err = dkg.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err := dkg.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
@@ -511,28 +439,14 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	// Start EthDKG
 	_, rcpt, err = dkg.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
+	assert.NotNil(t, rcpt)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var openLog *types.Log
-	for _, log := range rcpt.Logs {
-		eventSelector := log.Topics[0].String()
-		if eventSelector == eventInfo.ID.String() {
-			openLog = log
-		}
-	}
-
-	// Make sure we found the open event
-	assert.NotNil(t, openLog)
-	openEvent, err := c.Ethdkg().ParseRegistrationOpened(*openLog)
+	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
+	assert.NotNil(t, openEvent)
 
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
@@ -616,24 +530,9 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-
-	var openLog *types.Log
-	for _, log := range rcpt.Logs {
-		eventSelector := log.Topics[0].String()
-		if eventSelector == eventInfo.ID.String() {
-			openLog = log
-		}
-	}
-
-	// Make sure we found the open event
-	assert.NotNil(t, openLog)
-	openEvent, err := c.Ethdkg().ParseRegistrationOpened(*openLog)
+	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
+	assert.NotNil(t, openEvent)
 
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)

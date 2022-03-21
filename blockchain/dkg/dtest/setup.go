@@ -25,13 +25,16 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/MadBase/MadNet/blockchain"
 	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/etest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -315,18 +318,14 @@ func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Ac
 	return privateKeys, accounts
 }
 
-func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
+func ReadFromFileOnRoot(filePath string, configVar string) (string, error) {
 	rootPath := GetMadnetRootPath()
+	rootPath = append(rootPath, filePath)
+	fileFullPath := filepath.Join(rootPath...)
 
-	// open config file owner.toml
-	ownerTomlPath := append(rootPath, "scripts")
-	ownerTomlPath = append(ownerTomlPath, "base-files")
-	ownerTomlPath = append(ownerTomlPath, "owner.toml")
-	ownerTomlFullPath := filepath.Join(ownerTomlPath...)
-
-	f, err := os.Open(ownerTomlFullPath)
+	f, err := os.Open(fileFullPath)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer f.Close()
 
@@ -336,14 +335,24 @@ func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
 
 	// https://golang.org/pkg/bufio/#Scanner.Scan
 	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "defaultAccount") {
+		if strings.Contains(scanner.Text(), configVar) {
 			defaultAccount = scanner.Text()
 			break
 		}
 	}
 
 	splits := strings.Split(defaultAccount, "=")
-	acctAddress := strings.Trim(splits[1], " \"")
+	return strings.Trim(splits[1], " \""), nil
+}
+
+func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
+	rootPath := GetMadnetRootPath()
+
+	// open config file owner.toml
+	acctAddress, err := ReadFromFileOnRoot("scripts/base-files/owner.toml", "defaultAccount")
+	if err != nil {
+		return nil, nil, err
+	}
 	acctAddressLowerCase := strings.ToLower(acctAddress)
 
 	// open password file
@@ -536,9 +545,11 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	}
 
 	// inits contracts
-	// todo: fix this
-	// var factory string = config.Configuration.Ethereum.RegistryAddress
-	var factory string = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+	factory, err := ReadFromFileOnRoot("scripts/base-files/owner.toml", "registryAddress")
+	if err != nil {
+		return err
+	}
+
 	addr := common.Address{}
 	copy(addr[:], common.FromHex(factory))
 	err = eth.SetContractFactory(ctx, addr)
@@ -628,4 +639,28 @@ func RegisterValidators(eth *blockchain.EthereumDetails, validatorAddresses []st
 	}
 
 	return nil
+}
+
+func GetETHDKGRegistrationOpened(logs []*types.Log, eth interfaces.Ethereum) (*bindings.ETHDKGRegistrationOpened, error) {
+	eventMap := monitor.GetETHDKGEvents()
+	eventInfo, ok := eventMap["RegistrationOpened"]
+	if !ok {
+		return nil, fmt.Errorf("event not found: %v", eventInfo.Name)
+	}
+
+	var event *bindings.ETHDKGRegistrationOpened
+	var err error
+	for _, log := range logs {
+		for _, topic := range log.Topics {
+			if topic.String() == eventInfo.ID.String() {
+				event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
+				if err != nil {
+					continue
+				}
+
+				return event, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("event not found")
 }
