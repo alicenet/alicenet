@@ -54,6 +54,10 @@ contract MockBaseContract is
         return _factory;
     }
 
+    function getpString() public view returns (string memory) {
+        return _pString;
+    }
+
     function getImut() public view returns (uint256) {
         return _imut;
     }

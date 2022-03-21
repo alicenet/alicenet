@@ -99,7 +99,7 @@ CHECK_EXISTING() {
         echo -e "Invalid number"
         exit 1
     fi
-    if [ ! -f "./scripts/generated/config/validator$1.toml"]; then
+    if [ ! -f "./scripts/generated/config/validator$1.toml" ]; then
         echo -e "Validator $1 does not exist"
         exit 1
     fi

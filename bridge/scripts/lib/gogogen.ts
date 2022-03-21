@@ -1,12 +1,11 @@
 import fs from "fs";
 import { task } from "hardhat/config";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 task("go-go-gen", "Builds generate.go file from all json files in path")
   .addParam("in", "relative path of the output files")
   .addParam("out", "relative path of the output files")
   .addParam("pkg", "pkg the go generate command should use")
-  .setAction(async (taskArgs, hre: HardhatRuntimeEnvironment) => {
+  .setAction(async (taskArgs) => {
     let outputData = `#! /bin/bash\n`;
     outputData =
       outputData +
@@ -26,7 +25,7 @@ task("go-go-gen", "Builds generate.go file from all json files in path")
       outpath = "";
     }
     fs.readdirSync(taskArgs.in).forEach((file) => {
-      let source = file.replace(".json", "");
+      const source = file.replace(".json", "");
       outputData =
         outputData +
         `abigen --abi ${taskArgs.in}/${source}.json --pkg ${taskArgs.pkg} --type ${source} --out ${outpath}${source}.go\n`;

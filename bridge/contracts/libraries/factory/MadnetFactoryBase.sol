@@ -133,6 +133,15 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
     }
 
     /**
+     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
+     * by its name_
+     * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
+     */
+    function lookup(bytes32 salt_) public view returns (address addr) {
+        addr = getMetamorphicContractAddress(salt_, address(this));
+    }
+
+    /**
      * @dev getImplementation is public getter function for the _owner account address
      */
     function getImplementation() public view returns (address) {
@@ -390,7 +399,7 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**
      * @dev _multiCall allows EOA to make multiple function calls within a single transaction
      * impersonating the factory
-     * @param cdata_: array of hex encoded data with the function calls (function signature + arguments)
+     * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
     function _multiCall(bytes[] calldata cdata_) internal {
         for (uint256 i = 0; i < cdata_.length; i++) {

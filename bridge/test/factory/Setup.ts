@@ -1,4 +1,4 @@
-//const { contracts } from"@openzeppelin/cli/lib/prompts/choices");
+// const { contracts } from"@openzeppelin/cli/lib/prompts/choices");
 import { expect } from "chai";
 import { BytesLike, ContractFactory, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
@@ -6,18 +6,18 @@ import { END_POINT, MADNET_FACTORY, MOCK } from "../../scripts/lib/constants";
 import { MadnetFactory } from "../../typechain-types/MadnetFactory";
 
 export async function getAccounts() {
-  let signers = await ethers.getSigners();
-  let accounts = [];
-  for (let signer of signers) {
+  const signers = await ethers.getSigners();
+  const accounts = [];
+  for (const signer of signers) {
     accounts.push(signer.address);
   }
   return accounts;
 }
 
 export async function predictFactoryAddress(ownerAddress: string) {
-  let txCount = await ethers.provider.getTransactionCount(ownerAddress);
+  const txCount = await ethers.provider.getTransactionCount(ownerAddress);
   // console.log(txCount)
-  let futureFactoryAddress = ethers.utils.getContractAddress({
+  const futureFactoryAddress = ethers.utils.getContractAddress({
     from: ownerAddress,
     nonce: txCount,
   });
@@ -37,59 +37,59 @@ export async function proxyMockLogicTest(
   const factory = factoryBase.attach(factoryAddress);
   const mockProxy = contract.attach(proxyAddress);
   let txResponse = await mockProxy.setFactory(factoryAddress);
-  let receipt = await txResponse.wait();
+  await txResponse.wait();
   const testArg = 4;
   await expectTxSuccess(txResponse);
-  let fa = await mockProxy.callStatic.getFactory();
+  const fa = await mockProxy.callStatic.getFactory();
   expect(fa).to.equal(factoryAddress);
   txResponse = await mockProxy.setV(testArg);
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
   let v = await mockProxy.callStatic.getVar();
   expect(v.toNumber()).to.equal(testArg);
   let i = await mockProxy.callStatic.getImut();
   expect(i.toNumber()).to.equal(2);
-  //upgrade the proxy
+  // upgrade the proxy
   txResponse = await factory.upgradeProxy(salt, endPointAddr, "0x");
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
-  //endpoint interface connected to proxy address
-  let proxyEndpoint = endPointFactory.attach(proxyAddress);
+  // endpoint interface connected to proxy address
+  const proxyEndpoint = endPointFactory.attach(proxyAddress);
   i = await proxyEndpoint.i();
   let num = i.toNumber() + 2;
   txResponse = await proxyEndpoint.addTwo();
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   let test = await getEventVar(txResponse, "AddedTwo", "i");
   expect(test.toNumber()).to.equal(num);
-  //lock the proxy upgrade
+  // lock the proxy upgrade
   txResponse = await factory.upgradeProxy(salt, mockLogicAddr, "0x");
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
   txResponse = await mockProxy.setV(testArg + 2);
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
   v = await mockProxy.getVar();
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   expect(v.toNumber()).to.equal(testArg + 2);
-  //lock the upgrade functionality
+  // lock the upgrade functionality
   txResponse = await mockProxy.lock();
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
-  let txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
+  const txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
   await expect(txRes).to.be.revertedWith(
     "reverted with an unrecognized custom error"
   );
-  //unlock the proxy
+  // unlock the proxy
   txResponse = await mockProxy.unlock();
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
   txResponse = await factory.upgradeProxy(salt, endPointAddr, "0x");
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
   i = await proxyEndpoint.i();
   num = i.toNumber() + 2;
   txResponse = await proxyEndpoint.addTwo();
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   test = await getEventVar(txResponse, "AddedTwo", "i");
   expect(test.toNumber()).to.equal(num);
 }
@@ -101,17 +101,17 @@ export async function metaMockLogicTest(
 ) {
   const Contract = contract.attach(address);
   let txResponse = await Contract.setFactory(factoryAddress);
-  let test = 4;
-  let receipt = await txResponse.wait();
+  const test = 4;
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
-  let fa = await Contract.getFactory.call();
+  const fa = await Contract.getFactory.call();
   expect(fa).to.equal(factoryAddress);
   txResponse = await Contract.setV(test);
-  receipt = await txResponse.wait();
+  await txResponse.wait();
   await expectTxSuccess(txResponse);
-  let v = await Contract.getVar();
+  const v = await Contract.getVar();
   expect(v.toNumber()).to.equal(test);
-  let i = await Contract.getImut();
+  const i = await Contract.getImut();
   expect(i.toNumber()).to.equal(2);
 }
 
@@ -121,15 +121,15 @@ export async function getEventVar(
   varName: string
 ) {
   let result: any;
-  let receipt = await txResponse.wait();
+  const receipt = await txResponse.wait();
   if (receipt.events !== undefined) {
-    let events = receipt.events;
+    const events = receipt.events;
     for (let i = 0; i < events.length; i++) {
-      //look for the event
+      // look for the event
       if (events[i].event === eventName) {
         if (events[i].args !== undefined) {
-          let args = events[i].args;
-          //extract the deployed mock logic contract address from the event
+          const args = events[i].args;
+          // extract the deployed mock logic contract address from the event
           result = args !== undefined ? args[varName] : undefined;
           if (result !== undefined) {
             return result;
@@ -146,18 +146,18 @@ export async function getEventVar(
 }
 
 export async function expectTxSuccess(txResponse: ContractTransaction) {
-  let receipt = await txResponse.wait();
+  const receipt = await txResponse.wait();
   expect(receipt.status).to.equal(1);
 }
 
 export function getCreateAddress(Address: string, nonce: number) {
   return ethers.utils.getContractAddress({
     from: Address,
-    nonce: nonce,
+    nonce,
   });
 }
 export function bytes32ArrayToStringArray(bytes32Array: Array<any>) {
-  let ret = [];
+  const ret = [];
   for (let i = 0; i < bytes32Array.length; i++) {
     ret.push(ethers.utils.parseBytes32String(bytes32Array[i]));
   }
@@ -165,16 +165,16 @@ export function bytes32ArrayToStringArray(bytes32Array: Array<any>) {
 }
 
 export function getSalt() {
-  //set a new salt
-  let salt = new Date();
-  //use the time as the salt
-  let Salt = salt.getTime();
+  // set a new salt
+  const salt = new Date();
+  // use the time as the salt
+  const Salt = salt.getTime();
   return ethers.utils.formatBytes32String(Salt.toString());
 }
 
 export async function getDeployTemplateArgs(contractName: string) {
-  let contract = await ethers.getContractFactory(contractName);
-  let deployByteCode = contract.getDeployTransaction();
+  const contract = await ethers.getContractFactory(contractName);
+  const deployByteCode = contract.getDeployTransaction();
   return deployByteCode.data as BytesLike;
 }
 
@@ -187,8 +187,8 @@ export async function getDeployStaticArgs(
   contractName: string,
   argsArray: Array<any>
 ) {
-  let contract = await ethers.getContractFactory(contractName);
-  let ret: DeployStaticArgs = {
+  const contract = await ethers.getContractFactory(contractName);
+  const ret: DeployStaticArgs = {
     salt: getSalt(),
     initCallData: contract.interface.encodeFunctionData(
       "initialize",
@@ -199,25 +199,27 @@ export async function getDeployStaticArgs(
 }
 
 export async function checkMockInit(target: string, initVal: number) {
-  let mockFactory = await ethers.getContractFactory(MOCK);
-  let mock = await mockFactory.attach(target);
-  let i = await mock.getImut();
+  const mockFactory = await ethers.getContractFactory(MOCK);
+  const mock = await mockFactory.attach(target);
+  const i = await mock.getImut();
   expect(i.toNumber()).to.equal(initVal);
 }
 
 export async function deployFactory() {
-  let factoryBase = await ethers.getContractFactory(MADNET_FACTORY);
-  let accounts = await getAccounts();
-  let firstOwner = accounts[0];
-  //gets the initial transaction count for the address
-  let transactionCount = await ethers.provider.getTransactionCount(firstOwner);
-  //pre calculate the address of the factory contract
-  let futureFactoryAddress = ethers.utils.getContractAddress({
+  const factoryBase = await ethers.getContractFactory(MADNET_FACTORY);
+  const accounts = await getAccounts();
+  const firstOwner = accounts[0];
+  // gets the initial transaction count for the address
+  const transactionCount = await ethers.provider.getTransactionCount(
+    firstOwner
+  );
+  // pre calculate the address of the factory contract
+  const futureFactoryAddress = ethers.utils.getContractAddress({
     from: firstOwner,
     nonce: transactionCount,
   });
-  //deploy the factory with its address as a constructor input
-  let factory = await factoryBase.deploy(futureFactoryAddress);
+  // deploy the factory with its address as a constructor input
+  const factory = await factoryBase.deploy(futureFactoryAddress);
   expect(factory.address).to.equal(futureFactoryAddress);
   return factory;
 }
@@ -226,8 +228,8 @@ export async function deployCreate2Initable(
   factory: MadnetFactory,
   salt: BytesLike
 ) {
-  let mockInitFactory = await ethers.getContractFactory("MockInitializable");
-  let txResponse = await factory.deployCreate2(
+  const mockInitFactory = await ethers.getContractFactory("MockInitializable");
+  const txResponse = await factory.deployCreate2(
     0,
     salt,
     mockInitFactory.bytecode
@@ -236,7 +238,7 @@ export async function deployCreate2Initable(
 }
 
 export function getMetamorphicAddress(factoryAddress: string, salt: string) {
-  let initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
+  const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
   return ethers.utils.getCreate2Address(
     factoryAddress,
     salt,

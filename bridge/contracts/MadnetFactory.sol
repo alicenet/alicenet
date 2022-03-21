@@ -5,7 +5,6 @@ import "contracts/Proxy.sol";
 import "contracts/libraries/factory/MadnetFactoryBase.sol";
 
 /// @custom:salt MadnetFactory
-/// @custom:deploy-type factory
 contract MadnetFactory is MadnetFactoryBase {
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
