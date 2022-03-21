@@ -12,7 +12,7 @@
     "build": "hardhat compile && hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
     "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
     "lint-solidity": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
-    "lint": "eslint test/**/*.ts scripts/**/*.ts contracts/**/*.ts --fix"
+    "lint": "eslint test/**/*.ts scripts/**/*.ts --fix"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
