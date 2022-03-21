@@ -19,10 +19,11 @@ describe("StakeNFT: Testing StakeNFT Access Control", async () => {
 
   describe("A user with admin role should be able to:", async () => {
     it("Trip circuit breaker", async function () {
-      let rcpt = await factoryCallAny(fixture, "stakeNFT", "tripCB");
+      const rcpt = await factoryCallAny(fixture, "stakeNFT", "tripCB");
       expect(rcpt.status).to.be.equal(1);
-      expect(await fixture.stakeNFT.circuitBreakerState()).to.be.true;
+      expect(await fixture.stakeNFT.circuitBreakerState()).to.be.equals(true);
     });
+
     it("Skim excess of Tokens and ETH", async function () {
       let rcpt = await factoryCallAny(fixture, "stakeNFT", "skimExcessEth", [
         adminSigner.address,

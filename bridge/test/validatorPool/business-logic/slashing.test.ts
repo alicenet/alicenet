@@ -6,6 +6,7 @@ import {
   Fixture,
   getFixture,
   getValidatorEthAccount,
+  mineBlocks,
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
@@ -47,6 +48,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -89,6 +91,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -163,6 +166,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
     const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
@@ -189,7 +193,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed assert after minor slash"
     );
-
+    await mineBlocks(1n);
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[2]);
     currentState = await getCurrentState(fixture, validators);
@@ -231,6 +235,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
     const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
@@ -257,7 +262,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed assert after minor slash"
     );
-
+    await mineBlocks(1n);
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[2]);
     currentState = await getCurrentState(fixture, validators);
@@ -434,6 +439,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     await showState(
@@ -488,6 +494,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     // Expect infringer unregister the validator position
@@ -551,6 +558,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     await showState(
@@ -612,13 +620,14 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await showState("After registering", expectedState);
 
     await ethdkg.minorSlash(infringer, disputer);
     let currentState = await getCurrentState(fixture, validators);
     await showState("After minor slashing", currentState);
-
+    await mineBlocks(1n);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
     expectedState.ValidatorPool.StakeNFT++;
@@ -650,6 +659,7 @@ describe("ValidatorPool: Slashing logic", async () => {
         expectedState,
         `After minor slashing: ${i}`
       );
+      await mineBlocks(1n);
     }
     const finalReward = stakeAmount - BigInt(3) * reward;
     // After last minor slash the guy should have any funds to generate a new stakeNFT position
@@ -684,6 +694,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -725,6 +736,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",

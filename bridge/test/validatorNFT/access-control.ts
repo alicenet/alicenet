@@ -3,7 +3,7 @@ import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
 import { ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { Fixture, getFixture } from "../setup";
+import { Fixture, getFixture, mineBlocks } from "../setup";
 
 describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
   let fixture: Fixture;
@@ -32,6 +32,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
     it("Burn a token", async function () {
       await (await validatorPool.mintValidatorNFT()).wait();
+      await mineBlocks(1n);
       const rcpt = await (await validatorPool.burnValidatorNFT(1)).wait();
       expect(rcpt.status).to.be.equal(1);
       expect(await fixture.madToken.balanceOf(validatorPool.address)).to.be.eq(
@@ -51,6 +52,7 @@ describe("ValidatorNFT: Testing ValidatorNFT Access Control", async () => {
 
     it("Burn a token from an address", async function () {
       await (await validatorPool.mintValidatorNFT()).wait();
+      await mineBlocks(1n);
       const rcpt = await (
         await validatorPool.burnToValidatorNFT(1, notAdminSigner.address)
       ).wait();

@@ -7,6 +7,7 @@ import {
   Fixture,
   getFixture,
   getValidatorEthAccount,
+  mineBlocks,
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
@@ -37,6 +38,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const newValidators = validators;
     // Set a non validator address in the middle of array for un-registering
     newValidators[1] = "0x000000000000000000000000000000000000dEaD";
@@ -94,6 +96,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
@@ -122,6 +125,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
@@ -149,6 +153,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);

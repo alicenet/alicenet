@@ -15,7 +15,7 @@ import {
   newPosition,
 } from "../setup";
 
-describe("StakeNFT: Mint and Burn", async () => {
+describe("StakeNFT: Shares Invariance", async () => {
   let fixture: BaseTokensFixture;
   let notAdminSigner: SignerWithAddress;
   let adminSigner: SignerWithAddress;

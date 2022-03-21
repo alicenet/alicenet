@@ -3,7 +3,7 @@ import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
 import { ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { Fixture, getFixture } from "../setup";
+import { Fixture, getFixture, mineBlocks } from "../setup";
 
 describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => {
   let fixture: Fixture;
@@ -48,6 +48,7 @@ describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => 
     let tx = await validatorPool.mintValidatorNFT();
     const rcpt = await tx.wait();
     expect(rcpt.status).to.be.equal(1);
+    await mineBlocks(1n);
     const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       validatorPool.address
     );
@@ -94,6 +95,7 @@ describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => 
     let tx = await validatorPool.mintValidatorNFT();
     const rcpt = await tx.wait();
     expect(rcpt.status).to.be.equal(1);
+    await mineBlocks(1n);
     const nftBalanceBefore = await fixture.validatorNFT.balanceOf(
       validatorPool.address
     );
