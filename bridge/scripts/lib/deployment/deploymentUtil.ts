@@ -4,7 +4,7 @@ import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 
 type Ethers =
-  typeof import("../../../node_modules/ethers/lib/ethers") &
+  typeof import("/home/zj/work/mn/MadNet/bridge/node_modules/ethers/lib/ethers") &
     HardhatEthersHelpers;
 
 export interface ArgData {
