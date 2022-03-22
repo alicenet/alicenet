@@ -280,10 +280,10 @@ contract MadByte is
         // stakingAmount
         minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
 
-        _safeTransferEthWithMagic(IMagicEthTransfer(_FoundationAddress()), foundationAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_ValidatorNFTAddress()), minerAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_StakeNFTAddress()), stakingAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_StakeNFTLPAddress()), lpStakingAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_validatorNFTAddress()), minerAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_stakeNFTAddress()), stakingAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_stakeNFTLPAddress()), lpStakingAmount);
         require(
             address(this).balance >= poolBalance,
             "MadByte: Address balance should be always greater than the pool balance!"

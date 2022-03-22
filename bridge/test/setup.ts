@@ -12,8 +12,8 @@ import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
   AToken,
-  ATokenBurner,
-  ATokenMinter,
+  ATokenBurnerMock,
+  ATokenMinterMock,
   ETHDKG,
   MadByte,
   MadnetFactory,
@@ -452,13 +452,14 @@ export const getFixture = async (
   ])) as AToken;
   const aTokenMinter = (await deployUpgradeableWithFactory(
     factory,
-    "ATokenMinter",
-    undefined
-  )) as ATokenMinter;
+    "ATokenMinterMock",
+    "ATokenMinter"
+  )) as ATokenMinterMock;
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
+    "ATokenBurnerMock",
     "ATokenBurner"
-  )) as ATokenBurner;
+  )) as ATokenBurnerMock;
 
   await posFixtureSetup(factory, madToken, admin);
 

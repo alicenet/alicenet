@@ -51,7 +51,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (
             _moveToNextPhase(
                 Phase.ShareDistribution,
-                IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount(),
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                 numRegistered
             )
         ) {
@@ -78,7 +78,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             "ETHDKG: Participant already distributed shares this ETHDKG round!"
         );
 
-        uint256 numValidators = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount();
+        uint256 numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         uint256 threshold = _getThreshold(numValidators);
         require(
             encryptedShares.length == numValidators - 1,
@@ -208,7 +208,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (
             _moveToNextPhase(
                 Phase.MPKSubmission,
-                IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount(),
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                 numParticipants
             )
         ) {
@@ -283,7 +283,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             msg.sender,
             participant.index,
             participant.nonce,
-            ISnapshots(_SnapshotsAddress()).getEpoch(),
+            ISnapshots(_snapshotsAddress()).getEpoch(),
             participant.gpkj[0],
             participant.gpkj[1],
             participant.gpkj[2],
@@ -294,7 +294,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (
             _moveToNextPhase(
                 Phase.DisputeGPKJSubmission,
-                IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount(),
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                 numParticipants
             )
         ) {
@@ -318,19 +318,19 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);
 
-        IValidatorPool(_ValidatorPoolAddress()).completeETHDKG();
+        IValidatorPool(_validatorPoolAddress()).completeETHDKG();
 
-        uint256 epoch = ISnapshots(_SnapshotsAddress()).getEpoch();
-        uint256 ethHeight = ISnapshots(_SnapshotsAddress()).getCommittedHeightFromLatestSnapshot();
+        uint256 epoch = ISnapshots(_snapshotsAddress()).getEpoch();
+        uint256 ethHeight = ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot();
         uint256 madHeight;
         if (_customMadnetHeight == 0) {
-            madHeight = ISnapshots(_SnapshotsAddress()).getMadnetHeightFromLatestSnapshot();
+            madHeight = ISnapshots(_snapshotsAddress()).getMadnetHeightFromLatestSnapshot();
         } else {
             madHeight = _customMadnetHeight;
             _customMadnetHeight = 0;
         }
         emit ValidatorSetCompleted(
-            uint8(IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount()),
+            uint8(IValidatorPool(_validatorPoolAddress()).getValidatorsCount()),
             _nonce,
             epoch,
             ethHeight,

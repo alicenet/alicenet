@@ -67,9 +67,9 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         returns (bool)
     {
         bool isSafeToProceedConsensus = true;
-        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
             isSafeToProceedConsensus = false;
-            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
         // dummy to silence compiling warnings
         groupSignature_;
