@@ -12,7 +12,6 @@ import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/INFTStake.sol";
 
-
 abstract contract NFTStakeBase is
     Initializable,
     ERC721Upgradeable,
