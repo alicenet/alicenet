@@ -32,10 +32,4 @@ geth \
   \
   --allow-insecure-unlock \
   --unlock 0,1,2,3,4,5 \
-  --password ./assets/test/keys/password.txt &
-
-GETH_PID="$!"
-
-trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
-
-wait
+  --password ./assets/test/keys/password.txt

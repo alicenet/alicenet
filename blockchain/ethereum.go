@@ -126,8 +126,6 @@ func NewEthereumSimulator(
 		genAlloc[address] = core.GenesisAccount{Balance: wei}
 	}
 
-	// gasLimit := uint64(150000000)
-	// sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
 	client, err := ethclient.Dial("http://127.0.0.1:8545")
 	if err != nil {
 		return nil, err
@@ -634,13 +632,11 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	bf := new(big.Int).Set(baseFee)
 	baseFee2x := new(big.Int).Mul(bm, bf)
 
-	//eth.client.SuggestGasTipCap(subCtx)
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
 		tipCap = big.NewInt(1)
 		// return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 	}
-	// tipCap := big.NewInt(1)
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
 	opts.Context = ctx

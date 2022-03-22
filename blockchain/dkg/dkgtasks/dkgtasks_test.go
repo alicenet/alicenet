@@ -127,28 +127,6 @@ func SetupTasks(tr *objects.TypeRegistry) {
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 }
 
-// func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-// 	height, err := eth.GetFinalizedHeight(context.Background())
-// 	assert.Nil(t, err)
-
-// 	distance := target - height
-
-// 	for i := uint64(0); i < distance; i++ {
-// 		eth.Commit()
-// 	}
-// }
-
-// func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-// 	distance := int64(target)
-// 	for distance > 0 {
-// 		height, err := eth.GetFinalizedHeight(context.Background())
-// 		assert.Nil(t, err)
-
-// 		distance = int64(target) - int64(height)
-// 		<-time.After(100 * time.Millisecond)
-// 	}
-// }
-
 func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
 	currentBlock, err := eth.GetCurrentHeight(context.Background())
 	if err != nil {
@@ -247,7 +225,6 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now we know ethdkg is running, let's find out when registration has to happen
-	// TODO this should be based on an OpenRegistration event
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 	t.Logf("Current Height:%v", currentHeight)
@@ -305,7 +282,6 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	assert.Nil(t, err)
 
-	//callOpts = eth.GetCallOpts(ctx, accounts[0])
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(objects.RegistrationOpen), phase)
@@ -501,7 +477,6 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 
 func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
@@ -570,7 +545,6 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 
 func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestSuite {
 	suite := StartFromKeyShareSubmissionPhase(t, n, 0, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	dkgStates := suite.dkgStates
@@ -595,8 +569,6 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 	height, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	// advanceTo(t, eth, height+dkgStates[0].ConfirmationLength)
-
 	gpkjSubmissionTasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	disputeMissingGPKjTasks := make([]*dkgtasks.DisputeMissingGPKjTask, n)
 	disputeGPKjTasks := make([]*dkgtasks.DisputeGPKjTask, n)
@@ -619,7 +591,6 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 
 func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromMPKSubmissionPhase(t, n, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 

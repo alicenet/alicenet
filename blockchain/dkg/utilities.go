@@ -163,38 +163,22 @@ func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap, percentage *big.Int) (*big.Int, 
 func AmILeading(numValidators int, myIdx int, blocksSinceDesperation int, blockhash []byte, logger *logrus.Entry) bool {
 	var numValidatorsAllowed int = 1
 	for i := int(blocksSinceDesperation); i > 0; {
-		logger.Infof("i: %v\n", i)
 		i -= constants.ETHDKGDesperationFactor / numValidatorsAllowed
 		numValidatorsAllowed++
-		logger.Infof("new_i: %v, numValidatorsAllowed: %v\n", i, numValidatorsAllowed)
 
 		if numValidatorsAllowed >= numValidators {
-			logger.Infof("breaking loop\n")
 			break
 		}
 	}
 
 	// use the random nature of blockhash to deterministically define the range of validators that are allowed to take an ETHDKG action
 	rand := (&big.Int{}).SetBytes(blockhash)
-
 	start := int((&big.Int{}).Mod(rand, big.NewInt(int64(numValidators))).Int64())
 	end := (start + numValidatorsAllowed) % numValidators
 
-	logger.WithFields(logrus.Fields{
-		"blockhash":            blockhash,
-		"rand":                 rand,
-		"start":                start,
-		"numValidatorsAllowed": numValidatorsAllowed,
-		"endCalc":              (start + numValidatorsAllowed),
-		"end":                  end,
-		"idx":                  myIdx,
-	}).Infof("after loop\n")
-
 	if end > start {
-		logger.Info("first")
 		return myIdx >= start && myIdx < end
 	} else {
-		logger.Info("second")
 		return myIdx >= start || myIdx < end
 	}
 }
