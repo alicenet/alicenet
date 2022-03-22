@@ -130,7 +130,7 @@ func NewEthereumSimulator(
 	// sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
 	client, err := ethclient.Dial("http://127.0.0.1:8545")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	eth.client = client
 	eth.queue = NewTxnQueue(client, eth.selectors, timeout)
@@ -169,20 +169,33 @@ func NewEthereumSimulator(
 			log.Fatal(err)
 		}
 
-		reader := bytes.NewReader(buff.Bytes())
-		resp, err := c.Post(
-			"http://127.0.0.1:8545",
-			"application/json",
-			reader,
-		)
+		retryCount := 5
+		var worked bool
+		for i := 0; i < retryCount; i++ {
+			reader := bytes.NewReader(buff.Bytes())
+			resp, err := c.Post(
+				"http://127.0.0.1:8545",
+				"application/json",
+				reader,
+			)
 
-		if err != nil {
-			log.Fatalf("error calling evm_mine rpc: %v", err)
+			if err != nil {
+				log.Printf("error calling evm_mine rpc: %v", err)
+				continue
+			}
+
+			_, err = io.ReadAll(resp.Body)
+			if err != nil {
+				log.Printf("error reading response from evm_mine rpc: %v", err)
+				continue
+			}
+
+			worked = true
+			break
 		}
 
-		_, err = io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("error reading response from evm_mine rpc: %v", err)
+		if !worked {
+			panic(fmt.Errorf("error commiting evm_mine on rpc: %v", err))
 		}
 	}
 

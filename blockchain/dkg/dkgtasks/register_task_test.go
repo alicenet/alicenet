@@ -21,11 +21,7 @@ import (
 func TestRegisterTask(t *testing.T) {
 	n := 5
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
-
-	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
-
 	tr := &objects.TypeRegistry{}
-
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 
 	logger := logging.GetLogger("ethereum")

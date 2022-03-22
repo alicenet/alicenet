@@ -88,15 +88,6 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _owner = msg.sender;
     }
 
-    /**
-     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
-     * by its name_
-     * @param _salt: Custom NatSpec tag @custom:salt at the top of the contract solidity file
-     */
-    function lookup(bytes32 _salt) public view returns (address addr) {
-        addr = getMetamorphicContractAddress(_salt, address(this));
-    }
-
     // solhint-disable payable-fallback
     /**
      * @dev fallback function returns the address of the most recent deployment of a template

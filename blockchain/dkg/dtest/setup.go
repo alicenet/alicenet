@@ -528,6 +528,11 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	scriptPathJoined := filepath.Join(scriptPath...)
 	fmt.Println("scriptPathJoined: ", scriptPathJoined)
 
+	err := os.Setenv("SKIP_REGISTRATION", "1")
+	if err != nil {
+		return err
+	}
+
 	cmd := exec.Cmd{
 		Path:   scriptPathJoined,
 		Args:   []string{scriptPathJoined, "deploy"},
@@ -536,7 +541,7 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 		Stderr: os.Stderr,
 	}
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	// if there is an error with our execution
 	// handle it here
@@ -545,7 +550,7 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	}
 
 	// inits contracts
-	factory, err := ReadFromFileOnRoot("scripts/base-files/owner.toml", "registryAddress")
+	factory, err := ReadFromFileOnRoot("scripts/generated/factoryState", "defaultFactoryAddress")
 	if err != nil {
 		return err
 	}
