@@ -15,7 +15,7 @@ import {
   newPosition,
 } from "../setup";
 
-describe("StakeNFT: Mint and Burn", async () => {
+describe("PublicStaking: Shares Invariance", async () => {
   let fixture: BaseTokensFixture;
   let notAdminSigner: SignerWithAddress;
   let adminSigner: SignerWithAddress;
@@ -28,12 +28,12 @@ describe("StakeNFT: Mint and Burn", async () => {
   describe("Mint stakeNFT and", async () => {
     let tokenID: number;
     beforeEach(async function () {
-      await fixture.madToken.approve(fixture.stakeNFT.address, 1000);
-      const tx = await fixture.stakeNFT.connect(adminSigner).mint(1000);
+      await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+      const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
       const blockNumber = BigInt(tx.blockNumber as number);
       tokenID = await getTokenIdFromTx(tx);
       await assertPositions(
-        fixture.stakeNFT,
+        fixture.publicStaking,
         tokenID,
         newPosition(1000n, blockNumber + 1n, blockNumber + 1n, 0n, 0n),
         adminSigner.address,
@@ -43,7 +43,7 @@ describe("StakeNFT: Mint and Burn", async () => {
       );
       await assertERC20Balance(
         fixture.madToken,
-        fixture.stakeNFT.address,
+        fixture.publicStaking.address,
         1000n
       );
     });
@@ -55,7 +55,7 @@ describe("StakeNFT: Mint and Burn", async () => {
       await mineBlocks(3n);
       const [[payoutEth, payoutMadToken]] =
         await callFunctionAndGetReturnValues(
-          fixture.stakeNFT,
+          fixture.publicStaking,
           "burn",
           adminSigner,
           [tokenID]
@@ -63,7 +63,11 @@ describe("StakeNFT: Mint and Burn", async () => {
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
       expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(fixture.madToken, fixture.stakeNFT.address, 0n);
+      await assertERC20Balance(
+        fixture.madToken,
+        fixture.publicStaking.address,
+        0n
+      );
       await assertERC20Balance(
         fixture.madToken,
         adminSigner.address,
@@ -80,7 +84,7 @@ describe("StakeNFT: Mint and Burn", async () => {
       await mineBlocks(3n);
       const [[payoutEth, payoutMadToken]] =
         await callFunctionAndGetReturnValues(
-          fixture.stakeNFT,
+          fixture.publicStaking,
           "burnTo",
           adminSigner,
           [notAdminSigner.address, tokenID]
@@ -88,28 +92,32 @@ describe("StakeNFT: Mint and Burn", async () => {
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
       expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(fixture.madToken, fixture.stakeNFT.address, 0n);
+      await assertERC20Balance(
+        fixture.madToken,
+        fixture.publicStaking.address,
+        0n
+      );
       await assertERC20Balance(fixture.madToken, notAdminSigner.address, 1000n);
       await assertERC20Balance(
         fixture.madToken,
         adminSigner.address,
         balanceBeforeUser
       );
-      await assertTotalReserveAndZeroExcess(fixture.stakeNFT, 0n, 0n);
+      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
     });
   });
 
   describe("MintTo stakeNFT and", async () => {
     let tokenID: number;
     beforeEach(async function () {
-      await fixture.madToken.approve(fixture.stakeNFT.address, 1000);
-      const tx = await fixture.stakeNFT
+      await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+      const tx = await fixture.publicStaking
         .connect(adminSigner)
         .mintTo(notAdminSigner.address, 1000, 10);
       const blockNumber = BigInt(tx.blockNumber as number);
       tokenID = await getTokenIdFromTx(tx);
       await assertPositions(
-        fixture.stakeNFT,
+        fixture.publicStaking,
         tokenID,
         newPosition(1000n, blockNumber + 10n, blockNumber + 1n, 0n, 0n),
         notAdminSigner.address,
@@ -119,15 +127,17 @@ describe("StakeNFT: Mint and Burn", async () => {
       );
       await assertERC20Balance(
         fixture.madToken,
-        fixture.stakeNFT.address,
+        fixture.publicStaking.address,
         1000n
       );
       await assertERC20Balance(fixture.madToken, notAdminSigner.address, 0n);
     });
     it("Should not allow burn a NFT position before time", async function () {
       await expect(
-        fixture.stakeNFT.connect(notAdminSigner).burn(tokenID)
-      ).to.be.rejectedWith("StakeNFT: The position is not ready to be burned!");
+        fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
+      ).to.be.rejectedWith(
+        "PublicStaking: The position is not ready to be burned!"
+      );
     });
 
     it("Burn a NFT position", async function () {
@@ -138,7 +148,7 @@ describe("StakeNFT: Mint and Burn", async () => {
       await mineBlocks(11n);
       const [[payoutEth, payoutMadToken]] =
         await callFunctionAndGetReturnValues(
-          fixture.stakeNFT,
+          fixture.publicStaking,
           "burn",
           notAdminSigner,
           [tokenID]
@@ -146,14 +156,18 @@ describe("StakeNFT: Mint and Burn", async () => {
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
       expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(fixture.madToken, fixture.stakeNFT.address, 0n);
+      await assertERC20Balance(
+        fixture.madToken,
+        fixture.publicStaking.address,
+        0n
+      );
       await assertERC20Balance(fixture.madToken, notAdminSigner.address, 1000n);
       await assertERC20Balance(
         fixture.madToken,
         adminSigner.address,
         balanceBeforeUser
       );
-      await assertTotalReserveAndZeroExcess(fixture.stakeNFT, 0n, 0n);
+      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
     });
 
     it("BurnTo a NFT position", async function () {
@@ -164,7 +178,7 @@ describe("StakeNFT: Mint and Burn", async () => {
       await mineBlocks(11n);
       const [[payoutEth, payoutMadToken]] =
         await callFunctionAndGetReturnValues(
-          fixture.stakeNFT,
+          fixture.publicStaking,
           "burnTo",
           notAdminSigner,
           [adminSigner.address, tokenID]
@@ -172,14 +186,18 @@ describe("StakeNFT: Mint and Burn", async () => {
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
       expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(fixture.madToken, fixture.stakeNFT.address, 0n);
+      await assertERC20Balance(
+        fixture.madToken,
+        fixture.publicStaking.address,
+        0n
+      );
       await assertERC20Balance(fixture.madToken, notAdminSigner.address, 0n);
       await assertERC20Balance(
         fixture.madToken,
         adminSigner.address,
         balanceBeforeUser + 1000n
       );
-      await assertTotalReserveAndZeroExcess(fixture.stakeNFT, 0n, 0n);
+      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
     });
   });
 });
