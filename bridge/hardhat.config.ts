@@ -9,10 +9,10 @@ import "hardhat-gas-reporter";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
+import "./scripts/generateImmutableAuth";
 import "./scripts/lib/gogogen";
 import "./scripts/lib/madnetFactoryTasks";
 import "./scripts/lib/madnetTasks";
-import "./scripts/generateImmutableAuth";
 require("dotenv").config();
 
 /**

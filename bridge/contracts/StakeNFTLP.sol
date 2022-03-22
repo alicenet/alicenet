@@ -216,7 +216,7 @@ abstract contract StakeNFTLPBase is
         checkMagic(magic_)
     {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
         // update state
         _tokenState = _deposit(_shares, amount_, _tokenState);
         _reserveToken += amount_;
@@ -318,7 +318,7 @@ abstract contract StakeNFTLPBase is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), owner, payout);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), owner, payout);
         return payout;
     }
 
@@ -356,7 +356,7 @@ abstract contract StakeNFTLPBase is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), to_, payout);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payout);
         return payout;
     }
 
@@ -480,7 +480,7 @@ abstract contract StakeNFTLPBase is
         );
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
-        _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
 
         // get local copy of storage vars to save gas
         uint256 shares = _shares;
@@ -544,7 +544,7 @@ abstract contract StakeNFTLPBase is
         ERC721Upgradeable._burn(tokenID_);
 
         // transfer out all eth and tokens owed
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), to_, payoutToken);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payoutToken);
         _safeTransferEth(to_, payoutEth);
         return (payoutEth, payoutToken);
     }
@@ -615,7 +615,7 @@ abstract contract StakeNFTLPBase is
         returns (IERC20Transferable madToken, uint256 excess)
     {
         uint256 reserve = _reserveToken;
-        madToken = IERC20Transferable(_MadTokenAddress());
+        madToken = IERC20Transferable(_madTokenAddress());
         uint256 balance = madToken.balanceOf(address(this));
         require(
             balance >= reserve,

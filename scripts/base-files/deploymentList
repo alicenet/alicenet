@@ -5,6 +5,8 @@ deploymentList = [
   "contracts/Governance.sol:Governance",
   "contracts/MadByte.sol:MadByte",
   "contracts/MadToken.sol:MadToken",
+  "contracts/ATokenMinter.sol:ATokenMinter",
+  "contracts/ATokenBurner.sol:ATokenBurner",
   "contracts/Snapshots.sol:Snapshots",
   "contracts/StakeNFT.sol:StakeNFT",
   "contracts/StakeNFTLP.sol:StakeNFTLP",
