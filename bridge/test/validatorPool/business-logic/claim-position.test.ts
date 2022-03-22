@@ -38,7 +38,7 @@ describe("ValidatorPool: Claiming logic", async () => {
     // As this is a complete cycle, expect the initial state to be exactly the same as the final state
     const expectedState = await getCurrentState(fixture, validators);
     for (let index = 0; index < expectedState.validators.length; index++) {
-      expectedState.Factory.StakeNFT--;
+      expectedState.Factory.PublicStaking--;
       expectedState.validators[index].NFT++;
     }
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -60,7 +60,7 @@ describe("ValidatorPool: Claiming logic", async () => {
   });
 
   it("Should successfully claim exiting NFT positions of all validators even with excess of ETH and tokens", async function () {
-    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
     const madTokenAmount = ethers.utils.parseEther("2");
@@ -68,10 +68,10 @@ describe("ValidatorPool: Claiming logic", async () => {
     // As this is a complete cycle, expect the initial state to be exactly the same as the final state
     const expectedState = await getCurrentState(fixture, validators);
     for (let index = 0; index < expectedState.validators.length; index++) {
-      expectedState.Factory.StakeNFT--;
+      expectedState.Factory.PublicStaking--;
       expectedState.validators[index].NFT++;
     }
-    expectedState.StakeNFT.ETH = BigInt(0);
+    expectedState.PublicStaking.ETH = BigInt(0);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
@@ -90,12 +90,12 @@ describe("ValidatorPool: Claiming logic", async () => {
     expect(currentState).to.be.deep.equal(expectedState);
   });
 
-  it("After claiming, register the user again with a new stakenft position", async function () {
+  it("After claiming, register the user again with a new PublicStaking position", async function () {
     // As this is a complete cycle, expect the initial state to be exactly the same as the final
     // state
     const expectedState = await getCurrentState(fixture, validators);
     for (let index = 0; index < expectedState.validators.length; index++) {
-      expectedState.Factory.StakeNFT--;
+      expectedState.Factory.PublicStaking--;
       expectedState.validators[index].NFT++;
       expectedState.validators[index].Acc = true;
       expectedState.validators[index].Reg = true;
@@ -125,14 +125,14 @@ describe("ValidatorPool: Claiming logic", async () => {
     );
     // Re-initialize validators
     const newValidators = await createValidators(fixture, validatorsSnapshots);
-    const newStakeNFTIDs = await stakeValidators(fixture, newValidators);
+    const newPublicStakingIDs = await stakeValidators(fixture, newValidators);
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
-      newStakeNFTIDs,
+      newPublicStakingIDs,
     ]);
     const currentState = await getCurrentState(fixture, validators);
-    // Expect that validators funds are transferred again to ValidatorNFT
-    expectedState.ValidatorNFT.MAD +=
+    // Expect that validators funds are transferred again to ValidatorStaking
+    expectedState.ValidatorStaking.MAD +=
       BigInt(stakeAmount) * BigInt(validators.length);
     expect(currentState).to.be.deep.equal(expectedState);
   });
@@ -157,7 +157,7 @@ describe("ValidatorPool: Claiming logic", async () => {
     }
   });
 
-  it("Should not allow a non-owner try to get stakenft position in the exitingQueue", async function () {
+  it("Should not allow a non-owner try to get PublicStaking position in the exitingQueue", async function () {
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,

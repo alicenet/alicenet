@@ -18,12 +18,12 @@ import {
   MadByte,
   MadnetFactory,
   MadToken,
+  PublicStaking,
   Snapshots,
   SnapshotsMock,
-  StakeNFT,
-  ValidatorNFT,
   ValidatorPool,
   ValidatorPoolMock,
+  ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
@@ -46,11 +46,11 @@ export interface BaseFixture {
 export interface BaseTokensFixture extends BaseFixture {
   madToken: MadToken;
   madByte: MadByte;
-  stakeNFT: StakeNFT;
+  publicStaking: PublicStaking;
 }
 
 export interface Fixture extends BaseTokensFixture {
-  validatorNFT: ValidatorNFT;
+  validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
@@ -299,17 +299,17 @@ export const deployFactoryAndBaseTokens = async (
     "MadByte"
   )) as MadByte;
 
-  // StakeNFT
-  const stakeNFT = (await deployStaticWithFactory(
+  // PublicStaking
+  const publicStaking = (await deployStaticWithFactory(
     factory,
-    "StakeNFT"
-  )) as StakeNFT;
+    "PublicStaking"
+  )) as PublicStaking;
 
   return {
     factory,
     madToken,
     madByte,
-    stakeNFT,
+    publicStaking,
   };
 };
 export const deployMadnetFactory = async (
@@ -371,14 +371,14 @@ export const getFixture = async (
   const namedSigners = await ethers.getSigners();
   const [admin] = namedSigners;
   // Deploy the base tokens
-  const { factory, madToken, madByte, stakeNFT } =
+  const { factory, madToken, madByte, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
 
-  // ValidatorNFT is not considered a base token since is only used by validators
-  const validatorNFT = (await deployStaticWithFactory(
+  // ValidatorStaking is not considered a base token since is only used by validators
+  const validatorStaking = (await deployStaticWithFactory(
     factory,
-    "ValidatorNFT"
-  )) as ValidatorNFT;
+    "ValidatorStaking"
+  )) as ValidatorStaking;
 
   let validatorPool;
   if (typeof mockValidatorPool !== "undefined" && mockValidatorPool) {
@@ -472,8 +472,8 @@ export const getFixture = async (
   return {
     madToken,
     madByte,
-    stakeNFT,
-    validatorNFT,
+    publicStaking,
+    validatorStaking,
     validatorPool,
     snapshots,
     ethdkg,

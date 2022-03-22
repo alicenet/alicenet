@@ -70,11 +70,13 @@ task("registerValidators", "registers validators")
       await factory.lookup(hre.ethers.utils.formatBytes32String("MadToken"))
     );
     console.log(`MadToken Address: ${madToken.address}`);
-    const stakeNFT = await hre.ethers.getContractAt(
-      "StakeNFT",
-      await factory.lookup(hre.ethers.utils.formatBytes32String("StakeNFT"))
+    const publicStaking = await hre.ethers.getContractAt(
+      "PublicStaking",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("PublicStaking")
+      )
     );
-    console.log(`stakeNFT Address: ${stakeNFT.address}`);
+    console.log(`publicStaking Address: ${publicStaking.address}`);
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
       await factory.lookup(
@@ -111,7 +113,7 @@ task("registerValidators", "registers validators")
     tx = await madToken
       .connect(admin)
       .approve(
-        stakeNFT.address,
+        publicStaking.address,
         stakeAmountMadWei.mul(validatorAddresses.length)
       );
     await tx.wait();
@@ -124,14 +126,14 @@ task("registerValidators", "registers validators")
     );
 
     console.log("Starting the registration process...");
-    // mint StakeNFT positions to validators
+    // mint PublicStaking positions to validators
     for (let i = 0; i < validatorAddresses.length; i++) {
-      let tx = await stakeNFT
+      let tx = await publicStaking
         .connect(admin)
         .mintTo(factory.address, stakeAmountMadWei, lockTime);
       await tx.wait();
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
-      console.log(`Minted StakeNFT.tokenID ${tokenId}`);
+      console.log(`Minted PublicStaking.tokenID ${tokenId}`);
       stakingTokenIds.push(tokenId);
 
       const iface = new hre.ethers.utils.Interface([
@@ -141,7 +143,9 @@ task("registerValidators", "registers validators")
         validatorPool.address,
         tokenId,
       ]);
-      tx = await factory.connect(admin).callAny(stakeNFT.address, 0, input);
+      tx = await factory
+        .connect(admin)
+        .callAny(publicStaking.address, 0, input);
 
       await tx.wait();
 

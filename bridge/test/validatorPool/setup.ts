@@ -9,7 +9,7 @@ import {
 } from "../setup";
 
 interface Contract {
-  StakeNFT: bigint;
+  PublicStaking: bigint;
   ValNFT: bigint;
   MAD: bigint;
   ETH: bigint;
@@ -17,7 +17,7 @@ interface Contract {
 }
 
 interface Admin {
-  StakeNFT: bigint;
+  PublicStaking: bigint;
   ValNFT: bigint;
   MAD: bigint;
   Addr: string;
@@ -34,8 +34,8 @@ interface Validator {
 }
 interface State {
   Admin: Admin;
-  StakeNFT: Contract;
-  ValidatorNFT: Contract;
+  PublicStaking: Contract;
+  ValidatorStaking: Contract;
   ValidatorPool: Contract;
   Factory: Contract;
   validators: Array<Validator>;
@@ -57,34 +57,34 @@ export const getCurrentState = async (
   // System state
   const state: State = {
     Admin: {
-      StakeNFT: BigInt(0),
+      PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       MAD: BigInt(0),
       Addr: "0x0",
     },
-    StakeNFT: {
-      StakeNFT: BigInt(0),
+    PublicStaking: {
+      PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       MAD: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
-    ValidatorNFT: {
-      StakeNFT: BigInt(0),
+    ValidatorStaking: {
+      PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       MAD: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
     ValidatorPool: {
-      StakeNFT: BigInt(0),
+      PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       MAD: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
     Factory: {
-      StakeNFT: BigInt(0),
+      PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       MAD: BigInt(0),
       ETH: BigInt(0),
@@ -94,11 +94,11 @@ export const getCurrentState = async (
   };
   const [adminSigner] = await ethers.getSigners();
   // Get state for admin
-  state.Admin.StakeNFT = (
-    await fixture.stakeNFT.balanceOf(adminSigner.address)
+  state.Admin.PublicStaking = (
+    await fixture.publicStaking.balanceOf(adminSigner.address)
   ).toBigInt();
   state.Admin.ValNFT = (
-    await fixture.validatorNFT.balanceOf(adminSigner.address)
+    await fixture.validatorStaking.balanceOf(adminSigner.address)
   ).toBigInt();
   state.Admin.MAD = (
     await fixture.madToken.balanceOf(adminSigner.address)
@@ -109,7 +109,7 @@ export const getCurrentState = async (
   for (let i = 0; i < _validators.length; i++) {
     const validator: Validator = {
       Idx: i,
-      NFT: (await fixture.stakeNFT.balanceOf(_validators[i])).toBigInt(),
+      NFT: (await fixture.publicStaking.balanceOf(_validators[i])).toBigInt(),
       MAD: (await fixture.madToken.balanceOf(_validators[i])).toBigInt(),
       Addr: _validators[i],
       Reg: await fixture.validatorPool.isValidator(_validators[i]),
@@ -121,12 +121,12 @@ export const getCurrentState = async (
   // Contract data
   const contractData = [
     {
-      contractState: state.StakeNFT,
-      contractAddress: fixture.stakeNFT.address,
+      contractState: state.PublicStaking,
+      contractAddress: fixture.publicStaking.address,
     },
     {
-      contractState: state.ValidatorNFT,
-      contractAddress: fixture.validatorNFT.address,
+      contractState: state.ValidatorStaking,
+      contractAddress: fixture.validatorStaking.address,
     },
     {
       contractState: state.ValidatorPool,
@@ -139,11 +139,11 @@ export const getCurrentState = async (
   ];
   // Get state for contracts
   for (let i = 0; i < contractData.length; i++) {
-    contractData[i].contractState.StakeNFT = (
-      await fixture.stakeNFT.balanceOf(contractData[i].contractAddress)
+    contractData[i].contractState.PublicStaking = (
+      await fixture.publicStaking.balanceOf(contractData[i].contractAddress)
     ).toBigInt();
     contractData[i].contractState.ValNFT = (
-      await fixture.validatorNFT.balanceOf(contractData[i].contractAddress)
+      await fixture.validatorStaking.balanceOf(contractData[i].contractAddress)
     ).toBigInt();
     contractData[i].contractState.MAD = (
       await fixture.madToken.balanceOf(contractData[i].contractAddress)
@@ -186,7 +186,7 @@ export const createValidators = async (
   await fixture.madToken
     .connect(adminSigner)
     .approve(
-      fixture.stakeNFT.address,
+      fixture.publicStaking.address,
       stakeAmountMadWei.mul(_validatorsSnapshots.length)
     );
   await showState(
@@ -206,13 +206,13 @@ export const stakeValidators = async (
   const lockTime = 1;
   for (let i = 0; i < validators.length; i++) {
     // Stake all MAD tokens
-    const tx = await fixture.stakeNFT
+    const tx = await fixture.publicStaking
       .connect(adminSigner)
       .mintTo(fixture.factory.address, stakeAmountMadWei, lockTime);
     // Get the proof of staking (NFT's tokenID)
     const tokenID = await getTokenIdFromTx(tx);
     stakingTokenIds.push(tokenID);
-    await factoryCallAny(fixture, "stakeNFT", "approve", [
+    await factoryCallAny(fixture, "publicStaking", "approve", [
       fixture.validatorPool.address,
       tokenID,
     ]);
@@ -232,21 +232,21 @@ export const claimPosition = async (
   return BigNumber.from(receipt.logs[0].topics[3]);
 };
 
-export const getStakeNFTFromMinorSlashEvent = async (
+export const getPublicStakingFromMinorSlashEvent = async (
   tx: ContractTransaction
 ): Promise<bigint> => {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([
-    "event ValidatorMinorSlashed(address indexed account, uint256 stakeNFT)",
+    "event ValidatorMinorSlashed(address indexed account, uint256 publicStaking)",
   ]);
   const data = receipt.logs[receipt.logs.length - 1].data;
   const topics = receipt.logs[receipt.logs.length - 1].topics;
   const event = intrface.decodeEventLog("ValidatorMinorSlashed", data, topics);
-  return event.stakeNFT;
+  return event.publicStaking;
 };
 
 /**
- * Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+ * Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
  * itself, this is a method to send eth accidentally to the validatorPool contract
  * @param fixture
  * @param etherAmount
@@ -261,32 +261,36 @@ export const burnStakeTo = async (
 ) => {
   await fixture.madToken
     .connect(adminSigner)
-    .approve(fixture.stakeNFT.address, madTokenAmount);
-  const tx = await fixture.stakeNFT.connect(adminSigner).mint(madTokenAmount);
+    .approve(fixture.publicStaking.address, madTokenAmount);
+  const tx = await fixture.publicStaking
+    .connect(adminSigner)
+    .mint(madTokenAmount);
   const tokenID = await getTokenIdFromTx(tx);
-  await fixture.stakeNFT.depositEth(42, {
+  await fixture.publicStaking.depositEth(42, {
     value: etherAmount,
   });
-  await fixture.stakeNFT
+  await fixture.publicStaking
     .connect(adminSigner)
     .burnTo(fixture.validatorPool.address, tokenID);
 };
 
 /**
- * Mint a stakeNFT
+ * Mint a publicStaking
  * @param fixture
  * @param etherAmount
  * @param madTokenAmount
  * @param adminSigner
  */
-export const mintStakeNFT = async (
+export const mintPublicStaking = async (
   fixture: Fixture,
   madTokenAmount: BigNumber,
   adminSigner: Signer
 ) => {
   await fixture.madToken
     .connect(adminSigner)
-    .approve(fixture.stakeNFT.address, madTokenAmount);
-  const tx = await fixture.stakeNFT.connect(adminSigner).mint(madTokenAmount);
+    .approve(fixture.publicStaking.address, madTokenAmount);
+  const tx = await fixture.publicStaking
+    .connect(adminSigner)
+    .mint(madTokenAmount);
   return await getTokenIdFromTx(tx);
 };

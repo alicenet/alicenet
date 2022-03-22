@@ -5,7 +5,7 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IValidatorPool.sol";
-import "contracts/interfaces/INFTStake.sol";
+import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -16,7 +16,7 @@ contract ValidatorPoolMock is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
-    ImmutableValidatorNFT,
+    ImmutableValidatorStaking,
     ImmutableMadToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
@@ -46,7 +46,7 @@ contract ValidatorPoolMock is
     // solhint-disable no-empty-blocks
     constructor()
         ImmutableFactory(msg.sender)
-        ImmutableValidatorNFT()
+        ImmutableValidatorStaking()
         ImmutableSnapshots()
         ImmutableETHDKG()
         ImmutableMadToken()
@@ -74,38 +74,38 @@ contract ValidatorPoolMock is
         IETHDKG(_ethdkgAddress()).setCustomMadnetHeight(madnetHeight_);
     }
 
-    function mintValidatorNFT() public returns (uint256 stakeID_) {
+    function mintValidatorStaking() public returns (uint256 stakeID_) {
         IERC20Transferable(_madTokenAddress()).transferFrom(
             msg.sender,
             address(this),
             _stakeAmount
         );
-        IERC20Transferable(_madTokenAddress()).approve(_validatorNFTAddress(), _stakeAmount);
-        stakeID_ = INFTStake(_validatorNFTAddress()).mint(_stakeAmount);
+        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        stakeID_ = IStakingNFT(_validatorStakingAddress()).mint(_stakeAmount);
     }
 
-    function burnValidatorNFT(uint256 tokenID_)
+    function burnValidatorStaking(uint256 tokenID_)
         public
         returns (uint256 payoutEth, uint256 payoutMadToken)
     {
-        return INFTStake(_validatorNFTAddress()).burn(tokenID_);
+        return IStakingNFT(_validatorStakingAddress()).burn(tokenID_);
     }
 
-    function mintToValidatorNFT(address to_) public returns (uint256 stakeID_) {
+    function mintToValidatorStaking(address to_) public returns (uint256 stakeID_) {
         IERC20Transferable(_madTokenAddress()).transferFrom(
             msg.sender,
             address(this),
             _stakeAmount
         );
-        IERC20Transferable(_madTokenAddress()).approve(_validatorNFTAddress(), _stakeAmount);
-        stakeID_ = INFTStake(_validatorNFTAddress()).mintTo(to_, _stakeAmount, 1);
+        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        stakeID_ = IStakingNFT(_validatorStakingAddress()).mintTo(to_, _stakeAmount, 1);
     }
 
-    function burnToValidatorNFT(uint256 tokenID_, address to_)
+    function burnToValidatorStaking(uint256 tokenID_, address to_)
         public
         returns (uint256 payoutEth, uint256 payoutMadToken)
     {
-        return INFTStake(_validatorNFTAddress()).burnTo(to_, tokenID_);
+        return IStakingNFT(_validatorStakingAddress()).burnTo(to_, tokenID_);
     }
 
     function minorSlash(address validator, address disputer) public {

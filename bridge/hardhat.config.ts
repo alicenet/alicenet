@@ -235,8 +235,8 @@ const config: HardhatUserConfig = {
       "Snapshots",
       "MadByte",
       "MadToken",
-      "StakeNFT",
-      "ValidatorNFT",
+      "PublicStaking",
+      "ValidatorStaking",
       "Governance",
     ],
     except: [

@@ -36,17 +36,17 @@ describe("Snapshots: Tests Snapshots methods", () => {
       stakeAmountMadWei.mul(validators.length)
     );
     await fixture.madToken.approve(
-      fixture.stakeNFT.address,
+      fixture.publicStaking.address,
       stakeAmountMadWei.mul(validators.length)
     );
 
     for (const validator of validatorsSnapshots) {
-      const tx = await fixture.stakeNFT
+      const tx = await fixture.publicStaking
         .connect(adminSigner)
         .mintTo(validator.address, stakeAmountMadWei, lockTime);
       const tokenId = getTokenIdFromTx(tx);
       stakingTokenIds.push(tokenId);
-      await fixture.stakeNFT
+      await fixture.publicStaking
         .connect(await getValidatorEthAccount(validator))
         .setApprovalForAll(fixture.validatorPool.address, true);
     }
