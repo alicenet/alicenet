@@ -115,7 +115,7 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
 
 		// 1. Give 'acct' tokens
-		txn, err := c.StakeNFT().MintTo(txnOpts, acct.Address, big.NewInt(10_000_000), big.NewInt(0))
+		txn, err := c.PublicStaking().MintTo(txnOpts, acct.Address, big.NewInt(10_000_000), big.NewInt(0))
 		assert.Nilf(t, err, "Failed on transfer %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 		tokenID := txn.Value()
@@ -124,14 +124,9 @@ func connectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		assert.Nil(t, err)
 
 		// 2. Allow system to take tokens from 'acct' for staking
-		txn, err = c.StakeNFT().Approve(o, c.ValidatorPoolAddress(), big.NewInt(10_000_000))
+		txn, err = c.PublicStaking().Approve(o, c.ValidatorPoolAddress(), big.NewInt(10_000_000))
 		assert.Nilf(t, err, "Failed on approval %v", idx)
 		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		// 3. Tell system to take tokens from 'acct' for staking
-		// txn, err = c.StakeNFT().LockStake(o, big.NewInt(1_000_000))
-		// assert.Nilf(t, err, "Failed on lock %v", idx)
-		// eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
 
 		txn, err = c.ValidatorPool().RegisterValidators(o, []common.Address{acct.Address}, []*big.Int{tokenID})
 		assert.Nilf(t, err, "Failed on register %v", idx)
