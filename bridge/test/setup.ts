@@ -147,7 +147,9 @@ async function getContractAddressFromEventLog(
     result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
   }
   if (result === "") {
-    throw "Couldn't parse logs in the transaction!\nReceipt:\n" + receipt;
+    throw new Error(
+      "Couldn't parse logs in the transaction!\nReceipt:\n" + receipt
+    );
   }
   return result;
 }
@@ -175,7 +177,9 @@ export const deployStaticWithFactory = async (
   }
   let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
-    throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
   }
 
   let initCallDataBin;
@@ -197,7 +201,9 @@ export const deployStaticWithFactory = async (
   );
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
-    throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
   }
 
   return _Contract.attach(await getContractAddressFromDeployedStaticEvent(tx));
@@ -225,12 +231,16 @@ async function deployUpgradeableWithFactory(
   }
   let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
-    throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
   }
   const transaction = await factory.deployCreate(deployCode);
   receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
-    throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
   }
   const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
   let saltBytes;
@@ -243,7 +253,9 @@ async function deployUpgradeableWithFactory(
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
-    throw `Contract deployment size:${receipt.gasUsed} is greater than 10 million`;
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
   }
 
   let initCallDataBin = "0x";
@@ -436,8 +448,7 @@ export async function getTokenIdFromTx(tx: any) {
   const logs =
     typeof receipt.logs[2] !== "undefined" ? receipt.logs[2] : receipt.logs[0];
   const log = iface.parseLog(logs);
-  const { from, to, tokenId } = log.args;
-  return tokenId;
+  return log.args[2];
 }
 
 export async function factoryCallAny(
