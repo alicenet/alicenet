@@ -52,10 +52,11 @@ run `npx hardhat --help`.
  * `generate-immutable-auth-contract` Generates authorization for contracts deployed at deterministic address via factory
 
 ```bash
+
  $ npx hardhat generate-immutable-auth-contract
- $ npx hardhat generate-immutable-auth-contract --input ./path/to/folder/
+ $ npx hardhat generate-immutable-auth-contract --input ./path/to/folder/containing/deploymentList
  $ npx hardhat generate-immutable-auth-contract --output ./
- $ npx hardhat generate-immutable-auth-contract --input ./path/to/folder/ --output ./
+ $ npx hardhat generate-immutable-auth-contract --input ./path/to/folder/containing/deploymentList --output ./
 ```
 
 If you are linking a custom Deployment list file it must follow the following format
