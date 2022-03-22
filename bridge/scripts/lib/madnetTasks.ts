@@ -10,8 +10,7 @@ export async function getTokenIdFromTx(ethers: any, tx: any) {
   const iface = new ethers.utils.Interface(abi);
   const receipt = await tx.wait();
   const log = iface.parseLog(receipt.logs[2]);
-  const { from, to, tokenId } = log.args;
-  return tokenId;
+  return log.args[2];
 }
 
 task(

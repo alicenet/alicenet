@@ -216,11 +216,11 @@ task("deployContracts", "runs the initial deployment of all madnet contracts")
     "deployFactory",
     "flag to indicate deployment, will deploy the factory first if set"
   )
-  .addOptionalParam("inputFolder", "path to location containing deploymentArgsTemplate, and deploymentList")
   .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state"
+    "inputFolder",
+    "path to location containing deploymentArgsTemplate, and deploymentList"
   )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     // setting listName undefined will use the default list
@@ -358,7 +358,10 @@ task(
 // factoryName param doesnt do anything right now
 task(DEPLOY_CREATE, "deploys a contract from the factory using create")
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
+  .addOptionalParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
@@ -418,7 +421,10 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     "salt",
     "salt used to specify logicContract and proxy address calculation"
   )
-  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
+  .addOptionalParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryAddress = await getFactoryAddress(network, taskArgs);
@@ -448,10 +454,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryAddress = await getFactoryAddress(network, taskArgs);
@@ -513,10 +516,7 @@ task(
     "factoryAddress",
     "optional factory address, defaults to config address"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "input constructor args at the end of call"
@@ -573,10 +573,7 @@ task(
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factoryState"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryAddress = await getFactoryAddress(network, taskArgs);
@@ -634,10 +631,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factoryState"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .addOptionalParam(
     "salt",
     "unique salt for specifying proxy defaults to salt specified in logic contract"
@@ -706,7 +700,10 @@ task(
   "multi call to deploy logic and upgrade proxy through factory"
 )
   .addParam("contractName", "logic contract name")
-  .addOptionalParam("factoryAddress", "the default factory address from factoryState will be used if not set")
+  .addOptionalParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
   .addOptionalParam(
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
