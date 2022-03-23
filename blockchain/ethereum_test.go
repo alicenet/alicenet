@@ -2,7 +2,6 @@ package blockchain_test
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"testing"
@@ -44,14 +43,6 @@ func TestAccountsFound(t *testing.T) {
 		assert.Nilf(t, err, "Not able to get keys for account: %v", acct.Address)
 	}
 
-}
-
-func TestCreateSelector(t *testing.T) {
-	signature := "removeFacet(bytes4)"
-
-	selector := blockchain.CalculateSelector(signature)
-
-	assert.Equal(t, "ca5a0fae", fmt.Sprintf("%x", selector))
 }
 
 func TestHardhatNode(t *testing.T) {

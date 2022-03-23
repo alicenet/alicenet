@@ -39,6 +39,8 @@ var (
 	ErrPasscodeNotFound = errors.New("could not find specified passcode")
 )
 
+var ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND string = "Method eth_maxPriorityFeePerGas not found"
+
 type EthereumDetails struct {
 	logger         *logrus.Logger
 	endpoint       string
@@ -179,12 +181,14 @@ func NewEthereumSimulator(
 
 			if err != nil {
 				log.Printf("error calling evm_mine rpc: %v", err)
+				<-time.After(5 * time.Second)
 				continue
 			}
 
 			_, err = io.ReadAll(resp.Body)
 			if err != nil {
 				log.Printf("error reading response from evm_mine rpc: %v", err)
+				<-time.After(5 * time.Second)
 				continue
 			}
 
@@ -226,6 +230,13 @@ type jsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+func (err *jsonError) Error() string {
+	if err.Message == "" {
+		return fmt.Sprintf("json-rpc error %d", err.Code)
+	}
+	return err.Message
 }
 
 // NewEthereumEndpoint creates a new Ethereum abstraction
@@ -634,8 +645,11 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
-		tipCap = big.NewInt(1)
-		// return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		if err.Error() == ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND {
+			tipCap = big.NewInt(1)
+		} else {
+			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		}
 	}
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
@@ -691,10 +705,12 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 	baseFee2x := new(big.Int).Mul(bm, bf)
 	tipCap, err := eth.client.SuggestGasTipCap(ctx)
 	if err != nil {
-		tipCap = big.NewInt(1)
-		// return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		if err.Error() == ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND {
+			tipCap = big.NewInt(1)
+		} else {
+			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		}
 	}
-	// tipCap := big.NewInt(1)
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
 	txRough := &types.DynamicFeeTx{}
