@@ -10,6 +10,7 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/INFTStake.sol";
+import "contracts/interfaces/INFTStakeDescriptor.sol";
 
 abstract contract StakeNFTStorage {
     // Position describes a staked position
@@ -90,7 +91,8 @@ abstract contract StakeNFTBase is
     ImmutableFactory,
     ImmutableValidatorPool,
     ImmutableMadToken,
-    ImmutableGovernance
+    ImmutableGovernance,
+    ImmutableStakeNFTPositionDescriptor
 {
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
@@ -107,6 +109,7 @@ abstract contract StakeNFTBase is
         ImmutableMadToken()
         ImmutableGovernance()
         ImmutableValidatorPool()
+        ImmutableStakeNFTPositionDescriptor()
     {}
 
     /// gets the current value for the Eth accumulator
@@ -725,6 +728,16 @@ abstract contract StakeNFTBase is
             }
         }
         return (accumulator_, slush_);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721Upgradeable)
+        returns (string memory)
+    {
+        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
+        return INFTStakeDescriptor(_StakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 }
 
