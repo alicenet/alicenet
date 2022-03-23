@@ -5,7 +5,6 @@ pragma solidity ^0.8.11;
 import "./DeterministicAddress.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
-
     address private immutable _factory;
 
     modifier onlyFactory() {
@@ -20,11 +19,9 @@ abstract contract ImmutableFactory is DeterministicAddress {
     function _factoryAddress() internal view returns (address) {
         return _factory;
     }
-
 }
 
 abstract contract ImmutableAToken is ImmutableFactory {
-
     address private immutable _aToken;
 
     modifier onlyAToken() {
@@ -33,20 +30,22 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 
     constructor() {
-        _aToken = getMetamorphicContractAddress(0x41546f6b656e0000000000000000000000000000000000000000000000000000, _factoryAddress());
+        _aToken = getMetamorphicContractAddress(
+            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenAddress() internal view returns(address) {
+    function _aTokenAddress() internal view returns (address) {
         return _aToken;
     }
 
-    function _saltForAToken() internal pure returns(bytes32) {
+    function _saltForAToken() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableFoundation is ImmutableFactory {
-
     address private immutable _foundation;
 
     modifier onlyFoundation() {
@@ -55,20 +54,22 @@ abstract contract ImmutableFoundation is ImmutableFactory {
     }
 
     constructor() {
-        _foundation = getMetamorphicContractAddress(0x466f756e646174696f6e00000000000000000000000000000000000000000000, _factoryAddress());
+        _foundation = getMetamorphicContractAddress(
+            0x466f756e646174696f6e00000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _foundationAddress() internal view returns(address) {
+    function _foundationAddress() internal view returns (address) {
         return _foundation;
     }
 
-    function _saltForFoundation() internal pure returns(bytes32) {
+    function _saltForFoundation() internal pure returns (bytes32) {
         return 0x466f756e646174696f6e00000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableGovernance is ImmutableFactory {
-
     address private immutable _governance;
 
     modifier onlyGovernance() {
@@ -77,20 +78,22 @@ abstract contract ImmutableGovernance is ImmutableFactory {
     }
 
     constructor() {
-        _governance = getMetamorphicContractAddress(0x476f7665726e616e636500000000000000000000000000000000000000000000, _factoryAddress());
+        _governance = getMetamorphicContractAddress(
+            0x476f7665726e616e636500000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _governanceAddress() internal view returns(address) {
+    function _governanceAddress() internal view returns (address) {
         return _governance;
     }
 
-    function _saltForGovernance() internal pure returns(bytes32) {
+    function _saltForGovernance() internal pure returns (bytes32) {
         return 0x476f7665726e616e636500000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableMadByte is ImmutableFactory {
-
     address private immutable _madByte;
 
     modifier onlyMadByte() {
@@ -99,20 +102,22 @@ abstract contract ImmutableMadByte is ImmutableFactory {
     }
 
     constructor() {
-        _madByte = getMetamorphicContractAddress(0x4d61644279746500000000000000000000000000000000000000000000000000, _factoryAddress());
+        _madByte = getMetamorphicContractAddress(
+            0x4d61644279746500000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _madByteAddress() internal view returns(address) {
+    function _madByteAddress() internal view returns (address) {
         return _madByte;
     }
 
-    function _saltForMadByte() internal pure returns(bytes32) {
+    function _saltForMadByte() internal pure returns (bytes32) {
         return 0x4d61644279746500000000000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableMadToken is ImmutableFactory {
-
     address private immutable _madToken;
 
     modifier onlyMadToken() {
@@ -121,20 +126,22 @@ abstract contract ImmutableMadToken is ImmutableFactory {
     }
 
     constructor() {
-        _madToken = getMetamorphicContractAddress(0x4d6164546f6b656e000000000000000000000000000000000000000000000000, _factoryAddress());
+        _madToken = getMetamorphicContractAddress(
+            0x4d6164546f6b656e000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _madTokenAddress() internal view returns(address) {
+    function _madTokenAddress() internal view returns (address) {
         return _madToken;
     }
 
-    function _saltForMadToken() internal pure returns(bytes32) {
+    function _saltForMadToken() internal pure returns (bytes32) {
         return 0x4d6164546f6b656e000000000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableSnapshots is ImmutableFactory {
-
     address private immutable _snapshots;
 
     modifier onlySnapshots() {
@@ -143,20 +150,22 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
     }
 
     constructor() {
-        _snapshots = getMetamorphicContractAddress(0x536e617073686f74730000000000000000000000000000000000000000000000, _factoryAddress());
+        _snapshots = getMetamorphicContractAddress(
+            0x536e617073686f74730000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _snapshotsAddress() internal view returns(address) {
+    function _snapshotsAddress() internal view returns (address) {
         return _snapshots;
     }
 
-    function _saltForSnapshots() internal pure returns(bytes32) {
+    function _saltForSnapshots() internal pure returns (bytes32) {
         return 0x536e617073686f74730000000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableStakeNFT is ImmutableFactory {
-
     address private immutable _stakeNFT;
 
     modifier onlyStakeNFT() {
@@ -165,20 +174,22 @@ abstract contract ImmutableStakeNFT is ImmutableFactory {
     }
 
     constructor() {
-        _stakeNFT = getMetamorphicContractAddress(0x5374616b654e4654000000000000000000000000000000000000000000000000, _factoryAddress());
+        _stakeNFT = getMetamorphicContractAddress(
+            0x5374616b654e4654000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _stakeNFTAddress() internal view returns(address) {
+    function _stakeNFTAddress() internal view returns (address) {
         return _stakeNFT;
     }
 
-    function _saltForStakeNFT() internal pure returns(bytes32) {
+    function _saltForStakeNFT() internal pure returns (bytes32) {
         return 0x5374616b654e4654000000000000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableStakeNFTLP is ImmutableFactory {
-
     address private immutable _stakeNFTLP;
 
     modifier onlyStakeNFTLP() {
@@ -187,20 +198,46 @@ abstract contract ImmutableStakeNFTLP is ImmutableFactory {
     }
 
     constructor() {
-        _stakeNFTLP = getMetamorphicContractAddress(0x5374616b654e46544c5000000000000000000000000000000000000000000000, _factoryAddress());
+        _stakeNFTLP = getMetamorphicContractAddress(
+            0x5374616b654e46544c5000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _stakeNFTLPAddress() internal view returns(address) {
+    function _stakeNFTLPAddress() internal view returns (address) {
         return _stakeNFTLP;
     }
 
-    function _saltForStakeNFTLP() internal pure returns(bytes32) {
+    function _saltForStakeNFTLP() internal pure returns (bytes32) {
         return 0x5374616b654e46544c5000000000000000000000000000000000000000000000;
     }
 }
 
-abstract contract ImmutableValidatorNFT is ImmutableFactory {
+abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
+    address private immutable _stakeNFTPositionDescriptor;
 
+    modifier onlyStakeNFTPositionDescriptor() {
+        require(msg.sender == _stakeNFTPositionDescriptor, "onlyStakeNFTPositionDescriptor");
+        _;
+    }
+
+    constructor() {
+        _stakeNFTPositionDescriptor = getMetamorphicContractAddress(
+            0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _stakeNFTPositionDescriptorAddress() internal view returns (address) {
+        return _stakeNFTPositionDescriptor;
+    }
+
+    function _saltForStakeNFTPositionDescriptor() internal pure returns (bytes32) {
+        return 0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000;
+    }
+}
+
+abstract contract ImmutableValidatorNFT is ImmutableFactory {
     address private immutable _validatorNFT;
 
     modifier onlyValidatorNFT() {
@@ -209,20 +246,22 @@ abstract contract ImmutableValidatorNFT is ImmutableFactory {
     }
 
     constructor() {
-        _validatorNFT = getMetamorphicContractAddress(0x56616c696461746f724e46540000000000000000000000000000000000000000, _factoryAddress());
+        _validatorNFT = getMetamorphicContractAddress(
+            0x56616c696461746f724e46540000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _validatorNFTAddress() internal view returns(address) {
+    function _validatorNFTAddress() internal view returns (address) {
         return _validatorNFT;
     }
 
-    function _saltForValidatorNFT() internal pure returns(bytes32) {
+    function _saltForValidatorNFT() internal pure returns (bytes32) {
         return 0x56616c696461746f724e46540000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableValidatorPool is ImmutableFactory {
-
     address private immutable _validatorPool;
 
     modifier onlyValidatorPool() {
@@ -231,20 +270,22 @@ abstract contract ImmutableValidatorPool is ImmutableFactory {
     }
 
     constructor() {
-        _validatorPool = getMetamorphicContractAddress(0x56616c696461746f72506f6f6c00000000000000000000000000000000000000, _factoryAddress());
+        _validatorPool = getMetamorphicContractAddress(
+            0x56616c696461746f72506f6f6c00000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _validatorPoolAddress() internal view returns(address) {
+    function _validatorPoolAddress() internal view returns (address) {
         return _validatorPool;
     }
 
-    function _saltForValidatorPool() internal pure returns(bytes32) {
+    function _saltForValidatorPool() internal pure returns (bytes32) {
         return 0x56616c696461746f72506f6f6c00000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableATokenBurner is ImmutableFactory {
-
     address private immutable _aTokenBurner;
 
     modifier onlyATokenBurner() {
@@ -253,20 +294,22 @@ abstract contract ImmutableATokenBurner is ImmutableFactory {
     }
 
     constructor() {
-        _aTokenBurner = getMetamorphicContractAddress(0x41546f6b656e4275726e65720000000000000000000000000000000000000000, _factoryAddress());
+        _aTokenBurner = getMetamorphicContractAddress(
+            0x41546f6b656e4275726e65720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenBurnerAddress() internal view returns(address) {
+    function _aTokenBurnerAddress() internal view returns (address) {
         return _aTokenBurner;
     }
 
-    function _saltForATokenBurner() internal pure returns(bytes32) {
+    function _saltForATokenBurner() internal pure returns (bytes32) {
         return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableATokenMinter is ImmutableFactory {
-
     address private immutable _aTokenMinter;
 
     modifier onlyATokenMinter() {
@@ -275,20 +318,22 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
     }
 
     constructor() {
-        _aTokenMinter = getMetamorphicContractAddress(0x41546f6b656e4d696e7465720000000000000000000000000000000000000000, _factoryAddress());
+        _aTokenMinter = getMetamorphicContractAddress(
+            0x41546f6b656e4d696e7465720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenMinterAddress() internal view returns(address) {
+    function _aTokenMinterAddress() internal view returns (address) {
         return _aTokenMinter;
     }
 
-    function _saltForATokenMinter() internal pure returns(bytes32) {
+    function _saltForATokenMinter() internal pure returns (bytes32) {
         return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
-
     address private immutable _ethdkgAccusations;
 
     modifier onlyETHDKGAccusations() {
@@ -297,20 +342,22 @@ abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
     }
 
     constructor() {
-        _ethdkgAccusations = getMetamorphicContractAddress(0x455448444b4741636375736174696f6e73000000000000000000000000000000, _factoryAddress());
+        _ethdkgAccusations = getMetamorphicContractAddress(
+            0x455448444b4741636375736174696f6e73000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgAccusationsAddress() internal view returns(address) {
+    function _ethdkgAccusationsAddress() internal view returns (address) {
         return _ethdkgAccusations;
     }
 
-    function _saltForETHDKGAccusations() internal pure returns(bytes32) {
+    function _saltForETHDKGAccusations() internal pure returns (bytes32) {
         return 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableETHDKGPhases is ImmutableFactory {
-
     address private immutable _ethdkgPhases;
 
     modifier onlyETHDKGPhases() {
@@ -319,20 +366,22 @@ abstract contract ImmutableETHDKGPhases is ImmutableFactory {
     }
 
     constructor() {
-        _ethdkgPhases = getMetamorphicContractAddress(0x455448444b475068617365730000000000000000000000000000000000000000, _factoryAddress());
+        _ethdkgPhases = getMetamorphicContractAddress(
+            0x455448444b475068617365730000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgPhasesAddress() internal view returns(address) {
+    function _ethdkgPhasesAddress() internal view returns (address) {
         return _ethdkgPhases;
     }
 
-    function _saltForETHDKGPhases() internal pure returns(bytes32) {
+    function _saltForETHDKGPhases() internal pure returns (bytes32) {
         return 0x455448444b475068617365730000000000000000000000000000000000000000;
     }
 }
 
 abstract contract ImmutableETHDKG is ImmutableFactory {
-
     address private immutable _ethdkg;
 
     modifier onlyETHDKG() {
@@ -341,37 +390,17 @@ abstract contract ImmutableETHDKG is ImmutableFactory {
     }
 
     constructor() {
-        _ethdkg = getMetamorphicContractAddress(0x455448444b470000000000000000000000000000000000000000000000000000, _factoryAddress());
+        _ethdkg = getMetamorphicContractAddress(
+            0x455448444b470000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgAddress() internal view returns(address) {
+    function _ethdkgAddress() internal view returns (address) {
         return _ethdkg;
     }
 
-    function _saltForETHDKG() internal pure returns(bytes32) {
+    function _saltForETHDKG() internal pure returns (bytes32) {
         return 0x455448444b470000000000000000000000000000000000000000000000000000;
     }
-}
-
-abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
-
-    address private immutable _StakeNFTPositionDescriptor;
-
-    constructor() {
-        _StakeNFTPositionDescriptor = getMetamorphicContractAddress(0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000, _factoryAddress());
-    }
-
-    modifier onlyStakeNFTPositionDescriptor() {
-        require(msg.sender == _StakeNFTPositionDescriptor, "onlyStakeNFTPositionDescriptor");
-        _;
-    }
-
-    function _StakeNFTPositionDescriptorAddress() internal view returns(address) {
-        return _StakeNFTPositionDescriptor;
-    }
-
-    function _saltForStakeNFTPositionDescriptor() internal pure returns(bytes32) {
-        return 0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000;
-    }
-
 }

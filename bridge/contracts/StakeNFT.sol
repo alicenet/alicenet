@@ -448,7 +448,7 @@ abstract contract StakeNFTBase is
         returns (string memory)
     {
         require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
-        return INFTStakeDescriptor(_StakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
+        return INFTStakeDescriptor(_stakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
