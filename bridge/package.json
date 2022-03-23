@@ -6,12 +6,14 @@
   },
   "scripts": {
     "typechain": "hardhat typechain",
+    "lint": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
     "test": "hardhat test --show-stack-traces",
-    "test-parallel": "hardhat test --parallel --show-stack-traces",
-    "clean": "mkdir -p typechain-types && rm -rf typechain-types && hardhat clean && mkdir -p bindings && rm -rf bindings && mkdir -p artifacts && rm -rf artifacts ",
-    "build": "hardhat compile && hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
+    "test-parallel": "npm run test -- --parallel",
     "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
-    "linter": "solhint 'contracts/**/*.sol' 'test/**/*.sol'"
+    "clean": "rm -rf typechain-types && hardhat clean && rm -rf bindings artifacts",
+    "compile": "hardhat compile",
+    "generate": "hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
+    "build": "npm run clean && npm run compile && npm run generate"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",

@@ -1,46 +1,68 @@
 # MadNet
 
 ## Requirements
-
+#### Always required
 * [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
+#### Required for working on the Golang client (until it is Dockerized)
 * [Go 1.17](https://go.dev/dl/)
 * [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
+#### Required for working on Solidity contracts
 * [Node 16](https://nodejs.org/en/download/)
 
-In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
-version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
-
-```shell
-$ npm prefix --global
-$ sudo npm install -g n
-$ echo $PATH
-$ command -v n
-$ n --version
-$ n i lts
-```
-
 ## Build MadNet
-
 First, this repository needs to be cloned, and be the current working dir.
 
 <br />
 
-Then to perform all code auto generation (run with `sudo` if your `docker` is only installed for `root`). Double check
-you meet the requirements in the bridge [README.md](bridge/README.md)
-
+Then, to generate all files necessary for the project to build (run with `sudo` if your `docker` is only installed for `root`):
 ```
 make generate
 ```
+The generate command above may need to be rerun after making certain changes. Check the [File generation](#file-generation)
+ section for more info on this.
 
-This generates all protobuf, capnproto, grpcs, and swagger files that the project depends on. Any time you make changes
-to any of the source files of these, this command needs to be rerun. Once completed it is now possible to compile an
-executable. If you are having problems in this step, check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
+<br />
 
+Then, to compile an executable:
 ```
 make build
 ```
 
-## Environment Setup
+## File generation
+The `make generate` command runs two subcommands:
+* `make generate-bridge`
+* `make generate-go`
+
+Both commands run in a Docker container, so that nothing needs to be installed on your machine directly.
+
+<br />
+
+### Command: make generate-bridge
+This command:
+* (re)compiles all the solidity contracts
+* (re)compiles the Go bindings for the solidity contracts
+* (re)generates the ABI definitions for the solidity contracts
+
+Rerun this every time you made changes to the solidity contracts and want these to be used by the madnet binary
+
+Under the hood, this commend runs the `bridge` module's `compile` script to compile the contracts, and then the `bridge` module's `generate` script to generate the bindings and ABI definitions. These can also be run on the system directly, as long as the dependencies defined in `docker/generate-bridge` are installed.
+
+<br />
+
+### Command: make generate-go
+This command:
+* (re)compiles all the protobuf type definitions into Go sourcecode
+* (re)compiles all the capnproto type definitions into Go sourcecode
+* (re)compiles all the grpc endpoint definitions into Go sourcecode
+* (re)generates convenient wrapper functions for the grpc endpoints using `cmd/mngen`
+* (re)generates a new swagger json file based on the grpc endpoints
+* (re)generates a Go source file containing the swagger json file in binary format, so it can be baked into the final executable
+
+Rerun this command every time you made changes to the public API surface of MadNet.
+
+<br />
+
+## Setup Test Environment
 
 In order to initialize a chain with all validators online we need to generate the configuration files, keystores, geth
 genesis file, and password files run this command (if already executed, run `./scripts/main.sh clean` first)
@@ -155,6 +177,19 @@ make: *** [build] Error 1
 >  cd ..
 >```
 > now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
+
+# Different Node versions
+In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
+version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
+
+```shell
+$ npm prefix --global
+$ sudo npm install -g n
+$ echo $PATH
+$ command -v n
+$ n --version
+$ n i lts
+```
 
 # WHAT'S NEXT
 
