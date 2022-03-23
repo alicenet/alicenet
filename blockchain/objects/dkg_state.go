@@ -26,6 +26,8 @@ type DkgState struct {
 	PhaseLength        uint64
 	ConfirmationLength uint64
 	PhaseStart         uint64
+	MPKSetAtBlock      uint64
+	CompletionAtBlock  uint64
 
 	// Local validator info
 	////////////////////////////////////////////////////////////////////////////
@@ -169,6 +171,7 @@ func (state *DkgState) OnKeyShareSubmissionComplete(mpkSubmissionStartBlock uint
 func (state *DkgState) OnMPKSet(gpkjSubmissionStartBlock uint64) {
 	state.Phase = GPKJSubmission
 	state.PhaseStart = gpkjSubmissionStartBlock
+	state.MPKSetAtBlock = gpkjSubmissionStartBlock
 }
 
 // OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event

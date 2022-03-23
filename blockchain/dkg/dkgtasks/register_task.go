@@ -141,7 +141,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		//"emptyHashEq": t.TxHash == emptyHash,
 	}).Info("registering fees 2")
 
-	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
+	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 60*time.Second)
 	defer cancelFunc()
 
 	eth.Queue().QueueTransaction(ctx, txn)

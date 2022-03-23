@@ -32,17 +32,20 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 		err = tasks[idx].DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		eth.Commit()
-
-		//This is because the MPK submission task should be
-		//executed only by 1 validator
-		if idx == 0 {
+		if amILeading {
+			assert.Nil(t, err)
 			assert.True(t, tasks[idx].Success)
 		} else {
-			assert.False(t, tasks[idx].Success)
+			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+				assert.NotNil(t, err)
+				assert.False(t, tasks[idx].Success)
+			} else {
+				assert.Nil(t, err)
+				assert.True(t, tasks[idx].Success)
+			}
+
 		}
 	}
 
@@ -105,10 +108,10 @@ func TestMPKSubmissionBad1(t *testing.T) {
 // This is caused by submitting invalid state information (state is nil).
 func TestMPKSubmissionBad2(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -130,10 +133,10 @@ func TestMPKSubmissionBad2(t *testing.T) {
 // completing KeyShareSubmission phase.
 func TestMPKSubmissionBad4(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -160,27 +163,31 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
+	var hadLeaders bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
 		err := tasks[idx].Initialize(ctx, logger, eth, state)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 
-		eth.Commit()
-
-		//This is because the MPK submission task should be
-		//executed only by 1 validator
-		if idx == 0 {
-			assert.True(t, tasks[idx].Success)
-		} else {
-			assert.False(t, tasks[idx].Success)
+		if amILeading {
+			hadLeaders = true
+			// only perform MPK submission if validator is leading
+			assert.True(t, tasks[idx].ShouldRetry(ctx, logger, eth))
+			err = tasks[idx].DoWork(ctx, logger, eth)
+			assert.Nil(t, err)
+			assert.False(t, tasks[idx].ShouldRetry(ctx, logger, eth))
 		}
-
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
-		assert.False(t, shouldRetry)
 	}
+
+	// make sure there were elected leaders
+	assert.True(t, hadLeaders)
+
+	// any task is able to tell if MPK still needs submission.
+	// if for any reason no validator lead the submission,
+	// then all tasks will have ShouldRetry() returning true
+	assert.False(t, tasks[0].ShouldRetry(ctx, logger, eth))
 }
 
 func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
@@ -199,4 +206,26 @@ func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
 		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
 		assert.True(t, shouldRetry)
 	}
+}
+
+func TestMPKSubmission_LeaderElection(t *testing.T) {
+	n := 4
+	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.eth.Close()
+	ctx := context.Background()
+	eth := suite.eth
+	logger := logging.GetLogger("test").WithField("Validator", "")
+	leaders := 0
+	// Do MPK Submission task
+	tasks := suite.mpkSubmissionTasks
+	for idx := 0; idx < n; idx++ {
+		tasks[idx].Initialize(ctx, logger, eth, suite.dkgStates[idx])
+		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
+
+		if tasks[idx].AmILeading(ctx, eth, logger) {
+			leaders++
+		}
+	}
+
+	assert.Greater(t, leaders, 0)
 }

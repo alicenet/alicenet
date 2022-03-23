@@ -44,7 +44,7 @@ abstract contract ImmutableAToken is ImmutableFactory {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableFoundation is ImmutableFactory {
 
     address private immutable _foundation;
@@ -66,7 +66,7 @@ abstract contract ImmutableFoundation is ImmutableFactory {
         return 0x466f756e646174696f6e00000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableGovernance is ImmutableFactory {
 
     address private immutable _governance;
@@ -88,7 +88,7 @@ abstract contract ImmutableGovernance is ImmutableFactory {
         return 0x476f7665726e616e636500000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableMadByte is ImmutableFactory {
 
     address private immutable _madByte;
@@ -110,7 +110,7 @@ abstract contract ImmutableMadByte is ImmutableFactory {
         return 0x4d61644279746500000000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableMadToken is ImmutableFactory {
 
     address private immutable _madToken;
@@ -132,7 +132,7 @@ abstract contract ImmutableMadToken is ImmutableFactory {
         return 0x4d6164546f6b656e000000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableSnapshots is ImmutableFactory {
 
     address private immutable _snapshots;
@@ -154,7 +154,7 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
         return 0x536e617073686f74730000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableStakeNFT is ImmutableFactory {
 
     address private immutable _stakeNFT;
@@ -176,7 +176,7 @@ abstract contract ImmutableStakeNFT is ImmutableFactory {
         return 0x5374616b654e4654000000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableStakeNFTLP is ImmutableFactory {
 
     address private immutable _stakeNFTLP;
@@ -198,7 +198,7 @@ abstract contract ImmutableStakeNFTLP is ImmutableFactory {
         return 0x5374616b654e46544c5000000000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableValidatorNFT is ImmutableFactory {
 
     address private immutable _validatorNFT;
@@ -220,7 +220,7 @@ abstract contract ImmutableValidatorNFT is ImmutableFactory {
         return 0x56616c696461746f724e46540000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableValidatorPool is ImmutableFactory {
 
     address private immutable _validatorPool;
@@ -242,7 +242,7 @@ abstract contract ImmutableValidatorPool is ImmutableFactory {
         return 0x56616c696461746f72506f6f6c00000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableATokenBurner is ImmutableFactory {
 
     address private immutable _aTokenBurner;
@@ -264,7 +264,7 @@ abstract contract ImmutableATokenBurner is ImmutableFactory {
         return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableATokenMinter is ImmutableFactory {
 
     address private immutable _aTokenMinter;
@@ -286,7 +286,7 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
         return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
 
     address private immutable _ethdkgAccusations;
@@ -308,7 +308,7 @@ abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
         return 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableETHDKGPhases is ImmutableFactory {
 
     address private immutable _ethdkgPhases;
@@ -330,7 +330,7 @@ abstract contract ImmutableETHDKGPhases is ImmutableFactory {
         return 0x455448444b475068617365730000000000000000000000000000000000000000;
     }
 }
-    
+
 abstract contract ImmutableETHDKG is ImmutableFactory {
 
     address private immutable _ethdkg;
@@ -352,4 +352,26 @@ abstract contract ImmutableETHDKG is ImmutableFactory {
         return 0x455448444b470000000000000000000000000000000000000000000000000000;
     }
 }
-    
+
+abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
+
+    address private immutable _StakeNFTPositionDescriptor;
+
+    constructor() {
+        _StakeNFTPositionDescriptor = getMetamorphicContractAddress(0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000, _factoryAddress());
+    }
+
+    modifier onlyStakeNFTPositionDescriptor() {
+        require(msg.sender == _StakeNFTPositionDescriptor, "onlyStakeNFTPositionDescriptor");
+        _;
+    }
+
+    function _StakeNFTPositionDescriptorAddress() internal view returns(address) {
+        return _StakeNFTPositionDescriptor;
+    }
+
+    function _saltForStakeNFTPositionDescriptor() internal pure returns(bytes32) {
+        return 0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000;
+    }
+
+}

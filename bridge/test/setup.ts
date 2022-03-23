@@ -21,6 +21,7 @@ import {
   Snapshots,
   SnapshotsMock,
   StakeNFT,
+  StakeNFTPositionDescriptor,
   ValidatorNFT,
   ValidatorPool,
   ValidatorPoolMock,
@@ -47,6 +48,7 @@ export interface Fixture {
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
   factory: MadnetFactory;
+  stakeNFTPositionDescriptor: StakeNFTPositionDescriptor;
   namedSigners: SignerWithAddress[];
   [key: string]: any;
 }
@@ -351,6 +353,12 @@ export const getFixture = async (
   // ETHDKG Accusations
   await deployUpgradeableWithFactory(factory, "ETHDKGAccusations");
 
+  // StakeNFTPositionDescriptor
+  const stakeNFTPositionDescriptor = (await deployUpgradeableWithFactory(
+    factory,
+    "StakeNFTPositionDescriptor"
+  )) as StakeNFTPositionDescriptor;
+
   // ETHDKG Phases
   await deployUpgradeableWithFactory(factory, "ETHDKGPhases");
 
@@ -436,6 +444,7 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
+    stakeNFTPositionDescriptor,
   };
 };
 
