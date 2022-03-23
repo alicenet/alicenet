@@ -2,6 +2,7 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -9,15 +10,18 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/constants"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	Start          uint64
+	End            uint64
+	State          *objects.DkgState
+	Success        bool
+	StartBlockHash common.Hash
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
@@ -46,6 +50,16 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
 	}
 
+	// setup leader election
+	block, err := eth.GetGethClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	if err != nil {
+		return fmt.Errorf("MPKSubmissionTask.Initialize(): error getting block by number: %v", err)
+	}
+
+	logger.Infof("block hash: %v\n", block.Hash())
+	t.StartBlockHash.SetBytes(block.Hash().Bytes())
+
+	// prepare MPK
 	g1KeyShares := make([][2]*big.Int, t.State.NumberOfValidators)
 	g2KeyShares := make([][4]*big.Int, t.State.NumberOfValidators)
 
@@ -73,7 +87,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		}
 	}
 
-	logger.Infof("# Participants:%v\n", len(t.State.Participants))
+	logger.Infof("# Participants: %v\n", len(t.State.Participants))
 
 	mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 	if err != nil && validMPK {
@@ -106,8 +120,14 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 
 	logger.Info("MPKSubmissionTask doTask()")
 
-	if !t.shouldSubmitMPK(ctx, eth) {
+	if !t.shouldSubmitMPK(ctx, eth, logger) {
+		t.Success = true
 		return nil
+	}
+
+	// submit if I'm a leader for this task
+	if !t.AmILeading(ctx, eth, logger) {
+		return errors.New("not leading MPK submission yet")
 	}
 
 	// Setup
@@ -161,7 +181,7 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 		return false
 	}
 
-	return t.shouldSubmitMPK(ctx, eth)
+	return t.shouldSubmitMPK(ctx, eth, logger)
 }
 
 // DoDone creates a log entry saying task is complete
@@ -172,7 +192,7 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
 }
 
-func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum) bool {
+func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
 	if t.State.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 		t.State.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
 		t.State.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
@@ -185,5 +205,26 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.
 		return false
 	}
 
-	return true
+	return !isMPKSet
+}
+
+func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
+	// check if I'm a leader for this task
+	currentHeight, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return false
+	}
+
+	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
+	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+
+	logger.WithFields(logrus.Fields{
+		"currentHeight":                    currentHeight,
+		"t.Start":                          t.Start,
+		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
+		"blocksSinceDesperation":           blocksSinceDesperation,
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
 }

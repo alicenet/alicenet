@@ -96,6 +96,7 @@ def run():
         ("AToken", "AToken"),
         ("ATokenBurner", "ATokenBurner"),
         ("ATokenMinter", "ATokenMinter"),
+        ("StakeNFTPositionDescriptor", "StakeNFTPositionDescriptor"),
         ("Foundation", "Foundation")
     ]
     c=make(clst)

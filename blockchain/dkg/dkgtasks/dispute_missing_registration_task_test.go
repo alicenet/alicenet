@@ -9,7 +9,7 @@ import (
 )
 
 func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
-	n := 5
+	n := 4
 	d := 1
 	suite := StartFromRegistrationOpenPhase(t, n, d, 100)
 	defer suite.eth.Close()
