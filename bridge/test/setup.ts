@@ -15,12 +15,14 @@ import {
   ATokenBurner,
   ATokenMinter,
   ETHDKG,
+  Foundation,
   MadByte,
   MadnetFactory,
   MadToken,
   Snapshots,
   SnapshotsMock,
   StakeNFT,
+  StakeNFTLP,
   ValidatorNFT,
   ValidatorPool,
   ValidatorPoolMock,
@@ -291,7 +293,7 @@ export const getFixture = async (
     admin.address,
   ])) as MadToken;
 
-  // MadByte
+  //MadByte
   const madByte = (await deployStaticWithFactory(
     factory,
     "MadByte"
@@ -303,11 +305,24 @@ export const getFixture = async (
     "StakeNFT"
   )) as StakeNFT;
 
+  //StakeNFT
+  const stakeNFTLP = (await deployStaticWithFactory(
+    factory,
+    "StakeNFTLP"
+  )) as StakeNFTLP;
+
   // ValidatorNFT
   const validatorNFT = (await deployStaticWithFactory(
     factory,
     "ValidatorNFT"
   )) as ValidatorNFT;
+
+  // Foundation
+  let foundation = (await deployUpgradeableWithFactory(
+    factory,
+    "Foundation",
+    undefined
+  )) as Foundation;
 
   let validatorPool;
   if (typeof mockValidatorPool !== "undefined" && mockValidatorPool) {
@@ -411,6 +426,8 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
+    stakeNFTLP,
+    foundation,
   };
 };
 
@@ -445,4 +462,35 @@ export async function factoryCallAny(
   );
   let receipt = await txResponse.wait();
   return receipt;
+}
+
+export async function callFunctionAndGetReturnValues(
+  contract: Contract,
+  functionName: any,
+  account: SignerWithAddress,
+  inputParamerters: any[],
+  messageValue?: BigNumber
+): Promise<[any, ContractTransaction]> {
+  try {
+    let returnValues;
+    let tx;
+    if (messageValue !== undefined) {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParamerters, { value: messageValue });
+      tx = await contract
+        .connect(account)
+        [functionName](...inputParamerters, { value: messageValue });
+    } else {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParamerters);
+      tx = await contract.connect(account)[functionName](...inputParamerters);
+    }
+    return [returnValues, tx];
+  } catch (error) {
+    throw new Error(
+      `Couldn't call function '${functionName}' with account '${account.address}' and input parameters '${inputParamerters}'\n${error}`
+    );
+  }
 }
