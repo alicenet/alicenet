@@ -1,6 +1,9 @@
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { StakeNFT, StakeNFTPositionDescriptor } from "../../typechain-types";
+import {
+  PublicStaking,
+  StakingPositionDescriptor,
+} from "../../typechain-types";
 import { expect } from "../chai-setup";
 import {
   Fixture,
@@ -9,11 +12,11 @@ import {
   getValidatorEthAccount,
 } from "../setup";
 
-describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods", async () => {
+describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", async () => {
   let fixture: Fixture;
   let adminSigner: Signer;
-  let stakeNFT: StakeNFT;
-  let stakeNFTPositionDescriptor: StakeNFTPositionDescriptor;
+  let publicStaking: PublicStaking;
+  let stakingPositionDescriptor: StakingPositionDescriptor;
   const stakeAmount = 20000;
   const stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
   const lockTime = 1;
@@ -25,14 +28,14 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
     const [admin] = fixture.namedSigners;
     adminSigner = await getValidatorEthAccount(admin.address);
 
-    stakeNFT = fixture.stakeNFT;
-    stakeNFTPositionDescriptor = fixture.stakeNFTPositionDescriptor;
+    publicStaking = fixture.publicStaking;
+    stakingPositionDescriptor = fixture.stakingPositionDescriptor;
 
     await fixture.madToken.approve(
-      fixture.stakeNFT.address,
+      fixture.publicStaking.address,
       BigNumber.from(stakeAmountMadWei)
     );
-    const tx = await fixture.stakeNFT
+    const tx = await fixture.publicStaking
       .connect(adminSigner)
       .mintTo(admin.address, stakeAmountMadWei, lockTime);
     tokenId = await getTokenIdFromTx(tx);
@@ -41,8 +44,8 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
   it("Fails if token at id does not exist", async function () {
     const invalidTokenId = 1234;
 
-    await expect(stakeNFT.tokenURI(invalidTokenId)).to.be.revertedWith(
-      "StakeNFT: Error, NFT token doesn't exist!"
+    await expect(publicStaking.tokenURI(invalidTokenId)).to.be.revertedWith(
+      "PublicStaking: Error, NFT token doesn't exist!"
     );
   });
 
@@ -52,7 +55,7 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
     let tokenUriJson: string;
     let expectedTokenUriData: string;
     beforeEach(async function () {
-      positionData = await stakeNFT.getPosition(tokenId);
+      positionData = await publicStaking.getPosition(tokenId);
 
       svg =
         `<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>` +
@@ -79,9 +82,9 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
       )}`;
     });
 
-    it("StakeNFTPositionDescriptor should return correct token uri", async function () {
-      const tokenUri = await stakeNFTPositionDescriptor.tokenURI(
-        stakeNFT.address,
+    it("StakingPositionDescriptor should return correct token uri", async function () {
+      const tokenUri = await stakingPositionDescriptor.tokenURI(
+        publicStaking.address,
         tokenId
       );
 
@@ -95,8 +98,8 @@ describe("StakeNFTPositionDescriptor: Tests StakeNFTPositionDescriptor methods",
       ).to.be.equal(svg);
     });
 
-    it("StakeNFT contract Should return correct token uri", async function () {
-      const tokenUri = await stakeNFT.tokenURI(tokenId);
+    it("PublicStaking contract Should return correct token uri", async function () {
+      const tokenUri = await publicStaking.tokenURI(tokenId);
 
       const parsedJson = JSON.parse(
         atob(tokenUri.replace("data:application/json;base64,", ""))

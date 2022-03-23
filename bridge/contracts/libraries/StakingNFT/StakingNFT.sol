@@ -11,7 +11,7 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/IStakingNFT.sol";
-import "contracts/interfaces/INFTStakeDescriptor.sol";
+import "contracts/interfaces/IStakingNFTDescriptor.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -27,7 +27,7 @@ abstract contract StakingNFT is
     ImmutableValidatorPool,
     ImmutableMadToken,
     ImmutableGovernance,
-    ImmutableStakeNFTPositionDescriptor
+    ImmutableStakingPositionDescriptor
 {
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
@@ -44,7 +44,7 @@ abstract contract StakingNFT is
         ImmutableMadToken()
         ImmutableGovernance()
         ImmutableValidatorPool()
-        ImmutableStakeNFTPositionDescriptor()
+        ImmutableStakingPositionDescriptor()
     {}
 
     /// gets the current value for the Eth accumulator
@@ -394,8 +394,8 @@ abstract contract StakingNFT is
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
-        return INFTStakeDescriptor(_stakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
+        require(_exists(tokenId), "PublicStaking: Error, NFT token doesn't exist!");
+        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens

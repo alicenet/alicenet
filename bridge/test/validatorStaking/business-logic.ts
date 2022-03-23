@@ -115,11 +115,11 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
   });
 
   it("Should return correct token uri", async function () {
-    const tx = await validatorPool.mintValidatorNFT();
+    const tx = await validatorPool.mintValidatorStaking();
     await tx.wait();
 
     const tokenId = 1;
-    const positionData = await fixture.validatorNFT.getPosition(tokenId);
+    const positionData = await fixture.validatorStaking.getPosition(tokenId);
 
     const svg =
       `<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>` +
@@ -145,7 +145,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
       tokenUriJson
     )}`;
 
-    const tokenUri = await fixture.validatorNFT.tokenURI(tokenId);
+    const tokenUri = await fixture.validatorStaking.tokenURI(tokenId);
 
     const parsedJson = JSON.parse(
       atob(tokenUri.replace("data:application/json;base64,", ""))

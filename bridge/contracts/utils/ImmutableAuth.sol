@@ -213,99 +213,27 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableStakeNFT is ImmutableFactory {
-    address private immutable _stakeNFT;
+abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
+    address private immutable _stakingPositionDescriptor;
 
-    modifier onlyStakeNFT() {
-        require(msg.sender == _stakeNFT, "onlyStakeNFT");
+    modifier onlyStakingPositionDescriptor() {
+        require(msg.sender == _stakingPositionDescriptor, "onlyStakingPositionDescriptor");
         _;
     }
 
     constructor() {
-        _stakeNFT = getMetamorphicContractAddress(
-            0x5374616b654e4654000000000000000000000000000000000000000000000000,
+        _stakingPositionDescriptor = getMetamorphicContractAddress(
+            0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000,
             _factoryAddress()
         );
     }
 
-    function _stakeNFTAddress() internal view returns (address) {
-        return _stakeNFT;
+    function _stakingPositionDescriptorAddress() internal view returns (address) {
+        return _stakingPositionDescriptor;
     }
 
-    function _saltForStakeNFT() internal pure returns (bytes32) {
-        return 0x5374616b654e4654000000000000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableStakeNFTLP is ImmutableFactory {
-    address private immutable _stakeNFTLP;
-
-    modifier onlyStakeNFTLP() {
-        require(msg.sender == _stakeNFTLP, "onlyStakeNFTLP");
-        _;
-    }
-
-    constructor() {
-        _stakeNFTLP = getMetamorphicContractAddress(
-            0x5374616b654e46544c5000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _stakeNFTLPAddress() internal view returns (address) {
-        return _stakeNFTLP;
-    }
-
-    function _saltForStakeNFTLP() internal pure returns (bytes32) {
-        return 0x5374616b654e46544c5000000000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
-    address private immutable _stakeNFTPositionDescriptor;
-
-    modifier onlyStakeNFTPositionDescriptor() {
-        require(msg.sender == _stakeNFTPositionDescriptor, "onlyStakeNFTPositionDescriptor");
-        _;
-    }
-
-    constructor() {
-        _stakeNFTPositionDescriptor = getMetamorphicContractAddress(
-            0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _stakeNFTPositionDescriptorAddress() internal view returns (address) {
-        return _stakeNFTPositionDescriptor;
-    }
-
-    function _saltForStakeNFTPositionDescriptor() internal pure returns (bytes32) {
-        return 0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000;
-    }
-}
-
-abstract contract ImmutableValidatorNFT is ImmutableFactory {
-    address private immutable _validatorNFT;
-
-    modifier onlyValidatorNFT() {
-        require(msg.sender == _validatorNFT, "onlyValidatorNFT");
-        _;
-    }
-
-    constructor() {
-        _validatorNFT = getMetamorphicContractAddress(
-            0x56616c696461746f724e46540000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _validatorNFTAddress() internal view returns (address) {
-        return _validatorNFT;
-    }
-
-    function _saltForValidatorNFT() internal pure returns (bytes32) {
-        return 0x56616c696461746f724e46540000000000000000000000000000000000000000;
+    function _saltForStakingPositionDescriptor() internal pure returns (bytes32) {
+        return 0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000;
     }
 }
 
