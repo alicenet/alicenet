@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.11;
 
+/* solhint-disable */
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
@@ -86,6 +86,22 @@ library StakeNFTDescriptor {
         return symbol;
     }
 
+    function generateSVGImage(ConstructTokenURIParams memory params)
+        internal
+        pure
+        returns (string memory svg)
+    {
+        StakeNFTSVG.StakeNFTSVGParams memory svgParams = StakeNFTSVG.StakeNFTSVGParams({
+            shares: params.shares.toString(),
+            freeAfter: params.freeAfter.toString(),
+            withdrawFreeAfter: params.withdrawFreeAfter.toString(),
+            accumulatorEth: params.accumulatorEth.toString(),
+            accumulatorToken: params.accumulatorToken.toString()
+        });
+
+        return StakeNFTSVG.generateSVG(svgParams);
+    }
+
     function generateDescriptionPartOne() private pure returns (string memory) {
         return
             string(
@@ -134,20 +150,5 @@ library StakeNFTDescriptor {
                 abi.encodePacked("MadNET Staked token for position #", params.tokenId.toString())
             );
     }
-
-    function generateSVGImage(ConstructTokenURIParams memory params)
-        internal
-        pure
-        returns (string memory svg)
-    {
-        StakeNFTSVG.StakeNFTSVGParams memory svgParams = StakeNFTSVG.StakeNFTSVGParams({
-            shares: params.shares.toString(),
-            freeAfter: params.freeAfter.toString(),
-            withdrawFreeAfter: params.withdrawFreeAfter.toString(),
-            accumulatorEth: params.accumulatorEth.toString(),
-            accumulatorToken: params.accumulatorToken.toString()
-        });
-
-        return StakeNFTSVG.generateSVG(svgParams);
-    }
 }
+/* solhint-enable */

@@ -113,7 +113,7 @@ describe("ValidatorNFT: Tests ValidatorNFT Business Logic methods", async () => 
   });
 
   it("Should return correct token uri", async function () {
-    let tx = await validatorPool.mintValidatorNFT();
+    const tx = await validatorPool.mintValidatorNFT();
     await tx.wait();
 
     const tokenId = 1;

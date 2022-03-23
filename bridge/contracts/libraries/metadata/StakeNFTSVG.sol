@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.7.6;
+pragma solidity ^0.8.11;
 
+/* solhint-disable */
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "contracts/utils/Base64.sol";
 
@@ -56,6 +57,7 @@ library StakeNFTSVG {
         pure
         returns (string memory svg)
     {
+        params; //to silence the warnings
         svg = string(
             abi.encodePacked(
                 '<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"',
@@ -64,3 +66,4 @@ library StakeNFTSVG {
         );
     }
 }
+/* solhint-enable */

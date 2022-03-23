@@ -3,9 +3,8 @@ import { Artifacts, RunTaskFunction } from "hardhat/types";
 import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 
-type Ethers =
-  typeof import("../../../node_modules/ethers/lib/ethers") &
-    HardhatEthersHelpers;
+type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
+  HardhatEthersHelpers;
 
 export interface ArgData {
   [key: string]: string;

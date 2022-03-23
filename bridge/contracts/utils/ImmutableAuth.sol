@@ -381,11 +381,13 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 }
 
 abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
-
     address private immutable _StakeNFTPositionDescriptor;
 
     constructor() {
-        _StakeNFTPositionDescriptor = getMetamorphicContractAddress(0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000, _factoryAddress());
+        _StakeNFTPositionDescriptor = getMetamorphicContractAddress(
+            0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000,
+            _factoryAddress()
+        );
     }
 
     modifier onlyStakeNFTPositionDescriptor() {
@@ -393,14 +395,13 @@ abstract contract ImmutableStakeNFTPositionDescriptor is ImmutableFactory {
         _;
     }
 
-    function _StakeNFTPositionDescriptorAddress() internal view returns(address) {
+    function _StakeNFTPositionDescriptorAddress() internal view returns (address) {
         return _StakeNFTPositionDescriptor;
     }
 
-    function _saltForStakeNFTPositionDescriptor() internal pure returns(bytes32) {
+    function _saltForStakeNFTPositionDescriptor() internal pure returns (bytes32) {
         return 0x5374616b654e4654506f736974696f6e44657363726970746f72000000000000;
     }
-
 }
 
 /* solhint-enable */

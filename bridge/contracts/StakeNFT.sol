@@ -440,6 +440,17 @@ abstract contract StakeNFTBase is
         accumulatorToken = p.accumulatorToken;
     }
 
+    /// Gets token URI
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721Upgradeable)
+        returns (string memory)
+    {
+        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
+        return INFTStakeDescriptor(_StakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
+    }
+
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
     /// deposited on this contract to reduce the integer division errors.
     function getAccumulatorScaleFactor() public pure returns (uint256) {
@@ -728,16 +739,6 @@ abstract contract StakeNFTBase is
             }
         }
         return (accumulator_, slush_);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721Upgradeable)
-        returns (string memory)
-    {
-        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
-        return INFTStakeDescriptor(_StakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 }
 
