@@ -51,39 +51,23 @@ genesis file, and password files run this command (if already executed, run `./s
 
 This will generate all necessary files for the local chain inside: `./scripts/generated`
 
-Open now a new terminal to start geth with
-
-```
-./scripts/main.sh geth
-```
-
-Open another terminal to start the bootnode with
+Open a terminal to start the bootnode with
 
 ```
 ./scripts/main.sh bootnode
 ```
 
-Open now another terminal to deploy the contracts. If you are having problems in this step, 
+Open another terminal to start geth with
+
+```
+./scripts/main.sh geth
+```
+
+Open now another terminal to deploy the contracts. This command will also register validators in the ValidatorPool. If you are having problems in this step, 
 check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
 
 ```
 ./scripts/main.sh deploy
-```
-
-When the script has been successfully executed it will log the Future Factory address, needed to run other commands. Go
-through the log and copy that value in the clipboard e.g.
-
-```shell
-...
-Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
-Future factory Address: 0x0b1F9c2b7bED6Db83295c7B5158EXAMPLE      <- THIS VALUE
-...
-```
-
-Now that you have the Future factory Address it is possible to register the validators
-
-```
-FACTORY_ADDRESS=0x0b1F9c2b7bED6Db83295c7B5158EXAMPLE ./scripts/main.sh register
 ```
 
 Once this has finished, turn on each of the validators, each in its own terminal shell
