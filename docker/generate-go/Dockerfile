@@ -1,10 +1,12 @@
 FROM golang:1.17.6-alpine3.15
 
+# some binaries used for code generation can be installed through package manager
 RUN apk add --no-cache protoc=3.18.1-r1 capnproto=0.8.0-r1 capnproto-dev=0.8.0-r1
 
 ADD go.mod go.sum /app/
 WORKDIR /app
 
+# other binaries used for code generation are installed from go source
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go &&\
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc &&\
     go install github.com/go-bindata/go-bindata/v3/... &&\
