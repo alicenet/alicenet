@@ -3,201 +3,53 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   BaseTokensFixture,
-  callFunctionAndGetReturnValues,
+  createUsers,
   getBaseTokensFixture,
-  getTokenIdFromTx,
   mineBlocks,
 } from "../../setup";
-import {
-  assertERC20Balance,
-  assertPositions,
-  assertTotalReserveAndZeroExcess,
-  newPosition,
-} from "../setup";
+import { assertTotalReserveAndZeroExcess } from "../setup";
 
 describe("PublicStaking: Shares Invariance", async () => {
   let fixture: BaseTokensFixture;
-  let notAdminSigner: SignerWithAddress;
-  let adminSigner: SignerWithAddress;
+  let users: SignerWithAddress[];
+  const numberUsers = 50;
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+    await fixture.madToken.approve(
+      fixture.publicStaking.address,
+      ethers.utils.parseUnits("100000", 18)
+    );
+    users = await createUsers(numberUsers);
   });
 
-  describe("Mint stakeNFT and", async () => {
-    let tokenID: number;
-    beforeEach(async function () {
-      await fixture.madToken.approve(fixture.publicStaking.address, 1000);
-      const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
-      const blockNumber = BigInt(tx.blockNumber as number);
-      tokenID = await getTokenIdFromTx(tx);
-      await assertPositions(
-        fixture.publicStaking,
-        tokenID,
-        newPosition(1000n, blockNumber + 1n, blockNumber + 1n, 0n, 0n),
-        adminSigner.address,
-        1n,
-        1000n,
-        0n
-      );
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        1000n
-      );
-    });
-
-    it("Burn a NFT position", async function () {
-      const balanceBeforeUser = (
-        await fixture.madToken.balanceOf(adminSigner.address)
-      ).toBigInt();
-      await mineBlocks(3n);
-      const [[payoutEth, payoutMadToken]] =
-        await callFunctionAndGetReturnValues(
-          fixture.publicStaking,
-          "burn",
-          adminSigner,
-          [tokenID]
-        );
-
-      expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(
-        fixture.madToken,
-        adminSigner.address,
-        balanceBeforeUser + 1000n
-      );
-    });
-
-    it("burnTo a NFT position", async function () {
-      await assertERC20Balance(fixture.madToken, notAdminSigner.address, 0n);
-      const balanceBeforeUser = (
-        await fixture.madToken.balanceOf(adminSigner.address)
-      ).toBigInt();
-
-      await mineBlocks(3n);
-      const [[payoutEth, payoutMadToken]] =
-        await callFunctionAndGetReturnValues(
-          fixture.publicStaking,
-          "burnTo",
-          adminSigner,
-          [notAdminSigner.address, tokenID]
-        );
-
-      expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.madToken, notAdminSigner.address, 1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        adminSigner.address,
-        balanceBeforeUser
-      );
-      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
-    });
-  });
-
-  describe("MintTo stakeNFT and", async () => {
-    let tokenID: number;
-    beforeEach(async function () {
-      await fixture.madToken.approve(fixture.publicStaking.address, 1000);
-      const tx = await fixture.publicStaking
-        .connect(adminSigner)
-        .mintTo(notAdminSigner.address, 1000, 10);
-      const blockNumber = BigInt(tx.blockNumber as number);
-      tokenID = await getTokenIdFromTx(tx);
-      await assertPositions(
-        fixture.publicStaking,
-        tokenID,
-        newPosition(1000n, blockNumber + 10n, blockNumber + 1n, 0n, 0n),
-        notAdminSigner.address,
-        1n,
-        1000n,
-        0n
-      );
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        1000n
-      );
-      await assertERC20Balance(fixture.madToken, notAdminSigner.address, 0n);
-    });
-    it("Should not allow burn a NFT position before time", async function () {
-      await expect(
-        fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
-      ).to.be.rejectedWith(
-        "PublicStaking: The position is not ready to be burned!"
-      );
-    });
-
-    it("Burn a NFT position", async function () {
-      const balanceBeforeUser = (
-        await fixture.madToken.balanceOf(adminSigner.address)
-      ).toBigInt();
-
-      await mineBlocks(11n);
-      const [[payoutEth, payoutMadToken]] =
-        await callFunctionAndGetReturnValues(
-          fixture.publicStaking,
-          "burn",
-          notAdminSigner,
-          [tokenID]
-        );
-
-      expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.madToken, notAdminSigner.address, 1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        adminSigner.address,
-        balanceBeforeUser
-      );
-      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
-    });
-
-    it("BurnTo a NFT position", async function () {
-      const balanceBeforeUser = (
-        await fixture.madToken.balanceOf(adminSigner.address)
-      ).toBigInt();
-
-      await mineBlocks(11n);
-      const [[payoutEth, payoutMadToken]] =
-        await callFunctionAndGetReturnValues(
-          fixture.publicStaking,
-          "burnTo",
-          notAdminSigner,
-          [adminSigner.address, tokenID]
-        );
-
-      expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutMadToken.toBigInt()).to.be.equals(1000n);
-      await assertERC20Balance(
-        fixture.madToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.madToken, notAdminSigner.address, 0n);
-      await assertERC20Balance(
-        fixture.madToken,
-        adminSigner.address,
-        balanceBeforeUser + 1000n
-      );
-      await assertTotalReserveAndZeroExcess(fixture.publicStaking, 0n, 0n);
-    });
+  it("Invariance should hold with multiple users", async function () {
+    const baseAmount = ethers.utils.parseUnits("1000000", 18).toBigInt();
+    let shares = 0n;
+    for (let i = 0; i < numberUsers; i++) {
+      const userAmount = baseAmount + BigInt(i);
+      await fixture.madToken.transfer(users[i].address, userAmount);
+      await fixture.madToken
+        .connect(users[i])
+        .approve(fixture.publicStaking.address, userAmount);
+      await fixture.publicStaking.connect(users[i]).mint(userAmount);
+      shares += userAmount;
+    }
+    expect(
+      (await fixture.publicStaking.getTotalShares()).toBigInt()
+    ).to.be.equals(shares);
+    await assertTotalReserveAndZeroExcess(fixture.publicStaking, shares, 0n);
+    await mineBlocks(2n);
+    for (let i = 0; i < numberUsers; i++) {
+      if (i % 3 === 0) {
+        const userAmount = baseAmount + BigInt(i);
+        await fixture.publicStaking.connect(users[i]).burn(i + 1);
+        shares -= userAmount;
+      }
+    }
+    expect(
+      (await fixture.publicStaking.getTotalShares()).toBigInt()
+    ).to.be.equals(shares);
+    await assertTotalReserveAndZeroExcess(fixture.publicStaking, shares, 0n);
   });
 });

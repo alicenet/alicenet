@@ -98,8 +98,8 @@ export const getValidatorEthAccount = async (
     const balance = await ethers.provider.getBalance(validator.address);
     if (balance.eq(0)) {
       await (
-        await ethers.getSigner("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
-      ).sendTransaction({
+        await ethers.getSigners()
+      )[0].sendTransaction({
         to: validator.address,
         value: ethers.utils.parseEther("10"),
       });
@@ -109,6 +109,25 @@ export const getValidatorEthAccount = async (
     }
     return ethers.getSigner(validator.address);
   }
+};
+
+export const createUsers = async (
+  numberOfUsers: number
+): Promise<SignerWithAddress[]> => {
+  const users: SignerWithAddress[] = [];
+  const admin = (await ethers.getSigners())[0];
+  for (let i = 0; i < numberOfUsers; i++) {
+    const user = new Wallet(ethers.utils.randomBytes(64), ethers.provider);
+    const balance = await ethers.provider.getBalance(user.address);
+    if (balance.eq(0)) {
+      await admin.sendTransaction({
+        to: user.address,
+        value: ethers.utils.parseEther("1"),
+      });
+    }
+    users.push(user as Signer as SignerWithAddress);
+  }
+  return users;
 };
 
 async function getContractAddressFromDeployedStaticEvent(

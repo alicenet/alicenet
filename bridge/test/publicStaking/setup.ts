@@ -1,5 +1,7 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumberish, Contract } from "ethers";
+import { BigNumber, BigNumberish, Contract } from "ethers";
+import { callFunctionAndGetReturnValues } from "../setup";
 
 export interface Position {
   shares: bigint;
@@ -111,4 +113,18 @@ export const assertERC20Balance = async (
     expectedAmount,
     "ERC20 Balance didn't match the expected amount!"
   );
+};
+
+export const collectEth = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<BigNumber> => {
+  const [collectedEth] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectEth",
+    user,
+    [tokenID]
+  );
+  return collectedEth;
 };
