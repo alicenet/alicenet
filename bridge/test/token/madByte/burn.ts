@@ -185,16 +185,6 @@ describe("Testing MadByte Burning methods", async () => {
     );
   });
 
-  it("Should fail to burn to 0 address", async () => {
-    // Try to burn one more than minted
-    let burnQuantity = BigNumber.from(madBytes).add(1);
-    await expect(
-      fixture.madByte.connect(user).burnTo(zeroAddress, burnQuantity, 0)
-    ).to.be.revertedWith(
-      "MadByte: The number of tokens to be burned is greater than the Total Supply!"
-    );
-  });
-
   it("Should fail to burn without fulfilling min eth amount", async () => {
     let minEth = ethIn.add(1);
     let burnQuantity = madBytes;
