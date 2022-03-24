@@ -47,13 +47,21 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
@@ -80,13 +88,21 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
@@ -111,20 +127,28 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
     ).to.be.equal(distributable.mul(splits[3]));
   });
 
-  it("Should distribute without stakeNFTLP", async () => {
+  it("Should distribute without liquidityProviderStaking", async () => {
     const [madBytes] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
@@ -142,20 +166,28 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
     ).to.be.equal(distributable.mul(splits[3]));
   });
 
-  it("Should distribute without stakeNFT", async () => {
+  it("Should distribute without publicStaking", async () => {
     const [madBytes] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
@@ -173,20 +205,28 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
     ).to.be.equal(distributable.mul(splits[3]));
   });
 
-  it("Should distribute without validatorNFT", async () => {
+  it("Should distribute without validatorStaking", async () => {
     const [madBytes] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
@@ -204,13 +244,21 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
-      (await ethers.provider.getBalance(fixture.validatorNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[0]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFT.address)).mul(1000)
+      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
+        1000
+      )
     ).to.be.equal(distributable.mul(splits[1]));
     expect(
-      (await ethers.provider.getBalance(fixture.stakeNFTLP.address)).mul(1000)
+      (
+        await ethers.provider.getBalance(
+          fixture.liquidityProviderStaking.address
+        )
+      ).mul(1000)
     ).to.be.equal(distributable.mul(splits[2]));
     expect(
       (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)

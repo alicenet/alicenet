@@ -16,6 +16,7 @@ import {
   ATokenMinterMock,
   ETHDKG,
   Foundation,
+  LiquidityProviderStaking,
   MadByte,
   MadnetFactory,
   MadToken,
@@ -383,11 +384,11 @@ export const getFixture = async (
     "ValidatorStaking"
   )) as ValidatorStaking;
 
-  //StakeNFTLP
-  const stakeNFTLP = (await deployStaticWithFactory(
+  // LiquidityProviderStaking
+  const liquidityProviderStaking = (await deployStaticWithFactory(
     factory,
-    "StakeNFTLP"
-  )) as StakeNFTLP;
+    "LiquidityProviderStaking"
+  )) as LiquidityProviderStaking;
 
   // Foundation
   let foundation = (await deployUpgradeableWithFactory(
@@ -504,7 +505,7 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
-    stakeNFTLP,
+    liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
   };
