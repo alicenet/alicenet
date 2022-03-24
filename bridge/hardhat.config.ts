@@ -174,7 +174,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.11",
+        version: "0.8.13",
         settings: {
           outputSelection: {
             "*": {
@@ -237,8 +237,8 @@ const config: HardhatUserConfig = {
       "Snapshots",
       "MadByte",
       "MadToken",
-      "StakeNFT",
-      "ValidatorNFT",
+      "PublicStaking",
+      "ValidatorStaking",
       "Governance",
     ],
     except: [

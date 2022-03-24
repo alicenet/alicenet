@@ -162,8 +162,8 @@ func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry,
 	}
 
 	logger = logger.WithFields(logrus.Fields{
-		"Account":          event.Account.String(),
-		"StakeNFT.TokenID": event.StakeNFT.Uint64(),
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
 	})
 
 	logger.Infof("ValidatorMinorSlashed")

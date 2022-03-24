@@ -6,6 +6,7 @@ import {
   Fixture,
   getFixture,
   getValidatorEthAccount,
+  mineBlocks,
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
@@ -13,7 +14,7 @@ import {
   commitSnapshots,
   createValidators,
   getCurrentState,
-  getStakeNFTFromMinorSlashEvent,
+  getPublicStakingFromMinorSlashEvent,
   showState,
   stakeValidators,
 } from "../setup";
@@ -47,6 +48,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -60,13 +62,13 @@ describe("ValidatorPool: Slashing logic", async () => {
     const currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount;
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.PublicStaking.MAD += stakeAmount;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
-    expectedState.StakeNFT.MAD -= reward;
+    expectedState.PublicStaking.MAD -= reward;
     expectedState.validators[1].MAD += reward;
     expectedState.validators[0].Acc = true;
     expectedState.validators[0].ExQ = true;
@@ -89,16 +91,17 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
       await getCurrentState(fixture, validators)
     );
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
-    const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
-    expect(newStakeNFT).to.be.gt(
+    const newPublicStaking = await getPublicStakingFromMinorSlashEvent(tx);
+    expect(newPublicStaking).to.be.gt(
       BigInt(0),
-      "New StakeNFT position was not created properly!"
+      "New PublicStaking position was not created properly!"
     );
     await showState(
       "After minor slashing",
@@ -107,13 +110,13 @@ describe("ValidatorPool: Slashing logic", async () => {
     const currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount;
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.PublicStaking.MAD += stakeAmount;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
-    expectedState.StakeNFT.MAD -= reward;
+    expectedState.PublicStaking.MAD -= reward;
     expectedState.validators[1].MAD += reward;
     expectedState.validators[0].Acc = true;
     expectedState.validators[0].ExQ = true;
@@ -135,15 +138,15 @@ describe("ValidatorPool: Slashing logic", async () => {
     const blockNumber = receipt.blockNumber;
 
     expect(exitingNFT.toBigInt()).to.be.equal(
-      newStakeNFT,
+      newPublicStaking,
       "Failed claiming NFT position!"
     );
 
     expect(
-      (await fixture.stakeNFT.ownerOf(newStakeNFT)).toLowerCase()
+      (await fixture.publicStaking.ownerOf(newPublicStaking)).toLowerCase()
     ).to.be.equal(validatorsSnapshots[0].address.toLowerCase());
 
-    const position = await fixture.stakeNFT.getPosition(newStakeNFT);
+    const position = await fixture.publicStaking.getPosition(newPublicStaking);
     expect(position.freeAfter.toBigInt()).to.be.equal(
       (await fixture.validatorPool.POSITION_LOCK_PERIOD()).toBigInt() +
         BigInt(blockNumber)
@@ -163,21 +166,22 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
-    const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
-    expect(newStakeNFT).to.be.gt(
+    const newPublicStaking = await getPublicStakingFromMinorSlashEvent(tx);
+    expect(newPublicStaking).to.be.gt(
       BigInt(0),
-      "New StakeNFT position was not created properly!"
+      "New PublicStaking position was not created properly!"
     );
     let currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount - reward;
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.PublicStaking.MAD += stakeAmount - reward;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].MAD += reward;
     expectedState.validators[0].Acc = true;
@@ -189,17 +193,17 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed assert after minor slash"
     );
-
+    await mineBlocks(1n);
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[2]);
     currentState = await getCurrentState(fixture, validators);
     // Expect infringer unregister the validator position
-    expectedState.ValidatorPool.StakeNFT--;
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.StakeNFT.MAD -= stakeAmount - reward;
+    expectedState.ValidatorPool.PublicStaking--;
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.PublicStaking.MAD -= stakeAmount - reward;
     // the stakeamount minus the 2 rewards given to the 2 accusators should be redistributed to all
     // validators
-    expectedState.ValidatorNFT.MAD += stakeAmount - BigInt(2) * reward;
+    expectedState.ValidatorStaking.MAD += stakeAmount - BigInt(2) * reward;
     expectedState.validators[2].MAD += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -213,7 +217,7 @@ describe("ValidatorPool: Slashing logic", async () => {
   });
 
   it("Should be able to Minor slash and major slash even with excess of eth and Token", async function () {
-    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
     const madTokenAmount = ethers.utils.parseEther("2");
@@ -231,21 +235,22 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
-    const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
-    expect(newStakeNFT).to.be.gt(
+    const newPublicStaking = await getPublicStakingFromMinorSlashEvent(tx);
+    expect(newPublicStaking).to.be.gt(
       BigInt(0),
-      "New StakeNFT position was not created properly!"
+      "New PublicStaking position was not created properly!"
     );
     let currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount - reward;
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.PublicStaking.MAD += stakeAmount - reward;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].MAD += reward;
     expectedState.validators[0].Acc = true;
@@ -257,17 +262,17 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed assert after minor slash"
     );
-
+    await mineBlocks(1n);
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[2]);
     currentState = await getCurrentState(fixture, validators);
     // Expect infringer unregister the validator position
-    expectedState.ValidatorPool.StakeNFT--;
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.StakeNFT.MAD -= stakeAmount - reward;
+    expectedState.ValidatorPool.PublicStaking--;
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.PublicStaking.MAD -= stakeAmount - reward;
     // the stakeamount minus the 2 rewards given to the 2 accusators should be redistributed to all
     // validators
-    expectedState.ValidatorNFT.MAD += stakeAmount - BigInt(2) * reward;
+    expectedState.ValidatorStaking.MAD += stakeAmount - BigInt(2) * reward;
     expectedState.validators[2].MAD += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -296,35 +301,35 @@ describe("ValidatorPool: Slashing logic", async () => {
     ]);
     const eths = 4;
     const mads = 20;
-    await fixture.validatorNFT.connect(adminSigner).depositEth(42, {
+    await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
       value: ethers.utils.parseEther(`${eths}`),
     });
     await fixture.madToken
       .connect(adminSigner)
       .approve(
-        fixture.validatorNFT.address,
+        fixture.validatorStaking.address,
         ethers.utils.parseEther(`${mads}`)
       );
-    await fixture.validatorNFT
+    await fixture.validatorStaking
       .connect(adminSigner)
       .depositToken(42, ethers.utils.parseEther(`${mads}`));
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
-    const newStakeNFT = await getStakeNFTFromMinorSlashEvent(tx);
-    expect(newStakeNFT).to.be.gt(
+    const newPublicStaking = await getPublicStakingFromMinorSlashEvent(tx);
+    expect(newPublicStaking).to.be.gt(
       BigInt(0),
-      "New StakeNFT position was not created properly!"
+      "New PublicStaking position was not created properly!"
     );
     let currentState = await getCurrentState(fixture, validators);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount - reward;
-    expectedState.ValidatorNFT.MAD -=
+    expectedState.PublicStaking.MAD += stakeAmount - reward;
+    expectedState.ValidatorStaking.MAD -=
       stakeAmount + ethers.utils.parseEther(`${mads / 4}`).toBigInt();
-    expectedState.ValidatorNFT.ETH -= ethers.utils
+    expectedState.ValidatorStaking.ETH -= ethers.utils
       .parseEther(`${eths / 4}`)
       .toBigInt();
     // Expect infringer to loose reward on his staking position and be transferred to accusator
@@ -344,22 +349,25 @@ describe("ValidatorPool: Slashing logic", async () => {
       ).toBigInt()
     ).to.be.equal(BigInt(0), "ValidatorPool shouldn't have any balance");
 
-    // minting 1 stakeNFt so all the profit funds are not moved from the stakenft contract at slashing
+    // minting 1 PublicStaking so all the profit funds are not moved from the PublicStaking contract at slashing
     // time
     const newStakeAmount = (stakeAmount - reward) * BigInt(3);
     await fixture.madToken
       .connect(adminSigner)
-      .approve(fixture.stakeNFT.address, newStakeAmount);
-    await fixture.stakeNFT.connect(adminSigner).mint(newStakeAmount);
+      .approve(fixture.publicStaking.address, newStakeAmount);
+    await fixture.publicStaking.connect(adminSigner).mint(newStakeAmount);
 
-    // Deposit now in the stakeNFT contract
-    await fixture.stakeNFT.connect(adminSigner).depositEth(42, {
+    // Deposit now in the publicStaking contract
+    await fixture.publicStaking.connect(adminSigner).depositEth(42, {
       value: ethers.utils.parseEther(`${eths}`),
     });
     await fixture.madToken
       .connect(adminSigner)
-      .approve(fixture.stakeNFT.address, ethers.utils.parseEther(`${mads}`));
-    await fixture.stakeNFT
+      .approve(
+        fixture.publicStaking.address,
+        ethers.utils.parseEther(`${mads}`)
+      );
+    await fixture.publicStaking
       .connect(adminSigner)
       .depositToken(42, ethers.utils.parseEther(`${mads}`));
 
@@ -367,16 +375,16 @@ describe("ValidatorPool: Slashing logic", async () => {
     await ethdkg.majorSlash(validators[0], validators[2]);
     currentState = await getCurrentState(fixture, validators);
     // Expect infringer unregister the validator position
-    expectedState.ValidatorPool.StakeNFT--;
-    expectedState.StakeNFT.ETH -= ethers.utils
+    expectedState.ValidatorPool.PublicStaking--;
+    expectedState.PublicStaking.ETH -= ethers.utils
       .parseEther(`${eths / 4}`)
       .toBigInt();
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.StakeNFT.MAD -=
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.PublicStaking.MAD -=
       stakeAmount - reward + ethers.utils.parseEther(`${mads / 4}`).toBigInt();
     // the stakeamount minus the 2 rewards given to the 2 accusators should be redistributed to all
     // validators
-    expectedState.ValidatorNFT.MAD += stakeAmount - BigInt(2) * reward;
+    expectedState.ValidatorStaking.MAD += stakeAmount - BigInt(2) * reward;
     expectedState.validators[2].MAD +=
       reward + ethers.utils.parseEther(`${mads / 4}`).toBigInt();
     // Expect infringer to be unregistered, not in exiting queue and not accusable
@@ -409,10 +417,10 @@ describe("ValidatorPool: Slashing logic", async () => {
         .connect(await getValidatorEthAccount(validatorsSnapshots[index]))
         .collectProfits();
       expectedState.validators[index].MAD += collectedAmount;
-      expectedState.ValidatorNFT.ETH -= ethers.utils
+      expectedState.ValidatorStaking.ETH -= ethers.utils
         .parseEther(`${eths / 4}`)
         .toBigInt();
-      expectedState.ValidatorNFT.MAD -= collectedAmount;
+      expectedState.ValidatorStaking.MAD -= collectedAmount;
     }
     currentState = await getCurrentState(fixture, validators);
     expect(currentState).to.be.deep.equal(
@@ -434,6 +442,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     await showState(
@@ -442,8 +451,8 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.ValidatorNFT.MAD -= reward;
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.ValidatorStaking.MAD -= reward;
     expectedState.validators[1].MAD += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -466,7 +475,7 @@ describe("ValidatorPool: Slashing logic", async () => {
         .connect(await getValidatorEthAccount(validatorsSnapshots[index]))
         .collectProfits();
       expectedState.validators[index].MAD += collectedAmount;
-      expectedState.ValidatorNFT.MAD -= collectedAmount;
+      expectedState.ValidatorStaking.MAD -= collectedAmount;
     }
     currentState = await getCurrentState(fixture, validators);
     expect(currentState).to.be.deep.equal(
@@ -488,12 +497,13 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.ValidatorNFT.MAD -= reward;
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.ValidatorStaking.MAD -= reward;
     expectedState.validators[1].MAD += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -551,6 +561,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
     await showState(
@@ -559,8 +570,8 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
-    // Expect reward to be transferred from ValidatorNFT to disputer
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    // Expect reward to be transferred from ValidatorStaking to disputer
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     expectedState.validators[1].MAD += stakeAmount;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -582,7 +593,7 @@ describe("ValidatorPool: Slashing logic", async () => {
         .connect(await getValidatorEthAccount(validatorsSnapshots[index]))
         .collectProfits();
       expectedState.validators[index].MAD += collectedAmount;
-      expectedState.ValidatorNFT.MAD -= collectedAmount;
+      expectedState.ValidatorStaking.MAD -= collectedAmount;
     }
     currentState = await getCurrentState(fixture, validators);
     await showState("Expected state", expectedState);
@@ -612,20 +623,21 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await showState("After registering", expectedState);
 
     await ethdkg.minorSlash(infringer, disputer);
     let currentState = await getCurrentState(fixture, validators);
     await showState("After minor slashing", currentState);
-
+    await mineBlocks(1n);
     // Expect infringer validator position to be unregister
     expectedState.ValidatorPool.ValNFT--;
-    expectedState.ValidatorPool.StakeNFT++;
+    expectedState.ValidatorPool.PublicStaking++;
 
     // Expect infringer to loose the validator position
-    expectedState.StakeNFT.MAD += stakeAmount - reward;
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.PublicStaking.MAD += stakeAmount - reward;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
 
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].MAD += reward;
@@ -641,7 +653,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       const expectedState = await getCurrentState(fixture, validators);
       await ethdkg.minorSlash(infringer, disputer);
       const currentState = await getCurrentState(fixture, validators);
-      expectedState.StakeNFT.MAD -= reward;
+      expectedState.PublicStaking.MAD -= reward;
       expectedState.validators[1].MAD += reward;
       expectedState.validators[0].Acc = true;
       expectedState.validators[0].ExQ = true;
@@ -650,14 +662,15 @@ describe("ValidatorPool: Slashing logic", async () => {
         expectedState,
         `After minor slashing: ${i}`
       );
+      await mineBlocks(1n);
     }
     const finalReward = stakeAmount - BigInt(3) * reward;
-    // After last minor slash the guy should have any funds to generate a new stakeNFT position
+    // After last minor slash the guy should have any funds to generate a new publicStaking position
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.minorSlash(infringer, disputer);
     currentState = await getCurrentState(fixture, validators);
-    expectedState.StakeNFT.MAD -= finalReward;
-    expectedState.ValidatorPool.StakeNFT--;
+    expectedState.PublicStaking.MAD -= finalReward;
+    expectedState.ValidatorPool.PublicStaking--;
     expectedState.validators[1].MAD += finalReward;
     expectedState.validators[0].Acc = false;
     expectedState.validators[0].ExQ = false;
@@ -684,6 +697,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -701,7 +715,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position and the accusator to have all the funds gained
     // as reward
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     expectedState.validators[1].MAD += reward;
     expectedState.validators[0].Acc = false;
     expectedState.validators[0].ExQ = false;
@@ -725,6 +739,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
       "After registering",
@@ -737,12 +752,12 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
 
     const currentState = await getCurrentState(fixture, validators);
-    // Expect infringer validator position to be unregister and not StakeNFT position to be created
+    // Expect infringer validator position to be unregister and not PublicStaking position to be created
     expectedState.ValidatorPool.ValNFT--;
 
     // Expect infringer to loose the validator position and the accusator to have all the funds gained
     // as reward
-    expectedState.ValidatorNFT.MAD -= stakeAmount;
+    expectedState.ValidatorStaking.MAD -= stakeAmount;
     expectedState.validators[1].MAD += stakeAmount;
     expectedState.validators[0].Acc = false;
     expectedState.validators[0].ExQ = false;

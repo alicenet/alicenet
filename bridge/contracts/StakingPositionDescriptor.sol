@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.11;
-pragma abicoder v2;
 
-import "contracts/libraries/metadata/StakeNFTDescriptor.sol";
-import "contracts/interfaces/INFTStakeDescriptor.sol";
+import "contracts/libraries/metadata/StakingDescriptor.sol";
+import "contracts/interfaces/IStakingNFTDescriptor.sol";
 
-/// @custom:salt StakeNFTPositionDescriptor
+/// @custom:salt StakingPositionDescriptor
 /// @custom:deploy-type deployUpgradeable
-contract StakeNFTPositionDescriptor is INFTStakeDescriptor {
-    function tokenURI(INFTStake _stakeNft, uint256 tokenId)
+contract StakingPositionDescriptor is IStakingNFTDescriptor {
+    function tokenURI(IStakingNFT _stakingNFT, uint256 tokenId)
         external
         view
         override
@@ -20,11 +19,11 @@ contract StakeNFTPositionDescriptor is INFTStakeDescriptor {
             uint256 withdrawFreeAfter,
             uint256 accumulatorEth,
             uint256 accumulatorToken
-        ) = _stakeNft.getPosition(tokenId);
+        ) = _stakingNFT.getPosition(tokenId);
 
         return
-            StakeNFTDescriptor.constructTokenURI(
-                StakeNFTDescriptor.ConstructTokenURIParams({
+            StakingDescriptor.constructTokenURI(
+                StakingDescriptor.ConstructTokenURIParams({
                     tokenId: tokenId,
                     shares: shares,
                     freeAfter: freeAfter,

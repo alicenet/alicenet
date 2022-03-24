@@ -5,12 +5,12 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "contracts/utils/Base64.sol";
 
-/// @title StakeNFTSVG
-/// @notice Provides a function for generating an SVG associated with a Staked NFT position
-library StakeNFTSVG {
+/// @title StakingSVG
+/// @notice Provides a function for generating an SVG associated with a Staking NFT position
+library StakingSVG {
     using Strings for uint256;
 
-    struct StakeNFTSVGParams {
+    struct StakingSVGParams {
         string shares;
         string freeAfter;
         string withdrawFreeAfter;
@@ -18,15 +18,11 @@ library StakeNFTSVG {
         string accumulatorToken;
     }
 
-    function generateSVG(StakeNFTSVGParams memory params)
-        internal
-        pure
-        returns (string memory svg)
-    {
+    function generateSVG(StakingSVGParams memory params) internal pure returns (string memory svg) {
         return string(abi.encodePacked(generateSVGDefs(params), generateSVGText(params), "</svg>"));
     }
 
-    function generateSVGText(StakeNFTSVGParams memory params)
+    function generateSVGText(StakingSVGParams memory params)
         private
         pure
         returns (string memory svg)
@@ -52,7 +48,7 @@ library StakeNFTSVG {
         );
     }
 
-    function generateSVGDefs(StakeNFTSVGParams memory params)
+    function generateSVGDefs(StakingSVGParams memory params)
         private
         pure
         returns (string memory svg)

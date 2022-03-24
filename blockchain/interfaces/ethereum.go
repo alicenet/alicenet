@@ -130,10 +130,10 @@ type Contracts interface {
 	MadTokenAddress() common.Address
 	MadByte() *bindings.MadByte
 	MadByteAddress() common.Address
-	StakeNFT() *bindings.StakeNFT
-	StakeNFTAddress() common.Address
-	ValidatorNFT() *bindings.ValidatorNFT
-	ValidatorNFTAddress() common.Address
+	PublicStaking() *bindings.PublicStaking
+	PublicStakingAddress() common.Address
+	ValidatorStaking() *bindings.ValidatorStaking
+	ValidatorStakingAddress() common.Address
 	ContractFactory() *bindings.MadnetFactory
 	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address

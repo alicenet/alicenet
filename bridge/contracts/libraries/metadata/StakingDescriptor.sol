@@ -6,14 +6,10 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "contracts/utils/Base64.sol";
-import "contracts/libraries/metadata/StakeNFTSVG.sol";
+import "contracts/libraries/metadata/StakingSVG.sol";
 
-library StakeNFTDescriptor {
+library StakingDescriptor {
     using Strings for uint256;
-    using SafeMath for uint256;
-    using SafeMath for uint160;
-    using SafeMath for uint8;
-    using SignedSafeMath for int256;
 
     struct ConstructTokenURIParams {
         uint256 tokenId;
@@ -91,7 +87,7 @@ library StakeNFTDescriptor {
         pure
         returns (string memory svg)
     {
-        StakeNFTSVG.StakeNFTSVGParams memory svgParams = StakeNFTSVG.StakeNFTSVGParams({
+        StakingSVG.StakingSVGParams memory svgParams = StakingSVG.StakingSVGParams({
             shares: params.shares.toString(),
             freeAfter: params.freeAfter.toString(),
             withdrawFreeAfter: params.withdrawFreeAfter.toString(),
@@ -99,7 +95,7 @@ library StakeNFTDescriptor {
             accumulatorToken: params.accumulatorToken.toString()
         });
 
-        return StakeNFTSVG.generateSVG(svgParams);
+        return StakingSVG.generateSVG(svgParams);
     }
 
     function generateDescriptionPartOne() private pure returns (string memory) {

@@ -15,23 +15,23 @@ import (
 
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
-	eth                    *EthereumDetails
-	ethdkg                 *bindings.ETHDKG
-	ethdkgAddress          common.Address
-	madToken               *bindings.MadToken
-	madTokenAddress        common.Address
-	madByte                *bindings.MadByte
-	madByteAddress         common.Address
-	stakeNFT               *bindings.StakeNFT
-	stakeNFTAddress        common.Address
-	validatorNFT           *bindings.ValidatorNFT
-	validatorNFTAddress    common.Address
-	contractFactory        *bindings.MadnetFactory
-	contractFactoryAddress common.Address
-	snapshots              *bindings.Snapshots
-	snapshotsAddress       common.Address
-	validatorPool          *bindings.ValidatorPool
-	validatorPoolAddress   common.Address
+	eth                     *EthereumDetails
+	ethdkg                  *bindings.ETHDKG
+	ethdkgAddress           common.Address
+	madToken                *bindings.MadToken
+	madTokenAddress         common.Address
+	madByte                 *bindings.MadByte
+	madByteAddress          common.Address
+	publicStaking           *bindings.PublicStaking
+	publicStakingAddress    common.Address
+	validatorStaking        *bindings.ValidatorStaking
+	validatorStakingAddress common.Address
+	contractFactory         *bindings.MadnetFactory
+	contractFactoryAddress  common.Address
+	snapshots               *bindings.Snapshots
+	snapshotsAddress        common.Address
+	validatorPool           *bindings.ValidatorPool
+	validatorPoolAddress    common.Address
 	// factory        *bindings.Factory
 	// factoryAddress common.Address
 	governance        *bindings.Governance
@@ -74,22 +74,6 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			return addr, err
 		}
 
-		/*
-			- "MadnetFactoryBase"
-			- "Foundation"
-			+ "MadByte".
-			+ "MadToken".
-			+ "StakeNFT".
-			- "StakeNFTLP"
-			+ "ValidatorNFT".
-			- "ETHDKGAccusations"
-			- "ETHDKGPhases"
-			+ "ETHDKG".
-			+ "Governance".
-			+ "Snapshots".
-			+ "ValidatorPool".
-		*/
-
 		// ETHDKG
 		c.ethdkgAddress, err = lookup("ETHDKG")
 		logAndEat(logger, err)
@@ -130,24 +114,24 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 		c.madToken, err = bindings.NewMadToken(c.madTokenAddress, eth.client)
 		logAndEat(logger, err)
 
-		// StakeNFT
-		c.stakeNFTAddress, err = lookup("StakeNFT")
+		// PublicStaking
+		c.publicStakingAddress, err = lookup("PublicStaking")
 		logAndEat(logger, err)
-		if bytes.Equal(c.stakeNFTAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.publicStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.stakeNFT, err = bindings.NewStakeNFT(c.stakeNFTAddress, eth.client)
+		c.publicStaking, err = bindings.NewPublicStaking(c.publicStakingAddress, eth.client)
 		logAndEat(logger, err)
 
-		// ValidatorNFT
-		c.validatorNFTAddress, err = lookup("ValidatorNFT")
+		// ValidatorStaking
+		c.validatorStakingAddress, err = lookup("ValidatorStaking")
 		logAndEat(logger, err)
-		if bytes.Equal(c.validatorNFTAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.validatorStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.validatorNFT, err = bindings.NewValidatorNFT(c.validatorNFTAddress, eth.client)
+		c.validatorStaking, err = bindings.NewValidatorStaking(c.validatorStakingAddress, eth.client)
 		logAndEat(logger, err)
 
 		// Governance
@@ -200,20 +184,20 @@ func (c *ContractDetails) MadByteAddress() common.Address {
 	return c.madByteAddress
 }
 
-func (c *ContractDetails) StakeNFT() *bindings.StakeNFT {
-	return c.stakeNFT
+func (c *ContractDetails) PublicStaking() *bindings.PublicStaking {
+	return c.publicStaking
 }
 
-func (c *ContractDetails) StakeNFTAddress() common.Address {
-	return c.stakeNFTAddress
+func (c *ContractDetails) PublicStakingAddress() common.Address {
+	return c.publicStakingAddress
 }
 
-func (c *ContractDetails) ValidatorNFT() *bindings.ValidatorNFT {
-	return c.validatorNFT
+func (c *ContractDetails) ValidatorStaking() *bindings.ValidatorStaking {
+	return c.validatorStaking
 }
 
-func (c *ContractDetails) ValidatorNFTAddress() common.Address {
-	return c.validatorNFTAddress
+func (c *ContractDetails) ValidatorStakingAddress() common.Address {
+	return c.validatorStakingAddress
 }
 
 func (c *ContractDetails) ContractFactory() *bindings.MadnetFactory {

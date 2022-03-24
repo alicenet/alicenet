@@ -4,95 +4,30 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "contracts/libraries/governance/GovernanceMaxLock.sol";
+import "contracts/libraries/StakingNFT/StakingNFTStorage.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
-import "contracts/interfaces/INFTStake.sol";
-import "contracts/interfaces/INFTStakeDescriptor.sol";
+import "contracts/interfaces/IStakingNFT.sol";
+import "contracts/interfaces/IStakingNFTDescriptor.sol";
 
-abstract contract StakeNFTStorage {
-    // Position describes a staked position
-    struct Position {
-        // number of madToken
-        uint224 shares;
-        // block number after which the position may be burned.
-        // prevents double spend of voting weight
-        uint32 freeAfter;
-        // block number after which the position may be collected or burned.
-        uint256 withdrawFreeAfter;
-        // the last value of the ethState accumulator this account performed a
-        // withdraw at
-        uint256 accumulatorEth;
-        // the last value of the tokenState accumulator this account performed a
-        // withdraw at
-        uint256 accumulatorToken;
-    }
-
-    // Accumulator is a struct that allows values to be collected such that the
-    // remainders of floor division may be cleaned up
-    struct Accumulator {
-        // accumulator is a sum of all changes always increasing
-        uint256 accumulator;
-        // slush stores division remainders until they may be distributed evenly
-        uint256 slush;
-    }
-
-    // _MAX_MINT_LOCK describes the maximum interval a Position may be locked
-    // during a call to mintTo
-    uint256 internal constant _MAX_MINT_LOCK = 1051200;
-    // 10**18
-    uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
-    // constants for the cb state
-    bool internal constant _CIRCUIT_BREAKER_OPENED = true;
-    bool internal constant _CIRCUIT_BREAKER_CLOSED = false;
-
-    // monotonically increasing counter
-    uint256 internal _counter;
-
-    // cb is the circuit breaker
-    // cb is a set only object
-    bool internal _circuitBreaker;
-
-    // _shares stores total amount of MadToken staked in contract
-    uint256 internal _shares;
-
-    // _tokenState tracks distribution of MadToken that originate from slashing
-    // events
-    Accumulator internal _tokenState;
-
-    // _ethState tracks the distribution of Eth that originate from the sale of
-    // MadBytes
-    Accumulator internal _ethState;
-
-    // _positions tracks all staked positions based on tokenID
-    mapping(uint256 => Position) internal _positions;
-
-    // state to keep track of the amount of Eth deposited and collected from the
-    // contract
-    uint256 internal _reserveEth;
-
-    // state to keep track of the amount of MadTokens deposited and collected
-    // from the contract
-    uint256 internal _reserveToken;
-}
-
-abstract contract StakeNFTBase is
+abstract contract StakingNFT is
     Initializable,
     ERC721Upgradeable,
-    StakeNFTStorage,
+    StakingNFTStorage,
     MagicValue,
     EthSafeTransfer,
     ERC20SafeTransfer,
     GovernanceMaxLock,
     ICBOpener,
-    INFTStake,
+    IStakingNFT,
     ImmutableFactory,
     ImmutableValidatorPool,
     ImmutableMadToken,
     ImmutableGovernance,
-    ImmutableStakeNFTPositionDescriptor
+    ImmutableStakingPositionDescriptor
 {
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
@@ -109,7 +44,7 @@ abstract contract StakeNFTBase is
         ImmutableMadToken()
         ImmutableGovernance()
         ImmutableValidatorPool()
-        ImmutableStakeNFTPositionDescriptor()
+        ImmutableStakingPositionDescriptor()
     {}
 
     /// gets the current value for the Eth accumulator
@@ -165,11 +100,11 @@ abstract contract StakeNFTBase is
     ) public override withCircuitBreaker onlyGovernance returns (uint256) {
         require(
             caller_ == ownerOf(tokenID_),
-            "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
+            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "StakeNFT: Lock Duration is greater than the amount allowed!"
+            "PublicStaking: Lock Duration is greater than the amount allowed!"
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
@@ -184,11 +119,11 @@ abstract contract StakeNFTBase is
     {
         require(
             msg.sender == ownerOf(tokenID_),
-            "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
+            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "StakeNFT: Lock Duration is greater than the amount allowed!"
+            "PublicStaking: Lock Duration is greater than the amount allowed!"
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
@@ -202,11 +137,11 @@ abstract contract StakeNFTBase is
     {
         require(
             msg.sender == ownerOf(tokenID_),
-            "StakeNFT: Error, token doesn't exist or doesn't belong to the caller!"
+            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "StakeNFT: Lock Duration is greater than the amount allowed!"
+            "PublicStaking: Lock Duration is greater than the amount allowed!"
         );
         return _lockWithdraw(tokenID_, lockDuration_);
     }
@@ -263,7 +198,7 @@ abstract contract StakeNFTBase is
     ) public virtual withCircuitBreaker returns (uint256 tokenID) {
         require(
             lockDuration_ <= _MAX_MINT_LOCK,
-            "StakeNFT: The lock duration must be less or equal than the maxMintLock!"
+            "PublicStaking: The lock duration must be less or equal than the maxMintLock!"
         );
         tokenID = _mintNFT(to_, amount_);
         if (lockDuration_ > 0) {
@@ -296,11 +231,14 @@ abstract contract StakeNFTBase is
     /// of this function must be the owner of the tokenID
     function collectEth(uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
-        require(msg.sender == owner, "StakeNFT: Error sender is not the owner of the tokenID!");
+        require(
+            msg.sender == owner,
+            "PublicStaking: Error sender is not the owner of the tokenID!"
+        );
         Position memory position = _positions[tokenID_];
         require(
             _positions[tokenID_].withdrawFreeAfter < block.number,
-            "StakeNFT: Cannot withdraw at the moment."
+            "PublicStaking: Cannot withdraw at the moment."
         );
 
         // get values and update state
@@ -315,11 +253,14 @@ abstract contract StakeNFTBase is
     /// caller of this function must be the owner of the tokenID
     function collectToken(uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
-        require(msg.sender == owner, "StakeNFT: Error sender is not the owner of the tokenID!");
+        require(
+            msg.sender == owner,
+            "PublicStaking: Error sender is not the owner of the tokenID!"
+        );
         Position memory position = _positions[tokenID_];
         require(
             position.withdrawFreeAfter < block.number,
-            "StakeNFT: Cannot withdraw at the moment."
+            "PublicStaking: Cannot withdraw at the moment."
         );
 
         // get values and update state
@@ -334,11 +275,14 @@ abstract contract StakeNFTBase is
     /// of this function must be the owner of the tokenID
     function collectEthTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
-        require(msg.sender == owner, "StakeNFT: Error sender is not the owner of the tokenID!");
+        require(
+            msg.sender == owner,
+            "PublicStaking: Error sender is not the owner of the tokenID!"
+        );
         Position memory position = _positions[tokenID_];
         require(
             _positions[tokenID_].withdrawFreeAfter < block.number,
-            "StakeNFT: Cannot withdraw at the moment."
+            "PublicStaking: Cannot withdraw at the moment."
         );
 
         // get values and update state
@@ -353,11 +297,14 @@ abstract contract StakeNFTBase is
     /// caller of this function must be the owner of the tokenID
     function collectTokenTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
-        require(msg.sender == owner, "StakeNFT: Error sender is not the owner of the tokenID!");
+        require(
+            msg.sender == owner,
+            "PublicStaking: Error sender is not the owner of the tokenID!"
+        );
         Position memory position = _positions[tokenID_];
         require(
             position.withdrawFreeAfter < block.number,
-            "StakeNFT: Cannot withdraw at the moment."
+            "PublicStaking: Cannot withdraw at the moment."
         );
 
         // get values and update state
@@ -389,7 +336,7 @@ abstract contract StakeNFTBase is
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
     function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
+        require(_exists(tokenID_), "PublicStaking: Error, NFT token doesn't exist!");
         Position memory p = _positions[tokenID_];
         (, , , payout) = _collect(_shares, _ethState, p, p.accumulatorEth);
         return payout;
@@ -397,7 +344,7 @@ abstract contract StakeNFTBase is
 
     /// estimateTokenCollection returns the amount of MadToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "StakeNFT: Error, NFT token doesn't exist!");
+        require(_exists(tokenID_), "PublicStaking: Error, NFT token doesn't exist!");
         Position memory p = _positions[tokenID_];
         (, , , payout) = _collect(_shares, _tokenState, p, p.accumulatorToken);
         return payout;
@@ -431,7 +378,7 @@ abstract contract StakeNFTBase is
             uint256 accumulatorToken
         )
     {
-        require(_exists(tokenID_), "StakeNFT: Token ID doesn't exist!");
+        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
         Position memory p = _positions[tokenID_];
         shares = uint256(p.shares);
         freeAfter = uint256(p.freeAfter);
@@ -447,8 +394,8 @@ abstract contract StakeNFTBase is
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
-        return INFTStakeDescriptor(_stakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
+        require(_exists(tokenId), "PublicStaking: Error, NFT token doesn't exist!");
+        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
@@ -457,7 +404,13 @@ abstract contract StakeNFTBase is
         return _ACCUMULATOR_SCALE_FACTOR;
     }
 
-    function __stakeNFTBaseInit(string memory name_, string memory symbol_)
+    /// gets the _MAX_MINT_LOCK value. This value is the maximum duration of blocks that we allow a
+    /// position to be locked
+    function getMaxMintLock() public pure returns (uint256) {
+        return _MAX_MINT_LOCK;
+    }
+
+    function __stakingNFTInit(string memory name_, string memory symbol_)
         internal
         onlyInitializing
     {
@@ -469,7 +422,7 @@ abstract contract StakeNFTBase is
     // the number of shares in the locked Position so that governance vote
     // counting may be performed when setting a lock
     function _lockPosition(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(_exists(tokenID_), "StakeNFT: Token ID doesn't exist!");
+        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -481,7 +434,7 @@ abstract contract StakeNFTBase is
     // by setting the withdrawFreeAfter field on the Position struct.
     // returns the number of shares in the locked Position so that
     function _lockWithdraw(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(_exists(tokenID_), "StakeNFT: Token ID doesn't exist!");
+        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -495,7 +448,7 @@ abstract contract StakeNFTBase is
         // total distribution of 220M
         require(
             amount_ <= 2**224 - 1,
-            "StakeNFT: The amount exceeds the maximum number of MadTokens that will ever exist!"
+            "PublicStaking: The amount exceeds the maximum number of MadTokens that will ever exist!"
         );
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
@@ -514,8 +467,8 @@ abstract contract StakeNFTBase is
         _shares = shares;
         _positions[tokenID] = Position(
             uint224(amount_),
-            1,
-            1,
+            uint32(block.number) + 1,
+            uint32(block.number) + 1,
             ethState.accumulator,
             tokenState.accumulator
         );
@@ -531,14 +484,14 @@ abstract contract StakeNFTBase is
         address to_,
         uint256 tokenID_
     ) internal returns (uint256 payoutEth, uint256 payoutToken) {
-        require(from_ == ownerOf(tokenID_), "StakeNFT: User is not the owner of the tokenID!");
+        require(from_ == ownerOf(tokenID_), "PublicStaking: User is not the owner of the tokenID!");
 
         // collect state
         Position memory p = _positions[tokenID_];
         // enforce freeAfter to prevent burn during lock
         require(
             p.freeAfter < block.number && p.withdrawFreeAfter < block.number,
-            "StakeNFT: The position is not ready to be burned!"
+            "PublicStaking: The position is not ready to be burned!"
         );
 
         // get copy of storage to save gas
@@ -621,7 +574,7 @@ abstract contract StakeNFTBase is
         uint256 balance = address(this).balance;
         require(
             balance >= reserve,
-            "StakeNFT: The balance of the contract is less then the tracked reserve!"
+            "PublicStaking: The balance of the contract is less then the tracked reserve!"
         );
         excess = balance - reserve;
     }
@@ -638,7 +591,7 @@ abstract contract StakeNFTBase is
         uint256 balance = madToken.balanceOf(address(this));
         require(
             balance >= reserve,
-            "StakeNFT: The balance of the contract is less then the tracked reserve!"
+            "PublicStaking: The balance of the contract is less then the tracked reserve!"
         );
         excess = balance - reserve;
         return (madToken, excess);
@@ -715,7 +668,7 @@ abstract contract StakeNFTBase is
         }
         // Slush should be never be above 2**167 to protect against overflow in
         // the later code.
-        require(state_.slush < 2**167, "StakeNFT: slush too large");
+        require(state_.slush < 2**167, "PublicStaking: slush too large");
         return state_;
     }
 
@@ -739,15 +692,5 @@ abstract contract StakeNFTBase is
             }
         }
         return (accumulator_, slush_);
-    }
-}
-
-/// @custom:salt StakeNFT
-/// @custom:deploy-type deployStatic
-contract StakeNFT is StakeNFTBase {
-    constructor() StakeNFTBase() {}
-
-    function initialize() public onlyFactory initializer {
-        __stakeNFTBaseInit("MNSNFT", "MNS");
     }
 }

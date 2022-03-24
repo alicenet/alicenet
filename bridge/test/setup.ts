@@ -18,13 +18,13 @@ import {
   MadByte,
   MadnetFactory,
   MadToken,
+  PublicStaking,
   Snapshots,
   SnapshotsMock,
-  StakeNFT,
-  StakeNFTPositionDescriptor,
-  ValidatorNFT,
+  StakingPositionDescriptor,
   ValidatorPool,
   ValidatorPoolMock,
+  ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
@@ -39,18 +39,24 @@ export interface Snapshot {
   validatorIndex: number;
 }
 
-export interface Fixture {
+export interface BaseFixture {
+  factory: MadnetFactory;
+  [key: string]: any;
+}
+
+export interface BaseTokensFixture extends BaseFixture {
   madToken: MadToken;
   madByte: MadByte;
-  stakeNFT: StakeNFT;
-  validatorNFT: ValidatorNFT;
+  publicStaking: PublicStaking;
+}
+
+export interface Fixture extends BaseTokensFixture {
+  validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
-  factory: MadnetFactory;
-  stakeNFTPositionDescriptor: StakeNFTPositionDescriptor;
+  stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
-  [key: string]: any;
 }
 
 /**
@@ -279,31 +285,10 @@ async function deployUpgradeableWithFactory(
   );
 }
 
-export const getFixture = async (
-  mockValidatorPool?: boolean,
-  mockSnapshots?: boolean,
-  mockETHDKG?: boolean
-): Promise<Fixture> => {
-  await network.provider.send("evm_setAutomine", [true]);
-  // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-  // being sent as input to the function (the contract bytecode), so we need to increase the block
-  // gas limit temporally in order to deploy the template
-  await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
-
-  const namedSigners = await ethers.getSigners();
-  const [admin] = namedSigners;
-
-  const txCount = await ethers.provider.getTransactionCount(admin.address);
-  // calculate the factory address for the constructor arg
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
-  const Factory = await ethers.getContractFactory("MadnetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
-  await factory.deployed();
-
+export const deployFactoryAndBaseTokens = async (
+  admin: SignerWithAddress
+): Promise<BaseTokensFixture> => {
+  const factory = await deployMadnetFactory(admin);
   // MadToken
   const madToken = (await deployStaticWithFactory(
     factory,
@@ -316,17 +301,86 @@ export const getFixture = async (
     "MadByte"
   )) as MadByte;
 
-  // StakeNFT
-  const stakeNFT = (await deployStaticWithFactory(
+  // PublicStaking
+  const publicStaking = (await deployStaticWithFactory(
     factory,
-    "StakeNFT"
-  )) as StakeNFT;
+    "PublicStaking"
+  )) as PublicStaking;
 
-  // ValidatorNFT
-  const validatorNFT = (await deployStaticWithFactory(
+  return {
     factory,
-    "ValidatorNFT"
-  )) as ValidatorNFT;
+    madToken,
+    madByte,
+    publicStaking,
+  };
+};
+export const deployMadnetFactory = async (
+  admin: SignerWithAddress
+): Promise<MadnetFactory> => {
+  const txCount = await ethers.provider.getTransactionCount(admin.address);
+  // calculate the factory address for the constructor arg
+  const futureFactoryAddress = ethers.utils.getContractAddress({
+    from: admin.address,
+    nonce: txCount,
+  });
+
+  const Factory = await ethers.getContractFactory("MadnetFactory");
+  const factory = await Factory.deploy(futureFactoryAddress);
+  await factory.deployed();
+  return factory;
+};
+
+export const preFixtureSetup = async () => {
+  await network.provider.send("evm_setAutomine", [true]);
+  // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+  // being sent as input to the function (the contract bytecode), so we need to increase the block
+  // gas limit temporally in order to deploy the template
+  await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+};
+
+export const posFixtureSetup = async (
+  factory: MadnetFactory,
+  madToken: MadToken,
+  admin: SignerWithAddress
+) => {
+  // finish workaround, putting the blockgas limit to the previous value 30_000_000
+  await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
+  await factory.callAny(
+    madToken.address,
+    0,
+    madToken.interface.encodeFunctionData("transfer", [
+      admin.address,
+      ethers.utils.parseEther("100000000"),
+    ])
+  );
+};
+
+export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
+  await preFixtureSetup();
+  const [admin] = await ethers.getSigners();
+  // MadToken
+  const fixture = await deployFactoryAndBaseTokens(admin);
+  await posFixtureSetup(fixture.factory, fixture.madToken, admin);
+  return fixture;
+};
+
+export const getFixture = async (
+  mockValidatorPool?: boolean,
+  mockSnapshots?: boolean,
+  mockETHDKG?: boolean
+): Promise<Fixture> => {
+  await preFixtureSetup();
+  const namedSigners = await ethers.getSigners();
+  const [admin] = namedSigners;
+  // Deploy the base tokens
+  const { factory, madToken, madByte, publicStaking } =
+    await deployFactoryAndBaseTokens(admin);
+
+  // ValidatorStaking is not considered a base token since is only used by validators
+  const validatorStaking = (await deployStaticWithFactory(
+    factory,
+    "ValidatorStaking"
+  )) as ValidatorStaking;
 
   let validatorPool;
   if (typeof mockValidatorPool !== "undefined" && mockValidatorPool) {
@@ -353,11 +407,11 @@ export const getFixture = async (
   // ETHDKG Accusations
   await deployUpgradeableWithFactory(factory, "ETHDKGAccusations");
 
-  // StakeNFTPositionDescriptor
-  const stakeNFTPositionDescriptor = (await deployUpgradeableWithFactory(
+  // StakingPositionDescriptor
+  const stakingPositionDescriptor = (await deployUpgradeableWithFactory(
     factory,
-    "StakeNFTPositionDescriptor"
-  )) as StakeNFTPositionDescriptor;
+    "StakingPositionDescriptor"
+  )) as StakingPositionDescriptor;
 
   // ETHDKG Phases
   await deployUpgradeableWithFactory(factory, "ETHDKGPhases");
@@ -415,16 +469,8 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurnerMock;
 
-  // finish workaround, putting the blockgas limit to the previous value 30_000_000
-  await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
-  await factory.callAny(
-    madToken.address,
-    0,
-    madToken.interface.encodeFunctionData("transfer", [
-      admin.address,
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
+  await posFixtureSetup(factory, madToken, admin);
+
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -434,8 +480,8 @@ export const getFixture = async (
   return {
     madToken,
     madByte,
-    stakeNFT,
-    validatorNFT,
+    publicStaking,
+    validatorStaking,
     validatorPool,
     snapshots,
     ethdkg,
@@ -444,7 +490,7 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
-    stakeNFTPositionDescriptor,
+    stakingPositionDescriptor,
   };
 };
 
@@ -461,13 +507,13 @@ export async function getTokenIdFromTx(tx: any) {
 }
 
 export async function factoryCallAny(
-  fixture: Fixture,
+  fixture: BaseFixture,
   contractName: string,
   functionName: string,
   args?: Array<any>
 ) {
   const factory = fixture.factory;
-  const contract = fixture[contractName];
+  const contract: Contract = fixture[contractName];
   if (args === undefined) {
     args = [];
   }
@@ -478,4 +524,35 @@ export async function factoryCallAny(
   );
   const receipt = await txResponse.wait();
   return receipt;
+}
+
+export async function callFunctionAndGetReturnValues(
+  contract: Contract,
+  functionName: any,
+  account: SignerWithAddress,
+  inputParameters: any[],
+  messageValue?: BigNumber
+): Promise<[any, ContractTransaction]> {
+  try {
+    let returnValues;
+    let tx;
+    if (messageValue !== undefined) {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParameters, { value: messageValue });
+      tx = await contract
+        .connect(account)
+        [functionName](...inputParameters, { value: messageValue });
+    } else {
+      returnValues = await contract
+        .connect(account)
+        .callStatic[functionName](...inputParameters);
+      tx = await contract.connect(account)[functionName](...inputParameters);
+    }
+    return [returnValues, tx];
+  } catch (error) {
+    throw new Error(
+      `Couldn't call function '${functionName}' with account '${account.address}' and input parameters '${inputParameters}'\n${error}`
+    );
+  }
 }
