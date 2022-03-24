@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.11;
 
-pragma solidity >=0.6.0;
+/* solhint-disable */
 
 /// @title Base64
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -141,3 +142,4 @@ library Base64 {
         return result;
     }
 }
+/* solhint-enable */

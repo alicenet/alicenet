@@ -9,6 +9,7 @@ import "hardhat-gas-reporter";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
+import "./scripts/generateImmutableAuth";
 import "./scripts/lib/gogogen";
 import "./scripts/lib/madnetFactoryTasks";
 import "./scripts/lib/madnetTasks";
@@ -42,10 +43,8 @@ const config: HardhatUserConfig = {
     validator9: 9,
     validator10: 10,
     user: 11,
-    // "user": 2
   },
-  //unnamedAccounts: [],
-  //defaultNetwork: "ganache",
+
   networks: {
     dev: {
       url: "http://127.0.0.1:8545",

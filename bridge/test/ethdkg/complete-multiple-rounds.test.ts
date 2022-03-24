@@ -17,7 +17,7 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
   });
 
   it("completes ETHDKG with 10 validators then a validator try to register without registration open", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await completeETHDKGRound(
+    const [ethdkg, validatorPool, expectedNonce] = await completeETHDKGRound(
       validators10
     );
 

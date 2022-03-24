@@ -224,7 +224,7 @@ abstract contract StakeNFTBase is
         checkMagic(magic_)
     {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
         // update state
         _tokenState = _deposit(_shares, amount_, _tokenState);
         _reserveToken += amount_;
@@ -326,7 +326,7 @@ abstract contract StakeNFTBase is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), owner, payout);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), owner, payout);
         return payout;
     }
 
@@ -364,7 +364,7 @@ abstract contract StakeNFTBase is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), to_, payout);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payout);
         return payout;
     }
 
@@ -440,6 +440,17 @@ abstract contract StakeNFTBase is
         accumulatorToken = p.accumulatorToken;
     }
 
+    /// Gets token URI
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721Upgradeable)
+        returns (string memory)
+    {
+        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
+        return INFTStakeDescriptor(_stakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
+    }
+
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
     /// deposited on this contract to reduce the integer division errors.
     function getAccumulatorScaleFactor() public pure returns (uint256) {
@@ -488,7 +499,7 @@ abstract contract StakeNFTBase is
         );
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
-        _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
 
         // get local copy of storage vars to save gas
         uint256 shares = _shares;
@@ -552,7 +563,7 @@ abstract contract StakeNFTBase is
         ERC721Upgradeable._burn(tokenID_);
 
         // transfer out all eth and tokens owed
-        _safeTransferERC20(IERC20Transferable(_MadTokenAddress()), to_, payoutToken);
+        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payoutToken);
         _safeTransferEth(to_, payoutEth);
         return (payoutEth, payoutToken);
     }
@@ -623,7 +634,7 @@ abstract contract StakeNFTBase is
         returns (IERC20Transferable madToken, uint256 excess)
     {
         uint256 reserve = _reserveToken;
-        madToken = IERC20Transferable(_MadTokenAddress());
+        madToken = IERC20Transferable(_madTokenAddress());
         uint256 balance = madToken.balanceOf(address(this));
         require(
             balance >= reserve,
@@ -728,16 +739,6 @@ abstract contract StakeNFTBase is
             }
         }
         return (accumulator_, slush_);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721Upgradeable)
-        returns (string memory)
-    {
-        require(_exists(tokenId), "StakeNFT: Error, NFT token doesn't exist!");
-        return INFTStakeDescriptor(_StakeNFTPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 }
 

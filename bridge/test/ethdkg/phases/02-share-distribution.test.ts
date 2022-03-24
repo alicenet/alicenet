@@ -43,9 +43,7 @@ describe("ETHDKG: Distribute Shares", () => {
   });
 
   it("does not let non-validators to distribute shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, ,] = await startAtDistributeShares(validators4);
 
     // try to distribute shares with a non validator address
     await expect(
@@ -63,9 +61,8 @@ describe("ETHDKG: Distribute Shares", () => {
   });
 
   it("does not let validator to distribute shares more than once", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
 
     await distributeValidatorsShares(
       ethdkg,
@@ -88,7 +85,7 @@ describe("ETHDKG: Distribute Shares", () => {
   });
 
   it("does not let validator send empty commitments or encrypted shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
+    const [ethdkg, , expectedNonce] = await startAtDistributeShares(
       validators4
     );
 
@@ -125,7 +122,7 @@ describe("ETHDKG: Distribute Shares", () => {
 
     // the user can send empty encrypted shares on this phase, the accusation window will be
     // handling this!
-    let tx = await ethdkg
+    const tx = await ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
       .distributeShares(
         [BigNumber.from("0"), BigNumber.from("0"), BigNumber.from("0")],

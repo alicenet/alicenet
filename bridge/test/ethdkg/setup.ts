@@ -12,6 +12,7 @@ export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export { assert, expect } from "../chai-setup";
 
+/* eslint-disable no-unused-vars */
 export enum Phase {
   RegistrationOpen,
   ShareDistribution,
@@ -22,7 +23,7 @@ export enum Phase {
   DisputeGPKJSubmission,
   Completion,
 }
-
+/* eslint-enable no-unused-vars */
 export interface ValidatorRawData {
   privateKey?: string;
   address: string;
@@ -43,13 +44,13 @@ export interface ValidatorRawData {
 // Event asserts
 
 export const assertRegistrationComplete = async (tx: ContractTransaction) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event RegistrationComplete(uint256 blockNumber)",
   ]);
-  let data = receipt.logs[1].data;
-  let topics = receipt.logs[1].topics;
-  let event = intrface.decodeEventLog("RegistrationComplete", data, topics);
+  const data = receipt.logs[1].data;
+  const topics = receipt.logs[1].topics;
+  const event = intrface.decodeEventLog("RegistrationComplete", data, topics);
   expect(event.blockNumber).to.equal(receipt.blockNumber);
 };
 
@@ -61,13 +62,13 @@ export const assertEventSharesDistributed = async (
   encryptedShares: BigNumberish[],
   commitments: [BigNumberish, BigNumberish][]
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event SharesDistributed(address account, uint256 index, uint256 nonce, uint256[] encryptedShares, uint256[2][] commitments)",
   ]);
-  let data = receipt.logs[0].data;
-  let topics = receipt.logs[0].topics;
-  let event = intrface.decodeEventLog("SharesDistributed", data, topics);
+  const data = receipt.logs[0].data;
+  const topics = receipt.logs[0].topics;
+  const event = intrface.decodeEventLog("SharesDistributed", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);
   expect(event.nonce).to.equal(nonce);
@@ -78,13 +79,13 @@ export const assertEventSharesDistributed = async (
 export const assertEventShareDistributionComplete = async (
   tx: ContractTransaction
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event ShareDistributionComplete(uint256 blockNumber)",
   ]);
-  let data = receipt.logs[1].data;
-  let topics = receipt.logs[1].topics;
-  let event = intrface.decodeEventLog(
+  const data = receipt.logs[1].data;
+  const topics = receipt.logs[1].topics;
+  const event = intrface.decodeEventLog(
     "ShareDistributionComplete",
     data,
     topics
@@ -101,13 +102,13 @@ export const assertEventKeyShareSubmitted = async (
   keyShareG1CorrectnessProof: [BigNumberish, BigNumberish],
   keyShareG2: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event KeyShareSubmitted(address account, uint256 index, uint256 nonce, uint256[2] keyShareG1, uint256[2] keyShareG1CorrectnessProof, uint256[4] keyShareG2)",
   ]);
-  let data = receipt.logs[0].data;
-  let topics = receipt.logs[0].topics;
-  let event = intrface.decodeEventLog("KeyShareSubmitted", data, topics);
+  const data = receipt.logs[0].data;
+  const topics = receipt.logs[0].topics;
+  const event = intrface.decodeEventLog("KeyShareSubmitted", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);
   expect(event.nonce).to.equal(nonce);
@@ -122,13 +123,13 @@ export const assertEventKeyShareSubmitted = async (
 export const assertEventKeyShareSubmissionComplete = async (
   tx: ContractTransaction
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event KeyShareSubmissionComplete(uint256 blockNumber)",
   ]);
-  let data = receipt.logs[1].data;
-  let topics = receipt.logs[1].topics;
-  let event = intrface.decodeEventLog(
+  const data = receipt.logs[1].data;
+  const topics = receipt.logs[1].topics;
+  const event = intrface.decodeEventLog(
     "KeyShareSubmissionComplete",
     data,
     topics
@@ -141,13 +142,13 @@ export const assertEventMPKSet = async (
   nonce: BigNumberish,
   mpk: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event MPKSet(uint256 blockNumber, uint256 nonce, uint256[4] mpk)",
   ]);
-  let data = receipt.logs[0].data;
-  let topics = receipt.logs[0].topics;
-  let event = intrface.decodeEventLog("MPKSet", data, topics);
+  const data = receipt.logs[0].data;
+  const topics = receipt.logs[0].topics;
+  const event = intrface.decodeEventLog("MPKSet", data, topics);
   expect(event.blockNumber).to.equal(receipt.blockNumber);
   expect(event.nonce).to.equal(nonce);
   expect(event.mpk[0]).to.equal(mpk[0]);
@@ -165,13 +166,13 @@ export const assertEventValidatorMemberAdded = async (
   epoch: BigNumberish,
   gpkj: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event ValidatorMemberAdded(address account, uint256 index, uint256 nonce, uint256 epoch, uint256 share0, uint256 share1, uint256 share2, uint256 share3)",
   ]);
-  let data = receipt.logs[0].data;
-  let topics = receipt.logs[0].topics;
-  let event = intrface.decodeEventLog("ValidatorMemberAdded", data, topics);
+  const data = receipt.logs[0].data;
+  const topics = receipt.logs[0].topics;
+  const event = intrface.decodeEventLog("ValidatorMemberAdded", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);
   expect(event.nonce).to.equal(nonce);
@@ -185,13 +186,13 @@ export const assertEventValidatorMemberAdded = async (
 export const assertEventGPKJSubmissionComplete = async (
   tx: ContractTransaction
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event GPKJSubmissionComplete(uint256 blockNumber)",
   ]);
-  let data = receipt.logs[1].data;
-  let topics = receipt.logs[1].topics;
-  let event = intrface.decodeEventLog("GPKJSubmissionComplete", data, topics);
+  const data = receipt.logs[1].data;
+  const topics = receipt.logs[1].topics;
+  const event = intrface.decodeEventLog("GPKJSubmissionComplete", data, topics);
   expect(event.blockNumber).to.equal(receipt.blockNumber);
 };
 
@@ -206,13 +207,13 @@ export const assertEventValidatorSetCompleted = async (
   madHeight: BigNumberish,
   mpk: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
-  let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  let intrface = new ethers.utils.Interface([
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const intrface = new ethers.utils.Interface([
     "event ValidatorSetCompleted(uint256 validatorCount, uint256 nonce, uint256 epoch, uint256 ethHeight, uint256 madHeight, uint256 groupKey0, uint256 groupKey1, uint256 groupKey2, uint256 groupKey3)",
   ]);
-  let data = receipt.logs[0].data;
-  let topics = receipt.logs[0].topics;
-  let event = intrface.decodeEventLog("ValidatorSetCompleted", data, topics);
+  const data = receipt.logs[0].data;
+  const topics = receipt.logs[0].topics;
+  const event = intrface.decodeEventLog("ValidatorSetCompleted", data, topics);
   expect(event.validatorCount).to.equal(validatorCount);
   expect(event.nonce).to.equal(nonce);
   expect(event.epoch).to.equal(epoch);
@@ -293,7 +294,7 @@ export const assertETHDKGPhase = async (
   ethdkg: ETHDKG,
   expectedPhase: Phase
 ) => {
-  let actualPhase = await ethdkg.getETHDKGPhase();
+  const actualPhase = await ethdkg.getETHDKGPhase();
   assert(actualPhase === expectedPhase, "Incorrect Phase");
 };
 
@@ -303,7 +304,7 @@ export const addValidators = async (
   validators: ValidatorRawData[]
 ) => {
   if ((<ValidatorPoolMock>validatorPool).isMock) {
-    for (let validator of validators) {
+    for (const validator of validators) {
       expect(await validatorPool.isValidator(validator.address)).to.equal(
         false
       );
@@ -315,29 +316,29 @@ export const addValidators = async (
 
 export const endCurrentPhase = async (ethdkg: ETHDKG) => {
   // advance enough blocks to timeout a phase
-  let phaseStart = await ethdkg.getPhaseStartBlock();
-  let phaseLength = await ethdkg.getPhaseLength();
-  let bn = await ethers.provider.getBlockNumber();
-  let endBlock = phaseStart.add(phaseLength);
-  let blocksToMine = endBlock.sub(bn);
+  const phaseStart = await ethdkg.getPhaseStartBlock();
+  const phaseLength = await ethdkg.getPhaseLength();
+  const bn = await ethers.provider.getBlockNumber();
+  const endBlock = phaseStart.add(phaseLength);
+  const blocksToMine = endBlock.sub(bn);
   await mineBlocks(blocksToMine.toBigInt());
 };
 
 export const endCurrentAccusationPhase = async (ethdkg: ETHDKG) => {
   // advance enough blocks to timeout a phase
-  let phaseStart = await ethdkg.getPhaseStartBlock();
-  let phaseLength = await ethdkg.getPhaseLength();
-  let bn = await ethers.provider.getBlockNumber();
-  let endBlock = phaseStart.add(phaseLength.mul(2));
-  let blocksToMine = endBlock.sub(bn);
+  const phaseStart = await ethdkg.getPhaseStartBlock();
+  const phaseLength = await ethdkg.getPhaseLength();
+  const bn = await ethers.provider.getBlockNumber();
+  const endBlock = phaseStart.add(phaseLength.mul(2));
+  const blocksToMine = endBlock.sub(bn);
   await mineBlocks(blocksToMine.toBigInt());
 };
 
 export const waitNextPhaseStartDelay = async (ethdkg: ETHDKG) => {
   // advance enough blocks to timeout a phase
-  let phaseStart = (await ethdkg.getPhaseStartBlock()).toBigInt();
-  let bn = BigInt(await ethers.provider.getBlockNumber());
-  let blocksToMine = phaseStart - bn + BigInt(1);
+  const phaseStart = (await ethdkg.getPhaseStartBlock()).toBigInt();
+  const bn = BigInt(await ethers.provider.getBlockNumber());
+  const blocksToMine = phaseStart - bn + BigInt(1);
   await mineBlocks(blocksToMine);
 };
 
@@ -345,7 +346,7 @@ export const initializeETHDKG = async (
   ethdkg: ETHDKG,
   validatorPool: ValidatorPoolMock | ValidatorPool
 ) => {
-  let nonce = await ethdkg.getNonce();
+  const nonce = await ethdkg.getNonce();
   await expect(validatorPool.initializeETHDKG()).to.emit(
     ethdkg,
     "RegistrationOpened"
@@ -360,17 +361,17 @@ export const registerValidators = async (
   validators: ValidatorRawData[],
   expectedNonce: number
 ) => {
-  //validators = shuffle(validators);
-  for (let validator of validators) {
-    let numParticipantsBefore = await ethdkg.getNumParticipants();
-    let tx = ethdkg
+  // validators = shuffle(validators);
+  for (const validator of validators) {
+    const numParticipantsBefore = await ethdkg.getNumParticipants();
+    const tx = ethdkg
       .connect(await getValidatorEthAccount(validator))
       .register(validator.madNetPublicKey);
-    let receipt = await tx;
-    let participant = await ethdkg.getParticipantInternalState(
+    const receipt = await tx;
+    const participant = await ethdkg.getParticipantInternalState(
       validator.address
     );
-    expect(tx)
+    await expect(tx)
       .to.emit(ethdkg, "AddressRegistered")
       .withArgs(
         ethers.utils.getAddress(validator.address),
@@ -378,8 +379,8 @@ export const registerValidators = async (
         expectedNonce,
         validator.madNetPublicKey
       );
-    let numValidators = await validatorPool.getValidatorsCount();
-    let numParticipants = await ethdkg.getNumParticipants();
+    const numValidators = await validatorPool.getValidatorsCount();
+    const numParticipants = await ethdkg.getNumParticipants();
     // if all validators in the Pool participated in this round
     if (numParticipantsBefore.add(1).eq(numValidators)) {
       await assertRegistrationComplete(receipt);
@@ -397,13 +398,13 @@ export const distributeValidatorsShares = async (
   validators: ValidatorRawData[],
   expectedNonce: number
 ) => {
-  //validators = shuffle(validators);
-  for (let validator of validators) {
-    let numParticipantsBefore = await ethdkg.getNumParticipants();
-    let tx = await ethdkg
+  // validators = shuffle(validators);
+  for (const validator of validators) {
+    const numParticipantsBefore = await ethdkg.getNumParticipants();
+    const tx = await ethdkg
       .connect(await getValidatorEthAccount(validator))
       .distributeShares(validator.encryptedShares, validator.commitments);
-    let participant = await ethdkg.getParticipantInternalState(
+    const participant = await ethdkg.getParticipantInternalState(
       validator.address
     );
     await assertEventSharesDistributed(
@@ -415,8 +416,8 @@ export const distributeValidatorsShares = async (
       validator.commitments
     );
     // if all validators in the Pool participated in this round
-    let numValidators = await validatorPool.getValidatorsCount();
-    let numParticipants = await ethdkg.getNumParticipants();
+    const numValidators = await validatorPool.getValidatorsCount();
+    const numParticipants = await ethdkg.getNumParticipants();
     if (numParticipantsBefore.add(1).eq(numValidators)) {
       await assertEventShareDistributionComplete(tx);
       expect(await ethdkg.getNumParticipants()).to.eq(0);
@@ -433,17 +434,17 @@ export const submitValidatorsKeyShares = async (
   validators: ValidatorRawData[],
   expectedNonce: number
 ) => {
-  //validators = shuffle(validators);
-  for (let validator of validators) {
-    let numParticipantsBefore = await ethdkg.getNumParticipants();
-    let tx = await ethdkg
+  // validators = shuffle(validators);
+  for (const validator of validators) {
+    const numParticipantsBefore = await ethdkg.getNumParticipants();
+    const tx = await ethdkg
       .connect(await getValidatorEthAccount(validator))
       .submitKeyShare(
         validator.keyShareG1,
         validator.keyShareG1CorrectnessProof,
         validator.keyShareG2
       );
-    let participant = await ethdkg.getParticipantInternalState(
+    const participant = await ethdkg.getParticipantInternalState(
       validator.address
     );
     await assertEventKeyShareSubmitted(
@@ -457,11 +458,11 @@ export const submitValidatorsKeyShares = async (
     );
     //
     // if all validators in the Pool participated in this round
-    let numValidators = await validatorPool.getValidatorsCount();
+    const numValidators = await validatorPool.getValidatorsCount();
     if (numValidators.eq(1)) {
       await assertETHDKGPhase(ethdkg, Phase.KeyShareSubmission);
     }
-    let numParticipants = await ethdkg.getNumParticipants();
+    const numParticipants = await ethdkg.getNumParticipants();
     if (numParticipantsBefore.add(1).eq(numValidators)) {
       await assertEventKeyShareSubmissionComplete(tx);
       expect(await ethdkg.getNumParticipants()).to.eq(0);
@@ -478,15 +479,15 @@ export const submitMasterPublicKey = async (
   expectedNonce: number
 ) => {
   // choose an random validator from the list to send the mpk
-  var index = Math.floor(Math.random() * validators.length);
-  let tx = await ethdkg
+  const index = Math.floor(Math.random() * validators.length);
+  const tx = await ethdkg
     .connect(await getValidatorEthAccount(validators[index]))
     .submitMasterPublicKey(validators[index].mpk);
   await assertEventMPKSet(tx, expectedNonce, validators[index].mpk);
   expect(await ethdkg.getNumParticipants()).to.eq(0);
   await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   // The other validators should fail
-  for (let validator of validators) {
+  for (const validator of validators) {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator))
@@ -504,13 +505,13 @@ export const submitValidatorsGPKJ = async (
   expectedNonce: number,
   expectedEpoch: number
 ) => {
-  //validators = shuffle(validators);
-  for (let validator of validators) {
-    let numParticipantsBefore = await ethdkg.getNumParticipants();
-    let tx = await ethdkg
+  // validators = shuffle(validators);
+  for (const validator of validators) {
+    const numParticipantsBefore = await ethdkg.getNumParticipants();
+    const tx = await ethdkg
       .connect(await getValidatorEthAccount(validator))
       .submitGPKJ(validator.gpkj);
-    let participant = await ethdkg.getParticipantInternalState(
+    const participant = await ethdkg.getParticipantInternalState(
       validator.address
     );
     await assertEventValidatorMemberAdded(
@@ -522,8 +523,8 @@ export const submitValidatorsGPKJ = async (
       validator.gpkj
     );
     // if all validators in the Pool participated in this round
-    let numValidators = await validatorPool.getValidatorsCount();
-    let numParticipants = await ethdkg.getNumParticipants();
+    const numValidators = await validatorPool.getValidatorsCount();
+    const numParticipants = await ethdkg.getNumParticipants();
     if (numParticipantsBefore.add(1).eq(numValidators)) {
       await assertEventGPKJSubmissionComplete(tx);
       expect(await ethdkg.getNumParticipants()).to.eq(0);
@@ -543,8 +544,8 @@ export const completeETHDKG = async (
   expectedEthHeight?: number
 ) => {
   // choose an random validator from the list to send the mpk
-  var index = Math.floor(Math.random() * validators.length);
-  let tx = await ethdkg
+  const index = Math.floor(Math.random() * validators.length);
+  const tx = await ethdkg
     .connect(await getValidatorEthAccount(validators[index]))
     .complete();
   let _expectedEthHeight = 0;
@@ -562,7 +563,7 @@ export const completeETHDKG = async (
   );
   await assertETHDKGPhase(ethdkg, Phase.Completion);
   // The other validators should fail
-  for (let validator of validators) {
+  for (const validator of validators) {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator))
@@ -602,7 +603,7 @@ export const startAtSubmitKeyShares = async (
     validatorPool: ValidatorPoolMock | ValidatorPool;
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
-  let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
+  const [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
     validators,
     contracts
   );
@@ -627,7 +628,7 @@ export const startAtMPKSubmission = async (
     validatorPool: ValidatorPoolMock | ValidatorPool;
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
-  let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+  const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
     validators,
     contracts
   );
@@ -650,7 +651,7 @@ export const startAtGPKJ = async (
     validatorPool: ValidatorPoolMock | ValidatorPool;
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
-  let [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
+  const [ethdkg, validatorPool, expectedNonce] = await startAtMPKSubmission(
     validators,
     contracts
   );
@@ -673,7 +674,7 @@ export const completeETHDKGRound = async (
 ): Promise<
   [ETHDKG, ValidatorPoolMock | ValidatorPool, number, number, number]
 > => {
-  let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+  const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
     validators,
     contracts
   );
