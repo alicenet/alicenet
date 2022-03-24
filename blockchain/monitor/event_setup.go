@@ -60,6 +60,15 @@ func GetValidatorPoolEvents() map[string]abi.Event {
 	return validatorPoolABI.Events
 }
 
+func GetPublicStakingEvents() map[string]abi.Event {
+	publicStakingABI, err := abi.JSON(strings.NewReader(bindings.PublicStakingMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+
+	return publicStakingABI.Events
+}
+
 func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
 	ethDkgEvents := GetETHDKGEvents()
 

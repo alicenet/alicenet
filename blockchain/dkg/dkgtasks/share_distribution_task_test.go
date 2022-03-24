@@ -105,7 +105,7 @@ func TestShareDistributionBad1(t *testing.T) {
 // One validator attempts to submit invalid commitments (identity element).
 // This should result in a failed submission.
 func TestShareDistributionBad2(t *testing.T) {
-	n := 5
+	n := 4
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
@@ -120,7 +120,7 @@ func TestShareDistributionBad2(t *testing.T) {
 		// check points
 		publicKey := suite.dkgStates[idx].TransportPublicKey
 		if (publicKey[0].Cmp(p.PublicKey[0]) != 0) || (publicKey[1].Cmp(p.PublicKey[1]) != 0) {
-			t.Fatal("Invalid public key")
+			t.Fatalf("Invalid public key: internal: %v | network: %v", publicKey, p.PublicKey)
 		}
 	}
 
@@ -166,7 +166,7 @@ func TestShareDistributionBad2(t *testing.T) {
 // One validator attempts to submit invalid commitments (incorrect commitment length)
 // This should result in a failed submission.
 func TestShareDistributionBad4(t *testing.T) {
-	n := 7
+	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
@@ -183,7 +183,7 @@ func TestShareDistributionBad4(t *testing.T) {
 		// check points
 		publicKey := dkgStates[idx].TransportPublicKey
 		if (publicKey[0].Cmp(p.PublicKey[0]) != 0) || (publicKey[1].Cmp(p.PublicKey[1]) != 0) {
-			t.Fatal("Invalid public key")
+			t.Fatalf("Invalid public key: internal: %v | network: %v", publicKey, p.PublicKey)
 		}
 	}
 
@@ -278,11 +278,11 @@ func TestShareDistributionBad5(t *testing.T) {
 // We begin by submitting invalid information;
 // we submit nil state information
 func TestShareDistributionBad6(t *testing.T) {
-	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	n := 5
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -303,10 +303,10 @@ func TestShareDistributionBad6(t *testing.T) {
 // We submit invalid state information (again).
 func TestShareDistributionBad7(t *testing.T) {
 	n := 4
-	_, ecdsaPrivateKeys := dtest.InitializeNewDetDkgStateInfo(n)
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := connectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -340,17 +340,7 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 		task := suite.shareDistTasks[idx]
 		err := task.Initialize(ctx, logger, suite.eth, state)
 		assert.Nil(t, err)
-		err = task.DoWork(ctx, logger, suite.eth)
-		assert.Nil(t, err)
 
-		suite.eth.Commit()
-		assert.True(t, task.Success)
-	}
-
-	for idx := 0; idx < n; idx++ {
-		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-		task := suite.shareDistTasks[idx]
-		task.State.Account.Address = common.Address{}
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}

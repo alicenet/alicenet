@@ -213,6 +213,30 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
+    address private immutable _stakingPositionDescriptor;
+
+    modifier onlyStakingPositionDescriptor() {
+        require(msg.sender == _stakingPositionDescriptor, "onlyStakingPositionDescriptor");
+        _;
+    }
+
+    constructor() {
+        _stakingPositionDescriptor = getMetamorphicContractAddress(
+            0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _stakingPositionDescriptorAddress() internal view returns (address) {
+        return _stakingPositionDescriptor;
+    }
+
+    function _saltForStakingPositionDescriptor() internal pure returns (bytes32) {
+        return 0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000;
+    }
+}
+
 abstract contract ImmutableValidatorPool is ImmutableFactory {
     address private immutable _validatorPool;
 

@@ -21,6 +21,7 @@ import {
   PublicStaking,
   Snapshots,
   SnapshotsMock,
+  StakingPositionDescriptor,
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
@@ -54,6 +55,7 @@ export interface Fixture extends BaseTokensFixture {
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
+  stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
 }
 
@@ -424,6 +426,12 @@ export const getFixture = async (
   // ETHDKG Accusations
   await deployUpgradeableWithFactory(factory, "ETHDKGAccusations");
 
+  // StakingPositionDescriptor
+  const stakingPositionDescriptor = (await deployUpgradeableWithFactory(
+    factory,
+    "StakingPositionDescriptor"
+  )) as StakingPositionDescriptor;
+
   // ETHDKG Phases
   await deployUpgradeableWithFactory(factory, "ETHDKGPhases");
 
@@ -501,6 +509,7 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
+    stakingPositionDescriptor,
   };
 };
 

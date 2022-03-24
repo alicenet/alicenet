@@ -16,6 +16,12 @@ for filePath in $(ls ../scripts/generated/config | xargs); do
     sed -i "s/registryAddress = .*/registryAddress = $FACTORY_ADDRESS/" "../scripts/generated/config/$filePath"
 done
 cd $CURRENT_WD
+
+if [[ ! -z "${SKIP_REGISTRATION}" ]]; then
+    echo "SKIPPING VALIDATOR REGISTRATION"
+    exit 0
+fi
+
 FACTORY_ADDRESS="$(echo "$addr" | sed -e 's/^"//' -e 's/"$//')"
 ./scripts/main.sh register
 if command -v gnome-terminal &>/dev/null; then

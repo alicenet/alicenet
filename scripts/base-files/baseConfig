@@ -6,7 +6,7 @@ consensus = "debug"
 admin = "debug"
 
 [chain]
-id = 42
+id = 1337
 stateDB = ""
 stateDBInMemory = false
 transactionDB = ""
