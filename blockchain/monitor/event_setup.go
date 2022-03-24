@@ -60,13 +60,13 @@ func GetValidatorPoolEvents() map[string]abi.Event {
 	return validatorPoolABI.Events
 }
 
-func GetStakeNFTEvents() map[string]abi.Event {
-	stakeNFTABI, err := abi.JSON(strings.NewReader(bindings.StakeNFTMetaData.ABI))
+func GetPublicStakingEvents() map[string]abi.Event {
+	publicStakingABI, err := abi.JSON(strings.NewReader(bindings.PublicStakingMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
 
-	return stakeNFTABI.Events
+	return publicStakingABI.Events
 }
 
 func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
