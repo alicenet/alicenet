@@ -1,7 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BigNumberish, Contract } from "ethers";
-import { callFunctionAndGetReturnValues } from "../setup";
+import {
+  callFunctionAndGetReturnValues,
+  getTokenIdFromTx,
+  mineBlocks,
+} from "../setup";
 
 export interface Position {
   shares: bigint;
@@ -127,4 +131,92 @@ export const collectEth = async (
     [tokenID]
   );
   return collectedEth;
+};
+
+export const collectToken = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<BigNumber> => {
+  const [collectedEth] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectToken",
+    user,
+    [tokenID]
+  );
+  return collectedEth;
+};
+
+export const mintPosition = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  amountToMint: bigint,
+  expectedAccumulatorEth: bigint = 0n,
+  expectedAccumulatorToken: bigint = 0n
+): Promise<[number, Position]> => {
+  const tx = await contract.connect(user).mint(amountToMint);
+  await mineBlocks(1n);
+  const tokenID = await getTokenIdFromTx(tx);
+  const blockNumber = BigInt((await tx.wait()).blockNumber);
+  const expectedPosition = newPosition(
+    amountToMint,
+    blockNumber + 1n,
+    blockNumber + 1n,
+    expectedAccumulatorEth,
+    expectedAccumulatorToken
+  );
+  await assertPositions(contract, tokenID, expectedPosition, user.address);
+
+  return [tokenID, expectedPosition];
+};
+
+export const assertAccumulatorAndSlushEth = async (
+  contract: Contract,
+  accumulatorExpectedAmount: bigint,
+  slushExpectedAmount: bigint
+) => {
+  const [accumulator, slush] = await contract.getEthAccumulator();
+  expect(accumulator.toBigInt()).to.be.equals(
+    accumulatorExpectedAmount,
+    "Accumulator didn't match the expected amount!"
+  );
+  expect(slush.toBigInt()).to.be.equals(
+    slushExpectedAmount,
+    "Slush didn't match the expected amount!"
+  );
+};
+
+export const assertAccumulatorAndSlushToken = async (
+  contract: Contract,
+  accumulatorExpectedAmount: bigint,
+  slushExpectedAmount: bigint
+) => {
+  const [accumulator, slush] = await contract.getTokenAccumulator();
+  expect(accumulator.toBigInt()).to.be.equals(
+    accumulatorExpectedAmount,
+    "Accumulator didn't match the expected amount!"
+  );
+  expect(slush.toBigInt()).to.be.equals(
+    slushExpectedAmount,
+    "Slush didn't match the expected amount!"
+  );
+};
+
+export const estimateAndCollectTokens = async (
+  contract: Contract,
+  tokenID: number,
+  user: SignerWithAddress,
+  expectedCollectAmount: bigint
+) => {
+  expect(
+    (await contract.estimateTokenCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmount,
+    "Token collection don't match expected value!"
+  );
+
+  expect((await collectToken(contract, user, tokenID)).toBigInt()).to.be.equals(
+    expectedCollectAmount,
+    "Collected amount to match expected value!"
+  );
 };
