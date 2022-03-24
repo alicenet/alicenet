@@ -2,7 +2,12 @@ import { BigNumber } from "ethers";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
-import { Fixture, getFixture, getValidatorEthAccount } from "../setup";
+import {
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+  mineBlocks,
+} from "../setup";
 import {
   validatorsSnapshots,
   validSnapshot1024,
@@ -21,7 +26,9 @@ describe("Snapshots: With successful snapshot completed", () => {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
-
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     snapshots = fixture.snapshots as Snapshots;
     await snapshots
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
@@ -29,8 +36,36 @@ describe("Snapshots: With successful snapshot completed", () => {
     snapshotNumber = BigNumber.from(1);
   });
 
+  it("Should succeed doing a valid snapshot for next epoch", async function () {
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
+    await fixture.snapshots
+      .connect(validValidator)
+      .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims);
+    expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(2));
+  });
+
+  it("Should not allow committing a snapshot for next epoch before time", async function () {
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
+    await expect(
+      fixture.snapshots
+        .connect(validValidator)
+        .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
+    ).to.be.revertedWith(
+      "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
+    );
+    expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
+  });
+
   it("Does not allow snapshot with data from previous snapshot", async function () {
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     await expect(
       fixture.snapshots
         .connect(validValidator)
@@ -40,27 +75,22 @@ describe("Snapshots: With successful snapshot completed", () => {
 
   it("Does not allow snapshot if ETHDKG round is Running", async function () {
     await fixture.validatorPool.scheduleMaintenance();
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     await snapshots
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
       .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims);
     await fixture.validatorPool.initializeETHDKG();
-    let junkData =
+    const junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
-    let validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
+    const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
     ).to.be.revertedWith(`Snapshots: Consensus is not running!`);
   });
 
   it("getLatestSnapshot returns correct snapshot data", async function () {
-    const expectedSignature = [
-      BigNumber.from(
-        "1255022359938341263552008964652785372053438514616831677297275448520908946987"
-      ),
-      BigNumber.from(
-        "14701588978138831040868532458058035157389630420138682442198805011661026372629"
-      ),
-    ];
     const expectedChainId = BigNumber.from(1);
     const expectedHeight = BigNumber.from(1024);
     const expectedTxCount = BigNumber.from(0);

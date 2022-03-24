@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -x
+set -ex
 
 NETWORK=${1:-"dev"}
 ADDRESSES=$(ls ./scripts/generated/keystores/keys | grep -v '^0x546f99f244b' | xargs)
@@ -10,9 +10,9 @@ BRIDGE_DIR=./bridge
 cd $BRIDGE_DIR
 
 
-npx hardhat --network $NETWORK --show-stack-traces registerValidators --factory-address $FACTORY_ADDRESS $ADDRESSES
+npx hardhat --network "$NETWORK" --show-stack-traces registerValidators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
 
 
-cd $CURRENT_WD
+cd "$CURRENT_WD"
 
 

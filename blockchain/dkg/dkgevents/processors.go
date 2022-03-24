@@ -10,15 +10,16 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 // todo: improve this
-func isValidator(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState) (bool, error) {
+func isValidator(eth interfaces.Ethereum, logger *logrus.Entry, acct accounts.Account) (bool, error) {
 	ctx := context.Background()
-	callOpts := eth.GetCallOpts(ctx, state.EthDKG.Account)
-	isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, state.EthDKG.Account.Address)
+	callOpts := eth.GetCallOpts(ctx, acct)
+	isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, acct.Address)
 	if err != nil {
 		return false, errors.New("cannot check if I'm a validator")
 	}
@@ -42,12 +43,31 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	state.Lock()
 	defer state.Unlock()
 
+	amIaValidator, err := isValidator(eth, logger, state.EthDKG.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+	}
+
+	// get validators from ValidatorPool
+	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cf()
+
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	if err != nil {
+		return err
+		// return dkg.LogReturnErrorf(logger, "ProcessRegistrationOpened(): Unable to get validatorAddresses from ValidatorPool: %v", err)
+	}
+
 	dkgState, registrationEnds, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(
 		state.EthDKG.Account,
 		event.StartBlock.Uint64(),
 		event.PhaseLength.Uint64(),
 		event.ConfirmationLength.Uint64(),
-		event.Nonce.Uint64())
+		event.Nonce.Uint64(),
+		amIaValidator,
+		validatorAddresses,
+	)
 	state.EthDKG = dkgState
 
 	logger.WithFields(logrus.Fields{
@@ -63,25 +83,6 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"Phase": dkgState.Phase,
 	}).Infof("Purging Schedule")
 	state.Schedule.Purge()
-
-	amIaValidator, err := isValidator(eth, logger, state)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "I'm not a validator: %v", err)
-	}
-	state.EthDKG.IsValidator = amIaValidator
-
-	// get validators from ValidatorPool
-	ctx, cf := context.WithTimeout(context.Background(), 7*time.Second)
-	defer cf()
-
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
-	if err != nil {
-		return err
-		// return dkg.LogReturnErrorf(logger, "ProcessRegistrationOpened(): Unable to get validatorAddresses from ValidatorPool: %v", err)
-	}
-	state.EthDKG.ValidatorAddresses = validatorAddresses
-	state.EthDKG.NumberOfValidators = len(validatorAddresses)
 
 	if !state.EthDKG.IsValidator {
 		return nil
@@ -108,7 +109,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	return nil
 }
 
-func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64) (*objects.DkgState, uint64, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
+func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*objects.DkgState, uint64, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
 	dkgState := objects.NewDkgState(account)
 	dkgState.OnRegistrationOpened(
 		startBlock,
@@ -116,6 +117,10 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 		confirmationLength,
 		nonce,
 	)
+
+	dkgState.IsValidator = amIValidator
+	dkgState.ValidatorAddresses = validatorAddresses
+	dkgState.NumberOfValidators = len(validatorAddresses)
 
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 	registrationTask := dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds)

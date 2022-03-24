@@ -47,7 +47,7 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}
 		// todo: evvaluate sec concern of non-validated CurveSpec if any
-		if err := owner.New(account /*constants.CurveSecp256k1*/, constants.CurveSpec(event.AccountType)); err != nil {
+		if err := owner.New(account, constants.CurveSpec(event.AccountType)); err != nil {
 			logger.Debugf("Error in Services.ProcessDepositReceived at owner.New: %v", err)
 			return err
 		}
@@ -162,8 +162,8 @@ func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry,
 	}
 
 	logger = logger.WithFields(logrus.Fields{
-		"Account":          event.Account.String(),
-		"StakeNFT.TokenID": event.StakeNFT.Uint64(),
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
 	})
 
 	logger.Infof("ValidatorMinorSlashed")

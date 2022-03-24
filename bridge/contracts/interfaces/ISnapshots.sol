@@ -22,6 +22,8 @@ interface ISnapshots {
 
     function setSnapshotDesperationFactor(uint32 desperationFactor_) external;
 
+    function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_) external;
+
     function snapshot(bytes calldata signatureGroup_, bytes calldata bClaims_)
         external
         returns (bool);
@@ -29,6 +31,8 @@ interface ISnapshots {
     function getSnapshotDesperationDelay() external view returns (uint256);
 
     function getSnapshotDesperationFactor() external view returns (uint256);
+
+    function getMinimumIntervalBetweenSnapshots() external view returns (uint256);
 
     function getChainId() external view returns (uint256);
 

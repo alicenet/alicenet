@@ -20,14 +20,14 @@ describe("Snapshots: Access control methods", () => {
   });
 
   it("GetEpochLength returns 1024", async function () {
-    let expectedEpochLength = 1024;
+    const expectedEpochLength = 1024;
 
     const epochLength = await fixture.snapshots.getEpochLength();
     await expect(epochLength).to.be.equal(expectedEpochLength);
   });
 
   it("Does not allow setSnapshotDesperationDelay if sender is not admin", async function () {
-    let expectedDelay = 123;
+    const expectedDelay = 123;
     await expect(
       fixture.snapshots
         .connect(randomerSigner)
@@ -36,7 +36,7 @@ describe("Snapshots: Access control methods", () => {
   });
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
-    let expectedDelay = 123;
+    const expectedDelay = 123;
     await factoryCallAny(fixture, "snapshots", "setSnapshotDesperationDelay", [
       expectedDelay,
     ]);
@@ -46,7 +46,7 @@ describe("Snapshots: Access control methods", () => {
   });
 
   it("Does not allow setSnapshotDesperationFactor if sender is not admin", async function () {
-    let expectedFactor = 123;
+    const expectedFactor = 123;
     await expect(
       fixture.snapshots
         .connect(randomerSigner)
@@ -55,7 +55,7 @@ describe("Snapshots: Access control methods", () => {
   });
 
   it("Allows setSnapshotDesperationFactor from admin address", async function () {
-    let expectedFactor = 123;
+    const expectedFactor = 123;
 
     await factoryCallAny(fixture, "snapshots", "setSnapshotDesperationFactor", [
       expectedFactor,

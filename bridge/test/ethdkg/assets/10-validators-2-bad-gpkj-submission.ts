@@ -1,5 +1,5 @@
 import { ValidatorRawData } from "../setup";
-export const validators10_2BadGPKJSubmission: ValidatorRawData[] = [
+export const validators10BadGPKJSubmission2: ValidatorRawData[] = [
   {
     privateKey:
       "0xff000000000000000000000000000000000000000000000000000000000000ff",

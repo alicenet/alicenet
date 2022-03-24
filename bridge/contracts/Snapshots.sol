@@ -21,6 +21,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         onlyFactory
         initializer
     {
+        // considering that in optimum conditions 1 Sidechain block is at every 3 seconds and 1 block at
+        // ethereum is approx at 13 seconds
+        _minimumIntervalBetweenSnapshots = uint32(_epochLength / 4);
         _snapshotDesperationDelay = desperationDelay_;
         _snapshotDesperationFactor = desperationFactor_;
     }
@@ -33,6 +36,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
+    function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_)
+        public
+        onlyFactory
+    {
+        _minimumIntervalBetweenSnapshots = minimumIntervalBetweenSnapshots_;
+    }
+
     /// @notice Saves next snapshot
     /// @param groupSignature_ The group signature used to sign the snapshots' block claims
     /// @param bClaims_ The claims being made about given block
@@ -42,28 +52,30 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         returns (bool)
     {
         require(
-            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
+            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
             "Snapshots: Only validators allowed!"
         );
         require(
-            IValidatorPool(_ValidatorPoolAddress()).isConsensusRunning(),
+            IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
             "Snapshots: Consensus is not running!"
         );
 
-        (bool success, uint256 validatorIndex) = IETHDKG(_ETHDKGAddress()).tryGetParticipantIndex(
+        require(
+            block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
+            "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
+        );
+
+        (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress()).tryGetParticipantIndex(
             msg.sender
         );
         //todo:remove this, dummy operation only to silence linter
         validatorIndex;
         require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
-        // todo: critical! add eth min blocks between snapshots
 
-        //todo: are we going to snapshot on epoch 0?
         uint32 epoch = _epoch + 1;
-        // todo: explicitly verify min eth boundary
         // uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
 
-        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGED AND MERGED
+        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
         /*
         uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
             ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
@@ -71,11 +83,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         */
 
         // Check if sender is the elected validator allowed to make the snapshot
-        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGED AND MERGED
+        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
         /*
         require(
             _mayValidatorSnapshot(
-                IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount(),
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                 validatorIndex - 1,
                 blocksSinceDesperation,
                 keccak256(bClaims_),
@@ -91,7 +103,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
-                    keccak256(abi.encodePacked(IETHDKG(_ETHDKGAddress()).getMasterPublicKey())),
+                    keccak256(abi.encodePacked(IETHDKG(_ethdkgAddress()).getMasterPublicKey())),
                 "Snapshots: Wrong master public key!"
             );
 
@@ -117,9 +129,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         require(blockClaims.chainId == _chainId, "Snapshots: Incorrect chainID for snapshot!");
 
         bool isSafeToProceedConsensus = true;
-        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
             isSafeToProceedConsensus = false;
-            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
 
         _snapshots[epoch] = Snapshot(block.number, blockClaims);
@@ -142,6 +154,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function getSnapshotDesperationDelay() public view returns (uint256) {
         return _snapshotDesperationDelay;
+    }
+
+    function getMinimumIntervalBetweenSnapshots() public view returns (uint256) {
+        return _minimumIntervalBetweenSnapshots;
     }
 
     function getChainId() public view returns (uint256) {

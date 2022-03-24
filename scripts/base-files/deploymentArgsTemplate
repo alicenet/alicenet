@@ -1,0 +1,29 @@
+[[constructor."contracts/AToken.sol:AToken"]]
+legacyToken_ = "0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
+
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+chainID_ = "1337"
+
+[[constructor."contracts/Snapshots.sol:Snapshots"]]
+epochLength_ = "1024"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationDelay_ = "10"
+
+[[initializer."contracts/Snapshots.sol:Snapshots"]]
+desperationFactor_ = "40"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+stakeAmount_ = "1"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+maxNumValidators_ = "10"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+disputerReward_ = "1"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+phaseLength_ = "40"
+
+[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
+confirmationLength_ = "6"

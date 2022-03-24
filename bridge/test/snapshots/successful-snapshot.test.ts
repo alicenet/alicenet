@@ -2,12 +2,17 @@ import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
-import { Fixture, getFixture, getValidatorEthAccount } from "../setup";
+import {
+  Fixture,
+  getFixture,
+  getValidatorEthAccount,
+  mineBlocks,
+} from "../setup";
 import {
   invalidSnapshot500,
   invalidSnapshotChainID2,
   invalidSnapshotIncorrectSig,
-  validatorsSnapshots,
+  validatorsSnapshots as validatorsSnapshots1,
   validSnapshot1024,
 } from "./assets/4-validators-snapshots-1";
 
@@ -17,7 +22,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   beforeEach(async function () {
     fixture = await getFixture(true, false);
 
-    await completeETHDKGRound(validatorsSnapshots, {
+    await completeETHDKGRound(validatorsSnapshots1, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
@@ -26,11 +31,14 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   });
 
   it("Reverts when validator not elected to do snapshot", async function () {
-    let junkData =
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
+    const junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
     await expect(
       snapshots
-        .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
+        .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
         .snapshot(junkData, junkData)
     ).to.be.revertedWith(`RCertParserLibrary: Not enough bytes to extract`);
   });
@@ -40,7 +48,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(
           await getValidatorEthAccount(
-            validatorsSnapshots[invalidSnapshot500.validatorIndex]
+            validatorsSnapshots1[invalidSnapshot500.validatorIndex]
           )
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
@@ -52,7 +60,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(
           await getValidatorEthAccount(
-            validatorsSnapshots[invalidSnapshotChainID2.validatorIndex]
+            validatorsSnapshots1[invalidSnapshotChainID2.validatorIndex]
           )
         )
         .snapshot(
@@ -68,7 +76,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(
           await getValidatorEthAccount(
-            validatorsSnapshots[invalidSnapshotIncorrectSig.validatorIndex]
+            validatorsSnapshots1[invalidSnapshotIncorrectSig.validatorIndex]
           )
         )
         .snapshot(
@@ -83,7 +91,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(
           await getValidatorEthAccount(
-            validatorsSnapshots[invalidSnapshotIncorrectSig.validatorIndex]
+            validatorsSnapshots1[invalidSnapshotIncorrectSig.validatorIndex]
           )
         )
         .snapshot(
@@ -98,10 +106,12 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     const expectedEpoch = 1;
     const expectedHeight = validSnapshot1024.height;
     const expectedSafeToProceedConsensus = true;
-
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     await expect(
       snapshots
-        .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
+        .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
     )
       .to.emit(snapshots, `SnapshotTaken`)
@@ -109,7 +119,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         expectedChainId,
         expectedEpoch,
         expectedHeight,
-        ethers.utils.getAddress(validatorsSnapshots[0].address),
+        ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
         validSnapshot1024.GroupSignature
       );
@@ -121,10 +131,10 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   it('Does not allow snapshot caller did not participate in the last ETHDKG round', async function () {
     await expect(
       snapshots
-        .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
+        .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
     ).to.be.revertedWith(
       `Snapshots: Caller didn't participate in the last ethdkg round!`
     )
-  })*/
+  }) */
 });

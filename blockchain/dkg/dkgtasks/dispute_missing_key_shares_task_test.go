@@ -9,7 +9,7 @@ import (
 )
 
 func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
-	n := 10
+	n := 5
 	unsubmittedKeyShares := 4
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
