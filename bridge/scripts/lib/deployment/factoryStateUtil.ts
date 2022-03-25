@@ -1,5 +1,5 @@
 import toml from "@iarna/toml";
-import { BigNumberish, BytesLike, ContractReceipt } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
 import fs from "fs";
 import { FACTORY_STATE_PATH } from "../constants";
 import { readFactoryState } from "./deploymentConfigUtil";
@@ -7,14 +7,14 @@ import { readFactoryState } from "./deploymentConfigUtil";
 export type FactoryData = {
   address: string;
   owner?: string;
-  gas?: number;
+  gas: BigNumber;
 };
 
 export type DeployCreateData = {
   name: string;
   address: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   constructorArgs?: any;
   receipt?: ContractReceipt;
 };
@@ -24,7 +24,7 @@ export type MetaContractData = {
   templateName: string;
   templateAddress: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   initCallData: string;
   receipt?: ContractReceipt;
 };
@@ -32,7 +32,7 @@ export type TemplateData = {
   name: string;
   address: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   receipt?: ContractReceipt;
   constructorArgs?: string;
 };
@@ -46,7 +46,7 @@ export type ProxyData = {
   logicName?: string;
   logicAddress?: string;
   factoryAddress: string;
-  gas?: BigNumberish;
+  gas: BigNumberish;
   receipt?: ContractReceipt;
   initCallData?: BytesLike;
 };

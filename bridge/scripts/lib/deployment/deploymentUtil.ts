@@ -1,8 +1,10 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
+import { BytesLike } from "ethers";
 import { Artifacts, RunTaskFunction } from "hardhat/types";
 import { predictFactoryAddress } from "../../../test/factory/Setup";
 import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
+import { MetaContractData, ProxyData } from "./factoryStateUtil";
 
 type Ethers =
   typeof import("../../../node_modules/ethers/lib/ethers") &
@@ -19,6 +21,30 @@ export interface DeploymentArgs {
   initializer: ContractArgs;
 }
 
+export type DeployProxyMCArgs = {
+  contractName: string;
+  logicAddress: string;
+  factoryAddress?: string;
+  initCallData?: BytesLike;
+  outputFolder?: string;
+};
+
+export type DeployArgs = {
+  contractName: string;
+  factoryAddress: string;
+  initCallData?: string;
+  constructorArgs?: any;
+  outputFolder?: string;
+};
+
+export type Args = {
+  contractName: string;
+  factoryAddress?: string;
+  salt?: BytesLike;
+  initCallData?: string;
+  constructorArgs?: any;
+  outputFolder?: string;
+};
 export interface InitData {
   constructorArgs: { [key: string]: any };
   initializerArgs: { [key: string]: any };
@@ -29,14 +55,13 @@ export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
   return await run("deployFactory", { outputFolder: usrPath });
 }
 
-export async function deployStatic(
+export async function getDeployMetaArgs(
   fullyQualifiedName: string,
   factoryAddress:string,
   artifacts: Artifacts,
-  run: RunTaskFunction,
   inputFolder?: string,
   outputFolder?: string
-) {
+): Promise<DeployArgs>{
   let initCallData;
   // check if contract needs to be initialized
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
@@ -47,28 +72,26 @@ export async function deployStatic(
     );
     initCallData = await getEncodedInitCallData(initializerArgs);
   }
-
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName)
     : undefined;
-  return await run("deployMetamorphic", {
+  return {
     contractName: extractName(fullyQualifiedName),
     factoryAddress: factoryAddress,
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-  });
+  }
 }
 
-export async function deployUpgradeableProxy(
+export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
   artifacts: Artifacts,
-  run: RunTaskFunction,
   inputFolder?: string,
   outputFolder?: string
-) {
+): Promise<DeployArgs> {
   let initCallData;
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
   if (initAble) {
@@ -82,13 +105,13 @@ export async function deployUpgradeableProxy(
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
     : undefined;
-  return await run("deployUpgradeableProxy", {
+  return {
     contractName: extractName(fullyQualifiedName),
     factoryAddress: factoryAddress,
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-  });
+  }
 }
 
 export async function isInitializable(

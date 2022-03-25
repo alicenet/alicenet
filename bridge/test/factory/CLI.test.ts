@@ -18,6 +18,7 @@ import {
 import { deployFactory } from "../../scripts/lib/deployment/deploymentUtil";
 import {
   DeployCreateData,
+  FactoryData,
   MetaContractData,
   ProxyData,
   TemplateData,
@@ -45,20 +46,21 @@ describe("Cli tasks", async () => {
   it("deploys factory with cli and checks if the default factory is updated in factory state toml file", async () => {
     const accounts = await getAccounts();
     const futureFactoryAddress = await predictFactoryAddress(accounts[0]);
-    const factoryAddress = await run(DEPLOY_FACTORY);
+    const factoryData: FactoryData = await run(DEPLOY_FACTORY);
     // check if the address is the predicted
-    expect(factoryAddress).to.equal(futureFactoryAddress);
+    expect(factoryData.address).to.equal(futureFactoryAddress);
   });
   // todo add init call data and check init vars
   it("deploys MockInitializable contract with deployUpgradeableProxy", async () => {
     // deploys factory using the deployFactory task
-    const factory = await deployFactory(run);
+    const factoryData: FactoryData = await deployFactory(run);
     const proxyData: ProxyData = await run(DEPLOY_UPGRADEABLE_PROXY, {
       contractName: MOCK_INITIALIZABLE,
+      factoryAddress: factoryData.address,
       initCallData: "14",
     });
     const expectedProxyAddress = getMetamorphicAddress(
-      factory,
+      factoryData.address,
       ethers.utils.formatBytes32String(MOCK_INITIALIZABLE)
     );
     expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
@@ -66,32 +68,32 @@ describe("Cli tasks", async () => {
   // todo check mock logic
   it("deploys mock contract with deployStatic", async () => {
     // deploys factory using the deployFactory task
-    const factory = await cliDeployFactory();
-    const metaData = await cliDeployMetamorphic(MOCK, undefined, undefined, [
+    const factoryData: FactoryData = await cliDeployFactory();
+    const metaData = await cliDeployMetamorphic(MOCK, factoryData.address, undefined, [
       "2",
       "s",
     ]);
     const salt = ethers.utils.formatBytes32String("Mock");
-    const expectedMetaAddr = getMetamorphicAddress(factory, salt);
+    const expectedMetaAddr = getMetamorphicAddress(factoryData.address, salt);
     expect(metaData.metaAddress).to.equal(expectedMetaAddr);
   });
 
   it("deploys MockInitializable contract with deployCreate", async () => {
-    await cliDeployFactory();
-    const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE);
+    const factoryData: FactoryData = await cliDeployFactory();
+    const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE,factoryData.address);
   });
 
   it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initCallData", async () => {
-    await cliDeployFactory();
+    const factoryData: FactoryData = await cliDeployFactory();
     const test = "1";
-    const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE);
+    const deployCreateData = await cliDeployCreate(MOCK_INITIALIZABLE, factoryData.address);
     const salt = (await getSalt(MOCK_INITIALIZABLE)) as string;
-    const proxyData = await cliDeployProxy(salt);
+    const proxyData = await cliDeployProxy(salt, factoryData.address);
     const logicFactory = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const upgradedProxyData = await cliUpgradeDeployedProxy(
       MOCK_INITIALIZABLE,
       deployCreateData.address,
-      undefined,
+      factoryData.address,
       test
     );
     const mockContract = logicFactory.attach(upgradedProxyData.proxyAddress);
@@ -100,14 +102,14 @@ describe("Cli tasks", async () => {
   });
 
   it("deploys mock contract with deployTemplate then deploys a metamorphic contract", async () => {
-    await cliDeployFactory();
+    const factoryData: FactoryData = await cliDeployFactory();
     const testVar1 = "14";
     const testVar2 = "s";
-    const templateData = await cliDeployTemplate(MOCK, undefined, [
+    const templateData = await cliDeployTemplate(MOCK, factoryData.address, [
       testVar1,
       testVar2,
     ]);
-    const metaData = await cliDeployStatic(MOCK, undefined, undefined);
+    const metaData = await cliDeployStatic(MOCK, factoryData.address, undefined);
     const logicFactory = await ethers.getContractFactory(MOCK);
     const mockContract = logicFactory.attach(metaData.metaAddress);
     const i = await mockContract.callStatic.getImut();
@@ -117,20 +119,20 @@ describe("Cli tasks", async () => {
   });
 
   it("deploys mockInitializable with deployCreate, then deploy and upgrades a proxy with multiCallDeployProxy", async () => {
-    await cliDeployFactory();
-    const logicData = await cliDeployCreate(MOCK_INITIALIZABLE);
+    const factoryData: FactoryData = await cliDeployFactory();
+    const logicData = await cliDeployCreate(MOCK_INITIALIZABLE, factoryData.address);
     const proxyData = await cliMultiCallDeployProxy(
       MOCK_INITIALIZABLE,
       logicData.address,
-      undefined,
+      factoryData.address,
       "1"
     );
   });
 
   it("deploys mock with deployCreate", async () => {
-    await cliDeployFactory();
+    const factoryData: FactoryData = await cliDeployFactory();
     const factory = await deployFactory(run);
-    const deployCreateData = await cliDeployCreate(MOCK, undefined, ["2", "s"]);
+    const deployCreateData = await cliDeployCreate(MOCK, factoryData.address, ["2", "s"]);
   });
 });
 
