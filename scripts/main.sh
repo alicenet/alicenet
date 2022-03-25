@@ -26,6 +26,26 @@ PRE_CHECK () {
     done
 }
 
+# Check if have tools in the right version
+COMMANDS=("grep" "sed") # assign each command to a version in VERSIONS
+VERSIONS=("3.7" "4.8")
+# MacOs users make sure that you are running gnu-sed instead of the sed version that is installed
+# by default. Also make sure to update you $PATH to point to the new executable.
+for (( i=0; i<"${#COMMANDS[@]}"; i++ )); do
+    if ! ${COMMANDS[$i]} --version | grep ${VERSIONS[$i]} &> /dev/null;
+    then
+        if [ "${COMMANDS[$i]}" == "sed" ]; then
+            echo
+            echo -e "Required ${COMMANDS[$i]} version: >= ${VERSIONS[$i]}"
+            echo "MacOs users make sure that you are running gnu-sed instead of the default macOS sed version."
+            echo "Also make sure to update you \$PATH to point to the new executable."
+        else
+            echo -e "Required ${COMMANDS[$i]} version: >= ${VERSIONS[$i]} but version installed is: $(${COMMANDS[$i]} --version)"
+        fi
+        exit 1
+    fi
+done
+
 CLEAN_UP () {
     # Reset Folder
     rm -rf ./scripts/generated
@@ -99,7 +119,7 @@ CHECK_EXISTING() {
         echo -e "Invalid number"
         exit 1
     fi
-    if [ ! -f "./scripts/generated/config/validator$1"]; then
+    if [ ! -f "./scripts/generated/config/validator$1.toml" ]; then
         echo -e "Validator $1 does not exist"
         exit 1
     fi
@@ -155,8 +175,19 @@ case $1 in
     register)
         ./scripts/base-scripts/register.sh
     ;;
+    register_test)
+        ./scripts/base-scripts/register_test.sh "${@:2}"
+    ;;
     unregister)
         ./scripts/base-scripts/unregister.sh
+    ;;
+    hardhat_node)
+        ./scripts/base-scripts/hardhat_node.sh &
+        GETH_PID="$!"
+
+        trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
+
+        wait
     ;;
     list)
         LIST
@@ -169,7 +200,7 @@ case $1 in
     ;;
     *)
         echo -e "Unknown argument!"
-        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | deposit | register | unregister | list | status | clean"
+        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | hardhat_node | list | status | clean"
         exit 1;
 esac
 exit 0

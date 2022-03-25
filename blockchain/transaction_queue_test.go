@@ -2,48 +2,18 @@ package blockchain_test
 
 import (
 	"context"
-	"math"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/etest"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/stretchr/testify/assert"
 )
 
-func ConnectSimulator(t *testing.T, numberAccounts int, mineInterval time.Duration) interfaces.Ethereum {
-	privKeys := etest.SetupPrivateKeys(numberAccounts)
-	eth, err := blockchain.NewEthereumSimulator(
-		privKeys,
-		1,
-		time.Second*2,
-		time.Second*5,
-		0,
-		big.NewInt(math.MaxInt64),
-		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
-	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
-	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
-
-	go func() {
-		for {
-			time.Sleep(mineInterval)
-			eth.Commit()
-		}
-	}()
-
-	return eth
-}
-
-func TestFoo(t *testing.T) {
-
-	n := 2
-
-	eth := ConnectSimulator(t, n, 100*time.Millisecond)
+func TestTransferFunds(t *testing.T) {
+	n := 4
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
 
 	accounts := eth.GetKnownAccounts()

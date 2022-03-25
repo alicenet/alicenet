@@ -8,11 +8,12 @@ import (
 )
 
 type ExecutionData struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
-	TxOpts  *TxOpts
+	Start          uint64
+	End            uint64
+	State          *objects.DkgState
+	Success        bool
+	StartBlockHash common.Hash
+	TxOpts         *TxOpts
 }
 
 type TxOpts struct {

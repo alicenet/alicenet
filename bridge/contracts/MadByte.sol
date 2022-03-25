@@ -19,9 +19,9 @@ contract MadByte is
     EthSafeTransfer,
     Sigmoid,
     ImmutableFactory,
-    ImmutableStakeNFT,
-    ImmutableValidatorNFT,
-    ImmutableStakeNFTLP,
+    ImmutablePublicStaking,
+    ImmutableValidatorStaking,
+    ImmutableLiquidityProviderStaking,
     ImmutableFoundation
 {
     struct Deposit {
@@ -70,9 +70,9 @@ contract MadByte is
         Admin(msg.sender)
         Mutex()
         ImmutableFactory(msg.sender)
-        ImmutableStakeNFT()
-        ImmutableValidatorNFT()
-        ImmutableStakeNFTLP()
+        ImmutablePublicStaking()
+        ImmutableValidatorStaking()
+        ImmutableLiquidityProviderStaking()
         ImmutableFoundation()
     {}
 
@@ -280,10 +280,13 @@ contract MadByte is
         // stakingAmount
         minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
 
-        _safeTransferEthWithMagic(IMagicEthTransfer(_FoundationAddress()), foundationAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_ValidatorNFTAddress()), minerAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_StakeNFTAddress()), stakingAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_StakeNFTLPAddress()), lpStakingAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_validatorStakingAddress()), minerAmount);
+        _safeTransferEthWithMagic(IMagicEthTransfer(_publicStakingAddress()), stakingAmount);
+        _safeTransferEthWithMagic(
+            IMagicEthTransfer(_liquidityProviderStakingAddress()),
+            lpStakingAmount
+        );
         require(
             address(this).balance >= poolBalance,
             "MadByte: Address balance should be always greater than the pool balance!"

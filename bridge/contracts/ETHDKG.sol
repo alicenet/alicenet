@@ -14,6 +14,8 @@ import "contracts/interfaces/IProxy.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-group ethdkg
+/// @custom:deploy-group-index 2
 contract ETHDKG is
     ETHDKGStorage,
     IETHDKG,
@@ -27,7 +29,7 @@ contract ETHDKG is
 
     modifier onlyValidator() {
         require(
-            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
+            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
             "ETHDKG: Only validators allowed!"
         );
         _;
@@ -35,7 +37,7 @@ contract ETHDKG is
 
     constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
         // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = IProxy(_ETHDKGPhasesAddress()).getImplementationAddress();
+        address ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
         assembly {
             if iszero(extcodesize(ethdkgPhases)) {
                 mstore(0x00, "ethdkgPhases size 0")
@@ -44,7 +46,7 @@ contract ETHDKG is
         }
         _ethdkgPhases = ethdkgPhases;
         // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = IProxy(_ETHDKGAccusationsAddress()).getImplementationAddress();
+        address ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
         assembly {
             if iszero(extcodesize(ethdkgAccusations)) {
                 mstore(0x00, "ethdkgAccusations size 0")
@@ -84,8 +86,8 @@ contract ETHDKG is
         emit ValidatorSetCompleted(
             0,
             _nonce,
-            ISnapshots(_SnapshotsAddress()).getEpoch(),
-            ISnapshots(_SnapshotsAddress()).getCommittedHeightFromLatestSnapshot(),
+            ISnapshots(_snapshotsAddress()).getEpoch(),
+            ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot(),
             madnetHeight,
             0x0,
             0x0,
@@ -331,7 +333,7 @@ contract ETHDKG is
 
     function _initializeETHDKG() internal {
         //todo: should we reward ppl here?
-        uint256 numberValidators = IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount();
+        uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         require(
             numberValidators >= _MIN_VALIDATORS,
             "ETHDKG: Minimum number of validators staked not met!"

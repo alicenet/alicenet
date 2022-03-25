@@ -7,6 +7,7 @@ import {
   Fixture,
   getFixture,
   getValidatorEthAccount,
+  mineBlocks,
 } from "../../setup";
 import { validatorsSnapshots } from "../../snapshots/assets/4-validators-snapshots-1";
 import {
@@ -21,11 +22,11 @@ import {
 describe("ValidatorPool: Registration logic", async () => {
   let fixture: Fixture;
   let adminSigner: Signer;
-  let maxNumValidators = 4; //default number
+  const maxNumValidators = 4; // default number
   let stakeAmount: bigint;
   let validators: string[];
   let stakingTokenIds: BigNumber[];
-  let dummyAddress = "0x000000000000000000000000000000000000dEaD";
+  const dummyAddress = "0x000000000000000000000000000000000000dEaD";
 
   beforeEach(async function () {
     fixture = await getFixture(false, true, true);
@@ -36,13 +37,13 @@ describe("ValidatorPool: Registration logic", async () => {
     stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
   });
 
-  it("Should not allow registering validators if the STAKENFT position doesn’t have enough MADTokens staked", async function () {
-    let rcpt = await factoryCallAny(
+  it("Should not allow registering validators if the PublicStaking position doesn’t have enough MADTokens staked", async function () {
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "setStakeAmount",
       [stakeAmount + BigInt(1)]
-    ); //Add 1 to max amount allowed
+    ); // Add 1 to max amount allowed
     expect(rcpt.status).to.equal(1);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -50,7 +51,7 @@ describe("ValidatorPool: Registration logic", async () => {
         stakingTokenIds,
       ])
     ).to.be.revertedWith(
-      "ValidatorStakeNFT: Error, the Stake position doesn't have enough funds!"
+      "ValidatorPool: Error, the Stake position doesn't have enough funds!"
     );
   });
 
@@ -114,10 +115,10 @@ describe("ValidatorPool: Registration logic", async () => {
     );
   });
 
-  it("Should not allow registering validators if the STAKENFT position was not given permissions for the ValidatorPool contract burn it", async function () {
+  it("Should not allow registering validators if the PublicStaking position was not given permissions for the ValidatorPool contract burn it", async function () {
     for (const tokenID of stakingTokenIds) {
-      //Disallow validatorPool to withdraw validator's NFT from StakeNFT
-      await factoryCallAny(fixture, "stakeNFT", "approve", [
+      // Disallow validatorPool to withdraw validator's NFT from PublicStaking
+      await factoryCallAny(fixture, "publicStaking", "approve", [
         dummyAddress,
         tokenID,
       ]);
@@ -131,15 +132,15 @@ describe("ValidatorPool: Registration logic", async () => {
   });
 
   it("Should not allow registering an address that is already a validator", async function () {
-    //Clone validators array
-    let _validatorsSnapshots = validatorsSnapshots.slice();
-    //Repeat the first validator
+    // Clone validators array
+    const _validatorsSnapshots = validatorsSnapshots.slice();
+    // Repeat the first validator
     _validatorsSnapshots[1] = _validatorsSnapshots[0];
-    let newValidators = await createValidators(fixture, _validatorsSnapshots);
-    //Approve first validator for twice the amount
+    const newValidators = await createValidators(fixture, _validatorsSnapshots);
+    // Approve first validator for twice the amount
     await fixture.madToken
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .approve(fixture.stakeNFT.address, stakeAmount * BigInt(2));
+      .approve(fixture.publicStaking.address, stakeAmount * BigInt(2));
     await stakeValidators(fixture, newValidators);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
@@ -156,11 +157,12 @@ describe("ValidatorPool: Registration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
-    let newValidators = await createValidators(fixture, validatorsSnapshots);
-    let newTokensIds = await stakeValidators(fixture, newValidators);
+    const newValidators = await createValidators(fixture, validatorsSnapshots);
+    const newTokensIds = await stakeValidators(fixture, newValidators);
     await expect(
       factoryCallAny(fixture, "validatorPool", "registerValidators", [
         newValidators,
@@ -172,23 +174,24 @@ describe("ValidatorPool: Registration logic", async () => {
   });
 
   it("Should successfully register validators if all conditions are met", async function () {
-    let expectedState = await getCurrentState(fixture, validators);
-    //Expect that NFTs are transferred from each validator to ValidatorPool sd ValidatorNFTs
-    validators.map((_, index) => {
-      expectedState.Factory.StakeNFT--;
+    const expectedState = await getCurrentState(fixture, validators);
+    // Expect that NFTs are transferred from each validator from ValidatorPool to ValidatorStaking
+    for (let index = 0; index < validators.length; index++) {
+      expectedState.Factory.PublicStaking--;
       expectedState.ValidatorPool.ValNFT++;
       expectedState.validators[index].Acc = true;
       expectedState.validators[index].Reg = true;
-    });
-    //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
-    expectedState.StakeNFT.MAD -= stakeAmount * BigInt(validators.length);
-    expectedState.ValidatorNFT.MAD += stakeAmount * BigInt(validators.length);
+    }
+    // Expect that all validators funds are transferred from PublicStaking to ValidatorStaking
+    expectedState.PublicStaking.MAD -= stakeAmount * BigInt(validators.length);
+    expectedState.ValidatorStaking.MAD +=
+      stakeAmount * BigInt(validators.length);
     // Register validators
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
     ]);
-    let currentState = await getCurrentState(fixture, validators);
+    const currentState = await getCurrentState(fixture, validators);
     await showState("after registering", currentState);
     await showState("Expected state after registering", expectedState);
     await showState("Current state after registering", currentState);
@@ -197,30 +200,31 @@ describe("ValidatorPool: Registration logic", async () => {
   });
 
   it("Should be able to register validators even if the contract has excess of Tokens and eth", async function () {
-    // Mint a stakeNFT and burn it to the ValidatorPool contract. Besides a contract self destructing
+    // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
-    let etherAmount = ethers.utils.parseEther("1");
-    let madTokenAmount = ethers.utils.parseEther("2");
+    const etherAmount = ethers.utils.parseEther("1");
+    const madTokenAmount = ethers.utils.parseEther("2");
     await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
 
-    let expectedState = await getCurrentState(fixture, validators);
-    //Expect that NFTs are transferred from each validator to ValidatorPool sd ValidatorNFTs
-    validators.map((_, index) => {
-      expectedState.Factory.StakeNFT--;
+    const expectedState = await getCurrentState(fixture, validators);
+    // Expect that NFTs are transferred from each validator from ValidatorPool to ValidatorStaking
+    for (let index = 0; index < validators.length; index++) {
+      expectedState.Factory.PublicStaking--;
       expectedState.ValidatorPool.ValNFT++;
       expectedState.validators[index].Acc = true;
       expectedState.validators[index].Reg = true;
-    });
-    //Expect that all validators funds are transferred from StakeNFT to ValidatorNFT
-    expectedState.StakeNFT.MAD -= stakeAmount * BigInt(validators.length);
-    expectedState.StakeNFT.ETH = BigInt(0);
-    expectedState.ValidatorNFT.MAD += stakeAmount * BigInt(validators.length);
+    }
+    // Expect that all validators funds are transferred from PublicStaking to ValidatorStaking
+    expectedState.PublicStaking.MAD -= stakeAmount * BigInt(validators.length);
+    expectedState.PublicStaking.ETH = BigInt(0);
+    expectedState.ValidatorStaking.MAD +=
+      stakeAmount * BigInt(validators.length);
     // Register validators
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
     ]);
-    let currentState = await getCurrentState(fixture, validators);
+    const currentState = await getCurrentState(fixture, validators);
     await showState("after registering", currentState);
     await showState("Expected state after registering", expectedState);
     await showState("Current state after registering", currentState);
@@ -233,7 +237,7 @@ describe("ValidatorPool: Registration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    let currentState = await getCurrentState(fixture, validators);
+    const currentState = await getCurrentState(fixture, validators);
     await showState("after registering", currentState);
     await fixture.validatorPool
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
@@ -248,39 +252,40 @@ describe("ValidatorPool: Registration logic", async () => {
       validators,
       stakingTokenIds,
     ]);
-    let currentState = await getCurrentState(fixture, validators);
+    const currentState = await getCurrentState(fixture, validators);
     await showState("after registering", currentState);
-    // Original Validators has all the validators not only the maximun to register
+    // Original Validators has all the validators not only the maximum to register
     // Position 5 is not a register validator
     await expect(
       fixture.validatorPool.connect(adminSigner).setLocation("1.1.1.1")
     ).to.be.revertedWith("ValidatorPool: Only validators allowed!");
   });
 
-  it("Should not allow users to register reusing previous stakeNFT that cannot be burned", async function () {
+  it("Should not allow users to register reusing previous publicStaking that cannot be burned", async function () {
     await factoryCallAny(fixture, "validatorPool", "registerValidators", [
       validators,
       stakingTokenIds,
     ]);
+    await mineBlocks(1n);
     await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
       validators,
     ]);
     await commitSnapshots(fixture, 4);
     stakingTokenIds = [];
     for (const validator of validatorsSnapshots) {
-      let claimTx = (await fixture.validatorPool
+      const claimTx = (await fixture.validatorPool
         .connect(await getValidatorEthAccount(validator))
         .claimExitingNFTPosition()) as ContractTransaction;
-      let receipt = await ethers.provider.getTransactionReceipt(claimTx.hash);
-      //When a token is claimed it gets burned an minted so it gets a new tokenId so we need to update array for re-registration
+      const receipt = await ethers.provider.getTransactionReceipt(claimTx.hash);
+      // When a token is claimed it gets burned an minted so it gets a new tokenId so we need to update array for re-registration
       const tokenId = BigNumber.from(receipt.logs[0].topics[3]);
       stakingTokenIds.push(tokenId);
       // Transfer to factory for re-registering
-      await fixture.stakeNFT
+      await fixture.publicStaking
         .connect(await getValidatorEthAccount(validator))
         .transferFrom(validator.address, fixture.factory.address, tokenId);
       // Approve new tokensIds
-      await factoryCallAny(fixture, "stakeNFT", "approve", [
+      await factoryCallAny(fixture, "publicStaking", "approve", [
         fixture.validatorPool.address,
         tokenId,
       ]);
@@ -298,6 +303,8 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("StakeNFT: The position is not ready to be burned!");
+    ).to.be.revertedWith(
+      "PublicStaking: The position is not ready to be burned!"
+    );
   });
 });

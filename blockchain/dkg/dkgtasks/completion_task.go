@@ -2,10 +2,12 @@ package dkgtasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 	"math/big"
 )
@@ -36,6 +38,15 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
+	// setup leader election
+	block, err := eth.GetGethClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	if err != nil {
+		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
+	}
+
+	logger.Infof("block hash: %v\n", block.Hash())
+	t.StartBlockHash.SetBytes(block.Hash().Bytes())
+
 	return nil
 }
 
@@ -57,7 +68,13 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	logger.Info("CompletionTask doTask()")
 
 	if t.isTaskCompleted(ctx, eth) {
+		t.Success = true
 		return nil
+	}
+
+	// submit if I'm a leader for this task
+	if !t.AmILeading(ctx, eth, logger) {
+		return errors.New("not leading Completion yet")
 	}
 
 	// Setup
@@ -124,9 +141,11 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		logger.WithFields(logrus.Fields{
 			"t.State.Phase":      t.State.Phase,
 			"t.State.PhaseStart": t.State.PhaseStart,
-		}).Info("CompletionTask ShouldRetry - will not retry")
+		}).Info("CompletionTask ShouldRetry - will not retry because it's done")
 		return false
 	}
+
+	logger.Info("CompletionTask ShouldRetry() will retry")
 
 	return true
 }
@@ -151,4 +170,25 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Eth
 	}
 
 	return phase == uint8(objects.Completion)
+}
+
+func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
+	// check if I'm a leader for this task
+	currentHeight, err := eth.GetCurrentHeight(ctx)
+	if err != nil {
+		return false
+	}
+
+	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
+	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+
+	logger.WithFields(logrus.Fields{
+		"currentHeight":                    currentHeight,
+		"t.Start":                          t.Start,
+		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
+		"blocksSinceDesperation":           blocksSinceDesperation,
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
 }

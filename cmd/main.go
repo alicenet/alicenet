@@ -163,14 +163,8 @@ func main() {
 		&utils.Command: {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},
 
-		&utils.ApproveTokensCommand:  {},
-		&utils.DepositCommand:        {},
-		&utils.EthdkgCommand:         {},
-		&utils.RegisterCommand:       {},
-		&utils.SendWeiCommand:        {},
-		&utils.TransferTokensCommand: {},
-		&utils.UnregisterCommand:     {},
-		&utils.UpdateValueCommand:    {},
+		&utils.EthdkgCommand:  {},
+		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
@@ -193,15 +187,10 @@ func main() {
 		&bootnode.Command:  &rootCommand,
 		&validator.Command: &rootCommand,
 		// &deploy.Command:              &rootCommand,
-		&utils.Command:               &rootCommand,
-		&utils.ApproveTokensCommand:  &utils.Command,
-		&utils.EthdkgCommand:         &utils.Command,
-		&utils.RegisterCommand:       &utils.Command,
-		&utils.UpdateValueCommand:    &utils.Command,
-		&utils.SendWeiCommand:        &utils.Command,
-		&utils.TransferTokensCommand: &utils.Command,
-		&utils.UnregisterCommand:     &utils.Command,
-		&utils.DepositCommand:        &utils.Command}
+		&utils.Command:        &rootCommand,
+		&utils.EthdkgCommand:  &utils.Command,
+		&utils.SendWeiCommand: &utils.Command,
+	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
 	for c := range options {

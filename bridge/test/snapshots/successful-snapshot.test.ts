@@ -34,7 +34,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
-    let junkData =
+    const junkData =
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
     await expect(
       snapshots
@@ -136,5 +136,5 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     ).to.be.revertedWith(
       `Snapshots: Caller didn't participate in the last ethdkg round!`
     )
-  })*/
+  }) */
 });

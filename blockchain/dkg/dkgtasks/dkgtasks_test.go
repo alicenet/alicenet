@@ -1,19 +1,23 @@
 package dkgtasks_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"math"
+	"encoding/json"
+	"io"
+	"log"
 	"math/big"
+	"net/http"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-
-	"github.com/MadBase/MadNet/bridge/bindings"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
@@ -25,7 +29,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,101 +64,6 @@ func (ah *adminHandlerMock) RegisterSnapshotCallback(func(*objs.BlockHeader) err
 
 func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
-}
-
-func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) interfaces.Ethereum {
-	eth, err := blockchain.NewEthereumSimulator(
-		privateKeys,
-		6,
-		1*time.Second,
-		5*time.Second,
-		0,
-		big.NewInt(math.MaxInt64),
-		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
-
-	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
-	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
-
-	// Mine a block once a second
-	if blockInterval > 1*time.Millisecond {
-		go func() {
-			for {
-				time.Sleep(blockInterval)
-				eth.Commit()
-			}
-		}()
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Unlock the default account and use it to deploy contracts
-	deployAccount := eth.GetDefaultAccount()
-	err = eth.UnlockAccount(deployAccount)
-	assert.Nil(t, err, "Failed to unlock default account")
-
-	// Deploy all the contracts
-	c := eth.Contracts()
-	panic("missing deploy step")
-	// _, _, err = c.DeployContracts(ctx, deployAccount)
-	// assert.Nil(t, err, "Failed to deploy contracts...")
-
-	// For each address passed set them up as a validator
-	txnOpts, err := eth.GetTransactionOpts(ctx, deployAccount)
-	assert.Nil(t, err, "Failed to create txn opts")
-
-	accountList := eth.GetKnownAccounts()
-	for idx, acct := range accountList {
-		//	for idx := 1; idx < len(accountAddresses); idx++ {
-		// acct, err := eth.GetAccount(common.HexToAddress(accountAddresses[idx]))
-		//assert.Nil(t, err)
-		err = eth.UnlockAccount(acct)
-		assert.Nil(t, err)
-
-		eth.Commit()
-		t.Logf("# unlocked %v of %v", idx+1, len(accountList))
-
-		// 1. Give 'acct' tokens
-		txn, err := c.StakeNFT().MintTo(txnOpts, acct.Address, big.NewInt(10_000_000), big.NewInt(0))
-		assert.Nilf(t, err, "Failed on transfer %v", idx)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-		tokenID := txn.Value()
-
-		o, err := eth.GetTransactionOpts(ctx, acct)
-		assert.Nil(t, err)
-
-		// 2. Allow system to take tokens from 'acct' for staking
-		txn, err = c.StakeNFT().Approve(o, c.ValidatorPoolAddress(), big.NewInt(10_000_000))
-		assert.Nilf(t, err, "Failed on approval %v", idx)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		// 3. Tell system to take tokens from 'acct' for staking
-		// txn, err = c.StakeNFT().LockStake(o, big.NewInt(1_000_000))
-		// assert.Nilf(t, err, "Failed on lock %v", idx)
-		// eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-
-		txn, err = c.ValidatorPool().RegisterValidators(o, []common.Address{acct.Address}, []*big.Int{tokenID})
-		assert.Nilf(t, err, "Failed on register %v", idx)
-		assert.NotNil(t, txn)
-		eth.Queue().QueueGroupTransaction(ctx, SETUP_GROUP, txn)
-		t.Logf("Finished loop %v of %v", idx+1, len(accountList))
-		eth.Commit()
-	}
-
-	// Wait for all transactions for all accounts to complete
-	rcpts, err := eth.Queue().WaitGroupTransactions(ctx, SETUP_GROUP)
-	assert.Nil(t, err)
-
-	// Make sure all transactions were successful
-	t.Logf("# rcpts: %v", len(rcpts))
-	for _, rcpt := range rcpts {
-		assert.Equal(t, uint64(1), rcpt.Status)
-	}
-
-	return eth
 }
 
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
@@ -220,13 +128,49 @@ func SetupTasks(tr *objects.TypeRegistry) {
 }
 
 func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-	height, err := eth.GetFinalizedHeight(context.Background())
-	assert.Nil(t, err)
+	currentBlock, err := eth.GetCurrentHeight(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
-	distance := target - height
+	c := http.Client{}
+	msg := &blockchain.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  "hardhat_mine",
+		Params:  make([]byte, 0),
+	}
 
-	for i := uint64(0); i < distance; i++ {
-		eth.Commit()
+	blocksToMine := target - currentBlock
+	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+
+	if msg.Params, err = json.Marshal([]string{blocksToMineString}); err != nil {
+		panic(err)
+	}
+
+	log.Printf("hardhat_mine %v blocks to target height %v", blocksToMine, target)
+
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(msg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reader := bytes.NewReader(buff.Bytes())
+
+	resp, err := c.Post(
+		"http://127.0.0.1:8545",
+		"application/json",
+		reader,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -240,7 +184,7 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	t.Logf("dkgStates:%v", dkgStates)
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
-	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
 
 	accountList := eth.GetKnownAccounts()
@@ -258,8 +202,6 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := eth.Contracts()
-
 	txnOpts, err := eth.GetTransactionOpts(context.Background(), ownerAccount)
 	assert.Nil(t, err)
 
@@ -268,7 +210,7 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	tr := &objects.TypeRegistry{}
 	adminHandlers := make([]*adminHandlerMock, len(accountList))
 	SetupTasks(tr)
-	//	for i := 1; i < len(accountList); i++ {
+
 	for i, account := range accountList {
 		adminHandlers[i] = new(adminHandlerMock)
 		wg.Add(1)
@@ -276,16 +218,13 @@ func IgnoreTestDkgSuccess(t *testing.T) {
 	}
 
 	// Kick off a round of ethdkg
-	txn, err := c.Ethdkg().SetPhaseLength(txnOpts, 10)
+	_, _, err = dkg.SetETHDKGPhaseLength(20, eth, txnOpts, ctx)
 	assert.Nil(t, err)
-	eth.Queue().QueueAndWait(ctx, txn)
 
-	txn, err = c.Ethdkg().InitializeETHDKG(txnOpts)
+	_, _, err = dkg.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
-	eth.Queue().QueueAndWait(ctx, txn)
 
 	// Now we know ethdkg is running, let's find out when registration has to happen
-	// TODO this should be based on an OpenRegistration event
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 	t.Logf("Current Height:%v", currentHeight)
@@ -316,7 +255,7 @@ type TestSuite struct {
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
 	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
 
-	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()
@@ -327,46 +266,46 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, err := eth.Contracts().Ethdkg().SetPhaseLength(ownerOpts, phaseLength)
-	assert.Nil(t, err)
-	_, err = eth.Queue().QueueAndWait(ctx, txn)
+	_, _, err = dkg.SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	txn, err = eth.Contracts().ValidatorPool().InitializeETHDKG(ownerOpts)
+	// init ETHDKG on ValidatorPool, through ContractFactory
+	_, rcpt, err := dkg.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	eth.Commit()
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
-
-	eventMap := monitor.GetETHDKGEvents()
-	eventInfo, ok := eventMap["RegistrationOpened"]
-	if !ok {
-		t.Fatal("event not found: RegistrationOpened")
-	}
-	var event *bindings.ETHDKGRegistrationOpened
-	for _, log := range rcpt.Logs {
-		if log.Topics[0].String() == eventInfo.ID.String() {
-			event, err = eth.Contracts().Ethdkg().ParseRegistrationOpened(*log)
-			assert.Nil(t, err)
-			break
-		}
-	}
 	assert.NotNil(t, event)
+
+	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	assert.Nil(t, err)
+
+	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, uint8(objects.RegistrationOpen), phase)
+
+	valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(n), valCount.Uint64())
 
 	// Do Register task
 	regTasks := make([]*dkgtasks.RegisterTask, n)
 	dispMissingRegTasks := make([]*dkgtasks.DisputeMissingRegistrationTask, n)
 	dkgStates := make([]*objects.DkgState, n)
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < n; idx++ {
+		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		// Set Registration success to true
 		state, _, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
 			accounts[idx],
 			event.StartBlock.Uint64(),
 			event.PhaseLength.Uint64(),
 			event.ConfirmationLength.Uint64(),
-			event.Nonce.Uint64())
+			event.Nonce.Uint64(),
+			true,
+			validatorAddresses,
+		)
 
 		dkgStates[idx] = state
 		regTasks[idx] = regTask
@@ -378,18 +317,9 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 			continue
 		}
 
-		callOpts := eth.GetCallOpts(ctx, accounts[0])
-		phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
-		assert.Nil(t, err)
-		assert.Equal(t, uint8(objects.RegistrationOpen), phase)
-
 		nVal, err := eth.Contracts().Ethdkg().GetNumParticipants(callOpts)
 		assert.Nil(t, err)
 		assert.Equal(t, uint64(idx), nVal.Uint64())
-
-		valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
-		assert.Nil(t, err)
-		assert.Equal(t, uint64(n), valCount.Uint64())
 
 		err = regTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -448,9 +378,17 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 
 func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, n, 0, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
+
+	callOpts := suite.eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount())
+	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, phase, uint8(objects.ShareDistribution))
+
+	height, err := suite.eth.GetCurrentHeight(ctx)
+	assert.Nil(t, err)
+	assert.GreaterOrEqual(t, height, suite.shareDistTasks[0].Start)
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
@@ -539,7 +477,6 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 
 func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares int, phaseLength uint16) *TestSuite {
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
@@ -608,27 +545,29 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 
 func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestSuite {
 	suite := StartFromKeyShareSubmissionPhase(t, n, 0, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	dkgStates := suite.dkgStates
 	eth := suite.eth
 
 	// Do MPK Submission task (once is enough)
-	task := suite.mpkSubmissionTasks[0]
-	state := dkgStates[0]
 
-	err := task.Initialize(ctx, logger, eth, state)
-	assert.Nil(t, err)
-	err = task.DoWork(ctx, logger, eth)
-	assert.Nil(t, err)
+	for idx := 0; idx < n; idx++ {
+		task := suite.mpkSubmissionTasks[idx]
+		state := dkgStates[idx]
+
+		err := task.Initialize(ctx, logger, eth, state)
+		assert.Nil(t, err)
+		if task.AmILeading(ctx, eth, logger) {
+			err = task.DoWork(ctx, logger, eth)
+			assert.Nil(t, err)
+		}
+	}
 
 	eth.Commit()
 
 	height, err := suite.eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-
-	// advanceTo(t, eth, height+dkgStates[0].ConfirmationLength)
 
 	gpkjSubmissionTasks := make([]*dkgtasks.GPKjSubmissionTask, n)
 	disputeMissingGPKjTasks := make([]*dkgtasks.DisputeMissingGPKjTask, n)
@@ -652,7 +591,6 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 
 func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromMPKSubmissionPhase(t, n, phaseLength)
-	//accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
@@ -737,6 +675,15 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
 		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
 	}
+
+	return suite
+}
+
+func StartFromCompletion(t *testing.T, n int, phaseLength uint16) *TestSuite {
+	suite := StartFromGPKjPhase(t, n, []int{}, []int{}, phaseLength)
+
+	// move to Completion phase
+	advanceTo(t, suite.eth, suite.completionTasks[0].Start+suite.dkgStates[0].ConfirmationLength)
 
 	return suite
 }

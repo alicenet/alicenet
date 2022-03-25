@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
-
+import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
@@ -46,7 +46,7 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
-    function setEpochLength(uint32 epochLength_) external {
+    function setEpochLength(uint32 epochLength_) public {
         _epochLength = epochLength_;
     }
 
@@ -67,14 +67,24 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         returns (bool)
     {
         bool isSafeToProceedConsensus = true;
-        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
             isSafeToProceedConsensus = false;
-            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
         // dummy to silence compiling warnings
         groupSignature_;
         bClaims_;
+        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.BClaims(
+            0,
+            0,
+            0,
+            0x00,
+            0x00,
+            0x00,
+            0x00
+        );
         _epoch++;
+        _snapshots[_epoch] = Snapshot(block.number, blockClaims);
         return true;
     }
 

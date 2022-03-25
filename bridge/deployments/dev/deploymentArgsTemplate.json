@@ -20,11 +20,11 @@
   "initializerArgs": {
     "contracts/ETHDKG.sol:ETHDKG": [
       {
-        "phaseLength_": "20",
+        "phaseLength_": "40",
         "type": "uint256"
       },
       {
-        "confirmationLength_": "4",
+        "confirmationLength_": "6",
         "type": "uint256"
       }
     ],
