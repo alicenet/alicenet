@@ -9,13 +9,12 @@ import {
   mineBlocks,
 } from "../../setup";
 import {
-  assertAccumulatorAndSlushEth,
-  assertAccumulatorAndSlushToken,
-  assertERC20Balance,
-  assertPositions,
-  assertTotalReserveAndZeroExcess,
-  estimateAndCollectTokens,
-  mintPosition,
+  burnPositionCheckAndUpdateState,
+  collectTokensCheckAndUpdateState,
+  depositEthCheckAndUpdateState,
+  depositTokensCheckAndUpdateState,
+  getCurrentState,
+  mintPositionCheckAndUpdateState,
 } from "../setup";
 
 describe("PublicStaking: Collect Tokens and ETH profit", async () => {
@@ -30,7 +29,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       ethers.utils.parseUnits("100000", 18)
     );
     users = await createUsers(numberUsers);
-    const baseAmount = ethers.utils.parseUnits("10000", 1).toBigInt();
+    const baseAmount = ethers.utils.parseUnits("100", 0).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
       await fixture.madToken.transfer(await users[i].getAddress(), baseAmount);
       await fixture.madToken
@@ -52,165 +51,224 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
   it("Mint, collect and burn tokens for multiple users", async function () {
     const sharesPerUser = 100n;
+    const tokensID: number[] = [];
+    for (let i = 0; i < users.length; i++) {
+      tokensID.push(0);
+    }
+
     const scaleFactor = (
       await fixture.publicStaking.getAccumulatorScaleFactor()
     ).toBigInt();
-    const tokensID: number[] = [];
-    let [tokenID, expectedPosition] = await mintPosition(
+
+    const expectedState = await getCurrentState(
       fixture.publicStaking,
-      users[0],
-      sharesPerUser
-    );
-    tokensID.push(tokenID);
-
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
-    await assertAccumulatorAndSlushToken(fixture.publicStaking, 0n, 0n);
-
-    let amountDeposited = 50n;
-    await fixture.publicStaking.depositToken(42, amountDeposited);
-    await assertTotalReserveAndZeroExcess(fixture.publicStaking, 150n, 0n);
-
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
-    let accTokenExpected = (amountDeposited * scaleFactor) / sharesPerUser;
-    await assertAccumulatorAndSlushToken(
-      fixture.publicStaking,
-      accTokenExpected,
-      0n
-    );
-    const [accumulator, slush] =
-      await fixture.publicStaking.getTokenAccumulator();
-
-    expect(
-      slush.toBigInt() + accumulator.toBigInt() * sharesPerUser
-    ).to.be.equals(
-      amountDeposited * scaleFactor,
-      "Accumulator and slush expected value dont match!"
-    );
-
-    let expectedTokensAmount = 150n;
-    await assertERC20Balance(
       fixture.madToken,
-      fixture.publicStaking.address,
-      expectedTokensAmount
+      users,
+      tokensID
     );
 
-    await estimateAndCollectTokens(
+    await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      tokensID[0],
-      users[0],
-      50n
-    );
-
-    expectedTokensAmount = expectedTokensAmount - 50n;
-    await assertERC20Balance(
       fixture.madToken,
-      fixture.publicStaking.address,
-      expectedTokensAmount
-    );
-
-    await assertTotalReserveAndZeroExcess(fixture.publicStaking, 100n, 0n);
-
-    await assertAccumulatorAndSlushToken(
-      fixture.publicStaking,
-      accTokenExpected,
-      0n
-    );
-    [tokenID, expectedPosition] = await mintPosition(
-      fixture.publicStaking,
-      users[1],
       sharesPerUser,
-      0n,
-      accTokenExpected
-    );
-    tokensID.push(tokenID);
-    await assertTotalReserveAndZeroExcess(
-      fixture.publicStaking,
-      sharesPerUser * 2n,
-      0n
+      0,
+      users,
+      tokensID,
+      expectedState,
+      "After mint 1"
     );
 
-    await assertAccumulatorAndSlushToken(
+    // deposit and collect only with 1 user
+    let amountDeposited = 50n;
+    await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      accTokenExpected,
-      0n
+      fixture.madToken,
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 1"
     );
 
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
+    await collectTokensCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      amountDeposited,
+      0,
+      users,
+      tokensID,
+      expectedState,
+      "After collect 1"
+    );
+
+    // mint another position.
+    await mintPositionCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      sharesPerUser,
+      1,
+      users,
+      tokensID,
+      expectedState,
+      "After mint 2"
+    );
+
+    // deposit and collect the profits for all users
     amountDeposited = 500n;
-    expectedTokensAmount = sharesPerUser * 2n + amountDeposited;
-    await fixture.publicStaking.depositToken(42, amountDeposited);
-
-    accTokenExpected += (amountDeposited * scaleFactor) / (2n * sharesPerUser);
-    await assertAccumulatorAndSlushToken(
+    await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      accTokenExpected,
-      0n
-    );
-
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
-    await assertERC20Balance(
       fixture.madToken,
-      fixture.publicStaking.address,
-      expectedTokensAmount
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 2"
     );
-    await assertTotalReserveAndZeroExcess(
+
+    let numUsers = 2;
+    for (let i = 0; i < numUsers; i++) {
+      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
+      await collectTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.madToken,
+        expectedCollectedAmount,
+        i,
+        users,
+        tokensID,
+        expectedState,
+        "After collect 2-" + i
+      );
+    }
+
+    // mint another position.
+    await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      expectedTokensAmount,
-      0n
-    );
-    await estimateAndCollectTokens(
-      fixture.publicStaking,
-      tokensID[0],
-      users[0],
-      amountDeposited / 2n
-    );
-    expectedTokensAmount -= amountDeposited / 2n;
-    await assertERC20Balance(
       fixture.madToken,
-      fixture.publicStaking.address,
-      expectedTokensAmount
-    );
-    await assertTotalReserveAndZeroExcess(
-      fixture.publicStaking,
-      expectedTokensAmount,
-      0n
-    );
-    await assertAccumulatorAndSlushToken(
-      fixture.publicStaking,
-      accTokenExpected,
-      0n
+      sharesPerUser,
+      2,
+      users,
+      tokensID,
+      expectedState,
+      "After mint 3"
     );
 
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
-    expectedPosition.accumulatorToken = accTokenExpected;
-    await assertPositions(fixture.publicStaking, tokensID[0], expectedPosition);
-
-    await estimateAndCollectTokens(
+    // deposit and collect the profits for all users
+    amountDeposited = 1000n;
+    await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      tokensID[1],
-      users[1],
-      amountDeposited / 2n
-    );
-
-    expectedTokensAmount -= amountDeposited / 2n;
-    await assertERC20Balance(
       fixture.madToken,
-      fixture.publicStaking.address,
-      expectedTokensAmount
-    );
-    await assertTotalReserveAndZeroExcess(
-      fixture.publicStaking,
-      expectedTokensAmount,
-      0n
-    );
-    await assertAccumulatorAndSlushToken(
-      fixture.publicStaking,
-      accTokenExpected,
-      0n
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 3"
     );
 
-    await assertAccumulatorAndSlushEth(fixture.publicStaking, 0n, 0n);
-    expectedPosition.accumulatorToken = accTokenExpected;
-    await assertPositions(fixture.publicStaking, tokensID[1], expectedPosition);
+    let expectedSlushes = [
+      333333333333333400n,
+      666666666666666700n,
+      1000000000000000000n,
+    ];
+    numUsers = 3;
+    for (let i = 0; i < numUsers; i++) {
+      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
+      await collectTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.madToken,
+        expectedCollectedAmount,
+        i,
+        users,
+        tokensID,
+        expectedState,
+        "After collect 3-" + i,
+        expectedSlushes[i]
+      );
+    }
+
+    // deposit and collect the profits for all users
+    amountDeposited = 1000n;
+    await depositTokensCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 4"
+    );
+
+    expectedSlushes = [666666666666666800n, 1333333333333333400n];
+
+    // only 2 users collect
+    for (let i = 0; i < 2; i++) {
+      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
+      await collectTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.madToken,
+        expectedCollectedAmount,
+        i,
+        users,
+        tokensID,
+        expectedState,
+        "After collect 4-" + i,
+        expectedSlushes[i]
+      );
+    }
+
+    // deposit and collect the profits for all users
+    amountDeposited = 1666n;
+    await depositTokensCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 5"
+    );
+
+    // All users collect this time, we expect the last user witch didn't register last time to get more
+    const expectedCollectedAmounts = [555n, 555n, 889n];
+    expectedSlushes = [
+      777777777777777800n,
+      1555555555555555600n,
+      2000000000000000000n,
+    ];
+    for (let i = 0; i < numUsers; i++) {
+      await collectTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.madToken,
+        expectedCollectedAmounts[i],
+        i,
+        users,
+        tokensID,
+        expectedState,
+        "After collect 4-" + i,
+        expectedSlushes[i]
+      );
+    }
+    await mineBlocks(2n);
+    amountDeposited = ethers.utils.parseEther("1000").toBigInt();
+    await depositEthCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      amountDeposited,
+      users,
+      tokensID,
+      expectedState,
+      "After deposit 6 Eth"
+    );
+
+    await burnPositionCheckAndUpdateState(
+      fixture.publicStaking,
+      fixture.madToken,
+      333_333333333333333333n,
+      100n,
+      0,
+      users,
+      tokensID,
+      expectedState,
+      "After burn 1"
+    );
   });
 });

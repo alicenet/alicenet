@@ -639,13 +639,13 @@ abstract contract StakingNFT is
             state_.slush = 0;
         }
 
-        uint256 payoutReminder = payout;
+        uint256 payoutRemainder = payout;
         // reduce payout by scale factor
         payout /= _ACCUMULATOR_SCALE_FACTOR;
         // Computing and saving the numeric error from the floor division in the
         // slush.
-        payoutReminder -= payout * _ACCUMULATOR_SCALE_FACTOR;
-        state_.slush += payoutReminder;
+        payoutRemainder -= payout * _ACCUMULATOR_SCALE_FACTOR;
+        state_.slush += payoutRemainder;
 
         return (state_, p_, positionAccumulatorValue_, payout);
     }

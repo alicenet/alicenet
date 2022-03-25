@@ -1,6 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BigNumberish, Contract } from "ethers";
+import { ethers } from "hardhat";
 import {
   callFunctionAndGetReturnValues,
   getTokenIdFromTx,
@@ -8,12 +9,102 @@ import {
 } from "../setup";
 
 export interface Position {
-  shares: bigint;
-  freeAfter: bigint;
-  withdrawFreeAfter: bigint;
-  accumulatorEth: bigint;
-  accumulatorToken: bigint;
+  Shares: bigint;
+  FreeAfter: bigint;
+  WithdrawFreeAfter: bigint;
+  AccumulatorEth: bigint;
+  AccumulatorToken: bigint;
 }
+
+export interface User {
+  Address: string;
+  TokenBalance: bigint;
+  NFTBalance: bigint;
+  Idx: number;
+  Position: Position;
+}
+
+export interface AccumulatorState {
+  Accumulator: bigint;
+  Slush: bigint;
+}
+
+export interface StakingContract {
+  Address: string;
+  TokenBalance: bigint;
+  EthBalance: bigint;
+  TotalShares: bigint;
+  ReserveTokens: bigint;
+  ReserveEth: bigint;
+  AccumulatorToken: AccumulatorState;
+  AccumulatorEth: AccumulatorState;
+}
+
+export interface StakingState {
+  BaseStaking: StakingContract;
+  Users: User[];
+}
+
+export const getCurrentState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  _users: SignerWithAddress[],
+  _tokensID: number[]
+): Promise<StakingState> => {
+  if (_users.length !== _tokensID.length) {
+    throw new Error(
+      "The _users array should have the same length as _tokensID array." +
+        " In case a user doesn't have a minted NFT position send 0 in that position!"
+    );
+  }
+  const [accumulatorEth, slushEth] = await stakingContract.getEthAccumulator();
+  const [accumulatorToken, slushToken] =
+    await stakingContract.getTokenAccumulator();
+  const stakingState: StakingState = {
+    BaseStaking: {
+      Address: stakingContract.address,
+      TokenBalance: (
+        await tokenContract.balanceOf(stakingContract.address)
+      ).toBigInt(),
+      EthBalance: (
+        await ethers.provider.getBalance(stakingContract.address)
+      ).toBigInt(),
+      TotalShares: (await stakingContract.getTotalShares()).toBigInt(),
+      ReserveTokens: (
+        await stakingContract.getTotalReserveMadToken()
+      ).toBigInt(),
+      ReserveEth: (await stakingContract.getTotalReserveEth()).toBigInt(),
+      AccumulatorToken: {
+        Accumulator: accumulatorToken.toBigInt(),
+        Slush: slushToken.toBigInt(),
+      },
+      AccumulatorEth: {
+        Accumulator: accumulatorEth.toBigInt(),
+        Slush: slushEth.toBigInt(),
+      },
+    },
+    Users: [],
+  };
+
+  for (let i = 0; i < _users.length; i++) {
+    stakingState.Users.push({
+      Address: _users[i].address,
+      TokenBalance: (
+        await tokenContract.balanceOf(_users[i].address)
+      ).toBigInt(),
+      NFTBalance: (
+        await stakingContract.balanceOf(_users[i].address)
+      ).toBigInt(),
+      Idx: i,
+      Position:
+        _tokensID[i] === 0
+          ? newPosition(0n, 0n, 0n, 0n, 0n)
+          : await getPosition(stakingContract, _tokensID[i]),
+    });
+  }
+
+  return stakingState;
+};
 
 export const newPosition = (
   shares: bigint,
@@ -23,11 +114,11 @@ export const newPosition = (
   accumulatorToken: bigint
 ): Position => {
   return {
-    shares,
-    freeAfter,
-    withdrawFreeAfter,
-    accumulatorEth,
-    accumulatorToken,
+    Shares: shares,
+    FreeAfter: freeAfter,
+    WithdrawFreeAfter: withdrawFreeAfter,
+    AccumulatorEth: accumulatorEth,
+    AccumulatorToken: accumulatorToken,
   };
 };
 
@@ -43,12 +134,330 @@ export const getPosition = async (
     _accumulatorToken,
   ] = await contract.getPosition(tokenID);
   return {
-    shares: _shares.toBigInt(),
-    freeAfter: _freeAfter.toBigInt(),
-    withdrawFreeAfter: _withdrawFreeAfter.toBigInt(),
-    accumulatorEth: _accumulatorEth.toBigInt(),
-    accumulatorToken: _accumulatorToken.toBigInt(),
+    Shares: _shares.toBigInt(),
+    FreeAfter: _freeAfter.toBigInt(),
+    WithdrawFreeAfter: _withdrawFreeAfter.toBigInt(),
+    AccumulatorEth: _accumulatorEth.toBigInt(),
+    AccumulatorToken: _accumulatorToken.toBigInt(),
   };
+};
+
+export const collectEth = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<BigNumber> => {
+  const [collectedEth] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectEth",
+    user,
+    [tokenID]
+  );
+  return collectedEth;
+};
+
+export const collectToken = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<BigNumber> => {
+  const [collectedEth] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectToken",
+    user,
+    [tokenID]
+  );
+  return collectedEth;
+};
+
+export const burnPosition = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<[BigNumber, BigNumber]> => {
+  const [[payoutEth, payoutToken]] = await callFunctionAndGetReturnValues(
+    contract,
+    "burn",
+    user,
+    [tokenID]
+  );
+  return [payoutEth, payoutToken];
+};
+
+export const mintPosition = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  amountToMint: bigint,
+  expectedAccumulatorEth: bigint = 0n,
+  expectedAccumulatorToken: bigint = 0n
+): Promise<[number, Position]> => {
+  const tx = await contract.connect(user).mint(amountToMint);
+  await mineBlocks(1n);
+  const tokenID = await getTokenIdFromTx(tx);
+  const blockNumber = BigInt((await tx.wait()).blockNumber);
+  const expectedPosition = newPosition(
+    amountToMint,
+    blockNumber + 1n,
+    blockNumber + 1n,
+    expectedAccumulatorEth,
+    expectedAccumulatorToken
+  );
+  await assertPositions(contract, tokenID, expectedPosition, user.address);
+
+  return [tokenID, expectedPosition];
+};
+
+export const estimateAndCollectTokens = async (
+  contract: Contract,
+  tokenID: number,
+  user: SignerWithAddress,
+  expectedCollectAmount: bigint
+) => {
+  expect(
+    (await contract.estimateTokenCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmount,
+    "Token collection don't match expected value!"
+  );
+
+  expect((await collectToken(contract, user, tokenID)).toBigInt()).to.be.equals(
+    expectedCollectAmount,
+    "Collected amount to match expected value!"
+  );
+};
+
+export const estimateAndCollectEth = async (
+  contract: Contract,
+  tokenID: number,
+  user: SignerWithAddress,
+  expectedCollectAmount: bigint
+) => {
+  expect(
+    (await contract.estimateEthCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmount,
+    "Token collection don't match expected value!"
+  );
+
+  expect((await collectEth(contract, user, tokenID)).toBigInt()).to.be.equals(
+    expectedCollectAmount,
+    "Collected amount to match expected value!"
+  );
+};
+
+export const mintPositionCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  amount: bigint,
+  userIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string
+) => {
+  const [tokenID, expectedPosition] = await mintPosition(
+    stakingContract,
+    users[userIdx],
+    amount,
+    stakingState.BaseStaking.AccumulatorEth.Accumulator,
+    stakingState.BaseStaking.AccumulatorToken.Accumulator
+  );
+
+  tokensID[userIdx] = tokenID;
+  stakingState.BaseStaking.TokenBalance += amount;
+  stakingState.BaseStaking.ReserveTokens += amount;
+  stakingState.BaseStaking.TotalShares += amount;
+  stakingState.Users[userIdx].TokenBalance -= amount;
+  stakingState.Users[userIdx].NFTBalance++;
+  stakingState.Users[userIdx].Position = expectedPosition;
+
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const depositTokensCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  amountDeposited: bigint,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string
+) => {
+  const scaleFactor = (
+    await stakingContract.getAccumulatorScaleFactor()
+  ).toBigInt();
+  await stakingContract.depositToken(42, amountDeposited);
+  const scaledAmount =
+    amountDeposited * scaleFactor +
+    stakingState.BaseStaking.AccumulatorToken.Slush;
+  const roundedAmount = scaledAmount / stakingState.BaseStaking.TotalShares;
+  stakingState.BaseStaking.TokenBalance += amountDeposited;
+  stakingState.BaseStaking.ReserveTokens += amountDeposited;
+  stakingState.BaseStaking.AccumulatorToken.Accumulator += roundedAmount;
+  stakingState.BaseStaking.AccumulatorToken.Slush =
+    scaledAmount - roundedAmount * stakingState.BaseStaking.TotalShares;
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const depositEthCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  amountDeposited: bigint,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string
+) => {
+  const scaleFactor = (
+    await stakingContract.getAccumulatorScaleFactor()
+  ).toBigInt();
+  await stakingContract.depositEth(42, {
+    value: amountDeposited,
+  });
+  const scaledAmount =
+    amountDeposited * scaleFactor +
+    stakingState.BaseStaking.AccumulatorEth.Slush;
+  const roundedAmount = scaledAmount / stakingState.BaseStaking.TotalShares;
+  stakingState.BaseStaking.EthBalance += amountDeposited;
+  stakingState.BaseStaking.ReserveEth += amountDeposited;
+  stakingState.BaseStaking.AccumulatorEth.Accumulator += roundedAmount;
+  stakingState.BaseStaking.AccumulatorEth.Slush =
+    scaledAmount - roundedAmount * stakingState.BaseStaking.TotalShares;
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const collectTokensCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  expectedAmountCollected: bigint,
+  userIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string,
+  expectedSlush?: bigint
+) => {
+  await estimateAndCollectTokens(
+    stakingContract,
+    tokensID[userIdx],
+    users[userIdx],
+    expectedAmountCollected
+  );
+  stakingState.Users[userIdx].TokenBalance += expectedAmountCollected;
+  stakingState.Users[userIdx].Position.AccumulatorToken =
+    stakingState.BaseStaking.AccumulatorToken.Accumulator;
+  stakingState.BaseStaking.TokenBalance -= expectedAmountCollected;
+  stakingState.BaseStaking.ReserveTokens -= expectedAmountCollected;
+  if (expectedSlush !== undefined) {
+    stakingState.BaseStaking.AccumulatorToken.Slush = expectedSlush;
+  }
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const collectEthCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  expectedAmountCollected: bigint,
+  userIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string,
+  expectedSlush?: bigint
+) => {
+  await estimateAndCollectEth(
+    stakingContract,
+    tokensID[userIdx],
+    users[userIdx],
+    expectedAmountCollected
+  );
+  stakingState.Users[userIdx].Position.AccumulatorEth =
+    stakingState.BaseStaking.AccumulatorEth.Accumulator;
+  stakingState.BaseStaking.EthBalance -= expectedAmountCollected;
+  stakingState.BaseStaking.ReserveEth -= expectedAmountCollected;
+  if (expectedSlush !== undefined) {
+    stakingState.BaseStaking.AccumulatorEth.Slush = expectedSlush;
+  }
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const burnPositionCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  expectedPayoutEth: bigint,
+  expectedPayoutToken: bigint,
+  userIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string
+) => {
+  const [payoutEth, payoutToken] = await burnPosition(
+    stakingContract,
+    users[userIdx],
+    tokensID[userIdx]
+  );
+  expect(payoutEth.toBigInt()).to.be.equals(
+    expectedPayoutEth,
+    "Payout Eth don't match expected amount!"
+  );
+  expect(payoutToken.toBigInt()).to.be.equals(
+    expectedPayoutToken,
+    "Payout token don't match expected amount!"
+  );
+  tokensID[userIdx] = 0;
+  stakingState.Users[userIdx].NFTBalance--;
+  stakingState.Users[userIdx].TokenBalance += expectedPayoutToken;
+  stakingState.Users[userIdx].Position = newPosition(0n, 0n, 0n, 0n, 0n);
+  stakingState.BaseStaking.TokenBalance -= expectedPayoutToken;
+  stakingState.BaseStaking.ReserveTokens -= expectedPayoutToken;
+  stakingState.BaseStaking.EthBalance -= expectedPayoutEth;
+  stakingState.BaseStaking.ReserveEth -= expectedPayoutEth;
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const assertAccumulatorAndSlushEth = async (
+  contract: Contract,
+  accumulatorExpectedAmount: bigint,
+  slushExpectedAmount: bigint
+) => {
+  const [accumulator, slush] = await contract.getEthAccumulator();
+  expect(accumulator.toBigInt()).to.be.equals(
+    accumulatorExpectedAmount,
+    "Accumulator didn't match the expected amount!"
+  );
+  expect(slush.toBigInt()).to.be.equals(
+    slushExpectedAmount,
+    "Slush didn't match the expected amount!"
+  );
+};
+
+export const assertAccumulatorAndSlushToken = async (
+  contract: Contract,
+  accumulatorExpectedAmount: bigint,
+  slushExpectedAmount: bigint
+) => {
+  const [accumulator, slush] = await contract.getTokenAccumulator();
+  expect(accumulator.toBigInt()).to.be.equals(
+    accumulatorExpectedAmount,
+    "Accumulator didn't match the expected amount!"
+  );
+  expect(slush.toBigInt()).to.be.equals(
+    slushExpectedAmount,
+    "Slush didn't match the expected amount!"
+  );
 };
 
 export const assertTotalReserveAndZeroExcess = async (
@@ -116,107 +525,5 @@ export const assertERC20Balance = async (
   expect((await contract.balanceOf(ownerAddress)).toBigInt()).to.be.equals(
     expectedAmount,
     "ERC20 Balance didn't match the expected amount!"
-  );
-};
-
-export const collectEth = async (
-  contract: Contract,
-  user: SignerWithAddress,
-  tokenID: number
-): Promise<BigNumber> => {
-  const [collectedEth] = await callFunctionAndGetReturnValues(
-    contract,
-    "collectEth",
-    user,
-    [tokenID]
-  );
-  return collectedEth;
-};
-
-export const collectToken = async (
-  contract: Contract,
-  user: SignerWithAddress,
-  tokenID: number
-): Promise<BigNumber> => {
-  const [collectedEth] = await callFunctionAndGetReturnValues(
-    contract,
-    "collectToken",
-    user,
-    [tokenID]
-  );
-  return collectedEth;
-};
-
-export const mintPosition = async (
-  contract: Contract,
-  user: SignerWithAddress,
-  amountToMint: bigint,
-  expectedAccumulatorEth: bigint = 0n,
-  expectedAccumulatorToken: bigint = 0n
-): Promise<[number, Position]> => {
-  const tx = await contract.connect(user).mint(amountToMint);
-  await mineBlocks(1n);
-  const tokenID = await getTokenIdFromTx(tx);
-  const blockNumber = BigInt((await tx.wait()).blockNumber);
-  const expectedPosition = newPosition(
-    amountToMint,
-    blockNumber + 1n,
-    blockNumber + 1n,
-    expectedAccumulatorEth,
-    expectedAccumulatorToken
-  );
-  await assertPositions(contract, tokenID, expectedPosition, user.address);
-
-  return [tokenID, expectedPosition];
-};
-
-export const assertAccumulatorAndSlushEth = async (
-  contract: Contract,
-  accumulatorExpectedAmount: bigint,
-  slushExpectedAmount: bigint
-) => {
-  const [accumulator, slush] = await contract.getEthAccumulator();
-  expect(accumulator.toBigInt()).to.be.equals(
-    accumulatorExpectedAmount,
-    "Accumulator didn't match the expected amount!"
-  );
-  expect(slush.toBigInt()).to.be.equals(
-    slushExpectedAmount,
-    "Slush didn't match the expected amount!"
-  );
-};
-
-export const assertAccumulatorAndSlushToken = async (
-  contract: Contract,
-  accumulatorExpectedAmount: bigint,
-  slushExpectedAmount: bigint
-) => {
-  const [accumulator, slush] = await contract.getTokenAccumulator();
-  expect(accumulator.toBigInt()).to.be.equals(
-    accumulatorExpectedAmount,
-    "Accumulator didn't match the expected amount!"
-  );
-  expect(slush.toBigInt()).to.be.equals(
-    slushExpectedAmount,
-    "Slush didn't match the expected amount!"
-  );
-};
-
-export const estimateAndCollectTokens = async (
-  contract: Contract,
-  tokenID: number,
-  user: SignerWithAddress,
-  expectedCollectAmount: bigint
-) => {
-  expect(
-    (await contract.estimateTokenCollection(tokenID)).toBigInt()
-  ).to.be.equals(
-    expectedCollectAmount,
-    "Token collection don't match expected value!"
-  );
-
-  expect((await collectToken(contract, user, tokenID)).toBigInt()).to.be.equals(
-    expectedCollectAmount,
-    "Collected amount to match expected value!"
   );
 };
