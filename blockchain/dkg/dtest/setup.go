@@ -61,7 +61,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*objects.DkgS
 	baseSecretBytes[31] = 101
 	baseSecretValue := new(big.Int).SetBytes(baseSecretBytes)
 
-	// Make base for transport keydeploy.go
+	// Make base for transport key
 	baseTransportBytes := make([]byte, 32)
 	baseTransportBytes[0] = 1
 	baseTransportBytes[1] = 1

@@ -24,7 +24,7 @@ var _ interfaces.Task = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 		adminHandler:  adminHandler,
 	}
 }

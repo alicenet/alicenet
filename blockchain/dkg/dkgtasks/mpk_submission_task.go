@@ -24,7 +24,7 @@ var _ interfaces.Task = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

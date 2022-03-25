@@ -39,7 +39,7 @@ func (t *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewDkgTask(state *objects.DkgState, start uint64, end uint64) *ExecutionData {
+func NewExecutionData(state *objects.DkgState, start uint64, end uint64) *ExecutionData {
 	return &ExecutionData{
 		State:   state,
 		Start:   start,

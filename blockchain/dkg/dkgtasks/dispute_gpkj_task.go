@@ -25,7 +25,7 @@ var _ interfaces.Task = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

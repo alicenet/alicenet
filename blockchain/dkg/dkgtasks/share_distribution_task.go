@@ -22,7 +22,7 @@ var _ interfaces.Task = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

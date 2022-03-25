@@ -23,7 +23,7 @@ var _ interfaces.Task = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

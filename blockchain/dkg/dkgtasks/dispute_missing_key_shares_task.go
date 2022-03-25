@@ -21,7 +21,7 @@ var _ interfaces.Task = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

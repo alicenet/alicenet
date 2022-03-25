@@ -21,7 +21,7 @@ var _ interfaces.Task = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

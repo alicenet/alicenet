@@ -394,7 +394,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	populateMonitor(mon.State, addr0, EPOCH)
 
 	mockTsk := &mockTask{
-		DkgTask: dkgtasks.NewDkgTask(nil, 1, 40),
+		DkgTask: dkgtasks.NewExecutionData(nil, 1, 40),
 	}
 	// Schedule some tasks
 	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)

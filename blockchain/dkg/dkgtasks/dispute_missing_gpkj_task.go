@@ -21,7 +21,7 @@ var _ interfaces.Task = &DisputeMissingGPKjTask{}
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 

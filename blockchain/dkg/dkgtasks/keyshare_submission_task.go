@@ -21,7 +21,7 @@ var _ interfaces.Task = &KeyshareSubmissionTask{}
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		ExecutionData: NewDkgTask(state, start, end),
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
