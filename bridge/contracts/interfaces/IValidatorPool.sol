@@ -4,9 +4,9 @@ pragma solidity ^0.8.11;
 import "contracts/utils/CustomEnumerableMaps.sol";
 
 interface IValidatorPool {
-    event ValidatorJoined(address indexed account, uint256 validatorNFT);
-    event ValidatorLeft(address indexed account, uint256 stakeNFT);
-    event ValidatorMinorSlashed(address indexed account, uint256 stakeNFT);
+    event ValidatorJoined(address indexed account, uint256 validatorStakingTokenID);
+    event ValidatorLeft(address indexed account, uint256 publicStakingTokenID);
+    event ValidatorMinorSlashed(address indexed account, uint256 publicStakingTokenID);
     event ValidatorMajorSlashed(address indexed account);
     event MaintenanceScheduled();
 
@@ -28,8 +28,10 @@ interface IValidatorPool {
 
     function pauseConsensusOnArbitraryHeight(uint256 madnetHeight) external;
 
-    function registerValidators(address[] calldata validators, uint256[] calldata stakerTokenIDs)
-        external;
+    function registerValidators(
+        address[] calldata validators,
+        uint256[] calldata publicStakingTokenIDs
+    ) external;
 
     function unregisterValidators(address[] calldata validators) external;
 

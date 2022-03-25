@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import "contracts/StakeNFT.sol";
+import "contracts/libraries/StakingNFT/StakingNFT.sol";
 
-/// @custom:salt ValidatorNFT
+/// @custom:salt ValidatorStaking
 /// @custom:deploy-type deployStatic
-contract ValidatorNFT is StakeNFTBase {
-    // solhint-disable no-empty-blocks
-    constructor() StakeNFTBase() {}
+contract ValidatorStaking is StakingNFT {
+    constructor() StakingNFT() {}
 
     function initialize() public initializer onlyFactory {
-        __stakeNFTBaseInit("MNVSNFT", "MNVS");
+        __stakingNFTInit("AVSNFT", "AVS");
     }
 
     /// mint allows a staking position to be opened. This function
@@ -40,7 +39,7 @@ contract ValidatorNFT is StakeNFTBase {
     ) public override withCircuitBreaker onlyValidatorPool returns (uint256 tokenID) {
         require(
             lockDuration_ <= _MAX_MINT_LOCK,
-            "StakeNFT: The lock duration must be less or equal than the maxMintLock!"
+            "PublicStaking: The lock duration must be less or equal than the maxMintLock!"
         );
         tokenID = _mintNFT(to_, amount_);
         if (lockDuration_ > 0) {

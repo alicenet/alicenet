@@ -1,26 +1,18 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { factoryCallAny, Fixture, getFixture } from "../setup";
+import { commitSnapshots } from "./setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
   let fixture: Fixture;
-  let adminSigner: SignerWithAddress;
-  let notAdmin1Signer: SignerWithAddress;
-  let maxNumValidators = 5;
-  let stakeAmount = 20000;
-  let stakingTokenIds = new Array();
+  const maxNumValidators = 5;
+  const stakeAmount = 20000;
 
   beforeEach(async function () {
-    stakingTokenIds = [];
-    fixture = await getFixture();
-    const [admin, notAdmin1, , ,] = fixture.namedSigners;
-    adminSigner = await ethers.getSigner(admin.address);
-    notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
+    fixture = await getFixture(false, true);
   });
 
   it("Set a minimum stake", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "setStakeAmount",
@@ -30,7 +22,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Set a maximum number of validators", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "setMaxNumValidators",
@@ -40,7 +32,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Schedule maintenance", async function () {
-    let rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAny(
       fixture,
       "validatorPool",
       "scheduleMaintenance"
@@ -76,6 +68,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Pause consensus", async function () {
+    await commitSnapshots(fixture, 1);
     await expect(
       factoryCallAny(
         fixture,

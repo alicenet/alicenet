@@ -72,7 +72,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantNotRegistered(txOpts, accusableParticipants)
 		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing key shares: %v", err)
+			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
 		}
 
 		//TODO: add retry logic, add timeout

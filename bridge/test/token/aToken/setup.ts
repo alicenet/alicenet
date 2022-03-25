@@ -24,7 +24,7 @@ export interface state {
 
 export async function getState(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
-  let state: state = {
+  const state: state = {
     Balances: {
       madToken: {
         address: fixture.madToken.address.slice(-4),
@@ -48,7 +48,7 @@ export async function getState(fixture: Fixture) {
 }
 
 export function showState(title: string, state: state) {
-  if (process.env.npm_config_detailed == "true") {
+  if (process.env.npm_config_detailed === "true") {
     // execute "npm --detailed=true test" to see this output
     console.log(title, state);
   }
@@ -59,7 +59,7 @@ export function format(number: BigNumber) {
 }
 
 export function getUserNotInRoleReason(address: string, role: string) {
-  let reason =
+  const reason =
     "AccessControl: account " +
     address.toLowerCase() +
     " is missing role " +
@@ -68,7 +68,6 @@ export function getUserNotInRoleReason(address: string, role: string) {
 }
 
 export async function init(fixture: Fixture) {
-  const contractName = await fixture.aToken.name();
   [admin, user] = await ethers.getSigners();
   await fixture.madToken.connect(admin).approve(admin.address, 1000);
   await fixture.madToken

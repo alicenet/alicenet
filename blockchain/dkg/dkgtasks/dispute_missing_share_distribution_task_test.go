@@ -147,6 +147,7 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBadShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{4}, []int{3}, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")

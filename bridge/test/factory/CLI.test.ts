@@ -31,16 +31,9 @@ import {
 } from "./Setup";
 
 describe("Cli tasks", async () => {
-  let firstOwner: string;
-  let firstDelegator: string;
-  const accounts: Array<string> = [];
-
   beforeEach(async () => {
     process.env.test = "true";
     process.env.silencer = "true";
-    // set owner and delegator
-    firstOwner = accounts[0];
-    firstDelegator = accounts[1];
   });
 
   it("deploys factory with cli and checks if the default factory is updated in factory state toml file", async () => {

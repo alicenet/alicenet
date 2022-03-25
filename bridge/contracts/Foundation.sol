@@ -31,7 +31,7 @@ contract Foundation is
     /// first reading the source code and hopefully this comment
     function depositToken(uint8 magic_, uint256 amount_) public checkMagic(magic_) {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_MadTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
     }
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE

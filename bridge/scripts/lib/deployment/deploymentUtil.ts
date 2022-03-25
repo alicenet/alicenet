@@ -6,9 +6,8 @@ import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 import { MetaContractData, ProxyData } from "./factoryStateUtil";
 
-type Ethers =
-  typeof import("../../../node_modules/ethers/lib/ethers") &
-    HardhatEthersHelpers;
+type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
+  HardhatEthersHelpers;
 
 export interface ArgData {
   [key: string]: string;

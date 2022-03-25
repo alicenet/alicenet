@@ -5,13 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -153,4 +158,89 @@ func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap, percentage *big.Int) (*big.Int, 
 	resultTipCap = (&big.Int{}).Add(resultTipCap, gasTipCapRemainder)
 
 	return resultFeeCap, resultTipCap
+}
+
+func AmILeading(numValidators int, myIdx int, blocksSinceDesperation int, blockhash []byte, logger *logrus.Entry) bool {
+	var numValidatorsAllowed int = 1
+	for i := int(blocksSinceDesperation); i > 0; {
+		i -= constants.ETHDKGDesperationFactor / numValidatorsAllowed
+		numValidatorsAllowed++
+
+		if numValidatorsAllowed >= numValidators {
+			break
+		}
+	}
+
+	// use the random nature of blockhash to deterministically define the range of validators that are allowed to take an ETHDKG action
+	rand := (&big.Int{}).SetBytes(blockhash)
+	start := int((&big.Int{}).Mod(rand, big.NewInt(int64(numValidators))).Int64())
+	end := (start + numValidatorsAllowed) % numValidators
+
+	if end > start {
+		return myIdx >= start && myIdx < end
+	} else {
+		return myIdx >= start || myIdx < end
+	}
+}
+
+func SetETHDKGPhaseLength(length uint16, eth interfaces.Ethereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+	// Shorten ethdkg phase for testing purposes
+	ethdkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	input, err := ethdkgABI.Pack("setPhaseLength", uint16(length))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txn, err := eth.Contracts().ContractFactory().CallAny(callOpts, eth.Contracts().EthdkgAddress(), big.NewInt(0), input)
+	if err != nil {
+		return nil, nil, err
+	}
+	if txn == nil {
+		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
+	}
+
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if rcpt == nil {
+		return nil, nil, errors.New("non existent receipt for tx ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
+	}
+
+	return txn, rcpt, nil
+}
+
+func InitializeETHDKG(eth interfaces.Ethereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+	// Shorten ethdkg phase for testing purposes
+	validatorPoolABI, err := abi.JSON(strings.NewReader(bindings.ValidatorPoolMetaData.ABI))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	input, err := validatorPoolABI.Pack("initializeETHDKG")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txn, err := eth.Contracts().ContractFactory().CallAny(callOpts, eth.Contracts().ValidatorPoolAddress(), big.NewInt(0), input)
+	if err != nil {
+		return nil, nil, err
+	}
+	if txn == nil {
+		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(validatorPool, initializeETHDKG())")
+	}
+
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if rcpt == nil {
+		return nil, nil, errors.New("non existent receipt for tx ContractFactory.CallAny(validatorPool, initializeETHDKG())")
+	}
+
+	return txn, rcpt, nil
 }

@@ -2,12 +2,17 @@ package blockchain
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -17,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -34,6 +38,8 @@ var (
 	ErrKeysNotFound     = errors.New("account either not found or not unlocked")
 	ErrPasscodeNotFound = errors.New("could not find specified passcode")
 )
+
+var ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND string = "Method eth_maxPriorityFeePerGas not found"
 
 type EthereumDetails struct {
 	logger         *logrus.Logger
@@ -122,10 +128,12 @@ func NewEthereumSimulator(
 		genAlloc[address] = core.GenesisAccount{Balance: wei}
 	}
 
-	gasLimit := uint64(150000000)
-	sim := backends.NewSimulatedBackend(genAlloc, gasLimit)
-	eth.client = sim
-	eth.queue = NewTxnQueue(sim, eth.selectors, timeout)
+	client, err := ethclient.Dial("http://127.0.0.1:8545")
+	if err != nil {
+		return nil, err
+	}
+	eth.client = client
+	eth.queue = NewTxnQueue(client, eth.selectors, timeout)
 	eth.queue.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
@@ -136,16 +144,99 @@ func NewEthereumSimulator(
 		return nil, nil
 	}
 
-	eth.close = func() error {
+	eth.SetClose(func() error {
 		os.RemoveAll(pathKeystore)
-		return sim.Close()
-	}
+		client.Close()
+		return nil
+	})
 
 	eth.commit = func() {
-		sim.Commit()
+		c := http.Client{}
+		msg := &JsonrpcMessage{
+			Version: "2.0",
+			ID:      []byte("1"),
+			Method:  "evm_mine",
+			Params:  make([]byte, 0),
+		}
+
+		if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+			panic(err)
+		}
+
+		var buff bytes.Buffer
+		err := json.NewEncoder(&buff).Encode(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		retryCount := 5
+		var worked bool
+		for i := 0; i < retryCount; i++ {
+			reader := bytes.NewReader(buff.Bytes())
+			resp, err := c.Post(
+				"http://127.0.0.1:8545",
+				"application/json",
+				reader,
+			)
+
+			if err != nil {
+				log.Printf("error calling evm_mine rpc: %v", err)
+				<-time.After(5 * time.Second)
+				continue
+			}
+
+			_, err = io.ReadAll(resp.Body)
+			if err != nil {
+				log.Printf("error reading response from evm_mine rpc: %v", err)
+				<-time.After(5 * time.Second)
+				continue
+			}
+
+			worked = true
+			break
+		}
+
+		if !worked {
+			panic(fmt.Errorf("error commiting evm_mine on rpc: %v", err))
+		}
 	}
 
 	return eth, nil
+}
+
+func (eth *EthereumDetails) SetContractFactory(ctx context.Context, contractFactoryAddress common.Address) error {
+	c := &ContractDetails{eth: eth}
+	err := c.LookupContracts(ctx, contractFactoryAddress)
+	if err != nil {
+		return err
+	}
+
+	eth.contracts = c
+	return nil
+}
+
+// A value of this type can a JSON-RPC request, notification, successful response or
+// error response. Which one it is depends on the fields.
+type JsonrpcMessage struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   *jsonError      `json:"error,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+}
+
+type jsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+func (err *jsonError) Error() string {
+	if err.Message == "" {
+		return fmt.Sprintf("json-rpc error %d", err.Code)
+	}
+	return err.Message
 }
 
 // NewEthereumEndpoint creates a new Ethereum abstraction
@@ -240,6 +331,22 @@ func (eth *EthereumDetails) KnownSelectors() interfaces.SelectorMap {
 func (eth *EthereumDetails) Close() error {
 	eth.queue.Close()
 	return eth.close()
+}
+
+func (eth *EthereumDetails) SetClose(fn func() error) {
+	if eth.close != nil {
+		var prevClose (func() error) = eth.close
+		eth.close = func() error {
+			err := prevClose()
+			if err != nil {
+				return err
+			}
+
+			return fn()
+		}
+	} else {
+		eth.close = fn
+	}
 }
 
 func (eth *EthereumDetails) Commit() {
@@ -535,9 +642,14 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	bm := new(big.Int).SetInt64(bmi64)
 	bf := new(big.Int).Set(baseFee)
 	baseFee2x := new(big.Int).Mul(bm, bf)
+
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		if err.Error() == ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND {
+			tipCap = big.NewInt(1)
+		} else {
+			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		}
 	}
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
@@ -593,7 +705,11 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 	baseFee2x := new(big.Int).Mul(bm, bf)
 	tipCap, err := eth.client.SuggestGasTipCap(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		if err.Error() == ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND {
+			tipCap = big.NewInt(1)
+		} else {
+			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
+		}
 	}
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 

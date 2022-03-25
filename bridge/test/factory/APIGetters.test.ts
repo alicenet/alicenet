@@ -10,19 +10,16 @@ import { assert, expect } from "../chai-setup";
 import {
   bytes32ArrayToStringArray,
   deployFactory,
-  getAccounts,
   getMetamorphicAddress,
 } from "./Setup";
 process.env.silencer = "true";
 
 describe("Madnetfactory API test", async () => {
-  let accounts: Array<string> = [];
   let utilsContract: Utils;
   let factory: MadnetFactory;
 
   beforeEach(async () => {
     const utilsBase = await ethers.getContractFactory(UTILS);
-    accounts = await getAccounts();
     // set owner and delegator
     utilsContract = await utilsBase.deploy();
     factory = await deployFactory();

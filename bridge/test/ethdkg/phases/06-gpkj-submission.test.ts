@@ -9,7 +9,7 @@ import {
 
 describe("ETHDKG: GPKj submission", () => {
   it("should not allow GPKj submission outside of GPKjSubmission phase", async () => {
-    let [ethdkg] = await startAtMPKSubmission(validators4);
+    const [ethdkg] = await startAtMPKSubmission(validators4);
 
     await expect(
       ethdkg
@@ -19,7 +19,7 @@ describe("ETHDKG: GPKj submission", () => {
   });
 
   it("should not allow non-validators to submit GPKj submission", async () => {
-    let [ethdkg] = await startAtGPKJ(validators4);
+    const [ethdkg] = await startAtGPKJ(validators4);
 
     const validator11 = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
 
@@ -31,7 +31,9 @@ describe("ETHDKG: GPKj submission", () => {
   });
 
   it("should not allow submission of GPKj more than once from a validator", async () => {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(validators4);
+    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
+      validators4
+    );
 
     await submitValidatorsGPKJ(
       ethdkg,
@@ -55,7 +57,7 @@ describe("ETHDKG: GPKj submission", () => {
   });
 
   it("should not allow submission of empty GPKj", async () => {
-    let [ethdkg] = await startAtGPKJ(validators4);
+    const [ethdkg] = await startAtGPKJ(validators4);
 
     await expect(
       ethdkg

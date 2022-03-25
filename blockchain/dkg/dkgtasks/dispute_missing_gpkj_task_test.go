@@ -168,6 +168,7 @@ func TestDisputeMissingGPKjTask_ShouldRetry_True(t *testing.T) {
 func TestShouldAccuseOneValidatorWhoDidNotDistributeGPKjAndAnotherSubmittedBadGPKj(t *testing.T) {
 	n := 5
 	suite := StartFromGPKjPhase(t, n, []int{4}, []int{3}, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
@@ -218,6 +219,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeGPKjAndAnotherSubmittedBadGP
 func TestShouldAccuseTwoValidatorWhoDidNotDistributeGPKjAndAnotherTwoSubmittedBadGPKj(t *testing.T) {
 	n := 5
 	suite := StartFromGPKjPhase(t, n, []int{3, 4}, []int{1, 2}, 100)
+	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Test", "Test1")

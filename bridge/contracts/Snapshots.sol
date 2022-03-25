@@ -52,11 +52,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         returns (bool)
     {
         require(
-            IValidatorPool(_ValidatorPoolAddress()).isValidator(msg.sender),
+            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
             "Snapshots: Only validators allowed!"
         );
         require(
-            IValidatorPool(_ValidatorPoolAddress()).isConsensusRunning(),
+            IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
             "Snapshots: Consensus is not running!"
         );
 
@@ -65,7 +65,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
         );
 
-        (bool success, uint256 validatorIndex) = IETHDKG(_ETHDKGAddress()).tryGetParticipantIndex(
+        (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress()).tryGetParticipantIndex(
             msg.sender
         );
         //todo:remove this, dummy operation only to silence linter
@@ -87,7 +87,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         /*
         require(
             _mayValidatorSnapshot(
-                IValidatorPool(_ValidatorPoolAddress()).getValidatorsCount(),
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                 validatorIndex - 1,
                 blocksSinceDesperation,
                 keccak256(bClaims_),
@@ -103,7 +103,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
-                    keccak256(abi.encodePacked(IETHDKG(_ETHDKGAddress()).getMasterPublicKey())),
+                    keccak256(abi.encodePacked(IETHDKG(_ethdkgAddress()).getMasterPublicKey())),
                 "Snapshots: Wrong master public key!"
             );
 
@@ -129,9 +129,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         require(blockClaims.chainId == _chainId, "Snapshots: Incorrect chainID for snapshot!");
 
         bool isSafeToProceedConsensus = true;
-        if (IValidatorPool(_ValidatorPoolAddress()).isMaintenanceScheduled()) {
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
             isSafeToProceedConsensus = false;
-            IValidatorPool(_ValidatorPoolAddress()).pauseConsensus();
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
 
         _snapshots[epoch] = Snapshot(block.number, blockClaims);

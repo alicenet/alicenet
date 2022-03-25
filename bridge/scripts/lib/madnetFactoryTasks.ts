@@ -196,9 +196,10 @@ task("deployContracts", "runs the initial deployment of all madnet contracts")
   .addOptionalParam("factoryAddress", "specify if a factory is already deployed, if not specifed a new factory will be deployed")
   .addOptionalParam("inputFolder", "path to location containing deploymentArgsTemplate, and deploymentList")
   .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state"
+    "inputFolder",
+    "path to location containing deploymentArgsTemplate, and deploymentList"
   )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
     let cumulativeGasUsed = BigNumber.from("0")
     await checkUserDirPath(taskArgs.outputFolder);
@@ -769,10 +770,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
@@ -823,8 +821,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     await updateProxyList(network, proxyData, taskArgs.outputFolder);
     return proxyData;
   });
-
-
+  
 /**
  * deploys a proxy and upgrades it using multicall from factory
  * @returns a proxyData object with logic contract name, address and proxy salt, and address.
@@ -840,10 +837,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factoryState"
-  )
+  .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .addOptionalParam(
     "salt",
     "unique salt for specifying proxy defaults to salt specified in logic contract"

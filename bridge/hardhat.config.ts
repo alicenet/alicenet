@@ -9,6 +9,7 @@ import "hardhat-gas-reporter";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
+import "./scripts/generateImmutableAuth";
 import "./scripts/lib/gogogen";
 import "./scripts/lib/madnetFactoryTasks";
 import "./scripts/lib/madnetTasks";
@@ -42,10 +43,8 @@ const config: HardhatUserConfig = {
     validator9: 9,
     validator10: 10,
     user: 11,
-    // "user": 2
   },
-  //unnamedAccounts: [],
-  //defaultNetwork: "ganache",
+
   networks: {
     dev: {
       url: "http://127.0.0.1:8545",
@@ -71,10 +70,11 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
     },
     hardhat: {
+      chainId: 1337,
       allowUnlimitedContractSize: false,
       mining: {
         auto: true,
-        //interval: 15000,
+        interval: 0,
       },
       accounts: [
         {
@@ -174,7 +174,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.11",
+        version: "0.8.13",
         settings: {
           outputSelection: {
             "*": {
@@ -237,8 +237,8 @@ const config: HardhatUserConfig = {
       "Snapshots",
       "MadByte",
       "MadToken",
-      "StakeNFT",
-      "ValidatorNFT",
+      "PublicStaking",
+      "ValidatorStaking",
       "Governance",
     ],
     except: [

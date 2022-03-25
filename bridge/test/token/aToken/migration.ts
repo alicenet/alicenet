@@ -1,23 +1,18 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { MadToken } from "../../../typechain-types";
-import { AToken } from "../../../typechain-types/AToken";
 import { expect, Fixture, getFixture } from "../../setup";
 import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
-  let aToken: AToken;
-  let madToken: MadToken;
-  let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
-  let amount = 1000;
+  const amount = 1000;
   let fixture: Fixture;
 
   beforeEach(async function () {
     fixture = await getFixture();
-    [admin, user] = await ethers.getSigners();
+    [, user] = await ethers.getSigners();
     await init(fixture);
     expectedState = await getState(fixture);
   });

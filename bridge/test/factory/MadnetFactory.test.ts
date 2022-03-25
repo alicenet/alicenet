@@ -210,7 +210,7 @@ describe("Madnet Contract Factory", () => {
     const factory = await deployFactory();
     // use the ethers Mock contract abstraction to generate the deploy transaction data
     const mockCon: ContractFactory = await ethers.getContractFactory(MOCK);
-    // get the init code with contructor args appended
+    // get the init code with constructor args appended
     const deployTx = mockCon.getDeployTransaction(2, "s");
     const transactionCount = await ethers.provider.getTransactionCount(
       factory.address
@@ -238,7 +238,7 @@ describe("Madnet Contract Factory", () => {
     let factory = await deployFactory();
     // use the ethers Mock contract abstraction to generate the deploy transaction data
     const mockCon = await ethers.getContractFactory(MOCK);
-    // get the init code with contructor args appended
+    // get the init code with constructor args appended
     const deployTx = mockCon.getDeployTransaction(2, "s");
     // deploy Mock Logic through the factory
     const signers = await ethers.getSigners();
@@ -372,7 +372,7 @@ describe("Madnet Contract Factory", () => {
       DEPLOYED_RAW,
       CONTRACT_ADDR
     );
-    expect(mockInitAddr).to.not.equal(undefined);
+    expect(mockInitAddr).to.not.be.equals(undefined);
     const mockInitializable = await ethers.getContractFactory(
       MOCK_INITIALIZABLE
     );
@@ -395,7 +395,7 @@ describe("Madnet Contract Factory", () => {
       DEPLOYED_RAW,
       CONTRACT_ADDR
     );
-    expect(mockInitAddr).to.not.equal(undefined);
+    expect(mockInitAddr).to.not.be.equals(undefined);
     // call data to initialize mockInitializable
     const mockInitable = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const initCallData = await mockInitable.interface.encodeFunctionData(

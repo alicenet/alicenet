@@ -12,9 +12,8 @@ import {
 
 describe("ETHDKG: Submit Key share", () => {
   it("should not allow submission of key shares when not in KeyShareSubmission phase", async () => {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtDistributeShares(
-      validators4
-    );
+    const [ethdkg, validatorPool, expectedNonce] =
+      await startAtDistributeShares(validators4);
     // distribute shares for all validators
     await distributeValidatorsShares(
       ethdkg,
@@ -36,7 +35,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should allow submission of key shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
     // Submit the Key shares for all validators
@@ -50,9 +49,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow non-validator to submit key shares", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
-      validators4
-    );
+    const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
 
     // a non-validator tries to submit the Key shares
     const validator11 = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
@@ -88,7 +85,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
+    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
     // Submit the Key shares for all validators
@@ -112,9 +109,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow submission of key shares with empty input data", async function () {
-    let [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
-      validators4
-    );
+    const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
 
     // Submit empty Key shares for all validators
     await expect(
