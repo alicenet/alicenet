@@ -31,6 +31,7 @@ export const MOCK_FACTORY = "MockFactory";
 export const MOCK_INITIALIZABLE = "MockInitializable";
 export const MULTI_CALL_DEPLOY_PROXY = "multiCallDeployProxy";
 export const MULTI_CALL_UPGRADE_PROXY = "multiCallUpgradeProxy";
+export const ONLY_PROXY = "onlyProxy";
 export const PROXY = "Proxy";
 export const PROXY_ADDR = "ProxyAddress";
 export const RECEIPT = "receipt";

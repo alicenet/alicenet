@@ -5,7 +5,7 @@ import "contracts/interfaces/IAToken.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
 /// @custom:salt ATokenMinter
-/// @custom:deploy-type deployStatic
+/// @custom:deploy-type onlyProxy
 contract ATokenMinter is ImmutableAToken {
     // Placeholder contract. The real ATokenMinter will be implemented later
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
