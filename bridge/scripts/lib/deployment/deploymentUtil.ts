@@ -1,10 +1,8 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 import { BytesLike } from "ethers";
 import { Artifacts, RunTaskFunction } from "hardhat/types";
-import { predictFactoryAddress } from "../../../test/factory/Setup";
 import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
-import { MetaContractData, ProxyData } from "./factoryStateUtil";
 
 type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
@@ -56,11 +54,11 @@ export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
 
 export async function getDeployMetaArgs(
   fullyQualifiedName: string,
-  factoryAddress:string,
+  factoryAddress: string,
   artifacts: Artifacts,
   inputFolder?: string,
   outputFolder?: string
-): Promise<DeployArgs>{
+): Promise<DeployArgs> {
   let initCallData;
   // check if contract needs to be initialized
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
@@ -81,7 +79,7 @@ export async function getDeployMetaArgs(
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-  }
+  };
 }
 
 export async function getDeployUpgradeableProxyArgs(
@@ -110,7 +108,7 @@ export async function getDeployUpgradeableProxyArgs(
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-  }
+  };
 }
 
 export async function isInitializable(
@@ -145,7 +143,7 @@ export async function hasConstructorArgs(
   return false;
 }
 /**
- * @description encodes init call data input to be used by the custom hardhat tasks 
+ * @description encodes init call data input to be used by the custom hardhat tasks
  * @param args values of the init call data as an array of strings where each string represents variable value
  * @returns the args array as a comma delimited string
  */
@@ -153,7 +151,7 @@ export async function getEncodedInitCallData(
   args: Array<string> | undefined
 ): Promise<string | undefined> {
   if (args !== undefined) {
-    return args.toString()
+    return args.toString();
   }
 }
 

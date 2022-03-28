@@ -1,6 +1,11 @@
 // const { contracts } from"@openzeppelin/cli/lib/prompts/choices");
 import { expect } from "chai";
-import { BytesLike, ContractFactory, ContractReceipt, ContractTransaction } from "ethers";
+import {
+  BytesLike,
+  ContractFactory,
+  ContractReceipt,
+  ContractTransaction,
+} from "ethers";
 import { ethers } from "hardhat";
 import { END_POINT, MADNET_FACTORY, MOCK } from "../../scripts/lib/constants";
 import { MadnetFactory } from "../../typechain-types/MadnetFactory";
@@ -173,9 +178,6 @@ export async function getReceiptEventVar(
   }
   throw new Error(`failed to find event: ${eventName}`);
 }
-
-
-
 
 export async function expectTxSuccess(txResponse: ContractTransaction) {
   const receipt = await txResponse.wait();

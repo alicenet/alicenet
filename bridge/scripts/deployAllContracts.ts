@@ -4,8 +4,8 @@ import { getDeploymentList } from "./lib/deployment/deploymentListUtil";
 import {
   deployFactory,
   getDeployMetaArgs,
-  getDeployUpgradeableProxyArgs,
   getDeployType,
+  getDeployUpgradeableProxyArgs,
 } from "./lib/deployment/deploymentUtil";
 
 async function main() {

@@ -17,7 +17,8 @@ contract MadnetFactory is MadnetFactoryBase {
      * address (address of itself)
      */
     constructor(address selfAddr_) MadnetFactoryBase(selfAddr_) {}
-//TODO: Make this payable?
+
+    //TODO: Make this payable?
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
@@ -69,7 +70,7 @@ contract MadnetFactory is MadnetFactoryBase {
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
-     //TODO make this payable?
+    //TODO make this payable?
     function deployCreate2(
         uint256 value_,
         bytes32 salt_,

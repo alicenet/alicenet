@@ -398,7 +398,7 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
         return contractAddr;
     }
 
-/*
+    /*
 
 just so you know how - remember convo about changing the template deploy code to store on the template msg.sender.... then in the constructor do a 
 assembly { 
@@ -453,8 +453,6 @@ ff SELFDESTRUCT                     CALLER
 05                           02 
 56 jump                         
 */
-
-
 
     /**
      * @dev _initializeContract allows the owner/delegator to initialize contracts deployed via factory

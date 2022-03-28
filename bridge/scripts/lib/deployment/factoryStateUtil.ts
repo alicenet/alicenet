@@ -70,27 +70,29 @@ async function writeFactoryState(
   fieldData: any,
   usrPath?: string
 ) {
-  const path =
-    usrPath === undefined
-      ? FACTORY_STATE_PATH
-      : usrPath.replace(/\/+$/, "") + "/factoryState";
-  let factoryStateConfig;
-  if (fs.existsSync(path)) {
-    factoryStateConfig = await readFactoryState(path);
-    factoryStateConfig[network] =
-      factoryStateConfig[network] === undefined
-        ? {}
-        : factoryStateConfig[network];
-    factoryStateConfig[network][fieldName] = fieldData;
-  } else {
-    factoryStateConfig = {
-      [network]: {
-        [fieldName]: fieldData,
-      },
-    };
+  if (process.env.silencer === undefined || process.env.silencer === "false") {
+    const path =
+      usrPath === undefined
+        ? FACTORY_STATE_PATH
+        : usrPath.replace(/\/+$/, "") + "/factoryState";
+    let factoryStateConfig;
+    if (fs.existsSync(path)) {
+      factoryStateConfig = await readFactoryState(path);
+      factoryStateConfig[network] =
+        factoryStateConfig[network] === undefined
+          ? {}
+          : factoryStateConfig[network];
+      factoryStateConfig[network][fieldName] = fieldData;
+    } else {
+      factoryStateConfig = {
+        [network]: {
+          [fieldName]: fieldData,
+        },
+      };
+    }
+    const data = toml.stringify(factoryStateConfig);
+    fs.writeFileSync(path, data);
   }
-  const data = toml.stringify(factoryStateConfig);
-  fs.writeFileSync(path, data);
 }
 
 export async function updateDefaultFactoryData(
@@ -144,15 +146,17 @@ export async function updateList(
   data: any,
   usrPath?: string
 ) {
-  const factoryStateConfig = await readFactoryState(usrPath);
-  const output: Array<any> =
-    factoryStateConfig[network][fieldName] === undefined
-      ? []
-      : factoryStateConfig[network][fieldName];
-  output.push(data);
-  if (data.receipt !== undefined) {
-    data.receipt = undefined;
+  if (process.env.silencer === undefined || process.env.silencer === "false") {
+    const factoryStateConfig = await readFactoryState(usrPath);
+    const output: Array<any> =
+      factoryStateConfig[network][fieldName] === undefined
+        ? []
+        : factoryStateConfig[network][fieldName];
+    output.push(data);
+    if (data.receipt !== undefined) {
+      data.receipt = undefined;
+    }
+    // write new data to config file
+    await writeFactoryState(network, fieldName, output, usrPath);
   }
-  // write new data to config file
-  await writeFactoryState(network, fieldName, output, usrPath);
 }

@@ -93,12 +93,7 @@ task("registerValidators", "registers validators")
 
     // Make sure that admin is the named account at position 0
     const [admin] = await hre.ethers.getSigners();
-    const tokens = await madToken.balanceOf(factory.address);
-    console.log("balance of madtoke in factory:", tokens);
-
     console.log(`Admin address: ${admin.address}`);
-    const adminTokenBal = await madToken.balanceOf(admin.address);
-    console.log(adminTokenBal);
     let iface = new hre.ethers.utils.Interface([
       "function transfer(address,uint256)",
     ]);
@@ -117,8 +112,6 @@ task("registerValidators", "registers validators")
         stakeAmountMadWei.mul(validatorAddresses.length)
       );
     await tx.wait();
-    console.log(stakeAmountMadWei.mul(validatorAddresses.length).toBigInt());
-
     console.log(
       `Approved allowance to validatorPool of: ${stakeAmountMadWei
         .mul(validatorAddresses.length)
@@ -135,7 +128,6 @@ task("registerValidators", "registers validators")
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
       console.log(`Minted PublicStaking.tokenID ${tokenId}`);
       stakingTokenIds.push(tokenId);
-
       const iface = new hre.ethers.utils.Interface([
         "function approve(address,uint256)",
       ]);
@@ -148,14 +140,12 @@ task("registerValidators", "registers validators")
         .callAny(publicStaking.address, 0, input);
 
       await tx.wait();
-
       console.log(`Approved tokenID:${tokenId} to ValidatorPool`);
     }
 
     console.log(
       `registering ${validatorAddresses.length} validators with ValidatorPool...`
     );
-
     // add validators to the ValidatorPool
     // await validatorPool.registerValidators(validatorAddresses, stakingTokenIds)
     iface = new hre.ethers.utils.Interface([

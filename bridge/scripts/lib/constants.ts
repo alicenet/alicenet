@@ -1,4 +1,5 @@
 import "process";
+export const MULTICALL_GAS_LIMIT = "10000000";
 export const DEPLOYMENT_LIST_FPATH = "/deploymentList";
 export const DEPLOYMENT_ARGS_TEMPLATE_FPATH = "/deploymentArgsTemplate";
 export const DEFAULT_CONFIG_OUTPUT_DIR = "../scripts/base-files";
