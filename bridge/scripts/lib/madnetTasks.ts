@@ -250,7 +250,7 @@ task(
   "pauseEthdkgArbritaryHeigh",
   "Forcing consensus to stop on block number defined by --input"
 )
-  .addParam("input", "The block number after the latest block mined")
+  .addParam("madnetHeight", "The block number after the latest block mined")
   .setAction(async (taskArgs, hre) => {
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
