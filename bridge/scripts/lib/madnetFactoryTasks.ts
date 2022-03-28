@@ -24,6 +24,7 @@ import {
   MADNET_FACTORY,
   MULTICALL_GAS_LIMIT,
   MULTI_CALL_DEPLOY_PROXY,
+  ONLY_PROXY,
   PROXY,
   STATIC_DEPLOYMENT,
   UPGRADEABLE_DEPLOYMENT,
@@ -45,6 +46,7 @@ import {
   DeployArgs,
   DeploymentArgs,
   DeployProxyMCArgs,
+  extractName,
   getAllContracts,
   getDeployMetaArgs,
   getDeployType,
@@ -255,6 +257,16 @@ task("deployContracts", "runs the initial deployment of all madnet contracts")
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
           break;
         }
+        case ONLY_PROXY: {
+          const name = extractName(fullyQualifiedName);
+          const salt: BytesLike = await getBytes32Salt(name, hre);
+          proxyData = await hre.run("deployProxy", {
+            factoryAddress,
+            salt,
+          });
+          cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
+          break;
+        }
         default: {
           break;
         }
@@ -306,11 +318,7 @@ task(
       : "0x";
     // factory interface pointed to deployed factory contract
     // get the 32byte salt from logic contract file
-    const salt: BytesLike =
-      taskArgs.salt === undefined
-        ? await getBytes32Salt(taskArgs.contractName, hre)
-        : hre.ethers.utils.formatBytes32String(taskArgs.salt);
-
+    const salt: BytesLike = await getBytes32Salt(taskArgs.contractName, hre);
     const logicContract: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
@@ -783,6 +791,10 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
       gas: receipt.gasUsed,
       receipt,
     };
+    const salt = hre.ethers.utils.parseBytes32String(taskArgs.salt);
+    await showState(
+      `Deployed ${salt} proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+    );
     return proxyData;
   });
 

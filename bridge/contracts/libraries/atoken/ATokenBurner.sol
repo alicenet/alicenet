@@ -5,7 +5,7 @@ import "contracts/interfaces/IAToken.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
 /// @custom:salt ATokenBurner
-/// @custom:deploy-type deployStatic
+/// @custom:deploy-type onlyProxy
 contract ATokenBurner is ImmutableAToken {
     // Placeholder contract. The real ATokenBurner will be implemented later
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
