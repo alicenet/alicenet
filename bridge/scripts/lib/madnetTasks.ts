@@ -218,8 +218,12 @@ task(
   console.log(event);
 });
 
-task("scheduleMaintenance", "Calls schedule Maintenance").setAction(
-  async (taskArgs, hre) => {
+task("scheduleMaintenance", "Calls schedule Maintenance")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
       "function scheduleMaintenance()",
@@ -230,7 +234,7 @@ task("scheduleMaintenance", "Calls schedule Maintenance").setAction(
     const adminSigner = await ethers.getSigner(admin.address);
     const factory = await ethers.getContractAt(
       "MadnetFactory",
-      "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+      taskArgs.factoryAddress
     );
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
@@ -243,27 +247,30 @@ task("scheduleMaintenance", "Calls schedule Maintenance").setAction(
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait();
-  }
-);
+  });
 
 task(
-  "pauseEthdkgArbritaryHeigh",
+  "pauseEthdkgArbitraryHeight",
   "Forcing consensus to stop on block number defined by --input"
 )
   .addParam("madnetHeight", "The block number after the latest block mined")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
   .setAction(async (taskArgs, hre) => {
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
       "function pauseConsensusOnArbitraryHeight(uint256)",
     ]);
     const input = iface.encodeFunctionData("pauseConsensusOnArbitraryHeight", [
-      taskArgs.input,
+      taskArgs.madnetHeight,
     ]);
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
     const factory = await ethers.getContractAt(
       "MadnetFactory",
-      "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
+      taskArgs.factoryAddress
     );
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
