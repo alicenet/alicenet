@@ -61,7 +61,11 @@ func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keysto
 		config.Configuration.Ethereum.Timeout,
 		config.Configuration.Ethereum.RetryCount,
 		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.FinalityDelay)
+		config.Configuration.Ethereum.FinalityDelay,
+		config.Configuration.Ethereum.TxFeePercentageToIncrease,
+		config.Configuration.Ethereum.TxMaxFeeThresholdInGwei,
+		config.Configuration.Ethereum.TxCheckFrequency,
+		config.Configuration.Ethereum.TxTimeoutForReplacement)
 
 	if err != nil {
 		logger.Fatalf("NewEthereumEndpoint(...) failed: %v", err)

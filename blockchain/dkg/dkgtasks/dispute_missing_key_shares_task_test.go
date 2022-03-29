@@ -123,9 +123,9 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 		err = disputeMissingKeyshareTask.DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
-		eth.Commit()
 		assert.True(t, disputeMissingKeyshareTask.Success)
 
+		eth.Commit()
 		shouldRetry := disputeMissingKeyshareTask.ShouldRetry(ctx, logger, eth)
 		assert.False(t, shouldRetry)
 	}

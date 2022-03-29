@@ -3,22 +3,18 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
-	"math/big"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	Start        uint64
-	End          uint64
-	State        *objects.DkgState
-	Success      bool
+	*ExecutionData
 	adminHandler interfaces.AdminHandler
 }
 
@@ -28,11 +24,8 @@ var _ interfaces.Task = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Start:        start,
-		End:          end,
-		State:        state,
-		Success:      false,
-		adminHandler: adminHandler,
+		ExecutionData: NewExecutionData(state, start, end),
+		adminHandler:  adminHandler,
 	}
 }
 
@@ -99,28 +92,33 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+	}
+
 	// Do it
 	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	//TODO: add retry logic, add timeout
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("GPKj submission fees")
 
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing registration receipt")
-	}
-
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "submit gpkj status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	}
-
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -168,4 +166,8 @@ func (t *GPKjSubmissionTask) DoDone(logger *logrus.Entry) {
 // SetAdminHandler sets the task adminHandler
 func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandler) {
 	t.adminHandler = adminHandler
+}
+
+func (t *GPKjSubmissionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

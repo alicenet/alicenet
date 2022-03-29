@@ -2,28 +2,17 @@ package dkgtasks
 
 import (
 	"context"
-	"errors"
-	"math/big"
-	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
-	TxOpts  *bind.TransactOpts
-	TxHash  common.Hash
+	*ExecutionData
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
@@ -32,10 +21,7 @@ var _ interfaces.Task = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
@@ -83,91 +69,44 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	if t.TxOpts == nil {
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			logger.Errorf("getting txn opts failed: %v", err)
-			return err
-		}
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	}
 
-		nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-		if err != nil {
-			logger.Errorf("getting acct nonce 2: %v", err)
-			return err
-		}
-
-		txnOpts.Nonce = big.NewInt(int64(nonce))
-
-		logger.WithFields(logrus.Fields{
-			"GasFeeCap": txnOpts.GasFeeCap,
-			"GasTipCap": txnOpts.GasTipCap,
-			"Nonce":     txnOpts.Nonce,
-		}).Info("registering fees")
-
-		t.TxOpts = txnOpts
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := eth.Contracts().Ethdkg().Register(t.TxOpts, t.State.TransportPublicKey)
+	txn, err := eth.Contracts().Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
-
-		if err.Error() == "nonce too low" {
-			nonce, err := eth.GetGethClient().PendingNonceAt(ctx, t.State.Account.Address)
-			if err != nil {
-				logger.Errorf("getting acct nonce 2: %v", err)
-				return err
-			}
-
-			t.TxOpts.Nonce = big.NewInt(int64(nonce))
-		}
-
 		return err
 	}
-
-	t.TxHash = txn.Hash()
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.WithFields(logrus.Fields{
-		"GasFeeCap":  t.TxOpts.GasFeeCap,
-		"GasFeeCap2": txn.GasFeeCap(),
-		"GasTipCap":  t.TxOpts.GasTipCap,
-		"GasTipCap2": txn.GasTipCap(),
-		"Nonce":      t.TxOpts.Nonce,
-		// "Nonce2":     txn.Nonce,
-		"txn.Hash()": txn.Hash().Hex(),
-		"t.TxHash":   t.TxHash.Hex(),
-		//"emptyHashEq": t.TxHash == emptyHash,
-	}).Info("registering fees 2")
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("registering fees")
 
-	timeOutCtx, cancelFunc := context.WithTimeout(ctx, 60*time.Second)
-	defer cancelFunc()
-
+	// Queue transaction
 	eth.Queue().QueueTransaction(ctx, txn)
 
-	// Waiting for receipt with timeout
-	// If we reach the timeout, we return an error
-	// to evaluate if we should retry with a higher fee and tip
-	receipt, err := eth.Queue().WaitTransaction(timeOutCtx, txn)
-	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return err
-	}
-
-	if receipt == nil {
-		//logger.Error("missing registration receipt")
-		return errors.New("missing registration receipt")
-	}
-
-	// Wait for finalityDelay to avoid fork rollback
-	err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
-	if err != nil {
-		logger.Errorf("waiting confirmations failed: %v", err)
-		return err
-	}
-
 	t.Success = true
+
 	return nil
 }
 
@@ -202,45 +141,6 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		}
 	}
 
-	if needsRegistration {
-		if t.TxOpts == nil {
-			txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-			if err != nil {
-				logger.Errorf("getting txn opts failed: %v", err)
-				return true
-			}
-
-			t.TxOpts = txnOpts
-		}
-
-		// increase FeeCap and TipCap
-		l := logger.WithFields(logrus.Fields{
-			"gasFeeCap": t.TxOpts.GasFeeCap,
-			"gasTipCap": t.TxOpts.GasTipCap,
-			"Nonce":     t.TxOpts.Nonce,
-		})
-
-		// calculate 10% increase in GasFeeCap and GasTipCap
-		increasedFeeCap, increasedTipCap := dkg.IncreaseFeeAndTipCap(t.TxOpts.GasFeeCap, t.TxOpts.GasTipCap, big.NewInt(10))
-		t.TxOpts.GasFeeCap = increasedFeeCap
-		t.TxOpts.GasTipCap = increasedTipCap
-
-		l.WithFields(logrus.Fields{
-			"gasFeeCap10pc": t.TxOpts.GasFeeCap,
-			"gasTipCap10pc": t.TxOpts.GasTipCap,
-		}).Info("Retrying register with higher fee/tip caps")
-	} else {
-		var emptyHash common.Hash
-		if t.TxHash != emptyHash {
-			// Wait for finalityDelay to avoid fork rollback
-			err = dkg.WaitConfirmations(t.TxHash, ctx, logger, eth)
-			if err != nil {
-				logger.Errorf("register.ShouldRetry() error waitingConfirmations: %v", err)
-				return true
-			}
-		}
-	}
-
 	return needsRegistration
 }
 
@@ -250,4 +150,8 @@ func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("RegisterTask done")
+}
+
+func (t *RegisterTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

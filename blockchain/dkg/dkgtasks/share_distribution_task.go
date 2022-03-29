@@ -2,21 +2,18 @@ package dkgtasks
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
+	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*ExecutionData
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
@@ -25,10 +22,7 @@ var _ interfaces.Task = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
@@ -86,13 +80,21 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	c := eth.Contracts()
 	me := t.State.Account.Address
 	logger.Debugf("me:%v", me.Hex())
+
+	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
-		logger.Errorf("getting txn opts failed: %v", err)
-		return err
+		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
-	//TODO: add retry logic and timeout
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+	}
 
 	// Distribute shares
 	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
@@ -100,24 +102,19 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
 	}
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Errorf("waiting for receipt failed: %v", err)
-		return err
-	}
-	if receipt == nil {
-		message := "missing distribute shares receipt"
-		logger.Error(message)
-		return errors.New(message)
-	}
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		message := fmt.Sprintf("receipt status indicates failure: %v", receipt.Status)
-		logger.Errorf(message)
-		return errors.New(message)
-	}
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("share distribution fees")
+
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -168,4 +165,8 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
+}
+
+func (t *ShareDistributionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

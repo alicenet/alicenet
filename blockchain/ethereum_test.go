@@ -54,7 +54,11 @@ func TestHardhatNode(t *testing.T) {
 		10*time.Second,
 		30*time.Second,
 		0,
-		big.NewInt(math.MaxInt64))
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
 	defer func() {
 		err := eth.Close()
 		if err != nil {

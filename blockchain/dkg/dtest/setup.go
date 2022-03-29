@@ -396,7 +396,11 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		10*time.Second,
 		30*time.Second,
 		0,
-		big.NewInt(math.MaxInt64))
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
 	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
@@ -424,16 +428,6 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		eth.Close()
 		t.Fatalf("error: %v", err)
 	}
-
-	// Mine a block once a second
-	// if blockInterval > 1*time.Millisecond {
-	// 	go func() {
-	// 		for {
-	// 			time.Sleep(blockInterval)
-	// 			eth.Commit()
-	// 		}
-	// 	}()
-	// }
 
 	t.Logf("deploying contracts..")
 
