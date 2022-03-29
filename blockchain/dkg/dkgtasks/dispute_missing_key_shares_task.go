@@ -2,21 +2,17 @@ package dkgtasks
 
 import (
 	"context"
-	"math/big"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // DisputeMissingKeySharesTask stores the data required to dispute shares
 type DisputeMissingKeySharesTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*ExecutionData
 }
 
 // asserting that DisputeMissingKeySharesTask struct implements interface interfaces.Task
@@ -25,10 +21,7 @@ var _ interfaces.Task = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
@@ -64,31 +57,37 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing key shares: %v", accusableParticipants)
 
-		txOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txOpts: %v", err)
+			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txnOpts: %v", err)
 		}
 
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txOpts, accusableParticipants)
+		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+		// we increase the Gas to have priority for the next blocks
+		if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+			logger.Info("txnOpts Replaced")
+			txnOpts.Nonce = t.TxOpts.Nonce
+			txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+			txnOpts.GasTipCap = t.TxOpts.GasTipCap
+		}
+
+		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txnOpts, accusableParticipants)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error accusing missing key shares: %v", err)
 		}
+		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+		t.TxOpts.GasFeeCap = txn.GasFeeCap()
+		t.TxOpts.GasTipCap = txn.GasTipCap()
+		t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-		//TODO: add retry logic, add timeout
+		logger.WithFields(logrus.Fields{
+			"GasFeeCap": t.TxOpts.GasFeeCap,
+			"GasTipCap": t.TxOpts.GasTipCap,
+			"Nonce":     t.TxOpts.Nonce,
+		}).Info("missing key shares dispute fees")
 
-		// Waiting for receipt
-		receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error waiting for receipt failed: %v", err)
-		}
-		if receipt == nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error missing share dispute receipt")
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			return dkg.LogReturnErrorf(logger, "missing key share dispute status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-		}
+		// Queue transaction
+		eth.Queue().QueueTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing key shares")
 	}
@@ -136,6 +135,10 @@ func (t *DisputeMissingKeySharesTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Info("DisputeMissingKeySharesTask done")
+}
+
+func (t *DisputeMissingKeySharesTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }
 
 func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

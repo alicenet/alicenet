@@ -1,4 +1,5 @@
 import "process";
+export const MULTICALL_GAS_LIMIT = "10000000";
 export const DEPLOYMENT_LIST_FPATH = "/deploymentList";
 export const DEPLOYMENT_ARGS_TEMPLATE_FPATH = "/deploymentArgsTemplate";
 export const DEFAULT_CONFIG_OUTPUT_DIR = "../scripts/base-files";
@@ -30,6 +31,7 @@ export const MOCK_FACTORY = "MockFactory";
 export const MOCK_INITIALIZABLE = "MockInitializable";
 export const MULTI_CALL_DEPLOY_PROXY = "multiCallDeployProxy";
 export const MULTI_CALL_UPGRADE_PROXY = "multiCallUpgradeProxy";
+export const ONLY_PROXY = "onlyProxy";
 export const PROXY = "Proxy";
 export const PROXY_ADDR = "ProxyAddress";
 export const RECEIPT = "receipt";

@@ -9,7 +9,7 @@ NETWORK=${1:-"dev"}
 cd $BRIDGE_DIR
 
 # npx hardhat run ./scripts/getDeployList.ts
-npx hardhat --network "$NETWORK" --show-stack-traces deployContracts --deploy-factory
+npx hardhat --network "$NETWORK" --show-stack-traces deployContracts
 addr="$(grep -Pzo "(?s)\[$NETWORK\]\ndefaultFactoryAddress = \"(.*?)\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
 export FACTORY_ADDRESS=$addr
 for filePath in $(ls ../scripts/generated/config | xargs); do

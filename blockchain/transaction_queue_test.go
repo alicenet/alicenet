@@ -11,7 +11,6 @@ import (
 )
 
 func TestTransferFunds(t *testing.T) {
-
 	n := 4
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)

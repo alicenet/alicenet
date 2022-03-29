@@ -4,23 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	Start          uint64
-	End            uint64
-	State          *objects.DkgState
-	Success        bool
-	StartBlockHash common.Hash
+	*ExecutionData
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
@@ -29,10 +23,7 @@ var _ interfaces.Task = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
@@ -93,32 +84,38 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+	}
+
 	// Register
 	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
+
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("complete fees")
+
 	logger.Info("CompletionTask sent completed call")
 
-	//TODO: add retry logic, add timeout
-
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing completion receipt")
-	}
-
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "completion status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	}
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 
 	logger.Info("CompletionTask complete!")
-
 	t.Success = true
 
 	return nil
@@ -159,6 +156,10 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
+}
+
+func (t *CompletionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }
 
 func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {

@@ -3,9 +3,9 @@ import { STATIC_DEPLOYMENT, UPGRADEABLE_DEPLOYMENT } from "./lib/constants";
 import { getDeploymentList } from "./lib/deployment/deploymentListUtil";
 import {
   deployFactory,
-  deployStatic,
-  deployUpgradeableProxy,
+  getDeployMetaArgs,
   getDeployType,
+  getDeployUpgradeableProxyArgs,
 } from "./lib/deployment/deploymentUtil";
 
 async function main() {
@@ -20,10 +20,10 @@ async function main() {
     const deployType = await getDeployType(fullyQualifiedName, artifacts);
     switch (deployType) {
       case STATIC_DEPLOYMENT:
-        await deployStatic(fullyQualifiedName, artifacts, ethers, run);
+        await getDeployMetaArgs(fullyQualifiedName, artifacts, ethers, run);
         break;
       case UPGRADEABLE_DEPLOYMENT:
-        await deployUpgradeableProxy(
+        await getDeployUpgradeableProxyArgs(
           fullyQualifiedName,
           artifacts,
           ethers,

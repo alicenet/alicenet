@@ -2,20 +2,17 @@ package dkgtasks
 
 import (
 	"context"
-
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
-	Start   uint64
-	End     uint64
-	State   *objects.DkgState
-	Success bool
+	*ExecutionData
 }
 
 // asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
@@ -24,10 +21,7 @@ var _ interfaces.Task = &KeyshareSubmissionTask{}
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		Start:   start,
-		End:     end,
-		State:   state,
-		Success: false,
+		ExecutionData: NewExecutionData(state, start, end),
 	}
 }
 
@@ -76,9 +70,19 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	// Setup
 	me := t.State.Account
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, me)
+	// Setup
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+	}
+
+	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
+	// we increase the Gas to have priority for the next blocks
+	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
+		logger.Info("txnOpts Replaced")
+		txnOpts.Nonce = t.TxOpts.Nonce
+		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
+		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
 	// Submit Keyshares
@@ -94,23 +98,19 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	//TODO: add retry logic, add timeout
+	logger.WithFields(logrus.Fields{
+		"GasFeeCap": t.TxOpts.GasFeeCap,
+		"GasTipCap": t.TxOpts.GasTipCap,
+		"Nonce":     t.TxOpts.Nonce,
+	}).Info("key share submission fees")
 
-	// Waiting for receipt
-	receipt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		return dkg.LogReturnErrorf(logger, "waiting for receipt failed: %v", err)
-	}
-	if receipt == nil {
-		return dkg.LogReturnErrorf(logger, "missing submit keyshare receipt")
-	}
-
-	// Check receipt to confirm we were successful
-	if receipt.Status != uint64(1) {
-		return dkg.LogReturnErrorf(logger, "submit keyshare status (%v) indicates failure: %v", receipt.Status, receipt.Logs)
-	}
-
+	// Queue transaction
+	eth.Queue().QueueTransaction(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -166,4 +166,8 @@ func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
 	defer t.State.Unlock()
 
 	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
+}
+
+func (t *KeyshareSubmissionTask) GetExecutionData() interface{} {
+	return t.ExecutionData
 }

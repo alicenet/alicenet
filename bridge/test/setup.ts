@@ -15,6 +15,8 @@ import {
   ATokenBurnerMock,
   ATokenMinterMock,
   ETHDKG,
+  Foundation,
+  LiquidityProviderStaking,
   MadByte,
   MadnetFactory,
   MadToken,
@@ -396,6 +398,19 @@ export const getFixture = async (
     "ValidatorStaking"
   )) as ValidatorStaking;
 
+  // LiquidityProviderStaking
+  const liquidityProviderStaking = (await deployStaticWithFactory(
+    factory,
+    "LiquidityProviderStaking"
+  )) as LiquidityProviderStaking;
+
+  // Foundation
+  let foundation = (await deployUpgradeableWithFactory(
+    factory,
+    "Foundation",
+    undefined
+  )) as Foundation;
+
   let validatorPool;
   if (typeof mockValidatorPool !== "undefined" && mockValidatorPool) {
     // ValidatorPoolMock
@@ -508,6 +523,8 @@ export const getFixture = async (
     aToken,
     aTokenMinter,
     aTokenBurner,
+    liquidityProviderStaking,
+    foundation,
     stakingPositionDescriptor,
   };
 };

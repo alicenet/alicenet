@@ -93,12 +93,7 @@ task("registerValidators", "registers validators")
 
     // Make sure that admin is the named account at position 0
     const [admin] = await hre.ethers.getSigners();
-    const tokens = await madToken.balanceOf(factory.address);
-    console.log("balance of madtoke in factory:", tokens);
-
     console.log(`Admin address: ${admin.address}`);
-    const adminTokenBal = await madToken.balanceOf(admin.address);
-    console.log(adminTokenBal);
     let iface = new hre.ethers.utils.Interface([
       "function transfer(address,uint256)",
     ]);
@@ -117,8 +112,6 @@ task("registerValidators", "registers validators")
         stakeAmountMadWei.mul(validatorAddresses.length)
       );
     await tx.wait();
-    console.log(stakeAmountMadWei.mul(validatorAddresses.length).toBigInt());
-
     console.log(
       `Approved allowance to validatorPool of: ${stakeAmountMadWei
         .mul(validatorAddresses.length)
@@ -135,7 +128,6 @@ task("registerValidators", "registers validators")
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
       console.log(`Minted PublicStaking.tokenID ${tokenId}`);
       stakingTokenIds.push(tokenId);
-
       const iface = new hre.ethers.utils.Interface([
         "function approve(address,uint256)",
       ]);
@@ -148,14 +140,12 @@ task("registerValidators", "registers validators")
         .callAny(publicStaking.address, 0, input);
 
       await tx.wait();
-
       console.log(`Approved tokenID:${tokenId} to ValidatorPool`);
     }
 
     console.log(
       `registering ${validatorAddresses.length} validators with ValidatorPool...`
     );
-
     // add validators to the ValidatorPool
     // await validatorPool.registerValidators(validatorAddresses, stakingTokenIds)
     iface = new hre.ethers.utils.Interface([
@@ -217,3 +207,70 @@ task(
   const event = intrface.decodeEventLog("DepositReceived", data, topics);
   console.log(event);
 });
+
+task("scheduleMaintenance", "Calls schedule Maintenance")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const iface = new ethers.utils.Interface([
+      "function scheduleMaintenance()",
+    ]);
+    const input = iface.encodeFunctionData("scheduleMaintenance", []);
+    console.log("input", input);
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "MadnetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });
+
+task(
+  "pauseEthdkgArbitraryHeight",
+  "Forcing consensus to stop on block number defined by --input"
+)
+  .addParam("madnetHeight", "The block number after the latest block mined")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const iface = new ethers.utils.Interface([
+      "function pauseConsensusOnArbitraryHeight(uint256)",
+    ]);
+    const input = iface.encodeFunctionData("pauseConsensusOnArbitraryHeight", [
+      taskArgs.madnetHeight,
+    ]);
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "MadnetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });

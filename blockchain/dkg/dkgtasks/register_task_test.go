@@ -471,6 +471,7 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	err = registrationTask.DoWork(ctx, log, eth)
 	assert.Nil(t, err)
 
+	eth.Commit()
 	retry := registrationTask.ShouldRetry(ctx, log, eth)
 	assert.False(t, retry)
 }

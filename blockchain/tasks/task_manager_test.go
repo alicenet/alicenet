@@ -1,8 +1,10 @@
 package tasks_test
 
 import (
-	"context"
-	"encoding/json"
+	"errors"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 	"math/big"
 	"reflect"
 	"sync"
@@ -14,233 +16,9 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
-
-//
-// Mock implementation of interfaces.Task
-//
-type mockState struct {
-	sync.Mutex
-	count int
-}
-
-type mockTask struct {
-	DoneCalled bool
-	State      *mockState
-}
-
-func (mt *mockTask) DoDone(logger *logrus.Entry) {
-	mt.DoneCalled = true
-}
-
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, interfaces.Ethereum) error {
-	return nil
-}
-
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, interfaces.Ethereum) error {
-	return nil
-}
-
-func (mt *mockTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	dkgState := state.(*mockState)
-
-	mt.State = dkgState
-
-	mt.State.Lock()
-	defer mt.State.Unlock()
-
-	mt.State.count += 1
-
-	return nil
-}
-
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ethereum) bool {
-	return false
-}
-
-//
-// Mock implementation of interfaces.Ethereum
-//
-type mockEthereum struct {
-}
-
-func (eth *mockEthereum) ChainID() *big.Int {
-	return nil
-}
-
-func (eth *mockEthereum) GetFinalityDelay() uint64 {
-	return 12
-}
-
-func (eth *mockEthereum) Close() error {
-	return nil
-}
-
-func (eth *mockEthereum) Commit() {
-
-}
-
-func (eth *mockEthereum) IsEthereumAccessible() bool {
-	return false
-}
-
-func (eth *mockEthereum) GetCallOpts(context.Context, accounts.Account) *bind.CallOpts {
-	return nil
-}
-
-func (eth *mockEthereum) GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) LoadAccounts(string) {}
-
-func (eth *mockEthereum) LoadPasscodes(string) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccount(accounts.Account) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccountWithPasscode(accounts.Account, string) error {
-	return nil
-}
-
-func (eth *mockEthereum) TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetAccount(addr common.Address) (accounts.Account, error) {
-	return accounts.Account{Address: addr}, nil
-}
-func (eth *mockEthereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetBalance(common.Address) (*big.Int, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetGethClient() interfaces.GethClient {
-	return nil
-}
-
-func (eth *mockEthereum) GetCoinbaseAddress() common.Address {
-	return eth.GetDefaultAccount().Address
-}
-
-func (eth *mockEthereum) GetCurrentHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-
-func (eth *mockEthereum) GetDefaultAccount() accounts.Account {
-	return accounts.Account{}
-}
-func (eth *mockEthereum) GetEndpoint() string {
-	return "na"
-}
-func (eth *mockEthereum) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetFinalizedHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetPeerCount(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetSnapshot() ([]byte, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetSyncProgress() (bool, *ethereum.SyncProgress, error) {
-	return false, nil, nil
-}
-func (eth *mockEthereum) GetTimeoutContext() (context.Context, context.CancelFunc) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetValidators(context.Context) ([]common.Address, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetKnownAccounts() []accounts.Account {
-	return []accounts.Account{}
-}
-
-func (eth *mockEthereum) KnownSelectors() interfaces.SelectorMap {
-	return nil
-}
-
-func (eth *mockEthereum) Queue() interfaces.TxnQueue {
-	return nil
-}
-
-func (eth *mockEthereum) RetryCount() int {
-	return 0
-}
-func (eth *mockEthereum) RetryDelay() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Timeout() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Contracts() interfaces.Contracts {
-	return nil
-}
-
-func TestFoo(t *testing.T) {
-	var s map[string]string
-
-	raw, err := json.Marshal(s)
-	assert.Nil(t, err)
-
-	t.Logf("Raw data:%v", string(raw))
-}
-
-func TestType(t *testing.T) {
-	state := objects.NewDkgState(accounts.Account{})
-	ct := dkgtasks.NewCompletionTask(state, 1, 10)
-
-	var task interfaces.Task = ct
-	raw, err := json.Marshal(task)
-	assert.Nil(t, err)
-	assert.Greater(t, len(raw), 1)
-
-	tipe := reflect.TypeOf(task)
-	t.Logf("type0:%v", tipe.String())
-
-	if tipe.Kind() == reflect.Ptr {
-		tipe = tipe.Elem()
-	}
-
-	typeName := tipe.String()
-	t.Logf("type1:%v", typeName)
-
-}
-
-func TestSharedState(t *testing.T) {
-	logger := logging.GetLogger("test")
-
-	state := &mockState{}
-
-	task0 := &mockTask{}
-	task1 := &mockTask{}
-
-	wg := sync.WaitGroup{}
-
-	tasks.StartTask(logger.WithField("Task", 0), &wg, &mockEthereum{}, task0, state)
-	tasks.StartTask(logger.WithField("Task", 1), &wg, &mockEthereum{}, task1, state)
-
-	wg.Wait()
-
-	assert.Equal(t, 2, state.count)
-}
 
 func TestIsAdminClient(t *testing.T) {
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
@@ -249,4 +27,350 @@ func TestIsAdminClient(t *testing.T) {
 	isAdminClient := reflect.TypeOf(task).Implements(adminInterface)
 
 	assert.True(t, isAdminClient)
+}
+
+func TestStartTask_initializeTask_Error(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
+
+	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("initialize error"))
+
+	wg := sync.WaitGroup{}
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(10 * time.Millisecond)
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTask, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTask.Success)
+}
+
+func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTask.TxOpts = &dkgtasks.TxOpts{
+		Nonce: big.NewInt(1),
+	}
+
+	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTask.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("DoWork_error"))
+	dkgTask.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTask.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(errors.New(tasks.NonceToLowError))
+
+	wg := sync.WaitGroup{}
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(10 * time.Millisecond)
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTask, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTask.Success)
+	assert.Nil(t, dkgTask.TxOpts.Nonce)
+}
+
+// Happy path with mined tx present after finality delay
+func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
+	logger := logging.GetLogger("test")
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.TxOpts.TxHashes = append(dkgTaskMock.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
+	receipt := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(1),
+	}
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receipt, nil)
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+	ethMock.On("GetFinalityDelay").Return(2)
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(10 * time.Millisecond)
+	ethMock.On("GetTxCheckFrequency").Return(3 * time.Second)
+	ethMock.On("GetTxTimeoutForReplacement").Return(30 * time.Second)
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(1, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(2, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(3, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(4, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(5, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(6, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(7, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(8, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(9, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(10, nil).Once()
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(1), dkgTaskMock.TxOpts.MinedInBlock)
+}
+
+// Tx was mined, but it's not present after finality delay
+func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
+	logger := logging.GetLogger("test")
+	minedInBlock := 9
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
+	receiptOk1 := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(2),
+	}
+	receiptOk2 := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(int64(minedInBlock)),
+	}
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk1, nil).Once()
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(&types.Receipt{}, errors.New("error getting receipt")).Once()
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk2, nil).Once()
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk2, nil).Once()
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+	ethMock.On("GetFinalityDelay").Return(2)
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(10 * time.Millisecond)
+	ethMock.On("GetTxCheckFrequency").Return(3 * time.Second)
+	ethMock.On("GetTxTimeoutForReplacement").Return(30 * time.Second)
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(1, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(2, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(3, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(4, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(5, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(6, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(7, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(8, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(9, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(10, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(11, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(12, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(13, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(14, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(15, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(16, nil).Once()
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+}
+
+// Tx was mined after a retry because of a failed receipt
+func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
+	logger := logging.GetLogger("test")
+	minedInBlock := 7
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
+	receiptFailedStatus := &types.Receipt{
+		Status: uint64(0),
+	}
+	receiptOk := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(int64(minedInBlock)),
+	}
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptFailedStatus, nil).Once()
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk, nil).Once()
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk, nil).Once()
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+	ethMock.On("GetFinalityDelay").Return(2)
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(10 * time.Millisecond)
+	ethMock.On("GetTxCheckFrequency").Return(3 * time.Second)
+	ethMock.On("GetTxTimeoutForReplacement").Return(30 * time.Second)
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(1, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(2, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(3, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(4, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(5, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(6, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(7, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(8, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(9, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(10, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(11, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(12, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(13, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(14, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(15, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(16, nil).Once()
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+}
+
+// Tx reached replacement timeout, tx mined after retry with replacement
+func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
+	logger := logging.GetLogger("test")
+	minedInBlock := 10
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
+	receiptOk := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(int64(minedInBlock)),
+	}
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk, nil)
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+	ethMock.On("GetFinalityDelay").Return(2)
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(1 * time.Millisecond)
+	ethMock.On("GetTxCheckFrequency").Return(3 * time.Second)
+	ethMock.On("GetTxTimeoutForReplacement").Return(6 * time.Second)
+	ethMock.On("GetTxFeePercentageToIncrease").Return(43)
+	ethMock.On("GetTxMaxFeeThresholdInGwei").Return(uint64(1000000))
+
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(1, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(2, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(3, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(4, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(5, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(6, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(7, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(8, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(9, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(10, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(11, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(12, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(13, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(14, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(15, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(16, nil).Once()
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	expectedGasFeeCap := big.NewInt(203569)
+	expectedGasTipCap := big.NewInt(52)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
+}
+
+// Tx reached replacement timeout, tx mined after retry with replacement
+func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *testing.T) {
+	logger := logging.GetLogger("test")
+	minedInBlock := 10
+
+	state := objects.NewDkgState(accounts.Account{})
+	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
+	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
+	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	wg := sync.WaitGroup{}
+
+	gethClientMock := &interfaces.GethClientMock{}
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
+	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
+	receiptOk := &types.Receipt{
+		Status:      uint64(1),
+		BlockNumber: big.NewInt(int64(minedInBlock)),
+	}
+	gethClientMock.On("TransactionReceipt", mock.Anything, mock.Anything).Return(receiptOk, nil)
+
+	ethMock := &interfaces.EthereumMock{}
+	ethMock.On("GetGethClient").Return(gethClientMock)
+	ethMock.On("GetFinalityDelay").Return(2)
+	ethMock.On("RetryCount").Return(3)
+	ethMock.On("RetryDelay").Return(1 * time.Millisecond)
+	ethMock.On("GetTxCheckFrequency").Return(3 * time.Second)
+	ethMock.On("GetTxTimeoutForReplacement").Return(6 * time.Second)
+	ethMock.On("GetTxFeePercentageToIncrease").Return(143)
+	ethMock.On("GetTxMaxFeeThresholdInGwei").Return(uint64(200000))
+
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(1, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(2, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(3, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(4, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(5, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(6, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(7, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(8, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(9, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(10, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(11, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(12, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(13, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(14, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(15, nil).Once()
+	ethMock.On("GetCurrentHeight", mock.Anything).Return(16, nil).Once()
+
+	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, state)
+
+	expectedGasFeeCap := big.NewInt(200000)
+	expectedGasTipCap := big.NewInt(89)
+
+	wg.Wait()
+
+	assert.False(t, dkgTaskMock.Success)
+	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
+	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
 }

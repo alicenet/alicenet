@@ -1,5 +1,5 @@
 import toml from "@iarna/toml";
-import { BigNumberish, BytesLike, ContractReceipt } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
 import fs from "fs";
 import { FACTORY_STATE_PATH } from "../constants";
 import { readFactoryState } from "./deploymentConfigUtil";
@@ -7,14 +7,14 @@ import { readFactoryState } from "./deploymentConfigUtil";
 export type FactoryData = {
   address: string;
   owner?: string;
-  gas?: number;
+  gas: BigNumber;
 };
 
 export type DeployCreateData = {
   name: string;
   address: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   constructorArgs?: any;
   receipt?: ContractReceipt;
 };
@@ -24,7 +24,7 @@ export type MetaContractData = {
   templateName: string;
   templateAddress: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   initCallData: string;
   receipt?: ContractReceipt;
 };
@@ -32,7 +32,7 @@ export type TemplateData = {
   name: string;
   address: string;
   factoryAddress: string;
-  gas?: number;
+  gas: BigNumber;
   receipt?: ContractReceipt;
   constructorArgs?: string;
 };
@@ -46,7 +46,7 @@ export type ProxyData = {
   logicName?: string;
   logicAddress?: string;
   factoryAddress: string;
-  gas?: BigNumberish;
+  gas: BigNumberish;
   receipt?: ContractReceipt;
   initCallData?: BytesLike;
 };
@@ -70,27 +70,29 @@ async function writeFactoryState(
   fieldData: any,
   usrPath?: string
 ) {
-  const path =
-    usrPath === undefined
-      ? FACTORY_STATE_PATH
-      : usrPath.replace(/\/+$/, "") + "/factoryState";
-  let factoryStateConfig;
-  if (fs.existsSync(path)) {
-    factoryStateConfig = await readFactoryState(path);
-    factoryStateConfig[network] =
-      factoryStateConfig[network] === undefined
-        ? {}
-        : factoryStateConfig[network];
-    factoryStateConfig[network][fieldName] = fieldData;
-  } else {
-    factoryStateConfig = {
-      [network]: {
-        [fieldName]: fieldData,
-      },
-    };
+  if (process.env.silencer === undefined || process.env.silencer === "false") {
+    const path =
+      usrPath === undefined
+        ? FACTORY_STATE_PATH
+        : usrPath.replace(/\/+$/, "") + "/factoryState";
+    let factoryStateConfig;
+    if (fs.existsSync(path)) {
+      factoryStateConfig = await readFactoryState(path);
+      factoryStateConfig[network] =
+        factoryStateConfig[network] === undefined
+          ? {}
+          : factoryStateConfig[network];
+      factoryStateConfig[network][fieldName] = fieldData;
+    } else {
+      factoryStateConfig = {
+        [network]: {
+          [fieldName]: fieldData,
+        },
+      };
+    }
+    const data = toml.stringify(factoryStateConfig);
+    fs.writeFileSync(path, data);
   }
-  const data = toml.stringify(factoryStateConfig);
-  fs.writeFileSync(path, data);
 }
 
 export async function updateDefaultFactoryData(
@@ -144,15 +146,17 @@ export async function updateList(
   data: any,
   usrPath?: string
 ) {
-  const factoryStateConfig = await readFactoryState(usrPath);
-  const output: Array<any> =
-    factoryStateConfig[network][fieldName] === undefined
-      ? []
-      : factoryStateConfig[network][fieldName];
-  output.push(data);
-  if (data.receipt !== undefined) {
-    data.receipt = undefined;
+  if (process.env.silencer === undefined || process.env.silencer === "false") {
+    const factoryStateConfig = await readFactoryState(usrPath);
+    const output: Array<any> =
+      factoryStateConfig[network][fieldName] === undefined
+        ? []
+        : factoryStateConfig[network][fieldName];
+    output.push(data);
+    if (data.receipt !== undefined) {
+      data.receipt = undefined;
+    }
+    // write new data to config file
+    await writeFactoryState(network, fieldName, output, usrPath);
   }
-  // write new data to config file
-  await writeFactoryState(network, fieldName, output, usrPath);
 }
