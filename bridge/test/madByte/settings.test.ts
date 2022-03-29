@@ -1,20 +1,16 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import {
-  BaseTokensFixture,
-  factoryCallAnyFixture,
-  getBaseTokensFixture,
-} from "../setup";
+import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, showState } from "./setup";
 
 describe("Testing MadByte Settings", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await getFixture();
     const signers = await ethers.getSigners();
     [admin, user] = signers;
     showState("Initial", await getState(fixture));

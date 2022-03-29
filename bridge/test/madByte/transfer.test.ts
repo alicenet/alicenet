@@ -2,11 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import {
-  BaseTokensFixture,
-  callFunctionAndGetReturnValues,
-  getBaseTokensFixture,
-} from "../setup";
+import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getState, showState, state } from "./setup";
 
 describe("Testing MadByte Transfer methods", async () => {
@@ -14,14 +10,14 @@ describe("Testing MadByte Transfer methods", async () => {
   let user: SignerWithAddress;
   let user2: SignerWithAddress;
   let expectedState: state;
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
   const eth = 4;
   let ethIn: BigNumber;
   const minMadBytes = 0;
   let madBytes: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await getFixture();
     const signers = await ethers.getSigners();
     [admin, user, user2] = signers;
     showState("Initial", await getState(fixture));

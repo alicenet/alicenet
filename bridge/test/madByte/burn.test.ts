@@ -2,11 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import {
-  BaseTokensFixture,
-  callFunctionAndGetReturnValues,
-  getBaseTokensFixture,
-} from "../setup";
+import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { format, getState, state } from "./setup";
 
 describe("Testing MadByte Burning methods", async () => {
@@ -14,7 +10,7 @@ describe("Testing MadByte Burning methods", async () => {
   let user: SignerWithAddress;
   let expectedState: state;
   let eths: BigNumber;
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
   const eth = 40;
   let ethIn: BigNumber;
   let madBytes: BigNumber;
@@ -22,7 +18,7 @@ describe("Testing MadByte Burning methods", async () => {
   const marketSpread = 4;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await getFixture();
     const signers = await ethers.getSigners();
     [admin, user] = signers;
     ethIn = ethers.utils.parseEther(eth.toString());
@@ -260,7 +256,7 @@ describe("Testing MadByte Burning methods", async () => {
     );
   });
 
-  xit("Should keep ether sent value and (mint/burn) value relation greater or equal to market spread value with subsequent minting", async () => {
+  it("Should keep ether sent value and (mint/burn) value relation greater or equal to market spread value with subsequent minting", async () => {
     // If some consequent mints are performed this relation is not kept between two first operations
     const ethIn = ethers.utils.parseEther("4");
     const [madBytes1] = await callFunctionAndGetReturnValues(
@@ -302,14 +298,12 @@ describe("Testing MadByte Burning methods", async () => {
       user,
       [madBytes3, 0]
     );
-    expect(ethIn.div(ethOut1).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
-    );
-    expect(ethIn.div(ethOut2).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
-    );
-    expect(ethIn.div(ethOut3).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
+    const expectedAmount =
+      (ethIn.toBigInt() * 3n) /
+      (ethOut3.toBigInt() + ethOut2.toBigInt() + ethOut1.toBigInt());
+    expect(expectedAmount).to.be.equals(
+      BigInt(marketSpread),
+      "Failed at assertion"
     );
   });
 });

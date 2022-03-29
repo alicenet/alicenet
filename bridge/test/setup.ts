@@ -405,7 +405,7 @@ export const getFixture = async (
   )) as LiquidityProviderStaking;
 
   // Foundation
-  let foundation = (await deployUpgradeableWithFactory(
+  const foundation = (await deployUpgradeableWithFactory(
     factory,
     "Foundation",
     undefined

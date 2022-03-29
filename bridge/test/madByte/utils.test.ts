@@ -1,14 +1,14 @@
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import { BaseTokensFixture, getBaseTokensFixture } from "../setup";
+import { Fixture, getFixture } from "../setup";
 import { getState, showState } from "./setup";
 
 describe("Testing MadByte Utils methods", async () => {
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
   const marketSpread = 4;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await getFixture();
     showState("Initial", await getState(fixture));
   });
 

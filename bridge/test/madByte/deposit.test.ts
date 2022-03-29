@@ -3,10 +3,10 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
-  BaseTokensFixture,
   callFunctionAndGetReturnValues,
   factoryCallAnyFixture,
-  getBaseTokensFixture,
+  Fixture,
+  getFixture,
 } from "../setup";
 import { getState, showState, state } from "./setup";
 
@@ -14,7 +14,7 @@ describe("Testing MadByte Deposit methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
   const minMadBytes = 0;
   const marketSpread = 4;
   const eth = 10;
@@ -23,9 +23,8 @@ describe("Testing MadByte Deposit methods", async () => {
   let madDeposit: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    const signers = await ethers.getSigners();
-    [admin, user] = signers;
+    fixture = await getFixture();
+    [admin, user] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
     await factoryCallAnyFixture(fixture, "madByte", "setAdmin", [
       admin.address,

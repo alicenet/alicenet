@@ -3,22 +3,22 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
-  BaseTokensFixture,
   callFunctionAndGetReturnValues,
   factoryCallAnyFixture,
-  getBaseTokensFixture,
+  Fixture,
+  getFixture,
 } from "../setup";
 import { getState, showState } from "./setup";
 
 describe("Testing MadByte Distribution methods", async () => {
   let admin: SignerWithAddress;
-  let fixture: BaseTokensFixture;
+  let fixture: Fixture;
   const minMadBytes = 0;
   const eth = 4;
   let ethIn: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await getFixture();
     const signers = await ethers.getSigners();
     [admin] = signers;
     showState("Initial", await getState(fixture));
