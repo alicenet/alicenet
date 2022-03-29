@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import { completeETHDKGRound } from "../../ethdkg/setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -32,10 +32,12 @@ describe("ValidatorPool: Collecting logic", async function () {
   });
 
   it("Should successfully collect profit of validators", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     const eths = ethers.utils.parseEther("4.0").toBigInt();
     const expectedState = await getCurrentState(fixture, validators);
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
@@ -45,7 +47,7 @@ describe("ValidatorPool: Collecting logic", async function () {
     expectedState.ValidatorStaking.ETH += eths;
     // Complete ETHDKG Round
     await showState("After deposit:", expectedState);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -68,10 +70,12 @@ describe("ValidatorPool: Collecting logic", async function () {
     const madTokenAmount = ethers.utils.parseEther("2");
     await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
 
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     const eths = ethers.utils.parseEther("4.0").toBigInt();
     const expectedState = await getCurrentState(fixture, validators);
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
@@ -81,7 +85,7 @@ describe("ValidatorPool: Collecting logic", async function () {
     expectedState.ValidatorStaking.ETH += eths;
     // Complete ETHDKG Round
     await showState("After deposit:", expectedState);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -98,10 +102,12 @@ describe("ValidatorPool: Collecting logic", async function () {
   });
 
   it("Check if profit leftovers are sent back to user when unregistering", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     const expectedState = await getCurrentState(fixture, validators);
     const maxNumValidators = validatorsSnapshots.length;
     const eths = ethers.utils.parseEther(`4`).toBigInt();
@@ -122,7 +128,7 @@ describe("ValidatorPool: Collecting logic", async function () {
     await showState("Expected state after deposit", expectedState);
     await showState("Current state after deposit", currentState);
     expect(currentState).to.be.deep.equal(expectedState);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,

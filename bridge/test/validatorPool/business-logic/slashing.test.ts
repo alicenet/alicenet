@@ -2,7 +2,7 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -38,16 +38,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Minor slash a validator", async function () {
     const reward = ethers.utils.parseEther("1").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
@@ -81,16 +83,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Minor slash a validator then he leaves the pool", async function () {
     const reward = ethers.utils.parseEther("1").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
@@ -156,16 +160,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Minor slash a validator then major slash it", async function () {
     const reward = ethers.utils.parseEther("10000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
@@ -225,16 +231,18 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     const reward = ethers.utils.parseEther("10000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
@@ -288,17 +296,19 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Minor slash a validator then major slash it with funds distribution in the middle", async function () {
     const reward = ethers.utils.parseEther("10000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
 
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     const eths = 4;
     const mads = 20;
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
@@ -432,16 +442,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Major slash a validator then validators collect profit", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
@@ -487,16 +499,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Should not allow major slash a validator twice", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
@@ -524,16 +538,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Should not allow major/minor slash a person that it's not a validator", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await expect(
       ethdkg.majorSlash(await adminSigner.getAddress(), validators[1])
     ).to.be.revertedWith(
@@ -551,16 +567,18 @@ describe("ValidatorPool: Slashing logic", async () => {
     let reward = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     reward *= BigInt(2);
     // Set reward to 1 MadToken
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[1]);
@@ -613,16 +631,18 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Set infringer and disputer validators
     const infringer = validators[0];
     const disputer = validators[1];
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     let expectedState = await getCurrentState(fixture, validators);
     await showState("After registering", expectedState);
@@ -687,16 +707,18 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Minor slash a validator with reward equals to the staking amount", async function () {
     const reward = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     // Set reward to be equal to the staked amount (in this case minor will be equal to major slashes)
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(
@@ -729,16 +751,18 @@ describe("ValidatorPool: Slashing logic", async () => {
     let reward = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     reward *= BigInt(2);
     // Set reward to be equal to the staked amount (in this case minor will be equal to major slashes)
-    await factoryCallAny(fixture, "validatorPool", "setDisputerReward", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
     // Obtain ETHDKG Mock
     const ETHDKGMockFactory = await ethers.getContractFactory("ETHDKGMock");
     const ethdkg = ETHDKGMockFactory.attach(fixture.ethdkg.address);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
     const expectedState = await getCurrentState(fixture, validators);
     await showState(

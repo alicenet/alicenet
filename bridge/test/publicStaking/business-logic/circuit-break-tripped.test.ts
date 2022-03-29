@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import {
   BaseTokensFixture,
-  factoryCallAny,
+  factoryCallAnyFixture,
   getBaseTokensFixture,
 } from "../../setup";
 
@@ -17,7 +17,7 @@ describe("PublicStaking: Call functions with Circuit Breaker tripped", async () 
     [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.madToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
-    await factoryCallAny(fixture, "publicStaking", "tripCB");
+    await factoryCallAnyFixture(fixture, "publicStaking", "tripCB");
   });
 
   describe("Users should not be able to:", async () => {

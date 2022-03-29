@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
   BaseTokensFixture,
-  factoryCallAny,
+  factoryCallAnyFixture,
   getBaseTokensFixture,
 } from "../setup";
 
@@ -19,7 +19,11 @@ describe("PublicStaking: Testing StakeNFT Access Control", async () => {
 
   describe("A user with admin role should be able to:", async () => {
     it("Trip circuit breaker", async function () {
-      const rcpt = await factoryCallAny(fixture, "publicStaking", "tripCB");
+      const rcpt = await factoryCallAnyFixture(
+        fixture,
+        "publicStaking",
+        "tripCB"
+      );
       expect(rcpt.status).to.be.equal(1);
       expect(await fixture.publicStaking.circuitBreakerState()).to.be.equals(
         true
@@ -27,16 +31,19 @@ describe("PublicStaking: Testing StakeNFT Access Control", async () => {
     });
 
     it("Skim excess of Tokens and ETH", async function () {
-      let rcpt = await factoryCallAny(
+      let rcpt = await factoryCallAnyFixture(
         fixture,
         "publicStaking",
         "skimExcessEth",
         [adminSigner.address]
       );
       expect(rcpt.status).to.be.equal(1);
-      rcpt = await factoryCallAny(fixture, "publicStaking", "skimExcessToken", [
-        adminSigner.address,
-      ]);
+      rcpt = await factoryCallAnyFixture(
+        fixture,
+        "publicStaking",
+        "skimExcessToken",
+        [adminSigner.address]
+      );
       expect(rcpt.status).to.be.equal(1);
     });
   });

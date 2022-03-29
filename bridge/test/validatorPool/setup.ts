@@ -2,7 +2,7 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { ValidatorRawData } from "../ethdkg/setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getTokenIdFromTx,
   getValidatorEthAccount,
@@ -212,7 +212,7 @@ export const stakeValidators = async (
     // Get the proof of staking (NFT's tokenID)
     const tokenID = await getTokenIdFromTx(tx);
     stakingTokenIds.push(tokenID);
-    await factoryCallAny(fixture, "publicStaking", "approve", [
+    await factoryCallAnyFixture(fixture, "publicStaking", "approve", [
       fixture.validatorPool.address,
       tokenID,
     ]);

@@ -1,7 +1,7 @@
 import { Signer } from "ethers";
 import { expect } from "../chai-setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -37,9 +37,12 @@ describe("Snapshots: Access control methods", () => {
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
     const expectedDelay = 123;
-    await factoryCallAny(fixture, "snapshots", "setSnapshotDesperationDelay", [
-      expectedDelay,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "snapshots",
+      "setSnapshotDesperationDelay",
+      [expectedDelay]
+    );
 
     const delay = await fixture.snapshots.getSnapshotDesperationDelay();
     await expect(delay).to.be.equal(expectedDelay);
@@ -57,9 +60,12 @@ describe("Snapshots: Access control methods", () => {
   it("Allows setSnapshotDesperationFactor from admin address", async function () {
     const expectedFactor = 123;
 
-    await factoryCallAny(fixture, "snapshots", "setSnapshotDesperationFactor", [
-      expectedFactor,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "snapshots",
+      "setSnapshotDesperationFactor",
+      [expectedFactor]
+    );
 
     const delay = await fixture.snapshots
       .connect(adminSigner)

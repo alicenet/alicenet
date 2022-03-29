@@ -114,18 +114,21 @@ export const getValidatorEthAccount = async (
 };
 
 export const createUsers = async (
-  numberOfUsers: number
+  numberOfUsers: number,
+  createWithNoFunds: boolean = false
 ): Promise<SignerWithAddress[]> => {
   const users: SignerWithAddress[] = [];
   const admin = (await ethers.getSigners())[0];
   for (let i = 0; i < numberOfUsers; i++) {
     const user = new Wallet(ethers.utils.randomBytes(64), ethers.provider);
-    const balance = await ethers.provider.getBalance(user.address);
-    if (balance.eq(0)) {
-      await admin.sendTransaction({
-        to: user.address,
-        value: ethers.utils.parseEther("1"),
-      });
+    if (!createWithNoFunds) {
+      const balance = await ethers.provider.getBalance(user.address);
+      if (balance.eq(0)) {
+        await admin.sendTransaction({
+          to: user.address,
+          value: ethers.utils.parseEther("1"),
+        });
+      }
     }
     users.push(user as Signer as SignerWithAddress);
   }
@@ -188,20 +191,14 @@ function getBytes32Salt(contractName: string) {
 export const deployStaticWithFactory = async (
   factory: MadnetFactory,
   contractName: string,
+  salt?: string,
   initCallData?: any[],
-  constructorArgs?: any[]
+  constructorArgs: any[] = []
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  let contractTx;
-  if (constructorArgs !== undefined) {
-    contractTx = await factory.deployTemplate(
-      _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
-    );
-  } else {
-    contractTx = await factory.deployTemplate(
-      _Contract.getDeployTransaction().data as BytesLike
-    );
-  }
+  const contractTx = await factory.deployTemplate(
+    _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
+  );
   let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
     throw new Error(
@@ -222,10 +219,13 @@ export const deployStaticWithFactory = async (
     console.log(error);
     initCallDataBin = "0x";
   }
-  const tx = await factory.deployStatic(
-    getBytes32Salt(contractName),
-    initCallDataBin
-  );
+  let saltBytes;
+  if (salt === undefined) {
+    saltBytes = getBytes32Salt(contractName);
+  } else {
+    saltBytes = getBytes32Salt(salt);
+  }
+  const tx = await factory.deployStatic(saltBytes, initCallDataBin);
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
     throw new Error(
@@ -241,21 +241,16 @@ async function deployUpgradeableWithFactory(
   contractName: string,
   salt?: string,
   initCallData?: any[],
-  constructorArgs?: any[]
+  constructorArgs: any[] = []
 ): Promise<Contract> {
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode: BytesLike;
-  let contractTx;
-  if (constructorArgs !== undefined) {
-    contractTx = await factory.deployTemplate(
-      (deployCode = _Contract.getDeployTransaction(...constructorArgs)
-        .data as BytesLike)
-    );
-  } else {
-    contractTx = await factory.deployTemplate(
-      (deployCode = _Contract.getDeployTransaction().data as BytesLike)
-    );
-  }
+
+  const contractTx = await factory.deployTemplate(
+    (deployCode = _Contract.getDeployTransaction(...constructorArgs)
+      .data as BytesLike)
+  );
+
   let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
   if (receipt.gasUsed.gt(10_000_000)) {
     throw new Error(
@@ -474,9 +469,13 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
-  const aToken = (await deployStaticWithFactory(factory, "AToken", undefined, [
-    madToken.address,
-  ])) as AToken;
+  const aToken = (await deployStaticWithFactory(
+    factory,
+    "AToken",
+    "AToken",
+    undefined,
+    [madToken.address]
+  )) as AToken;
   const aTokenMinter = (await deployUpgradeableWithFactory(
     factory,
     "ATokenMinterMock",
@@ -525,7 +524,7 @@ export async function getTokenIdFromTx(tx: any) {
   return log.args[2];
 }
 
-export async function factoryCallAny(
+export async function factoryCallAnyFixture(
   fixture: BaseFixture,
   contractName: string,
   functionName: string,
@@ -533,6 +532,15 @@ export async function factoryCallAny(
 ) {
   const factory = fixture.factory;
   const contract: Contract = fixture[contractName];
+  return await factoryCallAny(factory, contract, functionName, args);
+}
+
+export async function factoryCallAny(
+  factory: MadnetFactory,
+  contract: Contract,
+  functionName: string,
+  args?: Array<any>
+) {
   if (args === undefined) {
     args = [];
   }
@@ -575,3 +583,15 @@ export async function callFunctionAndGetReturnValues(
     );
   }
 }
+
+export const getMetamorphicAddress = (
+  factoryAddress: string,
+  salt: string
+): string => {
+  const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
+  return ethers.utils.getCreate2Address(
+    factoryAddress,
+    ethers.utils.formatBytes32String(salt),
+    ethers.utils.keccak256(initCode)
+  );
+};

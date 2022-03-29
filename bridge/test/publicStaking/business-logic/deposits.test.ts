@@ -1,4 +1,3 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BaseTokensFixture, getBaseTokensFixture } from "../../setup";
@@ -6,12 +5,9 @@ import { assertTotalReserveAndZeroExcess } from "../setup";
 
 describe("PublicStaking: Deposit Tokens and ETH", async () => {
   let fixture: BaseTokensFixture;
-  let notAdminSigner: SignerWithAddress;
-  let adminSigner: SignerWithAddress;
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.madToken.approve(fixture.publicStaking.address, 100000);
   });
   it("Make successful deposits of tokens and ETH", async function () {
@@ -29,7 +25,7 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
         await ethers.provider.getBalance(fixture.publicStaking.address)
       ).toBigInt()
     ).to.be.equals(ethAmount);
-    assertTotalReserveAndZeroExcess(
+    await assertTotalReserveAndZeroExcess(
       fixture.publicStaking,
       tokenAmount,
       ethAmount

@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers/lib/ethers";
 import { ethers } from "hardhat";
-import { Fixture } from "../../setup";
+import { Fixture } from "../setup";
 
 let admin: SignerWithAddress;
 let user: SignerWithAddress;

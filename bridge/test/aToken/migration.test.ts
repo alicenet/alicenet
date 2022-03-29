@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect, Fixture, getFixture } from "../../setup";
+import { expect, Fixture, getFixture } from "../setup";
 import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {

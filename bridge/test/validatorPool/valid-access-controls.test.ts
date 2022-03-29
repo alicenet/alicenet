@@ -1,5 +1,5 @@
 import { expect } from "../chai-setup";
-import { factoryCallAny, Fixture, getFixture } from "../setup";
+import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { commitSnapshots } from "./setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
@@ -12,7 +12,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Set a minimum stake", async function () {
-    const rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "setStakeAmount",
@@ -22,7 +22,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Set a maximum number of validators", async function () {
-    const rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "setMaxNumValidators",
@@ -32,7 +32,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Schedule maintenance", async function () {
-    const rcpt = await factoryCallAny(
+    const rcpt = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "scheduleMaintenance"
@@ -42,7 +42,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
 
   it("Register validators", async function () {
     await expect(
-      factoryCallAny(fixture, "validatorPool", "registerValidators", [
+      factoryCallAnyFixture(fixture, "validatorPool", "registerValidators", [
         ["0x000000000000000000000000000000000000dEaD"],
         [1],
       ])
@@ -51,7 +51,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
 
   it("Initialize ETHDKG", async function () {
     await expect(
-      factoryCallAny(fixture, "validatorPool", "initializeETHDKG")
+      factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
     ).to.be.revertedWith(
       "ETHDKG: Minimum number of validators staked not met!"
     );
@@ -59,7 +59,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
 
   it("Unregister validators", async function () {
     await expect(
-      factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
+      factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         ["0x000000000000000000000000000000000000dEaD"],
       ])
     ).to.be.revertedWith(
@@ -70,7 +70,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   it("Pause consensus", async function () {
     await commitSnapshots(fixture, 1);
     await expect(
-      factoryCallAny(
+      factoryCallAnyFixture(
         fixture,
         "validatorPool",
         "pauseConsensusOnArbitraryHeight",

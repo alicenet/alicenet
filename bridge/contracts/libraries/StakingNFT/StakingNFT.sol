@@ -624,7 +624,7 @@ abstract contract StakingNFT is
         if (positionAccumulatorValue_ > state_.accumulator) {
             accumulatorDelta = type(uint168).max - positionAccumulatorValue_;
             accumulatorDelta += state_.accumulator;
-            positionAccumulatorValue_ = accumulatorDelta;
+            positionAccumulatorValue_ = state_.accumulator;
         } else {
             accumulatorDelta = state_.accumulator - positionAccumulatorValue_;
             // update accumulator value for calling method
