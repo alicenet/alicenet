@@ -1,13 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { expect } from "../../chai-setup";
-import {
-  callFunctionAndGetReturnValues,
-  Fixture,
-  getFixture,
-} from "../../setup";
-import { format, getState, init, showState, state } from "./setup";
+import { expect } from "../chai-setup";
+import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
+import { getState, showState, state } from "./setup";
 
 describe("Testing MadByte Minting methods", async () => {
   let admin: SignerWithAddress;
@@ -16,18 +12,17 @@ describe("Testing MadByte Minting methods", async () => {
   let expectedState: state;
   let eths: BigNumber;
   let fixture: Fixture;
-  let eth = 4;
+  const eth = 4;
   let mad: bigint;
   let ethIn: BigNumber;
-  let minMadBytes = 0;
+  const minMadBytes = 0;
   const zeroAddress = "0x0000000000000000000000000000000000000000";
   const ONE_MB = 1 * 10 ** 18;
 
   beforeEach(async function () {
     fixture = await getFixture();
-    let signers = await ethers.getSigners();
+    const signers = await ethers.getSigners();
     [admin, user, user2] = signers;
-    await init(fixture);
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());
     mad = ethers.utils.parseUnits(eth.toString()).toBigInt();
@@ -42,14 +37,13 @@ describe("Testing MadByte Minting methods", async () => {
       [minMadBytes],
       ethIn
     );
-    //Eths
-    let eths = await fixture.madByte.madByteToEth(
+    // Eths
+    const eths = await fixture.madByte.madByteToEth(
       await fixture.madByte.getPoolBalance(),
       await fixture.madByte.totalSupply(),
       madBytes
     );
     // Round eths to avoid consumed gas on state comparison
-    let roundedEths = format(eths);
     expect(madBytes).to.be.equal(BigInt("399028731704364116575"));
     expectedState.Balances.eth.user -= eth;
     expectedState.Balances.madByte.user += madBytes.toBigInt();
@@ -65,8 +59,8 @@ describe("Testing MadByte Minting methods", async () => {
       [minMadBytes],
       ethIn
     );
-    //Eths
-    let eths2 = await fixture.madByte.madByteToEth(
+    // Eths
+    const eths2 = await fixture.madByte.madByteToEth(
       await fixture.madByte.getPoolBalance(),
       await fixture.madByte.totalSupply(),
       madBytes2
@@ -81,7 +75,7 @@ describe("Testing MadByte Minting methods", async () => {
   });
 
   it("Should mint with huge amount of eth", async () => {
-    let eth = 70000000000;
+    const eth = 70000000000;
     ethIn = ethers.utils.parseEther(eth.toString());
     expectedState = await getState(fixture);
     const [madBytes] = await callFunctionAndGetReturnValues(
@@ -142,7 +136,7 @@ describe("Testing MadByte Minting methods", async () => {
   });
 
   it("Should mint a big amount of eth to an address", async () => {
-    let eth = 70000000000;
+    const eth = 70000000000;
     ethIn = ethers.utils.parseEther(eth.toString());
     mad = ethers.utils.parseUnits(eth.toString()).toBigInt();
     expectedState = await getState(fixture);
@@ -179,7 +173,7 @@ describe("Testing MadByte Minting methods", async () => {
   });
 
   it("Should fail to mint with big min MadByte quantity", async () => {
-    let minMadBytes = BigInt((900 * ONE_MB).toString());
+    const minMadBytes = BigInt((900 * ONE_MB).toString());
     await expect(
       fixture.madByte.connect(admin).mint(minMadBytes, {
         value: ethers.utils.parseEther(eth.toString()),

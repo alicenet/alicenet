@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { ValidatorPool } from "../../../typechain-types";
 import { expect } from "../../chai-setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -29,7 +29,7 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
     await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
 
     // Skimming the excess of eth
-    await factoryCallAny(fixture, "validatorPool", "skimExcessEth", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "skimExcessEth", [
       testAddress,
     ]);
     expect(
@@ -48,7 +48,7 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
     );
 
     // skim excess of madtokens
-    await factoryCallAny(fixture, "validatorPool", "skimExcessToken", [
+    await factoryCallAnyFixture(fixture, "validatorPool", "skimExcessToken", [
       testAddress,
     ]);
     expect(

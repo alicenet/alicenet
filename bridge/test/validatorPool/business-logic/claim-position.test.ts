@@ -2,7 +2,7 @@ import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -41,14 +41,19 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.Factory.PublicStaking--;
       expectedState.validators[index].NFT++;
     }
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
     await commitSnapshots(fixture, 4);
     for (const validatorsSnapshot of validatorsSnapshots) {
       await fixture.validatorPool
@@ -72,14 +77,19 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.validators[index].NFT++;
     }
     expectedState.PublicStaking.ETH = BigInt(0);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
     await commitSnapshots(fixture, 4);
     for (const validatorsSnapshot of validatorsSnapshots) {
       await fixture.validatorPool
@@ -105,14 +115,19 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.ValidatorPool.ValNFT++;
       expectedState.Admin.MAD -= stakeAmount * BigInt(2);
     }
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
     await commitSnapshots(fixture, 4);
     for (const validatorsSnapshot of validatorsSnapshots) {
       await fixture.validatorPool
@@ -126,10 +141,12 @@ describe("ValidatorPool: Claiming logic", async () => {
     // Re-initialize validators
     const newValidators = await createValidators(fixture, validatorsSnapshots);
     const newPublicStakingIDs = await stakeValidators(fixture, newValidators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      newPublicStakingIDs,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, newPublicStakingIDs]
+    );
     const currentState = await getCurrentState(fixture, validators);
     // Expect that validators funds are transferred again to ValidatorStaking
     expectedState.ValidatorStaking.MAD +=
@@ -138,14 +155,19 @@ describe("ValidatorPool: Claiming logic", async () => {
   });
 
   it("Should not allow users to claim position before the right time", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
     for (const validator of validatorsSnapshots) {
       await expect(
         fixture.validatorPool
@@ -158,14 +180,19 @@ describe("ValidatorPool: Claiming logic", async () => {
   });
 
   it("Should not allow a non-owner try to get PublicStaking position in the exitingQueue", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     await mineBlocks(1n);
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
     await commitSnapshots(fixture, 4);
     await expect(
       fixture.validatorPool.connect(adminSigner).claimExitingNFTPosition()

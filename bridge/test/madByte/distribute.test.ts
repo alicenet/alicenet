@@ -1,36 +1,35 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { expect } from "../../chai-setup";
+import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
-} from "../../setup";
-import { getState, init, showState } from "./setup";
+} from "../setup";
+import { getState, showState } from "./setup";
 
 describe("Testing MadByte Distribution methods", async () => {
   let admin: SignerWithAddress;
-  let user: SignerWithAddress;
-  let user2: SignerWithAddress;
   let fixture: Fixture;
-  let minMadBytes = 0;
-  let eth = 4;
+  const minMadBytes = 0;
+  const eth = 4;
   let ethIn: BigNumber;
 
   beforeEach(async function () {
     fixture = await getFixture();
-    let signers = await ethers.getSigners();
-    [admin, user, user2] = signers;
-    await init(fixture);
+    const signers = await ethers.getSigners();
+    [admin] = signers;
     showState("Initial", await getState(fixture));
-    await factoryCallAny(fixture, "madByte", "setAdmin", [admin.address]);
+    await factoryCallAnyFixture(fixture, "madByte", "setAdmin", [
+      admin.address,
+    ]);
     ethIn = ethers.utils.parseEther(eth.toString());
   });
 
   it("Should correctly distribute", async () => {
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -39,13 +38,13 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     const splits = [250, 250, 250, 250];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000
@@ -73,20 +72,20 @@ describe("Testing MadByte Distribution methods", async () => {
     const splits = [250, 250, 250, 250];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
     // Burn previous supply
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
       [minMadBytes],
       ethIn
     );
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000
@@ -110,7 +109,7 @@ describe("Testing MadByte Distribution methods", async () => {
   });
 
   it("Should distribute without foundation", async () => {
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -119,13 +118,13 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     const splits = [350, 350, 300, 0];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000
@@ -149,7 +148,7 @@ describe("Testing MadByte Distribution methods", async () => {
   });
 
   it("Should distribute without liquidityProviderStaking", async () => {
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -158,13 +157,13 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     const splits = [350, 350, 0, 300];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000
@@ -188,7 +187,7 @@ describe("Testing MadByte Distribution methods", async () => {
   });
 
   it("Should distribute without publicStaking", async () => {
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -197,13 +196,13 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     const splits = [350, 350, 0, 300];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000
@@ -227,7 +226,7 @@ describe("Testing MadByte Distribution methods", async () => {
   });
 
   it("Should distribute without validatorStaking", async () => {
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -236,13 +235,13 @@ describe("Testing MadByte Distribution methods", async () => {
     );
     const splits = [0, 350, 350, 300];
     await fixture.madByte.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    const [distribution] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "distribute",
       admin,
       []
     );
-    let distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
+    const distributable = ethIn.sub(await fixture.madByte.getPoolBalance());
     expect(
       (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
         1000

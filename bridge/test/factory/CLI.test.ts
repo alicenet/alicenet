@@ -75,10 +75,7 @@ describe("Cli tasks", async () => {
 
   it("deploys MockInitializable contract with deployCreate", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
-    const deployCreateData = await cliDeployCreate(
-      MOCK_INITIALIZABLE,
-      factoryData.address
-    );
+    await cliDeployCreate(MOCK_INITIALIZABLE, factoryData.address);
   });
 
   it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initCallData", async () => {
@@ -89,7 +86,7 @@ describe("Cli tasks", async () => {
       factoryData.address
     );
     const salt = (await getSalt(MOCK_INITIALIZABLE)) as string;
-    const proxyData = await cliDeployProxy(salt, factoryData.address);
+    await cliDeployProxy(salt, factoryData.address);
     const logicFactory = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const upgradedProxyData = await cliUpgradeDeployedProxy(
       MOCK_INITIALIZABLE,
@@ -106,10 +103,7 @@ describe("Cli tasks", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
     const testVar1 = "14";
     const testVar2 = "s";
-    const templateData = await cliDeployTemplate(MOCK, factoryData.address, [
-      testVar1,
-      testVar2,
-    ]);
+    await cliDeployTemplate(MOCK, factoryData.address, [testVar1, testVar2]);
     const metaData = await cliDeployStatic(
       MOCK,
       factoryData.address,
@@ -129,7 +123,7 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const proxyData = await cliMultiCallDeployProxy(
+    await cliMultiCallDeployProxy(
       MOCK_INITIALIZABLE,
       logicData.address,
       factoryData.address,
@@ -139,11 +133,8 @@ describe("Cli tasks", async () => {
 
   it("deploys mock with deployCreate", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
-    const factory = await deployFactory(run);
-    const deployCreateData = await cliDeployCreate(MOCK, factoryData.address, [
-      "2",
-      "s",
-    ]);
+    await deployFactory(run);
+    await cliDeployCreate(MOCK, factoryData.address, ["2", "s"]);
   });
 });
 

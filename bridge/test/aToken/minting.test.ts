@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect, factoryCallAny, Fixture, getFixture } from "../../setup";
+import { expect, factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
@@ -29,7 +29,7 @@ describe("Testing AToken", async () => {
 
       describe("Business methods with onlyFactory modifier", async () => {
         it("Should mint when called by external identified as minter impersonating factory", async function () {
-          await factoryCallAny(fixture, "aTokenMinter", "mint", [
+          await factoryCallAnyFixture(fixture, "aTokenMinter", "mint", [
             user.address,
             amount,
           ]);

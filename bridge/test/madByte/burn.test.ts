@@ -1,50 +1,26 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { MadByte } from "../../../typechain-types";
-import { expect } from "../../chai-setup";
-import {
-  callFunctionAndGetReturnValues,
-  Fixture,
-  getFixture,
-} from "../../setup";
-import { format, getState, init, showState, state } from "./setup";
+import { expect } from "../chai-setup";
+import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
+import { format, getState, state } from "./setup";
 
 describe("Testing MadByte Burning methods", async () => {
-  let madByte: MadByte;
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
-  let user2: SignerWithAddress;
   let expectedState: state;
-  let currentState: state;
-  let amount = 1000;
   let eths: BigNumber;
   let fixture: Fixture;
-  let userAddresses: string[];
-  let contractAddresses: string[];
-  let minerAmount: BigNumber;
-  let stakingAmount: BigNumber;
-  let lpStakingAmount: BigNumber;
-  let foundationAmount: BigNumber;
-  let eth = 40;
-  let mad = 10;
+  const eth = 40;
   let ethIn: BigNumber;
-  let madDeposit: BigNumber;
-  let burnQuantity: BigNumber;
   let madBytes: BigNumber;
-  let minMadBytes = 0;
-
-  let marketSpread = 4;
-  const zeroAddress = "0x0000000000000000000000000000000000000000";
-  const ONE_MB = 1 * 10 ** 18;
+  const minMadBytes = 0;
+  const marketSpread = 4;
 
   beforeEach(async function () {
     fixture = await getFixture();
-    let signers = await ethers.getSigners();
-    [admin, user, user2] = signers;
-    await init(fixture);
-    // let expectedState = await getState(contractAddresses, userAddresses);
-    showState("Initial", await getState(fixture));
+    const signers = await ethers.getSigners();
+    [admin, user] = signers;
     ethIn = ethers.utils.parseEther(eth.toString());
     [madBytes] = await callFunctionAndGetReturnValues(
       fixture.madByte,
@@ -53,12 +29,11 @@ describe("Testing MadByte Burning methods", async () => {
       [minMadBytes],
       ethIn
     );
-    burnQuantity = madBytes;
     expectedState = await getState(fixture);
   });
 
   it("Should burn", async () => {
-    let remaining = ethers.utils.parseUnits("100").toBigInt();
+    const remaining = ethers.utils.parseUnits("100").toBigInt();
     let burnQuantity = BigNumber.from(madBytes).sub(remaining).toBigInt();
     expectedState = await getState(fixture);
     [eths] = await callFunctionAndGetReturnValues(
@@ -97,8 +72,8 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should burn a huge amount of MadBytes", async () => {
-    let eth = 70000000000;
-    let ethIn = ethers.utils.parseEther(eth.toString());
+    const eth = 70000000000;
+    const ethIn = ethers.utils.parseEther(eth.toString());
     const [madBytes] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mintTo",
@@ -106,7 +81,7 @@ describe("Testing MadByte Burning methods", async () => {
       [user.address, minMadBytes],
       ethIn
     );
-    let burnQuantity = madBytes.toBigInt();
+    const burnQuantity = madBytes.toBigInt();
     expectedState = await getState(fixture);
     [eths] = await callFunctionAndGetReturnValues(
       fixture.madByte,
@@ -114,7 +89,7 @@ describe("Testing MadByte Burning methods", async () => {
       user,
       [burnQuantity, 0]
     );
-    let roundedEths = format(eths);
+    const roundedEths = format(eths);
     expectedState.Balances.madByte.user -= burnQuantity;
     expectedState.Balances.eth.user += roundedEths;
     expectedState.Balances.madByte.poolBalance -= eths.toBigInt();
@@ -125,7 +100,7 @@ describe("Testing MadByte Burning methods", async () => {
 
   it("Should fail to burn more than possible", async () => {
     // Try to burn one more than minted
-    let burnQuantity = BigNumber.from(madBytes).add(1);
+    const burnQuantity = BigNumber.from(madBytes).add(1);
     await expect(
       fixture.madByte.connect(user).burn(burnQuantity, 0)
     ).to.be.revertedWith(
@@ -135,7 +110,7 @@ describe("Testing MadByte Burning methods", async () => {
 
   it("Should fail to burn 0 tokens", async () => {
     // Try to burn 0
-    let burnQuantity = 0;
+    const burnQuantity = 0;
     await fixture.madByte.connect(user).mint(minMadBytes, {
       value: ethers.utils.parseEther(eth.toString()),
     });
@@ -147,17 +122,17 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should burn to an address", async () => {
-    let burnQuantity = madBytes;
+    const burnQuantity = madBytes;
     // Round eths to avoid consumed gas on state comparison
     expectedState = await getState(fixture);
-    //Eths to receive
+    // Eths to receive
     [eths] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "burnTo",
       user,
       [admin.address, burnQuantity, 0]
     );
-    let roundedEths = format(eths);
+    const roundedEths = format(eths);
     expectedState.Balances.madByte.user -= burnQuantity.toBigInt();
     expectedState.Balances.eth.admin += roundedEths;
     expectedState.Balances.madByte.poolBalance -= eths.toBigInt();
@@ -168,7 +143,7 @@ describe("Testing MadByte Burning methods", async () => {
 
   it("Should fail to burn to an address more than possible", async () => {
     // Try to burn one more than minted
-    let burnQuantity = BigNumber.from(madBytes).add(1);
+    const burnQuantity = BigNumber.from(madBytes).add(1);
     await expect(
       fixture.madByte.connect(user).burnTo(admin.address, burnQuantity, 0)
     ).to.be.revertedWith(
@@ -177,7 +152,7 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should fail to burn 0 tokens to an address", async () => {
-    let burnQuantity = 0;
+    const burnQuantity = 0;
     await expect(
       fixture.madByte.connect(user).burnTo(admin.address, burnQuantity, 0)
     ).to.be.revertedWith(
@@ -186,8 +161,8 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should fail to burn without fulfilling min eth amount", async () => {
-    let minEth = ethIn.add(1);
-    let burnQuantity = madBytes;
+    const minEth = ethIn.add(1);
+    const burnQuantity = madBytes;
     await expect(
       fixture.madByte
         .connect(user)
@@ -200,8 +175,8 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should burn and keep market spread", async () => {
-    let burnQuantity = madBytes;
-    //Eths to receive
+    const burnQuantity = madBytes;
+    // Eths to receive
     [eths] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "burn",
@@ -217,9 +192,7 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should mint and burn a lot", async () => {
-    let totalEth = 40;
-    let it = 10;
-    let eth = totalEth / it;
+    const it = 10;
     for (let i = 0; i < it; i++) {
       const [madBytes] = await callFunctionAndGetReturnValues(
         fixture.madByte,
@@ -228,9 +201,9 @@ describe("Testing MadByte Burning methods", async () => {
         [minMadBytes],
         ethIn
       );
-      let burnQuantity = madBytes.toBigInt();
+      const burnQuantity = madBytes.toBigInt();
       expectedState = await getState(fixture);
-      //Eths to receive
+      // Eths to receive
       expectedState = await getState(fixture);
       [eths] = await callFunctionAndGetReturnValues(
         fixture.madByte,
@@ -239,7 +212,7 @@ describe("Testing MadByte Burning methods", async () => {
         [burnQuantity, 0]
       );
       // Round eths to avoid consumed gas on state comparison
-      let roundedEths = format(eths);
+      const roundedEths = format(eths);
       expectedState.Balances.madByte.user -= burnQuantity;
       expectedState.Balances.eth.user += roundedEths;
       expectedState.Balances.madByte.poolBalance -= eths.toBigInt();
@@ -250,9 +223,9 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should burn it all", async () => {
-    let burnQuantity = await fixture.madByte.totalSupply();
+    const burnQuantity = await fixture.madByte.totalSupply();
     expectedState = await getState(fixture);
-    //Eths to receive
+    // Eths to receive
     expectedState = await getState(fixture);
     [eths] = await callFunctionAndGetReturnValues(
       fixture.madByte,
@@ -264,7 +237,7 @@ describe("Testing MadByte Burning methods", async () => {
   });
 
   it("Should keep ether sent value and (mint/burn) value relation greater or equal to market spread value", async () => {
-    let ethIn = ethers.utils.parseEther("8000");
+    const ethIn = ethers.utils.parseEther("8000");
     const [madBytes1] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mintTo",
@@ -283,9 +256,9 @@ describe("Testing MadByte Burning methods", async () => {
     );
   });
 
-  xit("Should keep ether sent value and (mint/burn) value relation greater or equal to market spread value with subsequent minting", async () => {
+  it("Should keep ether sent value and (mint/burn) value relation greater or equal to market spread value with subsequent minting", async () => {
     // If some consequent mints are performed this relation is not kept between two first operations
-    let ethIn = ethers.utils.parseEther("4");
+    const ethIn = ethers.utils.parseEther("4");
     const [madBytes1] = await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mintTo",
@@ -325,14 +298,12 @@ describe("Testing MadByte Burning methods", async () => {
       user,
       [madBytes3, 0]
     );
-    expect(ethIn.div(ethOut1).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
-    );
-    expect(ethIn.div(ethOut2).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
-    );
-    expect(ethIn.div(ethOut3).toNumber()).to.be.greaterThanOrEqual(
-      marketSpread
+    const expectedAmount =
+      (ethIn.toBigInt() * 3n) /
+      (ethOut3.toBigInt() + ethOut2.toBigInt() + ethOut1.toBigInt());
+    expect(expectedAmount).to.be.equals(
+      BigInt(marketSpread),
+      "Failed at assertion"
     );
   });
 });

@@ -6,7 +6,7 @@ import {
   completeETHDKGRound,
 } from "../../ethdkg/setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -33,11 +33,13 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("Initialize ETHDKG", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
@@ -50,7 +52,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
 
   it("Should not allow pausing “consensus” before 1.5 without snapshots", async function () {
     await expect(
-      factoryCallAny(
+      factoryCallAnyFixture(
         fixture,
         "validatorPool",
         "pauseConsensusOnArbitraryHeight",
@@ -61,11 +63,13 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
 
   it("Pause consensus after 1.5 days without snapshot", async function () {
     // set consensus running
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
@@ -82,7 +86,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         ).toBigInt() + BigInt(1)
       ),
     ]);
-    const tx = await factoryCallAny(
+    const tx = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "pauseConsensusOnArbitraryHeight",
@@ -106,11 +110,13 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
 
   it("After 1.5 days without snapshots, replace validators and run ETHDKG to completion", async function () {
     // set consensus running
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
@@ -128,7 +134,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       ),
     ]);
     const arbitraryMadnetHeight = 42;
-    const tx = await factoryCallAny(
+    const tx = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "pauseConsensusOnArbitraryHeight",
@@ -150,19 +156,24 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       arbitraryMadnetHeight,
       [0, 0, 0, 0]
     );
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
 
     const newValidators = await createValidators(fixture, validatorsSnapshots2);
     const newStakingTokenIds = await stakeValidators(fixture, validators);
 
     // set consensus running
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      newValidators,
-      newStakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [newValidators, newStakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
@@ -182,12 +193,14 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     // Complete ETHDKG Round
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(
       false
     );
@@ -202,21 +215,23 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("Should not allow start ETHDKG if consensus is true or and ETHDKG round is running", async function () {
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     // Complete ETHDKG Round
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await expect(
-      factoryCallAny(fixture, "validatorPool", "initializeETHDKG")
+      factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
     ).to.be.revertedWith("ValidatorPool: There's an ETHDKG round running!");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
     await expect(
-      factoryCallAny(fixture, "validatorPool", "initializeETHDKG")
+      factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
     ).to.be.revertedWith(
       "ValidatorPool: Error Madnet Consensus should be halted!"
     );
@@ -226,12 +241,14 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     const fixture = await getFixture();
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     // Complete ETHDKG Round
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -240,7 +257,11 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     expect(await fixture.validatorPool.isMaintenanceScheduled()).to.be.equals(
       false
     );
-    await factoryCallAny(fixture, "validatorPool", "scheduleMaintenance");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "scheduleMaintenance"
+    );
     expect(await fixture.validatorPool.isMaintenanceScheduled()).to.be.equals(
       true
     );
@@ -252,15 +273,21 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       "Consensus should be halted!"
     );
 
-    await factoryCallAny(fixture, "validatorPool", "unregisterAllValidators");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterAllValidators"
+    );
     const newValidators = await createValidators(fixture, validatorsSnapshots2);
     const newStakingTokenIds = await stakeValidators(fixture, newValidators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      newValidators,
-      newStakingTokenIds,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [newValidators, newStakingTokenIds]
+    );
     // Complete ETHDKG Round
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(
       validatorsSnapshots2,
       {

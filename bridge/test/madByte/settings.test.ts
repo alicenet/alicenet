@@ -1,8 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect } from "../../chai-setup";
-import { factoryCallAny, Fixture, getFixture } from "../../setup";
-import { getState, init, showState } from "./setup";
+import { expect } from "../chai-setup";
+import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
+import { getState, showState } from "./setup";
 
 describe("Testing MadByte Settings", async () => {
   let admin: SignerWithAddress;
@@ -11,11 +11,12 @@ describe("Testing MadByte Settings", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
-    let signers = await ethers.getSigners();
+    const signers = await ethers.getSigners();
     [admin, user] = signers;
-    await init(fixture);
     showState("Initial", await getState(fixture));
-    await factoryCallAny(fixture, "madByte", "setAdmin", [admin.address]);
+    await factoryCallAnyFixture(fixture, "madByte", "setAdmin", [
+      admin.address,
+    ]);
   });
 
   it("Should fail to set split not being an admin", async () => {
@@ -41,10 +42,10 @@ describe("Testing MadByte Settings", async () => {
   });
 
   it("Should set some splits to 0", async () => {
-    fixture.madByte.connect(admin).setSplits(0, 0, 1000, 0);
+    await fixture.madByte.connect(admin).setSplits(0, 0, 1000, 0);
   });
 
   it("Should correctly set the splits", async () => {
-    fixture.madByte.connect(admin).setSplits(300, 300, 300, 100);
+    await fixture.madByte.connect(admin).setSplits(300, 300, 300, 100);
   });
 });

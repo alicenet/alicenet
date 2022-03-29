@@ -3,7 +3,7 @@ import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
 import {
-  factoryCallAny,
+  factoryCallAnyFixture,
   getFixture,
   getValidatorEthAccount,
   mineBlocks,
@@ -28,16 +28,22 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
     const snapshots = fixture.snapshots as Snapshots;
     const validators = await createValidators(fixture, validatorsSnapshots1);
     const stakingTokenIds = await stakeValidators(fixture, validators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      validators,
-      stakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(validatorsSnapshots1, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
-    await factoryCallAny(fixture, "validatorPool", "scheduleMaintenance");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "scheduleMaintenance"
+    );
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
@@ -55,18 +61,23 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         expectedSafeToProceedConsensus,
         validSnapshot1024.GroupSignature
       );
-    await factoryCallAny(fixture, "validatorPool", "unregisterValidators", [
-      validators,
-    ]);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "unregisterValidators",
+      [validators]
+    );
 
     // registering the new validators
     const newValidators = await createValidators(fixture, validatorsSnapshots2);
     const newStakingTokenIds = await stakeValidators(fixture, newValidators);
-    await factoryCallAny(fixture, "validatorPool", "registerValidators", [
-      newValidators,
-      newStakingTokenIds,
-    ]);
-    await factoryCallAny(fixture, "validatorPool", "initializeETHDKG");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [newValidators, newStakingTokenIds]
+    );
+    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await completeETHDKGRound(
       validatorsSnapshots2,
       {
