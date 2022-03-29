@@ -1,38 +1,35 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { MadByte } from "../../../typechain-types";
-import { expect } from "../../chai-setup";
+import { expect } from "../chai-setup";
 import {
+  BaseTokensFixture,
   callFunctionAndGetReturnValues,
-  factoryCallAny,
-  Fixture,
-  getFixture,
-} from "../../setup";
-import { getState, init, showState, state } from "./setup";
+  factoryCallAnyFixture,
+  getBaseTokensFixture,
+} from "../setup";
+import { getState, showState, state } from "./setup";
 
 describe("Testing MadByte Deposit methods", async () => {
-  let madByte: MadByte;
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
-  let user2: SignerWithAddress;
   let expectedState: state;
-  let fixture: Fixture;
-  let minMadBytes = 0;
-  let marketSpread = 4;
-  let eth = 10;
-  let mad = 10;
+  let fixture: BaseTokensFixture;
+  const minMadBytes = 0;
+  const marketSpread = 4;
+  const eth = 10;
+  const mad = 10;
   let ethIn: BigNumber;
   let madDeposit: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getFixture();
-    let signers = await ethers.getSigners();
-    [admin, user, user2] = signers;
-    await init(fixture);
-    // let expectedState = await getState(contractAddresses, userAddresses);
+    fixture = await getBaseTokensFixture();
+    const signers = await ethers.getSigners();
+    [admin, user] = signers;
     showState("Initial", await getState(fixture));
-    await factoryCallAny(fixture, "madByte", "setAdmin", [admin.address]);
+    await factoryCallAnyFixture(fixture, "madByte", "setAdmin", [
+      admin.address,
+    ]);
     ethIn = ethers.utils.parseEther(eth.toString());
     madDeposit = ethers.utils.parseUnits(mad.toString());
   });
@@ -67,7 +64,7 @@ describe("Testing MadByte Deposit methods", async () => {
 
   it("Should deposit funds on side-chain burning main-chain tokens then affecting pool balance", async () => {
     // Mint MAD since a burn will be performed
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -99,7 +96,7 @@ describe("Testing MadByte Deposit methods", async () => {
   it("Should deposit funds on side-chain without burning main-chain tokens then not affecting balances", async () => {
     expectedState = await getState(fixture);
     // Calculate the amount of bytes per eth value sent
-    let madBytes = await fixture.madByte.ethToMadByte(
+    const madBytes = await fixture.madByte.ethToMadByte(
       await fixture.madByte.getPoolBalance(),
       ethIn.div(marketSpread)
     );
@@ -126,13 +123,13 @@ describe("Testing MadByte Deposit methods", async () => {
       admin,
       [1, user.address, madDeposit]
     );
-    let deposit = await fixture.madByte.getDeposit(depositId);
+    const deposit = await fixture.madByte.getDeposit(depositId);
     expect(deposit.value).to.be.equal(ethIn.toBigInt());
   });
 
   it("Should distribute after deposit", async () => {
     // Mint MAD since a burn will be performed
-    const [madBytes] = await callFunctionAndGetReturnValues(
+    await callFunctionAndGetReturnValues(
       fixture.madByte,
       "mint",
       admin,
@@ -165,7 +162,7 @@ describe("Testing MadByte Deposit methods", async () => {
   });
 
   it("Should distribute after mint deposit", async () => {
-    let madBytes = await fixture.madByte.ethToMadByte(
+    const madBytes = await fixture.madByte.ethToMadByte(
       await fixture.madByte.getPoolBalance(),
       ethIn.div(marketSpread)
     );

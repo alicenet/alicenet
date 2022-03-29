@@ -1,21 +1,14 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect } from "../../chai-setup";
-import { Fixture, getFixture } from "../../setup";
-import { getState, init, showState } from "./setup";
+import { expect } from "../chai-setup";
+import { BaseTokensFixture, getBaseTokensFixture } from "../setup";
+import { getState, showState } from "./setup";
 
 describe("Testing MadByte Utils methods", async () => {
-  let admin: SignerWithAddress;
-  let user: SignerWithAddress;
-  let user2: SignerWithAddress;
-  let fixture: Fixture;
-  let marketSpread = 4;
+  let fixture: BaseTokensFixture;
+  const marketSpread = 4;
 
   beforeEach(async function () {
-    fixture = await getFixture();
-    let signers = await ethers.getSigners();
-    [admin, user, user2] = signers;
-    await init(fixture);
+    fixture = await getBaseTokensFixture();
     showState("Initial", await getState(fixture));
   });
 
