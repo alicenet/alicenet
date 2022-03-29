@@ -1,6 +1,11 @@
 // const { contracts } from"@openzeppelin/cli/lib/prompts/choices");
 import { expect } from "chai";
-import { BytesLike, ContractFactory, ContractTransaction } from "ethers";
+import {
+  BytesLike,
+  ContractFactory,
+  ContractReceipt,
+  ContractTransaction,
+} from "ethers";
 import { ethers } from "hardhat";
 import { END_POINT, MADNET_FACTORY, MOCK } from "../../scripts/lib/constants";
 import { MadnetFactory } from "../../typechain-types/MadnetFactory";
@@ -122,6 +127,35 @@ export async function getEventVar(
 ) {
   let result: any;
   const receipt = await txResponse.wait();
+  if (receipt.events !== undefined) {
+    const events = receipt.events;
+    for (let i = 0; i < events.length; i++) {
+      // look for the event
+      if (events[i].event === eventName) {
+        if (events[i].args !== undefined) {
+          const args = events[i].args;
+          // extract the deployed mock logic contract address from the event
+          result = args !== undefined ? args[varName] : undefined;
+          if (result !== undefined) {
+            return result;
+          }
+        } else {
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
+        }
+      }
+    }
+  }
+  throw new Error(`failed to find event: ${eventName}`);
+}
+
+export async function getReceiptEventVar(
+  receipt: ContractReceipt,
+  eventName: string,
+  varName: string
+) {
+  let result: any;
   if (receipt.events !== undefined) {
     const events = receipt.events;
     for (let i = 0; i < events.length; i++) {

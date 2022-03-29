@@ -8,6 +8,7 @@ deploymentList = [
   "contracts/MadToken.sol:MadToken",
   "contracts/PublicStaking.sol:PublicStaking",
   "contracts/Snapshots.sol:Snapshots",
+  "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor",
   "contracts/ValidatorPool.sol:ValidatorPool",
   "contracts/ValidatorStaking.sol:ValidatorStaking",
   "contracts/libraries/atoken/ATokenBurner.sol:ATokenBurner",

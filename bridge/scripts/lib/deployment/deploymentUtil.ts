@@ -1,4 +1,5 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
+import { BytesLike } from "ethers";
 import { Artifacts, RunTaskFunction } from "hardhat/types";
 import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
@@ -17,6 +18,30 @@ export interface DeploymentArgs {
   initializer: ContractArgs;
 }
 
+export type DeployProxyMCArgs = {
+  contractName: string;
+  logicAddress: string;
+  factoryAddress?: string;
+  initCallData?: BytesLike;
+  outputFolder?: string;
+};
+
+export type DeployArgs = {
+  contractName: string;
+  factoryAddress: string;
+  initCallData?: string;
+  constructorArgs?: any;
+  outputFolder?: string;
+};
+
+export type Args = {
+  contractName: string;
+  factoryAddress?: string;
+  salt?: BytesLike;
+  initCallData?: string;
+  constructorArgs?: any;
+  outputFolder?: string;
+};
 export interface InitData {
   constructorArgs: { [key: string]: any };
   initializerArgs: { [key: string]: any };
@@ -27,14 +52,13 @@ export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
   return await run("deployFactory", { outputFolder: usrPath });
 }
 
-export async function deployStatic(
+export async function getDeployMetaArgs(
   fullyQualifiedName: string,
+  factoryAddress: string,
   artifacts: Artifacts,
-  ethers: Ethers,
-  run: RunTaskFunction,
   inputFolder?: string,
   outputFolder?: string
-) {
+): Promise<DeployArgs> {
   let initCallData;
   // check if contract needs to be initialized
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
@@ -45,27 +69,26 @@ export async function deployStatic(
     );
     initCallData = await getEncodedInitCallData(initializerArgs);
   }
-
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName)
-    : [];
-  return await run("deployMetamorphic", {
+    : undefined;
+  return {
     contractName: extractName(fullyQualifiedName),
-    initCallData,
-    constructorArgs,
-    outputFolder,
-  });
+    factoryAddress: factoryAddress,
+    initCallData: initCallData,
+    constructorArgs: constructorArgs,
+    outputFolder: outputFolder,
+  };
 }
 
-export async function deployUpgradeableProxy(
+export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
+  factoryAddress: string,
   artifacts: Artifacts,
-  ethers: Ethers,
-  run: RunTaskFunction,
   inputFolder?: string,
   outputFolder?: string
-) {
+): Promise<DeployArgs> {
   let initCallData;
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
   if (initAble) {
@@ -78,13 +101,14 @@ export async function deployUpgradeableProxy(
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-    : [];
-  return await run("deployUpgradeableProxy", {
+    : undefined;
+  return {
     contractName: extractName(fullyQualifiedName),
-    initCallData,
-    constructorArgs,
-    outputFolder,
-  });
+    factoryAddress: factoryAddress,
+    initCallData: initCallData,
+    constructorArgs: constructorArgs,
+    outputFolder: outputFolder,
+  };
 }
 
 export async function isInitializable(
@@ -118,12 +142,16 @@ export async function hasConstructorArgs(
   }
   return false;
 }
-
+/**
+ * @description encodes init call data input to be used by the custom hardhat tasks
+ * @param args values of the init call data as an array of strings where each string represents variable value
+ * @returns the args array as a comma delimited string
+ */
 export async function getEncodedInitCallData(
   args: Array<string> | undefined
 ): Promise<string | undefined> {
   if (args !== undefined) {
-    return args.toString().replace(",", ", ");
+    return args.toString();
   }
 }
 

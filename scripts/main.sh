@@ -28,7 +28,7 @@ PRE_CHECK () {
 
 # Check if have tools in the right version
 COMMANDS=("grep" "sed") # assign each command to a version in VERSIONS
-VERSIONS=("3.7" "4.8")
+VERSIONS=("3.7" "4.7")
 # MacOs users make sure that you are running gnu-sed instead of the sed version that is installed
 # by default. Also make sure to update you $PATH to point to the new executable.
 for (( i=0; i<"${#COMMANDS[@]}"; i++ )); do
