@@ -202,7 +202,7 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return true
 	}
 
-	height, err := eth.Contracts().Snapshots().GetMadnetHeightFromSnapshot(opts, epoch)
+	height, err := eth.Contracts().Snapshots().GetAliceNetHeightFromSnapshot(opts, epoch)
 	if err != nil {
 		logger.Errorf("Failed to determine height: %v", err)
 		return true

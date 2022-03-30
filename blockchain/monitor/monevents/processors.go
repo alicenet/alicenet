@@ -27,7 +27,7 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 		return nil
 	}
 
-	event, err := eth.Contracts().MadByte().ParseDepositReceived(log)
+	event, err := eth.Contracts().BToken().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}

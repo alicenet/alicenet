@@ -7,4 +7,6 @@ interface IAToken {
     function externalMint(address to, uint256 amount) external;
 
     function externalBurn(address from, uint256 amount) external;
+
+    function getLegacyTokenAddress() external view returns (address);
 }

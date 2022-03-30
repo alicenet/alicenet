@@ -71,7 +71,7 @@ export async function getDeployMetaArgs(
   }
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
-    ? await getDeploymentConstructorArgs(fullyQualifiedName)
+    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
     : undefined;
   return {
     contractName: extractName(fullyQualifiedName),

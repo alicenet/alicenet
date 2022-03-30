@@ -196,10 +196,10 @@ task(
     }
   });
 
-task("deployContracts", "runs the initial deployment of all alicenet contracts")
+task("deployContracts", "runs the initial deployment of all AliceNet contracts")
   .addOptionalParam(
     "factoryAddress",
-    "specify if a factory is already deployed, if not specifed a new factory will be deployed"
+    "specify if a factory is already deployed, if not specified a new factory will be deployed"
   )
   .addOptionalParam(
     "inputFolder",
@@ -457,7 +457,7 @@ task("multiCallDeployMetamorphic")
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
-    "array that holds all arguements for constructor"
+    "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
     const callArgs: DeployArgs = {
@@ -537,7 +537,7 @@ task("multiCallDeployMetamorphic")
         initCallData,
       };
       await showState(
-        `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with logic from, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
+        `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
       );
       await updateMetaList(network, metaContractData, taskArgs.outputFolder);
       return metaContractData;
@@ -595,7 +595,7 @@ task(
     cumulativeGas = cumulativeGas.add(metaContractData.gas);
     metaContractData.gas = cumulativeGas;
     await showState(
-      `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with logic from, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
+      `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
     );
     return metaContractData;
   });

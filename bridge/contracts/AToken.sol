@@ -43,4 +43,8 @@ contract AToken is
     function externalBurn(address from, uint256 amount) public onlyATokenBurner {
         _burn(from, amount);
     }
+
+    function getLegacyTokenAddress() public view returns (address) {
+        return _legacyToken;
+    }
 }
