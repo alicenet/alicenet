@@ -229,7 +229,6 @@ task("deployContracts", "runs the initial deployment of all alicenet contracts")
     for (let i = 0; i < contracts.length; i++) {
       const fullyQualifiedName = contracts[i];
       // check the contract for the @custom:deploy-type tag
-      console.log(fullyQualifiedName)
       const deployType = await getDeployType(fullyQualifiedName, artifacts);
       switch (deployType) {
         case STATIC_DEPLOYMENT: {
