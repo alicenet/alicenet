@@ -86,7 +86,7 @@ task(
   "deployFactory",
   "Deploys an instance of a factory contract specified by its name"
 )
-  .addOptionalParam("outputFolder")
+  .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
@@ -229,6 +229,7 @@ task("deployContracts", "runs the initial deployment of all alicenet contracts")
     for (let i = 0; i < contracts.length; i++) {
       const fullyQualifiedName = contracts[i];
       // check the contract for the @custom:deploy-type tag
+      console.log(fullyQualifiedName)
       const deployType = await getDeployType(fullyQualifiedName, artifacts);
       switch (deployType) {
         case STATIC_DEPLOYMENT: {

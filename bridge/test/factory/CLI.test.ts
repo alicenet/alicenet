@@ -174,11 +174,86 @@ describe("Cli tasks", async () => {
     ]);
     expect(deployCreateData.address).to.not.equal(ethers.constants.AddressZero);
   });
+
+  it("deploys MockBaseContract with fullMultiCallDeployProxy", async () => {
+    const factoryData: FactoryData = await cliDeployFactory();
+    const proxyData = await cliFullMultiCallDeployProxy(
+      MOCK,
+      factoryData.address, undefined, undefined, ["2", "s"]
+    );
+    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
+    const expectedProxyAddress = getMetamorphicAddress(
+      factoryData.address,
+      salt
+    );
+    expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
+  });
+
+  it("deploys MockBaseContract with multiCallDeployMetamorphic", async () => {
+    const factoryData: FactoryData = await cliDeployFactory();
+    const metaContractData = await cliMultiCallDeployMetamorphic(
+      MOCK,
+      factoryData.address, undefined, undefined, ["2", "s"]
+    );
+    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
+    const expectedMetaAddress = getMetamorphicAddress(
+      factoryData.address,
+      salt
+    );
+    expect(metaContractData.metaAddress).to.equal(expectedMetaAddress);
+  });
+
+  it("deploys all contracts in deploymentList", async () => {
+    await cliDeployContracts()
+  });
+
 });
+
+export async function cliDeployContracts(
+  factoryAddress?: string,
+  inputFolder?: string,
+){
+  return await run("deployContracts", {
+    factoryAddress,
+    inputFolder
+  });
+}
+
+export async function cliFullMultiCallDeployProxy(
+  contractName: string,
+  factoryAddress: string,
+  initCallData?: string,
+  outputFolder?: string,
+  constructorArgs?: Array<string>
+): Promise<ProxyData> {
+  return await run("fullMultiCallDeployProxy", {
+    contractName,
+    factoryAddress,
+    initCallData,
+    outputFolder,
+    constructorArgs,
+  });
+}
+
+export async function cliMultiCallDeployMetamorphic(
+  contractName: string,
+  factoryAddress: string,
+  initCallData?: string,
+  outputFolder?: string,
+  constructorArgs?: Array<string>
+): Promise<MetaContractData> {
+  return await run("multiCallDeployMetamorphic", {
+    contractName,
+    factoryAddress,
+    initCallData,
+    outputFolder,
+    constructorArgs,
+  });
+}
 
 export async function cliDeployUpgradeableProxy(
   contractName: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   initCallData?: string,
   constructorArgs?: Array<string>
 ): Promise<ProxyData> {
@@ -192,7 +267,7 @@ export async function cliDeployUpgradeableProxy(
 
 export async function cliDeployMetamorphic(
   contractName: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   initCallData?: string,
   constructorArgs?: Array<string>
 ): Promise<MetaContractData> {
@@ -206,7 +281,7 @@ export async function cliDeployMetamorphic(
 
 export async function cliDeployCreate(
   contractName: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   constructorArgs?: Array<string>
 ): Promise<DeployCreateData> {
   return await run(DEPLOY_CREATE, {
@@ -219,7 +294,7 @@ export async function cliDeployCreate(
 export async function cliUpgradeDeployedProxy(
   contractName: string,
   logicAddress: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   initCallData?: string
 ): Promise<ProxyData> {
   return await run(UPGRADE_DEPLOYED_PROXY, {
@@ -232,7 +307,7 @@ export async function cliUpgradeDeployedProxy(
 
 export async function cliDeployTemplate(
   contractName: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   constructorArgs?: Array<string>
 ): Promise<TemplateData> {
   return await run(DEPLOY_TEMPLATE, {
@@ -244,7 +319,7 @@ export async function cliDeployTemplate(
 
 export async function cliDeployStatic(
   contractName: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   initCallData?: Array<string>
 ): Promise<MetaContractData> {
   return await run(DEPLOY_STATIC, {
@@ -257,7 +332,7 @@ export async function cliDeployStatic(
 export async function cliMultiCallDeployProxy(
   contractName: string,
   logicAddress: string,
-  factoryAddress?: string,
+  factoryAddress: string,
   initCallData?: string,
   salt?: string
 ): Promise<ProxyData> {
@@ -272,7 +347,7 @@ export async function cliMultiCallDeployProxy(
 
 export async function cliMultiCallUpgradeProxy(
   contractName: string,
-  factoryAddress?: BytesLike,
+  factoryAddress: BytesLike,
   initCallData?: BytesLike,
   salt?: BytesLike,
   constructorArgs?: Array<string>
@@ -286,13 +361,15 @@ export async function cliMultiCallUpgradeProxy(
   });
 }
 
-export async function cliDeployFactory() {
-  return await run(DEPLOY_FACTORY);
+export async function cliDeployFactory(outputFolder?: string) {
+  return await run(DEPLOY_FACTORY, {
+    outputFolder:outputFolder
+  });
 }
 
 export async function cliDeployProxy(
   salt: string,
-  factoryAddress?: string
+  factoryAddress: string
 ): Promise<ProxyData> {
   return await run(DEPLOY_PROXY, {
     salt,
