@@ -179,7 +179,10 @@ describe("Cli tasks", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
     const proxyData = await cliFullMultiCallDeployProxy(
       MOCK,
-      factoryData.address, undefined, undefined, ["2", "s"]
+      factoryData.address,
+      undefined,
+      undefined,
+      ["2", "s"]
     );
     const salt = await getBytes32Salt(MOCK, artifacts, ethers);
     const expectedProxyAddress = getMetamorphicAddress(
@@ -193,7 +196,10 @@ describe("Cli tasks", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
     const metaContractData = await cliMultiCallDeployMetamorphic(
       MOCK,
-      factoryData.address, undefined, undefined, ["2", "s"]
+      factoryData.address,
+      undefined,
+      undefined,
+      ["2", "s"]
     );
     const salt = await getBytes32Salt(MOCK, artifacts, ethers);
     const expectedMetaAddress = getMetamorphicAddress(
@@ -204,18 +210,17 @@ describe("Cli tasks", async () => {
   });
 
   it("deploys all contracts in deploymentList", async () => {
-    await cliDeployContracts()
+    await cliDeployContracts();
   });
-
 });
 
 export async function cliDeployContracts(
   factoryAddress?: string,
-  inputFolder?: string,
-){
+  inputFolder?: string
+) {
   return await run("deployContracts", {
     factoryAddress,
-    inputFolder
+    inputFolder,
   });
 }
 
@@ -363,7 +368,7 @@ export async function cliMultiCallUpgradeProxy(
 
 export async function cliDeployFactory(outputFolder?: string) {
   return await run(DEPLOY_FACTORY, {
-    outputFolder:outputFolder
+    outputFolder,
   });
 }
 
