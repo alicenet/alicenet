@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BytesLike } from "ethers";
-import { ethers, run } from "hardhat";
+import { artifacts, ethers, run } from "hardhat";
 import {
   DEPLOY_CREATE,
   DEPLOY_FACTORY,
@@ -15,7 +15,10 @@ import {
   MULTI_CALL_UPGRADE_PROXY,
   UPGRADE_DEPLOYED_PROXY,
 } from "../../scripts/lib/constants";
-import { deployFactory } from "../../scripts/lib/deployment/deploymentUtil";
+import {
+  deployFactory,
+  getBytes32Salt,
+} from "../../scripts/lib/deployment/deploymentUtil";
 import {
   DeployCreateData,
   FactoryData,
@@ -23,7 +26,6 @@ import {
   ProxyData,
   TemplateData,
 } from "../../scripts/lib/deployment/factoryStateUtil";
-import { getSalt } from "../../scripts/lib/MadnetFactory";
 import {
   getAccounts,
   getMetamorphicAddress,
@@ -75,10 +77,18 @@ describe("Cli tasks", async () => {
 
   it("deploys MockInitializable contract with deployCreate", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
+    const nonce = await ethers.provider.getTransactionCount(
+      factoryData.address
+    );
+    const expectedAddress = ethers.utils.getContractAddress({
+      from: factoryData.address,
+      nonce,
+    });
     const deployCreateData = await cliDeployCreate(
       MOCK_INITIALIZABLE,
       factoryData.address
     );
+    expect(deployCreateData.address).to.equal(expectedAddress);
   });
 
   it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initCallData", async () => {
@@ -88,8 +98,13 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const salt = (await getSalt(MOCK_INITIALIZABLE)) as string;
+    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const expectedProxyAddress = getMetamorphicAddress(
+      factoryData.address,
+      salt
+    );
     const proxyData = await cliDeployProxy(salt, factoryData.address);
+    expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
     const logicFactory = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const upgradedProxyData = await cliUpgradeDeployedProxy(
       MOCK_INITIALIZABLE,
@@ -106,10 +121,18 @@ describe("Cli tasks", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
     const testVar1 = "14";
     const testVar2 = "s";
+    const nonce = await ethers.provider.getTransactionCount(
+      factoryData.address
+    );
+    const expectTemplateAddress = ethers.utils.getContractAddress({
+      from: factoryData.address,
+      nonce,
+    });
     const templateData = await cliDeployTemplate(MOCK, factoryData.address, [
       testVar1,
       testVar2,
     ]);
+    expect(templateData.address).to.equal(expectTemplateAddress);
     const metaData = await cliDeployStatic(
       MOCK,
       factoryData.address,
@@ -129,21 +152,27 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
+    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const expectedProxyAddress = getMetamorphicAddress(
+      factoryData.address,
+      salt
+    );
     const proxyData = await cliMultiCallDeployProxy(
       MOCK_INITIALIZABLE,
       logicData.address,
       factoryData.address,
       "1"
     );
+    expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
   });
 
   it("deploys mock with deployCreate", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
-    const factory = await deployFactory(run);
     const deployCreateData = await cliDeployCreate(MOCK, factoryData.address, [
       "2",
       "s",
     ]);
+    expect(deployCreateData.address).to.not.equal(ethers.constants.AddressZero);
   });
 });
 
