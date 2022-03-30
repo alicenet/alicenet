@@ -181,7 +181,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     const signer2 = await getValidatorEthAccount(validators4[2].address);
     await expect(
-      ethdkg.connect(signer2).register(validators4[2].madNetPublicKey)
+      ethdkg.connect(signer2).register(validators4[2].aliceNetPublicKey)
     ).to.be.revertedWith("ETHDKG: Cannot register at the moment");
   });
 

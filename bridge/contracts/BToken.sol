@@ -381,7 +381,7 @@ contract BToken is
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 poolBalance = _poolBalance;
         numBTK = _ethToBTokens(poolBalance, numEth_);
-        require(numBTK >= minBTK_, "BToken: could not mint minimum BToken");
+        require(numBTK >= minBTK_, "BToken: could not mint minimum BTokens");
         poolBalance += numEth_;
         _poolBalance = poolBalance;
         ERC20Upgradeable._mint(to_, numBTK);

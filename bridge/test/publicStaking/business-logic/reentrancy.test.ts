@@ -20,10 +20,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantLoopEthCollectorAccount =
       await ReentrantLoopEthCollectorAccount.deploy();
     await reentrantLoopEthCollectorAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(
+    await fixture.aToken.transfer(
       reentrantLoopEthCollectorAccount.address,
       1000
     );
@@ -35,7 +35,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     await reentrantLoopEthCollectorAccount.mint(1000);
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await mineBlocks(2n);
 
@@ -72,10 +72,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantFiniteEthCollectorAccount =
       await ReentrantFiniteEthCollectorAccount.deploy();
     await reentrantFiniteEthCollectorAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(
+    await fixture.aToken.transfer(
       reentrantFiniteEthCollectorAccount.address,
       1000
     );
@@ -87,7 +87,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     await reentrantFiniteEthCollectorAccount.mint(1000);
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await mineBlocks(2n);
 
@@ -125,16 +125,16 @@ describe("PublicStaking: Reentrancy tests", async () => {
     );
     const reentrantLoopBurnAccount = await ReentrantLoopBurnAccount.deploy();
     await reentrantLoopBurnAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(reentrantLoopBurnAccount.address, 1000);
+    await fixture.aToken.transfer(reentrantLoopBurnAccount.address, 1000);
     await reentrantLoopBurnAccount.approve(fixture.publicStaking.address, 1000);
     // mint a position with the reentrancy user and mine 2 blocks
     await reentrantLoopBurnAccount.mint(1000);
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await mineBlocks(2n);
 
@@ -157,10 +157,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantFiniteBurnAccount =
       await ReentrantFiniteBurnAccount.deploy();
     await reentrantFiniteBurnAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(reentrantFiniteBurnAccount.address, 1000);
+    await fixture.aToken.transfer(reentrantFiniteBurnAccount.address, 1000);
     await reentrantFiniteBurnAccount.approve(
       fixture.publicStaking.address,
       1000
@@ -169,7 +169,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     await reentrantFiniteBurnAccount.mint(1000);
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await mineBlocks(2n);
 
@@ -191,10 +191,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantLoopBurnERC721ReceiverAccount =
       await ReentrantLoopBurnERC721ReceiverAccount.deploy();
     await reentrantLoopBurnERC721ReceiverAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(
+    await fixture.aToken.transfer(
       reentrantLoopBurnERC721ReceiverAccount.address,
       1000
     );
@@ -205,7 +205,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     // mint a position with the reentrancy user and mine 2 blocks
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await reentrantLoopBurnERC721ReceiverAccount.mint(1000);
     await mineBlocks(2n);
@@ -235,10 +235,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantFiniteBurnERC721ReceiverAccount =
       await ReentrantFiniteBurnERC721ReceiverAccount.deploy();
     await reentrantFiniteBurnERC721ReceiverAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(
+    await fixture.aToken.transfer(
       reentrantFiniteBurnERC721ReceiverAccount.address,
       1000
     );
@@ -249,7 +249,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     // mint a position with the reentrancy user and mine 2 blocks
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.mint(1000);
     await reentrantFiniteBurnERC721ReceiverAccount.mint(1000);
     await mineBlocks(2n);
@@ -279,10 +279,10 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const reentrantLoopCollectEthERC721ReceiverAccount =
       await ReentrantLoopCollectEthERC721ReceiverAccount.deploy();
     await reentrantLoopCollectEthERC721ReceiverAccount.setTokens(
-      fixture.madToken.address,
+      fixture.aToken.address,
       fixture.publicStaking.address
     );
-    await fixture.madToken.transfer(
+    await fixture.aToken.transfer(
       reentrantLoopCollectEthERC721ReceiverAccount.address,
       1000
     );
@@ -292,7 +292,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
     );
 
     // mint to another user with the same amount
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const [adminSigner] = await ethers.getSigners();
     await fixture.publicStaking.mintTo(adminSigner.address, 1000, 1);
 

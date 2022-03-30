@@ -7,7 +7,7 @@ let admin: SignerWithAddress;
 let user: SignerWithAddress;
 export interface state {
   Balances: {
-    madToken: {
+    legacyToken: {
       address: string;
       admin: number;
       user: number;
@@ -17,7 +17,7 @@ export interface state {
       address: string;
       admin: number;
       user: number;
-      madToken: number;
+      legacyToken: number;
     };
   };
 }
@@ -26,20 +26,20 @@ export async function getState(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
   const state: state = {
     Balances: {
-      madToken: {
-        address: fixture.madToken.address.slice(-4),
-        admin: format(await fixture.madToken.balanceOf(admin.address)),
-        user: format(await fixture.madToken.balanceOf(user.address)),
+      legacyToken: {
+        address: fixture.legacyToken.address.slice(-4),
+        admin: format(await fixture.legacyToken.balanceOf(admin.address)),
+        user: format(await fixture.legacyToken.balanceOf(user.address)),
         aToken: format(
-          await fixture.madToken.balanceOf(fixture.aToken.address)
+          await fixture.legacyToken.balanceOf(fixture.aToken.address)
         ),
       },
       aToken: {
         address: fixture.aToken.address.slice(-4),
         admin: format(await fixture.aToken.balanceOf(admin.address)),
         user: format(await fixture.aToken.balanceOf(user.address)),
-        madToken: format(
-          await fixture.aToken.balanceOf(fixture.madToken.address)
+        legacyToken: format(
+          await fixture.aToken.balanceOf(fixture.legacyToken.address)
         ),
       },
     },
@@ -69,8 +69,8 @@ export function getUserNotInRoleReason(address: string, role: string) {
 
 export async function init(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
-  await fixture.madToken.connect(admin).approve(admin.address, 1000);
-  await fixture.madToken
+  await fixture.legacyToken.connect(admin).approve(admin.address, 1000);
+  await fixture.legacyToken
     .connect(admin)
     .transferFrom(admin.address, user.address, 1000);
   showState("Initial", await getState(fixture));

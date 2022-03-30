@@ -11,7 +11,7 @@ import {
 interface Contract {
   PublicStaking: bigint;
   ValNFT: bigint;
-  MAD: bigint;
+  ATK: bigint;
   ETH: bigint;
   Addr: string;
 }
@@ -19,13 +19,13 @@ interface Contract {
 interface Admin {
   PublicStaking: bigint;
   ValNFT: bigint;
-  MAD: bigint;
+  ATK: bigint;
   Addr: string;
 }
 
 interface Validator {
   NFT: bigint;
-  MAD: bigint;
+  ATK: bigint;
   Addr: string;
   Reg: boolean;
   ExQ: boolean;
@@ -59,34 +59,34 @@ export const getCurrentState = async (
     Admin: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
-      MAD: BigInt(0),
+      ATK: BigInt(0),
       Addr: "0x0",
     },
     PublicStaking: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
-      MAD: BigInt(0),
+      ATK: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
     ValidatorStaking: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
-      MAD: BigInt(0),
+      ATK: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
     ValidatorPool: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
-      MAD: BigInt(0),
+      ATK: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
     Factory: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
-      MAD: BigInt(0),
+      ATK: BigInt(0),
       ETH: BigInt(0),
       Addr: "0x0",
     },
@@ -100,8 +100,8 @@ export const getCurrentState = async (
   state.Admin.ValNFT = (
     await fixture.validatorStaking.balanceOf(adminSigner.address)
   ).toBigInt();
-  state.Admin.MAD = (
-    await fixture.madToken.balanceOf(adminSigner.address)
+  state.Admin.ATK = (
+    await fixture.aToken.balanceOf(adminSigner.address)
   ).toBigInt();
   state.Admin.Addr = adminSigner.address;
 
@@ -110,7 +110,7 @@ export const getCurrentState = async (
     const validator: Validator = {
       Idx: i,
       NFT: (await fixture.publicStaking.balanceOf(_validators[i])).toBigInt(),
-      MAD: (await fixture.madToken.balanceOf(_validators[i])).toBigInt(),
+      ATK: (await fixture.aToken.balanceOf(_validators[i])).toBigInt(),
       Addr: _validators[i],
       Reg: await fixture.validatorPool.isValidator(_validators[i]),
       ExQ: await fixture.validatorPool.isInExitingQueue(_validators[i]),
@@ -145,8 +145,8 @@ export const getCurrentState = async (
     contractData[i].contractState.ValNFT = (
       await fixture.validatorStaking.balanceOf(contractData[i].contractAddress)
     ).toBigInt();
-    contractData[i].contractState.MAD = (
-      await fixture.madToken.balanceOf(contractData[i].contractAddress)
+    contractData[i].contractState.ATK = (
+      await fixture.aToken.balanceOf(contractData[i].contractAddress)
     ).toBigInt();
     contractData[i].contractState.ETH = (
       await ethers.provider.getBalance(contractData[i].contractAddress)
@@ -169,25 +169,25 @@ export const createValidators = async (
   _validatorsSnapshots: ValidatorRawData[]
 ): Promise<string[]> => {
   const validators: string[] = [];
-  const stakeAmountMadWei = await fixture.validatorPool.getStakeAmount();
+  const stakeAmountATokenWei = await fixture.validatorPool.getStakeAmount();
   const [adminSigner] = await ethers.getSigners();
-  // Approve ValidatorPool to withdraw MAD tokens of validators
-  await fixture.madToken.approve(
+  // Approve ValidatorPool to withdraw ATK tokens of validators
+  await fixture.aToken.approve(
     fixture.validatorPool.address,
-    stakeAmountMadWei.mul(_validatorsSnapshots.length)
+    stakeAmountATokenWei.mul(_validatorsSnapshots.length)
   );
   for (let i = 0; i < _validatorsSnapshots.length; i++) {
     const validator = _validatorsSnapshots[i];
     await getValidatorEthAccount(validator);
     validators.push(validator.address);
-    // Send MAD tokens to each validator
-    await fixture.madToken.transfer(validator.address, stakeAmountMadWei);
+    // Send ATK tokens to each validator
+    await fixture.aToken.transfer(validator.address, stakeAmountATokenWei);
   }
-  await fixture.madToken
+  await fixture.aToken
     .connect(adminSigner)
     .approve(
       fixture.publicStaking.address,
-      stakeAmountMadWei.mul(_validatorsSnapshots.length)
+      stakeAmountATokenWei.mul(_validatorsSnapshots.length)
     );
   await showState(
     "After creating:",
@@ -202,13 +202,13 @@ export const stakeValidators = async (
 ): Promise<BigNumber[]> => {
   const stakingTokenIds: BigNumber[] = [];
   const [adminSigner] = await ethers.getSigners();
-  const stakeAmountMadWei = await fixture.validatorPool.getStakeAmount();
+  const stakeAmountATokenWei = await fixture.validatorPool.getStakeAmount();
   const lockTime = 1;
   for (let i = 0; i < validators.length; i++) {
-    // Stake all MAD tokens
+    // Stake all ATK tokens
     const tx = await fixture.publicStaking
       .connect(adminSigner)
-      .mintTo(fixture.factory.address, stakeAmountMadWei, lockTime);
+      .mintTo(fixture.factory.address, stakeAmountATokenWei, lockTime);
     // Get the proof of staking (NFT's tokenID)
     const tokenID = await getTokenIdFromTx(tx);
     stakingTokenIds.push(tokenID);
@@ -250,21 +250,21 @@ export const getPublicStakingFromMinorSlashEvent = async (
  * itself, this is a method to send eth accidentally to the validatorPool contract
  * @param fixture
  * @param etherAmount
- * @param madTokenAmount
+ * @param aTokenAmount
  * @param adminSigner
  */
 export const burnStakeTo = async (
   fixture: Fixture,
   etherAmount: BigNumber,
-  madTokenAmount: BigNumber,
+  aTokenAmount: BigNumber,
   adminSigner: Signer
 ) => {
-  await fixture.madToken
+  await fixture.aToken
     .connect(adminSigner)
-    .approve(fixture.publicStaking.address, madTokenAmount);
+    .approve(fixture.publicStaking.address, aTokenAmount);
   const tx = await fixture.publicStaking
     .connect(adminSigner)
-    .mint(madTokenAmount);
+    .mint(aTokenAmount);
   const tokenID = await getTokenIdFromTx(tx);
   await fixture.publicStaking.depositEth(42, {
     value: etherAmount,
@@ -278,19 +278,19 @@ export const burnStakeTo = async (
  * Mint a publicStaking
  * @param fixture
  * @param etherAmount
- * @param madTokenAmount
+ * @param aTokenAmount
  * @param adminSigner
  */
 export const mintPublicStaking = async (
   fixture: Fixture,
-  madTokenAmount: BigNumber,
+  aTokenAmount: BigNumber,
   adminSigner: Signer
 ) => {
-  await fixture.madToken
+  await fixture.aToken
     .connect(adminSigner)
-    .approve(fixture.publicStaking.address, madTokenAmount);
+    .approve(fixture.publicStaking.address, aTokenAmount);
   const tx = await fixture.publicStaking
     .connect(adminSigner)
-    .mint(madTokenAmount);
+    .mint(aTokenAmount);
   return await getTokenIdFromTx(tx);
 };

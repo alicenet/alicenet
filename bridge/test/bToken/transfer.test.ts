@@ -5,7 +5,7 @@ import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getState, showState, state } from "./setup";
 
-describe("Testing MadByte Transfer methods", async () => {
+describe("Testing BToken Transfer methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let user2: SignerWithAddress;
@@ -13,8 +13,8 @@ describe("Testing MadByte Transfer methods", async () => {
   let fixture: Fixture;
   const eth = 4;
   let ethIn: BigNumber;
-  const minMadBytes = 0;
-  let madBytes: BigNumber;
+  const minBTokens = 0;
+  let bTokens: BigNumber;
 
   beforeEach(async function () {
     fixture = await getFixture();
@@ -22,50 +22,50 @@ describe("Testing MadByte Transfer methods", async () => {
     [admin, user, user2] = signers;
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());
-    // Mint some MB for testing
-    [madBytes] = await callFunctionAndGetReturnValues(
-      fixture.madByte,
+    // Mint some ATokens for testing
+    [bTokens] = await callFunctionAndGetReturnValues(
+      fixture.bToken,
       "mint",
       user,
-      [minMadBytes],
+      [minBTokens],
       ethIn
     );
     expectedState = await getState(fixture);
   });
 
   it("Should transfer from sender to specified address", async () => {
-    await fixture.madByte.connect(user).transfer(admin.address, madBytes);
-    expectedState.Balances.madByte.admin += madBytes.toBigInt();
-    expectedState.Balances.madByte.user -= madBytes.toBigInt();
+    await fixture.bToken.connect(user).transfer(admin.address, bTokens);
+    expectedState.Balances.bToken.admin += bTokens.toBigInt();
+    expectedState.Balances.bToken.user -= bTokens.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should transfer from specified address to specified address", async () => {
-    await fixture.madByte.connect(user).approve(admin.address, madBytes);
-    await fixture.madByte
+    await fixture.bToken.connect(user).approve(admin.address, bTokens);
+    await fixture.bToken
       .connect(admin)
-      .transferFrom(user.address, user2.address, madBytes);
-    expectedState.Balances.madByte.user -= madBytes.toBigInt();
-    expectedState.Balances.madByte.user2 += madBytes.toBigInt();
+      .transferFrom(user.address, user2.address, bTokens);
+    expectedState.Balances.bToken.user -= bTokens.toBigInt();
+    expectedState.Balances.bToken.user2 += bTokens.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should fail to transfer from specified address to specified address without allowance", async () => {
     await expect(
-      fixture.madByte
+      fixture.bToken
         .connect(admin)
-        .transferFrom(user.address, user2.address, madBytes)
+        .transferFrom(user.address, user2.address, bTokens)
     ).to.be.revertedWith("ERC20: insufficient allowance");
   });
 
   it("Should fail to transfer from specified address to specified address without enough allowance", async () => {
-    await fixture.madByte
+    await fixture.bToken
       .connect(user)
-      .approve(admin.address, BigNumber.from(madBytes).sub(1));
+      .approve(admin.address, BigNumber.from(bTokens).sub(1));
     await expect(
-      fixture.madByte
+      fixture.bToken
         .connect(admin)
-        .transferFrom(user.address, user2.address, madBytes)
+        .transferFrom(user.address, user2.address, bTokens)
     ).to.be.revertedWith("ERC20: insufficient allowance");
   });
 });

@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { BytesLike } from "ethers";
 import { ethers, run } from "hardhat";
+import { getSalt } from "../../scripts/lib/alicenetFactory";
 import {
   DEPLOY_CREATE,
   DEPLOY_FACTORY,
@@ -23,7 +24,6 @@ import {
   ProxyData,
   TemplateData,
 } from "../../scripts/lib/deployment/factoryStateUtil";
-import { getSalt } from "../../scripts/lib/MadnetFactory";
 import {
   getAccounts,
   getMetamorphicAddress,

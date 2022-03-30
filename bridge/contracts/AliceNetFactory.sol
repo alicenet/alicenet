@@ -18,7 +18,6 @@ contract AliceNetFactory is AliceNetFactoryBase {
      */
     constructor(address selfAddr_) AliceNetFactoryBase(selfAddr_) {}
 
-    //TODO: Make this payable?
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
@@ -29,7 +28,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
         address target_,
         uint256 value_,
         bytes calldata cdata_
-    ) public onlyOwner {
+    ) public payable onlyOwner {
         bytes memory cdata = cdata_;
         _callAny(target_, value_, cdata);
         _returnAvailableData();
@@ -40,7 +39,11 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param target_: the address of the contract to be called
      * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
      */
-    function delegateCallAny(address target_, bytes calldata cdata_) public onlyOwnerOrDelegator {
+    function delegateCallAny(address target_, bytes calldata cdata_)
+        public
+        payable
+        onlyOwnerOrDelegator
+    {
         bytes memory cdata = cdata_;
         _delegateCallAny(target_, cdata);
         _returnAvailableData();
@@ -70,7 +73,6 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
-    //TODO make this payable?
     function deployCreate2(
         uint256 value_,
         bytes32 salt_,

@@ -58,18 +58,18 @@ task("registerValidators", "registers validators")
   .setAction(async (taskArgs, hre) => {
     console.log("registerValidators", taskArgs.addresses);
     const factory = await hre.ethers.getContractAt(
-      "MadnetFactory",
+      "AliceNetFactory",
       taskArgs.factoryAddress
     );
     const lockTime = 1;
     const validatorAddresses: string[] = taskArgs.addresses;
     const stakingTokenIds: BigNumber[] = [];
 
-    const madToken = await hre.ethers.getContractAt(
+    const aToken = await hre.ethers.getContractAt(
       "AToken",
       await factory.lookup(hre.ethers.utils.formatBytes32String("AToken"))
     );
-    console.log(`AToken Address: ${madToken.address}`);
+    console.log(`AToken Address: ${aToken.address}`);
     const publicStaking = await hre.ethers.getContractAt(
       "PublicStaking",
       await factory.lookup(
@@ -85,10 +85,10 @@ task("registerValidators", "registers validators")
     );
     console.log(`validatorPool Address: ${validatorPool.address}`);
     console.log(await validatorPool.getMaxNumValidators());
-    const stakeAmountMadWei = await validatorPool.getStakeAmount();
+    const stakeAmountATokenWei = await validatorPool.getStakeAmount();
 
     console.log(
-      `Minimum amount MadWei to stake: ${stakeAmountMadWei.toNumber()}`
+      `Minimum amount ATokenWei to stake: ${stakeAmountATokenWei.toNumber()}`
     );
 
     // Make sure that admin is the named account at position 0
@@ -97,25 +97,25 @@ task("registerValidators", "registers validators")
     let iface = new hre.ethers.utils.Interface([
       "function transfer(address,uint256)",
     ]);
-    const totalStakeAmt = stakeAmountMadWei.mul(validatorAddresses.length);
+    const totalStakeAmt = stakeAmountATokenWei.mul(validatorAddresses.length);
     let input = iface.encodeFunctionData("transfer", [
       admin.address,
       totalStakeAmt,
     ]);
-    let tx = await factory.connect(admin).callAny(madToken.address, 0, input);
+    let tx = await factory.connect(admin).callAny(aToken.address, 0, input);
     await tx.wait();
     // approve tokens
-    tx = await madToken
+    tx = await aToken
       .connect(admin)
       .approve(
         publicStaking.address,
-        stakeAmountMadWei.mul(validatorAddresses.length)
+        stakeAmountATokenWei.mul(validatorAddresses.length)
       );
     await tx.wait();
     console.log(
-      `Approved allowance to validatorPool of: ${stakeAmountMadWei
+      `Approved allowance to validatorPool of: ${stakeAmountATokenWei
         .mul(validatorAddresses.length)
-        .toNumber()} MadWei`
+        .toNumber()} ATokenWei`
     );
 
     console.log("Starting the registration process...");
@@ -123,7 +123,7 @@ task("registerValidators", "registers validators")
     for (let i = 0; i < validatorAddresses.length; i++) {
       let tx = await publicStaking
         .connect(admin)
-        .mintTo(factory.address, stakeAmountMadWei, lockTime);
+        .mintTo(factory.address, stakeAmountATokenWei, lockTime);
       await tx.wait();
       const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
       console.log(`Minted PublicStaking.tokenID ${tokenId}`);
@@ -186,7 +186,7 @@ task(
   const [admin] = await ethers.getSigners();
   const adminSigner = await ethers.getSigner(admin.address);
   const factory = await ethers.getContractAt(
-    "MadnetFactory",
+    "AliceNetFactory",
     "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
   );
   const bToken = await ethers.getContractAt(
@@ -223,7 +223,7 @@ task("scheduleMaintenance", "Calls schedule Maintenance")
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
     const factory = await ethers.getContractAt(
-      "MadnetFactory",
+      "AliceNetFactory",
       taskArgs.factoryAddress
     );
     const validatorPool = await hre.ethers.getContractAt(
@@ -243,7 +243,7 @@ task(
   "pauseEthdkgArbitraryHeight",
   "Forcing consensus to stop on block number defined by --input"
 )
-  .addParam("madnetHeight", "The block number after the latest block mined")
+  .addParam("alicenetHeight", "The block number after the latest block mined")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
@@ -254,12 +254,12 @@ task(
       "function pauseConsensusOnArbitraryHeight(uint256)",
     ]);
     const input = iface.encodeFunctionData("pauseConsensusOnArbitraryHeight", [
-      taskArgs.madnetHeight,
+      taskArgs.alicenetHeight,
     ]);
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
     const factory = await ethers.getContractAt(
-      "MadnetFactory",
+      "AliceNetFactory",
       taskArgs.factoryAddress
     );
     const validatorPool = await hre.ethers.getContractAt(

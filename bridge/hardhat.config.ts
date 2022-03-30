@@ -10,9 +10,9 @@ import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
 import "./scripts/generateImmutableAuth";
+import "./scripts/lib/alicenetFactoryTasks";
+import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
-import "./scripts/lib/madnetFactoryTasks";
-import "./scripts/lib/madnetTasks";
 require("dotenv").config();
 
 /**
@@ -231,7 +231,7 @@ const config: HardhatUserConfig = {
     clear: true,
     flat: true,
     only: [
-      "MadnetFactory",
+      "AliceNetFactory",
       "ETHDKG",
       "ValidatorPool",
       "Snapshots",

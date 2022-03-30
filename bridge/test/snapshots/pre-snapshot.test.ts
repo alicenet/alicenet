@@ -14,7 +14,10 @@ describe("Snapshots: Tests Snapshots methods", () => {
   let adminSigner: Signer;
   let randomSigner: Signer;
   const stakeAmount = 20000;
-  const stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
+  const stakeAmountATokenWei = ethers.utils.parseUnits(
+    stakeAmount.toString(),
+    18
+  );
   const lockTime = 1;
   let validators: any[];
   let stakingTokenIds: any[];
@@ -31,19 +34,19 @@ describe("Snapshots: Tests Snapshots methods", () => {
       validators.push(validator.address);
     }
 
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.validatorPool.address,
-      stakeAmountMadWei.mul(validators.length)
+      stakeAmountATokenWei.mul(validators.length)
     );
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.publicStaking.address,
-      stakeAmountMadWei.mul(validators.length)
+      stakeAmountATokenWei.mul(validators.length)
     );
 
     for (const validator of validatorsSnapshots) {
       const tx = await fixture.publicStaking
         .connect(adminSigner)
-        .mintTo(validator.address, stakeAmountMadWei, lockTime);
+        .mintTo(validator.address, stakeAmountATokenWei, lockTime);
       const tokenId = getTokenIdFromTx(tx);
       stakingTokenIds.push(tokenId);
       await fixture.publicStaking

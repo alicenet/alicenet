@@ -27,7 +27,7 @@ export enum Phase {
 export interface ValidatorRawData {
   privateKey?: string;
   address: string;
-  madNetPublicKey: [BigNumberish, BigNumberish];
+  aliceNetPublicKey: [BigNumberish, BigNumberish];
   encryptedShares: BigNumberish[];
   commitments: [BigNumberish, BigNumberish][];
   keyShareG1: [BigNumberish, BigNumberish];
@@ -204,12 +204,12 @@ export const assertEventValidatorSetCompleted = async (
   nonce: BigNumberish,
   epoch: BigNumberish,
   ethHeight: BigNumberish,
-  madHeight: BigNumberish,
+  aliceNetHeight: BigNumberish,
   mpk: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
 ) => {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([
-    "event ValidatorSetCompleted(uint256 validatorCount, uint256 nonce, uint256 epoch, uint256 ethHeight, uint256 madHeight, uint256 groupKey0, uint256 groupKey1, uint256 groupKey2, uint256 groupKey3)",
+    "event ValidatorSetCompleted(uint256 validatorCount, uint256 nonce, uint256 epoch, uint256 ethHeight, uint256 aliceNetHeight, uint256 groupKey0, uint256 groupKey1, uint256 groupKey2, uint256 groupKey3)",
   ]);
   const data = receipt.logs[0].data;
   const topics = receipt.logs[0].topics;
@@ -218,7 +218,7 @@ export const assertEventValidatorSetCompleted = async (
   expect(event.nonce).to.equal(nonce);
   expect(event.epoch).to.equal(epoch);
   expect(event.ethHeight).to.equal(ethHeight);
-  expect(event.madHeight).to.equal(madHeight);
+  expect(event.aliceNetHeight).to.equal(aliceNetHeight);
   expect(event.groupKey0).to.equal(mpk[0]);
   expect(event.groupKey1).to.equal(mpk[1]);
   expect(event.groupKey2).to.equal(mpk[2]);
@@ -366,7 +366,7 @@ export const registerValidators = async (
     const numParticipantsBefore = await ethdkg.getNumParticipants();
     const tx = ethdkg
       .connect(await getValidatorEthAccount(validator))
-      .register(validator.madNetPublicKey);
+      .register(validator.aliceNetPublicKey);
     const receipt = await tx;
     const participant = await ethdkg.getParticipantInternalState(
       validator.address
@@ -377,7 +377,7 @@ export const registerValidators = async (
         ethers.utils.getAddress(validator.address),
         participant.index,
         expectedNonce,
-        validator.madNetPublicKey
+        validator.aliceNetPublicKey
       );
     const numValidators = await validatorPool.getValidatorsCount();
     const numParticipants = await ethdkg.getNumParticipants();
@@ -540,7 +540,7 @@ export const completeETHDKG = async (
   validators: ValidatorRawData[],
   expectedNonce: number,
   expectedEpoch: number,
-  expectedMadHeight: number,
+  expectedAliceNetHeight: number,
   expectedEthHeight?: number
 ) => {
   // choose an random validator from the list to send the mpk
@@ -558,7 +558,7 @@ export const completeETHDKG = async (
     expectedNonce,
     expectedEpoch,
     _expectedEthHeight,
-    expectedMadHeight,
+    expectedAliceNetHeight,
     validators[index].mpk
   );
   await assertETHDKGPhase(ethdkg, Phase.Completion);
@@ -669,7 +669,7 @@ export const completeETHDKGRound = async (
     validatorPool: ValidatorPoolMock | ValidatorPool;
   },
   expectedEpoch?: number,
-  expectedMadHeight?: number,
+  expectedAliceNetHeight?: number,
   expectedEthHeight?: number
 ): Promise<
   [ETHDKG, ValidatorPoolMock | ValidatorPool, number, number, number]
@@ -682,9 +682,9 @@ export const completeETHDKGRound = async (
   if (typeof expectedEpoch !== "undefined") {
     _expectedEpoch = expectedEpoch;
   }
-  let _expectedMadHeight = 0;
-  if (typeof expectedMadHeight !== "undefined") {
-    _expectedMadHeight = expectedMadHeight;
+  let _expectedAliceNetHeight = 0;
+  if (typeof expectedAliceNetHeight !== "undefined") {
+    _expectedAliceNetHeight = expectedAliceNetHeight;
   }
   // Submit GPKj for all validators
   await submitValidatorsGPKJ(
@@ -705,7 +705,7 @@ export const completeETHDKGRound = async (
     validators,
     expectedNonce,
     _expectedEpoch,
-    _expectedMadHeight,
+    _expectedAliceNetHeight,
     expectedEthHeight
   );
   return [
@@ -713,6 +713,6 @@ export const completeETHDKGRound = async (
     validatorPool,
     expectedNonce,
     _expectedEpoch,
-    _expectedMadHeight,
+    _expectedAliceNetHeight,
   ];
 };

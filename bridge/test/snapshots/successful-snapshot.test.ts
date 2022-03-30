@@ -52,7 +52,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           )
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
-    ).to.be.revertedWith(`Snapshots: Incorrect Madnet height for snapshot!`);
+    ).to.be.revertedWith(`Snapshots: Incorrect AliceNet height for snapshot!`);
   });
 
   it("Reverts when snapshot data contains invalid chain id", async function () {

@@ -9,6 +9,7 @@ import fs from "fs";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
+  ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEFAULT_CONFIG_OUTPUT_DIR,
   DEPLOYED_PROXY,
@@ -21,7 +22,6 @@ import {
   DEPLOY_TEMPLATE,
   DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
-  MADNET_FACTORY,
   MULTICALL_GAS_LIMIT,
   MULTI_CALL_DEPLOY_PROXY,
   ONLY_PROXY,
@@ -89,7 +89,7 @@ task(
   .addOptionalParam("outputFolder")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const accounts = await getAccounts(hre);
     const txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
     // calculate the factory address for the constructor arg
@@ -111,7 +111,7 @@ task(
     const network = hre.network.name;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
-      `Deployed: ${MADNET_FACTORY}, at address: ${factory.address}`
+      `Deployed: ${ALICENET_FACTORY}, at address: ${factory.address}`
     );
     return factoryData;
   });
@@ -196,7 +196,7 @@ task(
     }
   });
 
-task("deployContracts", "runs the initial deployment of all madnet contracts")
+task("deployContracts", "runs the initial deployment of all alicenet contracts")
   .addOptionalParam(
     "factoryAddress",
     "specify if a factory is already deployed, if not specifed a new factory will be deployed"
@@ -299,7 +299,7 @@ task(
       outputFolder: taskArgs.outputFolder,
       constructorArgs: taskArgs.constructorArgs,
     };
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
@@ -476,7 +476,7 @@ task("multiCallDeployMetamorphic")
         "0x3000000000000000",
       ]);
     }
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicContract: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
@@ -624,7 +624,7 @@ task(
         "0x3000000000000000",
       ]);
     }
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicContract: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
@@ -671,7 +671,7 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const logicFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
@@ -723,7 +723,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // get a factory instance connected to the factory a
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicContract: ContractFactory = await hre.ethers.getContractFactory(
@@ -779,7 +779,7 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     "the default factory address from factoryState will be used if not set"
   )
   .setAction(async (taskArgs, hre) => {
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const txResponse = await factory.deployProxy(taskArgs.salt);
     const receipt = await txResponse.wait();
@@ -815,7 +815,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // grab the salt from the logic contract
     const Salt = await getBytes32Salt(taskArgs.contractName, hre);
     // get logic contract interface
@@ -889,7 +889,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
   )
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
@@ -962,7 +962,7 @@ task(
   )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const factoryBase = await hre.ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory: ContractFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName

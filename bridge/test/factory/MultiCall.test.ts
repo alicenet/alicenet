@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ContractFactory } from "ethers";
 import { ethers } from "hardhat";
 import {
+  ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
@@ -10,7 +11,6 @@ import {
   DEPLOY_STATIC,
   DEPLOY_TEMPLATE,
   END_POINT,
-  MADNET_FACTORY,
   MOCK,
   UTILS,
 } from "../../scripts/lib/constants";
@@ -33,7 +33,7 @@ describe("Multicall deploy proxy", () => {
     const endPoint = await endPointFactory.deploy(factory.address);
     // deploy code for mock with constructor args i = 2
     const deployTX = mockCon.getDeployTransaction(2, "s");
-    const factoryBase = await ethers.getContractFactory(MADNET_FACTORY);
+    const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
     const transactionCount = await ethers.provider.getTransactionCount(
       factory.address
     );
@@ -93,14 +93,14 @@ describe("Multicall deploy proxy", () => {
     const Salt = getSalt();
     // ethers instance of Mock contract abstraction
     const deployTX = mockFactory.getDeployTransaction(2, "s");
-    const MadnetFactory = await ethers.getContractFactory(MADNET_FACTORY);
+    const AliceNetFactory = await ethers.getContractFactory(ALICENET_FACTORY);
     // encoded function call to deployTemplate
-    const deployTemplate = MadnetFactory.interface.encodeFunctionData(
+    const deployTemplate = AliceNetFactory.interface.encodeFunctionData(
       DEPLOY_TEMPLATE,
       [deployTX.data]
     );
     // encoded function call to deployStatic
-    const deployStatic = MadnetFactory.interface.encodeFunctionData(
+    const deployStatic = AliceNetFactory.interface.encodeFunctionData(
       DEPLOY_STATIC,
       [Salt, "0x"]
     );

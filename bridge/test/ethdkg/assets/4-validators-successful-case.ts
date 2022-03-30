@@ -3,7 +3,7 @@ import { ValidatorRawData } from "../setup";
 export const validators4: ValidatorRawData[] = [
   {
     address: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x23bc3a063e898eb1f5f8e856fca12f4e7d87eab069b053bf96f8cbaf8ad98884",
       "0x0e97501434da93e87f9a7badf3c99078f9bed24616f47f0267bd3d4dab7a4f11",
     ],
@@ -56,7 +56,7 @@ export const validators4: ValidatorRawData[] = [
 
   {
     address: "0x615695C4a4D6a60830e5fca4901FbA099DF26271",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x05bbe20b28faf3c4c96fef2796d0c77b235de62119c663e4a125755a1d0025d7",
       "0x0599e9e116636921ccb9c44bd609d78e02473c2f8d67769f6dce5c70a4434230",
     ],
@@ -108,7 +108,7 @@ export const validators4: ValidatorRawData[] = [
   },
   {
     address: "0x63a6627b79813A7A43829490C4cE409254f64177",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x2f74907761d553f40bde96cc6459b22488e16df0878dcf96c53bf98a387b2c99",
       "0x0fffb58eb894f542aae6bee6a8c7aa8b3dbb7162ace24ab995321679f8e1c3fe",
     ],
@@ -160,7 +160,7 @@ export const validators4: ValidatorRawData[] = [
   },
   {
     address: "0x16564cF3e880d9F5d09909F51b922941EbBbC24d",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x18acfb61c62db84c8e502d8b1abf5fc4309eeedc64f2bbd2639b281d6c207cab",
       "0x09a300e6ffd862c99c2078df4160f20c3ed41b2b4af5497a0e8b50aaa5db35ca",
     ],

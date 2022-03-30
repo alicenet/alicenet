@@ -27,15 +27,15 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
     users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 18).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
-      await fixture.madToken.transfer(await users[i].getAddress(), baseAmount);
-      await fixture.madToken
+      await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
+      await fixture.aToken
         .connect(users[i])
         .approve(fixture.publicStaking.address, baseAmount);
     }
@@ -105,14 +105,14 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     const expectedState = await getCurrentState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       users,
       tokensID
     );
 
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       0,
       users,
@@ -123,7 +123,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       1,
       users,
@@ -136,7 +136,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -146,7 +146,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     await depositEthCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -157,7 +157,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     for (let i = 0; i < 2; i++) {
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         amountDeposited / 2n,
         i,
         users,
@@ -168,7 +168,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
       await collectEthCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         amountDeposited / 2n,
         i,
         users,
@@ -188,14 +188,14 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     const expectedState = await getCurrentState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       users,
       tokensID
     );
 
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       0,
       users,
@@ -208,7 +208,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -218,7 +218,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     await depositEthCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -231,7 +231,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     ).toBigInt();
     await collectTokensToCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       0,
       1,
@@ -243,7 +243,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     await collectEthToCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       0,
       1,
@@ -271,14 +271,14 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     const expectedState = await getCurrentState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       users,
       tokensID
     );
 
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       0,
       users,
@@ -291,7 +291,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     let amountDeposited = 50n;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -302,7 +302,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // user 1 should get all the amount deposited since he's the only that skated in the contract
     await collectTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       0,
       users,
@@ -314,7 +314,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // mint another position.
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       1,
       users,
@@ -328,7 +328,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     amountDeposited = 500n;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -342,7 +342,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         expectedCollectedAmount,
         i,
         users,
@@ -356,7 +356,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // of the amount deposited, and we should see some leftovers in the slush
     await mintPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       2,
       users,
@@ -369,7 +369,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     amountDeposited = 1000n;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -387,7 +387,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         expectedCollectedAmount,
         i,
         users,
@@ -402,7 +402,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     amountDeposited = 1000n;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -419,7 +419,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         expectedCollectedAmount,
         i,
         users,
@@ -434,7 +434,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     amountDeposited = 1666n;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -452,7 +452,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     for (let i = 0; i < numUsers; i++) {
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
-        fixture.madToken,
+        fixture.aToken,
         expectedCollectedAmounts[i],
         i,
         users,
@@ -468,7 +468,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     amountDeposited = ethers.utils.parseEther("1000").toBigInt();
     await depositEthCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       amountDeposited,
       users,
       tokensID,
@@ -480,7 +480,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // Start to burn the positions
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       333_333333333333333333n,
       100n,
@@ -495,7 +495,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     expectedSlushEth = 666666666666666700n;
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       333_333333333333333333n,
       100n,
@@ -512,7 +512,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     const expectedSlushToken = 0n;
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
-      fixture.madToken,
+      fixture.aToken,
       sharesPerUser,
       333_333333333333333334n,
       102n,

@@ -68,8 +68,8 @@ describe("ValidatorPool: Claiming logic", async () => {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const madTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+    const aTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
     // As this is a complete cycle, expect the initial state to be exactly the same as the final state
     const expectedState = await getCurrentState(fixture, validators);
     for (let index = 0; index < expectedState.validators.length; index++) {
@@ -110,10 +110,10 @@ describe("ValidatorPool: Claiming logic", async () => {
       expectedState.validators[index].Acc = true;
       expectedState.validators[index].Reg = true;
       // Validators already start with stakeAmount (see test config)
-      expectedState.validators[index].MAD = stakeAmount * BigInt(2);
+      expectedState.validators[index].ATK = stakeAmount * BigInt(2);
       // New Staking
       expectedState.ValidatorPool.ValNFT++;
-      expectedState.Admin.MAD -= stakeAmount * BigInt(2);
+      expectedState.Admin.ATK -= stakeAmount * BigInt(2);
     }
     await factoryCallAnyFixture(
       fixture,
@@ -149,7 +149,7 @@ describe("ValidatorPool: Claiming logic", async () => {
     );
     const currentState = await getCurrentState(fixture, validators);
     // Expect that validators funds are transferred again to ValidatorStaking
-    expectedState.ValidatorStaking.MAD +=
+    expectedState.ValidatorStaking.ATK +=
       BigInt(stakeAmount) * BigInt(validators.length);
     expect(currentState).to.be.deep.equal(expectedState);
   });

@@ -16,7 +16,7 @@ describe("PublicStaking: Shares Invariance", async () => {
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
@@ -28,8 +28,8 @@ describe("PublicStaking: Shares Invariance", async () => {
     let shares = 0n;
     for (let i = 0; i < numberUsers; i++) {
       const userAmount = baseAmount + BigInt(i);
-      await fixture.madToken.transfer(users[i].address, userAmount);
-      await fixture.madToken
+      await fixture.aToken.transfer(users[i].address, userAmount);
+      await fixture.aToken
         .connect(users[i])
         .approve(fixture.publicStaking.address, userAmount);
       await fixture.publicStaking.connect(users[i]).mint(userAmount);

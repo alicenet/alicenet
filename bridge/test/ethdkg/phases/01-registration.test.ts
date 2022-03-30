@@ -15,7 +15,7 @@ describe("ETHDKG: Registration Open", () => {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].madNetPublicKey)
+        .register(validators4[0].aliceNetPublicKey)
     ).to.be.revertedWith("ETHDKG: Cannot register at the moment");
   });
 
@@ -30,14 +30,14 @@ describe("ETHDKG: Registration Open", () => {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].madNetPublicKey)
+        .register(validators4[0].aliceNetPublicKey)
     ).to.emit(ethdkg, "AddressRegistered");
 
     // register that same validator again
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].madNetPublicKey)
+        .register(validators4[0].aliceNetPublicKey)
     ).to.be.revertedWith(
       "ETHDKG: Participant is already participating in this ETHDKG round!"
     );

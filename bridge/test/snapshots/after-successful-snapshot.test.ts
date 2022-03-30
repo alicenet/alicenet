@@ -70,7 +70,7 @@ describe("Snapshots: With successful snapshot completed", () => {
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
-    ).to.be.revertedWith(`Snapshots: Incorrect Madnet height for snapshot!`);
+    ).to.be.revertedWith(`Snapshots: Incorrect AliceNet height for snapshot!`);
   });
 
   it("Does not allow snapshot if ETHDKG round is Running", async function () {
@@ -181,22 +181,22 @@ describe("Snapshots: With successful snapshot completed", () => {
     await expect(blockClaims.headerRoot).to.be.equal(expectedHeaderRoot);
   });
 
-  it("getMadnetHeightFromSnapshot returns correct data", async function () {
+  it("getAliceNetHeightFromSnapshot returns correct data", async function () {
     const expectedHeight = BigNumber.from(1024);
 
     const height = await snapshots
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .getMadnetHeightFromSnapshot(snapshotNumber);
+      .getAliceNetHeightFromSnapshot(snapshotNumber);
 
     await expect(height).to.be.equal(expectedHeight);
   });
 
-  it("getMadnetHeightFromLatestSnapshot returns correct data", async function () {
+  it("getAliceNetHeightFromLatestSnapshot returns correct data", async function () {
     const expectedHeight = BigNumber.from(1024);
 
     const height = await snapshots
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .getMadnetHeightFromLatestSnapshot();
+      .getAliceNetHeightFromLatestSnapshot();
 
     await expect(height).to.be.equal(expectedHeight);
   });

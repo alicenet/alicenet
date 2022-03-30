@@ -19,13 +19,13 @@ describe("Testing AToken", async () => {
 
   describe("Testing Migrate operation", async () => {
     it("Should migrate user legacy tokens", async function () {
-      await fixture.madToken
+      await fixture.legacyToken
         .connect(user)
         .approve(fixture.aToken.address, amount);
       await fixture.aToken.connect(user).migrate(amount);
-      expectedState.Balances.madToken.user -= amount;
+      expectedState.Balances.legacyToken.user -= amount;
       expectedState.Balances.aToken.user += amount;
-      expectedState.Balances.madToken.aToken += amount;
+      expectedState.Balances.legacyToken.aToken += amount;
       currentState = await getState(fixture);
       expect(currentState).to.be.deep.eq(expectedState);
     });

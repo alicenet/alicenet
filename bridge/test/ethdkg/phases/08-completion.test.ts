@@ -175,7 +175,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].madNetPublicKey)
+        .register(validators4[0].aliceNetPublicKey)
     ).to.be.revertedWith("ETHDKG: Cannot register at the moment");
 
     await expect(

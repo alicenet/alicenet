@@ -1,10 +1,10 @@
-# Madnet/Bridge
+# AliceNet/Bridge
 
-This repository contains all solidity smart contracts used by the MadNet.
+This repository contains all solidity smart contracts used by the AliceNet.
 
 ## Requirements
 
-* HardHat (following)
+-   HardHat (following)
 
 To install hardhat and all requirements to compile and test the smart contracts in this repository, run the following
 command at the root of this repository
@@ -22,7 +22,7 @@ Install all the necessary dependencies
 
 ```bash
 $ npm ci
-$ npm run init 
+$ npm run init
 ```
 
 It is mandatory to run this latest command `npm run init`, every time you run the `clean` command.
@@ -35,13 +35,13 @@ the gas reporter when the tests are finished
 The two commands are respectivetely
 
 ```bash
-$ npm run test 
+$ npm run test
 ```
 
 and
 
 ```bash
-$ npm run test-parallel 
+$ npm run test-parallel
 ```
 
 ## HARDHAT
@@ -49,7 +49,7 @@ $ npm run test-parallel
 There is a suite of hardhat scripts and tasks you can run from the bridge folder. To list them simply
 run `npx hardhat --help`.
 
- * `generate-immutable-auth-contract` Generates authorization for contracts deployed at deterministic address via factory
+-   `generate-immutable-auth-contract` Generates authorization for contracts deployed at deterministic address via factory
 
 ```bash
 
@@ -68,9 +68,6 @@ If you are linking a custom Deployment list file it must follow the following fo
  ]
 ```
 
-
-
-
 ### Contract Factory CLI
 
 mass deployment run : npx hardhat generateDeployConfigs Specify constructor and initializer arguements in generated
@@ -82,7 +79,7 @@ change all npx hardhat DeployContracts --list-path path --arg-file-path path sin
 deployUpgradeableProxy --contract-name <name>
 single metamorphic deployment npx hardhat deployMetamorphic --contract-name <name>
 incremental updates upgrade proxy logic non multiCall npx hardhat deployCreate --contract-name logicContractName npx
-hardhat upgradeDeployedProxy --contract-name <name> --logic-address  
+hardhat upgradeDeployedProxy --contract-name <name> --logic-address
 multiCall npx hardhat multiCallUpgradeProxy --contractName <name>
 upgradeLock npx hardhat upgradeLock --contract-name <name>
 upgradeUnlock npx hardhat unlockUpgrade --contract-name <name>
@@ -113,10 +110,10 @@ file `prettier.json`
 
 **Visual Studio Code Plugin** - Group of pluing to make your life easier if you are using Visual studio
 
-* Solidity Visual Auditor
-    - [plugin link](https://marketplace.visualstudio.com/items?itemName=tintinweb.solidity-visual-auditor)
-* Solidity - [plugin link](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
-* Remix - [plugin link](https://marketplace.visualstudio.com/items?itemName=RemixProject.ethereum-remix)
+-   Solidity Visual Auditor
+    -   [plugin link](https://marketplace.visualstudio.com/items?itemName=tintinweb.solidity-visual-auditor)
+-   Solidity - [plugin link](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
+-   Remix - [plugin link](https://marketplace.visualstudio.com/items?itemName=RemixProject.ethereum-remix)
 
 ## Solidity Style guide
 

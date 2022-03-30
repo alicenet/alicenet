@@ -23,10 +23,10 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
 
   it("Factory should be able to skim excess of tokens eth sent to contract", async function () {
     const etherAmount = ethers.utils.parseEther("1");
-    const madTokenAmount = ethers.utils.parseEther("2");
+    const aTokenAmount = ethers.utils.parseEther("2");
     const testAddress = ethers.Wallet.createRandom().address;
 
-    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
 
     // Skimming the excess of eth
     await factoryCallAnyFixture(fixture, "validatorPool", "skimExcessEth", [
@@ -47,24 +47,22 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
       "ValidatorPool should not have any eth balance after skim excess token"
     );
 
-    // skim excess of madtokens
+    // skim excess of ATokens
     await factoryCallAnyFixture(fixture, "validatorPool", "skimExcessToken", [
       testAddress,
     ]);
     expect(
-      (await fixture.madToken.balanceOf(testAddress)).toBigInt()
+      (await fixture.aToken.balanceOf(testAddress)).toBigInt()
     ).to.be.equal(
-      madTokenAmount.toBigInt(),
-      "Test address should have all madToken balance after skim excess token"
+      aTokenAmount.toBigInt(),
+      "Test address should have all aToken balance after skim excess token"
     );
 
     expect(
-      (
-        await fixture.madToken.balanceOf(fixture.validatorPool.address)
-      ).toBigInt()
+      (await fixture.aToken.balanceOf(fixture.validatorPool.address)).toBigInt()
     ).to.be.equal(
       BigInt(0),
-      "ValidatorPool should not have any madToken balance after skim excess token"
+      "ValidatorPool should not have any aToken balance after skim excess token"
     );
   });
 
