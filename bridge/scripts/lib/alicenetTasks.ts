@@ -242,7 +242,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
   )
   .addParam(
     "accountType",
-    "For ethereum based address use the number: 1  For BN curve addresses user number: 2   Default: 1",
+    "For ethereum based address use number: 1  For BN curve addresses user number: 2",
     1,
     types.int
   )
