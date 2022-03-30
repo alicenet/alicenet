@@ -11,12 +11,12 @@ abstract contract ValidatorPoolStorage is
     ImmutableETHDKG,
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
-    ImmutableMadToken
+    ImmutableAToken
 {
     // POSITION_LOCK_PERIOD describes the maximum interval a PublicStaking Position may be locked after
     // being given back to validator exiting the pool
     uint256 public constant POSITION_LOCK_PERIOD = 172800;
-    // Interval in Madnet Epochs that a validator exiting the pool should before claiming is
+    // Interval in AliceNet Epochs that a validator exiting the pool should before claiming is
     // PublicStaking position
     uint256 public constant CLAIM_PERIOD = 3;
 
@@ -55,6 +55,6 @@ abstract contract ValidatorPoolStorage is
         ImmutableETHDKG()
         ImmutablePublicStaking()
         ImmutableValidatorStaking()
-        ImmutableMadToken()
+        ImmutableAToken()
     {}
 }

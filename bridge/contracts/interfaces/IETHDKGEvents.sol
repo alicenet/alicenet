@@ -55,7 +55,7 @@ interface IETHDKGEvents {
         uint256 nonce,
         uint256 epoch,
         uint256 ethHeight,
-        uint256 madHeight,
+        uint256 aliceNetHeight,
         uint256 groupKey0,
         uint256 groupKey1,
         uint256 groupKey2,

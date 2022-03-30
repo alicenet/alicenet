@@ -149,11 +149,11 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         return _snapshots[_epoch].committedAt;
     }
 
-    function getMadnetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
+    function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _snapshots[epoch_].blockClaims.height;
     }
 
-    function getMadnetHeightFromLatestSnapshot() public view returns (uint256) {
+    function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
         return _snapshots[_epoch].blockClaims.height;
     }
 

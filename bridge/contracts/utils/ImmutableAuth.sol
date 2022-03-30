@@ -45,6 +45,30 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableBToken is ImmutableFactory {
+    address private immutable _bToken;
+
+    modifier onlyBToken() {
+        require(msg.sender == _bToken, "onlyBToken");
+        _;
+    }
+
+    constructor() {
+        _bToken = getMetamorphicContractAddress(
+            0x42546f6b656e0000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bTokenAddress() internal view returns (address) {
+        return _bToken;
+    }
+
+    function _saltForBToken() internal pure returns (bytes32) {
+        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
 
@@ -114,54 +138,6 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
 
     function _saltForLiquidityProviderStaking() internal pure returns (bytes32) {
         return 0x4c697175696469747950726f76696465725374616b696e670000000000000000;
-    }
-}
-
-abstract contract ImmutableMadByte is ImmutableFactory {
-    address private immutable _madByte;
-
-    modifier onlyMadByte() {
-        require(msg.sender == _madByte, "onlyMadByte");
-        _;
-    }
-
-    constructor() {
-        _madByte = getMetamorphicContractAddress(
-            0x4d61644279746500000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _madByteAddress() internal view returns (address) {
-        return _madByte;
-    }
-
-    function _saltForMadByte() internal pure returns (bytes32) {
-        return 0x4d61644279746500000000000000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableMadToken is ImmutableFactory {
-    address private immutable _madToken;
-
-    modifier onlyMadToken() {
-        require(msg.sender == _madToken, "onlyMadToken");
-        _;
-    }
-
-    constructor() {
-        _madToken = getMetamorphicContractAddress(
-            0x4d6164546f6b656e000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _madTokenAddress() internal view returns (address) {
-        return _madToken;
-    }
-
-    function _saltForMadToken() internal pure returns (bytes32) {
-        return 0x4d6164546f6b656e000000000000000000000000000000000000000000000000;
     }
 }
 

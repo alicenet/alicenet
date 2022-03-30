@@ -26,7 +26,7 @@ interface IValidatorPool {
 
     function pauseConsensus() external;
 
-    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight) external;
+    function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight) external;
 
     function registerValidators(
         address[] calldata validators,

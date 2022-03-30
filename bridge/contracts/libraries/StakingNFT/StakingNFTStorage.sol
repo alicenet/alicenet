@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 abstract contract StakingNFTStorage {
     // Position describes a staked position
     struct Position {
-        // number of madToken
+        // number of aToken
         uint224 shares;
         // block number after which the position may be burned.
         // prevents double spend of voting weight
@@ -44,15 +44,15 @@ abstract contract StakingNFTStorage {
     // cb is a set only object
     bool internal _circuitBreaker;
 
-    // _shares stores total amount of MadToken staked in contract
+    // _shares stores total amount of AToken staked in contract
     uint256 internal _shares;
 
-    // _tokenState tracks distribution of MadToken that originate from slashing
+    // _tokenState tracks distribution of AToken that originate from slashing
     // events
     Accumulator internal _tokenState;
 
     // _ethState tracks the distribution of Eth that originate from the sale of
-    // MadBytes
+    // BTokens
     Accumulator internal _ethState;
 
     // _positions tracks all staked positions based on tokenID
@@ -62,7 +62,7 @@ abstract contract StakingNFTStorage {
     // contract
     uint256 internal _reserveEth;
 
-    // state to keep track of the amount of MadTokens deposited and collected
+    // state to keep track of the amount of ATokens deposited and collected
     // from the contract
     uint256 internal _reserveToken;
 }

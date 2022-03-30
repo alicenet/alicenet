@@ -58,9 +58,9 @@ interface ISnapshots {
 
     function getCommittedHeightFromLatestSnapshot() external view returns (uint256);
 
-    function getMadnetHeightFromSnapshot(uint256 epoch_) external view returns (uint256);
+    function getAliceNetHeightFromSnapshot(uint256 epoch_) external view returns (uint256);
 
-    function getMadnetHeightFromLatestSnapshot() external view returns (uint256);
+    function getAliceNetHeightFromLatestSnapshot() external view returns (uint256);
 
     function getSnapshot(uint256 epoch_) external view returns (Snapshot memory);
 

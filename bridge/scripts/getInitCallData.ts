@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const contractFactory = await ethers.getContractFactory("MadByte");
+  const contractFactory = await ethers.getContractFactory("BToken");
   const initCallData =
     contractFactory.interface.encodeFunctionData("initialize");
   console.log(initCallData);

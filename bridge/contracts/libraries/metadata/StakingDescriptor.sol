@@ -102,7 +102,7 @@ library StakingDescriptor {
         return
             string(
                 abi.encodePacked(
-                    "This NFT represents a staked position on MadNET.",
+                    "This NFT represents a staked position on AliceNet.",
                     "\\n",
                     "The owner of this NFT can modify or redeem the position.\\n"
                 )
@@ -143,7 +143,7 @@ library StakingDescriptor {
     {
         return
             string(
-                abi.encodePacked("MadNET Staked token for position #", params.tokenId.toString())
+                abi.encodePacked("AliceNet Staked token for position #", params.tokenId.toString())
             );
     }
 }

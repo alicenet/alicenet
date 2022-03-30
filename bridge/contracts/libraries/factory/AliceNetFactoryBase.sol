@@ -5,7 +5,7 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 
-abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
+abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**
     @dev owner role for privileged access to functions
     */
@@ -321,14 +321,14 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
                 06 5a GAS                   CALLER | 0 | 0 | 0 | 20
                 07 fa STATICCALL            GAS | CALLER | 0 | 0 | 0 | 20
                 08 15 ISZERO                tmeplateaddress
-                09 36 CALLDATASIZE          0 
+                09 36 CALLDATASIZE          0
                 0a 36 CALLDATASIZE          0 | 0
                 0b 36 CALLDATASIZE          0 | 0 | 0
                 0c 36 CALLDATASIZE          0 | 0 | 0 | 0
                 0d 51 MLOAD                 0 | 0 | 0 | 0 | 0
                 0e 5a GAS                   address | 0 | 0 | 0 | 0
                 0f f4 DELEGATECALL          GAS | address | 0 | 0 | 0 | 0
-                10 3d RETURNDATASIZE        
+                10 3d RETURNDATASIZE
                 11 36 CALLDATASIZE          RETURNDATASIZE
                 12 36 CALLDATASIZE
                 13 3e RETURNDATACOPY
@@ -372,11 +372,11 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
             let ptr := basePtr
             //codesize, pc,  pc, codecopy, codesize, push1 09, return push2 <codesize> 56 5b
             /*
-            00 38 codesize       
+            00 38 codesize
             01 58 pc            codesize
             02 58 pc            01 | codesize
             03 39 codecopy      02 | 01 | codesize
-            04 38 codesize      
+            04 38 codesize
             05 60 push1 09      codesize
             07 f3 return        09 | codesize
              */
@@ -400,11 +400,11 @@ abstract contract MadnetFactoryBase is DeterministicAddress, ProxyUpgrader {
 
     /*
 
-just so you know how - remember convo about changing the template deploy code to store on the template msg.sender.... then in the constructor do a 
-assembly { 
-    if and(iszero(iszero(eq(caller(),sload(<some slot>)))), iszero(iszero(eq(shr(192, calldataload(0x00)), <some funcSig>)))){ 
-        selfdestruct(msg.sender) 
-    } 
+just so you know how - remember convo about changing the template deploy code to store on the template msg.sender.... then in the constructor do a
+assembly {
+    if and(iszero(iszero(eq(caller(),sload(<some slot>)))), iszero(iszero(eq(shr(192, calldataload(0x00)), <some funcSig>)))){
+        selfdestruct(msg.sender)
+    }
 }
 11:24
 probably jacked up parentheses but you get idea can also optimize bool logic using demorgan to factor out iszero(iszero(
@@ -418,40 +418,40 @@ PC OPCODE OPNAME            STACK
 
 //JUMPCODE                          610000565B
 
-00 61 jumpdestination push2                     endofcontract                 
+00 61 jumpdestination push2                     endofcontract
 03 56 jump
-04 5B jumpdest                         
+04 5B jumpdest
 //BYTECODE
 05 5B jumpdest                                  //selfdestruct logic   5B63cfc720073d356102241c1473ffffffffffffffffffffffffffffffffffffffff33141615586007015733ff5b6080604052600556
 //function signature for selfdestruct(address)
-06 63 PUSH4 cfc72007 
+06 63 PUSH4 cfc72007
 0b 3D RETURNDATASIZE                   0 | cfc72007
 0c 35 CALLDATALOAD                     CALLDATA | cfc72007
-0d 61 PUSH2 0224                    0244 | CALLDATA | cfc72007                                        
+0d 61 PUSH2 0224                    0244 | CALLDATA | cfc72007
 10 1c SHR                              RIGHTALIGNEDCALLDATA | cfc72007
-14 EQ                               FSIGBOOL 
+14 EQ                               FSIGBOOL
 73 PUSH20                           ffffffffffffffffffffffffffffffffffffffff | FSIGBOOL
 ffffffffffffffffffffffffffffffffffffffff
 33 CALLER                           CALLER | ffffffffffffffffffffffffffffffffffffffff | FSIGBOOL
 14 EQ                               CBOOL | SIGBOOL
-16 AND                              
-15 ISZERO                           SDBOOL       
+16 AND
+15 ISZERO                           SDBOOL
 58 PC                               HOMEBOOL
 60 PUSH1
 07                                  PC | HOMEBOOL
-01 ADD                              07 | PC | HOMEBOOL 
-57 JUMPI                            PC + 7 | HOMEBOOL 
-33 CALLER                           
+01 ADD                              07 | PC | HOMEBOOL
+57 JUMPI                            PC + 7 | HOMEBOOL
+33 CALLER
 ff SELFDESTRUCT                     CALLER
-5b JUMPDEST                         
-60 
-80                           
+5b JUMPDEST
+60
+80
 60                           80
-40                           
+40
 52 MSTORE                    40 | 80
-60                           
-05                           02 
-56 jump                         
+60
+05                           02
+56 jump
 */
 
     /**

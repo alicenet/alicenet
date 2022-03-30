@@ -123,7 +123,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
         require(
             epoch * _epochLength == blockClaims.height,
-            "Snapshots: Incorrect Madnet height for snapshot!"
+            "Snapshots: Incorrect AliceNet height for snapshot!"
         );
 
         require(blockClaims.chainId == _chainId, "Snapshots: Incorrect chainID for snapshot!");
@@ -204,11 +204,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _snapshots[_epoch].committedAt;
     }
 
-    function getMadnetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
+    function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _snapshots[epoch_].blockClaims.height;
     }
 
-    function getMadnetHeightFromLatestSnapshot() public view returns (uint256) {
+    function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
         return _snapshots[_epoch].blockClaims.height;
     }
 

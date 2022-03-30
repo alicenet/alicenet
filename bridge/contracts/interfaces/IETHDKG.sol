@@ -8,7 +8,7 @@ interface IETHDKG {
 
     function setConfirmationLength(uint16 confirmationLength_) external;
 
-    function setCustomMadnetHeight(uint256 madnetHeight) external;
+    function setCustomAliceNetHeight(uint256 aliceNetHeight) external;
 
     function initializeETHDKG() external;
 

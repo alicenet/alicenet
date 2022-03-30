@@ -66,10 +66,10 @@ task("registerValidators", "registers validators")
     const stakingTokenIds: BigNumber[] = [];
 
     const madToken = await hre.ethers.getContractAt(
-      "MadToken",
-      await factory.lookup(hre.ethers.utils.formatBytes32String("MadToken"))
+      "AToken",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("AToken"))
     );
-    console.log(`MadToken Address: ${madToken.address}`);
+    console.log(`AToken Address: ${madToken.address}`);
     const publicStaking = await hre.ethers.getContractAt(
       "PublicStaking",
       await factory.lookup(
@@ -189,13 +189,13 @@ task(
     "MadnetFactory",
     "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
   );
-  const madByte = await ethers.getContractAt(
-    "MadByte",
-    await factory.lookup(hre.ethers.utils.formatBytes32String("MadByte"))
+  const bToken = await ethers.getContractAt(
+    "BToken",
+    await factory.lookup(hre.ethers.utils.formatBytes32String("BToken"))
   );
   const tx = await factory
     .connect(adminSigner)
-    .callAny(madByte.address, 0, input);
+    .callAny(bToken.address, 0, input);
   await tx.wait();
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   console.log(receipt);

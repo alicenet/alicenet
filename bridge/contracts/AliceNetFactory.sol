@@ -2,10 +2,10 @@
 pragma solidity ^0.8.11;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
-import "contracts/libraries/factory/MadnetFactoryBase.sol";
+import "contracts/libraries/factory/AliceNetFactoryBase.sol";
 
-/// @custom:salt MadnetFactory
-contract MadnetFactory is MadnetFactoryBase {
+/// @custom:salt AliceNetFactory
+contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
@@ -16,7 +16,7 @@ contract MadnetFactory is MadnetFactoryBase {
      * @param selfAddr_ is the factory contracts
      * address (address of itself)
      */
-    constructor(address selfAddr_) MadnetFactoryBase(selfAddr_) {}
+    constructor(address selfAddr_) AliceNetFactoryBase(selfAddr_) {}
 
     //TODO: Make this payable?
     /**
