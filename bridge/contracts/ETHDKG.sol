@@ -288,9 +288,11 @@ contract ETHDKG is
     }
 
     function tryGetParticipantIndex(address participant) public view returns (bool, uint256) {
-        Participant memory participantData = _participants[participant];
-        if (participantData.nonce == _nonce && _nonce != 0) {
-            return (true, _participants[participant].index);
+        uint256 participantDataIndex = _participants[participant].index;
+        uint256 participantDataNonce = _participants[participant].nonce;
+        uint256 nonce = _nonce;
+        if (participantDataNonce == nonce && nonce != 0) {
+            return (true, participantDataIndex);
         }
         return (false, 0);
     }
