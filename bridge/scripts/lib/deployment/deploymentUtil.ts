@@ -71,7 +71,7 @@ export async function getDeployMetaArgs(
   }
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
-    ? await getDeploymentConstructorArgs(fullyQualifiedName)
+    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
     : undefined;
   return {
     contractName: extractName(fullyQualifiedName),
@@ -266,11 +266,18 @@ export async function getBytes32Salt(
   artifacts: Artifacts,
   ethers: Ethers
 ) {
-  const salt: string = await getSalt(contractName, artifacts);
-
+  const fullName = await getFullyQualifiedName(contractName, artifacts);
+  const salt: string = await getSalt(fullName, artifacts);
   return ethers.utils.formatBytes32String(salt);
 }
-
+export async function getFullyQualifiedName(
+  contractName: string,
+  artifacts: Artifacts
+) {
+  const contractArtifact = await artifacts.readArtifact(contractName);
+  const path = contractArtifact.sourceName;
+  return path + ":" + contractName;
+}
 export async function getDeployType(fullName: string, artifacts: Artifacts) {
   return await getCustomNSTag(fullName, "deploy-type", artifacts);
 }

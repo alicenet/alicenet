@@ -17,7 +17,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
     [adminSigner, notAdminSigner] = await ethers.getSigners();
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     tokenID = await getTokenIdFromTx(tx);
   });

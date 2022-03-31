@@ -18,7 +18,10 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
   let publicStaking: PublicStaking;
   let stakingPositionDescriptor: StakingPositionDescriptor;
   const stakeAmount = 20000;
-  const stakeAmountMadWei = ethers.utils.parseUnits(stakeAmount.toString(), 18);
+  const stakeAmountATokenWei = ethers.utils.parseUnits(
+    stakeAmount.toString(),
+    18
+  );
   const lockTime = 1;
   let tokenId: BigNumberish;
 
@@ -31,13 +34,13 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     publicStaking = fixture.publicStaking;
     stakingPositionDescriptor = fixture.stakingPositionDescriptor;
 
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.publicStaking.address,
-      BigNumber.from(stakeAmountMadWei)
+      BigNumber.from(stakeAmountATokenWei)
     );
     const tx = await fixture.publicStaking
       .connect(adminSigner)
-      .mintTo(admin.address, stakeAmountMadWei, lockTime);
+      .mintTo(admin.address, stakeAmountATokenWei, lockTime);
     tokenId = await getTokenIdFromTx(tx);
   });
 
@@ -66,8 +69,8 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
         `<text x='10' y='100'>Accumulator (Token): ${positionData.accumulatorToken.toString()}</text></svg>`;
 
       tokenUriJson =
-        `{"name":"MadNET Staked token for position #1", ` +
-        `"description":"This NFT represents a staked position on MadNET.` +
+        `{"name":"AliceNet Staked token for position #1", ` +
+        `"description":"This NFT represents a staked position on AliceNet.` +
         `\\nThe owner of this NFT can modify or redeem the position.` +
         `\\n Shares: ${positionData.shares.toString()}` +
         `\\nFree After: ${positionData.freeAfter.toString()}` +

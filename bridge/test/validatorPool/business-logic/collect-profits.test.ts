@@ -67,8 +67,8 @@ describe("ValidatorPool: Collecting logic", async function () {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const madTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, madTokenAmount, adminSigner);
+    const aTokenAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
 
     await factoryCallAnyFixture(
       fixture,
@@ -111,18 +111,20 @@ describe("ValidatorPool: Collecting logic", async function () {
     const expectedState = await getCurrentState(fixture, validators);
     const maxNumValidators = validatorsSnapshots.length;
     const eths = ethers.utils.parseEther(`4`).toBigInt();
-    const mads = ethers.utils.parseEther(`4`).toBigInt();
+    const atokens = ethers.utils.parseEther(`4`).toBigInt();
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
       value: eths,
     });
-    await fixture.madToken
+    await fixture.aToken
       .connect(adminSigner)
-      .approve(fixture.validatorStaking.address, mads);
-    await fixture.validatorStaking.connect(adminSigner).depositToken(42, mads);
+      .approve(fixture.validatorStaking.address, atokens);
+    await fixture.validatorStaking
+      .connect(adminSigner)
+      .depositToken(42, atokens);
     // Expect ValidatorStaking balance to increment by earnings
     expectedState.ValidatorStaking.ETH += eths;
-    expectedState.ValidatorStaking.MAD += mads;
-    expectedState.Admin.MAD -= mads;
+    expectedState.ValidatorStaking.ATK += atokens;
+    expectedState.Admin.ATK -= atokens;
     // Complete ETHDKG Round
     let currentState = await getCurrentState(fixture, validators);
     await showState("Expected state after deposit", expectedState);
@@ -140,8 +142,8 @@ describe("ValidatorPool: Collecting logic", async function () {
     }
     for (let index = 0; index < expectedState.validators.length; index++) {
       expectedState.ValidatorStaking.ETH -= eths / BigInt(maxNumValidators);
-      expectedState.ValidatorStaking.MAD -= mads / BigInt(maxNumValidators);
-      expectedState.validators[index].MAD += mads / BigInt(maxNumValidators);
+      expectedState.ValidatorStaking.ATK -= atokens / BigInt(maxNumValidators);
+      expectedState.validators[index].ATK += atokens / BigInt(maxNumValidators);
       expectedState.validators[index].Reg = true;
       expectedState.validators[index].Acc = true;
     }

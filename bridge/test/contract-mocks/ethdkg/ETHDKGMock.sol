@@ -84,14 +84,14 @@ contract ETHDKGMock is
         _confirmationLength = confirmationLength_;
     }
 
-    function setCustomMadnetHeight(uint256 madnetHeight) public {
-        _customMadnetHeight = madnetHeight;
+    function setCustomAliceNetHeight(uint256 aliceNetHeight) public {
+        _customAliceNetHeight = aliceNetHeight;
         emit ValidatorSetCompleted(
             0,
             _nonce,
             ISnapshots(_snapshotsAddress()).getEpoch(),
             ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot(),
-            madnetHeight,
+            aliceNetHeight,
             0x0,
             0x0,
             0x0,

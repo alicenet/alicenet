@@ -1,9 +1,13 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { HugeAccumulatorStaking, MadToken } from "../../../typechain-types";
+import {
+  AToken,
+  HugeAccumulatorStaking,
+  LegacyToken,
+} from "../../../typechain-types";
 import {
   createUsers,
-  deployMadnetFactory,
+  deployAliceNetFactory,
   deployStaticWithFactory,
   mineBlocks,
   posFixtureSetup,
@@ -23,31 +27,45 @@ import {
 
 describe("PublicStaking: Accumulator Overflow", async () => {
   let stakingContract: HugeAccumulatorStaking;
-  let madToken: MadToken;
+  let aToken: AToken;
   const numberUsers: number = 2;
   let users: SignerWithAddress[] = [];
 
   beforeEach(async function () {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
-    const factory = await deployMadnetFactory(adminSigner);
-    // MadToken
-    madToken = (await deployStaticWithFactory(factory, "MadToken")) as MadToken;
+    const factory = await deployAliceNetFactory(adminSigner);
+
+    const legacyToken = (await deployStaticWithFactory(
+      factory,
+      "LegacyToken"
+    )) as LegacyToken;
+
+    // AToken
+    aToken = (await deployStaticWithFactory(
+      factory,
+      "AToken",
+      "AToken",
+      undefined,
+      [legacyToken.address]
+    )) as AToken;
+
     stakingContract = (await deployStaticWithFactory(
       factory,
       "HugeAccumulatorStaking",
       "PublicStaking"
     )) as HugeAccumulatorStaking;
-    await posFixtureSetup(factory, madToken, adminSigner);
-    await madToken.approve(
+
+    await posFixtureSetup(factory, aToken, legacyToken);
+    await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("100000", 18)
     );
     users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 0).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
-      await madToken.transfer(await users[i].getAddress(), baseAmount);
-      await madToken
+      await aToken.transfer(await users[i].getAddress(), baseAmount);
+      await aToken
         .connect(users[i])
         .approve(stakingContract.address, baseAmount);
     }
@@ -78,7 +96,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     const expectedState = await getCurrentState(
       stakingContract,
-      madToken,
+      aToken,
       users,
       tokensID
     );
@@ -86,7 +104,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     const userMintedAmount = 50n;
     await mintPositionCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       userMintedAmount,
       0,
       users,
@@ -99,7 +117,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     // moving the token accumulator closer to the overflow
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -110,7 +128,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     // moving the token accumulator closer to the overflow
     await depositEthCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -120,7 +138,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     await mintPositionCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       userMintedAmount,
       1,
       users,
@@ -134,7 +152,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     amountDeposited = 150n;
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -144,7 +162,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     await depositEthCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -157,7 +175,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     for (let i = 0; i < 2; i++) {
       await collectTokensCheckAndUpdateState(
         stakingContract,
-        madToken,
+        aToken,
         expectedCollectedAmount[i],
         i,
         users,
@@ -167,7 +185,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
-        madToken,
+        aToken,
         expectedCollectedAmount[i],
         i,
         users,
@@ -181,7 +199,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     amountDeposited = 400n;
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -190,7 +208,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     );
     await depositEthCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -204,7 +222,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     for (let i = 0; i < 2; i++) {
       await collectTokensCheckAndUpdateState(
         stakingContract,
-        madToken,
+        aToken,
         expectedCollectedAmount[i],
         i,
         users,
@@ -214,7 +232,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
-        madToken,
+        aToken,
         expectedCollectedAmount[i],
         i,
         users,
@@ -249,7 +267,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     const expectedState = await getCurrentState(
       stakingContract,
-      madToken,
+      aToken,
       users,
       tokensID
     );
@@ -257,7 +275,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     const userMintedAmount = 50n;
     await mintPositionCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       userMintedAmount,
       0,
       users,
@@ -270,7 +288,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     // moving the token accumulator closer to the overflow
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -281,7 +299,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     // moving the token accumulator closer to the overflow
     await depositEthCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -291,7 +309,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     await mintPositionCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       userMintedAmount,
       1,
       users,
@@ -305,7 +323,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     amountDeposited = 150n;
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -315,7 +333,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
 
     await depositEthCheckAndUpdateState(
       stakingContract,
-      madToken,
+      aToken,
       amountDeposited,
       users,
       tokensID,
@@ -327,7 +345,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     for (let i = 0; i < 2; i++) {
       await burnPositionCheckAndUpdateState(
         stakingContract,
-        madToken,
+        aToken,
         userMintedAmount,
         expectedPayoutAmountEth[i],
         expectedPayoutAmountToken[i],

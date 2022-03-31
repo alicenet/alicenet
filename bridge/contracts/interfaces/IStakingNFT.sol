@@ -28,11 +28,11 @@ interface IStakingNFT {
         uint256 lockDuration_
     ) external returns (uint256 tokenID);
 
-    function burn(uint256 tokenID_) external returns (uint256 payoutEth, uint256 payoutMadToken);
+    function burn(uint256 tokenID_) external returns (uint256 payoutEth, uint256 payoutAToken);
 
     function burnTo(address to_, uint256 tokenID_)
         external
-        returns (uint256 payoutEth, uint256 payoutMadToken);
+        returns (uint256 payoutEth, uint256 payoutAToken);
 
     function collectEth(uint256 tokenID_) external returns (uint256 payout);
 
@@ -59,7 +59,7 @@ interface IStakingNFT {
 
     function getTotalReserveEth() external view returns (uint256);
 
-    function getTotalReserveMadToken() external view returns (uint256);
+    function getTotalReserveAToken() external view returns (uint256);
 
     function estimateEthCollection(uint256 tokenID_) external view returns (uint256 payout);
 

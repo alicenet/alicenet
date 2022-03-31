@@ -2,10 +2,10 @@
 pragma solidity ^0.8.11;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
-import "contracts/libraries/factory/MadnetFactoryBase.sol";
+import "contracts/libraries/factory/AliceNetFactoryBase.sol";
 
-/// @custom:salt MadnetFactory
-contract MadnetFactory is MadnetFactoryBase {
+/// @custom:salt AliceNetFactory
+contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
@@ -16,9 +16,8 @@ contract MadnetFactory is MadnetFactoryBase {
      * @param selfAddr_ is the factory contracts
      * address (address of itself)
      */
-    constructor(address selfAddr_) MadnetFactoryBase(selfAddr_) {}
+    constructor(address selfAddr_) AliceNetFactoryBase(selfAddr_) {}
 
-    //TODO: Make this payable?
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
@@ -29,7 +28,7 @@ contract MadnetFactory is MadnetFactoryBase {
         address target_,
         uint256 value_,
         bytes calldata cdata_
-    ) public onlyOwner {
+    ) public payable onlyOwner {
         bytes memory cdata = cdata_;
         _callAny(target_, value_, cdata);
         _returnAvailableData();
@@ -40,7 +39,11 @@ contract MadnetFactory is MadnetFactoryBase {
      * @param target_: the address of the contract to be called
      * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
      */
-    function delegateCallAny(address target_, bytes calldata cdata_) public onlyOwnerOrDelegator {
+    function delegateCallAny(address target_, bytes calldata cdata_)
+        public
+        payable
+        onlyOwnerOrDelegator
+    {
         bytes memory cdata = cdata_;
         _delegateCallAny(target_, cdata);
         _returnAvailableData();
@@ -70,7 +73,6 @@ contract MadnetFactory is MadnetFactoryBase {
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
-    //TODO make this payable?
     function deployCreate2(
         uint256 value_,
         bytes32 salt_,

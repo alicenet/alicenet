@@ -37,7 +37,7 @@ contract ValidatorPool is
     }
 
     modifier assertNotConsensusRunning() {
-        require(!_isConsensusRunning, "ValidatorPool: Error Madnet Consensus should be halted!");
+        require(!_isConsensusRunning, "ValidatorPool: Error AliceNet Consensus should be halted!");
         _;
     }
 
@@ -103,12 +103,12 @@ contract ValidatorPool is
         _isConsensusRunning = true;
     }
 
-    // todo: check async in Madnet
+    // todo: check async in AliceNet
     function pauseConsensus() public onlySnapshots {
         _isConsensusRunning = false;
     }
 
-    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight_) public onlyFactory {
+    function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
         require(
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
@@ -116,7 +116,7 @@ contract ValidatorPool is
             "ValidatorPool: Condition not met to stop consensus!"
         );
         _isConsensusRunning = false;
-        IETHDKG(_ethdkgAddress()).setCustomMadnetHeight(madnetHeight_);
+        IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
 
     function registerValidators(address[] memory validators_, uint256[] memory stakerTokenIDs_)
@@ -180,9 +180,7 @@ contract ValidatorPool is
             "ValidatorPool: Profits can only be claimable when consensus is running!"
         );
 
-        uint256 balanceBeforeToken = IERC20Transferable(_madTokenAddress()).balanceOf(
-            address(this)
-        );
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
 
         uint256 validatorTokenID = _validators.get(msg.sender)._tokenID;
@@ -196,7 +194,7 @@ contract ValidatorPool is
         );
 
         require(
-            balanceBeforeToken == IERC20Transferable(_madTokenAddress()).balanceOf(address(this)),
+            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
             "ValidatorPool: Invalid transaction, token balance of the contract changed!"
         );
         require(
@@ -233,9 +231,7 @@ contract ValidatorPool is
             _isAccusable(dishonestValidator_),
             "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
         );
-        uint256 balanceBeforeToken = IERC20Transferable(_madTokenAddress()).balanceOf(
-            address(this)
-        );
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
 
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
@@ -248,14 +244,14 @@ contract ValidatorPool is
         }
         // redistribute the dishonest staking equally with the other validators
 
-        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), minerShares);
+        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), minerShares);
         IStakingNFT(_validatorStakingAddress()).depositToken(_getMagic(), minerShares);
         // transfer to the disputer any profit that the dishonestValidator had when his
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
         require(
-            balanceBeforeToken == IERC20Transferable(_madTokenAddress()).balanceOf(address(this)),
+            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
             "ValidatorPool: Invalid transaction, token balance of the contract changed!"
         );
         require(
@@ -271,9 +267,7 @@ contract ValidatorPool is
             _isAccusable(dishonestValidator_),
             "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
         );
-        uint256 balanceBeforeToken = IERC20Transferable(_madTokenAddress()).balanceOf(
-            address(this)
-        );
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
 
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
@@ -293,7 +287,7 @@ contract ValidatorPool is
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
         require(
-            balanceBeforeToken == IERC20Transferable(_madTokenAddress()).balanceOf(address(this)),
+            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
             "ValidatorPool: Invalid transaction, token balance of the contract changed!"
         );
         require(
@@ -316,13 +310,13 @@ contract ValidatorPool is
         return excess;
     }
 
-    /// skimExcessToken will allow the Admin role to refund any MadToken sent to this contract in error
+    /// skimExcessToken will allow the Admin role to refund any AToken sent to this contract in error
     /// by a user.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
         // This contract shouldn't held any token balance.
-        IERC20Transferable madToken = IERC20Transferable(_madTokenAddress());
-        excess = madToken.balanceOf(address(this));
-        _safeTransferERC20(madToken, to_, excess);
+        IERC20Transferable aToken = IERC20Transferable(_aTokenAddress());
+        excess = aToken.balanceOf(address(this));
+        _safeTransferERC20(aToken, to_, excess);
         return excess;
     }
 
@@ -416,7 +410,7 @@ contract ValidatorPool is
         uint256 payoutEth_,
         uint256 payoutToken_
     ) internal {
-        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payoutToken_);
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
         _safeTransferEth(to_, payoutEth_);
     }
 
@@ -437,9 +431,7 @@ contract ValidatorPool is
             "ValidatorPool: Address is already a validator or it is in the exiting line!"
         );
 
-        uint256 balanceBeforeToken = IERC20Transferable(_madTokenAddress()).balanceOf(
-            address(this)
-        );
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
         (validatorTokenID, payoutEth, payoutToken) = _swapPublicStakingForValidatorStaking(
             msg.sender,
@@ -451,7 +443,7 @@ contract ValidatorPool is
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
         require(
-            balanceBeforeToken == IERC20Transferable(_madTokenAddress()).balanceOf(address(this)),
+            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
             "ValidatorPool: Invalid transaction, token balance of the contract changed!"
         );
         require(
@@ -472,9 +464,7 @@ contract ValidatorPool is
     {
         require(_isValidator(validator_), "ValidatorPool: Address is not a validator_!");
 
-        uint256 balanceBeforeToken = IERC20Transferable(_madTokenAddress()).balanceOf(
-            address(this)
-        );
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
         (stakeTokenID, payoutEth, payoutToken) = _swapValidatorStakingForPublicStaking(validator_);
 
@@ -484,7 +474,7 @@ contract ValidatorPool is
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
         require(
-            balanceBeforeToken == IERC20Transferable(_madTokenAddress()).balanceOf(address(this)),
+            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
             "ValidatorPool: Invalid transaction, token balance of the contract changed!"
         );
         require(
@@ -562,7 +552,7 @@ contract ValidatorPool is
         returns (uint256 validatorTokenID)
     {
         // We should approve the validatorStaking to transferFrom the tokens of this contract
-        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), minerShares_);
+        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), minerShares_);
         validatorTokenID = IStakingNFT(_validatorStakingAddress()).mint(minerShares_);
     }
 
@@ -571,7 +561,7 @@ contract ValidatorPool is
         returns (uint256 stakeTokenID)
     {
         // We should approve the PublicStaking to transferFrom the tokens of this contract
-        IERC20Transferable(_madTokenAddress()).approve(_publicStakingAddress(), minerShares_);
+        IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), minerShares_);
         stakeTokenID = IStakingNFT(_publicStakingAddress()).mint(minerShares_);
     }
 

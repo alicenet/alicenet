@@ -2,17 +2,17 @@
 pragma solidity ^0.8.11;
 
 import "contracts/PublicStaking.sol";
-import "contracts/MadToken.sol";
+import "contracts/AToken.sol";
 
 abstract contract BaseMock {
     PublicStaking public publicStaking;
-    MadToken public madToken;
+    AToken public aToken;
 
     receive() external payable virtual {}
 
-    function setTokens(MadToken madToken_, PublicStaking stakeNFT_) public {
+    function setTokens(AToken aToken_, PublicStaking stakeNFT_) public {
         publicStaking = stakeNFT_;
-        madToken = madToken_;
+        aToken = aToken_;
     }
 
     function mint(uint256 amount_) public returns (uint256) {
@@ -36,7 +36,7 @@ abstract contract BaseMock {
     }
 
     function approve(address who, uint256 amount_) public returns (bool) {
-        return madToken.approve(who, amount_);
+        return aToken.approve(who, amount_);
     }
 
     function depositToken(uint256 amount_) public {

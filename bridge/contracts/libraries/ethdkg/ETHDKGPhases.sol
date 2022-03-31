@@ -322,19 +322,19 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
         uint256 epoch = ISnapshots(_snapshotsAddress()).getEpoch();
         uint256 ethHeight = ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot();
-        uint256 madHeight;
-        if (_customMadnetHeight == 0) {
-            madHeight = ISnapshots(_snapshotsAddress()).getMadnetHeightFromLatestSnapshot();
+        uint256 aliceNetHeight;
+        if (_customAliceNetHeight == 0) {
+            aliceNetHeight = ISnapshots(_snapshotsAddress()).getAliceNetHeightFromLatestSnapshot();
         } else {
-            madHeight = _customMadnetHeight;
-            _customMadnetHeight = 0;
+            aliceNetHeight = _customAliceNetHeight;
+            _customAliceNetHeight = 0;
         }
         emit ValidatorSetCompleted(
             uint8(IValidatorPool(_validatorPoolAddress()).getValidatorsCount()),
             _nonce,
             epoch,
             ethHeight,
-            madHeight,
+            aliceNetHeight,
             _masterPublicKey[0],
             _masterPublicKey[1],
             _masterPublicKey[2],

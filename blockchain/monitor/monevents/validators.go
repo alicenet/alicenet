@@ -36,7 +36,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 		"Nonce":          event.Nonce,
 		"Epoch":          event.Epoch,
 		"EthHeight":      event.EthHeight,
-		"MadHeight":      event.MadHeight,
+		"AliceNetHeight": event.AliceNetHeight,
 		"GroupKey0":      event.GroupKey0,
 		"GroupKey1":      event.GroupKey1,
 		"GroupKey2":      event.GroupKey2,
@@ -46,7 +46,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	epoch := uint32(event.Epoch.Int64())
 
 	vs := state.ValidatorSets[epoch]
-	vs.NotBeforeMadNetHeight = uint32(event.MadHeight.Uint64())
+	vs.NotBeforeMadNetHeight = uint32(event.AliceNetHeight.Uint64())
 	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1

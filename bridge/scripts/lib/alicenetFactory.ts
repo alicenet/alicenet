@@ -10,9 +10,9 @@
 // return the logs
 import { BytesLike, ContractReceipt } from "ethers";
 import { artifacts, ethers } from "hardhat";
-import { MadnetFactory } from "../../typechain-types";
+import { AliceNetFactory } from "../../typechain-types";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
-const defaultFactoryName = "MadnetFactory";
+const defaultFactoryName = "AliceNetFactory";
 const DeployedRawEvent = "DeployedRaw";
 const contractAddrVar = "contractAddr";
 const DeployedProxyEvent = "DeployedProxy";
@@ -23,8 +23,8 @@ export async function deployUpgradeable(
   factoryAddress: string,
   constructorArgs: Array<string>
 ) {
-  const MadnetFactory = await ethers.getContractFactory(defaultFactoryName);
-  const factory = await MadnetFactory.attach(factoryAddress);
+  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
+  const factory = await AliceNetFactory.attach(factoryAddress);
   // get an instance of the logic contract interface
   const logicFactory = await ethers.getContractFactory(contractName);
   // get the deployment bytecode from the interface
@@ -106,9 +106,9 @@ export async function deployStatic(
   contractName: string,
   factoryAddress: string
 ) {
-  const MadnetFactory = await ethers.getContractFactory(defaultFactoryName);
+  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
   const logicContract = await ethers.getContractFactory(contractName);
-  const factory: MadnetFactory = MadnetFactory.attach(factoryAddress);
+  const factory: AliceNetFactory = AliceNetFactory.attach(factoryAddress);
   const deployBCode = logicContract.bytecode;
   let txResponse = await factory.deployTemplate(deployBCode);
   let receipt = await txResponse.wait();

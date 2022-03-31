@@ -10,7 +10,7 @@ BRIDGE_DIR=./bridge
 cd $BRIDGE_DIR
 
 
-npx hardhat --network "$NETWORK" --show-stack-traces registerValidators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
+npx hardhat --network "$NETWORK" --show-stack-traces registerValidators --migrate-from-legacy --factory-address "$FACTORY_ADDRESS" $ADDRESSES
 
 
 cd "$CURRENT_WD"

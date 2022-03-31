@@ -17,7 +17,7 @@ contract ValidatorPoolMock is
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorStaking,
-    ImmutableMadToken
+    ImmutableAToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
 
@@ -49,11 +49,11 @@ contract ValidatorPoolMock is
         ImmutableValidatorStaking()
         ImmutableSnapshots()
         ImmutableETHDKG()
-        ImmutableMadToken()
+        ImmutableAToken()
     {}
 
     function initialize() public onlyFactory initializer {
-        //20000*10**18 MadWei = 20k MadTokens
+        //20000*10**18 ATokenWei = 20k ATokens
         _stakeAmount = 20000 * 10**18;
     }
 
@@ -63,7 +63,7 @@ contract ValidatorPoolMock is
 
     function setDisputerReward(uint256 disputerReward_) public {}
 
-    function pauseConsensusOnArbitraryHeight(uint256 madnetHeight_) public onlyFactory {
+    function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
         require(
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
@@ -71,39 +71,31 @@ contract ValidatorPoolMock is
             "ValidatorPool: Condition not met to stop consensus!"
         );
         _isConsensusRunning = false;
-        IETHDKG(_ethdkgAddress()).setCustomMadnetHeight(madnetHeight_);
+        IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
 
     function mintValidatorStaking() public returns (uint256 stakeID_) {
-        IERC20Transferable(_madTokenAddress()).transferFrom(
-            msg.sender,
-            address(this),
-            _stakeAmount
-        );
-        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mint(_stakeAmount);
     }
 
     function burnValidatorStaking(uint256 tokenID_)
         public
-        returns (uint256 payoutEth, uint256 payoutMadToken)
+        returns (uint256 payoutEth, uint256 payoutAToken)
     {
         return IStakingNFT(_validatorStakingAddress()).burn(tokenID_);
     }
 
     function mintToValidatorStaking(address to_) public returns (uint256 stakeID_) {
-        IERC20Transferable(_madTokenAddress()).transferFrom(
-            msg.sender,
-            address(this),
-            _stakeAmount
-        );
-        IERC20Transferable(_madTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mintTo(to_, _stakeAmount, 1);
     }
 
     function burnToValidatorStaking(uint256 tokenID_, address to_)
         public
-        returns (uint256 payoutEth, uint256 payoutMadToken)
+        returns (uint256 payoutEth, uint256 payoutAToken)
     {
         return IStakingNFT(_validatorStakingAddress()).burnTo(to_, tokenID_);
     }

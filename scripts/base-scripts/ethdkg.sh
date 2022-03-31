@@ -1,2 +1,2 @@
 #!/bin/sh
-./madnet --config ./assets/config/owner.toml utils ethdkg
+./madnet --config ./scripts/generated/owner.toml utils ethdkg

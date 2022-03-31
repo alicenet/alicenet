@@ -15,7 +15,7 @@ describe("PublicStaking: Call functions with Circuit Breaker tripped", async () 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
     [adminSigner, notAdminSigner] = await ethers.getSigners();
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     await factoryCallAnyFixture(fixture, "publicStaking", "tripCB");
   });

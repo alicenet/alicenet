@@ -17,15 +17,15 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    await fixture.madToken.approve(
+    await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
     users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("10000", 1).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
-      await fixture.madToken.transfer(await users[i].getAddress(), baseAmount);
-      await fixture.madToken
+      await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
+      await fixture.aToken
         .connect(users[i])
         .approve(fixture.publicStaking.address, baseAmount);
     }

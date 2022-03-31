@@ -1,11 +1,11 @@
 import { ethers } from "hardhat";
-import { END_POINT, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
 import {
   deployStatic,
   deployUpgradeable,
   upgradeProxy,
-} from "../../scripts/lib/MadnetFactory";
-import { MadnetFactory, Utils } from "../../typechain-types";
+} from "../../scripts/lib/alicenetFactory";
+import { END_POINT, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import { AliceNetFactory, Utils } from "../../typechain-types";
 import { assert, expect } from "../chai-setup";
 import {
   bytes32ArrayToStringArray,
@@ -14,9 +14,9 @@ import {
 } from "./Setup";
 process.env.silencer = "true";
 
-describe("Madnetfactory API test", async () => {
+describe("AliceNetfactory API test", async () => {
   let utilsContract: Utils;
-  let factory: MadnetFactory;
+  let factory: AliceNetFactory;
 
   beforeEach(async () => {
     const utilsBase = await ethers.getContractFactory(UTILS);

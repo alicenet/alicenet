@@ -25,7 +25,7 @@ abstract contract StakingNFT is
     IStakingNFT,
     ImmutableFactory,
     ImmutableValidatorPool,
-    ImmutableMadToken,
+    ImmutableAToken,
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
@@ -41,7 +41,7 @@ abstract contract StakingNFT is
 
     constructor()
         ImmutableFactory(msg.sender)
-        ImmutableMadToken()
+        ImmutableAToken()
         ImmutableGovernance()
         ImmutableValidatorPool()
         ImmutableStakingPositionDescriptor()
@@ -78,14 +78,14 @@ abstract contract StakingNFT is
     }
 
     /// skimExcessToken will send to the address passed as to_ any amount of
-    /// MadToken held by this contract that is not tracked by the Accumulator
-    /// system. This function allows the Admin role to refund any MadToken sent to
+    /// AToken held by this contract that is not tracked by the Accumulator
+    /// system. This function allows the Admin role to refund any AToken sent to
     /// this contract in error by a user. This method can not return any funds
     /// sent to the contract via the depositToken method.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
-        IERC20Transferable madToken;
-        (madToken, excess) = _estimateExcessToken();
-        _safeTransferERC20(madToken, to_, excess);
+        IERC20Transferable aToken;
+        (aToken, excess) = _estimateExcessToken();
+        _safeTransferERC20(aToken, to_, excess);
         return excess;
     }
 
@@ -147,9 +147,9 @@ abstract contract StakingNFT is
     }
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION AS ALL VALUE
-    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes MadToken
+    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes AToken
     /// to all stakers evenly should only be called during a slashing event. Any
-    /// MadToken sent to this method in error will be lost. This function will
+    /// AToken sent to this method in error will be lost. This function will
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
@@ -159,7 +159,7 @@ abstract contract StakingNFT is
         checkMagic(magic_)
     {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
         // update state
         _tokenState = _deposit(_shares, amount_, _tokenState);
         _reserveToken += amount_;
@@ -167,7 +167,7 @@ abstract contract StakingNFT is
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE
     /// WILL BE DISTRIBUTED TO STAKERS EVENLY depositEth distributes Eth to all
-    /// stakers evenly should only be called by MadBytes contract any Eth sent to
+    /// stakers evenly should only be called by BTokens contract any Eth sent to
     /// this method in error will be lost this function will fail if the circuit
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the
@@ -179,7 +179,7 @@ abstract contract StakingNFT is
 
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
-    /// MadToken into this contract. This function will fail if the circuit
+    /// AToken into this contract. This function will fail if the circuit
     /// breaker is tripped.
     function mint(uint256 amount_) public virtual withCircuitBreaker returns (uint256 tokenID) {
         return _mintNFT(msg.sender, amount_);
@@ -188,7 +188,7 @@ abstract contract StakingNFT is
     /// mintTo allows a staking position to be opened in the name of an
     /// account other than the caller. This method also allows a lock to be
     /// placed on the position up to _MAX_MINT_LOCK . This function requires the
-    /// caller to have performed an approve invocation against MadToken into
+    /// caller to have performed an approve invocation against AToken into
     /// this contract. This function will fail if the circuit breaker is
     /// tripped.
     function mintTo(
@@ -212,7 +212,7 @@ abstract contract StakingNFT is
     function burn(uint256 tokenID_)
         public
         virtual
-        returns (uint256 payoutEth, uint256 payoutMadToken)
+        returns (uint256 payoutEth, uint256 payoutAToken)
     {
         return _burn(msg.sender, msg.sender, tokenID_);
     }
@@ -222,7 +222,7 @@ abstract contract StakingNFT is
     function burnTo(address to_, uint256 tokenID_)
         public
         virtual
-        returns (uint256 payoutEth, uint256 payoutMadToken)
+        returns (uint256 payoutEth, uint256 payoutAToken)
     {
         return _burn(msg.sender, to_, tokenID_);
     }
@@ -249,7 +249,7 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// collectToken returns all due MadToken allocations to caller. The
+    /// collectToken returns all due AToken allocations to caller. The
     /// caller of this function must be the owner of the tokenID
     function collectToken(uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
@@ -267,7 +267,7 @@ abstract contract StakingNFT is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), owner, payout);
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), owner, payout);
         return payout;
     }
 
@@ -293,7 +293,7 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// collectTokenTo returns all due MadToken allocations to the to_ address. The
+    /// collectTokenTo returns all due AToken allocations to the to_ address. The
     /// caller of this function must be the owner of the tokenID
     function collectTokenTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
         address owner = ownerOf(tokenID_);
@@ -311,7 +311,7 @@ abstract contract StakingNFT is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payout);
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payout);
         return payout;
     }
 
@@ -319,7 +319,7 @@ abstract contract StakingNFT is
         return _circuitBreaker;
     }
 
-    /// gets the total amount of MadToken staked in contract
+    /// gets the total amount of AToken staked in contract
     function getTotalShares() public view returns (uint256) {
         return _shares;
     }
@@ -329,8 +329,8 @@ abstract contract StakingNFT is
         return _reserveEth;
     }
 
-    /// gets the total amount of MadToken staked in contract
-    function getTotalReserveMadToken() public view returns (uint256) {
+    /// gets the total amount of AToken staked in contract
+    function getTotalReserveAToken() public view returns (uint256) {
         return _reserveToken;
     }
 
@@ -342,7 +342,7 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// estimateTokenCollection returns the amount of MadToken a tokenID may withdraw
+    /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
         require(_exists(tokenID_), "PublicStaking: Error, NFT token doesn't exist!");
         Position memory p = _positions[tokenID_];
@@ -350,7 +350,7 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// estimateExcessToken returns the amount of MadToken that is held in the
+    /// estimateExcessToken returns the amount of AToken that is held in the
     /// name of this contract. The value returned is the value that would be
     /// returned by a call to skimExcessToken.
     function estimateExcessToken() public view returns (uint256 excess) {
@@ -444,15 +444,15 @@ abstract contract StakingNFT is
 
     // _mintNFT performs the mint operation and invokes the inherited _mint method
     function _mintNFT(address to_, uint256 amount_) internal returns (uint256 tokenID) {
-        // this is to allow struct packing and is safe due to MadToken having a
+        // this is to allow struct packing and is safe due to AToken having a
         // total distribution of 220M
         require(
             amount_ <= 2**224 - 1,
-            "PublicStaking: The amount exceeds the maximum number of MadTokens that will ever exist!"
+            "PublicStaking: The amount exceeds the maximum number of ATokens that will ever exist!"
         );
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
-        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
 
         // get local copy of storage vars to save gas
         uint256 shares = _shares;
@@ -516,7 +516,7 @@ abstract contract StakingNFT is
         ERC721Upgradeable._burn(tokenID_);
 
         // transfer out all eth and tokens owed
-        _safeTransferERC20(IERC20Transferable(_madTokenAddress()), to_, payoutToken);
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken);
         _safeTransferEth(to_, payoutEth);
         return (payoutEth, payoutToken);
     }
@@ -579,22 +579,22 @@ abstract contract StakingNFT is
         excess = balance - reserve;
     }
 
-    // _estimateExcessToken returns the amount of MadToken that is held in the
+    // _estimateExcessToken returns the amount of AToken that is held in the
     // name of this contract
     function _estimateExcessToken()
         internal
         view
-        returns (IERC20Transferable madToken, uint256 excess)
+        returns (IERC20Transferable aToken, uint256 excess)
     {
         uint256 reserve = _reserveToken;
-        madToken = IERC20Transferable(_madTokenAddress());
-        uint256 balance = madToken.balanceOf(address(this));
+        aToken = IERC20Transferable(_aTokenAddress());
+        uint256 balance = aToken.balanceOf(address(this));
         require(
             balance >= reserve,
             "PublicStaking: The balance of the contract is less then the tracked reserve!"
         );
         excess = balance - reserve;
-        return (madToken, excess);
+        return (aToken, excess);
     }
 
     function _getCount() internal view returns (uint256) {

@@ -33,13 +33,13 @@ func GetGovernanceEvents() map[string]abi.Event {
 	return governanceABI.Events
 }
 
-func GetMadByteEvents() map[string]abi.Event {
-	madByteABI, err := abi.JSON(strings.NewReader(bindings.MadByteMetaData.ABI))
+func GetBTokenEvents() map[string]abi.Event {
+	bTokenABI, err := abi.JSON(strings.NewReader(bindings.BTokenMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
 
-	return madByteABI.Events
+	return bTokenABI.Events
 }
 
 func GetSnapshotEvents() map[string]abi.Event {
@@ -110,7 +110,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 	RegisterETHDKGEvents(em, adminHandler)
 
 	// MadByte.DepositReceived
-	mbEvents := GetMadByteEvents()
+	mbEvents := GetBTokenEvents()
 	depositReceived, ok := mbEvents["DepositReceived"]
 	if !ok {
 		panic("could not find event MadByte.DepositReceived")

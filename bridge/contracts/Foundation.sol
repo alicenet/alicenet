@@ -16,27 +16,27 @@ contract Foundation is
     EthSafeTransfer,
     ERC20SafeTransfer,
     ImmutableFactory,
-    ImmutableMadToken
+    ImmutableAToken
 {
-    constructor() ImmutableFactory(msg.sender) ImmutableMadToken() {}
+    constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
 
     function initialize() public initializer onlyFactory {}
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION AS ALL VALUE
-    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes MadToken
+    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes ATokens
     /// to all stakers evenly should only be called during a slashing event. Any
-    /// MadToken sent to this method in error will be lost. This function will
+    /// AToken sent to this method in error will be lost. This function will
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
     function depositToken(uint8 magic_, uint256 amount_) public checkMagic(magic_) {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_madTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
     }
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE
     /// WILL BE DISTRIBUTED TO STAKERS EVENLY depositEth distributes Eth to all
-    /// stakers evenly should only be called by MadBytes contract any Eth sent to
+    /// stakers evenly should only be called by BToken contract any Eth sent to
     /// this method in error will be lost this function will fail if the circuit
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the

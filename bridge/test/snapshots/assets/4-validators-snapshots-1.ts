@@ -6,7 +6,7 @@ export const validatorsSnapshots: ValidatorRawData[] = [
     privateKey:
       "0xff070000000000000000000000000000000000000000000000000000000000ff",
     address: "0x61b1be2731cbe684cc40e290e3dfe323ca0ac01b",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x2f99dacacdfcf893d8c049e513f46b2482fcc4f0266efbe18a7203001e3c9167",
       "0xb292ab5e3a6c39458f8a943402be2fb35b89b81452827e068d5fd86a64caf8c",
     ],
@@ -61,7 +61,7 @@ export const validatorsSnapshots: ValidatorRawData[] = [
     privateKey:
       "0xff080000000000000000000000000000000000000000000000000000000000ff",
     address: "0x7bad54689792ea6b9a78ddfb7cfec074b0f41d5f",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x22732d24f6da70c9dc74a3e1d6a5ca091f256dce1a36f32e39c3375e6a128625",
       "0x228f6b0f35943da0bbbffbdbfeb3ce8921c5df840f61fe0b60b72d5bb25d4c85",
     ],
@@ -116,7 +116,7 @@ export const validatorsSnapshots: ValidatorRawData[] = [
     privateKey:
       "0xff090000000000000000000000000000000000000000000000000000000000ff",
     address: "0xf3f03cb034c667a75b609b77de3de931fca38370",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x2bc99a5d2088c9af7ae01a896b871371b002bc14433f5c23c7d416f9f9bab951",
       "0x59ebe06362e7247c84a6693d972bb76dfe4c0144d1083ba722b0e1a4a8fcc53",
     ],
@@ -171,7 +171,7 @@ export const validatorsSnapshots: ValidatorRawData[] = [
     privateKey:
       "0xff0a0000000000000000000000000000000000000000000000000000000000ff",
     address: "0xb05156b6f71886386331a7467cfd3803777bd35b",
-    madNetPublicKey: [
+    aliceNetPublicKey: [
       "0x126f1523615fc9c6cfe46996f0415844fadc524bb1f9ee45efabd4149e43f1f1",
       "0x243099115c5427722453f11db80a0e9bef79a289f1e5edb0fd4ac409df73b146",
     ],

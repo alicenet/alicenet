@@ -34,6 +34,8 @@ contract MockBaseContract is
         _factory = msg.sender;
     }
 
+    function payMe() public payable {}
+
     function setV(uint256 _v) public {
         _var = _v;
     }

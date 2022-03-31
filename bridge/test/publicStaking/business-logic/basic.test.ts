@@ -12,7 +12,7 @@ describe("PublicStaking: Basics", async () => {
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
     [adminSigner] = await ethers.getSigners();
-    await fixture.madToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     blockNumber = BigInt(tx.blockNumber as number);
   });

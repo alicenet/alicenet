@@ -18,24 +18,22 @@ type ContractDetails struct {
 	eth                     *EthereumDetails
 	ethdkg                  *bindings.ETHDKG
 	ethdkgAddress           common.Address
-	madToken                *bindings.MadToken
-	madTokenAddress         common.Address
-	madByte                 *bindings.MadByte
-	madByteAddress          common.Address
+	aToken                  *bindings.AToken
+	aTokenAddress           common.Address
+	bToken                  *bindings.BToken
+	bTokenAddress           common.Address
 	publicStaking           *bindings.PublicStaking
 	publicStakingAddress    common.Address
 	validatorStaking        *bindings.ValidatorStaking
 	validatorStakingAddress common.Address
-	contractFactory         *bindings.MadnetFactory
+	contractFactory         *bindings.AliceNetFactory
 	contractFactoryAddress  common.Address
 	snapshots               *bindings.Snapshots
 	snapshotsAddress        common.Address
 	validatorPool           *bindings.ValidatorPool
 	validatorPoolAddress    common.Address
-	// factory        *bindings.Factory
-	// factoryAddress common.Address
-	governance        *bindings.Governance
-	governanceAddress common.Address
+	governance              *bindings.Governance
+	governanceAddress       common.Address
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
@@ -53,7 +51,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 		logger := eth.logger
 
 		// Load the contractFactory first
-		contractFactory, err := bindings.NewMadnetFactory(contractFactoryAddress, eth.client)
+		contractFactory, err := bindings.NewAliceNetFactory(contractFactoryAddress, eth.client)
 		if err != nil {
 			return err
 		}
@@ -94,24 +92,24 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
 		logAndEat(logger, err)
 
-		// MadByte
-		c.madByteAddress, err = lookup("MadByte")
+		// BToken
+		c.bTokenAddress, err = lookup("BToken")
 		logAndEat(logger, err)
-		if bytes.Equal(c.madByteAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.bTokenAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.madByte, err = bindings.NewMadByte(c.madByteAddress, eth.client)
+		c.bToken, err = bindings.NewBToken(c.bTokenAddress, eth.client)
 		logAndEat(logger, err)
 
-		// MadToken
-		c.madTokenAddress, err = lookup("MadToken")
+		// AToken
+		c.aTokenAddress, err = lookup("AToken")
 		logAndEat(logger, err)
-		if bytes.Equal(c.madTokenAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.aTokenAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.madToken, err = bindings.NewMadToken(c.madTokenAddress, eth.client)
+		c.aToken, err = bindings.NewAToken(c.aTokenAddress, eth.client)
 		logAndEat(logger, err)
 
 		// PublicStaking
@@ -168,20 +166,20 @@ func (c *ContractDetails) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *ContractDetails) MadToken() *bindings.MadToken {
-	return c.madToken
+func (c *ContractDetails) AToken() *bindings.AToken {
+	return c.aToken
 }
 
-func (c *ContractDetails) MadTokenAddress() common.Address {
-	return c.madTokenAddress
+func (c *ContractDetails) ATokenAddress() common.Address {
+	return c.aTokenAddress
 }
 
-func (c *ContractDetails) MadByte() *bindings.MadByte {
-	return c.madByte
+func (c *ContractDetails) BToken() *bindings.BToken {
+	return c.bToken
 }
 
-func (c *ContractDetails) MadByteAddress() common.Address {
-	return c.madByteAddress
+func (c *ContractDetails) BTokenAddress() common.Address {
+	return c.bTokenAddress
 }
 
 func (c *ContractDetails) PublicStaking() *bindings.PublicStaking {
@@ -200,7 +198,7 @@ func (c *ContractDetails) ValidatorStakingAddress() common.Address {
 	return c.validatorStakingAddress
 }
 
-func (c *ContractDetails) ContractFactory() *bindings.MadnetFactory {
+func (c *ContractDetails) ContractFactory() *bindings.AliceNetFactory {
 	return c.contractFactory
 }
 
@@ -231,11 +229,3 @@ func (c *ContractDetails) Governance() *bindings.Governance {
 func (c *ContractDetails) GovernanceAddress() common.Address {
 	return c.governanceAddress
 }
-
-// func (c *ContractDetails) Factory() *bindings.Factory {
-// 	return c.factory
-// }
-
-// func (c *ContractDetails) FactoryAddress() common.Address {
-// 	return c.factoryAddress
-// }

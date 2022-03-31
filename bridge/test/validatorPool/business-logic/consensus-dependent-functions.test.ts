@@ -133,12 +133,12 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         ).toBigInt() + BigInt(1)
       ),
     ]);
-    const arbitraryMadnetHeight = 42;
+    const arbitraryAliceNetHeight = 42;
     const tx = await factoryCallAnyFixture(
       fixture,
       "validatorPool",
       "pauseConsensusOnArbitraryHeight",
-      [arbitraryMadnetHeight]
+      [arbitraryAliceNetHeight]
     );
     const transaction = await ethers.provider.getTransaction(
       tx.transactionHash
@@ -153,7 +153,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       1,
       0,
       0,
-      arbitraryMadnetHeight,
+      arbitraryAliceNetHeight,
       [0, 0, 0, 0]
     );
     await factoryCallAnyFixture(
@@ -184,7 +184,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         validatorPool: fixture.validatorPool,
       },
       undefined,
-      arbitraryMadnetHeight
+      arbitraryAliceNetHeight
     );
     expect(await fixture.validatorPool.isConsensusRunning()).to.be.equals(true);
   });
@@ -233,7 +233,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
     ).to.be.revertedWith(
-      "ValidatorPool: Error Madnet Consensus should be halted!"
+      "ValidatorPool: Error AliceNet Consensus should be halted!"
     );
   });
 

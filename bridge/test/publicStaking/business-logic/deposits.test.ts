@@ -8,7 +8,7 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    await fixture.madToken.approve(fixture.publicStaking.address, 100000);
+    await fixture.aToken.approve(fixture.publicStaking.address, 100000);
   });
   it("Make successful deposits of tokens and ETH", async function () {
     const ethAmount = ethers.utils.parseEther("10").toBigInt();
@@ -16,9 +16,7 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
     await fixture.publicStaking.depositToken(42, tokenAmount);
     await fixture.publicStaking.depositEth(42, { value: ethAmount });
     expect(
-      (
-        await fixture.madToken.balanceOf(fixture.publicStaking.address)
-      ).toBigInt()
+      (await fixture.aToken.balanceOf(fixture.publicStaking.address)).toBigInt()
     ).to.be.equals(tokenAmount);
     expect(
       (

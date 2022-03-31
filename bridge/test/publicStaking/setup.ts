@@ -70,9 +70,7 @@ export const getCurrentState = async (
         await ethers.provider.getBalance(stakingContract.address)
       ).toBigInt(),
       TotalShares: (await stakingContract.getTotalShares()).toBigInt(),
-      ReserveTokens: (
-        await stakingContract.getTotalReserveMadToken()
-      ).toBigInt(),
+      ReserveTokens: (await stakingContract.getTotalReserveAToken()).toBigInt(),
       ReserveEth: (await stakingContract.getTotalReserveEth()).toBigInt(),
       AccumulatorToken: {
         Accumulator: accumulatorToken.toBigInt(),
@@ -635,7 +633,7 @@ export const assertTotalReserveAndZeroExcess = async (
   reserveAmountToken: bigint,
   reserveAmountEth: bigint
 ) => {
-  expect((await contract.getTotalReserveMadToken()).toBigInt()).to.be.equals(
+  expect((await contract.getTotalReserveAToken()).toBigInt()).to.be.equals(
     reserveAmountToken,
     "Total reserve tokens don't match expected value!"
   );

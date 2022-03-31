@@ -131,15 +131,15 @@ type Contracts interface {
 
 	Ethdkg() *bindings.ETHDKG
 	EthdkgAddress() common.Address
-	MadToken() *bindings.MadToken
-	MadTokenAddress() common.Address
-	MadByte() *bindings.MadByte
-	MadByteAddress() common.Address
+	AToken() *bindings.AToken
+	ATokenAddress() common.Address
+	BToken() *bindings.BToken
+	BTokenAddress() common.Address
 	PublicStaking() *bindings.PublicStaking
 	PublicStakingAddress() common.Address
 	ValidatorStaking() *bindings.ValidatorStaking
 	ValidatorStakingAddress() common.Address
-	ContractFactory() *bindings.MadnetFactory
+	ContractFactory() *bindings.AliceNetFactory
 	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address
 	Snapshots() *bindings.Snapshots

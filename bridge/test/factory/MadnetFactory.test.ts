@@ -3,13 +3,13 @@ import { expect } from "chai";
 import { BytesLike, ContractFactory } from "ethers";
 import { artifacts, ethers } from "hardhat";
 import {
+  ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
   DEPLOYED_STATIC,
   DEPLOYED_TEMPLATE,
   END_POINT,
-  MADNET_FACTORY,
   MOCK,
   MOCK_INITIALIZABLE,
   PROXY,
@@ -28,7 +28,7 @@ import {
   getMetamorphicAddress,
   getSalt,
 } from "./Setup";
-describe("Madnet Contract Factory", () => {
+describe("AliceNet Contract Factory", () => {
   let firstOwner: string;
   let firstDelegator: string;
   let accounts: Array<string> = [];
@@ -77,7 +77,7 @@ describe("Madnet Contract Factory", () => {
     let factory = await deployFactory();
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     // sets the second account as delegator
     await factory.setDelegator(firstDelegator, { from: firstOwner });
@@ -135,7 +135,7 @@ describe("Madnet Contract Factory", () => {
   it("should not allow deploy static with unauthorized account", async () => {
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     let factory = await deployFactory();
     factory = factoryBase.attach(factory.address);
@@ -195,7 +195,7 @@ describe("Madnet Contract Factory", () => {
   it("should not allow deploy proxy with unauthorized account", async () => {
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     let factory = await deployFactory();
     factory = factoryBase.attach(factory.address);
@@ -243,7 +243,7 @@ describe("Madnet Contract Factory", () => {
     // deploy Mock Logic through the factory
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate(deployTx.data as BytesLike);
@@ -281,7 +281,7 @@ describe("Madnet Contract Factory", () => {
     await expectTxSuccess(txResponse);
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     factory = factoryBase.attach(factory.address);
     // console.log("UPGRADE PROXY GASUSED: ", txResponse["receipt"]["gasUsed"]);
@@ -342,7 +342,7 @@ describe("Madnet Contract Factory", () => {
     let factory = await deployFactory();
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate("0x6000");
@@ -355,7 +355,7 @@ describe("Madnet Contract Factory", () => {
     const endPointFactory = await ethers.getContractFactory(END_POINT);
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     const factory2 = factoryBase.attach(factory.address);
     const txResponse = factory2.deployCreate(endPointFactory.bytecode);
@@ -430,7 +430,7 @@ describe("Madnet Contract Factory", () => {
     ]);
     const signers = await ethers.getSigners();
     const factoryBase = (
-      await ethers.getContractFactory(MADNET_FACTORY)
+      await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     const factory2 = factoryBase.attach(factory.address);
     txResponse = await factory2.delegateCallAny(
@@ -541,5 +541,25 @@ describe("Madnet Contract Factory", () => {
     await expect(
       factory.upgradeProxy(salt, endPoint.address, "0x")
     ).to.revertedWith("reverted with an unrecognized custom error");
+  });
+
+  it("deploys a mock contract, calls payMe from factory with callAny", async () => {
+    const factory = await deployFactory();
+    const mockFactory = await ethers.getContractFactory(MOCK);
+    const mock = await mockFactory.deploy(2, "s");
+    const callData = mockFactory.interface.encodeFunctionData("payMe");
+    await factory.callAny(mock.address, 2, callData, {
+      value: 2,
+    });
+  });
+
+  it("deploys a mock contract, calls payMe from factory with delegateCallAny", async () => {
+    const factory = await deployFactory();
+    const mockFactory = await ethers.getContractFactory(MOCK);
+    const mock = await mockFactory.deploy(2, "s");
+    const callData = mockFactory.interface.encodeFunctionData("payMe");
+    await factory.delegateCallAny(mock.address, callData, {
+      value: 2,
+    });
   });
 });
