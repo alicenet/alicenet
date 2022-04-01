@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    BClaimsParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/BClaimsParserLibraryErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the BClaims structure from a blob of capnproto data
 library BClaimsParserLibrary {
+    using Strings for uint16;
     struct BClaims {
         uint32 chainId;
         uint32 height;
@@ -41,7 +47,7 @@ library BClaimsParserLibrary {
         uint16 dataSectionSize = BaseParserLibrary.extractUInt16(src, dataOffset);
         require(
             dataSectionSize > 0 && dataSectionSize <= 2,
-            "BClaimsParserLibrary: The size of the data section should be 1 or 2 words!"
+            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_SIZE_THRESHOLD_EXCEEDED.toString()
         );
         // In case the txCount is 0, the value is not included in the binary
         // blob by capnproto. Therefore, we need to deduce 8 bytes from the
@@ -88,11 +94,11 @@ library BClaimsParserLibrary {
     ) internal pure returns (BClaims memory bClaims) {
         require(
             dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment > dataOffset,
-            "BClaimsParserLibrary: Invalid parsing. Overflow on the dataOffset parameter"
+            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
         );
         require(
             src.length >= dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment,
-            "BClaimsParserLibrary: Invalid parsing. Not enough bytes to extract BClaims"
+            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_NOT_ENOUGH_BYTES.toString()
         );
 
         if (pointerOffsetAdjustment == 0) {
@@ -106,12 +112,12 @@ library BClaimsParserLibrary {
         bClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         require(
             bClaims.chainId > 0,
-            "BClaimsParserLibrary: Invalid parsing. The chainId should be greater than 0!"
+            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_CHAINID_ZERO.toString()
         );
         bClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         require(
             bClaims.height > 0,
-            "BClaimsParserLibrary: Invalid parsing. The height should be greater than 0!"
+            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_HEIGHT_ZERO.toString()
         );
         bClaims.prevBlock = BaseParserLibrary.extractBytes32(
             src,

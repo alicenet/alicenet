@@ -492,9 +492,7 @@ export const submitMasterPublicKey = async (
       ethdkg
         .connect(await getValidatorEthAccount(validator))
         .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   }
 };
 
@@ -568,9 +566,7 @@ export const completeETHDKG = async (
       ethdkg
         .connect(await getValidatorEthAccount(validator))
         .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   }
 };
 

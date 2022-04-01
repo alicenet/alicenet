@@ -33,9 +33,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3].address))
         .submitMasterPublicKey(validators4[3].mpk)
-    ).to.be.rejectedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.rejectedWith("143");
   });
 
   it("should allow submission of master public key by a non-validator", async () => {
@@ -71,9 +69,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
         .submitMasterPublicKey(val11MPK)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   });
 
   it("should not allow submission of empty master public key", async () => {
@@ -91,6 +87,6 @@ describe("ETHDKG: Submit Master Public Key", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey(mpk)
-    ).to.be.revertedWith("ETHDKG: Master key submission pairing check failed!");
+    ).to.be.revertedWith("144");
   });
 });

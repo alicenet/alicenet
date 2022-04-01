@@ -20,7 +20,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set a minimum stake", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(stakeAmount)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Set a maximum number of validators", async function () {
@@ -28,37 +28,37 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .setMaxNumValidators(maxNumValidators)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Set disputer reward", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setDisputerReward(1)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Set stake Amount", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Initialize ETHDKG", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).initializeETHDKG()
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Complete ETHDKG", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).completeETHDKG()
-    ).to.be.revertedWith("onlyETHDKG");
+    ).to.be.revertedWith("2016");
   });
 
   it("Schedule maintenance", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).scheduleMaintenance()
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Pause consensus on arbitrary height", async function () {
@@ -66,13 +66,13 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .pauseConsensusOnArbitraryHeight(1)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Pause consensus", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).pauseConsensus()
-    ).to.be.revertedWith("onlySnapshots");
+    ).to.be.revertedWith("2008");
   });
 
   it("Register validators", async function () {
@@ -80,7 +80,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .registerValidators(validators, stakingTokenIds)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Unregister validators", async function () {
@@ -88,25 +88,25 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .unregisterValidators(validators)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Unregister all validators", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).unregisterAllValidators()
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Set location", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setLocation("0.0.0.1")
-    ).to.be.revertedWith("ValidatorPool: Only validators allowed!");
+    ).to.be.revertedWith("800");
   });
 
   it("Collect profit", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).collectProfits()
-    ).to.be.revertedWith("ValidatorPool: Only validators allowed!");
+    ).to.be.revertedWith("800");
   });
 
   it("Major slash a validator", async function () {
@@ -114,7 +114,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
-    ).to.be.revertedWith("onlyETHDKG");
+    ).to.be.revertedWith("2016");
   });
 
   it("Minor slash a validator", async function () {
@@ -122,6 +122,6 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool
         .connect(notAdmin1Signer)
         .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
-    ).to.be.revertedWith("onlyETHDKG");
+    ).to.be.revertedWith("2016");
   });
 });

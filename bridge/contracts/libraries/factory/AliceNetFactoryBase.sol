@@ -4,8 +4,13 @@ import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
+import {
+    AliceNetFactoryBaseErrorCodes
+} from "contracts/libraries/errorCodes/AliceNetFactoryBaseErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
+    using Strings for uint16;
     /**
     @dev owner role for privileged access to functions
     */
@@ -532,7 +537,7 @@ ff SELFDESTRUCT                     CALLER
      * @param isOk_ boolean false to cause revert
      */
     function _requireAuth(bool isOk_) internal pure {
-        require(isOk_, "unauthorized");
+        require(isOk_, AliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_UNAUTHORIZED.toString());
     }
 
     /**
@@ -540,6 +545,6 @@ ff SELFDESTRUCT                     CALLER
      * @param isOk_ boolean false to cause revert
      */
     function _codeSizeZeroRevert(bool isOk_) internal pure {
-        require(isOk_, "csize0");
+        require(isOk_, AliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_CODE_SIZE_ZERO.toString());
     }
 }

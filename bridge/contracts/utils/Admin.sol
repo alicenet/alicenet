@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
+import {AdminErrorCodes} from "contracts/libraries/errorCodes/AdminErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract Admin {
+    using Strings for uint16;
     // _admin is a privileged role
     address internal _admin;
 
     /// @dev onlyAdmin enforces msg.sender is _admin
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Must be admin");
+        require(msg.sender == _admin, AdminErrorCodes.ADMIN_SENDER_MUST_BE_ADMIN.toString());
         _;
     }
 

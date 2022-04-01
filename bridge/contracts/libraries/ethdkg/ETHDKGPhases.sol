@@ -6,12 +6,16 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
+import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt ETHDKGPhases
 /// @custom:deploy-type deployUpgradeable
 /// @custom:deploy-group ethdkg
 /// @custom:deploy-group-index 1
 contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
+    using Strings for uint16;
+
     constructor() ETHDKGStorage() {}
 
     function register(uint256[2] memory publicKey) external {
@@ -19,20 +23,20 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.RegistrationOpen &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            "ETHDKG: Cannot register at the moment"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_REGISTRATION_PHASE.toString()
         );
         require(
             publicKey[0] != 0 && publicKey[1] != 0,
-            "ETHDKG: Registration failed - pubKey should be different from 0!"
+            ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_ZERO.toString()
         );
 
         require(
             CryptoLibrary.bn128IsOnCurve(publicKey),
-            "ETHDKG: Registration failed - public key not on elliptic curve!"
+            ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_NOT_ON_CURVE.toString()
         );
         require(
             _participants[msg.sender].nonce < _nonce,
-            "ETHDKG: Participant is already participating in this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_PARTICIPATING_IN_ROUND.toString()
         );
         uint32 numRegistered = uint32(_numParticipants);
         numRegistered++;
@@ -66,34 +70,31 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.ShareDistribution &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            "ETHDKG: cannot participate on this phase"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_SHARED_DISTRIBUTION_PHASE.toString()
         );
         Participant memory participant = _participants[msg.sender];
-        require(
-            participant.nonce == _nonce,
-            "ETHDKG: Share distribution failed, participant with invalid nonce!"
-        );
+        require(participant.nonce == _nonce, ETHDKGErrorCodes.ETHDKG_INVALID_NONCE.toString());
         require(
             participant.phase == Phase.RegistrationOpen,
-            "ETHDKG: Participant already distributed shares this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_DISTRIBUTED_SHARES_IN_ROUND.toString()
         );
 
         uint256 numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         uint256 threshold = _getThreshold(numValidators);
         require(
             encryptedShares.length == numValidators - 1,
-            "ETHDKG: Share distribution failed - invalid number of encrypted shares provided!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_NUM_ENCRYPTED_SHARES.toString()
         );
         require(
             commitments.length == threshold + 1,
-            "ETHDKG: Key sharing failed - invalid number of commitments provided!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_NUM_COMMITMENTS.toString()
         );
         for (uint256 k = 0; k <= threshold; k++) {
             require(
                 CryptoLibrary.bn128IsOnCurve(commitments[k]),
-                "ETHDKG: Key sharing failed - commitment not on elliptic curve!"
+                ETHDKGErrorCodes.ETHDKG_COMMITMENT_NOT_ON_CURVE.toString()
             );
-            require(commitments[k][0] != 0, "ETHDKG: Commitments shouldn't be 0!");
+            require(commitments[k][0] != 0, ETHDKGErrorCodes.ETHDKG_COMMITMENT_ZERO.toString());
         }
 
         bytes32 encryptedSharesHash = keccak256(abi.encodePacked(encryptedShares));
@@ -103,7 +104,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         require(
             participant.distributedSharesHash != 0x0,
-            "ETHDKG: The hash of encryptedShares and commitments should be different from 0!"
+            ETHDKGErrorCodes.ETHDKG_DISTRIBUTED_SHARE_HASH_ZERO.toString()
         );
         participant.commitmentsFirstCoefficient = commitments[0];
         participant.phase = Phase.ShareDistribution;
@@ -139,7 +140,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     block.number >= _phaseStartBlock + _phaseLength &&
                     block.number < _phaseStartBlock + 2 * _phaseLength &&
                     _badParticipants == 0),
-            "ETHDKG: cannot participate on key share submission phase"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_KEYSHARE_SUBMISSION_PHASE.toString()
         );
 
         // Since we had a dispute stage prior this state we need to set global state in here
@@ -149,11 +150,11 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         Participant memory participant = _participants[msg.sender];
         require(
             participant.nonce == _nonce,
-            "ETHDKG: Key share submission failed, participant with invalid nonce!"
+            ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE.toString()
         );
         require(
             participant.phase == Phase.ShareDistribution,
-            "ETHDKG: Participant already submitted key shares this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_KEYSHARES_IN_ROUND.toString()
         );
 
         require(
@@ -164,7 +165,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 participant.commitmentsFirstCoefficient,
                 keyShareG1CorrectnessProof
             ),
-            "ETHDKG: Key share submission failed - invalid key share G1!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G1.toString()
         );
         require(
             CryptoLibrary.bn128CheckPairing(
@@ -183,7 +184,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     keyShareG2[3]
                 ]
             ),
-            "ETHDKG: Key share submission failed - invalid key share G2!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G2.toString()
         );
 
         participant.keyShares = keyShareG1;
@@ -224,7 +225,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.MPKSubmission &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            "ETHDKG: cannot participate on master public key submission phase"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE.toString()
         );
         uint256[2] memory mpkG1 = _mpkG1;
         require(
@@ -244,7 +245,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     masterPublicKey_[3]
                 ]
             ),
-            "ETHDKG: Master key submission pairing check failed!"
+            ETHDKGErrorCodes.ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE.toString()
         );
 
         _masterPublicKey = masterPublicKey_;
@@ -260,23 +261,23 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.GPKJSubmission &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            "ETHDKG: Not in GPKJ submission phase"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE.toString()
         );
 
         Participant memory participant = _participants[msg.sender];
 
         require(
             participant.nonce == _nonce,
-            "ETHDKG: Key share submission failed, participant with invalid nonce!"
+            ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE.toString()
         );
         require(
             participant.phase == Phase.KeyShareSubmission,
-            "ETHDKG: Participant already submitted GPKj this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND.toString()
         );
 
         require(
             gpkj[0] != 0 || gpkj[1] != 0 || gpkj[2] != 0 || gpkj[3] != 0,
-            "ETHDKG: GPKj cannot be all zeros!"
+            ETHDKGErrorCodes.ETHDKG_GPKJ_ZERO.toString()
         );
 
         participant.gpkj = gpkj;
@@ -312,12 +313,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             (_ethdkgPhase == Phase.DisputeGPKJSubmission &&
                 block.number >= _phaseStartBlock + _phaseLength) &&
                 block.number < _phaseStartBlock + 2 * _phaseLength,
-            "ETHDKG: should be in post-GPKJDispute phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE.toString()
         );
-        require(
-            _badParticipants == 0,
-            "ETHDKG: Not all requisites to complete this ETHDKG round were completed!"
-        );
+        require(_badParticipants == 0, ETHDKGErrorCodes.ETHDKG_REQUISITES_INCOMPLETE.toString());
 
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);

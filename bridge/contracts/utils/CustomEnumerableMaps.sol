@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    CustomEnumerableMapsErrorCodes
+} from "contracts/libraries/errorCodes/CustomEnumerableMapsErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 struct ValidatorData {
     address _address;
     uint256 _tokenID;
@@ -17,6 +22,8 @@ struct ValidatorDataMap {
 }
 
 library CustomEnumerableMaps {
+    using Strings for uint16;
+
     /**
      * @dev Add a value to a map. O(1).
      *
@@ -138,7 +145,7 @@ library CustomEnumerableMaps {
         returns (ValidatorData memory)
     {
         (bool success, ValidatorData memory value) = tryGet(map, key);
-        require(success, "Error: Key not in the map!");
+        require(success, CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP.toString());
         return value;
     }
 

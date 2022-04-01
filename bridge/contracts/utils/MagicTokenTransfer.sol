@@ -4,15 +4,24 @@ pragma solidity ^0.8.0;
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IMagicTokenTransfer.sol";
+import {
+    MagicTokenTransferErrorCodes
+} from "contracts/libraries/errorCodes/MagicTokenTransferErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract MagicTokenTransfer is MagicValue {
+    using Strings for uint16;
+
     function _safeTransferTokenWithMagic(
         IERC20Transferable token_,
         IMagicTokenTransfer to_,
         uint256 amount_
     ) internal {
         bool success = token_.approve(address(to_), amount_);
-        require(success, "MagicTokenTransfer: Transfer failed.");
+        require(
+            success,
+            MagicTokenTransferErrorCodes.MAGICTOKENTRANSFER_TRANSFER_FAILED.toString()
+        );
         to_.depositToken(_getMagic(), amount_);
         token_.approve(address(to_), 0);
     }

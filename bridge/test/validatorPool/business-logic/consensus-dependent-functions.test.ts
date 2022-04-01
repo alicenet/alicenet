@@ -58,7 +58,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         "pauseConsensusOnArbitraryHeight",
         [1]
       )
-    ).to.be.revertedWith("ValidatorPool: Condition not met to stop consensus!");
+    ).to.be.revertedWith("804");
   });
 
   it("Pause consensus after 1.5 days without snapshot", async function () {
@@ -225,7 +225,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("ValidatorPool: There's an ETHDKG round running!");
+    ).to.be.revertedWith("802");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -233,7 +233,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
     ).to.be.revertedWith(
-      "ValidatorPool: Error AliceNet Consensus should be halted!"
+      "801"
     );
   });
 
@@ -312,6 +312,6 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         to: fixture.validatorPool.address,
         value: 1000,
       })
-    ).to.be.revertedWith("Only NFT contracts allowed to send ethereum!");
+    ).to.be.revertedWith("803");
   });
 });

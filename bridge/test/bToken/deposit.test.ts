@@ -32,15 +32,13 @@ describe("Testing BToken Deposit methods", async () => {
   });
 
   it("Should fail querying for an invalid deposit ID", async () => {
-    await expect(fixture.bToken.getDeposit(1000)).to.be.revertedWith(
-      "BToken: Invalid deposit ID!"
-    );
+    await expect(fixture.bToken.getDeposit(1000)).to.be.revertedWith("300");
   });
 
   it("Should not deposit to a contract", async () => {
     await expect(
       fixture.bToken.deposit(1, fixture.bToken.address, 0)
-    ).to.be.revertedWith("BToken: Contracts cannot make BTokens deposits!");
+    ).to.be.revertedWith("303");
   });
 
   it("Should not deposit with 0 eth amount", async () => {
@@ -48,12 +46,12 @@ describe("Testing BToken Deposit methods", async () => {
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
       })
-    ).to.be.revertedWith("BToken: requires at least 4 WEI");
+    ).to.be.revertedWith("306");
   });
 
   it("Should not deposit with 0 deposit amount", async () => {
     await expect(fixture.bToken.deposit(1, user.address, 0)).to.be.revertedWith(
-      "BToken: The deposit amount must be greater than zero!"
+      "304"
     );
   });
 

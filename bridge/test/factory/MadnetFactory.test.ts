@@ -84,7 +84,7 @@ describe("AliceNet Contract Factory", () => {
     expect(await factory.delegator()).to.equal(firstDelegator);
     factory = factoryBase.attach(factory.address);
     await expect(factory.setOwner(accounts[0])).to.be.revertedWith(
-      "unauthorized"
+      "900"
     );
   });
 
@@ -142,7 +142,7 @@ describe("AliceNet Contract Factory", () => {
     const Salt = getSalt();
     await expect(
       factory.deployStatic(Salt, "0x", { from: firstDelegator })
-    ).to.be.revertedWith("unauthorized");
+    ).to.be.revertedWith("900");
   });
 
   it("deploy contract with deploystatic", async () => {
@@ -202,7 +202,7 @@ describe("AliceNet Contract Factory", () => {
     const Salt = getSalt();
     await expectRevert(
       factory.deployProxy(Salt, { from: firstDelegator }),
-      "unauthorized"
+      "900"
     );
   });
 
@@ -247,7 +247,7 @@ describe("AliceNet Contract Factory", () => {
     ).connect(signers[2]);
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate(deployTx.data as BytesLike);
-    await expect(txResponse).to.be.revertedWith("unauthorized");
+    await expect(txResponse).to.be.revertedWith("900");
   });
 
   it("upgrade proxy to point to mock address with the factory", async () => {
@@ -289,7 +289,7 @@ describe("AliceNet Contract Factory", () => {
       factory.upgradeProxy(proxySalt, mockContract.address, "0x", {
         from: firstDelegator,
       })
-    ).to.be.revertedWith("unauthorized");
+    ).to.be.revertedWith("900");
   });
 
   it("call setfactory in mock through proxy expect su", async () => {
@@ -334,7 +334,7 @@ describe("AliceNet Contract Factory", () => {
   it("should not allow deploycreate with bad code", async () => {
     const factory = await deployFactory();
     const txResponse = factory.deployCreate("0x6000");
-    await expect(txResponse).to.be.revertedWith("csize0");
+    await expect(txResponse).to.be.revertedWith("901");
   });
 
   // fail on unauthorized with bad code
@@ -346,7 +346,7 @@ describe("AliceNet Contract Factory", () => {
     ).connect(signers[2]);
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate("0x6000");
-    await expect(txResponse).to.be.revertedWith("unauthorized");
+    await expect(txResponse).to.be.revertedWith("900");
   });
 
   // fail on unauthorized with good code
@@ -359,7 +359,7 @@ describe("AliceNet Contract Factory", () => {
     ).connect(signers[2]);
     const factory2 = factoryBase.attach(factory.address);
     const txResponse = factory2.deployCreate(endPointFactory.bytecode);
-    await expect(txResponse).to.be.revertedWith("unauthorized");
+    await expect(txResponse).to.be.revertedWith("900");
   });
 
   it("deploycreate2 mockinitializable", async () => {

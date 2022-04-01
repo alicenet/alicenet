@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    RClaimsParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/RClaimsParserLibraryErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the RClaims structure from a blob of capnproto data
 library RClaimsParserLibrary {
+    using Strings for uint16;
     struct RClaims {
         uint32 chainId;
         uint32 height;
@@ -48,26 +54,26 @@ library RClaimsParserLibrary {
     {
         require(
             dataOffset + _RCLAIMS_SIZE > dataOffset,
-            "RClaimsParserLibrary: Overflow on the dataOffset parameter"
+            RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
         );
         require(
             src.length >= dataOffset + _RCLAIMS_SIZE,
-            "RClaimsParserLibrary: Not enough bytes to extract RClaims"
+            RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_INSUFFICIENT_BYTES.toString()
         );
         rClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         require(
             rClaims.chainId > 0,
-            "RClaimsParserLibrary: Invalid parsing. The chainId should be greater than 0!"
+            RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_CHAINID_ZERO.toString()
         );
         rClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         require(
             rClaims.height > 0,
-            "RClaimsParserLibrary: Invalid parsing. The height should be greater than 0!"
+            RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_HEIGHT_ZERO.toString()
         );
         rClaims.round = BaseParserLibrary.extractUInt32(src, dataOffset + 8);
         require(
             rClaims.round > 0,
-            "RClaimsParserLibrary: Invalid parsing. The round should be greater than 0!"
+            RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_ROUND_ZERO.toString()
         );
         rClaims.prevBlock = BaseParserLibrary.extractBytes32(src, dataOffset + 24);
     }

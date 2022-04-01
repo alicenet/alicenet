@@ -81,7 +81,7 @@ describe("PublicStaking: Mint and Burn", async () => {
     await mineBlocks(2n);
     await expect(
       fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
-    ).to.revertedWith("PublicStaking: User is not the owner of the tokenID!");
+    ).to.revertedWith("600");
   });
 
   it("Should not allow to burn a position before time", async function () {
@@ -92,7 +92,7 @@ describe("PublicStaking: Mint and Burn", async () => {
     const tokenID = await getTokenIdFromTx(tx);
     await expect(
       fixture.publicStaking.connect(adminSigner).burn(tokenID)
-    ).to.revertedWith("PublicStaking: The position is not ready to be burned!");
+    ).to.revertedWith("606");
   });
 
   it("Should not allow to burn same position more than once", async function () {
@@ -217,9 +217,7 @@ describe("PublicStaking: Mint and Burn", async () => {
     it("Should not allow burn a NFT position before time", async function () {
       await expect(
         fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
-      ).to.be.rejectedWith(
-        "PublicStaking: The position is not ready to be burned!"
-      );
+      ).to.be.rejectedWith("606");
     });
 
     it("Burn a NFT position", async function () {

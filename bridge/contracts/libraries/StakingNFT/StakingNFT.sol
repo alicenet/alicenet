@@ -12,6 +12,11 @@ import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
+import {StakingNFTErrorCodes} from "contracts/libraries/errorCodes/StakingNFTErrorCodes.sol";
+import {
+    CircuitBreakerErrorCodes
+} from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -29,12 +34,14 @@ abstract contract StakingNFT is
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
+    using Strings for uint16;
+
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
     modifier withCircuitBreaker() {
         require(
             _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
-            "CircuitBreaker: The Circuit breaker is opened!"
+            CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED.toString()
         );
         _;
     }
@@ -100,11 +107,11 @@ abstract contract StakingNFT is
     ) public override withCircuitBreaker onlyGovernance returns (uint256) {
         require(
             caller_ == ownerOf(tokenID_),
-            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "PublicStaking: Lock Duration is greater than the amount allowed!"
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_GOVERNANCE_LOCK.toString()
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
@@ -119,11 +126,11 @@ abstract contract StakingNFT is
     {
         require(
             msg.sender == ownerOf(tokenID_),
-            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "PublicStaking: Lock Duration is greater than the amount allowed!"
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_GOVERNANCE_LOCK.toString()
         );
         return _lockPosition(tokenID_, lockDuration_);
     }
@@ -137,11 +144,11 @@ abstract contract StakingNFT is
     {
         require(
             msg.sender == ownerOf(tokenID_),
-            "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         require(
             lockDuration_ <= _MAX_GOVERNANCE_LOCK,
-            "PublicStaking: Lock Duration is greater than the amount allowed!"
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_GOVERNANCE_LOCK.toString()
         );
         return _lockWithdraw(tokenID_, lockDuration_);
     }
@@ -198,7 +205,7 @@ abstract contract StakingNFT is
     ) public virtual withCircuitBreaker returns (uint256 tokenID) {
         require(
             lockDuration_ <= _MAX_MINT_LOCK,
-            "PublicStaking: The lock duration must be less or equal than the maxMintLock!"
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_MINT_LOCK.toString()
         );
         tokenID = _mintNFT(to_, amount_);
         if (lockDuration_ > 0) {
@@ -233,12 +240,12 @@ abstract contract StakingNFT is
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
-            "PublicStaking: Error sender is not the owner of the tokenID!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         Position memory position = _positions[tokenID_];
         require(
             _positions[tokenID_].withdrawFreeAfter < block.number,
-            "PublicStaking: Cannot withdraw at the moment."
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_WITHDRAW_TIME_NOT_REACHED.toString()
         );
 
         // get values and update state
@@ -255,12 +262,12 @@ abstract contract StakingNFT is
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
-            "PublicStaking: Error sender is not the owner of the tokenID!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         Position memory position = _positions[tokenID_];
         require(
             position.withdrawFreeAfter < block.number,
-            "PublicStaking: Cannot withdraw at the moment."
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_WITHDRAW_TIME_NOT_REACHED.toString()
         );
 
         // get values and update state
@@ -277,12 +284,12 @@ abstract contract StakingNFT is
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
-            "PublicStaking: Error sender is not the owner of the tokenID!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         Position memory position = _positions[tokenID_];
         require(
             _positions[tokenID_].withdrawFreeAfter < block.number,
-            "PublicStaking: Cannot withdraw at the moment."
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_WITHDRAW_TIME_NOT_REACHED.toString()
         );
 
         // get values and update state
@@ -299,12 +306,12 @@ abstract contract StakingNFT is
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
-            "PublicStaking: Error sender is not the owner of the tokenID!"
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
         );
         Position memory position = _positions[tokenID_];
         require(
             position.withdrawFreeAfter < block.number,
-            "PublicStaking: Cannot withdraw at the moment."
+            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_WITHDRAW_TIME_NOT_REACHED.toString()
         );
 
         // get values and update state
@@ -336,7 +343,7 @@ abstract contract StakingNFT is
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
     function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "PublicStaking: Error, NFT token doesn't exist!");
+        require(_exists(tokenID_), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         Position memory p = _positions[tokenID_];
         (, , , payout) = _collect(_shares, _ethState, p, p.accumulatorEth);
         return payout;
@@ -344,7 +351,7 @@ abstract contract StakingNFT is
 
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(_exists(tokenID_), "PublicStaking: Error, NFT token doesn't exist!");
+        require(_exists(tokenID_), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         Position memory p = _positions[tokenID_];
         (, , , payout) = _collect(_shares, _tokenState, p, p.accumulatorToken);
         return payout;
@@ -378,7 +385,7 @@ abstract contract StakingNFT is
             uint256 accumulatorToken
         )
     {
-        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
+        require(_exists(tokenID_), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         Position memory p = _positions[tokenID_];
         shares = uint256(p.shares);
         freeAfter = uint256(p.freeAfter);
@@ -394,7 +401,7 @@ abstract contract StakingNFT is
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        require(_exists(tokenId), "PublicStaking: Error, NFT token doesn't exist!");
+        require(_exists(tokenId), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 
@@ -422,7 +429,7 @@ abstract contract StakingNFT is
     // the number of shares in the locked Position so that governance vote
     // counting may be performed when setting a lock
     function _lockPosition(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
+        require(_exists(tokenID_), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -434,7 +441,7 @@ abstract contract StakingNFT is
     // by setting the withdrawFreeAfter field on the Position struct.
     // returns the number of shares in the locked Position so that
     function _lockWithdraw(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(_exists(tokenID_), "PublicStaking: Token ID doesn't exist!");
+        require(_exists(tokenID_), StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID.toString());
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -448,7 +455,7 @@ abstract contract StakingNFT is
         // total distribution of 220M
         require(
             amount_ <= 2**224 - 1,
-            "PublicStaking: The amount exceeds the maximum number of ATokens that will ever exist!"
+            StakingNFTErrorCodes.STAKENFT_MINT_AMOUNT_EXCEEDS_MAX_SUPPLY.toString()
         );
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
@@ -484,14 +491,17 @@ abstract contract StakingNFT is
         address to_,
         uint256 tokenID_
     ) internal returns (uint256 payoutEth, uint256 payoutToken) {
-        require(from_ == ownerOf(tokenID_), "PublicStaking: User is not the owner of the tokenID!");
+        require(
+            from_ == ownerOf(tokenID_),
+            StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER.toString()
+        );
 
         // collect state
         Position memory p = _positions[tokenID_];
         // enforce freeAfter to prevent burn during lock
         require(
             p.freeAfter < block.number && p.withdrawFreeAfter < block.number,
-            "PublicStaking: The position is not ready to be burned!"
+            StakingNFTErrorCodes.STAKENFT_FREE_AFTER_TIME_NOT_REACHED.toString()
         );
 
         // get copy of storage to save gas
@@ -546,7 +556,7 @@ abstract contract StakingNFT is
     function _tripCB() internal {
         require(
             _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
-            "CircuitBreaker: The Circuit breaker is opened!"
+            CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED.toString()
         );
         _circuitBreaker = _CIRCUIT_BREAKER_OPENED;
     }
@@ -554,7 +564,7 @@ abstract contract StakingNFT is
     function _resetCB() internal {
         require(
             _circuitBreaker == _CIRCUIT_BREAKER_OPENED,
-            "CircuitBreaker: The Circuit breaker is closed!"
+            CircuitBreakerErrorCodes.CIRCUIT_BREAKER_CLOSED.toString()
         );
         _circuitBreaker = _CIRCUIT_BREAKER_CLOSED;
     }
@@ -574,7 +584,7 @@ abstract contract StakingNFT is
         uint256 balance = address(this).balance;
         require(
             balance >= reserve,
-            "PublicStaking: The balance of the contract is less then the tracked reserve!"
+            StakingNFTErrorCodes.STAKENFT_BALANCE_LESS_THAN_RESERVE.toString()
         );
         excess = balance - reserve;
     }
@@ -591,7 +601,7 @@ abstract contract StakingNFT is
         uint256 balance = aToken.balanceOf(address(this));
         require(
             balance >= reserve,
-            "PublicStaking: The balance of the contract is less then the tracked reserve!"
+            StakingNFTErrorCodes.STAKENFT_BALANCE_LESS_THAN_RESERVE.toString()
         );
         excess = balance - reserve;
         return (aToken, excess);
@@ -668,7 +678,7 @@ abstract contract StakingNFT is
         }
         // Slush should be never be above 2**167 to protect against overflow in
         // the later code.
-        require(state_.slush < 2**167, "PublicStaking: slush too large");
+        require(state_.slush < 2**167, StakingNFTErrorCodes.STAKENFT_SLUSH_TOO_LARGE.toString());
         return state_;
     }
 

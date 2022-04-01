@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    RCertParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/RCertParserLibraryErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "./BaseParserLibrary.sol";
 import "./RClaimsParserLibrary.sol";
 
 /// @title Library to parse the RCert structure from a blob of capnproto data
 library RCertParserLibrary {
+    using Strings for uint16;
     struct RCert {
         RClaimsParserLibrary.RClaims rClaims;
         uint256[4] sigGroupPublicKey;
@@ -34,11 +40,11 @@ library RCertParserLibrary {
     {
         require(
             dataOffset + RCertParserLibrary._SIG_GROUP_SIZE > dataOffset,
-            "RClaimsParserLibrary: Overflow on the dataOffset parameter"
+            RCertParserLibraryErrorCodes.RCERTPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
         );
         require(
             src.length >= dataOffset + RCertParserLibrary._SIG_GROUP_SIZE,
-            "RCertParserLibrary: Not enough bytes to extract"
+            RCertParserLibraryErrorCodes.RCERTPARSERLIB_INSUFFICIENT_BYTES.toString()
         );
         // _SIG_GROUP_SIZE = 192 bytes -> size in bytes of 6 uint256/bytes32 elements (6*32)
         publicKey[0] = BaseParserLibrary.extractUInt256(src, dataOffset + 0);
@@ -80,11 +86,11 @@ library RCertParserLibrary {
     {
         require(
             dataOffset + _RCERT_SIZE > dataOffset,
-            "RCertParserLibrary: Overflow on the dataOffset parameter"
+            RCertParserLibraryErrorCodes.RCERTPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
         );
         require(
             src.length >= dataOffset + _RCERT_SIZE,
-            "RCertParserLibrary: Not enough bytes to extract RCert"
+            RCertParserLibraryErrorCodes.RCERTPARSERLIB_INSUFFICIENT_BYTES_TO_EXTRACT.toString()
         );
         rCert.rClaims = RClaimsParserLibrary.extractInnerRClaims(src, dataOffset + 16);
         (rCert.sigGroupPublicKey, rCert.sigGroupSignature) = extractSigGroup(src, dataOffset + 72);

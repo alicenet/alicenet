@@ -48,7 +48,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         newValidators,
       ])
-    ).to.be.revertedWith("ValidatorPool: Address is not a validator_!");
+    ).to.be.revertedWith("817");
   });
 
   it("Should not allow unregistering if consensus or an ETHDKG round is running", async function () {
@@ -64,7 +64,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith("ValidatorPool: There's an ETHDKG round running!");
+    ).to.be.revertedWith("802");
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -73,9 +73,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith(
-      "ValidatorPool: Error AliceNet Consensus should be halted!"
-    );
+    ).to.be.revertedWith("801");
   });
 
   it("Should not allow unregistering more addresses that in the pool", async function () {
@@ -92,9 +90,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith(
-      "ValidatorPool: There are not enough validators to be removed!"
-    );
+    ).to.be.revertedWith("808");
   });
 
   it("Should not allow registering an address that was unregistered and didn’t claim is publicStaking position", async function () {
@@ -118,9 +114,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
         validators,
         newPublicStakingIds,
       ])
-    ).to.be.revertedWith(
-      "ValidatorPool: Address is already a validator or it is in the exiting line!"
-    );
+    ).to.be.revertedWith("816");
   });
 
   it("Should successfully unregister validators if all conditions are met", async function () {

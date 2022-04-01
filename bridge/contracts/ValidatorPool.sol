@@ -17,6 +17,8 @@ import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt ValidatorPool
 /// @custom:deploy-type deployUpgradeable
@@ -30,21 +32,28 @@ contract ValidatorPool is
     ERC721Holder
 {
     using CustomEnumerableMaps for ValidatorDataMap;
+    using Strings for uint16;
 
     modifier onlyValidator() {
-        require(_isValidator(msg.sender), "ValidatorPool: Only validators allowed!");
+        require(
+            _isValidator(msg.sender),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_CALLER_NOT_VALIDATOR.toString()
+        );
         _;
     }
 
     modifier assertNotConsensusRunning() {
-        require(!_isConsensusRunning, "ValidatorPool: Error AliceNet Consensus should be halted!");
+        require(
+            !_isConsensusRunning,
+            ValidatorPoolErrorCodes.VALIDATORPOOL_CONSENSUS_RUNNING.toString()
+        );
         _;
     }
 
     modifier assertNotETHDKGRunning() {
         require(
             !IETHDKG(_ethdkgAddress()).isETHDKGRunning(),
-            "ValidatorPool: There's an ETHDKG round running!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETHDKG_ROUND_RUNNING.toString()
         );
         _;
     }
@@ -54,7 +63,7 @@ contract ValidatorPool is
     receive() external payable {
         require(
             msg.sender == _validatorStakingAddress() || msg.sender == _publicStakingAddress(),
-            "Only NFT contracts allowed to send ethereum!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ONLY_CONTRACTS_ALLOWED.toString()
         );
     }
 
@@ -113,7 +122,7 @@ contract ValidatorPool is
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
                     MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            "ValidatorPool: Condition not met to stop consensus!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET.toString()
         );
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
@@ -127,17 +136,17 @@ contract ValidatorPool is
     {
         require(
             validators_.length + _validators.length() <= _maxNumValidators,
-            "ValidatorPool: There are not enough free spots for all new validators!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET.toString()
         );
         require(
             validators_.length == stakerTokenIDs_.length,
-            "ValidatorPool: Both input array should have same length!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_REGISTRATION_PARAMETER_LENGTH_MISMATCH.toString()
         );
 
         for (uint256 i = 0; i < validators_.length; i++) {
             require(
                 msg.sender == IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i]),
-                "ValidatorPool: The factory should be the owner of the PublicStaking position!"
+                ValidatorPoolErrorCodes.VALIDATORPOOL_FACTORY_SHOULD_OWN_POSITION.toString()
             );
             _registerValidator(validators_[i], stakerTokenIDs_[i]);
         }
@@ -151,7 +160,7 @@ contract ValidatorPool is
     {
         require(
             validators_.length <= _validators.length(),
-            "ValidatorPool: There are not enough validators to be removed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_VALIDATORS_GREATER_THAN_AVAILABLE.toString()
         );
         for (uint256 i = 0; i < validators_.length; i++) {
             _unregisterValidator(validators_[i]);
@@ -177,7 +186,7 @@ contract ValidatorPool is
     {
         require(
             _isConsensusRunning,
-            "ValidatorPool: Profits can only be claimable when consensus is running!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_PROFITS_ONLY_CLAIMABLE_DURING_CONSENSUS.toString()
         );
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
@@ -195,11 +204,11 @@ contract ValidatorPool is
 
         require(
             balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED.toString()
         );
         require(
             balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED.toString()
         );
 
         return (payoutEth, payoutToken);
@@ -207,10 +216,13 @@ contract ValidatorPool is
 
     function claimExitingNFTPosition() public returns (uint256) {
         ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
-        require(data._freeAfter > 0, "ValidatorPool: Address not in the exitingQueue!");
+        require(
+            data._freeAfter > 0,
+            ValidatorPoolErrorCodes.VALIDATORPOOL_SENDER_NOT_IN_EXITING_QUEUE.toString()
+        );
         require(
             ISnapshots(_snapshotsAddress()).getEpoch() > data._freeAfter,
-            "ValidatorPool: The waiting period is not over yet!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_WAITING_PERIOD_NOT_MET.toString()
         );
 
         _removeExitingQueueData(msg.sender);
@@ -229,7 +241,7 @@ contract ValidatorPool is
     function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
         require(
             _isAccusable(dishonestValidator_),
-            "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE.toString()
         );
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -252,11 +264,11 @@ contract ValidatorPool is
 
         require(
             balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED.toString()
         );
         require(
             balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED.toString()
         );
 
         emit ValidatorMajorSlashed(dishonestValidator_);
@@ -265,7 +277,7 @@ contract ValidatorPool is
     function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
         require(
             _isAccusable(dishonestValidator_),
-            "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE.toString()
         );
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -288,11 +300,11 @@ contract ValidatorPool is
 
         require(
             balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED.toString()
         );
         require(
             balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED.toString()
         );
 
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
@@ -341,12 +353,18 @@ contract ValidatorPool is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(index_ < _validators.length(), "Index out boundaries!");
+        require(
+            index_ < _validators.length(),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX.toString()
+        );
         return _validators.at(index_)._address;
     }
 
     function getValidatorData(uint256 index_) public view returns (ValidatorData memory) {
-        require(index_ < _validators.length(), "Index out boundaries!");
+        require(
+            index_ < _validators.length(),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX.toString()
+        );
         return _validators.at(index_);
     }
 
@@ -424,11 +442,11 @@ contract ValidatorPool is
     {
         require(
             _validators.length() <= _maxNumValidators,
-            "ValidatorPool: There are no free spots for new validators!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET.toString()
         );
         require(
             !_isAccusable(validator_),
-            "ValidatorPool: Address is already a validator or it is in the exiting line!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_ALREADY_VALIDATOR.toString()
         );
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
@@ -444,11 +462,11 @@ contract ValidatorPool is
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
         require(
             balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED.toString()
         );
         require(
             balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED.toString()
         );
 
         emit ValidatorJoined(validator_, validatorTokenID);
@@ -462,7 +480,10 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(_isValidator(validator_), "ValidatorPool: Address is not a validator_!");
+        require(
+            _isValidator(validator_),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_VALIDATOR.toString()
+        );
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -475,11 +496,11 @@ contract ValidatorPool is
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
         require(
             balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            "ValidatorPool: Invalid transaction, token balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED.toString()
         );
         require(
             balanceBeforeEth == address(this).balance,
-            "ValidatorPool: Invalid transaction, eth balance of the contract changed!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED.toString()
         );
 
         emit ValidatorLeft(validator_, stakeTokenID);
@@ -499,7 +520,7 @@ contract ValidatorPool is
         uint256 stakeAmount = _stakeAmount;
         require(
             stakeShares >= stakeAmount,
-            "ValidatorPool: Error, the Stake position doesn't have enough funds!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_INSUFFICIENT_FUNDS_IN_STAKE_POSITION.toString()
         );
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             to_,
@@ -513,7 +534,7 @@ contract ValidatorPool is
         //payoutToken should always have the minerShares in it!
         require(
             payoutToken >= stakeShares,
-            "ValidatorPool: Miner shares greater then the total payout in tokens!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW.toString()
         );
         payoutToken -= stakeAmount;
 
@@ -538,7 +559,7 @@ contract ValidatorPool is
         //payoutToken should always have the minerShares in it!
         require(
             payoutToken >= minerShares,
-            "ValidatorPool: Miner shares greater then the total payout in tokens!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW.toString()
         );
         payoutToken -= minerShares;
 
@@ -616,7 +637,10 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(_isAccusable(dishonestValidator_), "ValidatorPool: Address is not accusable!");
+        require(
+            _isAccusable(dishonestValidator_),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_ACCUSABLE.toString()
+        );
         // If the user accused is a valid validator, we should burn is validatorStaking position,
         // otherwise we burn the user's PublicStaking in the exiting line
         if (_isValidator(dishonestValidator_)) {
@@ -639,7 +663,7 @@ contract ValidatorPool is
         //payoutToken should always have the minerShares in it!
         require(
             payoutToken >= minerShares,
-            "ValidatorPool: Miner shares greater then the total payout in tokens!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW.toString()
         );
         payoutToken -= minerShares;
     }

@@ -48,7 +48,7 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     const invalidTokenId = 1234;
 
     await expect(publicStaking.tokenURI(invalidTokenId)).to.be.revertedWith(
-      "PublicStaking: Error, NFT token doesn't exist!"
+      "604"
     );
   });
 

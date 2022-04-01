@@ -70,9 +70,9 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
     const validatorPool = fixture.validatorPool as ValidatorPool;
     await expect(
       validatorPool.skimExcessEth(validatorsSnapshots[0].address)
-    ).to.be.rejectedWith("onlyFactory");
+    ).to.be.rejectedWith("2000");
     await expect(
       validatorPool.skimExcessToken(validatorsSnapshots[0].address)
-    ).to.be.rejectedWith("onlyFactory");
+    ).to.be.rejectedWith("2000");
   });
 });

@@ -23,6 +23,6 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
 
     await expect(
       registerValidators(ethdkg, validatorPool, validators10, expectedNonce)
-    ).to.be.revertedWith("ETHDKG: Cannot register at the moment");
+    ).to.be.revertedWith("128");
   });
 });

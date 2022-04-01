@@ -9,6 +9,8 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -20,6 +22,7 @@ contract ValidatorPoolMock is
     ImmutableAToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
+    using Strings for uint16;
 
     uint256 public constant POSITION_LOCK_PERIOD = 3; // Actual is 172800
 
@@ -68,7 +71,7 @@ contract ValidatorPoolMock is
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
                     MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            "ValidatorPool: Condition not met to stop consensus!"
+            ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET.toString()
         );
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
@@ -167,7 +170,10 @@ contract ValidatorPoolMock is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(index_ < _validators.length(), "Index out boundaries!");
+        require(
+            index_ < _validators.length(),
+            ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX.toString()
+        );
         return _validators.at(index_)._address;
     }
 

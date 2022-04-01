@@ -6,12 +6,16 @@ import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
+import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt ETHDKGAccusations
 /// @custom:deploy-type deployUpgradeable
 /// @custom:deploy-group ethdkg
 /// @custom:deploy-group-index 0
 contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
+    using Strings for uint16;
+
     constructor() ETHDKGStorage() {}
 
     function accuseParticipantNotRegistered(address[] memory dishonestAddresses) external {
@@ -19,14 +23,14 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.RegistrationOpen &&
                 ((block.number >= _phaseStartBlock + _phaseLength) &&
                     (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            "ETHDKG: should be in post-registration accusation phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_REGISTRATION_PHASE.toString()
         );
 
         uint16 badParticipants = _badParticipants;
         for (uint256 i = 0; i < dishonestAddresses.length; i++) {
             require(
                 IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddresses[i]),
-                "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
             );
 
             // check if the dishonestParticipant didn't participate in the registration phase,
@@ -34,7 +38,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             Participant memory dishonestParticipant = _participants[dishonestAddresses[i]];
             require(
                 dishonestParticipant.nonce != _nonce,
-                "ETHDKG: Dispute failed! dishonestParticipant is participating in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_PARTICIPATING_IN_ROUND.toString()
             );
 
             // this makes sure we cannot accuse someone twice because a minor fine will be enough to
@@ -50,7 +54,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.ShareDistribution &&
                 ((block.number >= _phaseStartBlock + _phaseLength) &&
                     (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            "ETHDKG: should be in post-ShareDistribution accusation phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_SHARED_DISTRIBUTION_PHASE.toString()
         );
 
         uint16 badParticipants = _badParticipants;
@@ -58,27 +62,27 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         for (uint256 i = 0; i < dishonestAddresses.length; i++) {
             require(
                 IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddresses[i]),
-                "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
             );
             Participant memory dishonestParticipant = _participants[dishonestAddresses[i]];
             require(
                 dishonestParticipant.nonce == _nonce,
-                "ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_PARTICIPATING_IN_ROUND.toString()
             );
 
             require(
                 dishonestParticipant.phase != Phase.ShareDistribution,
-                "ETHDKG: Dispute failed! Supposed dishonest participant distributed its share in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_DISTRIBUTED_SHARES_IN_ROUND.toString()
             );
 
             require(
                 dishonestParticipant.distributedSharesHash == 0x0,
-                "ETHDKG: Dispute failed! Supposed dishonest participant distributed its share in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_DISTRIBUTED_SHARES_IN_ROUND.toString()
             );
             require(
                 dishonestParticipant.commitmentsFirstCoefficient[0] == 0 &&
                     dishonestParticipant.commitmentsFirstCoefficient[1] == 0,
-                "ETHDKG: Dispute failed! It looks like the supposed dishonest participant had commitments! "
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_HAS_COMMITMENTS.toString()
             );
 
             IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
@@ -103,11 +107,11 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 (_ethdkgPhase == Phase.ShareDistribution &&
                     (block.number >= _phaseStartBlock + _phaseLength) &&
                     (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            "ETHDKG: Dispute failed! Contract is not in dispute phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_DISPUTE_PHASE.toString()
         );
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddress),
-            "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+            ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
         );
 
         Participant memory dishonestParticipant = _participants[dishonestAddress];
@@ -115,21 +119,21 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
         require(
             disputer.nonce == _nonce,
-            "ETHDKG: Dispute failed! Disputer is not participating in this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_DISPUTER_NOT_PARTICIPATING_IN_ROUND.toString()
         );
         require(
             dishonestParticipant.nonce == _nonce,
-            "ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+            ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_PARTICIPATING_IN_ROUND.toString()
         );
 
         require(
             dishonestParticipant.phase == Phase.ShareDistribution,
-            "ETHDKG: Dispute failed! dishonestParticipant did not distribute shares!"
+            ETHDKGErrorCodes.ETHDKG_ACCUSED_DID_NOT_DISTRIBUTE_SHARES_IN_ROUND.toString()
         );
 
         require(
             disputer.phase == Phase.ShareDistribution,
-            "ETHDKG: Dispute failed! Disputer did not distribute shares!"
+            ETHDKGErrorCodes.ETHDKG_DISPUTER_DID_NOT_DISTRIBUTE_SHARES_IN_ROUND.toString()
         );
 
         require(
@@ -140,7 +144,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                         keccak256(abi.encodePacked(commitments))
                     )
                 ),
-            "ETHDKG: Dispute failed! Submitted commitments and encrypted shares don't match!"
+            ETHDKGErrorCodes.ETHDKG_SHARES_AND_COMMITMENTS_MISMATCH.toString()
         );
 
         require(
@@ -151,7 +155,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 sharedKey,
                 sharedKeyCorrectnessProof
             ),
-            "ETHDKG: Dispute failed! Invalid shared key or proof!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_KEY_OR_PROOF.toString()
         );
 
         // Since all provided data is valid so far, we load the share and use the verified shared
@@ -196,7 +200,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.KeyShareSubmission &&
                 (block.number >= _phaseStartBlock + _phaseLength &&
                     block.number < _phaseStartBlock + 2 * _phaseLength),
-            "ETHDKG: Dispute failed! Should be in post-KeyShareSubmission phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_KEYSHARE_SUBMISSION_PHASE.toString()
         );
 
         uint16 badParticipants = _badParticipants;
@@ -204,23 +208,23 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         for (uint256 i = 0; i < dishonestAddresses.length; i++) {
             require(
                 IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddresses[i]),
-                "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
             );
 
             Participant memory dishonestParticipant = _participants[dishonestAddresses[i]];
             require(
                 dishonestParticipant.nonce == _nonce,
-                "ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_PARTICIPATING_IN_ROUND.toString()
             );
 
             require(
                 dishonestParticipant.phase != Phase.KeyShareSubmission,
-                "ETHDKG: Dispute failed! Dishonest participant submitted its key shares in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_SUBMITTED_SHARES_IN_ROUND.toString()
             );
 
             require(
                 dishonestParticipant.keyShares[0] == 0 && dishonestParticipant.keyShares[1] == 0,
-                "ETHDKG: Dispute failed! Dishonest participant submitted its key shares in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_SUBMITTED_SHARES_IN_ROUND.toString()
             );
 
             // evict the validator that didn't submit his shares
@@ -235,7 +239,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.GPKJSubmission &&
                 (block.number >= _phaseStartBlock + _phaseLength &&
                     block.number < _phaseStartBlock + 2 * _phaseLength),
-            "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_SUBMISSION_PHASE.toString()
         );
 
         uint16 badParticipants = _badParticipants;
@@ -243,17 +247,17 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         for (uint256 i = 0; i < dishonestAddresses.length; i++) {
             require(
                 IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddresses[i]),
-                "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
             );
             Participant memory dishonestParticipant = _participants[dishonestAddresses[i]];
             require(
                 dishonestParticipant.nonce == _nonce,
-                "ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_PARTICIPATING_IN_ROUND.toString()
             );
 
             require(
                 dishonestParticipant.phase != Phase.GPKJSubmission,
-                "ETHDKG: Dispute failed! Dishonest participant did participate in this GPKj submission!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_DID_NOT_PARTICIPATE_IN_GPKJ_SUBMISSION.toString()
             );
 
             // todo: being paranoic, check if we need this or if it's expensive
@@ -262,7 +266,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     dishonestParticipant.gpkj[1] == 0 &&
                     dishonestParticipant.gpkj[2] == 0 &&
                     dishonestParticipant.gpkj[3] == 0,
-                "ETHDKG: Dispute failed! It looks like the dishonestParticipant distributed its GPKJ!"
+                ETHDKGErrorCodes.ETHDKG_ACCUSED_DISTRIBUTED_GPKJ.toString()
             );
 
             IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
@@ -286,12 +290,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 (_ethdkgPhase == Phase.GPKJSubmission &&
                     (block.number >= _phaseStartBlock + _phaseLength) &&
                     (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            "ETHDKG: Dispute Failed! Should be in post-GPKJSubmission phase!"
+            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_SUBMISSION_PHASE.toString()
         );
 
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddress),
-            "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+            ETHDKGErrorCodes.ETHDKG_ACCUSED_NOT_VALIDATOR.toString()
         );
 
         Participant memory dishonestParticipant = _participants[dishonestAddress];
@@ -300,12 +304,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         require(
             dishonestParticipant.nonce == _nonce &&
                 dishonestParticipant.phase == Phase.GPKJSubmission,
-            "ETHDKG: Dispute Failed! Dishonest participant didn't submit his GPKJ for this round!"
+            ETHDKGErrorCodes.ETHDKG_ACCUSED_DID_NOT_SUBMIT_GPKJ_IN_ROUND.toString()
         );
 
         require(
             disputer.nonce == _nonce && disputer.phase == Phase.GPKJSubmission,
-            "ETHDKG: Dispute Failed! Disputer didn't submit his GPKJ for this round!"
+            ETHDKGErrorCodes.ETHDKG_DISPUTER_DID_NOT_SUBMIT_GPKJ_IN_ROUND.toString()
         );
 
         uint16 badParticipants = _badParticipants;
@@ -322,7 +326,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             (validators.length == numParticipants) &&
                 (encryptedSharesHash.length == numParticipants) &&
                 (commitments.length == numParticipants),
-            "ETHDKG: Dispute Failed! Invalid submission of arguments!"
+            ETHDKGErrorCodes.ETHDKG_INVALID_ARGS.toString()
         );
         {
             uint256 bitMap = 0;
@@ -331,7 +335,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             for (uint256 k = 0; k < numParticipants; k++) {
                 require(
                     commitments[k].length == threshold + 1,
-                    "ETHDKG: Dispute Failed! Invalid number of commitments provided!"
+                    ETHDKGErrorCodes.ETHDKG_INVALID_COMMITMENTS.toString()
                 );
 
                 bytes32 commitmentsHash = keccak256(abi.encodePacked(commitments[k]));
@@ -340,13 +344,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     participant.nonce == nonce &&
                         participant.index <= type(uint8).max &&
                         !_isBitSet(bitMap, uint8(participant.index)),
-                    "ETHDKG: Dispute Failed! Invalid or duplicated participant address!"
+                    ETHDKGErrorCodes.ETHDKG_INVALID_OR_DUPLICATED_PARTICIPANT.toString()
                 );
 
                 require(
                     participant.distributedSharesHash ==
                         keccak256(abi.encodePacked(encryptedSharesHash[k], commitmentsHash)),
-                    "ETHDKG: Dispute Failed! Invalid shares or commitments!"
+                    ETHDKGErrorCodes.ETHDKG_INVALID_SHARES_OR_COMMITMENTS.toString()
                 );
                 bitMap = _setBit(bitMap, uint8(participant.index));
             }

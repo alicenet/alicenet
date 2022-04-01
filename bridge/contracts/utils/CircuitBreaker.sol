@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
+import {
+    CircuitBreakerErrorCodes
+} from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 abstract contract CircuitBreaker {
+    using Strings for uint16;
     bool internal constant _OPEN = true;
     bool internal constant _CLOSED = false;
 
@@ -12,7 +18,7 @@ abstract contract CircuitBreaker {
     // withCB is a modifier to enforce the CB must
     // be set for a call to succeed
     modifier withCB() {
-        require(_cb == _CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
+        require(_cb == _CLOSED, CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED.toString());
         _;
     }
 
@@ -21,12 +27,12 @@ abstract contract CircuitBreaker {
     }
 
     function _tripCB() internal {
-        require(_cb == _CLOSED, "CircuitBreaker: The Circuit breaker is opened!");
+        require(_cb == _CLOSED, CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED.toString());
         _cb = _OPEN;
     }
 
     function _resetCB() internal {
-        require(_cb == _OPEN, "CircuitBreaker: The Circuit breaker is CLOSED!");
+        require(_cb == _OPEN, CircuitBreakerErrorCodes.CIRCUIT_BREAKER_CLOSED.toString());
         _cb = _CLOSED;
     }
 }

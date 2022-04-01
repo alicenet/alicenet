@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    PClaimsParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/PClaimsParserLibraryErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "./BaseParserLibrary.sol";
 import "./BClaimsParserLibrary.sol";
 import "./RCertParserLibrary.sol";
 
 /// @title Library to parse the PClaims structure from a blob of capnproto data
 library PClaimsParserLibrary {
+    using Strings for uint16;
     struct PClaims {
         BClaimsParserLibrary.BClaims bClaims;
         RCertParserLibrary.RCert rCert;
@@ -53,7 +59,7 @@ library PClaimsParserLibrary {
     {
         require(
             dataOffset + _PCLAIMS_SIZE > dataOffset,
-            "PClaimsParserLibrary: Overflow on the dataOffset parameter"
+            PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
         );
         uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
             src,
@@ -62,7 +68,7 @@ library PClaimsParserLibrary {
         pClaimsBinarySize = _PCLAIMS_SIZE - pointerOffsetAdjustment;
         require(
             src.length >= dataOffset + pClaimsBinarySize,
-            "PClaimsParserLibrary: Not enough bytes to extract PClaims"
+            PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_INSUFFICIENT_BYTES.toString()
         );
         pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(
             src,

@@ -9,7 +9,8 @@ import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
-
+import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "contracts/interfaces/IProxy.sol";
 
 /// @custom:salt ETHDKG
@@ -24,13 +25,14 @@ contract ETHDKG is
     ImmutableETHDKGAccusations,
     ImmutableETHDKGPhases
 {
+    using Strings for uint16;
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
 
     modifier onlyValidator() {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            "ETHDKG: Only validators allowed!"
+            ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED.toString()
         );
         _;
     }
@@ -68,7 +70,7 @@ contract ETHDKG is
     function setPhaseLength(uint16 phaseLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
-            "ETHDKG: This variable cannot be set if an ETHDKG round is running!"
+            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
         );
         _phaseLength = phaseLength_;
     }
@@ -76,7 +78,7 @@ contract ETHDKG is
     function setConfirmationLength(uint16 confirmationLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
-            "ETHDKG: This variable cannot be set if an ETHDKG round is running!"
+            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
         );
         _confirmationLength = confirmationLength_;
     }
@@ -342,7 +344,7 @@ contract ETHDKG is
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         require(
             numberValidators >= _MIN_VALIDATORS,
-            "ETHDKG: Minimum number of validators staked not met!"
+            ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET.toString()
         );
 
         _phaseStartBlock = uint64(block.number);
