@@ -302,6 +302,10 @@ contract ETHDKGMock is
         return _masterPublicKey;
     }
 
+    function getMasterPublicKeyHash() public view returns (bytes32) {
+        return _masterPublicKeyHash;
+    }
+
     function getMinValidators() public pure returns (uint256) {
         return _MIN_VALIDATORS;
     }

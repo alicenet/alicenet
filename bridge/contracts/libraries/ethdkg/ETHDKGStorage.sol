@@ -56,6 +56,7 @@ abstract contract ETHDKGStorage is
 
     uint256[4] internal _masterPublicKey;
     uint256[2] internal _mpkG1;
+    bytes32 internal _masterPublicKeyHash;
 
     mapping(address => Participant) internal _participants;
 
