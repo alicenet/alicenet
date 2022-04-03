@@ -145,7 +145,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
         require(
             CryptoLibrary.dleq_verify(
-                [CryptoLibrary.G1x, CryptoLibrary.G1y],
+                [CryptoLibrary.G1_X, CryptoLibrary.G1_Y],
                 disputer.publicKey,
                 dishonestParticipant.publicKey,
                 sharedKey,
@@ -182,7 +182,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // should be burned; otherwise, the share is valid, and whoever
         // submitted this accusation should be burned. In any case, someone
         // will have his stake burned.
-        tmp = CryptoLibrary.bn128_multiply([CryptoLibrary.G1x, CryptoLibrary.G1y, share]);
+        tmp = CryptoLibrary.bn128_multiply([CryptoLibrary.G1_X, CryptoLibrary.G1_Y, share]);
         if (result[0] != tmp[0] || result[1] != tmp[1]) {
             IValidatorPool(_validatorPoolAddress()).majorSlash(dishonestAddress, msg.sender);
         } else {
@@ -425,12 +425,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             [
                 gpkjStar[0],
                 gpkjStar[1],
-                CryptoLibrary.H2xi,
-                CryptoLibrary.H2x,
-                CryptoLibrary.H2yi,
-                CryptoLibrary.H2y,
-                CryptoLibrary.G1x,
-                CryptoLibrary.G1y,
+                CryptoLibrary.H2_XI,
+                CryptoLibrary.H2_X,
+                CryptoLibrary.H2_YI,
+                CryptoLibrary.H2_Y,
+                CryptoLibrary.G1_X,
+                CryptoLibrary.G1_Y,
                 gpkj[0],
                 gpkj[1],
                 gpkj[2],
