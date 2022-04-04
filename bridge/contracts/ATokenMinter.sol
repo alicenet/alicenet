@@ -5,8 +5,11 @@ import "contracts/interfaces/IAToken.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
 /// @custom:salt ATokenMinter
-/// @custom:deploy-type onlyProxy
+/// @custom:deploy-type deployUpgradeable
 contract ATokenMinter is ImmutableAToken {
-    // Placeholder contract. The real ATokenMinter will be implemented later
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
+
+    function mint(address to, uint256 amount) public onlyFactory {
+        IAToken(_aTokenAddress()).externalMint(to, amount);
+    }
 }

@@ -5,6 +5,7 @@ import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
   let user: SignerWithAddress;
+  let admin: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
   const amount = 1000;
@@ -12,7 +13,7 @@ describe("Testing AToken", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
-    [, user] = await ethers.getSigners();
+    [admin, user] = await ethers.getSigners();
     await init(fixture);
     expectedState = await getState(fixture);
   });
@@ -23,6 +24,10 @@ describe("Testing AToken", async () => {
         it("Should not mint when called by external address not identified as minter", async function () {
           await expect(
             fixture.aToken.externalMint(user.address, amount)
+          ).to.be.revertedWith("onlyATokenMinter");
+
+          await expect(
+            fixture.aToken.connect(admin).externalMint(user.address, amount)
           ).to.be.revertedWith("onlyATokenMinter");
         });
       });
@@ -38,11 +43,10 @@ describe("Testing AToken", async () => {
           expect(currentState).to.be.deep.eq(expectedState);
         });
 
-        it("Should mint when called by external identified as minter not impersonating factory", async function () {
-          await fixture.aTokenMinter.mint(user.address, amount);
-          expectedState.Balances.aToken.user += amount;
-          currentState = await getState(fixture);
-          expect(currentState).to.be.deep.eq(expectedState);
+        it("Should not mint when called by external identified as minter not impersonating factory", async function () {
+          await expect(
+            fixture.aTokenMinter.mint(user.address, amount)
+          ).to.be.rejectedWith("onlyFactory");
         });
       });
     });

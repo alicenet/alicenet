@@ -5,6 +5,7 @@ import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
   let user: SignerWithAddress;
+  let user2: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
   const amount = 1000;
@@ -12,7 +13,7 @@ describe("Testing AToken", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
-    [, user] = await ethers.getSigners();
+    [, user, user2] = await ethers.getSigners();
     await init(fixture);
     expectedState = await getState(fixture);
   });
@@ -28,6 +29,21 @@ describe("Testing AToken", async () => {
       expectedState.Balances.legacyToken.aToken += amount;
       currentState = await getState(fixture);
       expect(currentState).to.be.deep.eq(expectedState);
+    });
+
+    it("Should not allow migrate user legacy tokens without approval", async function () {
+      await expect(
+        fixture.aToken.connect(user).migrate(amount)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+
+    it("Should not allow migrate user legacy tokens without token", async function () {
+      await fixture.legacyToken
+        .connect(user2)
+        .approve(fixture.aToken.address, amount);
+      await expect(
+        fixture.aToken.connect(user2).migrate(amount)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
   });
 });

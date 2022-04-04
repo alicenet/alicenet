@@ -28,7 +28,7 @@ contract AToken is
     }
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("AToken", "ATK");
+        __ERC20_init("AToken", "ALC");
     }
 
     function migrate(uint256 amount) public {

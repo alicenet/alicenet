@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/libraries/StakingNFT/StakingNFT.sol";
 
 /// @custom:salt PublicStaking
-/// @custom:deploy-type deployStatic
+/// @custom:deploy-type deployUpgradeable
 contract PublicStaking is StakingNFT {
     constructor() StakingNFT() {}
 

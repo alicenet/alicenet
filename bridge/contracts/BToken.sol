@@ -77,7 +77,7 @@ contract BToken is
     {}
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("BToken", "BTK");
+        __ERC20_init("BToken", "BOB");
         _setSplitsInternal(332, 332, 332, 4);
     }
 
