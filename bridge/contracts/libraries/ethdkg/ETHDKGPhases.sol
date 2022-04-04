@@ -27,7 +27,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         require(
-            CryptoLibrary.bn128_is_on_curve(publicKey),
+            CryptoLibrary.bn128IsOnCurve(publicKey),
             "ETHDKG: Registration failed - public key not on elliptic curve!"
         );
         require(
@@ -90,7 +90,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         for (uint256 k = 0; k <= threshold; k++) {
             require(
-                CryptoLibrary.bn128_is_on_curve(commitments[k]),
+                CryptoLibrary.bn128IsOnCurve(commitments[k]),
                 "ETHDKG: Key sharing failed - commitment not on elliptic curve!"
             );
             require(commitments[k][0] != 0, "ETHDKG: Commitments shouldn't be 0!");
@@ -157,26 +157,26 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         require(
-            CryptoLibrary.dleq_verify(
-                [CryptoLibrary.H1x, CryptoLibrary.H1y],
+            CryptoLibrary.discreteLogEquality(
+                [CryptoLibrary.H1_X, CryptoLibrary.H1_Y],
                 keyShareG1,
-                [CryptoLibrary.G1x, CryptoLibrary.G1y],
+                [CryptoLibrary.G1_X, CryptoLibrary.G1_Y],
                 participant.commitmentsFirstCoefficient,
                 keyShareG1CorrectnessProof
             ),
             "ETHDKG: Key share submission failed - invalid key share G1!"
         );
         require(
-            CryptoLibrary.bn128_check_pairing(
+            CryptoLibrary.bn128CheckPairing(
                 [
                     keyShareG1[0],
                     keyShareG1[1],
-                    CryptoLibrary.H2xi,
-                    CryptoLibrary.H2x,
-                    CryptoLibrary.H2yi,
-                    CryptoLibrary.H2y,
-                    CryptoLibrary.H1x,
-                    CryptoLibrary.H1y,
+                    CryptoLibrary.H2_XI,
+                    CryptoLibrary.H2_X,
+                    CryptoLibrary.H2_YI,
+                    CryptoLibrary.H2_Y,
+                    CryptoLibrary.H1_X,
+                    CryptoLibrary.H1_Y,
                     keyShareG2[0],
                     keyShareG2[1],
                     keyShareG2[2],
@@ -190,12 +190,15 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         participant.phase = Phase.KeyShareSubmission;
         _participants[msg.sender] = participant;
 
-        uint256[2] memory mpkG1 = _mpkG1;
-        _mpkG1 = CryptoLibrary.bn128_add(
+        uint256 numParticipants = _numParticipants + 1;
+        uint256[2] memory mpkG1;
+        if (numParticipants > 1) {
+            mpkG1 = _mpkG1;
+        }
+        _mpkG1 = CryptoLibrary.bn128Add(
             [mpkG1[0], mpkG1[1], participant.keyShares[0], participant.keyShares[1]]
         );
 
-        uint256 numParticipants = _numParticipants + 1;
         emit KeyShareSubmitted(
             msg.sender,
             participant.index,
@@ -225,16 +228,16 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         uint256[2] memory mpkG1 = _mpkG1;
         require(
-            CryptoLibrary.bn128_check_pairing(
+            CryptoLibrary.bn128CheckPairing(
                 [
                     mpkG1[0],
                     mpkG1[1],
-                    CryptoLibrary.H2xi,
-                    CryptoLibrary.H2x,
-                    CryptoLibrary.H2yi,
-                    CryptoLibrary.H2y,
-                    CryptoLibrary.H1x,
-                    CryptoLibrary.H1y,
+                    CryptoLibrary.H2_XI,
+                    CryptoLibrary.H2_X,
+                    CryptoLibrary.H2_YI,
+                    CryptoLibrary.H2_Y,
+                    CryptoLibrary.H1_X,
+                    CryptoLibrary.H1_Y,
                     masterPublicKey_[0],
                     masterPublicKey_[1],
                     masterPublicKey_[2],
@@ -245,6 +248,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         _masterPublicKey = masterPublicKey_;
+        _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
 
         _setPhase(Phase.GPKJSubmission);
         emit MPKSet(block.number, _nonce, masterPublicKey_);
