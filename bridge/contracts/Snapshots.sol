@@ -103,7 +103,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             );
 
             require(
-                CryptoLibrary.verifySignature(
+                CryptoLibrary.Verify(
                     abi.encodePacked(keccak256(bClaims_)),
                     signature,
                     masterPublicKey
