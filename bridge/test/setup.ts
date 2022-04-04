@@ -13,8 +13,8 @@ import { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
-  ATokenBurnerMock,
-  ATokenMinterMock,
+  ATokenBurner,
+  ATokenMinter,
   BToken,
   ETHDKG,
   Foundation,
@@ -325,9 +325,11 @@ export const deployFactoryAndBaseTokens = async (
   const bToken = (await deployStaticWithFactory(factory, "BToken")) as BToken;
 
   // PublicStaking
-  const publicStaking = (await deployStaticWithFactory(
+  const publicStaking = (await deployUpgradeableWithFactory(
     factory,
-    "PublicStaking"
+    "PublicStaking",
+    "PublicStaking",
+    []
   )) as PublicStaking;
 
   return {
@@ -429,15 +431,19 @@ export const getFixture = async (
     await deployFactoryAndBaseTokens(admin);
 
   // ValidatorStaking is not considered a base token since is only used by validators
-  const validatorStaking = (await deployStaticWithFactory(
+  const validatorStaking = (await deployUpgradeableWithFactory(
     factory,
-    "ValidatorStaking"
+    "ValidatorStaking",
+    "ValidatorStaking",
+    []
   )) as ValidatorStaking;
 
   // LiquidityProviderStaking
-  const liquidityProviderStaking = (await deployStaticWithFactory(
+  const liquidityProviderStaking = (await deployUpgradeableWithFactory(
     factory,
-    "LiquidityProviderStaking"
+    "LiquidityProviderStaking",
+    "LiquidityProviderStaking",
+    []
   )) as LiquidityProviderStaking;
 
   // Foundation
@@ -522,14 +528,14 @@ export const getFixture = async (
 
   const aTokenMinter = (await deployUpgradeableWithFactory(
     factory,
-    "ATokenMinterMock",
+    "ATokenMinter",
     "ATokenMinter"
-  )) as ATokenMinterMock;
+  )) as ATokenMinter;
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
-    "ATokenBurnerMock",
+    "ATokenBurner",
     "ATokenBurner"
-  )) as ATokenBurnerMock;
+  )) as ATokenBurner;
 
   await posFixtureSetup(factory, aToken, legacyToken);
 

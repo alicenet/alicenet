@@ -5,6 +5,7 @@ import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
   let user: SignerWithAddress;
+  let admin: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
   const amount = 1000;
@@ -12,16 +13,20 @@ describe("Testing AToken", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
-    [, user] = await ethers.getSigners();
+    [admin, user] = await ethers.getSigners();
     await init(fixture);
     expectedState = await getState(fixture);
   });
 
   describe("Testing burning operation", async () => {
     describe("Methods with onlyATokenBurner modifier", async () => {
-      it("Should burn when called by external address not identified as burner", async function () {
+      it("Should not burn when called by external address not identified as burner", async function () {
         await expect(
           fixture.aToken.externalBurn(user.address, amount)
+        ).to.be.revertedWith("onlyATokenBurner");
+
+        await expect(
+          fixture.aToken.connect(admin).externalBurn(user.address, amount)
         ).to.be.revertedWith("onlyATokenBurner");
       });
     });
@@ -43,7 +48,7 @@ describe("Testing AToken", async () => {
         expect(currentState).to.be.deep.eq(expectedState);
       });
 
-      it("Should burn when called by external identified as burner not impersonating factory", async function () {
+      it("Should not allow to burn when called by external identified as burner not impersonating factory", async function () {
         // migrate some tokens for burning
         await fixture.legacyToken
           .connect(user)
@@ -51,10 +56,9 @@ describe("Testing AToken", async () => {
         await fixture.aToken.connect(user).migrate(amount);
         expectedState = await getState(fixture);
         // burn
-        fixture.aTokenBurner.burn(user.address, amount);
-        expectedState.Balances.aToken.user -= amount;
-        currentState = await getState(fixture);
-        expect(currentState).to.be.deep.eq(expectedState);
+        await expect(
+          fixture.aTokenBurner.burn(user.address, amount)
+        ).to.be.revertedWith("onlyFactory");
       });
     });
   });
