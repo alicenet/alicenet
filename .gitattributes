@@ -1,0 +1,6 @@
+# upon checkout, normalize line endings (e.g. \n for UNIX, \r\n for windows)
+* text=auto !eol
+
+# don't normalize shell scripts, since carriage returns cause script errors
+*.sh text eol=lf
+*.bash text eol=lf

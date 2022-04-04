@@ -15,7 +15,7 @@
 set +e
 
 # create user if doesn't exist already
-adduser -D -g $BUILDER_UID container_builder
+adduser -D -g $BUILDER_UID -u $BUILDER_UID container_builder
 BUILDER_NAME=$(getent passwd $BUILDER_UID | cut -d: -f1)
 
 # add all group ids that the user belongs to if they don't exist already
