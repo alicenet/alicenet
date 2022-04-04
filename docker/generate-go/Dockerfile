@@ -3,6 +3,7 @@ FROM golang:1.17.6-alpine3.15
 # some binaries used for code generation can be installed through package manager
 RUN apk add --no-cache protoc=3.18.1-r1 capnproto=0.8.0-r1 capnproto-dev=0.8.0-r1
 
+# inherit all permissions from host OS
 ARG BUILDER_UID
 ARG BUILDER_GIDS
 ADD docker/apply-permvars-alpine.sh /
