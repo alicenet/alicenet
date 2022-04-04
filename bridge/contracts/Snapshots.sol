@@ -65,32 +65,37 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
         );
 
+        (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress()).tryGetParticipantIndex(
+            msg.sender
+        );
+        //todo:remove this, dummy operation only to silence linter
+        validatorIndex;
+        require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
+
         uint32 epoch = _epoch + 1;
+        // uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
 
-        // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
-        // {
-        //     // Check if sender is the elected validator allowed to make the snapshot
-        //     (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
-        //         .tryGetParticipantIndex(msg.sender);
-        //     require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
+        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
+        /*
+        uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
+            ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
+            : 0;
+        */
 
-        //     uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
-
-        //     uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
-        //         ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
-        //         : 0;
-
-        //     require(
-        //         _mayValidatorSnapshot(
-        //             IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
-        //             validatorIndex - 1,
-        //             blocksSinceDesperation,
-        //             keccak256(bClaims_),
-        //             uint256(_snapshotDesperationFactor)
-        //         ),
-        //         "Snapshots: Validator not elected to do snapshot!"
-        //     );
-        // }
+        // Check if sender is the elected validator allowed to make the snapshot
+        // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
+        /*
+        require(
+            _mayValidatorSnapshot(
+                IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
+                validatorIndex - 1,
+                blocksSinceDesperation,
+                keccak256(bClaims_),
+                uint256(_snapshotDesperationFactor)
+            ),
+            "Snapshots: Validator not elected to do snapshot!"
+        );
+        */
 
         {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
@@ -98,7 +103,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
-                    IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
+                    keccak256(abi.encodePacked(IETHDKG(_ethdkgAddress()).getMasterPublicKey())),
                 "Snapshots: Wrong master public key!"
             );
 

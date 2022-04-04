@@ -79,7 +79,5 @@ interface IETHDKG {
 
     function getMasterPublicKey() external view returns (uint256[4] memory);
 
-    function getMasterPublicKeyHash() external view returns (bytes32);
-
     function tryGetParticipantIndex(address participant) external view returns (bool, uint256);
 }

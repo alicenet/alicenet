@@ -301,10 +301,6 @@ contract ETHDKG is
         return _masterPublicKey;
     }
 
-    function getMasterPublicKeyHash() public view returns (bytes32) {
-        return _masterPublicKeyHash;
-    }
-
     function getMinValidators() public pure returns (uint256) {
         return _MIN_VALIDATORS;
     }
@@ -349,7 +345,10 @@ contract ETHDKG is
         _nonce++;
         _numParticipants = 0;
         _badParticipants = 0;
+        _mpkG1 = [uint256(0), uint256(0)];
         _ethdkgPhase = Phase.RegistrationOpen;
+
+        delete _masterPublicKey;
 
         emit RegistrationOpened(
             block.number,
