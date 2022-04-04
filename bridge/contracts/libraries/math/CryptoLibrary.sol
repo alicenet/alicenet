@@ -30,18 +30,18 @@ library CryptoLibrary {
     uint256 constant GROUP_ORDER =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     // FIELD_MODULUS is the prime number over which the elliptic curves are based.
-    uint256 public constant FIELD_MODULUS =
+    uint256 constant FIELD_MODULUS =
         21888242871839275222246405745257275088696311157297823662689037894645226208583;
-    // CURVE_B is the constant of the elliptic curve for G1:
+    // curveB is the constant of the elliptic curve for G1:
     //
-    //      y^2 == x^3 + CURVE_B,
+    //      y^2 == x^3 + curveB,
     //
-    // with CURVE_B == 3.
-    uint256 public constant CURVE_B = 3;
+    // with curveB == 3.
+    uint256 constant curveB = 3;
 
-    // G1 == (G1_X, G1_Y) is the standard generator for group G1.
-    // uint256 constant G1_X  = 1;
-    // uint256 constant G1_Y  = 2;
+    // G1 == (G1x, G1y) is the standard generator for group G1.
+    // uint256 constant G1x  = 1;
+    // uint256 constant G1y  = 2;
     // H1 == (H1X, H1Y) = HashToG1([]byte("MadHive Rocks!") from golang code;
     // this is another generator for G1 and dlog_G1(H1) is unknown,
     // which is necessary for security.
@@ -49,12 +49,12 @@ library CryptoLibrary {
     // In the future, the specific value of H1 could be changed every time
     // there is a change in validator set. For right now, though, this will
     // be a fixed constant.
-    uint256 public constant H1_X =
+    uint256 constant H1x =
         2788159449993757418373833378244720686978228247930022635519861138679785693683;
-    uint256 public constant H1_Y =
+    uint256 constant H1y =
         12344898367754966892037554998108864957174899548424978619954608743682688483244;
 
-    // H2 == ([H2_XI, H2_X], [H2_YI, H2_Y]) is the *negation* of the
+    // H2 == ([H2xi, H2x], [H2yi, H2y]) is the *negation* of the
     // standard generator of group G2.
     // The standard generator comes from the Ethereum bn256 Go code.
     // The negated form is required because bn128_pairing check in Solidty requires this.
@@ -74,43 +74,43 @@ library CryptoLibrary {
     // This is equivalent to
     //
     //      e(sig, H2) * e(H(msg), pubK) == 1.
-    uint256 public constant H2_XI =
+    uint256 constant H2xi =
         11559732032986387107991004021392285783925812861821192530917403151452391805634;
-    uint256 public constant H2_X =
+    uint256 constant H2x =
         10857046999023057135944570762232829481370756359578518086990519993285655852781;
-    uint256 public constant H2_YI =
+    uint256 constant H2yi =
         17805874995975841540914202342111839520379459829704422454583296818431106115052;
-    uint256 public constant H2_Y =
+    uint256 constant H2y =
         13392588948715843804641432497768002650278120570034223513918757245338268106653;
 
-    uint256 public constant G1_X = 1;
-    uint256 public constant G1_Y = 2;
+    uint256 constant G1x = 1;
+    uint256 constant G1y = 2;
 
-    // TWO_256_MOD_P == 2^256 mod FIELD_MODULUS;
+    // two256modP == 2^256 mod FIELD_MODULUS;
     // this is used in hashToBase to obtain a more uniform hash value.
-    uint256 public constant TWO_256_MOD_P =
+    uint256 constant two256modP =
         6350874878119819312338956282401532409788428879151445726012394534686998597021;
 
-    // P_MINUS1 == -1 mod FIELD_MODULUS;
+    // pMinus1 == -1 mod FIELD_MODULUS;
     // this is used in sign0 and all ``negative'' values have this sign value.
-    uint256 public constant P_MINUS1 =
+    uint256 constant pMinus1 =
         21888242871839275222246405745257275088696311157297823662689037894645226208582;
 
-    // P_MINUS2 == FIELD_MODULUS - 2;
+    // pMinus2 == FIELD_MODULUS - 2;
     // this is the exponent used in finite field inversion.
-    uint256 public constant P_MINUS2 =
+    uint256 constant pMinus2 =
         21888242871839275222246405745257275088696311157297823662689037894645226208581;
 
-    // P_MINUS1_OVER2 == (FIELD_MODULUS - 1) / 2;
+    // pMinus1Over2 == (FIELD_MODULUS - 1) / 2;
     // this is the exponent used in computing the Legendre symbol and is
     // also used in sign0 as the cutoff point between ``positive'' and
     // ``negative'' numbers.
-    uint256 public constant P_MINUS1_OVER2 =
+    uint256 constant pMinus1Over2 =
         10944121435919637611123202872628637544348155578648911831344518947322613104291;
 
-    // P_PLUS1_OVER4 == (FIELD_MODULUS + 1) / 4;
+    // pPlus1Over4 == (FIELD_MODULUS + 1) / 4;
     // this is the exponent used in computing finite field square roots.
-    uint256 public constant P_PLUS1_OVER4 =
+    uint256 constant pPlus1Over4 =
         5472060717959818805561601436314318772174077789324455915672259473661306552146;
 
     // baseToG1 constants
@@ -119,14 +119,14 @@ library CryptoLibrary {
     // All of these constants are computed modulo FIELD_MODULUS.
     //
     // (-1 + sqrt(-3))/2
-    uint256 public constant HASH_CONST_1 = 2203960485148121921418603742825762020974279258880205651966;
+    uint256 constant hashConst1 = 2203960485148121921418603742825762020974279258880205651966;
     // sqrt(-3)
-    uint256 public constant HASH_CONST_2 = 4407920970296243842837207485651524041948558517760411303933;
+    uint256 constant hashConst2 = 4407920970296243842837207485651524041948558517760411303933;
     // 1/3
-    uint256 public constant HASH_CONST_3 =
+    uint256 constant hashConst3 =
         14592161914559516814830937163504850059130874104865215775126025263096817472389;
-    // 1 + CURVE_B (CURVE_B == 3)
-    uint256 public constant HASH_CONST_4 = 4;
+    // 1 + curveB (curveB == 3)
+    uint256 constant hashConst4 = 4;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //// HELPER FUNCTIONS
@@ -279,15 +279,15 @@ library CryptoLibrary {
         uint256[4] memory pubK
     ) internal view returns (bool v) {
         uint256[2] memory hashPoint;
-        hashPoint = _hashToG1(message);
+        hashPoint = HashToG1(message);
         v = bn128_check_pairing(
             [
                 sig[0],
                 sig[1],
-                H2_XI,
-                H2_X,
-                H2_YI,
-                H2_Y,
+                H2xi,
+                H2x,
+                H2yi,
+                H2y,
                 hashPoint[0],
                 hashPoint[1],
                 pubK[0],
@@ -376,7 +376,7 @@ library CryptoLibrary {
     ) internal pure returns (uint256 t) {
         uint256 s0 = uint256(keccak256(abi.encodePacked(c0, message)));
         uint256 s1 = uint256(keccak256(abi.encodePacked(c1, message)));
-        t = addmod(mulmod(s0, TWO_256_MOD_P, FIELD_MODULUS), s1, FIELD_MODULUS);
+        t = addmod(mulmod(s0, two256modP, FIELD_MODULUS), s1, FIELD_MODULUS);
     }
 
     // baseToG1 is a deterministic map from the base field F_p to the elliptic
@@ -415,13 +415,13 @@ library CryptoLibrary {
         //
         //      ap1 == t^2
         //      ap2 == t^2 + h4
-        //      h4  == HASH_CONST_4
+        //      h4  == hashConst4
         //
         // Defining alpha helps decrease the calls to expmod,
         // which is the most expensive operation we do.
         uint256 alpha;
         ap1 = mulmod(t, t, FIELD_MODULUS);
-        ap2 = addmod(ap1, HASH_CONST_4, FIELD_MODULUS);
+        ap2 = addmod(ap1, hashConst4, FIELD_MODULUS);
         alpha = mulmod(ap1, ap2, FIELD_MODULUS);
         alpha = invert(alpha);
 
@@ -431,7 +431,7 @@ library CryptoLibrary {
         //      tmp == (t^2 + h4)^3
         //          == ap2^3
         //
-        //      h4  == HASH_CONST_4
+        //      h4  == hashConst4
         //
         // This is cheap to compute because ap2 has not changed
         uint256 tmp;
@@ -454,18 +454,18 @@ library CryptoLibrary {
         //         == h1 - h2*ap1*alpha
         //
         //      ap1 == t^4 (note previous assignment)
-        //      h1  == HASH_CONST_1
-        //      h2  == HASH_CONST_2
+        //      h1  == hashConst1
+        //      h2  == hashConst2
         //
         // When t == 0, x1 is a valid x-coordinate of a point on the elliptic
         // curve, so we need no exceptions; this is different than the original
         // Fouque and Tibouchi 2012 paper. This comes from the fact that
         // 0^(-1) == 0 mod p, as we use expmod for inversion.
         uint256 x1;
-        x1 = mulmod(HASH_CONST_2, ap1, FIELD_MODULUS);
+        x1 = mulmod(hashConst2, ap1, FIELD_MODULUS);
         x1 = mulmod(x1, alpha, FIELD_MODULUS);
         x1 = neg(x1);
-        x1 = addmod(x1, HASH_CONST_1, FIELD_MODULUS);
+        x1 = addmod(x1, hashConst1, FIELD_MODULUS);
 
         // One of the potential x-coordinates of our elliptic curve point:
         //
@@ -478,9 +478,9 @@ library CryptoLibrary {
         //
         //      x3 == 1 - h3*tmp*alpha
         //
-        //      h3 == HASH_CONST_3
+        //      h3 == hashConst3
         uint256 x3;
-        x3 = mulmod(HASH_CONST_3, tmp, FIELD_MODULUS);
+        x3 = mulmod(hashConst3, tmp, FIELD_MODULUS);
         x3 = mulmod(x3, alpha, FIELD_MODULUS);
         x3 = neg(x3);
         x3 = addmod(x3, 1, FIELD_MODULUS);
@@ -496,14 +496,14 @@ library CryptoLibrary {
         uint256 y;
         y = mulmod(x1, x1, FIELD_MODULUS);
         y = mulmod(y, x1, FIELD_MODULUS);
-        y = addmod(y, CURVE_B, FIELD_MODULUS);
+        y = addmod(y, curveB, FIELD_MODULUS);
         int256 residue1 = legendre(y);
 
         // We now focus on determing residue2; if residue2 == 1,
         // then x2 is a valid x-coordinate for a point on E(F_p).
         y = mulmod(x2, x2, FIELD_MODULUS);
         y = mulmod(y, x2, FIELD_MODULUS);
-        y = addmod(y, CURVE_B, FIELD_MODULUS);
+        y = addmod(y, curveB, FIELD_MODULUS);
         int256 residue2 = legendre(y);
 
         // i is the index which gives us the correct x value (x1, x2, or x3)
@@ -523,7 +523,7 @@ library CryptoLibrary {
         // Now that we know x, we compute y
         y = mulmod(x, x, FIELD_MODULUS);
         y = mulmod(y, x, FIELD_MODULUS);
-        y = addmod(y, CURVE_B, FIELD_MODULUS);
+        y = addmod(y, curveB, FIELD_MODULUS);
         y = sqrt(y);
 
         // We now determine the sign of y based on t; this is a change from
@@ -561,161 +561,16 @@ library CryptoLibrary {
         h[1] = y;
     }
 
-    function _hashToG1(bytes memory message) internal view returns (uint256[2] memory h) {
-        assembly {
-
-            function memCopy(dest, src, len) {
-                if lt(len, 32) {
-                    mstore(0, "invalid len")
-                    revert(0, 32)
-                }
-                // Copy word-length chunks while possible
-                for {} gt(len, 31) {len := sub(len, 32)} {
-                    mstore(dest, mload(src))
-                    src := add(src, 32)
-                    dest := add(dest, 32)
-                }
-
-                if iszero(eq(len,0)) {
-                    // Copy remaining bytes
-                    let mask := sub(exp(256, sub(32, len)), 1)
-                    // e.g len = 4, yields
-                    // mask    = 00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                    // notMask = ffffffff00000000000000000000000000000000000000000000000000000000
-                    let srcpart := and(mload(src), not(mask))
-                    let destpart := and(mload(dest), mask)
-                    mstore(dest, or(destpart, srcpart))
-                }
-            }
-
-            function bn128_is_on_curve(p0,p1) ->result {
-                let o1 := mulmod(p0, p0, FIELD_MODULUS)
-                o1 := mulmod(p0, o1, FIELD_MODULUS)
-                o1 := addmod(o1,3, FIELD_MODULUS)
-                let o2 := mulmod(p1,p1, FIELD_MODULUS)
-                result := eq(o1,o2)
-            }
-
-            function baseToG1(ptr, t)->x,y {
-                let fp := add(ptr,0xc0)
-                let ap1 := mulmod(t, t, FIELD_MODULUS)
-                let alpha := mulmod(ap1, addmod(ap1, 4, FIELD_MODULUS), FIELD_MODULUS)
-                mstore(add(ptr, 0x60), alpha)
-                mstore(add(ptr, 0x80), P_MINUS2)
-                if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
-                }
-                alpha := mload(fp)
-                ap1 := mulmod(ap1, ap1, FIELD_MODULUS)
-                x := mulmod(ap1, HASH_CONST_2, FIELD_MODULUS)
-                x := mulmod(x, alpha, FIELD_MODULUS)
-                x := sub(FIELD_MODULUS, x)
-                x := addmod(x, HASH_CONST_1, FIELD_MODULUS)
-                let x_three := mulmod(x, x, FIELD_MODULUS)
-                x_three := mulmod(x_three, x, FIELD_MODULUS)
-                x_three := addmod(x_three, 3, FIELD_MODULUS)
-                mstore(add(ptr, 0x80), P_PLUS1_OVER4)
-                mstore(add(ptr, 0x60), x_three)
-                if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
-                }
-                let ymul := 1
-                if gt(t,P_MINUS1_OVER2) {
-                   ymul := P_MINUS1
-                }
-                y := mulmod(mload(fp), ymul, FIELD_MODULUS)
-                let y_two := mulmod(y, y, FIELD_MODULUS)
-                if eq(x_three, y_two) {
-                    leave
-                }
-                x  := addmod(x, 1, FIELD_MODULUS)
-                x := sub(FIELD_MODULUS, x)
-                x_three := mulmod(x, x, FIELD_MODULUS)
-                x_three := mulmod(x_three, x, FIELD_MODULUS)
-                x_three := addmod(x_three, 3, FIELD_MODULUS)
-                mstore(add(ptr, 0x60), x_three)
-                if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
-                }
-                y := mulmod(mload(fp), ymul, FIELD_MODULUS)
-                y_two := mulmod(y, y, FIELD_MODULUS)
-                if eq(x_three, y_two) {
-                    leave
-                }
-                ap1 := addmod(mulmod(t, t, FIELD_MODULUS), 4, FIELD_MODULUS)
-                x := mulmod(ap1, ap1, FIELD_MODULUS)
-                x := mulmod(x, ap1, FIELD_MODULUS)
-                x := mulmod(x, HASH_CONST_3, FIELD_MODULUS)
-                x := mulmod(x, alpha, FIELD_MODULUS)
-                x := sub(FIELD_MODULUS, x)
-                x := addmod(x, 1, FIELD_MODULUS)
-                x_three := mulmod(x, x, FIELD_MODULUS)
-                x_three := mulmod(x_three, x, FIELD_MODULUS)
-                x_three := addmod(x_three, 3, FIELD_MODULUS)
-                mstore(add(ptr, 0x60), x_three)
-                if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
-                }
-                y := mulmod(mload(fp), ymul, FIELD_MODULUS)
-            }
-
-            function HashToG1(ptr, messageptr, messagesize) ->x,y {
-                let size := add(messagesize, 1)
-                memCopy(add(ptr,1), messageptr, messagesize)
-                mstore8(ptr, 0x00)
-                let h0 := keccak256(ptr, size)
-                mstore8(ptr, 0x01)
-                let h1 := keccak256(ptr, size)
-                mstore8(ptr, 0x02)
-                let h2 := keccak256(ptr, size)
-                mstore8(ptr, 0x03)
-                let h3 := keccak256(ptr, size)
-                mstore(ptr, 0x20)
-                mstore(add(ptr, 0x20), 0x20)
-                mstore(add(ptr, 0x40), 0x20)
-                mstore(add(ptr, 0xa0), FIELD_MODULUS)
-                h1 := addmod(h1, mulmod(h0, TWO_256_MOD_P, FIELD_MODULUS), FIELD_MODULUS)
-                h2 := addmod(h3, mulmod(h2, TWO_256_MOD_P, FIELD_MODULUS), FIELD_MODULUS)
-                let x1,y1 := baseToG1(ptr, h1)
-                let success := bn128_is_on_curve(x1,y1)
-                if iszero(success) {
-                    revert(0,0)
-                }
-                let x2,y2 := baseToG1(ptr, h2)
-                success := bn128_is_on_curve(x2,y2)
-                if iszero(success) {
-                    revert(0,0)
-                }
-                mstore(ptr, x1)
-                mstore(add(ptr, 0x20), y1)
-                mstore(add(ptr, 0x40), x2)
-                mstore(add(ptr, 0x60), y2)
-                if iszero(staticcall(gas(), 0x06, ptr, 128, ptr, 64)) {
-                    revert(0,0)
-                }
-                x:=mload(ptr)
-                y:=mload(add(ptr, 0x20))
-            }
-
-            let messageptr := add(message, 0x20)
-            let messagesize := mload(message)
-            let ptr := mload(0x40)
-            let x,y := HashToG1(ptr, messageptr, messagesize)
-            mstore(h, x)
-            mstore(add(h, 0x20), y)
-        }
-    }
-
     // invert computes the multiplicative inverse of t modulo FIELD_MODULUS.
     // When t == 0, s == 0.
     function invert(uint256 t) internal view returns (uint256 s) {
-        s = expmod(t, P_MINUS2, FIELD_MODULUS);
+        s = expmod(t, pMinus2, FIELD_MODULUS);
     }
 
     // sqrt computes the multiplicative square root of t modulo FIELD_MODULUS.
     // sqrt does not check that a square root is possible; see legendre.
     function sqrt(uint256 t) internal view returns (uint256 s) {
-        s = expmod(t, P_PLUS1_OVER4, FIELD_MODULUS);
+        s = expmod(t, pPlus1Over4, FIELD_MODULUS);
     }
 
     // legendre computes the legendre symbol of t with respect to FIELD_MODULUS.
@@ -723,7 +578,7 @@ library CryptoLibrary {
     // FIELD_MODULUS, legendre(t) == -1 when a square root of t does not exist
     // modulo FIELD_MODULUS, and legendre(t) == 0 when t == 0 mod FIELD_MODULUS.
     function legendre(uint256 t) internal view returns (int256 chi) {
-        uint256 s = expmod(t, P_MINUS1_OVER2, FIELD_MODULUS);
+        uint256 s = expmod(t, pMinus1Over2, FIELD_MODULUS);
         if (s != 0) {
             chi = 2 * int256(s & 1) - 1;
         } else {
@@ -745,8 +600,8 @@ library CryptoLibrary {
     // of WB 2019.
     function sign0(uint256 t) internal pure returns (uint256 s) {
         s = 1;
-        if (t > P_MINUS1_OVER2) {
-            s = P_MINUS1;
+        if (t > pMinus1Over2) {
+            s = pMinus1;
         }
     }
 
