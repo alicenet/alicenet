@@ -34,9 +34,9 @@ describe("Testing ImmutableAuth error codes", async () => {
       2003
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_LP_STAKING returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_LP_STAKING,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING,
       2004
     );
   });
@@ -52,9 +52,9 @@ describe("Testing ImmutableAuth error codes", async () => {
       2006
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_PUBLIC_STAKING returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_PUBLICSTAKING returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_PUBLIC_STAKING,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING,
       2007
     );
   });
@@ -64,45 +64,45 @@ describe("Testing ImmutableAuth error codes", async () => {
       2008
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_STAKING_POSITION_DESCRIPTOR returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_STAKING_POSITION_DESCRIPTOR,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR,
       2009
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_VALIDATOR_POOL returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_VALIDATORPOOL returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_VALIDATOR_POOL,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL,
       2010
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_VALIDATOR_STAKING returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_VALIDATOR_STAKING,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING,
       2011
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_ATOKEN_BURNER returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_ATOKENBURNER returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ATOKEN_BURNER,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ATOKENBURNER,
       2012
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_ATOKEN_MINTER returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_ATOKENMINTER returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ATOKEN_MINTER,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ATOKENMINTER,
       2013
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_ETHDKG_ACCUSATIONS returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ETHDKG_ACCUSATIONS,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS,
       2014
     );
   });
-  it("IMMUTEABLEAUTH_ONLY_ETHDKG_PHASES returns correct code", async () => {
+  it("IMMUTEABLEAUTH_ONLY_ETHDKGPHASES returns correct code", async () => {
     await assertConstantReturnsCorrectErrorCode(
-      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ETHDKG_PHASES,
+      immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES,
       2015
     );
   });
