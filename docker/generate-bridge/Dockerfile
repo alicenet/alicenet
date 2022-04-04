@@ -6,6 +6,8 @@ RUN go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
 # final node image containing binaries compiled by helper image
 FROM node:16.14.0-alpine3.15
 RUN apk add --no-cache bash=5.1.16-r0
+
+# install old npm version, because npm >=7 doesnt allow running as root :(
 RUN npm i -g npm@6.14.16
 
 # inherit all permissions from host OS
