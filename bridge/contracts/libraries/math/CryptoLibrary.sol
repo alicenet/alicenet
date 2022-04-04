@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-/* solhint-disable */
 /*
     Author: Philipp Schindler
     Source code and documentation available on Github: https://github.com/PhilippSchindler/ethdkg
@@ -27,7 +26,7 @@ library CryptoLibrary {
     ////////
 
     // GROUP_ORDER is the are the number of group elements in the groups G1, G2, and GT.
-    uint256 constant GROUP_ORDER =
+    uint256 public constant GROUP_ORDER =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     // FIELD_MODULUS is the prime number over which the elliptic curves are based.
     uint256 public constant FIELD_MODULUS =
@@ -42,7 +41,7 @@ library CryptoLibrary {
     // G1 == (G1_X, G1_Y) is the standard generator for group G1.
     // uint256 constant G1_X  = 1;
     // uint256 constant G1_Y  = 2;
-    // H1 == (H1X, H1Y) = HashToG1([]byte("MadHive Rocks!") from golang code;
+    // H1 == (H1X, H1Y) = hashToG1([]byte("MadHive Rocks!") from golang code;
     // this is another generator for G1 and dlog_G1(H1) is unknown,
     // which is necessary for security.
     //
@@ -119,9 +118,11 @@ library CryptoLibrary {
     // All of these constants are computed modulo FIELD_MODULUS.
     //
     // (-1 + sqrt(-3))/2
-    uint256 public constant HASH_CONST_1 = 2203960485148121921418603742825762020974279258880205651966;
+    uint256 public constant HASH_CONST_1 =
+        2203960485148121921418603742825762020974279258880205651966;
     // sqrt(-3)
-    uint256 public constant HASH_CONST_2 = 4407920970296243842837207485651524041948558517760411303933;
+    uint256 public constant HASH_CONST_2 =
+        4407920970296243842837207485651524041948558517760411303933;
     // 1/3
     uint256 public constant HASH_CONST_3 =
         14592161914559516814830937163504850059130874104865215775126025263096817472389;
@@ -131,41 +132,29 @@ library CryptoLibrary {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //// HELPER FUNCTIONS
 
-    function dleq_verify(
+    function discreteLogEquality(
         uint256[2] memory x1,
         uint256[2] memory y1,
         uint256[2] memory x2,
         uint256[2] memory y2,
         uint256[2] memory proof
-    ) internal view returns (bool proof_is_valid) {
+    ) internal view returns (bool proofIsValid) {
         uint256[2] memory tmp1;
         uint256[2] memory tmp2;
 
-        tmp1 = bn128_multiply([x1[0], x1[1], proof[1]]);
-        tmp2 = bn128_multiply([y1[0], y1[1], proof[0]]);
-        uint256[2] memory t1prime = bn128_add([tmp1[0], tmp1[1], tmp2[0], tmp2[1]]);
+        tmp1 = bn128Multiply([x1[0], x1[1], proof[1]]);
+        tmp2 = bn128Multiply([y1[0], y1[1], proof[0]]);
+        uint256[2] memory t1prime = bn128Add([tmp1[0], tmp1[1], tmp2[0], tmp2[1]]);
 
-        tmp1 = bn128_multiply([x2[0], x2[1], proof[1]]);
-        tmp2 = bn128_multiply([y2[0], y2[1], proof[0]]);
-        uint256[2] memory t2prime = bn128_add([tmp1[0], tmp1[1], tmp2[0], tmp2[1]]);
+        tmp1 = bn128Multiply([x2[0], x2[1], proof[1]]);
+        tmp2 = bn128Multiply([y2[0], y2[1], proof[0]]);
+        uint256[2] memory t2prime = bn128Add([tmp1[0], tmp1[1], tmp2[0], tmp2[1]]);
 
         uint256 challenge = uint256(keccak256(abi.encodePacked(x1, y1, x2, y2, t1prime, t2prime)));
-        proof_is_valid = challenge == proof[0];
+        proofIsValid = challenge == proof[0];
     }
 
-    // TODO: identity (0, 0) should be considered a valid point
-    function bn128_is_on_curve(uint256[2] memory point) internal pure returns (bool) {
-        // check if the provided point is on the bn128 curve (y**2 = x**3 + 3)
-        return
-            mulmod(point[1], point[1], FIELD_MODULUS) ==
-            addmod(
-                mulmod(point[0], mulmod(point[0], point[0], FIELD_MODULUS), FIELD_MODULUS),
-                3,
-                FIELD_MODULUS
-            );
-    }
-
-    function bn128_add(uint256[4] memory input) internal view returns (uint256[2] memory result) {
+    function bn128Add(uint256[4] memory input) internal view returns (uint256[2] memory result) {
         // computes P + Q
         // input: 4 values of 256 bit each
         //  *) x-coordinate of point P
@@ -185,7 +174,7 @@ library CryptoLibrary {
         require(success, "elliptic curve addition failed");
     }
 
-    function bn128_multiply(uint256[3] memory input)
+    function bn128Multiply(uint256[3] memory input)
         internal
         view
         returns (uint256[2] memory result)
@@ -208,7 +197,7 @@ library CryptoLibrary {
         require(success, "elliptic curve multiplication failed");
     }
 
-    function bn128_check_pairing(uint256[12] memory input) internal view returns (bool) {
+    function bn128CheckPairing(uint256[12] memory input) internal view returns (bool) {
         uint256[1] memory result;
         bool success;
         assembly {
@@ -260,27 +249,27 @@ library CryptoLibrary {
     // Sign takes byte slice message and private key privK.
     // It then calls HashToG1 with message as input and performs scalar
     // multiplication to produce the resulting signature.
-    function Sign(bytes memory message, uint256 privK)
+    function sign(bytes memory message, uint256 privK)
         internal
         view
         returns (uint256[2] memory sig)
     {
         uint256[2] memory hashPoint;
-        hashPoint = HashToG1(message);
-        sig = bn128_multiply([hashPoint[0], hashPoint[1], privK]);
+        hashPoint = hashToG1ASM(message);
+        sig = bn128Multiply([hashPoint[0], hashPoint[1], privK]);
     }
 
     // Verify takes byte slice message, signature sig (element of G1),
     // public key pubK (element of G2), and checks that sig is a valid
     // signature for pubK for message. Also look at the definition of H2.
-    function Verify(
+    function verifySignature(
         bytes memory message,
         uint256[2] memory sig,
         uint256[4] memory pubK
     ) internal view returns (bool v) {
         uint256[2] memory hashPoint;
-        hashPoint = _hashToG1(message);
-        v = bn128_check_pairing(
+        hashPoint = hashToG1ASM(message);
+        v = bn128CheckPairing(
             [
                 sig[0],
                 sig[1],
@@ -324,7 +313,7 @@ library CryptoLibrary {
     // resulting points, we have an actual hash function to G1.
     // For more information relating to the hash-to-curve theory,
     // see the FT 2012 paper.
-    function HashToG1(bytes memory message) internal view returns (uint256[2] memory h) {
+    function hashToG1(bytes memory message) internal view returns (uint256[2] memory h) {
         uint256 t0 = hashToBase(message, 0x00, 0x01);
         uint256 t1 = hashToBase(message, 0x02, 0x03);
 
@@ -335,48 +324,9 @@ library CryptoLibrary {
         // Here, we check that we have a valid curve point after the addition.
         // Again, this is to ensure that even if something strange happens, we
         // will not return an invalid curvepoint.
-        h = bn128_add([h0[0], h0[1], h1[0], h1[1]]);
-        require(bn128_is_on_curve(h), "Invalid hash point: not on elliptic curve");
+        h = bn128Add([h0[0], h0[1], h1[0], h1[1]]);
+        require(bn128IsOnCurve(h), "Invalid hash point: not on elliptic curve");
         require(safeSigningPoint(h), "Dangerous hash point: not safe for signing");
-    }
-
-    // hashToBase takes in a byte slice message and bytes c0 and c1 for
-    // domain separation. The idea is that we treat keccak256 as a random
-    // oracle which outputs uint256. The problem is that we want to hash modulo
-    // FIELD_MODULUS (p, a prime number). Just using uint256 mod p will lead
-    // to bias in the distribution. In particular, there is bias towards the
-    // lower 5% of the numbers in [0, FIELD_MODULUS). The 1-norm error between
-    // s0 mod p and a uniform distribution is ~ 1/4. By itself, this 1-norm
-    // error is not too enlightening, but continue reading, as we will compare
-    // it with another distribution that has much smaller 1-norm error.
-    //
-    // To obtain a better distribution with less bias, we take 2 uint256 hash
-    // outputs (using c0 and c1 for domain separation so the hashes are
-    // independent) and ``combine them'' to form a ``uint512''. Of course,
-    // this is not possible in practice, so we view the combined output as
-    //
-    //      x == s0*2^256 + s1.
-    //
-    // This implies that x (combined from s0 and s1 in this way) is a
-    // 512-bit uint. If s0 and s1 are uniformly distributed modulo 2^256,
-    // then x is uniformly distributed modulo 2^512. We now want to reduce
-    // this modulo FIELD_MODULUS (p). This is done as follows:
-    //
-    //      x mod p == [(s0 mod p)*(2^256 mod p)] + s1 mod p.
-    //
-    // This allows us easily compute the result without needing to implement
-    // higher precision. The 1-norm error between x mod p and a uniform
-    // distribution is ~1e-77. This is a *signficant* improvement from s0 mod p.
-    // For all practical purposes, there is no difference from a
-    // uniform distribution.
-    function hashToBase(
-        bytes memory message,
-        bytes1 c0,
-        bytes1 c1
-    ) internal pure returns (uint256 t) {
-        uint256 s0 = uint256(keccak256(abi.encodePacked(c0, message)));
-        uint256 s1 = uint256(keccak256(abi.encodePacked(c1, message)));
-        t = addmod(mulmod(s0, TWO_256_MOD_P, FIELD_MODULUS), s1, FIELD_MODULUS);
     }
 
     // baseToG1 is a deterministic map from the base field F_p to the elliptic
@@ -555,28 +505,33 @@ library CryptoLibrary {
         // From Fouque-Tibouchi 2012, the only way to get an invalid point is
         // when t == 0, but we have already taken care of that to ensure that
         // when t == 0, we still return a valid curve point.
-        require(bn128_is_on_curve([x, y]), "Invalid point: not on elliptic curve");
+        require(bn128IsOnCurve([x, y]), "Invalid point: not on elliptic curve");
 
         h[0] = x;
         h[1] = y;
     }
 
-    function _hashToG1(bytes memory message) internal view returns (uint256[2] memory h) {
+    /// HashToG1 takes byte slice message and outputs an element of G1. Optimized version of `hashToG1`
+    /// written in EVM assembly.
+    function hashToG1ASM(bytes memory message) internal view returns (uint256[2] memory h) {
         assembly {
-
             function memCopy(dest, src, len) {
                 if lt(len, 32) {
                     mstore(0, "invalid len")
                     revert(0, 32)
                 }
                 // Copy word-length chunks while possible
-                for {} gt(len, 31) {len := sub(len, 32)} {
+                for {
+
+                } gt(len, 31) {
+                    len := sub(len, 32)
+                } {
                     mstore(dest, mload(src))
                     src := add(src, 32)
                     dest := add(dest, 32)
                 }
 
-                if iszero(eq(len,0)) {
+                if iszero(eq(len, 0)) {
                     // Copy remaining bytes
                     let mask := sub(exp(256, sub(32, len)), 1)
                     // e.g len = 4, yields
@@ -588,58 +543,72 @@ library CryptoLibrary {
                 }
             }
 
-            function bn128_is_on_curve(p0,p1) ->result {
+            function bn128IsOnCurve(p0, p1) -> result {
                 let o1 := mulmod(p0, p0, FIELD_MODULUS)
                 o1 := mulmod(p0, o1, FIELD_MODULUS)
-                o1 := addmod(o1,3, FIELD_MODULUS)
-                let o2 := mulmod(p1,p1, FIELD_MODULUS)
-                result := eq(o1,o2)
+                o1 := addmod(o1, 3, FIELD_MODULUS)
+                let o2 := mulmod(p1, p1, FIELD_MODULUS)
+                result := eq(o1, o2)
             }
 
-            function baseToG1(ptr, t)->x,y {
-                let fp := add(ptr,0xc0)
+            function baseToG1(ptr, t, output) {
+                let fp := add(ptr, 0xc0)
                 let ap1 := mulmod(t, t, FIELD_MODULUS)
-                let alpha := mulmod(ap1, addmod(ap1, 4, FIELD_MODULUS), FIELD_MODULUS)
+
+                let alpha := mulmod(ap1, addmod(ap1, HASH_CONST_4, FIELD_MODULUS), FIELD_MODULUS)
+                // invert alpha
                 mstore(add(ptr, 0x60), alpha)
                 mstore(add(ptr, 0x80), P_MINUS2)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
+                    mstore(0, "exp mod failed at 1")
+                    revert(0, 0x20)
                 }
                 alpha := mload(fp)
+
                 ap1 := mulmod(ap1, ap1, FIELD_MODULUS)
-                x := mulmod(ap1, HASH_CONST_2, FIELD_MODULUS)
+
+                let x := mulmod(ap1, HASH_CONST_2, FIELD_MODULUS)
                 x := mulmod(x, alpha, FIELD_MODULUS)
+                // negating x
                 x := sub(FIELD_MODULUS, x)
                 x := addmod(x, HASH_CONST_1, FIELD_MODULUS)
+
                 let x_three := mulmod(x, x, FIELD_MODULUS)
                 x_three := mulmod(x_three, x, FIELD_MODULUS)
                 x_three := addmod(x_three, 3, FIELD_MODULUS)
                 mstore(add(ptr, 0x80), P_PLUS1_OVER4)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
+                    mstore(0, "exp mod failed at 2")
+                    revert(0, 0x20)
                 }
+
                 let ymul := 1
-                if gt(t,P_MINUS1_OVER2) {
-                   ymul := P_MINUS1
+                if gt(t, P_MINUS1_OVER2) {
+                    ymul := P_MINUS1
                 }
-                y := mulmod(mload(fp), ymul, FIELD_MODULUS)
+                let y := mulmod(mload(fp), ymul, FIELD_MODULUS)
                 let y_two := mulmod(y, y, FIELD_MODULUS)
                 if eq(x_three, y_two) {
+                    mstore(output, x)
+                    mstore(add(output, 0x20), y)
                     leave
                 }
-                x  := addmod(x, 1, FIELD_MODULUS)
+                x := addmod(x, 1, FIELD_MODULUS)
                 x := sub(FIELD_MODULUS, x)
                 x_three := mulmod(x, x, FIELD_MODULUS)
                 x_three := mulmod(x_three, x, FIELD_MODULUS)
                 x_three := addmod(x_three, 3, FIELD_MODULUS)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
+                    mstore(0, "exp mod failed at 3")
+                    revert(0, 0x20)
                 }
                 y := mulmod(mload(fp), ymul, FIELD_MODULUS)
                 y_two := mulmod(y, y, FIELD_MODULUS)
                 if eq(x_three, y_two) {
+                    mstore(output, x)
+                    mstore(add(output, 0x20), y)
                     leave
                 }
                 ap1 := addmod(mulmod(t, t, FIELD_MODULUS), 4, FIELD_MODULUS)
@@ -654,14 +623,17 @@ library CryptoLibrary {
                 x_three := addmod(x_three, 3, FIELD_MODULUS)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    revert(0, 0)
+                    mstore(0, "exp mod failed at 4")
+                    revert(0, 0x20)
                 }
                 y := mulmod(mload(fp), ymul, FIELD_MODULUS)
+                mstore(output, x)
+                mstore(add(output, 0x20), y)
             }
 
-            function HashToG1(ptr, messageptr, messagesize) ->x,y {
+            function hashToG1(ptr, messageptr, messagesize, output) {
                 let size := add(messagesize, 1)
-                memCopy(add(ptr,1), messageptr, messagesize)
+                memCopy(add(ptr, 1), messageptr, messagesize)
                 mstore8(ptr, 0x00)
                 let h0 := keccak256(ptr, size)
                 mstore8(ptr, 0x01)
@@ -676,33 +648,49 @@ library CryptoLibrary {
                 mstore(add(ptr, 0xa0), FIELD_MODULUS)
                 h1 := addmod(h1, mulmod(h0, TWO_256_MOD_P, FIELD_MODULUS), FIELD_MODULUS)
                 h2 := addmod(h3, mulmod(h2, TWO_256_MOD_P, FIELD_MODULUS), FIELD_MODULUS)
-                let x1,y1 := baseToG1(ptr, h1)
-                let success := bn128_is_on_curve(x1,y1)
+                baseToG1(ptr, h1, output)
+                let x1 := mload(output)
+                let y1 := mload(add(output, 0x20))
+                let success := bn128IsOnCurve(x1, y1)
                 if iszero(success) {
-                    revert(0,0)
+                    mstore(0, "x1 y1 not in curve")
+                    revert(0, 0x20)
                 }
-                let x2,y2 := baseToG1(ptr, h2)
-                success := bn128_is_on_curve(x2,y2)
+                baseToG1(ptr, h2, output)
+                let x2 := mload(output)
+                let y2 := mload(add(output, 0x20))
+                success := bn128IsOnCurve(x2, y2)
                 if iszero(success) {
-                    revert(0,0)
+                    mstore(0, "x2 y2 not in curve")
+                    revert(0, 0x20)
                 }
                 mstore(ptr, x1)
                 mstore(add(ptr, 0x20), y1)
                 mstore(add(ptr, 0x40), x2)
                 mstore(add(ptr, 0x60), y2)
                 if iszero(staticcall(gas(), 0x06, ptr, 128, ptr, 64)) {
-                    revert(0,0)
+                    mstore(0, "bn256 add failed")
+                    revert(0, 0x20)
                 }
-                x:=mload(ptr)
-                y:=mload(add(ptr, 0x20))
+                let x := mload(ptr)
+                let y := mload(add(ptr, 0x20))
+                success := bn128IsOnCurve(x, y)
+                if iszero(success) {
+                    mstore(0, "x2 y2 not in curve")
+                    revert(0, 0x20)
+                }
+                if or(iszero(x), eq(y, 1)) {
+                    mstore(0, "point not safe to sign")
+                    revert(0, 0x20)
+                }
+                mstore(output, x)
+                mstore(add(output, 0x20), y)
             }
 
             let messageptr := add(message, 0x20)
             let messagesize := mload(message)
             let ptr := mload(0x40)
-            let x,y := HashToG1(ptr, messageptr, messagesize)
-            mstore(h, x)
-            mstore(add(h, 0x20), y)
+            hashToG1(ptr, messageptr, messagesize, h)
         }
     }
 
@@ -731,6 +719,172 @@ library CryptoLibrary {
         }
     }
 
+    // AggregateSignatures takes takes the signature array sigs, index array
+    // indices, and threshold to compute the thresholded group signature.
+    // After ensuring some basic requirements are met, it calls
+    // LagrangeInterpolationG1 to perform this interpolation.
+    //
+    // To trade computation (and expensive gas costs) for space, we choose
+    // to require that the multiplicative inverses modulo GROUP_ORDER be
+    // entered for this function call in invArray. This allows the expensive
+    // portion of gas cost to grow linearly in the size of the group rather
+    // than quadratically. Additional improvements made be included
+    // in the future.
+    //
+    // One advantage to how this function is designed is that we do not need
+    // to know the number of participants, as we only require inverses which
+    // will be required as deteremined by indices.
+    function aggregateSignatures(
+        uint256[2][] memory sigs,
+        uint256[] memory indices,
+        uint256 threshold,
+        uint256[] memory invArray
+    ) internal view returns (uint256[2] memory) {
+        require(
+            sigs.length == indices.length,
+            "Mismatch between length of signatures and index array"
+        );
+        require(
+            sigs.length > threshold,
+            "Failed to meet required number of signatures for threshold"
+        );
+        uint256 maxIndex = computeArrayMax(indices);
+        require(checkInverses(invArray, maxIndex), "invArray does not include correct inverses");
+        uint256[2] memory grpsig;
+        grpsig = lagrangeInterpolationG1(sigs, indices, threshold, invArray);
+        return grpsig;
+    }
+
+    // LagrangeInterpolationG1 efficiently computes Lagrange interpolation
+    // of pointsG1 using indices as the point location in the finite field.
+    // This is an efficient method of Lagrange interpolation as we assume
+    // finite field inverses are in invArray.
+    function lagrangeInterpolationG1(
+        uint256[2][] memory pointsG1,
+        uint256[] memory indices,
+        uint256 threshold,
+        uint256[] memory invArray
+    ) internal view returns (uint256[2] memory) {
+        require(pointsG1.length == indices.length, "Mismatch between pointsG1 and indices arrays");
+        uint256[2] memory val;
+        val[0] = 0;
+        val[1] = 0;
+        uint256 i;
+        uint256 ell;
+        uint256 idxJ;
+        uint256 idxK;
+        uint256 rj;
+        uint256 rjPartial;
+        uint256[2] memory partialVal;
+        for (i = 0; i < indices.length; i++) {
+            idxJ = indices[i];
+            if (i > threshold) {
+                break;
+            }
+            rj = 1;
+            for (ell = 0; ell < indices.length; ell++) {
+                idxK = indices[ell];
+                if (ell > threshold) {
+                    break;
+                }
+                if (idxK == idxJ) {
+                    continue;
+                }
+                rjPartial = liRjPartialConst(idxK, idxJ, invArray);
+                rj = mulmod(rj, rjPartial, GROUP_ORDER);
+            }
+            partialVal = pointsG1[i];
+            partialVal = bn128Multiply([partialVal[0], partialVal[1], rj]);
+            val = bn128Add([val[0], val[1], partialVal[0], partialVal[1]]);
+        }
+        return val;
+    }
+
+    // liRjPartialConst computes the partial constants of rj in Lagrange
+    // interpolation based on the the multiplicative inverses in invArray.
+    function liRjPartialConst(
+        uint256 k,
+        uint256 j,
+        uint256[] memory invArray
+    ) internal pure returns (uint256) {
+        require(k != j, "Must have k != j when computing rj partial constants");
+        uint256 tmp1 = k;
+        uint256 tmp2;
+        if (k > j) {
+            tmp2 = k - j;
+        } else {
+            tmp1 = mulmod(tmp1, GROUP_ORDER - 1, GROUP_ORDER);
+            tmp2 = j - k;
+        }
+        tmp2 = invArray[tmp2 - 1];
+        tmp2 = mulmod(tmp1, tmp2, GROUP_ORDER);
+        return tmp2;
+    }
+
+    // TODO: identity (0, 0) should be considered a valid point
+    function bn128IsOnCurve(uint256[2] memory point) internal pure returns (bool) {
+        // check if the provided point is on the bn128 curve (y**2 = x**3 + 3)
+        return
+            mulmod(point[1], point[1], FIELD_MODULUS) ==
+            addmod(
+                mulmod(point[0], mulmod(point[0], point[0], FIELD_MODULUS), FIELD_MODULUS),
+                3,
+                FIELD_MODULUS
+            );
+    }
+
+    // hashToBase takes in a byte slice message and bytes c0 and c1 for
+    // domain separation. The idea is that we treat keccak256 as a random
+    // oracle which outputs uint256. The problem is that we want to hash modulo
+    // FIELD_MODULUS (p, a prime number). Just using uint256 mod p will lead
+    // to bias in the distribution. In particular, there is bias towards the
+    // lower 5% of the numbers in [0, FIELD_MODULUS). The 1-norm error between
+    // s0 mod p and a uniform distribution is ~ 1/4. By itself, this 1-norm
+    // error is not too enlightening, but continue reading, as we will compare
+    // it with another distribution that has much smaller 1-norm error.
+    //
+    // To obtain a better distribution with less bias, we take 2 uint256 hash
+    // outputs (using c0 and c1 for domain separation so the hashes are
+    // independent) and ``combine them'' to form a ``uint512''. Of course,
+    // this is not possible in practice, so we view the combined output as
+    //
+    //      x == s0*2^256 + s1.
+    //
+    // This implies that x (combined from s0 and s1 in this way) is a
+    // 512-bit uint. If s0 and s1 are uniformly distributed modulo 2^256,
+    // then x is uniformly distributed modulo 2^512. We now want to reduce
+    // this modulo FIELD_MODULUS (p). This is done as follows:
+    //
+    //      x mod p == [(s0 mod p)*(2^256 mod p)] + s1 mod p.
+    //
+    // This allows us easily compute the result without needing to implement
+    // higher precision. The 1-norm error between x mod p and a uniform
+    // distribution is ~1e-77. This is a *signficant* improvement from s0 mod p.
+    // For all practical purposes, there is no difference from a
+    // uniform distribution.
+    function hashToBase(
+        bytes memory message,
+        bytes1 c0,
+        bytes1 c1
+    ) internal pure returns (uint256 t) {
+        uint256 s0 = uint256(keccak256(abi.encodePacked(c0, message)));
+        uint256 s1 = uint256(keccak256(abi.encodePacked(c1, message)));
+        t = addmod(mulmod(s0, TWO_256_MOD_P, FIELD_MODULUS), s1, FIELD_MODULUS);
+    }
+
+    // safeSigningPoint ensures that the HashToG1 point we are returning
+    // is safe to sign; in particular, it is not Infinity (the group identity
+    // element) or the standard curve generator (curveGen) or its negation.
+    //
+    // TODO: may want to confirm point is valid first as well as reducing mod field prime
+    function safeSigningPoint(uint256[2] memory input) internal pure returns (bool) {
+        if (input[0] == 0 || input[0] == 1) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     // neg computes the additive inverse (the negative) modulo FIELD_MODULUS.
     function neg(uint256 t) internal pure returns (uint256 s) {
         if (t == 0) {
@@ -748,127 +902,6 @@ library CryptoLibrary {
         if (t > P_MINUS1_OVER2) {
             s = P_MINUS1;
         }
-    }
-
-    // safeSigningPoint ensures that the HashToG1 point we are returning
-    // is safe to sign; in particular, it is not Infinity (the group identity
-    // element) or the standard curve generator (curveGen) or its negation.
-    //
-    // TODO: may want to confirm point is valid first as well as reducing mod field prime
-    function safeSigningPoint(uint256[2] memory input) internal pure returns (bool) {
-        if (input[0] == 0 || input[0] == 1) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    // AggregateSignatures takes takes the signature array sigs, index array
-    // indices, and threshold to compute the thresholded group signature.
-    // After ensuring some basic requirements are met, it calls
-    // LagrangeInterpolationG1 to perform this interpolation.
-    //
-    // To trade computation (and expensive gas costs) for space, we choose
-    // to require that the multiplicative inverses modulo GROUP_ORDER be
-    // entered for this function call in invArray. This allows the expensive
-    // portion of gas cost to grow linearly in the size of the group rather
-    // than quadratically. Additional improvements made be included
-    // in the future.
-    //
-    // One advantage to how this function is designed is that we do not need
-    // to know the number of participants, as we only require inverses which
-    // will be required as deteremined by indices.
-    function AggregateSignatures(
-        uint256[2][] memory sigs,
-        uint256[] memory indices,
-        uint256 threshold,
-        uint256[] memory invArray
-    ) internal view returns (uint256[2] memory) {
-        require(
-            sigs.length == indices.length,
-            "Mismatch between length of signatures and index array"
-        );
-        require(
-            sigs.length > threshold,
-            "Failed to meet required number of signatures for threshold"
-        );
-        uint256 maxIndex = computeArrayMax(indices);
-        require(checkInverses(invArray, maxIndex), "invArray does not include correct inverses");
-        uint256[2] memory grpsig;
-        grpsig = LagrangeInterpolationG1(sigs, indices, threshold, invArray);
-        return grpsig;
-    }
-
-    // computeArrayMax computes the maximum uin256 element of uint256Array
-    function computeArrayMax(uint256[] memory uint256Array) internal pure returns (uint256) {
-        uint256 curVal;
-        uint256 maxVal = uint256Array[0];
-        for (uint256 i = 1; i < uint256Array.length; i++) {
-            curVal = uint256Array[i];
-            if (curVal > maxVal) {
-                maxVal = curVal;
-            }
-        }
-        return maxVal;
-    }
-
-    // checkIndices determines whether or not each of these arrays contain
-    // unique indices. There is no reason any index should appear twice.
-    // All indices should be in {1, 2, ..., n} and this function ensures this.
-    // n is the total number of participants; that is, n == addresses.length.
-    function checkIndices(
-        uint256[] memory honestIndices,
-        uint256[] memory dishonestIndices,
-        uint256 n
-    ) internal pure returns (bool validIndices) {
-        validIndices = true;
-        uint256 k;
-        uint256 f;
-        uint256 cur_idx;
-
-        assert(n > 0);
-        assert(n < 256);
-
-        // Make sure each honestIndices list is unique
-        for (k = 0; k < honestIndices.length; k++) {
-            cur_idx = honestIndices[k];
-            // All indices must be between 1 and n
-            if ((cur_idx == 0) || (cur_idx > n)) {
-                validIndices = false;
-                break;
-            }
-            // Only check for equality with previous indices
-            if ((f & (1 << cur_idx)) == 0) {
-                f |= 1 << cur_idx;
-            } else {
-                // We have seen this index before; invalid index sets
-                validIndices = false;
-                break;
-            }
-        }
-        if (!validIndices) {
-            return validIndices;
-        }
-
-        // Make sure each dishonestIndices list is unique and does not match
-        // any from honestIndices.
-        for (k = 0; k < dishonestIndices.length; k++) {
-            cur_idx = dishonestIndices[k];
-            // All indices must be between 1 and n
-            if ((cur_idx == 0) || (cur_idx > n)) {
-                validIndices = false;
-                break;
-            }
-            // Only check for equality with previous indices
-            if ((f & (1 << cur_idx)) == 0) {
-                f |= 1 << cur_idx;
-            } else {
-                // We have seen this index before; invalid index sets
-                validIndices = false;
-                break;
-            }
-        }
-        return validIndices;
     }
 
     // checkInverses takes maxIndex as the maximum element of indices
@@ -898,70 +931,75 @@ library CryptoLibrary {
         return validInverses;
     }
 
-    // LagrangeInterpolationG1 efficiently computes Lagrange interpolation
-    // of pointsG1 using indices as the point location in the finite field.
-    // This is an efficient method of Lagrange interpolation as we assume
-    // finite field inverses are in invArray.
-    function LagrangeInterpolationG1(
-        uint256[2][] memory pointsG1,
-        uint256[] memory indices,
-        uint256 threshold,
-        uint256[] memory invArray
-    ) internal view returns (uint256[2] memory) {
-        require(pointsG1.length == indices.length, "Mismatch between pointsG1 and indices arrays");
-        uint256[2] memory val;
-        val[0] = 0;
-        val[1] = 0;
-        uint256 i;
-        uint256 ell;
-        uint256 idxJ;
-        uint256 idxK;
-        uint256 Rj;
-        uint256 RjPartial;
-        uint256[2] memory partialVal;
-        for (i = 0; i < indices.length; i++) {
-            idxJ = indices[i];
-            if (i > threshold) {
+    // checkIndices determines whether or not each of these arrays contain
+    // unique indices. There is no reason any index should appear twice.
+    // All indices should be in {1, 2, ..., n} and this function ensures this.
+    // n is the total number of participants; that is, n == addresses.length.
+    function checkIndices(
+        uint256[] memory honestIndices,
+        uint256[] memory dishonestIndices,
+        uint256 n
+    ) internal pure returns (bool validIndices) {
+        validIndices = true;
+        uint256 k;
+        uint256 f;
+        uint256 curIdx;
+
+        assert(n > 0);
+        assert(n < 256);
+
+        // Make sure each honestIndices list is unique
+        for (k = 0; k < honestIndices.length; k++) {
+            curIdx = honestIndices[k];
+            // All indices must be between 1 and n
+            if ((curIdx == 0) || (curIdx > n)) {
+                validIndices = false;
                 break;
             }
-            Rj = 1;
-            for (ell = 0; ell < indices.length; ell++) {
-                idxK = indices[ell];
-                if (ell > threshold) {
-                    break;
-                }
-                if (idxK == idxJ) {
-                    continue;
-                }
-                RjPartial = liRjPartialConst(idxK, idxJ, invArray);
-                Rj = mulmod(Rj, RjPartial, GROUP_ORDER);
+            // Only check for equality with previous indices
+            if ((f & (1 << curIdx)) == 0) {
+                f |= 1 << curIdx;
+            } else {
+                // We have seen this index before; invalid index sets
+                validIndices = false;
+                break;
             }
-            partialVal = pointsG1[i];
-            partialVal = bn128_multiply([partialVal[0], partialVal[1], Rj]);
-            val = bn128_add([val[0], val[1], partialVal[0], partialVal[1]]);
         }
-        return val;
+        if (!validIndices) {
+            return validIndices;
+        }
+
+        // Make sure each dishonestIndices list is unique and does not match
+        // any from honestIndices.
+        for (k = 0; k < dishonestIndices.length; k++) {
+            curIdx = dishonestIndices[k];
+            // All indices must be between 1 and n
+            if ((curIdx == 0) || (curIdx > n)) {
+                validIndices = false;
+                break;
+            }
+            // Only check for equality with previous indices
+            if ((f & (1 << curIdx)) == 0) {
+                f |= 1 << curIdx;
+            } else {
+                // We have seen this index before; invalid index sets
+                validIndices = false;
+                break;
+            }
+        }
+        return validIndices;
     }
 
-    // liRjPartialConst computes the partial constants of Rj in Lagrange
-    // interpolation based on the the multiplicative inverses in invArray.
-    function liRjPartialConst(
-        uint256 k,
-        uint256 j,
-        uint256[] memory invArray
-    ) internal pure returns (uint256) {
-        require(k != j, "Must have k != j when computing Rj partial constants");
-        uint256 tmp1 = k;
-        uint256 tmp2;
-        if (k > j) {
-            tmp2 = k - j;
-        } else {
-            tmp1 = mulmod(tmp1, GROUP_ORDER - 1, GROUP_ORDER);
-            tmp2 = j - k;
+    // computeArrayMax computes the maximum uin256 element of uint256Array
+    function computeArrayMax(uint256[] memory uint256Array) internal pure returns (uint256) {
+        uint256 curVal;
+        uint256 maxVal = uint256Array[0];
+        for (uint256 i = 1; i < uint256Array.length; i++) {
+            curVal = uint256Array[i];
+            if (curVal > maxVal) {
+                maxVal = curVal;
+            }
         }
-        tmp2 = invArray[tmp2 - 1];
-        tmp2 = mulmod(tmp1, tmp2, GROUP_ORDER);
-        return tmp2;
+        return maxVal;
     }
 }
-/* solhint-enable */

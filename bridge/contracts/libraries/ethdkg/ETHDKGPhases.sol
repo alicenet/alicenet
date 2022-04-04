@@ -27,7 +27,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         require(
-            CryptoLibrary.bn128_is_on_curve(publicKey),
+            CryptoLibrary.bn128IsOnCurve(publicKey),
             "ETHDKG: Registration failed - public key not on elliptic curve!"
         );
         require(
@@ -90,7 +90,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         for (uint256 k = 0; k <= threshold; k++) {
             require(
-                CryptoLibrary.bn128_is_on_curve(commitments[k]),
+                CryptoLibrary.bn128IsOnCurve(commitments[k]),
                 "ETHDKG: Key sharing failed - commitment not on elliptic curve!"
             );
             require(commitments[k][0] != 0, "ETHDKG: Commitments shouldn't be 0!");
@@ -157,7 +157,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         require(
-            CryptoLibrary.dleq_verify(
+            CryptoLibrary.discreteLogEquality(
                 [CryptoLibrary.H1_X, CryptoLibrary.H1_Y],
                 keyShareG1,
                 [CryptoLibrary.G1_X, CryptoLibrary.G1_Y],
@@ -167,7 +167,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             "ETHDKG: Key share submission failed - invalid key share G1!"
         );
         require(
-            CryptoLibrary.bn128_check_pairing(
+            CryptoLibrary.bn128CheckPairing(
                 [
                     keyShareG1[0],
                     keyShareG1[1],
@@ -195,7 +195,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (numParticipants > 1) {
             mpkG1 = _mpkG1;
         }
-        _mpkG1 = CryptoLibrary.bn128_add(
+        _mpkG1 = CryptoLibrary.bn128Add(
             [mpkG1[0], mpkG1[1], participant.keyShares[0], participant.keyShares[1]]
         );
 
@@ -228,7 +228,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         uint256[2] memory mpkG1 = _mpkG1;
         require(
-            CryptoLibrary.bn128_check_pairing(
+            CryptoLibrary.bn128CheckPairing(
                 [
                     mpkG1[0],
                     mpkG1[1],
