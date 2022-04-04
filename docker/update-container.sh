@@ -18,7 +18,6 @@ CMD=${4-};
 DOCKER_BUILD_ARGS="-f $DOCKERFILE -t $TAG";
 
 PASS_PERMVARS=${PASS_PERMVARS-};
-echo PASS_PERMVARS=$PASS_PERMVARS;
 if [ "$PASS_PERMVARS" != "" ]; then
 	source ./docker/set-permvars.sh;
 	DOCKER_BUILD_ARGS="$DOCKER_BUILD_ARGS --build-arg BUILDER_UID --build-arg BUILDER_GIDS";
