@@ -195,7 +195,6 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (numParticipants > 1) {
             mpkG1 = _mpkG1;
         }
-
         _mpkG1 = CryptoLibrary.bn128Add(
             [mpkG1[0], mpkG1[1], participant.keyShares[0], participant.keyShares[1]]
         );
