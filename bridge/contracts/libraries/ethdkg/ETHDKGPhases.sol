@@ -195,6 +195,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         if (numParticipants > 1) {
             mpkG1 = _mpkG1;
         }
+
         _mpkG1 = CryptoLibrary.bn128Add(
             [mpkG1[0], mpkG1[1], participant.keyShares[0], participant.keyShares[1]]
         );
@@ -248,6 +249,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         _masterPublicKey = masterPublicKey_;
+        _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
 
         _setPhase(Phase.GPKJSubmission);
         emit MPKSet(block.number, _nonce, masterPublicKey_);
