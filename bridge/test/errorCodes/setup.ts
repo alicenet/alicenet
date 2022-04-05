@@ -14,5 +14,7 @@ export const assertConstantReturnsCorrectErrorCode = async (
   expectedNumber: number
 ) => {
   const code = await constant();
-  expect(parseInt(code)).to.be.equal(expectedNumber);
+  const codeString = ethers.utils.parseBytes32String(code);
+
+  expect(parseInt(codeString)).to.be.equal(expectedNumber);
 };

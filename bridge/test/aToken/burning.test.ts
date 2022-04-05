@@ -58,7 +58,7 @@ describe("Testing AToken", async () => {
         // burn
         await expect(
           fixture.aTokenBurner.burn(user.address, amount)
-        ).to.be.revertedWith("onlyFactory");
+        ).to.be.revertedWith("2000");
       });
     });
   });

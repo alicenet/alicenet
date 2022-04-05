@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import {CryptoLibraryErrorCodes} from "contracts/libraries/errorCodes/CryptoLibraryErrorCodes.sol";
 
-/* solhint-disable */
 /*
     Author: Philipp Schindler
     Source code and documentation available on Github: https://github.com/PhilippSchindler/ethdkg
@@ -200,12 +199,7 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x07, input, 96, result, 64)
         }
-        require(
-            success,
-            string(
-                abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_MULTIPLICATION)
-            )
-        );
+        require(success, "elliptic curve multiplication failed");
     }
 
     function bn128CheckPairing(uint256[12] memory input) internal view returns (bool) {
@@ -219,10 +213,7 @@ library CryptoLibrary {
             // 32        size of result (one 32 byte boolean!)
             success := staticcall(not(0), 0x08, input, 384, result, 32)
         }
-        require(
-            success,
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_PAIRING))
-        );
+        require(success, "elliptic curve pairing failed");
         return result[0] == 1;
     }
 
@@ -257,10 +248,7 @@ library CryptoLibrary {
             // data
             result := mload(p)
         }
-        require(
-            success,
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_MODULAR_EXPONENTIATION))
-        );
+        require(success, "modular exponentiation falied");
     }
 
     // Sign takes byte slice message and private key privK.
@@ -341,9 +329,9 @@ library CryptoLibrary {
         // Here, we check that we have a valid curve point after the addition.
         // Again, this is to ensure that even if something strange happens, we
         // will not return an invalid curvepoint.
-        h = bn128_add([h0[0], h0[1], h1[0], h1[1]]);
+        h = bn128Add([h0[0], h0[1], h1[0], h1[1]]);
         require(
-            bn128_is_on_curve(h),
+            bn128IsOnCurve(h),
             string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_NOT_ON_CURVE))
         );
         require(
@@ -529,7 +517,7 @@ library CryptoLibrary {
         // when t == 0, but we have already taken care of that to ensure that
         // when t == 0, we still return a valid curve point.
         require(
-            bn128_is_on_curve([x, y]),
+            bn128IsOnCurve([x, y]),
             string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_POINT_NOT_ON_CURVE))
         );
 

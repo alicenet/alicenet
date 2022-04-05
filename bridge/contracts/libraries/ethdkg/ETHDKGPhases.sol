@@ -28,7 +28,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
 
         require(
-            CryptoLibrary.bn128_is_on_curve(publicKey),
+            CryptoLibrary.bn128IsOnCurve(publicKey),
             string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_NOT_ON_CURVE))
         );
         require(
@@ -93,7 +93,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         for (uint256 k = 0; k <= threshold; k++) {
             require(
-                CryptoLibrary.bn128_is_on_curve(commitments[k]),
+                CryptoLibrary.bn128IsOnCurve(commitments[k]),
                 string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_COMMITMENT_NOT_ON_CURVE))
             );
             require(

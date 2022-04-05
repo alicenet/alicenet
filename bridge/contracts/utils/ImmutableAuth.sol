@@ -48,6 +48,50 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 }
     
+abstract contract ImmutableATokenBurner is ImmutableFactory {
+
+    address private immutable _aTokenBurner;
+
+    modifier onlyATokenBurner() {
+        require(msg.sender == _aTokenBurner, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER)));
+        _;
+    }
+
+    constructor() {
+        _aTokenBurner = getMetamorphicContractAddress(0x41546f6b656e4275726e65720000000000000000000000000000000000000000, _factoryAddress());
+    }
+
+    function _aTokenBurnerAddress() internal view returns(address) {
+        return _aTokenBurner;
+    }
+
+    function _saltForATokenBurner() internal pure returns(bytes32) {
+        return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
+    }
+}
+    
+abstract contract ImmutableATokenMinter is ImmutableFactory {
+
+    address private immutable _aTokenMinter;
+
+    modifier onlyATokenMinter() {
+        require(msg.sender == _aTokenMinter, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER)));
+        _;
+    }
+
+    constructor() {
+        _aTokenMinter = getMetamorphicContractAddress(0x41546f6b656e4d696e7465720000000000000000000000000000000000000000, _factoryAddress());
+    }
+
+    function _aTokenMinterAddress() internal view returns(address) {
+        return _aTokenMinter;
+    }
+
+    function _saltForATokenMinter() internal pure returns(bytes32) {
+        return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
+    }
+}
+    
 abstract contract ImmutableBToken is ImmutableFactory {
 
     address private immutable _bToken;
@@ -243,50 +287,6 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
     function _saltForValidatorStaking() internal pure returns(bytes32) {
         return 0x56616c696461746f725374616b696e6700000000000000000000000000000000;
-    }
-}
-    
-abstract contract ImmutableATokenBurner is ImmutableFactory {
-
-    address private immutable _aTokenBurner;
-
-    modifier onlyATokenBurner() {
-        require(msg.sender == _aTokenBurner, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER)));
-        _;
-    }
-
-    constructor() {
-        _aTokenBurner = getMetamorphicContractAddress(0x41546f6b656e4275726e65720000000000000000000000000000000000000000, _factoryAddress());
-    }
-
-    function _aTokenBurnerAddress() internal view returns(address) {
-        return _aTokenBurner;
-    }
-
-    function _saltForATokenBurner() internal pure returns(bytes32) {
-        return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
-    }
-}
-    
-abstract contract ImmutableATokenMinter is ImmutableFactory {
-
-    address private immutable _aTokenMinter;
-
-    modifier onlyATokenMinter() {
-        require(msg.sender == _aTokenMinter, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER)));
-        _;
-    }
-
-    constructor() {
-        _aTokenMinter = getMetamorphicContractAddress(0x41546f6b656e4d696e7465720000000000000000000000000000000000000000, _factoryAddress());
-    }
-
-    function _aTokenMinterAddress() internal view returns(address) {
-        return _aTokenMinter;
-    }
-
-    function _saltForATokenMinter() internal pure returns(bytes32) {
-        return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
     }
 }
     
