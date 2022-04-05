@@ -7,15 +7,12 @@ import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt ETHDKGPhases
 /// @custom:deploy-type deployUpgradeable
 /// @custom:deploy-group ethdkg
 /// @custom:deploy-group-index 1
 contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
-    using Strings for uint16;
-
     constructor() ETHDKGStorage() {}
 
     function register(uint256[2] memory publicKey) external {
@@ -23,20 +20,20 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.RegistrationOpen &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_REGISTRATION_PHASE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_REGISTRATION_PHASE))
         );
         require(
             publicKey[0] != 0 && publicKey[1] != 0,
-            ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_ZERO.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_ZERO))
         );
 
         require(
-            CryptoLibrary.bn128IsOnCurve(publicKey),
-            ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_NOT_ON_CURVE.toString()
+            CryptoLibrary.bn128_is_on_curve(publicKey),
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_NOT_ON_CURVE))
         );
         require(
             _participants[msg.sender].nonce < _nonce,
-            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_PARTICIPATING_IN_ROUND.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_PARTICIPATING_IN_ROUND))
         );
         uint32 numRegistered = uint32(_numParticipants);
         numRegistered++;
@@ -70,31 +67,39 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.ShareDistribution &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_SHARED_DISTRIBUTION_PHASE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_SHARED_DISTRIBUTION_PHASE))
         );
         Participant memory participant = _participants[msg.sender];
-        require(participant.nonce == _nonce, ETHDKGErrorCodes.ETHDKG_INVALID_NONCE.toString());
+        require(
+            participant.nonce == _nonce,
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NONCE))
+        );
         require(
             participant.phase == Phase.RegistrationOpen,
-            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_DISTRIBUTED_SHARES_IN_ROUND.toString()
+            string(
+                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_DISTRIBUTED_SHARES_IN_ROUND)
+            )
         );
 
         uint256 numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         uint256 threshold = _getThreshold(numValidators);
         require(
             encryptedShares.length == numValidators - 1,
-            ETHDKGErrorCodes.ETHDKG_INVALID_NUM_ENCRYPTED_SHARES.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NUM_ENCRYPTED_SHARES))
         );
         require(
             commitments.length == threshold + 1,
-            ETHDKGErrorCodes.ETHDKG_INVALID_NUM_COMMITMENTS.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NUM_COMMITMENTS))
         );
         for (uint256 k = 0; k <= threshold; k++) {
             require(
-                CryptoLibrary.bn128IsOnCurve(commitments[k]),
-                ETHDKGErrorCodes.ETHDKG_COMMITMENT_NOT_ON_CURVE.toString()
+                CryptoLibrary.bn128_is_on_curve(commitments[k]),
+                string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_COMMITMENT_NOT_ON_CURVE))
             );
-            require(commitments[k][0] != 0, ETHDKGErrorCodes.ETHDKG_COMMITMENT_ZERO.toString());
+            require(
+                commitments[k][0] != 0,
+                string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_COMMITMENT_ZERO))
+            );
         }
 
         bytes32 encryptedSharesHash = keccak256(abi.encodePacked(encryptedShares));
@@ -104,7 +109,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         );
         require(
             participant.distributedSharesHash != 0x0,
-            ETHDKGErrorCodes.ETHDKG_DISTRIBUTED_SHARE_HASH_ZERO.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_DISTRIBUTED_SHARE_HASH_ZERO))
         );
         participant.commitmentsFirstCoefficient = commitments[0];
         participant.phase = Phase.ShareDistribution;
@@ -140,7 +145,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     block.number >= _phaseStartBlock + _phaseLength &&
                     block.number < _phaseStartBlock + 2 * _phaseLength &&
                     _badParticipants == 0),
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_KEYSHARE_SUBMISSION_PHASE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_KEYSHARE_SUBMISSION_PHASE))
         );
 
         // Since we had a dispute stage prior this state we need to set global state in here
@@ -150,11 +155,13 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         Participant memory participant = _participants[msg.sender];
         require(
             participant.nonce == _nonce,
-            ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
         );
         require(
             participant.phase == Phase.ShareDistribution,
-            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_KEYSHARES_IN_ROUND.toString()
+            string(
+                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_KEYSHARES_IN_ROUND)
+            )
         );
 
         require(
@@ -165,7 +172,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 participant.commitmentsFirstCoefficient,
                 keyShareG1CorrectnessProof
             ),
-            ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G1.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G1))
         );
         require(
             CryptoLibrary.bn128CheckPairing(
@@ -184,7 +191,7 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     keyShareG2[3]
                 ]
             ),
-            ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G2.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G2))
         );
 
         participant.keyShares = keyShareG1;
@@ -225,7 +232,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.MPKSubmission &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE.toString()
+            string(
+                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE)
+            )
         );
         uint256[2] memory mpkG1 = _mpkG1;
         require(
@@ -245,7 +254,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     masterPublicKey_[3]
                 ]
             ),
-            ETHDKGErrorCodes.ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE.toString()
+            string(
+                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE)
+            )
         );
 
         _masterPublicKey = masterPublicKey_;
@@ -261,23 +272,23 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _ethdkgPhase == Phase.GPKJSubmission &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength,
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE))
         );
 
         Participant memory participant = _participants[msg.sender];
 
         require(
             participant.nonce == _nonce,
-            ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
         );
         require(
             participant.phase == Phase.KeyShareSubmission,
-            ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND))
         );
 
         require(
             gpkj[0] != 0 || gpkj[1] != 0 || gpkj[2] != 0 || gpkj[3] != 0,
-            ETHDKGErrorCodes.ETHDKG_GPKJ_ZERO.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_GPKJ_ZERO))
         );
 
         participant.gpkj = gpkj;
@@ -313,9 +324,12 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             (_ethdkgPhase == Phase.DisputeGPKJSubmission &&
                 block.number >= _phaseStartBlock + _phaseLength) &&
                 block.number < _phaseStartBlock + 2 * _phaseLength,
-            ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE))
         );
-        require(_badParticipants == 0, ETHDKGErrorCodes.ETHDKG_REQUISITES_INCOMPLETE.toString());
+        require(
+            _badParticipants == 0,
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_REQUISITES_INCOMPLETE))
+        );
 
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);

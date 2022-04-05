@@ -74,16 +74,14 @@ pragma solidity ^0.8.11;
 
 import "./DeterministicAddress.sol";
 import {ImmutableAuthErrorCodes} from "contracts/libraries/errorCodes/ImmutableAuthErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
-    using Strings for uint16;
     address private immutable _factory;
     
     modifier onlyFactory() {
       require(
           msg.sender == _factory,
-          ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY.toString()
+          string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY))
       );
       _;
   }
@@ -110,11 +108,11 @@ function templateContract(contract: Contract): string {
 
   return `
 abstract contract Immutable${contract.name} is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _${mixedContractName};
 
     modifier only${contract.name}() {
-        require(msg.sender == _${mixedContractName}, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_${contract.name.toUpperCase()}.toString());
+        require(msg.sender == _${mixedContractName}, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_${contract.name.toUpperCase()})));
         _;
     }
 

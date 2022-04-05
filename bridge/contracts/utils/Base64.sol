@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 import {Base64ErrorCodes} from "contracts/libraries/errorCodes/Base64ErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 /* solhint-disable */
 
@@ -10,7 +9,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @notice Provides functions for encoding/decoding base64
 library Base64 {
-    using Strings for uint16;
     string internal constant TABLE_ENCODE =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     bytes internal constant TABLE_DECODE =
@@ -83,7 +81,10 @@ library Base64 {
         bytes memory data = bytes(_data);
 
         if (data.length == 0) return new bytes(0);
-        require(data.length % 4 == 0, Base64ErrorCodes.BASE64_INVALID_INPUT.toString());
+        require(
+            data.length % 4 == 0,
+            string(abi.encodePacked(Base64ErrorCodes.BASE64_INVALID_INPUT))
+        );
 
         // load the table into memory
         bytes memory table = TABLE_DECODE;

@@ -11,13 +11,10 @@ import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
 contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
-    using Strings for uint16;
-
     constructor(uint256 chainID_, uint256 epochLength_) SnapshotsStorage(chainID_, epochLength_) {}
 
     function initialize(uint32 desperationDelay_, uint32 desperationFactor_)
@@ -57,16 +54,16 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED.toString()
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
         );
         require(
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING.toString()
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
 
         require(
             block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
-            SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED.toString()
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
 
         uint32 epoch = _epoch + 1;
@@ -102,8 +99,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
-                    IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY.toString()
+                    keccak256(abi.encodePacked(IETHDKG(_ethdkgAddress()).getMasterPublicKey())),
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
             );
 
             require(
@@ -112,7 +109,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     signature,
                     masterPublicKey
                 ),
-                SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED.toString()
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
             );
         }
 
@@ -122,12 +119,12 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
         require(
             epoch * _epochLength == blockClaims.height,
-            SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT.toString()
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
         );
 
         require(
             blockClaims.chainId == _chainId,
-            SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID.toString()
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
         );
 
         bool isSafeToProceedConsensus = true;

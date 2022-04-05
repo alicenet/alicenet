@@ -4,13 +4,11 @@ pragma solidity ^0.8.11;
 import {
     MerkleProofParserLibraryErrorCodes
 } from "contracts/libraries/errorCodes/MerkleProofParserLibraryErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the MerkleProof structure from a blob of binary data
 library MerkleProofParserLibrary {
-    using Strings for uint16;
     struct MerkleProof {
         bool included;
         uint16 keyHeight;
@@ -38,21 +36,32 @@ library MerkleProofParserLibrary {
     {
         require(
             src.length >= _MERKLE_PROOF_SIZE,
-            MerkleProofParserLibraryErrorCodes
-                .MERKLEPROOFPARSERLIB_INVALID_PROOF_MINIMUM_SIZE
-                .toString()
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes
+                        .MERKLEPROOFPARSERLIB_INVALID_PROOF_MINIMUM_SIZE
+                )
+            )
         );
         uint16 bitmapLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 99);
         uint16 auditPathLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 101);
         require(
             src.length >= _MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32,
-            MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_PROOF_SIZE.toString()
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_PROOF_SIZE
+                )
+            )
         );
         mProof.included = BaseParserLibrary.extractBool(src, 0);
         mProof.keyHeight = BaseParserLibrary.extractUInt16FromBigEndian(src, 1);
         require(
             mProof.keyHeight >= 0 && mProof.keyHeight <= 256,
-            MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_KEY_HEIGHT.toString()
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_KEY_HEIGHT
+                )
+            )
         );
         mProof.key = BaseParserLibrary.extractBytes32(src, 3);
         mProof.proofKey = BaseParserLibrary.extractBytes32(src, 35);

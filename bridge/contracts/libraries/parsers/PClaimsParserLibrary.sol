@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 import {
     PClaimsParserLibraryErrorCodes
 } from "contracts/libraries/errorCodes/PClaimsParserLibraryErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./BaseParserLibrary.sol";
 import "./BClaimsParserLibrary.sol";
@@ -12,7 +11,6 @@ import "./RCertParserLibrary.sol";
 
 /// @title Library to parse the PClaims structure from a blob of capnproto data
 library PClaimsParserLibrary {
-    using Strings for uint16;
     struct PClaims {
         BClaimsParserLibrary.BClaims bClaims;
         RCertParserLibrary.RCert rCert;
@@ -59,7 +57,11 @@ library PClaimsParserLibrary {
     {
         require(
             dataOffset + _PCLAIMS_SIZE > dataOffset,
-            PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
+            string(
+                abi.encodePacked(
+                    PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
+                )
+            )
         );
         uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
             src,
@@ -68,7 +70,9 @@ library PClaimsParserLibrary {
         pClaimsBinarySize = _PCLAIMS_SIZE - pointerOffsetAdjustment;
         require(
             src.length >= dataOffset + pClaimsBinarySize,
-            PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_INSUFFICIENT_BYTES.toString()
+            string(
+                abi.encodePacked(PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_INSUFFICIENT_BYTES)
+            )
         );
         pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(
             src,

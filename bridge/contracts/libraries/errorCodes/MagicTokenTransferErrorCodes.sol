@@ -3,5 +3,5 @@ pragma solidity ^0.8.11;
 
 library MagicTokenTransferErrorCodes {
     // MagicTokenTransfer error codes
-    uint16 public constant MAGICTOKENTRANSFER_TRANSFER_FAILED = 2100; //"MagicTokenTransfer: Transfer failed."
+    bytes32 public constant MAGICTOKENTRANSFER_TRANSFER_FAILED = "2100"; //"MagicTokenTransfer: Transfer failed."
 }

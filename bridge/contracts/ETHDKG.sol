@@ -25,14 +25,13 @@ contract ETHDKG is
     ImmutableETHDKGAccusations,
     ImmutableETHDKGPhases
 {
-    using Strings for uint16;
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
 
     modifier onlyValidator() {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED))
         );
         _;
     }
@@ -70,7 +69,7 @@ contract ETHDKG is
     function setPhaseLength(uint16 phaseLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
-            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
         );
         _phaseLength = phaseLength_;
     }
@@ -78,7 +77,7 @@ contract ETHDKG is
     function setConfirmationLength(uint16 confirmationLength_) public onlyFactory {
         require(
             !_isETHDKGRunning(),
-            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
         );
         _confirmationLength = confirmationLength_;
     }
@@ -344,7 +343,7 @@ contract ETHDKG is
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         require(
             numberValidators >= _MIN_VALIDATORS,
-            ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET))
         );
 
         _phaseStartBlock = uint64(block.number);

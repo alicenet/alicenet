@@ -9,7 +9,6 @@ import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import {BTokenErrorCodes} from "contracts/libraries/errorCodes/BTokenErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
@@ -26,7 +25,6 @@ contract BToken is
     ImmutableLiquidityProviderStaking,
     ImmutableFoundation
 {
-    using Strings for uint16;
     struct Deposit {
         uint8 accountType;
         address account;
@@ -235,7 +233,7 @@ contract BToken is
         Deposit memory d = _deposits[depositID];
         require(
             d.account != address(uint160(0x00)),
-            BTokenErrorCodes.BTOKEN_INVALID_DEPOSIT_ID.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_DEPOSIT_ID))
         );
         return d;
     }
@@ -300,7 +298,7 @@ contract BToken is
         );
         require(
             address(this).balance >= poolBalance,
-            BTokenErrorCodes.BTOKEN_INVALID_BALANCE.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_BALANCE))
         );
 
         // invariants hold
@@ -311,7 +309,10 @@ contract BToken is
     // normal burn function. The ether will be distributed in the distribute
     // method.
     function _destroyTokens(uint256 numBTK_) internal returns (bool) {
-        require(numBTK_ != 0, BTokenErrorCodes.BTOKEN_INVALID_BURN_AMOUNT.toString());
+        require(
+            numBTK_ != 0,
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_BURN_AMOUNT))
+        );
         _poolBalance -= _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
         ERC20Upgradeable._burn(msg.sender, numBTK_);
         return true;
@@ -326,10 +327,13 @@ contract BToken is
     ) internal returns (uint256) {
         require(
             !_isContract(to_),
-            BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS))
         );
-        require(amount_ > 0, BTokenErrorCodes.BTOKEN_DEPOSIT_AMOUNT_ZERO.toString());
-        require(_destroyTokens(amount_), BTokenErrorCodes.BTOKEN_DEPOSIT_BURN_FAIL.toString());
+        require(amount_ > 0, string(abi.encodePacked(BTokenErrorCodes.BTOKEN_DEPOSIT_AMOUNT_ZERO)));
+        require(
+            _destroyTokens(amount_),
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_DEPOSIT_BURN_FAIL))
+        );
         // copying state to save gas
         return _doDepositCommon(accountType_, to_, amount_);
     }
@@ -343,9 +347,9 @@ contract BToken is
     ) internal returns (uint256) {
         require(
             !_isContract(to_),
-            BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS))
         );
-        require(amount_ > 0, BTokenErrorCodes.BTOKEN_DEPOSIT_AMOUNT_ZERO.toString());
+        require(amount_ > 0, string(abi.encodePacked(BTokenErrorCodes.BTOKEN_DEPOSIT_AMOUNT_ZERO)));
         // copying state to save gas
         return _doDepositCommon(accountType_, to_, amount_);
     }
@@ -360,15 +364,18 @@ contract BToken is
     ) internal returns (uint256) {
         require(
             !_isContract(to_),
-            BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_CONTRACTS_DISALLOWED_DEPOSITS))
         );
         require(
             numEth_ >= _MARKET_SPREAD,
-            BTokenErrorCodes.BTOKEN_MARKET_SPREAD_TOO_LOW.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_MARKET_SPREAD_TOO_LOW))
         );
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 amount_ = _ethToBTokens(_poolBalance, numEth_);
-        require(amount_ >= minBTK_, BTokenErrorCodes.BTOKEN_MINT_INSUFFICIENT_ETH.toString());
+        require(
+            amount_ >= minBTK_,
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_MINT_INSUFFICIENT_ETH))
+        );
         return _doDepositCommon(accountType_, to_, amount_);
     }
 
@@ -394,12 +401,15 @@ contract BToken is
     ) internal returns (uint256 numBTK) {
         require(
             numEth_ >= _MARKET_SPREAD,
-            BTokenErrorCodes.BTOKEN_MARKET_SPREAD_TOO_LOW.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_MARKET_SPREAD_TOO_LOW))
         );
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 poolBalance = _poolBalance;
         numBTK = _ethToBTokens(poolBalance, numEth_);
-        require(numBTK >= minBTK_, BTokenErrorCodes.BTOKEN_MINIMUM_MINT_NOT_MET.toString());
+        require(
+            numBTK >= minBTK_,
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_MINIMUM_MINT_NOT_MET))
+        );
         poolBalance += numEth_;
         _poolBalance = poolBalance;
         ERC20Upgradeable._mint(to_, numBTK);
@@ -414,10 +424,16 @@ contract BToken is
         uint256 numBTK_,
         uint256 minEth_
     ) internal returns (uint256 numEth) {
-        require(numBTK_ != 0, BTokenErrorCodes.BTOKEN_INVALID_BURN_AMOUNT.toString());
+        require(
+            numBTK_ != 0,
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_BURN_AMOUNT))
+        );
         uint256 poolBalance = _poolBalance;
         numEth = _bTokensToEth(poolBalance, totalSupply(), numBTK_);
-        require(numEth >= minEth_, BTokenErrorCodes.BTOKEN_MINIMUM_BURN_NOT_MET.toString());
+        require(
+            numEth >= minEth_,
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_MINIMUM_BURN_NOT_MET))
+        );
         poolBalance -= numEth;
         _poolBalance = poolBalance;
         ERC20Upgradeable._burn(from_, numBTK_);
@@ -437,7 +453,7 @@ contract BToken is
                 liquidityProviderStakingSplit_ +
                 protocolFee_ ==
                 _PERCENTAGE_SCALE,
-            BTokenErrorCodes.BTOKEN_SPLIT_VALUE_SUM_ERROR.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_SPLIT_VALUE_SUM_ERROR))
         );
         _validatorStakingSplit = validatorStakingSplit_;
         _publicStakingSplit = publicStakingSplit_;
@@ -469,7 +485,7 @@ contract BToken is
     ) internal pure returns (uint256 numEth) {
         require(
             totalSupply_ >= numBTK_,
-            BTokenErrorCodes.BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY.toString()
+            string(abi.encodePacked(BTokenErrorCodes.BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY))
         );
         return _min(poolBalance_, _fp(totalSupply_) - _fp(totalSupply_ - numBTK_));
     }

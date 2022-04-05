@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 import {
     CustomEnumerableMapsErrorCodes
 } from "contracts/libraries/errorCodes/CustomEnumerableMapsErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 struct ValidatorData {
     address _address;
@@ -22,8 +21,6 @@ struct ValidatorDataMap {
 }
 
 library CustomEnumerableMaps {
-    using Strings for uint16;
-
     /**
      * @dev Add a value to a map. O(1).
      *
@@ -145,7 +142,7 @@ library CustomEnumerableMaps {
         returns (ValidatorData memory)
     {
         (bool success, ValidatorData memory value) = tryGet(map, key);
-        require(success, CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP.toString());
+        require(success, string(abi.encodePacked(CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP)));
         return value;
     }
 

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 import {CryptoLibraryErrorCodes} from "contracts/libraries/errorCodes/CryptoLibraryErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 /* solhint-disable */
 /*
@@ -22,7 +21,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 //       some of them may not be if there are attempts they are called with
 //       invalid points.
 library CryptoLibrary {
-    using Strings for uint16;
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //// CRYPTOGRAPHIC CONSTANTS
 
@@ -176,7 +174,10 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x06, input, 128, result, 64)
         }
-        require(success, CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_ADDITION.toString());
+        require(
+            success,
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_ADDITION))
+        );
     }
 
     function bn128Multiply(uint256[3] memory input)
@@ -201,7 +202,9 @@ library CryptoLibrary {
         }
         require(
             success,
-            CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_MULTIPLICATION.toString()
+            string(
+                abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_MULTIPLICATION)
+            )
         );
     }
 
@@ -216,7 +219,10 @@ library CryptoLibrary {
             // 32        size of result (one 32 byte boolean!)
             success := staticcall(not(0), 0x08, input, 384, result, 32)
         }
-        require(success, CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_PAIRING.toString());
+        require(
+            success,
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_PAIRING))
+        );
         return result[0] == 1;
     }
 
@@ -251,7 +257,10 @@ library CryptoLibrary {
             // data
             result := mload(p)
         }
-        require(success, CryptoLibraryErrorCodes.CRYPTOLIB_MODULAR_EXPONENTIATION.toString());
+        require(
+            success,
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_MODULAR_EXPONENTIATION))
+        );
     }
 
     // Sign takes byte slice message and private key privK.
@@ -335,11 +344,11 @@ library CryptoLibrary {
         h = bn128_add([h0[0], h0[1], h1[0], h1[1]]);
         require(
             bn128_is_on_curve(h),
-            CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_NOT_ON_CURVE.toString()
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_NOT_ON_CURVE))
         );
         require(
             safeSigningPoint(h),
-            CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_UNSAFE.toString()
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_UNSAFE))
         );
     }
 
@@ -521,7 +530,7 @@ library CryptoLibrary {
         // when t == 0, we still return a valid curve point.
         require(
             bn128_is_on_curve([x, y]),
-            CryptoLibraryErrorCodes.CRYPTOLIB_POINT_NOT_ON_CURVE.toString()
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_POINT_NOT_ON_CURVE))
         );
 
         h[0] = x;
@@ -576,16 +585,24 @@ library CryptoLibrary {
     ) internal view returns (uint256[2] memory) {
         require(
             sigs.length == indices.length,
-            CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_INDICES_LENGTH_MISMATCH.toString()
+            string(
+                abi.encodePacked(
+                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_INDICES_LENGTH_MISMATCH
+                )
+            )
         );
         require(
             sigs.length > threshold,
-            CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_LENGTH_THRESHOLD_NOT_MET.toString()
+            string(
+                abi.encodePacked(
+                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_LENGTH_THRESHOLD_NOT_MET
+                )
+            )
         );
         uint256 maxIndex = computeArrayMax(indices);
         require(
             checkInverses(invArray, maxIndex),
-            CryptoLibraryErrorCodes.CRYPTOLIB_INVERSE_ARRAY_INCORRECT.toString()
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_INVERSE_ARRAY_INCORRECT))
         );
         uint256[2] memory grpsig;
         grpsig = lagrangeInterpolationG1(sigs, indices, threshold, invArray);

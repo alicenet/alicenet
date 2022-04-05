@@ -4,16 +4,14 @@ pragma solidity ^0.8.11;
 
 import "./DeterministicAddress.sol";
 import {ImmutableAuthErrorCodes} from "contracts/libraries/errorCodes/ImmutableAuthErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
-    using Strings for uint16;
     address private immutable _factory;
     
     modifier onlyFactory() {
       require(
           msg.sender == _factory,
-          ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY.toString()
+          string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY))
       );
       _;
   }
@@ -29,11 +27,11 @@ abstract contract ImmutableFactory is DeterministicAddress {
 }
 
 abstract contract ImmutableAToken is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _aToken;
 
     modifier onlyAToken() {
-        require(msg.sender == _aToken, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKEN.toString());
+        require(msg.sender == _aToken, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKEN)));
         _;
     }
 
@@ -51,11 +49,11 @@ abstract contract ImmutableAToken is ImmutableFactory {
 }
     
 abstract contract ImmutableBToken is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _bToken;
 
     modifier onlyBToken() {
-        require(msg.sender == _bToken, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN.toString());
+        require(msg.sender == _bToken, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN)));
         _;
     }
 
@@ -73,11 +71,11 @@ abstract contract ImmutableBToken is ImmutableFactory {
 }
     
 abstract contract ImmutableFoundation is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _foundation;
 
     modifier onlyFoundation() {
-        require(msg.sender == _foundation, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FOUNDATION.toString());
+        require(msg.sender == _foundation, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FOUNDATION)));
         _;
     }
 
@@ -95,11 +93,11 @@ abstract contract ImmutableFoundation is ImmutableFactory {
 }
     
 abstract contract ImmutableGovernance is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _governance;
 
     modifier onlyGovernance() {
-        require(msg.sender == _governance, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_GOVERNANCE.toString());
+        require(msg.sender == _governance, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_GOVERNANCE)));
         _;
     }
 
@@ -117,11 +115,11 @@ abstract contract ImmutableGovernance is ImmutableFactory {
 }
     
 abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _liquidityProviderStaking;
 
     modifier onlyLiquidityProviderStaking() {
-        require(msg.sender == _liquidityProviderStaking, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING.toString());
+        require(msg.sender == _liquidityProviderStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING)));
         _;
     }
 
@@ -139,11 +137,11 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
 }
     
 abstract contract ImmutablePublicStaking is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _publicStaking;
 
     modifier onlyPublicStaking() {
-        require(msg.sender == _publicStaking, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING.toString());
+        require(msg.sender == _publicStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING)));
         _;
     }
 
@@ -161,11 +159,11 @@ abstract contract ImmutablePublicStaking is ImmutableFactory {
 }
     
 abstract contract ImmutableSnapshots is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _snapshots;
 
     modifier onlySnapshots() {
-        require(msg.sender == _snapshots, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_SNAPSHOTS.toString());
+        require(msg.sender == _snapshots, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_SNAPSHOTS)));
         _;
     }
 
@@ -183,11 +181,11 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
 }
     
 abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _stakingPositionDescriptor;
 
     modifier onlyStakingPositionDescriptor() {
-        require(msg.sender == _stakingPositionDescriptor, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR.toString());
+        require(msg.sender == _stakingPositionDescriptor, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR)));
         _;
     }
 
@@ -205,11 +203,11 @@ abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
 }
     
 abstract contract ImmutableValidatorPool is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _validatorPool;
 
     modifier onlyValidatorPool() {
-        require(msg.sender == _validatorPool, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL.toString());
+        require(msg.sender == _validatorPool, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL)));
         _;
     }
 
@@ -227,11 +225,11 @@ abstract contract ImmutableValidatorPool is ImmutableFactory {
 }
     
 abstract contract ImmutableValidatorStaking is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _validatorStaking;
 
     modifier onlyValidatorStaking() {
-        require(msg.sender == _validatorStaking, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING.toString());
+        require(msg.sender == _validatorStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING)));
         _;
     }
 
@@ -249,11 +247,11 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 }
     
 abstract contract ImmutableATokenBurner is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _aTokenBurner;
 
     modifier onlyATokenBurner() {
-        require(msg.sender == _aTokenBurner, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER.toString());
+        require(msg.sender == _aTokenBurner, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER)));
         _;
     }
 
@@ -271,11 +269,11 @@ abstract contract ImmutableATokenBurner is ImmutableFactory {
 }
     
 abstract contract ImmutableATokenMinter is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _aTokenMinter;
 
     modifier onlyATokenMinter() {
-        require(msg.sender == _aTokenMinter, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER.toString());
+        require(msg.sender == _aTokenMinter, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER)));
         _;
     }
 
@@ -293,11 +291,11 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 }
     
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _ethdkgAccusations;
 
     modifier onlyETHDKGAccusations() {
-        require(msg.sender == _ethdkgAccusations, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS.toString());
+        require(msg.sender == _ethdkgAccusations, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS)));
         _;
     }
 
@@ -315,11 +313,11 @@ abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
 }
     
 abstract contract ImmutableETHDKGPhases is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _ethdkgPhases;
 
     modifier onlyETHDKGPhases() {
-        require(msg.sender == _ethdkgPhases, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES.toString());
+        require(msg.sender == _ethdkgPhases, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES)));
         _;
     }
 
@@ -337,11 +335,11 @@ abstract contract ImmutableETHDKGPhases is ImmutableFactory {
 }
     
 abstract contract ImmutableETHDKG is ImmutableFactory {
-    using Strings for uint16;
+
     address private immutable _ethdkg;
 
     modifier onlyETHDKG() {
-        require(msg.sender == _ethdkg, ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKG.toString());
+        require(msg.sender == _ethdkg, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKG)));
         _;
     }
 

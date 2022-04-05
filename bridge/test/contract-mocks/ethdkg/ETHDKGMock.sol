@@ -11,7 +11,6 @@ import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,
@@ -21,14 +20,13 @@ contract ETHDKGMock is
     ImmutableETHDKGPhases,
     IETHDKGEvents
 {
-    using Strings for uint16;
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
 
     modifier onlyValidator() {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED))
         );
         _;
     }
@@ -74,7 +72,7 @@ contract ETHDKGMock is
     function setPhaseLength(uint16 phaseLength_) public {
         require(
             !_isETHDKGRunning(),
-            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
         );
         _phaseLength = phaseLength_;
     }
@@ -82,7 +80,7 @@ contract ETHDKGMock is
     function setConfirmationLength(uint16 confirmationLength_) public {
         require(
             !_isETHDKGRunning(),
-            ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
         );
         _confirmationLength = confirmationLength_;
     }
@@ -346,7 +344,7 @@ contract ETHDKGMock is
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         require(
             numberValidators >= _MIN_VALIDATORS,
-            ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET.toString()
+            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET))
         );
 
         _phaseStartBlock = uint64(block.number);

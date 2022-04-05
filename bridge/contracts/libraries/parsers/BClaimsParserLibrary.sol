@@ -4,13 +4,11 @@ pragma solidity ^0.8.11;
 import {
     BClaimsParserLibraryErrorCodes
 } from "contracts/libraries/errorCodes/BClaimsParserLibraryErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the BClaims structure from a blob of capnproto data
 library BClaimsParserLibrary {
-    using Strings for uint16;
     struct BClaims {
         uint32 chainId;
         uint32 height;
@@ -47,7 +45,11 @@ library BClaimsParserLibrary {
         uint16 dataSectionSize = BaseParserLibrary.extractUInt16(src, dataOffset);
         require(
             dataSectionSize > 0 && dataSectionSize <= 2,
-            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_SIZE_THRESHOLD_EXCEEDED.toString()
+            string(
+                abi.encodePacked(
+                    BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_SIZE_THRESHOLD_EXCEEDED
+                )
+            )
         );
         // In case the txCount is 0, the value is not included in the binary
         // blob by capnproto. Therefore, we need to deduce 8 bytes from the
@@ -94,11 +96,17 @@ library BClaimsParserLibrary {
     ) internal pure returns (BClaims memory bClaims) {
         require(
             dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment > dataOffset,
-            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW.toString()
+            string(
+                abi.encodePacked(
+                    BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment,
-            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_NOT_ENOUGH_BYTES.toString()
+            string(
+                abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_NOT_ENOUGH_BYTES)
+            )
         );
 
         if (pointerOffsetAdjustment == 0) {
@@ -112,12 +120,12 @@ library BClaimsParserLibrary {
         bClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         require(
             bClaims.chainId > 0,
-            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_CHAINID_ZERO.toString()
+            string(abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_CHAINID_ZERO))
         );
         bClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         require(
             bClaims.height > 0,
-            BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_HEIGHT_ZERO.toString()
+            string(abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_HEIGHT_ZERO))
         );
         bClaims.prevBlock = BaseParserLibrary.extractBytes32(
             src,

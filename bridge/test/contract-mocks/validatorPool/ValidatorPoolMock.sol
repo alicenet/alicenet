@@ -10,7 +10,6 @@ import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -22,7 +21,6 @@ contract ValidatorPoolMock is
     ImmutableAToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
-    using Strings for uint16;
 
     uint256 public constant POSITION_LOCK_PERIOD = 3; // Actual is 172800
 
@@ -71,7 +69,7 @@ contract ValidatorPoolMock is
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
                     MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET.toString()
+            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET))
         );
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
@@ -170,10 +168,7 @@ contract ValidatorPoolMock is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX.toString()
-        );
+        require(index_ < _validators.length(), string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX)));
         return _validators.at(index_)._address;
     }
 

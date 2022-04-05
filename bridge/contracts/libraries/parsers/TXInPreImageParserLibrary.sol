@@ -4,13 +4,10 @@ pragma solidity ^0.8.11;
 import {
     TXInPreImageParserLibraryErrorCodes
 } from "contracts/libraries/errorCodes/TXInPreImageParserLibraryErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the TXInPreImage structure from a blob of capnproto data
 library TXInPreImageParserLibrary {
-    using Strings for uint16;
-
     struct TXInPreImage {
         uint32 chainId;
         uint32 consumedTxIdx;
@@ -54,18 +51,28 @@ library TXInPreImageParserLibrary {
     {
         require(
             dataOffset + _TX_IN_PRE_IMAGE_SIZE > dataOffset,
-            TXInPreImageParserLibraryErrorCodes
-                .TXINPREIMAGEPARSERLIB_DATA_OFFSET_OVERFLOW
-                .toString()
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_DATA_OFFSET_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= dataOffset + _TX_IN_PRE_IMAGE_SIZE,
-            TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_INSUFFICIENT_BYTES.toString()
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_INSUFFICIENT_BYTES
+                )
+            )
         );
         txInPreImage.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         require(
             txInPreImage.chainId > 0,
-            TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_CHAINID_ZERO.toString()
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_CHAINID_ZERO
+                )
+            )
         );
         txInPreImage.consumedTxIdx = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         txInPreImage.consumedTxHash = BaseParserLibrary.extractBytes32(src, dataOffset + 16);

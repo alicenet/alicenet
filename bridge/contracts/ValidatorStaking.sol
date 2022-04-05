@@ -6,8 +6,6 @@ import "contracts/libraries/StakingNFT/StakingNFT.sol";
 /// @custom:salt ValidatorStaking
 /// @custom:deploy-type deployUpgradeable
 contract ValidatorStaking is StakingNFT {
-    using Strings for uint16;
-
     constructor() StakingNFT() {}
 
     function initialize() public initializer onlyFactory {
@@ -41,7 +39,9 @@ contract ValidatorStaking is StakingNFT {
     ) public override withCircuitBreaker onlyValidatorPool returns (uint256 tokenID) {
         require(
             lockDuration_ <= _MAX_MINT_LOCK,
-            StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_MINT_LOCK.toString()
+            string(
+                abi.encodePacked(StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_MINT_LOCK)
+            )
         );
         tokenID = _mintNFT(to_, amount_);
         if (lockDuration_ > 0) {
