@@ -15,7 +15,7 @@ describe("ETHDKG: GPKj submission", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitGPKJ(validators4[0].gpkj)
-    ).to.be.revertedWith("ETHDKG: Not in GPKJ submission phase");
+    ).to.be.revertedWith("145");
   });
 
   it("should not allow non-validators to submit GPKj submission", async () => {
@@ -27,7 +27,7 @@ describe("ETHDKG: GPKj submission", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
         .submitGPKJ(validators4[0].gpkj)
-    ).to.be.revertedWith("ETHDKG: Only validators allowed!");
+    ).to.be.revertedWith("100");
   });
 
   it("should not allow submission of GPKj more than once from a validator", async () => {
@@ -51,9 +51,7 @@ describe("ETHDKG: GPKj submission", () => {
         expectedNonce,
         0
       )
-    ).to.be.revertedWith(
-      "ETHDKG: Participant already submitted GPKj this ETHDKG round!"
-    );
+    ).to.be.revertedWith("146");
   });
 
   it("should not allow submission of empty GPKj", async () => {
@@ -63,6 +61,6 @@ describe("ETHDKG: GPKj submission", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitGPKJ(["0", "0", "0", "0"])
-    ).to.be.revertedWith("ETHDKG: GPKj cannot be all zeros!");
+    ).to.be.revertedWith("147");
   });
 });

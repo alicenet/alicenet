@@ -64,7 +64,7 @@ describe("Snapshots: Tests Snapshots methods", () => {
       "0x0000000000000000000000000000000000000000000000000000006d6168616d";
     await expect(
       fixture.snapshots.connect(randomSigner).snapshot(junkData, junkData)
-    ).to.be.revertedWith("Snapshots: Only validators allowed!");
+    ).to.be.revertedWith("400");
   });
 
   it("Does not allow snapshot consensus is not running", async function () {
@@ -73,6 +73,6 @@ describe("Snapshots: Tests Snapshots methods", () => {
     const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
-    ).to.be.revertedWith(`Snapshots: Consensus is not running!`);
+    ).to.be.revertedWith(`401`);
   });
 });

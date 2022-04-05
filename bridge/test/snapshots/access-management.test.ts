@@ -32,7 +32,7 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationDelay(expectedDelay)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
@@ -54,7 +54,7 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationFactor(expectedFactor)
-    ).to.be.revertedWith("onlyFactory");
+    ).to.be.revertedWith("2000");
   });
 
   it("Allows setSnapshotDesperationFactor from admin address", async function () {

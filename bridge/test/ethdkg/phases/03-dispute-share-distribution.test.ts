@@ -36,9 +36,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
   });
 
   it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase", async function () {
@@ -58,9 +56,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     // distribute shares
     await distributeValidatorsShares(
@@ -94,9 +90,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
@@ -112,9 +106,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     // submit MPK
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
@@ -133,9 +125,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     // submit GPKj
     await submitValidatorsGPKJ(
@@ -159,9 +149,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     await endCurrentPhase(ethdkg);
 
@@ -176,9 +164,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
 
     // complete ethdkg
     await completeETHDKG(ethdkg, validators4, expectedNonce, 0, 0);
@@ -196,9 +182,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
@@ -228,9 +212,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! dishonestParticipant did not distribute shares!"
-    );
+    ).to.be.revertedWith("112");
   });
 
   it("should not allow accusation from a non-participating validator", async function () {
@@ -260,9 +242,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Disputer did not distribute shares!"
-    );
+    ).to.be.revertedWith("113");
   });
 
   it("should not allow accusation with an incorrect index", async function () {
@@ -311,9 +291,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           [0, 0],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Submitted commitments and encrypted shares don't match!"
-    );
+    ).to.be.revertedWith("114");
   });
 
   it("should not allow double accusation of a validator on two separate calls", async function () {
@@ -375,9 +353,7 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish
           ]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
   });
 
   it("should not allow double accusation of a validator on two separate calls, with a different index order", async function () {
@@ -445,9 +421,7 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish
           ]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
   });
 
   it("should not allow proceeding to next phase (KeyShareSubmission) after accusations take place", async function () {
@@ -506,9 +480,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[3].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[3].keyShareG2
         )
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on key share submission phase"
-    );
+    ).to.be.revertedWith("140");
   });
 
   it("should not allow proceeding to next phase (KeyShareSubmission) after bad shares accusations take place, along with accusations of non-participant validators", async function () {
@@ -581,9 +553,7 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish
           ]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
 
     // try moving into the next phase - KeyShareSubmission
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
@@ -601,9 +571,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[2].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[2].keyShareG2
         )
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on key share submission phase"
-    );
+    ).to.be.revertedWith("140");
 
     // try accusing the 1st validator again of bad shares using valid encrypted shares and commitments
     await expect(
@@ -624,9 +592,7 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish
           ]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
 
     await endCurrentAccusationPhase(ethdkg);
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
@@ -642,9 +608,7 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[2].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[2].keyShareG2
         )
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on key share submission phase"
-    );
+    ).to.be.revertedWith("140");
 
     // try accusing the 1st validator again of bad shares using valid encrypted shares and commitments
     await expect(
@@ -665,8 +629,6 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish
           ]
         )
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Contract is not in dispute phase!"
-    );
+    ).to.be.revertedWith("110");
   });
 });

@@ -52,9 +52,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   it("Initialize ETHDKG", async function () {
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith(
-      "ETHDKG: Minimum number of validators staked not met!"
-    );
+    ).to.be.revertedWith("102");
   });
 
   it("Unregister validators", async function () {
@@ -62,9 +60,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         ["0x000000000000000000000000000000000000dEaD"],
       ])
-    ).to.be.revertedWith(
-      "ValidatorPool: There are not enough validators to be removed!"
-    );
+    ).to.be.revertedWith("808");
   });
 
   it("Pause consensus", async function () {
@@ -76,6 +72,6 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
         "pauseConsensusOnArbitraryHeight",
         [1]
       )
-    ).to.be.revertedWith("ValidatorPool: Condition not met to stop consensus!");
+    ).to.be.revertedWith("804");
   });
 });

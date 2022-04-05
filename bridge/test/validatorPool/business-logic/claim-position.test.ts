@@ -173,9 +173,7 @@ describe("ValidatorPool: Claiming logic", async () => {
         fixture.validatorPool
           .connect(await getValidatorEthAccount(validator))
           .claimExitingNFTPosition()
-      ).to.be.revertedWith(
-        "ValidatorPool: The waiting period is not over yet!"
-      );
+      ).to.be.revertedWith("813");
     }
   });
 
@@ -196,6 +194,6 @@ describe("ValidatorPool: Claiming logic", async () => {
     await commitSnapshots(fixture, 4);
     await expect(
       fixture.validatorPool.connect(adminSigner).claimExitingNFTPosition()
-    ).to.be.revertedWith("ValidatorPool: Address not in the exitingQueue!");
+    ).to.be.revertedWith("812");
   });
 });

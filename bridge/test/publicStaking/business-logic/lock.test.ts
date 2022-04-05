@@ -42,9 +42,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockOwnPosition(tokenID, 10n);
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith(
-        "PublicStaking: The position is not ready to be burned!"
-      );
+      ).to.revertedWith("606");
     });
 
     it("Should not allow to lock a not owned position", async function () {
@@ -52,9 +50,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(notAdminSigner)
           .lockOwnPosition(tokenID, 10n)
-      ).to.revertedWith(
-        "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
-      );
+      ).to.revertedWith("600");
     });
 
     it("Should not allow to lock a position with a value greater than _MAX_MINT_LOCK", async function () {
@@ -63,9 +59,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(adminSigner)
           .lockOwnPosition(tokenID, 172801n)
-      ).to.revertedWith(
-        "PublicStaking: Lock Duration is greater than the amount allowed!"
-      );
+      ).to.revertedWith("601");
     });
 
     it("Should not be able to lock a non-existing position!", async function () {
@@ -91,16 +85,16 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.collectEth(tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectToken(tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectEthTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectTokenTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
     });
 
     it("Should not be able to withdrawalLock a non-existing position!", async function () {
@@ -116,9 +110,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(adminSigner)
           .lockWithdraw(tokenID, 172801n)
-      ).to.revertedWith(
-        "PublicStaking: Lock Duration is greater than the amount allowed!"
-      );
+      ).to.revertedWith("601");
     });
 
     it("Should not allow to burn a locked position without waiting", async function () {
@@ -126,17 +118,13 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith(
-        "PublicStaking: The position is not ready to be burned!"
-      );
+      ).to.revertedWith("606");
     });
 
     it("Should not allow to lock a not owned position", async function () {
       await expect(
         fixture.publicStaking.connect(notAdminSigner).lockWithdraw(tokenID, 10n)
-      ).to.revertedWith(
-        "PublicStaking: Error, token doesn't exist or doesn't belong to the caller!"
-      );
+      ).to.revertedWith("600");
     });
   });
   describe("PublicStaking: BurnLock and withdrawalLock a position", async () => {
@@ -162,21 +150,19 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.collectEth(tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectToken(tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectEthTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.collectTokenTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("PublicStaking: Cannot withdraw at the moment.");
+      ).to.be.rejectedWith("603");
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith(
-        "PublicStaking: The position is not ready to be burned!"
-      );
+      ).to.revertedWith("606");
     });
   });
 });

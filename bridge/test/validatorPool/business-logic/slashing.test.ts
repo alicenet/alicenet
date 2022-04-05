@@ -532,9 +532,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     await expect(
       ethdkg.majorSlash(validators[0], validators[1])
-    ).to.be.revertedWith(
-      "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
-    );
+    ).to.be.revertedWith("814");
   });
 
   it("Should not allow major/minor slash a person that it's not a validator", async function () {
@@ -554,15 +552,11 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     await expect(
       ethdkg.majorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith(
-      "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
-    );
+    ).to.be.revertedWith("814");
 
     await expect(
       ethdkg.minorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith(
-      "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
-    );
+    ).to.be.revertedWith("814");
   });
 
   it("Major slash a validator with disputer reward greater than stake Amount", async function () {
@@ -702,7 +696,7 @@ describe("ValidatorPool: Slashing logic", async () => {
       `Failed on final minor slashing`
     );
     await expect(ethdkg.minorSlash(infringer, disputer)).to.be.revertedWith(
-      "ValidatorPool: DishonestValidator should be a validator or be in the exiting line!"
+      "814"
     );
   });
 

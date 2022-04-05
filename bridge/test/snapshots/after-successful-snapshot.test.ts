@@ -55,9 +55,7 @@ describe("Snapshots: With successful snapshot completed", () => {
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
-    ).to.be.revertedWith(
-      "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
-    );
+    ).to.be.revertedWith("402");
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
   });
 
@@ -70,7 +68,7 @@ describe("Snapshots: With successful snapshot completed", () => {
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
-    ).to.be.revertedWith(`Snapshots: Incorrect AliceNet height for snapshot!`);
+    ).to.be.revertedWith("406");
   });
 
   it("Does not allow snapshot if ETHDKG round is Running", async function () {
@@ -87,7 +85,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
-    ).to.be.revertedWith(`Snapshots: Consensus is not running!`);
+    ).to.be.revertedWith(`401`);
   });
 
   it("getLatestSnapshot returns correct snapshot data", async function () {

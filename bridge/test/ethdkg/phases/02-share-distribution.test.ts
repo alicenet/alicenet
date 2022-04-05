@@ -39,7 +39,7 @@ describe("ETHDKG: Distribute Shares", () => {
         validators4.slice(0, 1),
         expectedNonce
       )
-    ).to.be.rejectedWith("ETHDKG: cannot participate on this phase");
+    ).to.be.rejectedWith("133");
   });
 
   it("does not let non-validators to distribute shares", async function () {
@@ -57,7 +57,7 @@ describe("ETHDKG: Distribute Shares", () => {
           [BigNumber.from("0")],
           [[BigNumber.from("0"), BigNumber.from("0")]]
         )
-    ).to.be.revertedWith("ETHDKG: Only validators allowed!");
+    ).to.be.revertedWith("100");
   });
 
   it("does not let validator to distribute shares more than once", async function () {
@@ -79,9 +79,7 @@ describe("ETHDKG: Distribute Shares", () => {
         validators4.slice(0, 1),
         expectedNonce
       )
-    ).to.be.rejectedWith(
-      "ETHDKG: Participant already distributed shares this ETHDKG round!"
-    );
+    ).to.be.rejectedWith("135");
   });
 
   it("does not let validator send empty commitments or encrypted shares", async function () {
@@ -94,9 +92,7 @@ describe("ETHDKG: Distribute Shares", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .distributeShares([BigNumber.from("0")], validators4[0].commitments)
-    ).to.be.rejectedWith(
-      "ETHDKG: Share distribution failed - invalid number of encrypted shares provided!"
-    );
+    ).to.be.rejectedWith("136");
 
     await expect(
       ethdkg
@@ -104,9 +100,7 @@ describe("ETHDKG: Distribute Shares", () => {
         .distributeShares(validators4[0].encryptedShares, [
           [BigNumber.from("0"), BigNumber.from("0")],
         ])
-    ).to.be.rejectedWith(
-      "ETHDKG: Key sharing failed - invalid number of commitments provided!"
-    );
+    ).to.be.rejectedWith("137");
 
     await expect(
       ethdkg
@@ -116,9 +110,7 @@ describe("ETHDKG: Distribute Shares", () => {
           [BigNumber.from("0"), BigNumber.from("0")],
           [BigNumber.from("0"), BigNumber.from("0")],
         ])
-    ).to.be.rejectedWith(
-      "ETHDKG: Key sharing failed - commitment not on elliptic curve!"
-    );
+    ).to.be.rejectedWith("138");
 
     // the user can send empty encrypted shares on this phase, the accusation window will be
     // handling this!

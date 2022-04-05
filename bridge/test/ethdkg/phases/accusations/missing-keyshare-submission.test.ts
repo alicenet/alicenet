@@ -39,9 +39,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey(validators4[0].mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   });
 
   it("allows accusation of some missing validators after Key share phase", async function () {
@@ -77,9 +75,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey(validators4[0].mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   });
 
   it("do not allow validators to proceed to the next phase if not all validators submitted their key shares", async function () {
@@ -102,9 +98,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey(validators4[0].mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   });
 
   it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open", async function () {
@@ -122,9 +116,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Should be in post-KeyShareSubmission phase!"
-    );
+    ).to.be.revertedWith("116");
   });
 
   it("should not allow validators who did not submit key shares in time to submit on the accusation phase", async function () {
@@ -151,18 +143,14 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
           validators4[2].keyShareG1CorrectnessProof,
           validators4[2].keyShareG2
         )
-    ).to.revertedWith(
-      "ETHDKG: cannot participate on key share submission phase"
-    );
+    ).to.revertedWith("140");
 
     // non-participant user tries to go to the next phase
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3].address))
         .submitMasterPublicKey(validators4[3].mpk)
-    ).to.be.revertedWith(
-      "ETHDKG: cannot participate on master public key submission phase"
-    );
+    ).to.be.revertedWith("143");
   });
 
   it("should not allow accusation of not submitting key shares of validators submitted their key shares", async function () {
@@ -185,9 +173,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[0].address])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Dishonest participant submitted its key shares in this ETHDKG round!"
-    );
+    ).to.be.revertedWith("117");
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -215,9 +201,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ethdkg.accuseParticipantDidNotSubmitKeyShares([
         "0x23EA3Bad9115d436190851cF4C49C1032fA7579A",
       ])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -243,9 +227,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Should be in post-KeyShareSubmission phase!"
-    );
+    ).to.be.revertedWith("116");
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -271,9 +253,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
         validators4[2].address,
         validators4[0].address,
       ])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute failed! Dishonest participant submitted its key shares in this ETHDKG round!"
-    );
+    ).to.be.revertedWith("117");
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -302,9 +282,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.revertedWith("104");
 
     await expect(await ethdkg.getBadParticipants()).to.equal(1);
   });

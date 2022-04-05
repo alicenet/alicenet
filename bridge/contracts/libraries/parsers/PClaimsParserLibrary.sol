@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    PClaimsParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/PClaimsParserLibraryErrorCodes.sol";
+
 import "./BaseParserLibrary.sol";
 import "./BClaimsParserLibrary.sol";
 import "./RCertParserLibrary.sol";
@@ -53,7 +57,11 @@ library PClaimsParserLibrary {
     {
         require(
             dataOffset + _PCLAIMS_SIZE > dataOffset,
-            "PClaimsParserLibrary: Overflow on the dataOffset parameter"
+            string(
+                abi.encodePacked(
+                    PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
+                )
+            )
         );
         uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
             src,
@@ -62,7 +70,9 @@ library PClaimsParserLibrary {
         pClaimsBinarySize = _PCLAIMS_SIZE - pointerOffsetAdjustment;
         require(
             src.length >= dataOffset + pClaimsBinarySize,
-            "PClaimsParserLibrary: Not enough bytes to extract PClaims"
+            string(
+                abi.encodePacked(PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_INSUFFICIENT_BYTES)
+            )
         );
         pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(
             src,

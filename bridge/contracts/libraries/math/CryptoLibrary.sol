@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {CryptoLibraryErrorCodes} from "contracts/libraries/errorCodes/CryptoLibraryErrorCodes.sol";
+
 /*
     Author: Philipp Schindler
     Source code and documentation available on Github: https://github.com/PhilippSchindler/ethdkg
@@ -171,7 +173,10 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x06, input, 128, result, 64)
         }
-        require(success, "elliptic curve addition failed");
+        require(
+            success,
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_ADDITION))
+        );
     }
 
     function bn128Multiply(uint256[3] memory input)
@@ -353,8 +358,14 @@ library CryptoLibrary {
         // Again, this is to ensure that even if something strange happens, we
         // will not return an invalid curvepoint.
         h = bn128Add([h0[0], h0[1], h1[0], h1[1]]);
-        require(bn128IsOnCurve(h), "Invalid hash point: not on elliptic curve");
-        require(safeSigningPoint(h), "Dangerous hash point: not safe for signing");
+        require(
+            bn128IsOnCurve(h),
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_NOT_ON_CURVE))
+        );
+        require(
+            safeSigningPoint(h),
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_UNSAFE))
+        );
     }
 
     /// HashToG1 takes byte slice message and outputs an element of G1. Optimized version of `hashToG1`
@@ -727,7 +738,10 @@ library CryptoLibrary {
         // From Fouque-Tibouchi 2012, the only way to get an invalid point is
         // when t == 0, but we have already taken care of that to ensure that
         // when t == 0, we still return a valid curve point.
-        require(bn128IsOnCurve([x, y]), "Invalid point: not on elliptic curve");
+        require(
+            bn128IsOnCurve([x, y]),
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_POINT_NOT_ON_CURVE))
+        );
 
         h[0] = x;
         h[1] = y;
@@ -781,14 +795,25 @@ library CryptoLibrary {
     ) internal view returns (uint256[2] memory) {
         require(
             sigs.length == indices.length,
-            "Mismatch between length of signatures and index array"
+            string(
+                abi.encodePacked(
+                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_INDICES_LENGTH_MISMATCH
+                )
+            )
         );
         require(
             sigs.length > threshold,
-            "Failed to meet required number of signatures for threshold"
+            string(
+                abi.encodePacked(
+                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_LENGTH_THRESHOLD_NOT_MET
+                )
+            )
         );
         uint256 maxIndex = computeArrayMax(indices);
-        require(checkInverses(invArray, maxIndex), "invArray does not include correct inverses");
+        require(
+            checkInverses(invArray, maxIndex),
+            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_INVERSE_ARRAY_INCORRECT))
+        );
         uint256[2] memory grpsig;
         grpsig = lagrangeInterpolationG1(sigs, indices, threshold, invArray);
         return grpsig;

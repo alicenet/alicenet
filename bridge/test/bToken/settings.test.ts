@@ -20,23 +20,19 @@ describe("Testing BToken Settings", async () => {
   it("Should fail to set split not being an admin", async () => {
     await expect(
       fixture.bToken.connect(user).setSplits(300, 300, 300, 100)
-    ).to.be.revertedWith("Must be admin");
+    ).to.be.revertedWith("1700");
   });
 
   it("Should fail to set splits greater than one unit", async () => {
     await expect(
       fixture.bToken.connect(admin).setSplits(333, 333, 333, 2)
-    ).to.be.revertedWith(
-      "BToken: All the split values must sum to _PERCENTAGE_SCALE!"
-    );
+    ).to.be.revertedWith("310");
   });
 
   it("Should fail to set all splits to 0", async () => {
     await expect(
       fixture.bToken.connect(admin).setSplits(0, 0, 0, 0)
-    ).to.be.revertedWith(
-      "BToken: All the split values must sum to _PERCENTAGE_SCALE!"
-    );
+    ).to.be.revertedWith("310");
   });
 
   it("Should set some splits to 0", async () => {

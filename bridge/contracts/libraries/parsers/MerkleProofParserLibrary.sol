@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    MerkleProofParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/MerkleProofParserLibraryErrorCodes.sol";
+
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the MerkleProof structure from a blob of binary data
@@ -32,19 +36,32 @@ library MerkleProofParserLibrary {
     {
         require(
             src.length >= _MERKLE_PROOF_SIZE,
-            "MerkleProofParserLibrary: Not enough bytes to extract a minimum MerkleProof"
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes
+                        .MERKLEPROOFPARSERLIB_INVALID_PROOF_MINIMUM_SIZE
+                )
+            )
         );
         uint16 bitmapLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 99);
         uint16 auditPathLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 101);
         require(
             src.length >= _MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32,
-            "MerkleProofParserLibrary: Not enough bytes to extract MerkleProof"
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_PROOF_SIZE
+                )
+            )
         );
         mProof.included = BaseParserLibrary.extractBool(src, 0);
         mProof.keyHeight = BaseParserLibrary.extractUInt16FromBigEndian(src, 1);
         require(
             mProof.keyHeight >= 0 && mProof.keyHeight <= 256,
-            "MerkleProofParserLibrary: keyHeight should be in the range [0, 256]"
+            string(
+                abi.encodePacked(
+                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_KEY_HEIGHT
+                )
+            )
         );
         mProof.key = BaseParserLibrary.extractBytes32(src, 3);
         mProof.proofKey = BaseParserLibrary.extractBytes32(src, 35);

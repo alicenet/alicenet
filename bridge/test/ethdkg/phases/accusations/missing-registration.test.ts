@@ -114,9 +114,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     await expect(
       ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.revertedWith(
-      "ETHDKG: should be in post-registration accusation phase!"
-    );
+    ).to.be.revertedWith("103");
     expect(await ethdkg.getBadParticipants()).to.equal(0);
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -153,7 +151,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
           validators4[0].encryptedShares,
           validators4[0].commitments
         )
-    ).to.be.rejectedWith("ETHDKG: cannot participate on this phase");
+    ).to.be.rejectedWith("133");
   });
 
   it("should not allow validators who did not register in time to register on the accusation phase", async function () {
@@ -182,7 +180,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     const signer2 = await getValidatorEthAccount(validators4[2].address);
     await expect(
       ethdkg.connect(signer2).register(validators4[2].aliceNetPublicKey)
-    ).to.be.revertedWith("ETHDKG: Cannot register at the moment");
+    ).to.be.revertedWith("128");
   });
 
   it("should not allow validators who did not register in time to distribute shares", async function () {
@@ -216,7 +214,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
           validators4[0].encryptedShares,
           validators4[0].commitments
         )
-    ).to.be.rejectedWith("ETHDKG: cannot participate on this phase");
+    ).to.be.rejectedWith("133");
   });
 
   it("should not allow accusation of validators that registered in ETHDKG", async function () {
@@ -244,9 +242,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     // accuse a participant validator
     await expect(
       ethdkg.accuseParticipantNotRegistered([validators4[0].address])
-    ).to.be.rejectedWith(
-      "ETHDKG: Dispute failed! dishonestParticipant is participating in this ETHDKG round!"
-    );
+    ).to.be.rejectedWith("105");
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -278,9 +274,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
       ethdkg.accuseParticipantNotRegistered([
         "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
       ])
-    ).to.be.rejectedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.rejectedWith("104");
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -313,9 +307,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     // accuse a non-participant validator
     await expect(
       ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.rejectedWith(
-      "ETHDKG: should be in post-registration accusation phase!"
-    );
+    ).to.be.rejectedWith("103");
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -349,9 +341,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
         validators4[3].address,
         "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
       ])
-    ).to.be.rejectedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.rejectedWith("104");
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -396,7 +386,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
           validators4[0].encryptedShares,
           validators4[0].commitments
         )
-    ).to.be.rejectedWith("ETHDKG: cannot participate on this phase");
+    ).to.be.rejectedWith("133");
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -448,7 +438,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
           validators10[0].encryptedShares,
           validators10[0].commitments
         )
-    ).to.be.revertedWith("ETHDKG: cannot participate on this phase");
+    ).to.be.revertedWith("133");
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -481,9 +471,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
         validators4[2].address,
         validators4[2].address,
       ])
-    ).to.be.rejectedWith(
-      "ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    );
+    ).to.be.rejectedWith("104");
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });

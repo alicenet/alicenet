@@ -40,7 +40,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
         .snapshot(junkData, junkData)
-    ).to.be.revertedWith(`RCertParserLibrary: Not enough bytes to extract`);
+    ).to.be.revertedWith("1401");
   });
 
   it("Reverts when snapshot data contains invalid height", async function () {
@@ -52,7 +52,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           )
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
-    ).to.be.revertedWith(`Snapshots: Incorrect AliceNet height for snapshot!`);
+    ).to.be.revertedWith("406");
   });
 
   it("Reverts when snapshot data contains invalid chain id", async function () {
@@ -67,7 +67,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotChainID2.GroupSignature,
           invalidSnapshotChainID2.BClaims
         )
-    ).to.be.revertedWith(`Snapshots: Incorrect chainID for snapshot!`);
+    ).to.be.revertedWith("407");
   });
 
   // todo wrong public key failure happens first with this data
@@ -83,7 +83,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           validSnapshot1024.GroupSignature,
           invalidSnapshotIncorrectSig.BClaims
         )
-    ).to.be.revertedWith(`Snapshots: Signature verification failed!`);
+    ).to.be.revertedWith("405");
   });
 
   it("Reverts when snapshot data contains incorrect public key", async function () {
@@ -98,7 +98,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotIncorrectSig.GroupSignature,
           invalidSnapshotIncorrectSig.BClaims
         )
-    ).to.be.revertedWith(`Snapshots: Wrong master public key!`);
+    ).to.be.revertedWith("404");
   });
 
   it("Successfully performs snapshot", async function () {

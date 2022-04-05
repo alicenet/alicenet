@@ -35,9 +35,9 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
     const tokenAmount = BigInt(100000);
     await expect(
       fixture.publicStaking.depositToken(41, tokenAmount)
-    ).to.be.revertedWith("BAD MAGIC");
+    ).to.be.revertedWith("2200");
     await expect(
       fixture.publicStaking.depositEth(41, { value: ethAmount })
-    ).to.be.revertedWith("BAD MAGIC");
+    ).to.be.revertedWith("2200");
   });
 });
