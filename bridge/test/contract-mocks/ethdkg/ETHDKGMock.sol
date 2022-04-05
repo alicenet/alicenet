@@ -307,6 +307,26 @@ contract ETHDKGMock is
         return _masterPublicKeyHash;
     }
 
+    function migrateValidators(
+        address[] memory validatorsAccounts_,
+        uint256[] memory validatorIndexes_,
+        uint256[4][] memory validatorShares_,
+        uint8 validatorCount_,
+        uint256 epoch_,
+        uint256 sideChainHeight_,
+        uint256 ethHeight_,
+        uint256[4] memory masterPublicKey_
+    ) public pure {
+        validatorsAccounts_;
+        validatorIndexes_;
+        validatorShares_;
+        validatorCount_;
+        epoch_;
+        sideChainHeight_;
+        ethHeight_;
+        masterPublicKey_;
+    }
+
     function getMinValidators() public pure returns (uint256) {
         return _MIN_VALIDATORS;
     }

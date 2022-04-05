@@ -28,6 +28,10 @@ interface ISnapshots {
         external
         returns (bool);
 
+    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
+        external
+        returns (bool);
+
     function getSnapshotDesperationDelay() external view returns (uint256);
 
     function getSnapshotDesperationFactor() external view returns (uint256);
@@ -73,4 +77,6 @@ interface ISnapshots {
         bytes32 blsig,
         uint256 desperationFactor
     ) external pure returns (bool);
+
+    function getEpochFromHeight(uint256 height) external view returns (uint256);
 }

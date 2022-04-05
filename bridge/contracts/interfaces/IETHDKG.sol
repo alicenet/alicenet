@@ -29,6 +29,17 @@ interface IETHDKG {
 
     function complete() external;
 
+    function migrateValidators(
+        address[] memory validatorsAccounts_,
+        uint256[] memory validatorIndexes_,
+        uint256[4][] memory validatorShares_,
+        uint8 validatorCount_,
+        uint256 epoch_,
+        uint256 sideChainHeight_,
+        uint256 ethHeight_,
+        uint256[4] memory masterPublicKey_
+    ) external;
+
     function accuseParticipantNotRegistered(address[] memory dishonestAddresses) external;
 
     function accuseParticipantDidNotDistributeShares(address[] memory dishonestAddresses) external;

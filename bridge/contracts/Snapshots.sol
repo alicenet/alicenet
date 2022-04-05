@@ -147,6 +147,44 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return isSafeToProceedConsensus;
     }
 
+    /// @notice Saves next snapshot
+    /// @param groupSignature_ The group signature used to sign the snapshots' block claims
+    /// @param bClaims_ The claims being made about given block
+    /// @return Flag whether we should kick off another round of key generation
+    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
+        public
+        onlyFactory
+        returns (bool)
+    {
+        {
+            require(_epoch == 0, "Migration only allowed at epoch 0!");
+            require(
+                groupSignature_.length == bClaims_.length && groupSignature_.length > 1,
+                "Mismatch calldata length!"
+            );
+        }
+
+        uint256 epoch;
+        for (uint256 i = 0; i < bClaims_.length; i++) {
+            BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
+                bClaims_[i]
+            );
+            require(blockClaims.height % _epochLength == 0, "Incorrect BCaims height!");
+            epoch = getEpochFromHeight(blockClaims.height);
+            _snapshots[epoch] = Snapshot(block.number, blockClaims);
+            emit SnapshotTaken(
+                _chainId,
+                epoch,
+                blockClaims.height,
+                msg.sender,
+                true,
+                groupSignature_[i]
+            );
+        }
+        _epoch = uint32(epoch);
+        return true;
+    }
+
     function getSnapshotDesperationFactor() public view returns (uint256) {
         return _snapshotDesperationFactor;
     }
@@ -217,6 +255,16 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
         return _snapshots[_epoch];
+    }
+
+    function getEpochFromHeight(uint256 height) public view returns (uint256) {
+        if (height <= _epochLength) {
+            return 1;
+        }
+        if (height % _epochLength == 0) {
+            return height / _epochLength;
+        }
+        return (height / _epochLength) + 1;
     }
 
     function mayValidatorSnapshot(

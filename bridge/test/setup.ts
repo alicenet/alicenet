@@ -244,13 +244,13 @@ export const deployStaticWithFactory = async (
   return _Contract.attach(await getContractAddressFromDeployedStaticEvent(tx));
 };
 
-async function deployUpgradeableWithFactory(
+export const deployUpgradeableWithFactory = async (
   factory: AliceNetFactory,
   contractName: string,
   salt?: string,
   initCallData?: any[],
   constructorArgs: any[] = []
-): Promise<Contract> {
+): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode: BytesLike;
 
@@ -305,7 +305,7 @@ async function deployUpgradeableWithFactory(
   return _Contract.attach(
     await getContractAddressFromDeployedProxyEvent(transaction2)
   );
-}
+};
 
 export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
@@ -604,6 +604,23 @@ export async function factoryCallAny(
   const txResponse = await factory.callAny(
     contract.address,
     0,
+    contract.interface.encodeFunctionData(functionName, args)
+  );
+  const receipt = await txResponse.wait();
+  return receipt;
+}
+
+export async function delegateFactoryCallAny(
+  factory: AliceNetFactory,
+  contract: Contract,
+  functionName: string,
+  args?: Array<any>
+) {
+  if (args === undefined) {
+    args = [];
+  }
+  const txResponse = await factory.delegateCallAny(
+    contract.address,
     contract.interface.encodeFunctionData(functionName, args)
   );
   const receipt = await txResponse.wait();

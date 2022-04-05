@@ -218,6 +218,52 @@ contract ETHDKG is
         _callPhaseContract(abi.encodeWithSignature("complete()"));
     }
 
+    function migrateValidators(
+        address[] memory validatorsAccounts_,
+        uint256[] memory validatorIndexes_,
+        uint256[4][] memory validatorShares_,
+        uint8 validatorCount_,
+        uint256 epoch_,
+        uint256 sideChainHeight_,
+        uint256 ethHeight_,
+        uint256[4] memory masterPublicKey_
+    ) public onlyFactory {
+        uint256 nonce = _nonce;
+        require(nonce == 0, "Only can execute this with nonce 0!");
+        require(
+            validatorsAccounts_.length == validatorIndexes_.length &&
+                validatorsAccounts_.length == validatorShares_.length,
+            "All input data length should match!"
+        );
+
+        _masterPublicKey = masterPublicKey_;
+        _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
+
+        for (uint256 i = 0; i < validatorsAccounts_.length; i++) {
+            emit ValidatorMemberAdded(
+                validatorsAccounts_[i],
+                validatorIndexes_[i],
+                nonce,
+                epoch_,
+                validatorShares_[i][0],
+                validatorShares_[i][1],
+                validatorShares_[i][2],
+                validatorShares_[i][3]
+            );
+        }
+        emit ValidatorSetCompleted(
+            validatorCount_,
+            nonce,
+            epoch_,
+            ethHeight_,
+            sideChainHeight_,
+            masterPublicKey_[0],
+            masterPublicKey_[1],
+            masterPublicKey_[2],
+            masterPublicKey_[3]
+        );
+    }
+
     function isETHDKGRunning() public view returns (bool) {
         return _isETHDKGRunning();
     }

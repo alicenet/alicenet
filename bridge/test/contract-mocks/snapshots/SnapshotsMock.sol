@@ -88,6 +88,16 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         return true;
     }
 
+    function getEpochFromHeight(uint256 height) public view returns (uint256) {
+        if (height <= _epochLength) {
+            return 1;
+        }
+        if (height % _epochLength == 0) {
+            return height / _epochLength;
+        }
+        return (height / _epochLength) + 1;
+    }
+
     function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
         _snapshots[_epoch].committedAt = height_;
         return height_;
@@ -166,6 +176,16 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
     }
 
     function isMock() public pure returns (bool) {
+        return true;
+    }
+
+    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
+        public
+        pure
+        returns (bool)
+    {
+        groupSignature_;
+        bClaims_;
         return true;
     }
 
