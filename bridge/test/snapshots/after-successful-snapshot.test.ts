@@ -55,9 +55,7 @@ describe("Snapshots: With successful snapshot completed", () => {
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
-    ).to.be.revertedWith(
-      "402"
-    );
+    ).to.be.revertedWith("402");
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
   });
 

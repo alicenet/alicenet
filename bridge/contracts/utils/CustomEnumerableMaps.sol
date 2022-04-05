@@ -142,7 +142,10 @@ library CustomEnumerableMaps {
         returns (ValidatorData memory)
     {
         (bool success, ValidatorData memory value) = tryGet(map, key);
-        require(success, string(abi.encodePacked(CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP)));
+        require(
+            success,
+            string(abi.encodePacked(CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP))
+        );
         return value;
     }
 

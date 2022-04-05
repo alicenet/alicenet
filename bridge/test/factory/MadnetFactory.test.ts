@@ -83,9 +83,7 @@ describe("AliceNet Contract Factory", () => {
     await factory.setDelegator(firstDelegator, { from: firstOwner });
     expect(await factory.delegator()).to.equal(firstDelegator);
     factory = factoryBase.attach(factory.address);
-    await expect(factory.setOwner(accounts[0])).to.be.revertedWith(
-      "900"
-    );
+    await expect(factory.setOwner(accounts[0])).to.be.revertedWith("900");
   });
 
   it("get owner, delegator", async () => {

@@ -232,9 +232,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     });
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith(
-      "801"
-    );
+    ).to.be.revertedWith("801");
   });
 
   it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg", async function () {

@@ -69,7 +69,9 @@ contract ValidatorPoolMock is
             block.number >
                 ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
                     MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET))
+            string(
+                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
+            )
         );
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
@@ -168,7 +170,10 @@ contract ValidatorPoolMock is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(index_ < _validators.length(), string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX)));
+        require(
+            index_ < _validators.length(),
+            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
+        );
         return _validators.at(index_)._address;
     }
 

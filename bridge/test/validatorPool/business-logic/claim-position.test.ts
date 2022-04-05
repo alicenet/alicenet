@@ -173,9 +173,7 @@ describe("ValidatorPool: Claiming logic", async () => {
         fixture.validatorPool
           .connect(await getValidatorEthAccount(validator))
           .claimExitingNFTPosition()
-      ).to.be.revertedWith(
-        "813"
-      );
+      ).to.be.revertedWith("813");
     }
   });
 

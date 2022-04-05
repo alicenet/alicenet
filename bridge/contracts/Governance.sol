@@ -18,7 +18,10 @@ contract Governance is IGovernor {
         uint256 key,
         bytes32 value
     ) external {
-        require(msg.sender == _factory, string(abi.encodePacked(GovernanceErrorCodes.GOVERNANCE_ONLY_FACTORY_ALLOWED)));
+        require(
+            msg.sender == _factory,
+            string(abi.encodePacked(GovernanceErrorCodes.GOVERNANCE_ONLY_FACTORY_ALLOWED))
+        );
         emit ValueUpdated(epoch, key, value, msg.sender);
     }
 }

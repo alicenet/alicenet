@@ -99,7 +99,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
-                     IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
+                    IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
                 string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
             );
 

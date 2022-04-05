@@ -15,7 +15,12 @@ abstract contract MagicTokenTransfer is MagicValue {
         uint256 amount_
     ) internal {
         bool success = token_.approve(address(to_), amount_);
-        require(success, string(abi.encodePacked(MagicTokenTransferErrorCodes.MAGICTOKENTRANSFER_TRANSFER_FAILED)));
+        require(
+            success,
+            string(
+                abi.encodePacked(MagicTokenTransferErrorCodes.MAGICTOKENTRANSFER_TRANSFER_FAILED)
+            )
+        );
         to_.depositToken(_getMagic(), amount_);
         token_.approve(address(to_), 0);
     }

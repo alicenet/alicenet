@@ -7,14 +7,14 @@ import {ImmutableAuthErrorCodes} from "contracts/libraries/errorCodes/ImmutableA
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
-    
+
     modifier onlyFactory() {
-      require(
-          msg.sender == _factory,
-          string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY))
-      );
-      _;
-  }
+        require(
+            msg.sender == _factory,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY))
+        );
+        _;
+    }
 
     constructor(address factory_) {
         _factory = factory_;
@@ -23,336 +23,417 @@ abstract contract ImmutableFactory is DeterministicAddress {
     function _factoryAddress() internal view returns (address) {
         return _factory;
     }
-
 }
 
 abstract contract ImmutableAToken is ImmutableFactory {
-
     address private immutable _aToken;
 
     modifier onlyAToken() {
-        require(msg.sender == _aToken, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKEN)));
+        require(
+            msg.sender == _aToken,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKEN))
+        );
         _;
     }
 
     constructor() {
-        _aToken = getMetamorphicContractAddress(0x41546f6b656e0000000000000000000000000000000000000000000000000000, _factoryAddress());
+        _aToken = getMetamorphicContractAddress(
+            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenAddress() internal view returns(address) {
+    function _aTokenAddress() internal view returns (address) {
         return _aToken;
     }
 
-    function _saltForAToken() internal pure returns(bytes32) {
+    function _saltForAToken() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableATokenBurner is ImmutableFactory {
 
+abstract contract ImmutableATokenBurner is ImmutableFactory {
     address private immutable _aTokenBurner;
 
     modifier onlyATokenBurner() {
-        require(msg.sender == _aTokenBurner, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER)));
+        require(
+            msg.sender == _aTokenBurner,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER))
+        );
         _;
     }
 
     constructor() {
-        _aTokenBurner = getMetamorphicContractAddress(0x41546f6b656e4275726e65720000000000000000000000000000000000000000, _factoryAddress());
+        _aTokenBurner = getMetamorphicContractAddress(
+            0x41546f6b656e4275726e65720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenBurnerAddress() internal view returns(address) {
+    function _aTokenBurnerAddress() internal view returns (address) {
         return _aTokenBurner;
     }
 
-    function _saltForATokenBurner() internal pure returns(bytes32) {
+    function _saltForATokenBurner() internal pure returns (bytes32) {
         return 0x41546f6b656e4275726e65720000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableATokenMinter is ImmutableFactory {
 
+abstract contract ImmutableATokenMinter is ImmutableFactory {
     address private immutable _aTokenMinter;
 
     modifier onlyATokenMinter() {
-        require(msg.sender == _aTokenMinter, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER)));
+        require(
+            msg.sender == _aTokenMinter,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER))
+        );
         _;
     }
 
     constructor() {
-        _aTokenMinter = getMetamorphicContractAddress(0x41546f6b656e4d696e7465720000000000000000000000000000000000000000, _factoryAddress());
+        _aTokenMinter = getMetamorphicContractAddress(
+            0x41546f6b656e4d696e7465720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _aTokenMinterAddress() internal view returns(address) {
+    function _aTokenMinterAddress() internal view returns (address) {
         return _aTokenMinter;
     }
 
-    function _saltForATokenMinter() internal pure returns(bytes32) {
+    function _saltForATokenMinter() internal pure returns (bytes32) {
         return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableBToken is ImmutableFactory {
 
+abstract contract ImmutableBToken is ImmutableFactory {
     address private immutable _bToken;
 
     modifier onlyBToken() {
-        require(msg.sender == _bToken, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN)));
+        require(
+            msg.sender == _bToken,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN))
+        );
         _;
     }
 
     constructor() {
-        _bToken = getMetamorphicContractAddress(0x42546f6b656e0000000000000000000000000000000000000000000000000000, _factoryAddress());
+        _bToken = getMetamorphicContractAddress(
+            0x42546f6b656e0000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _bTokenAddress() internal view returns(address) {
+    function _bTokenAddress() internal view returns (address) {
         return _bToken;
     }
 
-    function _saltForBToken() internal pure returns(bytes32) {
+    function _saltForBToken() internal pure returns (bytes32) {
         return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableFoundation is ImmutableFactory {
 
+abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
 
     modifier onlyFoundation() {
-        require(msg.sender == _foundation, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FOUNDATION)));
+        require(
+            msg.sender == _foundation,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FOUNDATION))
+        );
         _;
     }
 
     constructor() {
-        _foundation = getMetamorphicContractAddress(0x466f756e646174696f6e00000000000000000000000000000000000000000000, _factoryAddress());
+        _foundation = getMetamorphicContractAddress(
+            0x466f756e646174696f6e00000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _foundationAddress() internal view returns(address) {
+    function _foundationAddress() internal view returns (address) {
         return _foundation;
     }
 
-    function _saltForFoundation() internal pure returns(bytes32) {
+    function _saltForFoundation() internal pure returns (bytes32) {
         return 0x466f756e646174696f6e00000000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableGovernance is ImmutableFactory {
 
+abstract contract ImmutableGovernance is ImmutableFactory {
     address private immutable _governance;
 
     modifier onlyGovernance() {
-        require(msg.sender == _governance, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_GOVERNANCE)));
+        require(
+            msg.sender == _governance,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_GOVERNANCE))
+        );
         _;
     }
 
     constructor() {
-        _governance = getMetamorphicContractAddress(0x476f7665726e616e636500000000000000000000000000000000000000000000, _factoryAddress());
+        _governance = getMetamorphicContractAddress(
+            0x476f7665726e616e636500000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _governanceAddress() internal view returns(address) {
+    function _governanceAddress() internal view returns (address) {
         return _governance;
     }
 
-    function _saltForGovernance() internal pure returns(bytes32) {
+    function _saltForGovernance() internal pure returns (bytes32) {
         return 0x476f7665726e616e636500000000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
 
+abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     address private immutable _liquidityProviderStaking;
 
     modifier onlyLiquidityProviderStaking() {
-        require(msg.sender == _liquidityProviderStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING)));
+        require(
+            msg.sender == _liquidityProviderStaking,
+            string(
+                abi.encodePacked(
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING
+                )
+            )
+        );
         _;
     }
 
     constructor() {
-        _liquidityProviderStaking = getMetamorphicContractAddress(0x4c697175696469747950726f76696465725374616b696e670000000000000000, _factoryAddress());
+        _liquidityProviderStaking = getMetamorphicContractAddress(
+            0x4c697175696469747950726f76696465725374616b696e670000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _liquidityProviderStakingAddress() internal view returns(address) {
+    function _liquidityProviderStakingAddress() internal view returns (address) {
         return _liquidityProviderStaking;
     }
 
-    function _saltForLiquidityProviderStaking() internal pure returns(bytes32) {
+    function _saltForLiquidityProviderStaking() internal pure returns (bytes32) {
         return 0x4c697175696469747950726f76696465725374616b696e670000000000000000;
     }
 }
-    
-abstract contract ImmutablePublicStaking is ImmutableFactory {
 
+abstract contract ImmutablePublicStaking is ImmutableFactory {
     address private immutable _publicStaking;
 
     modifier onlyPublicStaking() {
-        require(msg.sender == _publicStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING)));
+        require(
+            msg.sender == _publicStaking,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING))
+        );
         _;
     }
 
     constructor() {
-        _publicStaking = getMetamorphicContractAddress(0x5075626c69635374616b696e6700000000000000000000000000000000000000, _factoryAddress());
+        _publicStaking = getMetamorphicContractAddress(
+            0x5075626c69635374616b696e6700000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _publicStakingAddress() internal view returns(address) {
+    function _publicStakingAddress() internal view returns (address) {
         return _publicStaking;
     }
 
-    function _saltForPublicStaking() internal pure returns(bytes32) {
+    function _saltForPublicStaking() internal pure returns (bytes32) {
         return 0x5075626c69635374616b696e6700000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableSnapshots is ImmutableFactory {
 
+abstract contract ImmutableSnapshots is ImmutableFactory {
     address private immutable _snapshots;
 
     modifier onlySnapshots() {
-        require(msg.sender == _snapshots, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_SNAPSHOTS)));
+        require(
+            msg.sender == _snapshots,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_SNAPSHOTS))
+        );
         _;
     }
 
     constructor() {
-        _snapshots = getMetamorphicContractAddress(0x536e617073686f74730000000000000000000000000000000000000000000000, _factoryAddress());
+        _snapshots = getMetamorphicContractAddress(
+            0x536e617073686f74730000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _snapshotsAddress() internal view returns(address) {
+    function _snapshotsAddress() internal view returns (address) {
         return _snapshots;
     }
 
-    function _saltForSnapshots() internal pure returns(bytes32) {
+    function _saltForSnapshots() internal pure returns (bytes32) {
         return 0x536e617073686f74730000000000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
 
+abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
     address private immutable _stakingPositionDescriptor;
 
     modifier onlyStakingPositionDescriptor() {
-        require(msg.sender == _stakingPositionDescriptor, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR)));
+        require(
+            msg.sender == _stakingPositionDescriptor,
+            string(
+                abi.encodePacked(
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR
+                )
+            )
+        );
         _;
     }
 
     constructor() {
-        _stakingPositionDescriptor = getMetamorphicContractAddress(0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000, _factoryAddress());
+        _stakingPositionDescriptor = getMetamorphicContractAddress(
+            0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _stakingPositionDescriptorAddress() internal view returns(address) {
+    function _stakingPositionDescriptorAddress() internal view returns (address) {
         return _stakingPositionDescriptor;
     }
 
-    function _saltForStakingPositionDescriptor() internal pure returns(bytes32) {
+    function _saltForStakingPositionDescriptor() internal pure returns (bytes32) {
         return 0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000;
     }
 }
-    
-abstract contract ImmutableValidatorPool is ImmutableFactory {
 
+abstract contract ImmutableValidatorPool is ImmutableFactory {
     address private immutable _validatorPool;
 
     modifier onlyValidatorPool() {
-        require(msg.sender == _validatorPool, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL)));
+        require(
+            msg.sender == _validatorPool,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL))
+        );
         _;
     }
 
     constructor() {
-        _validatorPool = getMetamorphicContractAddress(0x56616c696461746f72506f6f6c00000000000000000000000000000000000000, _factoryAddress());
+        _validatorPool = getMetamorphicContractAddress(
+            0x56616c696461746f72506f6f6c00000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _validatorPoolAddress() internal view returns(address) {
+    function _validatorPoolAddress() internal view returns (address) {
         return _validatorPool;
     }
 
-    function _saltForValidatorPool() internal pure returns(bytes32) {
+    function _saltForValidatorPool() internal pure returns (bytes32) {
         return 0x56616c696461746f72506f6f6c00000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
+abstract contract ImmutableValidatorStaking is ImmutableFactory {
     address private immutable _validatorStaking;
 
     modifier onlyValidatorStaking() {
-        require(msg.sender == _validatorStaking, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING)));
+        require(
+            msg.sender == _validatorStaking,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING))
+        );
         _;
     }
 
     constructor() {
-        _validatorStaking = getMetamorphicContractAddress(0x56616c696461746f725374616b696e6700000000000000000000000000000000, _factoryAddress());
+        _validatorStaking = getMetamorphicContractAddress(
+            0x56616c696461746f725374616b696e6700000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _validatorStakingAddress() internal view returns(address) {
+    function _validatorStakingAddress() internal view returns (address) {
         return _validatorStaking;
     }
 
-    function _saltForValidatorStaking() internal pure returns(bytes32) {
+    function _saltForValidatorStaking() internal pure returns (bytes32) {
         return 0x56616c696461746f725374616b696e6700000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
 
+abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
     address private immutable _ethdkgAccusations;
 
     modifier onlyETHDKGAccusations() {
-        require(msg.sender == _ethdkgAccusations, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS)));
+        require(
+            msg.sender == _ethdkgAccusations,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS))
+        );
         _;
     }
 
     constructor() {
-        _ethdkgAccusations = getMetamorphicContractAddress(0x455448444b4741636375736174696f6e73000000000000000000000000000000, _factoryAddress());
+        _ethdkgAccusations = getMetamorphicContractAddress(
+            0x455448444b4741636375736174696f6e73000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgAccusationsAddress() internal view returns(address) {
+    function _ethdkgAccusationsAddress() internal view returns (address) {
         return _ethdkgAccusations;
     }
 
-    function _saltForETHDKGAccusations() internal pure returns(bytes32) {
+    function _saltForETHDKGAccusations() internal pure returns (bytes32) {
         return 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableETHDKGPhases is ImmutableFactory {
 
+abstract contract ImmutableETHDKGPhases is ImmutableFactory {
     address private immutable _ethdkgPhases;
 
     modifier onlyETHDKGPhases() {
-        require(msg.sender == _ethdkgPhases, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES)));
+        require(
+            msg.sender == _ethdkgPhases,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES))
+        );
         _;
     }
 
     constructor() {
-        _ethdkgPhases = getMetamorphicContractAddress(0x455448444b475068617365730000000000000000000000000000000000000000, _factoryAddress());
+        _ethdkgPhases = getMetamorphicContractAddress(
+            0x455448444b475068617365730000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgPhasesAddress() internal view returns(address) {
+    function _ethdkgPhasesAddress() internal view returns (address) {
         return _ethdkgPhases;
     }
 
-    function _saltForETHDKGPhases() internal pure returns(bytes32) {
+    function _saltForETHDKGPhases() internal pure returns (bytes32) {
         return 0x455448444b475068617365730000000000000000000000000000000000000000;
     }
 }
-    
-abstract contract ImmutableETHDKG is ImmutableFactory {
 
+abstract contract ImmutableETHDKG is ImmutableFactory {
     address private immutable _ethdkg;
 
     modifier onlyETHDKG() {
-        require(msg.sender == _ethdkg, string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKG)));
+        require(
+            msg.sender == _ethdkg,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKG))
+        );
         _;
     }
 
     constructor() {
-        _ethdkg = getMetamorphicContractAddress(0x455448444b470000000000000000000000000000000000000000000000000000, _factoryAddress());
+        _ethdkg = getMetamorphicContractAddress(
+            0x455448444b470000000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
     }
 
-    function _ethdkgAddress() internal view returns(address) {
+    function _ethdkgAddress() internal view returns (address) {
         return _ethdkg;
     }
 
-    function _saltForETHDKG() internal pure returns(bytes32) {
+    function _saltForETHDKG() internal pure returns (bytes32) {
         return 0x455448444b470000000000000000000000000000000000000000000000000000;
     }
 }
-    
