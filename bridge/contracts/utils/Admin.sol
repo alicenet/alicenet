@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
+import {AdminErrorCodes} from "contracts/libraries/errorCodes/AdminErrorCodes.sol";
 
 abstract contract Admin {
     // _admin is a privileged role
@@ -7,7 +8,10 @@ abstract contract Admin {
 
     /// @dev onlyAdmin enforces msg.sender is _admin
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Must be admin");
+        require(
+            msg.sender == _admin,
+            string(abi.encodePacked(AdminErrorCodes.ADMIN_SENDER_MUST_BE_ADMIN))
+        );
         _;
     }
 

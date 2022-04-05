@@ -265,49 +265,37 @@ describe("PublicStaking: NFT transfer", async () => {
     it("Old owner shouldn't be able to lock or withdrawalLock position", async function () {
       await expect(
         fixture.publicStaking.lockOwnPosition(1, 100)
-      ).to.be.rejectedWith(
-        "Error, token doesn't exist or doesn't belong to the caller!"
-      );
+      ).to.be.rejectedWith("600");
 
       await expect(
         fixture.publicStaking.lockWithdraw(1, 100)
-      ).to.be.rejectedWith(
-        "Error, token doesn't exist or doesn't belong to the caller!"
-      );
+      ).to.be.rejectedWith("600");
     });
 
     it("Old owner shouldn't be able to burn or burnTo position", async function () {
-      await expect(fixture.publicStaking.burn(1)).to.be.rejectedWith(
-        "PublicStaking: User is not the owner of the tokenID!"
-      );
+      await expect(fixture.publicStaking.burn(1)).to.be.rejectedWith("600");
 
       await expect(
         fixture.publicStaking.burnTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith(
-        "PublicStaking: User is not the owner of the tokenID!"
-      );
+      ).to.be.rejectedWith("600");
     });
 
     it("Old owner shouldn't be able to collect profits position", async function () {
       await expect(fixture.publicStaking.collectEth(1)).to.be.rejectedWith(
-        "PublicStaking: Error sender is not the owner of the tokenID!"
+        "600"
       );
 
       await expect(
         fixture.publicStaking.collectEthTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith(
-        "PublicStaking: Error sender is not the owner of the tokenID!"
-      );
+      ).to.be.rejectedWith("600");
 
       await expect(fixture.publicStaking.collectToken(1)).to.be.rejectedWith(
-        "PublicStaking: Error sender is not the owner of the tokenID!"
+        "600"
       );
 
       await expect(
         fixture.publicStaking.collectTokenTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith(
-        "PublicStaking: Error sender is not the owner of the tokenID!"
-      );
+      ).to.be.rejectedWith("600");
     });
 
     it("New owner should be able to lock or withdrawalLock position", async function () {

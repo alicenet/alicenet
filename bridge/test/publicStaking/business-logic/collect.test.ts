@@ -50,7 +50,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     const tokenID = await getTokenIdFromTx(tx);
     await expect(
       fixture.publicStaking.connect(users[0]).collectEth(tokenID)
-    ).to.revertedWith("PublicStaking: Cannot withdraw at the moment.");
+    ).to.revertedWith("603");
   });
 
   it("Shouldn't allow to collect funds for not owned position", async function () {
@@ -60,10 +60,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .mint(sharesPerUser);
     const tokenID = await getTokenIdFromTx(tx);
     await expect(fixture.publicStaking.collectEth(tokenID)).to.revertedWith(
-      "PublicStaking: Error sender is not the owner of the tokenID!"
+      "600"
     );
     await expect(fixture.publicStaking.collectToken(tokenID)).to.revertedWith(
-      "PublicStaking: Error sender is not the owner of the tokenID!"
+      "600"
     );
   });
 
@@ -90,10 +90,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
   it("Shouldn't allow to estimate funds for non-existing position", async function () {
     await expect(
       fixture.publicStaking.estimateEthCollection(100)
-    ).to.revertedWith("PublicStaking: Error, NFT token doesn't exist!");
+    ).to.revertedWith("604");
     await expect(
       fixture.publicStaking.estimateTokenCollection(100)
-    ).to.revertedWith("PublicStaking: Error, NFT token doesn't exist!");
+    ).to.revertedWith("604");
   });
 
   it("Mint and collect profits", async function () {

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    TXInPreImageParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/TXInPreImageParserLibraryErrorCodes.sol";
 import "./BaseParserLibrary.sol";
 
 /// @title Library to parse the TXInPreImage structure from a blob of capnproto data
@@ -48,16 +51,28 @@ library TXInPreImageParserLibrary {
     {
         require(
             dataOffset + _TX_IN_PRE_IMAGE_SIZE > dataOffset,
-            "TXInPreImageParserLibrary: Overflow on the dataOffset parameter"
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_DATA_OFFSET_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= dataOffset + _TX_IN_PRE_IMAGE_SIZE,
-            "TXInPreImageParserLibrary: Not enough bytes to extract TXInPreImage"
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_INSUFFICIENT_BYTES
+                )
+            )
         );
         txInPreImage.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         require(
             txInPreImage.chainId > 0,
-            "TXInPreImageParserLibrary: Invalid parsing. The chainId should be greater than 0!"
+            string(
+                abi.encodePacked(
+                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_CHAINID_ZERO
+                )
+            )
         );
         txInPreImage.consumedTxIdx = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         txInPreImage.consumedTxHash = BaseParserLibrary.extractBytes32(src, dataOffset + 16);

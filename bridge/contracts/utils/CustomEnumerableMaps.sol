@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    CustomEnumerableMapsErrorCodes
+} from "contracts/libraries/errorCodes/CustomEnumerableMapsErrorCodes.sol";
+
 struct ValidatorData {
     address _address;
     uint256 _tokenID;
@@ -138,7 +142,10 @@ library CustomEnumerableMaps {
         returns (ValidatorData memory)
     {
         (bool success, ValidatorData memory value) = tryGet(map, key);
-        require(success, "Error: Key not in the map!");
+        require(
+            success,
+            string(abi.encodePacked(CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP))
+        );
         return value;
     }
 

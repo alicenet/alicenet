@@ -67,13 +67,13 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
     it("Mint a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).mint(amount)
-      ).to.be.revertedWith("onlyValidatorPool");
+      ).to.be.revertedWith("2010");
     });
 
     it("Burn a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).burn(42) // nonexistent
-      ).to.be.revertedWith("onlyValidatorPool");
+      ).to.be.revertedWith("2010");
     });
 
     it("Mint a token to an address", async function () {
@@ -81,7 +81,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .mintTo(notAdminSigner.address, amount, lockTime)
-      ).to.be.revertedWith("onlyValidatorPool");
+      ).to.be.revertedWith("2010");
     });
 
     it("Burn a token from an address", async function () {
@@ -89,7 +89,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .burnTo(notAdminSigner.address, 42) // nonexistent
-      ).to.be.revertedWith("onlyValidatorPool");
+      ).to.be.revertedWith("2010");
     });
   });
 });

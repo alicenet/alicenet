@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import {
+    BaseParserLibraryErrorCodes
+} from "contracts/libraries/errorCodes/BaseParserLibraryErrorCodes.sol";
+
 library BaseParserLibrary {
     // Size of a word, in bytes.
     uint256 internal constant _WORD_SIZE = 32;
@@ -15,11 +19,15 @@ library BaseParserLibrary {
     function extractUInt32(bytes memory src, uint256 offset) internal pure returns (uint32 val) {
         require(
             offset + 4 > offset,
-            "BaseParserLibrary: An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= offset + 4,
-            "BaseParserLibrary: Trying to read an offset out of boundaries in the src binary!"
+            string(abi.encodePacked(BaseParserLibraryErrorCodes.BASEPARSERLIB_OFFSET_OUT_OF_BOUNDS))
         );
 
         assembly {
@@ -42,11 +50,19 @@ library BaseParserLibrary {
     function extractUInt16(bytes memory src, uint256 offset) internal pure returns (uint16 val) {
         require(
             offset + 2 > offset,
-            "BaseParserLibrary: Error extracting uin16! An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT16_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= offset + 2,
-            "BaseParserLibrary: UINT16 ERROR! Trying to read an offset out of boundaries!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT16_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
 
         assembly {
@@ -67,11 +83,19 @@ library BaseParserLibrary {
     {
         require(
             offset + 2 > offset,
-            "BaseParserLibrary: UINT16 ERROR! An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT16_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= offset + 2,
-            "BaseParserLibrary: UINT16 ERROR! Trying to read an offset out of boundaries!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT16_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
 
         assembly {
@@ -85,10 +109,21 @@ library BaseParserLibrary {
     /// @return a bool
     /// @dev ~204 gas
     function extractBool(bytes memory src, uint256 offset) internal pure returns (bool) {
-        require(offset + 1 > offset, "BaseParserLibrary: BOOL ERROR: OVERFLOW!");
+        require(
+            offset + 1 > offset,
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BOOL_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
+        );
         require(
             src.length >= offset + 1,
-            "BaseParserLibrary: BOOL ERROR: OFFSET OUT OF BOUNDARIES!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BOOL_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
         uint256 val;
         assembly {
@@ -106,11 +141,19 @@ library BaseParserLibrary {
     function extractUInt256(bytes memory src, uint256 offset) internal pure returns (uint256 val) {
         require(
             offset + 31 > offset,
-            "BaseParserLibrary: An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT256_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length > offset + 31,
-            "BaseParserLibrary: Trying to read an offset out of boundaries!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT256_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
 
         assembly {
@@ -130,11 +173,19 @@ library BaseParserLibrary {
     {
         require(
             offset + 31 > offset,
-            "BaseParserLibrary: An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT256_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length > offset + 31,
-            "BaseParserLibrary: Trying to read an offset out of boundaries!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT256_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
 
         uint256 srcDataPointer;
@@ -297,11 +348,19 @@ library BaseParserLibrary {
     ) internal pure returns (bytes memory out) {
         require(
             offset + howManyBytes >= offset,
-            "BaseParserLibrary: An overflow happened with the offset or the howManyBytes parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
         require(
             src.length >= offset + howManyBytes,
-            "BaseParserLibrary: Not enough bytes to extract in the src binary"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES_OFFSET_OUT_OF_BOUNDS
+                )
+            )
         );
         out = new bytes(howManyBytes);
         uint256 start;
@@ -321,9 +380,20 @@ library BaseParserLibrary {
     function extractBytes32(bytes memory src, uint256 offset) internal pure returns (bytes32 out) {
         require(
             offset + 32 > offset,
-            "BaseParserLibrary: An overflow happened with the offset parameter!"
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES32_OFFSET_PARAMETER_OVERFLOW
+                )
+            )
         );
-        require(src.length >= (offset + 32), "BaseParserLibrary: not enough bytes to extract");
+        require(
+            src.length >= (offset + 32),
+            string(
+                abi.encodePacked(
+                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES32_OFFSET_OUT_OF_BOUNDS
+                )
+            )
+        );
         assembly {
             out := mload(add(add(src, _BYTES_HEADER_SIZE), offset))
         }

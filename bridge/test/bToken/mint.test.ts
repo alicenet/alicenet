@@ -184,6 +184,6 @@ describe("Testing BToken Minting methods", async () => {
       fixture.bToken.connect(admin).mint(minBTokens, {
         value: ethers.utils.parseEther(eth.toString()),
       })
-    ).to.be.revertedWith("BToken: could not mint minimum BTokens");
+    ).to.be.revertedWith("308");
   });
 });

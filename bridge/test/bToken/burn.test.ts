@@ -103,9 +103,7 @@ describe("Testing BToken Burning methods", async () => {
     const burnQuantity = BigNumber.from(bTokens).add(1);
     await expect(
       fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith(
-      "BToken: The number of tokens to be burned is greater than the Total Supply!"
-    );
+    ).to.be.revertedWith("311");
   });
 
   it("Should fail to burn 0 tokens", async () => {
@@ -116,9 +114,7 @@ describe("Testing BToken Burning methods", async () => {
     });
     await expect(
       fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith(
-      "BToken: The number of BTokens to be burn should be greater than 0!"
-    );
+    ).to.be.revertedWith("302");
   });
 
   it("Should burn to an address", async () => {
@@ -146,18 +142,14 @@ describe("Testing BToken Burning methods", async () => {
     const burnQuantity = BigNumber.from(bTokens).add(1);
     await expect(
       fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith(
-      "BToken: The number of tokens to be burned is greater than the Total Supply!"
-    );
+    ).to.be.revertedWith("311");
   });
 
   it("Should fail to burn 0 tokens to an address", async () => {
     const burnQuantity = 0;
     await expect(
       fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith(
-      "BToken: The number of BTokens to be burn should be greater than 0!"
-    );
+    ).to.be.revertedWith("302");
   });
 
   it("Should fail to burn without fulfilling min eth amount", async () => {
@@ -171,7 +163,7 @@ describe("Testing BToken Burning methods", async () => {
           burnQuantity,
           ethers.utils.parseEther(minEth.toString())
         )
-    ).to.be.revertedWith("BToken: Couldn't burn the minEth amount");
+    ).to.be.revertedWith("309");
   });
 
   it("Should burn and keep market spread", async () => {

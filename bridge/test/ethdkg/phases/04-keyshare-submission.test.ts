@@ -29,9 +29,7 @@ describe("ETHDKG: Submit Key share", () => {
         validators4,
         expectedNonce
       )
-    ).to.be.rejectedWith(
-      "ETHDKG: cannot participate on key share submission phase"
-    );
+    ).to.be.rejectedWith("140");
   });
 
   it("should allow submission of key shares", async function () {
@@ -81,7 +79,7 @@ describe("ETHDKG: Submit Key share", () => {
           val11KeyShareG1CorrectnessProof,
           val11KeyShareG2
         )
-    ).to.be.rejectedWith("ETHDKG: Only validators allowed!");
+    ).to.be.rejectedWith("100");
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
@@ -103,9 +101,7 @@ describe("ETHDKG: Submit Key share", () => {
         validators4.slice(0, 1),
         expectedNonce
       )
-    ).to.be.revertedWith(
-      "ETHDKG: Participant already submitted key shares this ETHDKG round!"
-    );
+    ).to.be.revertedWith("141");
   });
 
   it("should not allow submission of key shares with empty input data", async function () {
@@ -116,9 +112,7 @@ describe("ETHDKG: Submit Key share", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"])
-    ).to.be.rejectedWith(
-      "ETHDKG: Key share submission failed - invalid key share G1!"
-    );
+    ).to.be.rejectedWith("141");
 
     await expect(
       ethdkg
@@ -128,9 +122,7 @@ describe("ETHDKG: Submit Key share", () => {
           ["0", "0"],
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith(
-      "ETHDKG: Key share submission failed - invalid key share G1!"
-    );
+    ).to.be.rejectedWith("141");
 
     await expect(
       ethdkg
@@ -140,8 +132,6 @@ describe("ETHDKG: Submit Key share", () => {
           validators4[0].keyShareG1CorrectnessProof,
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith(
-      "ETHDKG: Key share submission failed - invalid key share G2!"
-    );
+    ).to.be.rejectedWith("142");
   });
 });

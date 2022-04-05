@@ -10,6 +10,7 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
@@ -53,16 +54,16 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            "Snapshots: Only validators allowed!"
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
         );
         require(
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            "Snapshots: Consensus is not running!"
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
 
         require(
             block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
-            "Snapshots: Necessary amount of ethereum blocks has not passed since last snapshot!"
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
 
         uint32 epoch = _epoch + 1;
@@ -99,7 +100,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
                     IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                "Snapshots: Wrong master public key!"
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
             );
 
             require(
@@ -108,7 +109,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     signature,
                     masterPublicKey
                 ),
-                "Snapshots: Signature verification failed!"
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
             );
         }
 
@@ -118,10 +119,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
         require(
             epoch * _epochLength == blockClaims.height,
-            "Snapshots: Incorrect AliceNet height for snapshot!"
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
         );
 
-        require(blockClaims.chainId == _chainId, "Snapshots: Incorrect chainID for snapshot!");
+        require(
+            blockClaims.chainId == _chainId,
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
+        );
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
