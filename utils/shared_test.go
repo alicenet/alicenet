@@ -2,6 +2,12 @@ package utils
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"github.com/MadBase/MadNet/logging"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"time"
 
 	"github.com/MadBase/MadNet/constants"
 
@@ -119,4 +125,45 @@ func TestValidateHash(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error: invalid hash length")
 	}
+}
+
+func TestRandomBytes(t *testing.T) {
+	n := 32
+	bt, err := RandomBytes(n)
+	assert.Nil(t, err)
+	assert.Equal(t, n, len(bt))
+}
+
+func TestOpenBadger(t *testing.T) {
+	dbPath := "~/test/"
+
+	ctxTimeout := 10 * time.Millisecond
+	ctx := context.Background()
+	nodeCtx, cf := context.WithTimeout(ctx, ctxTimeout)
+	defer cf()
+
+	db, err := OpenBadger(
+		nodeCtx.Done(),
+		dbPath,
+		false,
+	)
+
+	assert.Nil(t, err)
+	time.Sleep(ctxTimeout)
+	assert.True(t, db.IsClosed())
+}
+
+func TestDebugTrace(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("The code shouldn't panic")
+		}
+	}()
+	logger := logging.GetLogger("test")
+	logger.SetLevel(logrus.DebugLevel)
+
+	DebugTrace(logger, errors.New("test error"))
+	DebugTrace(logger, errors.New("test error"), "test string")
+	DebugTrace(logger, nil, "test string")
+	DebugTrace(logger, nil)
 }
