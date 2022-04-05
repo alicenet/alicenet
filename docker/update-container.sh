@@ -10,16 +10,23 @@ export MSYS_NO_PATHCONV=1;
 YELLOW='\033[0;33m';
 NOCOL='\033[0m';
 
-DOCKERFILE=$1
-TAG=$2
-DOCKER_CREATE_ARGS=${3-}
-CMD=${4-}
+DOCKERFILE=$1;
+TAG=$2;
+DOCKER_CREATE_ARGS=${3-};
+CMD=${4-};
+
+DOCKER_BUILD_ARGS="-f $DOCKERFILE -t $TAG";
+
+PASS_PERMVARS=${PASS_PERMVARS-};
+if [ "$PASS_PERMVARS" != "" ]; then
+	source ./docker/set-permvars.sh;
+	DOCKER_BUILD_ARGS="$DOCKER_BUILD_ARGS --build-arg BUILDER_UID --build-arg BUILDER_GIDS";
+fi;
 
 echo -e "$YELLOW# Building image... $NOCOL";
-DOCKER_BUILDKIT=1 docker build . -f $DOCKERFILE -t $TAG;
+DOCKER_BUILDKIT=1 docker build . $DOCKER_BUILD_ARGS;
 
 EXISTING_CONTAINER_IMAGE=$(docker ps -a --filter name=$TAG --format {{.Image}});
-
 if [ "$EXISTING_CONTAINER_IMAGE" = "$TAG" ]; then
 	IS_RUNNING=$(docker ps --filter name=$TAG --format {{.Image}});
 	if [ "$IS_RUNNING" != "" ]; then
@@ -30,8 +37,10 @@ if [ "$EXISTING_CONTAINER_IMAGE" = "$TAG" ]; then
 	echo -e "$YELLOW# Container ready! $NOCOL";
 else
 	if [ "$EXISTING_CONTAINER_IMAGE" != "" ]; then
-		echo -e "$YELLOW# Removing old container... $NOCOL";
-		docker rm -f $TAG;
+		echo -e "$YELLOW# Removing old image and container... $NOCOL";
+		docker container rm -vf $TAG;
+		docker image rm -f $EXISTING_CONTAINER_IMAGE
+		docker builder prune -f
 	fi;
 	
 	echo -e "$YELLOW# Creating new container... $NOCOL";

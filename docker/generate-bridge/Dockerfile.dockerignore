@@ -1,3 +1,4 @@
 **
-!package.json
-!package-lock.json
+!bridge/package.json
+!bridge/package-lock.json
+!docker/apply-permvars-alpine.sh
