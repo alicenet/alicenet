@@ -10,7 +10,6 @@ import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "contracts/interfaces/IProxy.sol";
 
 /// @custom:salt ETHDKG
