@@ -104,7 +104,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             );
 
             require(
-                CryptoLibrary.verifySignature(
+                CryptoLibrary.verifySignatureASM(
                     abi.encodePacked(keccak256(bClaims_)),
                     signature,
                     masterPublicKey
