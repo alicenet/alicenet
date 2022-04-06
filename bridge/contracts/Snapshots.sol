@@ -157,10 +157,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         returns (bool)
     {
         {
-            require(_epoch == 0, "Migration only allowed at epoch 0!");
             require(
-                groupSignature_.length == bClaims_.length && groupSignature_.length > 1,
-                "Mismatch calldata length!"
+                _epoch == 0,
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
+            );
+            require(
+                groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
             );
         }
 
@@ -169,7 +172,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
                 bClaims_[i]
             );
-            require(blockClaims.height % _epochLength == 0, "Incorrect BCaims height!");
+            require(
+                blockClaims.height % _epochLength == 0,
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
+            );
             epoch = getEpochFromHeight(blockClaims.height);
             _snapshots[epoch] = Snapshot(block.number, blockClaims);
             emit SnapshotTaken(
