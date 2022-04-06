@@ -130,9 +130,10 @@ describe("State Migration: Migrate state", () => {
 
     const txResponse = await txResponsePromise;
     const receipt = await txResponse.wait();
+    console.log(receipt.gasUsed);
 
     const expectedValidatorCount = 4;
-    const expectedNonce = 0;
+    const expectedNonce = 1;
     const expectedEpoch = 1;
     const expectedEthHeight = 0x236;
     const expectedSideChainHeight = 0;
@@ -166,6 +167,21 @@ describe("State Migration: Migrate state", () => {
         ],
         i + 5
       );
+      const participantData = await fixture.ethdkg.getParticipantInternalState(
+        validatorsAccounts[i]
+      );
+      expect(participantData.gpkj).to.be.deep.equals(
+        validatorShares[i],
+        "Incorrect gpkj"
+      );
+      expect(participantData.nonce).to.be.equal(
+        expectedNonce,
+        "Incorrect nonce"
+      );
+      expect(participantData.index).to.be.equal(
+        validatorIndexes[i],
+        "Incorrect index"
+      );
     }
 
     await assertEventValidatorSetCompleted(
@@ -184,11 +200,25 @@ describe("State Migration: Migrate state", () => {
       9
     );
 
-    expect(receipt.status).to.be.equals(1);
+    expect(receipt.status).to.be.equals(1, "receipt failed");
     expect(await fixture.snapshots.getEpoch()).to.be.equal(79);
     expect(await fixture.ethdkg.getMasterPublicKeyHash()).to.be.equals(
       ethers.utils.solidityKeccak256(["uint256[4]"], [masterPublicKey]),
       "MPKs dont match!"
     );
+    expect(await fixture.ethdkg.getMasterPublicKey()).to.be.deep.equals(
+      [
+        BigNumber.from(masterPublicKey[0]),
+        BigNumber.from(masterPublicKey[1]),
+        BigNumber.from(masterPublicKey[2]),
+        BigNumber.from(masterPublicKey[3]),
+      ],
+      "MPKs2 dont match!"
+    );
+    expect(await fixture.ethdkg.getNumParticipants()).to.be.equals(
+      expectedValidatorCount,
+      "Incorrect num participant!"
+    );
+    expect(await fixture.ethdkg.getNonce()).to.be.equals(1, "Incorrect nonce!");
   });
 });

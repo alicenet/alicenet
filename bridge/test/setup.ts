@@ -399,6 +399,11 @@ export const posFixtureSetup = async (
   await factory.callAny(
     aToken.address,
     0,
+    aToken.interface.encodeFunctionData("allowMigration")
+  );
+  await factory.callAny(
+    aToken.address,
+    0,
     aToken.interface.encodeFunctionData("migrate", [
       ethers.utils.parseEther("100000000"),
     ])

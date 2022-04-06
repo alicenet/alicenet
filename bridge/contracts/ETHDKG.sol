@@ -239,11 +239,13 @@ contract ETHDKG is
             string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MIGRATION_INPUT_DATA_MISMATCH))
         );
 
-        _masterPublicKey = masterPublicKey_;
-        _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
-        _nonce++;
+        nonce++;
 
         for (uint256 i = 0; i < validatorsAccounts_.length; i++) {
+            _participants[validatorsAccounts_[i]].index = uint64(validatorIndexes_[i]);
+            _participants[validatorsAccounts_[i]].nonce = uint64(nonce);
+            _participants[validatorsAccounts_[i]].phase = Phase.Completion;
+            _participants[validatorsAccounts_[i]].gpkj = validatorShares_[i];
             emit ValidatorMemberAdded(
                 validatorsAccounts_[i],
                 validatorIndexes_[i],
@@ -255,6 +257,11 @@ contract ETHDKG is
                 validatorShares_[i][3]
             );
         }
+        _masterPublicKey = masterPublicKey_;
+        _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
+        _nonce = uint64(nonce);
+        _numParticipants = validatorCount_;
+
         emit ValidatorSetCompleted(
             validatorCount_,
             nonce,
