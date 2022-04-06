@@ -262,6 +262,7 @@ contract ETHDKG is
             masterPublicKey_[2],
             masterPublicKey_[3]
         );
+        IValidatorPool(_validatorPoolAddress()).completeETHDKG();
     }
 
     function isETHDKGRunning() public view returns (bool) {
