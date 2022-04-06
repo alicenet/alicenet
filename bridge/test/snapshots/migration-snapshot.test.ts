@@ -103,7 +103,7 @@ describe("Snapshots: Migrate state", () => {
       fixture.factory,
       fixture.ethdkg,
       "migrateValidators",
-      [,]
+      [validators, [1, 2, 3, 4], [validators]]
     );
 
     // await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
