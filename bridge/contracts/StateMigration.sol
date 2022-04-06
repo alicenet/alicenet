@@ -2,20 +2,115 @@
 pragma solidity ^0.8.11;
 
 import "contracts/interfaces/ISnapshots.sol";
+import "contracts/interfaces/IAToken.sol";
+import "contracts/interfaces/IValidatorPool.sol";
+import "contracts/interfaces/IERC20Transferable.sol";
+import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-contract StateMigration is ImmutableFactory, ImmutableSnapshots, ImmutableETHDKG {
+import "hardhat/console.sol";
+
+contract ExternalStore is ImmutableFactory {
+    uint256[4] internal _tokenIDs;
+    uint256 internal _counter;
+
+    constructor(address factory_) ImmutableFactory(factory_) {}
+
+    function storeTokenIds(uint256[4] memory tokenIDs) public onlyFactory {
+        _tokenIDs = tokenIDs;
+    }
+
+    function incrementCounter() public onlyFactory {
+        _counter++;
+    }
+
+    function getTokenIds() public view returns (uint256[4] memory) {
+        return _tokenIDs;
+    }
+
+    function getCounter() public view returns (uint256) {
+        return _counter;
+    }
+}
+
+contract StateMigration is
+    ImmutableFactory,
+    ImmutableSnapshots,
+    ImmutableETHDKG,
+    ImmutableAToken,
+    ImmutableATokenMinter,
+    ImmutablePublicStaking,
+    ImmutableValidatorPool
+{
     uint256 public constant EPOCH_LENGTH = 1024;
+    ExternalStore internal immutable _externalStore;
 
     constructor(address factory_)
         ImmutableFactory(factory_)
         ImmutableSnapshots()
         ImmutableETHDKG()
-    {}
+        ImmutableAToken()
+        ImmutableATokenMinter()
+        ImmutablePublicStaking()
+        ImmutableValidatorPool()
+    {
+        _externalStore = new ExternalStore(factory_);
+    }
+
+    function doMigrationStep() public {
+        if (_externalStore.getCounter() == 0) {
+            stakeValidators();
+            _externalStore.incrementCounter();
+            return;
+        }
+        if (_externalStore.getCounter() == 1) {
+            migrateSnapshotsAndValidators();
+            _externalStore.incrementCounter();
+            return;
+        }
+    }
+
+    function stakeValidators() public {
+        // Setting staking amount
+        IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
+        // Minting 4 aTokensWei to stake the validators
+        IATokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), 4);
+        IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), 4);
+        uint256[4] memory tokenIDs;
+        for (uint256 i; i < 4; i++) {
+            // minting publicStaking position for the factory
+            tokenIDs[i] = IStakingNFT(_publicStakingAddress()).mint(1);
+            IERC721(_publicStakingAddress()).approve(_validatorPoolAddress(), tokenIDs[i]);
+        }
+        _externalStore.storeTokenIds(tokenIDs);
+    }
 
     function migrateSnapshotsAndValidators() public {
+        uint256[] memory tokenIDs = new uint256[](4);
+        uint256[4] memory tokenIDs_ = _externalStore.getTokenIds();
+        for (uint256 i = 0; i < tokenIDs.length; i++) {
+            tokenIDs[i] = tokenIDs_[i];
+        }
+        ////////////// Registering validators /////////////////////////
+        address[] memory validatorsAccounts_ = new address[](4);
+        validatorsAccounts_[0] = address(
+            uint160(0x000000000000000000000000b80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad)
+        );
+        validatorsAccounts_[1] = address(
+            uint160(0x00000000000000000000000025489d6a720663f7e5253df68948edb302dfdcb6)
+        );
+        validatorsAccounts_[2] = address(
+            uint160(0x000000000000000000000000322e8f463b925da54a778ed597aef41bc4fe4743)
+        );
+        validatorsAccounts_[3] = address(
+            uint160(0x000000000000000000000000adf2a338e19c12298a3007cbea1c5276d1f746e0)
+        );
+
+        IValidatorPool(_validatorPoolAddress()).registerValidators(validatorsAccounts_, tokenIDs);
+        ///////////////
         bytes[] memory bClaims_ = new bytes[](5);
         bytes[] memory groupSignatures_ = new bytes[](5);
 
@@ -53,13 +148,9 @@ contract StateMigration is ImmutableFactory, ImmutableSnapshots, ImmutableETHDKG
 
         ISnapshots(_snapshotsAddress()).migrateSnapshots(groupSignatures_, bClaims_);
 
-        address[] memory validatorsAccounts_ = new address[](4);
         uint256[] memory validatorIndexes_ = new uint256[](4);
         uint256[4][] memory validatorShares_ = new uint256[4][](4);
 
-        validatorsAccounts_[0] = address(
-            uint160(0x000000000000000000000000b80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad)
-        );
         validatorIndexes_[0] = 0x0000000000000000000000000000000000000000000000000000000000000001;
         validatorShares_[0] = [
             0x109f68dde37442959baa4b16498a6fd19c285f9355c23d8eef900876e8536a12,
@@ -68,9 +159,6 @@ contract StateMigration is ImmutableFactory, ImmutableSnapshots, ImmutableETHDKG
             0x163cb9abb41800ba5cc1955fd72c0983edc9869a21925006e691d4947451c9fd
         ];
 
-        validatorsAccounts_[1] = address(
-            uint160(0x00000000000000000000000025489d6a720663f7e5253df68948edb302dfdcb6)
-        );
         validatorIndexes_[1] = 0x0000000000000000000000000000000000000000000000000000000000000002;
         validatorShares_[1] = [
             0x13f8a33ff7ef3cb5536b2223195b7b652a3533d309ad3887bcf570c9b1dbe142,
@@ -79,9 +167,6 @@ contract StateMigration is ImmutableFactory, ImmutableSnapshots, ImmutableETHDKG
             0x27c0f981d1bbc1667ea520341b7fa65fc79815ab8122a814e3714bfdbacd84db
         ];
 
-        validatorsAccounts_[2] = address(
-            uint160(0x000000000000000000000000322e8f463b925da54a778ed597aef41bc4fe4743)
-        );
         validatorIndexes_[2] = 0x0000000000000000000000000000000000000000000000000000000000000003;
         validatorShares_[2] = [
             0x1064dd800716a7e80ed5d40d5563940cd25be4451976a28c237e1426d40eae5a,
@@ -90,9 +175,6 @@ contract StateMigration is ImmutableFactory, ImmutableSnapshots, ImmutableETHDKG
             0x281971fd391a560142b8d796018afc31131a668b2ca6f62b304564d6422bb03f
         ];
 
-        validatorsAccounts_[3] = address(
-            uint160(0x000000000000000000000000adf2a338e19c12298a3007cbea1c5276d1f746e0)
-        );
         validatorIndexes_[3] = 0x0000000000000000000000000000000000000000000000000000000000000004;
         validatorShares_[3] = [
             0x2228b7dd85ddae13994fa85f42df1833da3b9468a1e65b987142d62f125a9754,

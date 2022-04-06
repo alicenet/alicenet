@@ -70,6 +70,8 @@ interface ISnapshots {
 
     function getLatestSnapshot() external view returns (Snapshot memory);
 
+    function getEpochFromHeight(uint256 height) external view returns (uint256);
+
     function mayValidatorSnapshot(
         uint256 numValidators,
         uint256 myIdx,
@@ -77,6 +79,4 @@ interface ISnapshots {
         bytes32 blsig,
         uint256 desperationFactor
     ) external pure returns (bool);
-
-    function getEpochFromHeight(uint256 height) external view returns (uint256);
 }

@@ -4,7 +4,7 @@ import {
   assertEventValidatorMemberAdded,
   assertEventValidatorSetCompleted,
 } from "../ethdkg/setup";
-import { expect, Fixture, getFixture } from "../setup";
+import { expect, Fixture, getFixture, mineBlocks } from "../setup";
 
 describe("State Migration: Migrate state", () => {
   let fixture: Fixture;
@@ -18,12 +18,23 @@ describe("State Migration: Migrate state", () => {
       await ethers.getContractFactory("StateMigration")
     ).deploy(fixture.factory.address);
 
+    const receipt1 = await (
+      await fixture.factory.delegateCallAny(
+        stateMigration.address,
+        stateMigration.interface.encodeFunctionData("doMigrationStep")
+      )
+    ).wait();
+
+    expect(receipt1.status).to.be.equals(1);
+
+    await mineBlocks(2n);
+
     const txResponsePromise = fixture.factory.delegateCallAny(
       stateMigration.address,
-      stateMigration.interface.encodeFunctionData(
-        "migrateSnapshotsAndValidators"
-      )
+      stateMigration.interface.encodeFunctionData("doMigrationStep")
     );
+    const txResponse = await txResponsePromise;
+    const receipt = await txResponse.wait();
     const expectedChainId = 1;
     const expectedAliceNetHeights = [76800n, 77824n, 78848n, 79872n, 80896n];
     const expectedEpochs = [75n, 76n, 77n, 78n, 79n];
@@ -128,10 +139,6 @@ describe("State Migration: Migrate state", () => {
       ],
     ];
 
-    const txResponse = await txResponsePromise;
-    const receipt = await txResponse.wait();
-    console.log(receipt.gasUsed);
-
     const expectedValidatorCount = 4;
     const expectedNonce = 1;
     const expectedEpoch = 1;
@@ -165,7 +172,7 @@ describe("State Migration: Migrate state", () => {
           validatorShares[i][2],
           validatorShares[i][3],
         ],
-        i + 5
+        receipt.logs.length - 5 + i
       );
       const participantData = await fixture.ethdkg.getParticipantInternalState(
         validatorsAccounts[i]
@@ -182,6 +189,9 @@ describe("State Migration: Migrate state", () => {
         validatorIndexes[i],
         "Incorrect index"
       );
+      expect(
+        await fixture.validatorPool.isValidator(validatorsAccounts[i])
+      ).to.be.equals(true);
     }
 
     await assertEventValidatorSetCompleted(
@@ -197,7 +207,7 @@ describe("State Migration: Migrate state", () => {
         masterPublicKey[2],
         masterPublicKey[3],
       ],
-      9
+      receipt.logs.length - 1
     );
 
     expect(receipt.status).to.be.equals(1, "receipt failed");

@@ -88,6 +88,11 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         return true;
     }
 
+    function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
+        _snapshots[_epoch].committedAt = height_;
+        return height_;
+    }
+
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
         if (height <= _epochLength) {
             return 1;
@@ -96,11 +101,6 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
             return height / _epochLength;
         }
         return (height / _epochLength) + 1;
-    }
-
-    function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
-        _snapshots[_epoch].committedAt = height_;
-        return height_;
     }
 
     function getSnapshotDesperationDelay() public view returns (uint256) {
