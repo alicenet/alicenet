@@ -1,6 +1,17 @@
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { expect, factoryCallAny, Fixture, getFixture } from "../setup";
+import {
+  signedData,
+  validatorsSnapshots,
+} from "../math/assets/4-validators-1000-snapshots";
+import {
+  expect,
+  factoryCallAny,
+  factoryCallAnyFixture,
+  Fixture,
+  getFixture,
+} from "../setup";
+import { createValidators, stakeValidators } from "../validatorPool/setup";
 import {
   invalidSnapshot500,
   validSnapshot1024,
@@ -51,6 +62,125 @@ describe("Snapshots: Migrate state", () => {
         [invalidSnapshot500.BClaims],
       ])
     ).to.be.revertedWith("406");
+  });
+
+  it("After a migration we should not be able to change validators and rerun ethdkg without scheduling maintenance", async function () {
+    let expectedChainId = 1;
+    let expectedEpoch = 1;
+    let expectedHeight = validSnapshot1024.height as number;
+    let expectedSafeToProceedConsensus = false;
+    const fixture = await getFixture();
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+
+    let receipt = await factoryCallAny(
+      fixture.factory,
+      fixture.snapshots,
+      "migrateSnapshots",
+      [
+        [signedData[500].GroupSignature, signedData[501].GroupSignature],
+        [signedData[500].BClaims, signedData[501].BClaims],
+      ]
+    );
+
+    expect(receipt.status).to.be.equals(1);
+
+    // validatorsAccounts_,
+    //     uint256[] memory validatorIndexes_,
+    //     uint256[4][] memory validatorShares_,
+    //     uint8 validatorCount_,
+    //     uint256 epoch_,
+    //     uint256 sideChainHeight_,
+    //     uint256 ethHeight_,
+    //     uint256[4] memory masterPublicKey_
+    receipt = await factoryCallAny(
+      fixture.factory,
+      fixture.ethdkg,
+      "migrateValidators",
+      [,]
+    );
+
+    // await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
+    // await completeETHDKGRound(validatorsSnapshots, {
+    //   ethdkg: fixture.ethdkg,
+    //   validatorPool: fixture.validatorPool,
+    // });
+    // await factoryCallAnyFixture(
+    //   fixture,
+    //   "validatorPool",
+    //   "scheduleMaintenance"
+    // );
+    // await mineBlocks(
+    //   (await snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    // );
+    // await expect(
+    //   snapshots
+    //     .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
+    //     .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
+    // )
+    //   .to.emit(snapshots, `SnapshotTaken`)
+    //   .withArgs(
+    //     expectedChainId,
+    //     expectedEpoch,
+    //     expectedHeight,
+    //     ethers.utils.getAddress(validatorsSnapshots1[0].address),
+    //     expectedSafeToProceedConsensus,
+    //     validSnapshot1024.GroupSignature
+    //   );
+    // await factoryCallAnyFixture(
+    //   fixture,
+    //   "validatorPool",
+    //   "unregisterValidators",
+    //   [validators]
+    // );
+
+    // // registering the new validators
+    // const newValidators = await createValidators(fixture, validatorsSnapshots2);
+    // const newStakingTokenIds = await stakeValidators(fixture, newValidators);
+    // await factoryCallAnyFixture(
+    //   fixture,
+    //   "validatorPool",
+    //   "registerValidators",
+    //   [newValidators, newStakingTokenIds]
+    // );
+    // await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
+    // await completeETHDKGRound(
+    //   validatorsSnapshots2,
+    //   {
+    //     ethdkg: fixture.ethdkg,
+    //     validatorPool: fixture.validatorPool,
+    //   },
+    //   expectedEpoch,
+    //   expectedHeight,
+    //   (await snapshots.getCommittedHeightFromLatestSnapshot()).toNumber()
+    // );
+    // await mineBlocks(
+    //   (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    // );
+    // expectedChainId = 1;
+    // expectedEpoch = 2;
+    // expectedHeight = validSnapshot2048.height as number;
+    // expectedSafeToProceedConsensus = true;
+    // await expect(
+    //   snapshots
+    //     .connect(await getValidatorEthAccount(validatorsSnapshots2[0]))
+    //     .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
+    // )
+    //   .to.emit(snapshots, `SnapshotTaken`)
+    //   .withArgs(
+    //     expectedChainId,
+    //     expectedEpoch,
+    //     expectedHeight,
+    //     ethers.utils.getAddress(validatorsSnapshots2[0].address),
+    //     expectedSafeToProceedConsensus,
+    //     validSnapshot2048.GroupSignature
+    //   );
   });
 
   it("Should migrate using special migration contract", async function () {
@@ -159,32 +289,32 @@ describe("Snapshots: Migrate state", () => {
       ),
     ];
 
-    for (let i = 0; i < validatorsAccounts.length; i++) {
-      //   await expect(
-      //     txResponsePromise,
-      //     "Failed to Validator member found event for " + i
-      //   )
-      //     .to.emit(fixture.ethdkg, "ValidatorMemberAdded")
-      //     .withArgs(
-      //       validatorsAccounts[i],
-      //       validatorIndexes[i],
-      //       expectedEpoch,
-      //       validatorShares[i][0],
-      //       validatorShares[i][1],
-      //       validatorShares[i][2],
-      //       validatorShares[i][3]
-      //     );
-      const myEvent = fixture.ethdkg.interface.decodeEventLog(
-        "ValidatorMemberAdded",
-        receipt.logs[i + 5].data,
-        receipt.logs[i + 5].topics
-      );
-      await expect(myEvent).to.be.deep.equals({
-        account: validatorsAccounts[i],
-        index: validatorIndexes[i],
-        expectedEpoch,
-      });
-    }
+    // for (let i = 0; i < validatorsAccounts.length; i++) {
+    //   //   await expect(
+    //   //     txResponsePromise,
+    //   //     "Failed to Validator member found event for " + i
+    //   //   )
+    //   //     .to.emit(fixture.ethdkg, "ValidatorMemberAdded")
+    //   //     .withArgs(
+    //   //       validatorsAccounts[i],
+    //   //       validatorIndexes[i],
+    //   //       expectedEpoch,
+    //   //       validatorShares[i][0],
+    //   //       validatorShares[i][1],
+    //   //       validatorShares[i][2],
+    //   //       validatorShares[i][3]
+    //   //     );
+    //   const myEvent = fixture.ethdkg.interface.decodeEventLog(
+    //     "ValidatorMemberAdded",
+    //     receipt.logs[i + 5].data,
+    //     receipt.logs[i + 5].topics
+    //   );
+    //   await expect(myEvent).to.be.deep.equals({
+    //     account: validatorsAccounts[i],
+    //     index: validatorIndexes[i],
+    //     expectedEpoch,
+    //   });
+    // }
 
     await expect(
       txResponsePromise,
@@ -209,8 +339,6 @@ describe("Snapshots: Migrate state", () => {
       ethers.utils.solidityKeccak256(["uint256[4]"], [masterPublicKey]),
       "MPKs dont match!"
     );
-
-    // await assertEventValidatorMemberAdded();
   });
 
   describe("After a successful migration", () => {
