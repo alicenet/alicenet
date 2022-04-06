@@ -66,7 +66,7 @@ describe("Snapshots: Migrate state", () => {
     ).to.be.revertedWith("406");
   });
 
-  it("Factory be able to do snapshots after migration", async function () {
+  it("Should be able to do snapshots after migration", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(
