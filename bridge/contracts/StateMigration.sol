@@ -3,6 +3,7 @@ pragma solidity ^0.8.11;
 
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IAToken.sol";
+import "contracts/interfaces/IBToken.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
@@ -42,6 +43,7 @@ contract StateMigration is
     ImmutableETHDKG,
     ImmutableAToken,
     ImmutableATokenMinter,
+    ImmutableBToken,
     ImmutablePublicStaking,
     ImmutableValidatorPool
 {
@@ -53,6 +55,7 @@ contract StateMigration is
         ImmutableSnapshots()
         ImmutableETHDKG()
         ImmutableAToken()
+        ImmutableBToken()
         ImmutableATokenMinter()
         ImmutablePublicStaking()
         ImmutableValidatorPool()
@@ -74,6 +77,7 @@ contract StateMigration is
     }
 
     function stakeValidators() public {
+        IBToken(_bTokenAddress()).setSplits(1000, 0, 0, 0);
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
         // Minting 4 aTokensWei to stake the validators
