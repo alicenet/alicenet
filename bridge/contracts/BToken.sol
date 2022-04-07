@@ -289,13 +289,21 @@ contract BToken is
         // stakingAmount
         minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
 
-        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_validatorStakingAddress()), minerAmount);
-        _safeTransferEthWithMagic(IMagicEthTransfer(_publicStakingAddress()), stakingAmount);
-        _safeTransferEthWithMagic(
-            IMagicEthTransfer(_liquidityProviderStakingAddress()),
-            lpStakingAmount
-        );
+        if (foundationAmount != 0) {
+            _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
+        }
+        if (minerAmount != 0) {
+            _safeTransferEthWithMagic(IMagicEthTransfer(_validatorStakingAddress()), minerAmount);
+        }
+        if (stakingAmount != 0) {
+            _safeTransferEthWithMagic(IMagicEthTransfer(_publicStakingAddress()), stakingAmount);
+        }
+        if (lpStakingAmount != 0) {
+            _safeTransferEthWithMagic(
+                IMagicEthTransfer(_liquidityProviderStakingAddress()),
+                lpStakingAmount
+            );
+        }
         require(
             address(this).balance >= poolBalance,
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_BALANCE))
