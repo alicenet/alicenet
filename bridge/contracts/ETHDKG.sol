@@ -241,6 +241,17 @@ contract ETHDKG is
 
         nonce++;
 
+        emit RegistrationOpened(block.number, validatorCount_, nonce, 0, 0);
+
+        for (uint256 i = 0; i < validatorsAccounts_.length; i++) {
+            emit AddressRegistered(
+                validatorsAccounts_[i],
+                validatorIndexes_[i],
+                nonce,
+                [uint256(0), uint256(0)]
+            );
+        }
+
         for (uint256 i = 0; i < validatorsAccounts_.length; i++) {
             _participants[validatorsAccounts_[i]].index = uint64(validatorIndexes_[i]);
             _participants[validatorsAccounts_[i]].nonce = uint64(nonce);
@@ -257,6 +268,7 @@ contract ETHDKG is
                 validatorShares_[i][3]
             );
         }
+
         _masterPublicKey = masterPublicKey_;
         _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
         _nonce = uint64(nonce);

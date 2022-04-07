@@ -89,11 +89,17 @@ task(
 
 task(
   "deployStateMigrationContract",
-  "Computes factory address and to the deploymentArgs file"
+  "Deploy state migration contract and run migrations"
 )
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
+  )
+  .addOptionalParam("migrationAddress", "the address of the migration contract")
+  .addFlag(
+    "skipFirstTransaction",
+    "The task executes 2 tx to execute the migrations." +
+      " Use this flag if you want to skip the first tx where we mint the NFT."
   )
   .setAction(async (taskArgs, hre) => {
     if (
@@ -111,32 +117,62 @@ task(
       taskArgs.factoryAddress
     );
 
-    console.log("Deploying migration contract!");
-    const stateMigration = await (
-      await hre.ethers.getContractFactory("StateMigration")
-    )
-      .connect(admin)
-      .deploy(taskArgs.factoryAddress);
-
-    console.log("Deployed migration contract at " + stateMigration.address);
-
-    console.log("Calling the contract first time to mint and stake NFTs!");
-    await (
-      await factory.delegateCallAny(
-        stateMigration.address,
-        stateMigration.interface.encodeFunctionData("doMigrationStep")
+    let stateMigration;
+    if (
+      taskArgs.migrationAddress === undefined ||
+      taskArgs.migrationAddress === ""
+    ) {
+      console.log("Deploying migration contract!");
+      stateMigration = await (
+        await hre.ethers.getContractFactory("StateMigration")
       )
-    ).wait();
+        .connect(admin)
+        .deploy(taskArgs.factoryAddress);
 
-    let constBlock = await hre.ethers.provider.getBlockNumber();
-    const expectedBlock = constBlock + 2;
-    console.log(
-      "Current block: " + constBlock + " Waiting for 2 blocks to be mined!"
-    );
-    while (constBlock < expectedBlock) {
-      constBlock = await hre.ethers.provider.getBlockNumber();
-      console.log(`Current block: ${constBlock}`);
-      await delay(2000);
+      let constBlock = await hre.ethers.provider.getBlockNumber();
+      const expectedBlock = constBlock + 6;
+      console.log(
+        "Current block: " + constBlock + " Waiting for 6 blocks to be mined!"
+      );
+      while (constBlock < expectedBlock) {
+        constBlock = await hre.ethers.provider.getBlockNumber();
+        console.log(`Current block: ${constBlock}`);
+        await delay(2000);
+      }
+
+      console.log("Deployed migration contract at " + stateMigration.address);
+    } else {
+      stateMigration = await hre.ethers.getContractAt(
+        "StateMigration",
+        taskArgs.migrationAddress
+      );
+      console.log(
+        "Using migration contract deployed at " + stateMigration.address
+      );
+    }
+
+    if (
+      taskArgs.skipFirstTransaction === undefined ||
+      taskArgs.skipFirstTransaction === false
+    ) {
+      console.log("Calling the contract first time to mint and stake NFTs!");
+      await (
+        await factory.delegateCallAny(
+          stateMigration.address,
+          stateMigration.interface.encodeFunctionData("doMigrationStep")
+        )
+      ).wait();
+
+      let constBlock = await hre.ethers.provider.getBlockNumber();
+      const expectedBlock = constBlock + 2;
+      console.log(
+        "Current block: " + constBlock + " Waiting for 2 blocks to be mined!"
+      );
+      while (constBlock < expectedBlock) {
+        constBlock = await hre.ethers.provider.getBlockNumber();
+        console.log(`Current block: ${constBlock}`);
+        await delay(2000);
+      }
     }
     console.log(
       "Calling the contract second time to register and migrate state!"
@@ -210,6 +246,9 @@ task("registerValidators", "registers validators")
         "ERC20",
         await aToken.getLegacyTokenAddress()
       );
+
+      const input = aToken.interface.encodeFunctionData("allowMigration");
+      await factory.connect(admin).callAny(aToken.address, 0, input);
 
       console.log(`Legacy Token Address: ${legacyToken.address}`);
       console.log(

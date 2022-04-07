@@ -45,7 +45,7 @@ describe("Testing AToken", async () => {
     });
 
     it("Should not allow migrate if migration is locked", async function () {
-      const [admin, user] = await ethers.getSigners();
+      const [admin] = await ethers.getSigners();
       const factory = await deployAliceNetFactory(admin);
 
       // LegacyToken
