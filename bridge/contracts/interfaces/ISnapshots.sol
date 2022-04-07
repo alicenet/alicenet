@@ -28,6 +28,10 @@ interface ISnapshots {
         external
         returns (bool);
 
+    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
+        external
+        returns (bool);
+
     function getSnapshotDesperationDelay() external view returns (uint256);
 
     function getSnapshotDesperationFactor() external view returns (uint256);
@@ -65,6 +69,8 @@ interface ISnapshots {
     function getSnapshot(uint256 epoch_) external view returns (Snapshot memory);
 
     function getLatestSnapshot() external view returns (Snapshot memory);
+
+    function getEpochFromHeight(uint256 height) external view returns (uint256);
 
     function mayValidatorSnapshot(
         uint256 numValidators,

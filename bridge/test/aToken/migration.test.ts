@@ -1,6 +1,13 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect, Fixture, getFixture } from "../setup";
+import { AToken, LegacyToken } from "../../typechain-types";
+import {
+  deployAliceNetFactory,
+  deployStaticWithFactory,
+  expect,
+  Fixture,
+  getFixture,
+} from "../setup";
 import { getState, init, state } from "./setup";
 
 describe("Testing AToken", async () => {
@@ -35,6 +42,37 @@ describe("Testing AToken", async () => {
       await expect(
         fixture.aToken.connect(user).migrate(amount)
       ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+
+    it("Should not allow migrate if migration is locked", async function () {
+      const [admin, user] = await ethers.getSigners();
+      const factory = await deployAliceNetFactory(admin);
+
+      // LegacyToken
+      const legacyToken = (await deployStaticWithFactory(
+        factory,
+        "LegacyToken"
+      )) as LegacyToken;
+
+      const aToken = (await deployStaticWithFactory(
+        factory,
+        "AToken",
+        "AToken",
+        undefined,
+        [legacyToken.address]
+      )) as AToken;
+
+      await factory.callAny(
+        legacyToken.address,
+        0,
+        aToken.interface.encodeFunctionData("transfer", [
+          admin.address,
+          ethers.utils.parseEther("100000000"),
+        ])
+      );
+      await expect(aToken.connect(admin).migrate(amount)).to.be.revertedWith(
+        "MadTokens migration not allowed"
+      );
     });
 
     it("Should not allow migrate user legacy tokens without token", async function () {

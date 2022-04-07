@@ -54,4 +54,6 @@ library ETHDKGErrorCodes {
     bytes32 public constant ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE = "148"; // "ETHDKG: should be in post-GPKJDispute phase!"
     bytes32 public constant ETHDKG_REQUISITES_INCOMPLETE = "149"; //  "ETHDKG: Not all requisites to complete this ETHDKG round were completed!"
     bytes32 public constant ETHDKG_KEYSHARE_PHASE_INVALID_NONCE = "150"; // "ETHDKG: Key share submission failed, participant with invalid nonce!"
+    bytes32 public constant ETHDKG_MIGRATION_INVALID_NONCE = "151"; // "ETHDKG: Only can execute this with nonce 0!"
+    bytes32 public constant ETHDKG_MIGRATION_INPUT_DATA_MISMATCH = "152"; // "ETHDKG: All input data length should match!"
 }

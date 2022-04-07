@@ -5,6 +5,10 @@ import { task, types } from "hardhat/config";
 import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 export async function getTokenIdFromTx(ethers: any, tx: any) {
   const abi = [
     "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
@@ -81,6 +85,68 @@ task(
 
     const data = toml.stringify(deploymentConfig);
     fs.writeFileSync(taskArgs.outputFolder + "/deploymentArgsTemplate", data);
+  });
+
+task(
+  "deployStateMigrationContract",
+  "Computes factory address and to the deploymentArgs file"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    if (
+      taskArgs.factoryAddress === undefined ||
+      taskArgs.factoryAddress === ""
+    ) {
+      throw new Error("Expected a factory address to be passed!");
+    }
+    // Make sure that admin is the named account at position 0
+    const [admin] = await hre.ethers.getSigners();
+    console.log(`Admin address: ${admin.address}`);
+
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+
+    console.log("Deploying migration contract!");
+    const stateMigration = await (
+      await hre.ethers.getContractFactory("StateMigration")
+    )
+      .connect(admin)
+      .deploy(taskArgs.factoryAddress);
+
+    console.log("Deployed migration contract at " + stateMigration.address);
+
+    console.log("Calling the contract first time to mint and stake NFTs!");
+    await (
+      await factory.delegateCallAny(
+        stateMigration.address,
+        stateMigration.interface.encodeFunctionData("doMigrationStep")
+      )
+    ).wait();
+
+    let constBlock = await hre.ethers.provider.getBlockNumber();
+    const expectedBlock = constBlock + 2;
+    console.log(
+      "Current block: " + constBlock + " Waiting for 2 blocks to be mined!"
+    );
+    while (constBlock < expectedBlock) {
+      constBlock = await hre.ethers.provider.getBlockNumber();
+      console.log(`Current block: ${constBlock}`);
+      await delay(2000);
+    }
+    console.log(
+      "Calling the contract second time to register and migrate state!"
+    );
+    await (
+      await factory.delegateCallAny(
+        stateMigration.address,
+        stateMigration.interface.encodeFunctionData("doMigrationStep")
+      )
+    ).wait();
   });
 
 task("registerValidators", "registers validators")

@@ -11,4 +11,6 @@ library SnapshotsErrorCodes {
     bytes32 public constant SNAPSHOT_SIGNATURE_VERIFICATION_FAILED = "405"; //"Snapshots: Signature verification failed!"
     bytes32 public constant SNAPSHOT_INCORRECT_BLOCK_HEIGHT = "406"; //"Snapshots: Incorrect AliceNet height for snapshot!"
     bytes32 public constant SNAPSHOT_INCORRECT_CHAIN_ID = "407"; //"Snapshots: Incorrect chainID for snapshot!"
+    bytes32 public constant SNAPSHOT_MIGRATION_NOT_ALLOWED = "408"; //Snapshots: Migration only allowed at epoch 0!
+    bytes32 public constant SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH = "409"; //Snapshots: Mismatch calldata length!
 }

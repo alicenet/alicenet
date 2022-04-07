@@ -164,14 +164,15 @@ export const assertEventValidatorMemberAdded = async (
   index: BigNumberish,
   nonce: BigNumberish,
   epoch: BigNumberish,
-  gpkj: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
+  gpkj: [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
+  logsPos: number = 0
 ) => {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([
     "event ValidatorMemberAdded(address account, uint256 index, uint256 nonce, uint256 epoch, uint256 share0, uint256 share1, uint256 share2, uint256 share3)",
   ]);
-  const data = receipt.logs[0].data;
-  const topics = receipt.logs[0].topics;
+  const data = receipt.logs[logsPos].data;
+  const topics = receipt.logs[logsPos].topics;
   const event = intrface.decodeEventLog("ValidatorMemberAdded", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);
@@ -205,14 +206,15 @@ export const assertEventValidatorSetCompleted = async (
   epoch: BigNumberish,
   ethHeight: BigNumberish,
   aliceNetHeight: BigNumberish,
-  mpk: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
+  mpk: [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
+  logPos: number = 0
 ) => {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([
     "event ValidatorSetCompleted(uint256 validatorCount, uint256 nonce, uint256 epoch, uint256 ethHeight, uint256 aliceNetHeight, uint256 groupKey0, uint256 groupKey1, uint256 groupKey2, uint256 groupKey3)",
   ]);
-  const data = receipt.logs[0].data;
-  const topics = receipt.logs[0].topics;
+  const data = receipt.logs[logPos].data;
+  const topics = receipt.logs[logPos].topics;
   const event = intrface.decodeEventLog("ValidatorSetCompleted", data, topics);
   expect(event.validatorCount).to.equal(validatorCount);
   expect(event.nonce).to.equal(nonce);
