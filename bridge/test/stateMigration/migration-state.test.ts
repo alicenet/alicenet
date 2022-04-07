@@ -159,6 +159,7 @@ describe("State Migration: Migrate state", () => {
       ),
     ];
 
+    const ethLog = 45;
     for (let i = 0; i < validatorsAccounts.length; i++) {
       await assertEventValidatorMemberAdded(
         txResponse,
@@ -172,7 +173,7 @@ describe("State Migration: Migrate state", () => {
           validatorShares[i][2],
           validatorShares[i][3],
         ],
-        receipt.logs.length - 5 + i
+        ethLog + i
       );
       const participantData = await fixture.ethdkg.getParticipantInternalState(
         validatorsAccounts[i]
@@ -207,7 +208,7 @@ describe("State Migration: Migrate state", () => {
         masterPublicKey[2],
         masterPublicKey[3],
       ],
-      receipt.logs.length - 1
+      ethLog + 4
     );
 
     expect(receipt.status).to.be.equals(1, "receipt failed");
