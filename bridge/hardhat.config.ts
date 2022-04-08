@@ -66,6 +66,17 @@ const config: HardhatUserConfig = {
           : "0x0000000000000000000000000000000000000000000000000000000000000000",
       ],
     },
+    production: {
+      url: "https://eth.alice.net/",
+      gas: 15000000,
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+        process.env.PROD_PK
+          ? process.env.PROD_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+    },
     ganache: {
       url: "http://127.0.0.1:8545",
     },
