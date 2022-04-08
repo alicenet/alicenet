@@ -43,7 +43,7 @@ contract Foundation is
     /// source code and hopefully this comment
     function depositEth(uint8 magic_) public payable checkMagic(magic_) {}
 
-    function delegateCallAny(address target_, bytes memory cdata_) public onlyFactory {
+    function delegateCallAny(address target_, bytes memory cdata_) public payable onlyFactory {
         assembly {
             let size := mload(cdata_)
             let ptr := add(0x20, cdata_)
