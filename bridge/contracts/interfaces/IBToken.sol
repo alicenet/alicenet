@@ -8,4 +8,10 @@ interface IBToken {
         uint256 liquidityProviderStakingSplit_,
         uint256 protocolFee_
     ) external;
+
+    function virtualMintDeposit(
+        uint8 accountType_,
+        address to_,
+        uint256 amount_
+    ) external;
 }
