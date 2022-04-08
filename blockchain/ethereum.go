@@ -674,7 +674,7 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 
 	baseFee := block.BaseFee()
 
-	bmi64 := int64(100)
+	bmi64 := int64(2)
 	bm := new(big.Int).SetInt64(bmi64)
 	bf := new(big.Int).Set(baseFee)
 	baseFee2x := new(big.Int).Mul(bm, bf)
