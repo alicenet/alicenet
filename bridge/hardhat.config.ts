@@ -72,8 +72,8 @@ const config: HardhatUserConfig = {
       gasMultiplier: 2,
       gasPrice: "auto",
       accounts: [
-        process.env.TESTNET_PK
-          ? process.env.TESTNET_PK
+        process.env.PROD_PK
+          ? process.env.PROD_PK
           : "0x0000000000000000000000000000000000000000000000000000000000000000",
       ],
     },
