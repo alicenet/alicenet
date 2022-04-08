@@ -77,7 +77,7 @@ contract StateMigration is
     }
 
     function stakeValidators() public {
-        IBToken(_bTokenAddress()).setSplits(1000, 0, 0, 0);
+        IBToken(_bTokenAddress()).setSplits(0, 0, 0, 1000);
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
         // Minting 4 aTokensWei to stake the validators
@@ -116,6 +116,7 @@ contract StateMigration is
         IValidatorPool(_validatorPoolAddress()).registerValidators(validatorsAccounts_, tokenIDs);
         ///////////////
 
+        // ETHDKG migration
         uint256[] memory validatorIndexes_ = new uint256[](4);
         uint256[4][] memory validatorShares_ = new uint256[4][](4);
 
@@ -170,6 +171,13 @@ contract StateMigration is
             sideChainHeight_,
             ethHeight_,
             masterPublicKey_
+        );
+
+        // deposit
+        IBToken(_bTokenAddress()).virtualMintDeposit(
+            1,
+            0xba7809A4114eEF598132461f3202b5013e834CD5,
+            500000000000
         );
 
         // Snapshot migration

@@ -42,4 +42,15 @@ contract Foundation is
     /// successfully interacting with this method without first reading the
     /// source code and hopefully this comment
     function depositEth(uint8 magic_) public payable checkMagic(magic_) {}
+
+    function delegateCallAny(address target_, bytes memory cdata_) public payable onlyFactory {
+        assembly {
+            let size := mload(cdata_)
+            let ptr := add(0x20, cdata_)
+            if iszero(delegatecall(gas(), target_, ptr, size, 0x00, 0x00)) {
+                returndatacopy(0x00, 0x00, returndatasize())
+                revert(0x00, returndatasize())
+            }
+        }
+    }
 }

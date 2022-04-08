@@ -19,6 +19,19 @@ export async function getTokenIdFromTx(ethers: any, tx: any) {
   return log.args[2];
 }
 
+async function waitBlocks(waitingBlocks: number, hre: any) {
+  let constBlock = await hre.ethers.provider.getBlockNumber();
+  const expectedBlock = constBlock + waitingBlocks;
+  console.log(
+    `Current block: ${constBlock} Waiting for ${waitingBlocks} blocks to be mined!`
+  );
+  while (constBlock < expectedBlock) {
+    constBlock = await hre.ethers.provider.getBlockNumber();
+    console.log(`Current block: ${constBlock}`);
+    await delay(10000);
+  }
+}
+
 task(
   "deployLegacyTokenAndUpdateDeploymentArgs",
   "Computes factory address and to the deploymentArgs file"
@@ -129,16 +142,7 @@ task(
         .connect(admin)
         .deploy(taskArgs.factoryAddress);
 
-      let constBlock = await hre.ethers.provider.getBlockNumber();
-      const expectedBlock = constBlock + 6;
-      console.log(
-        "Current block: " + constBlock + " Waiting for 6 blocks to be mined!"
-      );
-      while (constBlock < expectedBlock) {
-        constBlock = await hre.ethers.provider.getBlockNumber();
-        console.log(`Current block: ${constBlock}`);
-        await delay(2000);
-      }
+      await waitBlocks(6, hre);
 
       console.log("Deployed migration contract at " + stateMigration.address);
     } else {
@@ -163,16 +167,7 @@ task(
         )
       ).wait();
 
-      let constBlock = await hre.ethers.provider.getBlockNumber();
-      const expectedBlock = constBlock + 2;
-      console.log(
-        "Current block: " + constBlock + " Waiting for 2 blocks to be mined!"
-      );
-      while (constBlock < expectedBlock) {
-        constBlock = await hre.ethers.provider.getBlockNumber();
-        console.log(`Current block: ${constBlock}`);
-        await delay(2000);
-      }
+      await waitBlocks(3, hre);
     }
     console.log(
       "Calling the contract second time to register and migrate state!"
@@ -183,6 +178,8 @@ task(
         stateMigration.interface.encodeFunctionData("doMigrationStep")
       )
     ).wait();
+
+    await waitBlocks(3, hre);
   });
 
 task("registerValidators", "registers validators")
