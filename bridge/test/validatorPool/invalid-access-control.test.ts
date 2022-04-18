@@ -17,12 +17,6 @@ describe("ValidatorPool Access Control: An user without admin role should not be
     notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
   });
 
-  it("Set a minimum stake", async function () {
-    await expect(
-      fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(stakeAmount)
-    ).to.be.revertedWith("2000");
-  });
-
   it("Set a maximum number of validators", async function () {
     await expect(
       fixture.validatorPool
@@ -40,7 +34,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set stake Amount", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)
-    ).to.be.revertedWith("2000");
+    ).to.be.revertedWith("823");
   });
 
   it("Initialize ETHDKG", async function () {

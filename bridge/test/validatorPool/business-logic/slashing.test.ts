@@ -68,7 +68,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount;
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.PublicStaking.ATK -= reward;
     expectedState.validators[1].ATK += reward;
@@ -118,7 +118,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount;
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.PublicStaking.ATK -= reward;
     expectedState.validators[1].ATK += reward;
@@ -187,7 +187,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount - reward;
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].ATK += reward;
     expectedState.validators[0].Acc = true;
@@ -258,7 +258,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount - reward;
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].ATK += reward;
     expectedState.validators[0].Acc = true;
@@ -338,7 +338,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount - reward;
     expectedState.ValidatorStaking.ATK -=
-      stakeAmount + ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
+      1n + ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
     expectedState.ValidatorStaking.ETH -= ethers.utils
       .parseEther(`${eths / 4}`)
       .toBigInt();
@@ -466,7 +466,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
     // Expect reward to be transferred from ValidatorStaking to disputer
-    expectedState.ValidatorStaking.ATK -= reward;
+    expectedState.ValidatorStaking.ATK--;
     expectedState.validators[1].ATK += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -519,7 +519,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
     // Expect reward to be transferred from ValidatorStaking to disputer
-    expectedState.ValidatorStaking.ATK -= reward;
+    expectedState.ValidatorStaking.ATK--;
     expectedState.validators[1].ATK += reward;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -585,7 +585,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Expect infringer unregister the validator position
     expectedState.ValidatorPool.ValNFT--;
     // Expect reward to be transferred from ValidatorStaking to disputer
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     expectedState.validators[1].ATK += stakeAmount;
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
@@ -653,7 +653,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount - reward;
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
 
     // Expect infringer to loose reward on his staking position and be transferred to accusator
     expectedState.validators[1].ATK += reward;
@@ -733,7 +733,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position and the accusator to have all the funds gained
     // as reward
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     expectedState.validators[1].ATK += reward;
     expectedState.validators[0].Acc = false;
     expectedState.validators[0].ExQ = false;
@@ -777,7 +777,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
     // Expect infringer to loose the validator position and the accusator to have all the funds gained
     // as reward
-    expectedState.ValidatorStaking.ATK -= stakeAmount;
+    expectedState.ValidatorStaking.ATK--;
     expectedState.validators[1].ATK += stakeAmount;
     expectedState.validators[0].Acc = false;
     expectedState.validators[0].ExQ = false;

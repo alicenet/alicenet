@@ -169,6 +169,20 @@ contract ValidatorPoolMock is
         return _validators.length();
     }
 
+    function getValidatorStakingPosition(uint256 tokenID)
+        public
+        view
+        returns (
+            uint256 shares,
+            uint256 freeAfter,
+            uint256 withdrawFreeAfter,
+            uint256 accumulatorEth,
+            uint256 accumulatorToken
+        )
+    {
+        return IStakingNFT(_validatorStakingAddress()).getPosition(tokenID);
+    }
+
     function getValidator(uint256 index_) public view returns (address) {
         require(
             index_ < _validators.length(),

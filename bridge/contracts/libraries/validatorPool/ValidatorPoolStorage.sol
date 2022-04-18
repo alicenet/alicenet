@@ -11,7 +11,8 @@ abstract contract ValidatorPoolStorage is
     ImmutableETHDKG,
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableAToken,
+    ImmutableValidatorVault
 {
     // POSITION_LOCK_PERIOD describes the maximum interval a PublicStaking Position may be locked after
     // being given back to validator exiting the pool
@@ -56,5 +57,6 @@ abstract contract ValidatorPoolStorage is
         ImmutablePublicStaking()
         ImmutableValidatorStaking()
         ImmutableAToken()
+        ImmutableValidatorVault()
     {}
 }
