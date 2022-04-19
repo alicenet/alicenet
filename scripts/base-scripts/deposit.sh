@@ -6,7 +6,7 @@ CURRENT_WD=$PWD
 BRIDGE_DIR=./bridge
 NETWORK=${1:-"dev"}
 cd $BRIDGE_DIR
-addr="$(grep -zo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
+addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
 FACTORY_ADDRESS=${2:-"$(echo "$addr" | sed -e 's/^"//' -e 's/"$//')"}
 
 npx hardhat --network "$NETWORK" --show-stack-traces virtualMintDeposit \
