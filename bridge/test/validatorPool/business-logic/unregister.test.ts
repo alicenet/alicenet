@@ -212,6 +212,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
       expectedState.validators[index].ExQ = true;
     }
     expectedState.ValidatorStaking.ATK -= BigInt(validators.length);
+    expectedState.ValidatorVault.ATK -=
+      BigInt(validators.length) * stakeAmount - BigInt(validators.length);
     expectedState.PublicStaking.ATK += stakeAmount * BigInt(validators.length);
     expectedState.ValidatorPool.ValNFT -= BigInt(validators.length);
     expectedState.ValidatorPool.PublicStaking += BigInt(validators.length);

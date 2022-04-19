@@ -63,7 +63,7 @@ contract ValidatorVault is
         _vaults[stakePosition_] = Vault(amount_, dilutionEpoch);
     }
 
-    function withdrawalStake(uint256 stakePosition_) public onlyValidatorPool returns (uint256) {
+    function withdrawStake(uint256 stakePosition_) public onlyValidatorPool returns (uint256) {
         Vault memory userVault = _updateVaultWithDilution(stakePosition_);
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, userVault._amount);
         totalReserve -= userVault._amount;

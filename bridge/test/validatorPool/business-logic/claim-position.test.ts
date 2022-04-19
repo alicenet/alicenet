@@ -150,6 +150,8 @@ describe("ValidatorPool: Claiming logic", async () => {
     const currentState = await getCurrentState(fixture, validators);
     // Expect that validators funds are transferred again to ValidatorStaking
     expectedState.ValidatorStaking.ATK += BigInt(validators.length);
+    expectedState.ValidatorVault.ATK +=
+      BigInt(validators.length) * stakeAmount - BigInt(validators.length);
     expect(currentState).to.be.deep.equal(expectedState);
   });
 

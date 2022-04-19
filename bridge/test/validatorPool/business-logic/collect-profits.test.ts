@@ -142,7 +142,7 @@ describe("ValidatorPool: Collecting logic", async function () {
     }
     for (let index = 0; index < expectedState.validators.length; index++) {
       expectedState.ValidatorStaking.ETH -= eths / BigInt(maxNumValidators);
-      expectedState.ValidatorStaking.ATK = atokens / BigInt(maxNumValidators);
+      expectedState.ValidatorStaking.ATK -= atokens / BigInt(maxNumValidators);
       expectedState.validators[index].ATK += atokens / BigInt(maxNumValidators);
       expectedState.validators[index].Reg = true;
       expectedState.validators[index].Acc = true;

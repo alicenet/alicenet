@@ -674,7 +674,7 @@ contract ValidatorPool is
             _validatorStakingAddress()
         );
         // get the locked amount in the vault
-        uint256 vaultAmount = IValidatorVault(_validatorVaultAddress()).withdrawalStake(
+        uint256 vaultAmount = IValidatorVault(_validatorVaultAddress()).withdrawStake(
             validatorTokenID
         );
         minerShares += vaultAmount;

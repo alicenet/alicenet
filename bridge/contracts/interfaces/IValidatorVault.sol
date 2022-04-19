@@ -6,7 +6,7 @@ interface IValidatorVault {
 
     function depositStake(uint256 stakePosition_, uint256 amount_) external;
 
-    function withdrawalStake(uint256 stakePosition_) external returns (uint256);
+    function withdrawStake(uint256 stakePosition_) external returns (uint256);
 
     function skimExcessEth(address to_) external returns (uint256 excess);
 

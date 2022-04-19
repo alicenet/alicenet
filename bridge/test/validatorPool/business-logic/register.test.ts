@@ -181,6 +181,9 @@ describe("ValidatorPool: Registration logic", async () => {
     // Expect that all validators funds are transferred from PublicStaking to ValidatorStaking
     expectedState.PublicStaking.ATK -= stakeAmount * BigInt(validators.length);
     expectedState.ValidatorStaking.ATK += BigInt(validators.length);
+    expectedState.ValidatorVault.ATK +=
+      BigInt(validators.length) * stakeAmount -
+      expectedState.ValidatorStaking.ATK;
     // Register validators
     await factoryCallAnyFixture(
       fixture,
@@ -215,6 +218,8 @@ describe("ValidatorPool: Registration logic", async () => {
     expectedState.PublicStaking.ATK -= stakeAmount * BigInt(validators.length);
     expectedState.PublicStaking.ETH = BigInt(0);
     expectedState.ValidatorStaking.ATK += BigInt(validators.length);
+    expectedState.ValidatorVault.ATK +=
+      stakeAmount * BigInt(validators.length) - BigInt(validators.length);
     // Register validators
     await factoryCallAnyFixture(
       fixture,
