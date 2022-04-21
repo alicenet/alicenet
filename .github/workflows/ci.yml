@@ -28,9 +28,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-group:         ["[a-d]", "[e]"          , "ethdkg"     , "ethdkg"             , "[f-p]", "[r-s]", "[t-z]"]
-        sub-filter-include: [""     , ""             , "phases"     , "phases/accusations" , ""     , ""     , ""     ]
-        sub-filter-exclude: [""     , "ethdkg/phases", "accusations", ""                   , ""     , ""     , ""     ]
+        include:
+          - test-group: "[a-d]"
+          - test-group: "[e]"
+            sub-filter-exclude: "ethdkg/phases"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases"
+            matrix.sub-filter-exclude: "accusations"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases/accusations"
+          - test-group: "[f-p]"
+          - test-group: "[r-s]"
+          - test-group: "[t-z]"
+
     needs: build
     defaults:
       run:

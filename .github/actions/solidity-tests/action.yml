@@ -6,10 +6,10 @@ inputs:
     required: true
   sub-filter-include:
     description: 'Sub folder to include in the search'
-    required: true
+    required: false
   sub-filter-exclude:
     description: 'Sub folder to exclude in the search'
-    required: true
+    required: false
 runs:
   using: "composite"
 
