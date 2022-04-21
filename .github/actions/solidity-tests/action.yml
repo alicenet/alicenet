@@ -11,7 +11,7 @@ runs:
   - shell: bash
     working-directory: ./bridge
     # run: npm run clean && npm run compile
-    run: ls
+    run: find --help
   - shell: bash
     run: find ./test -type f -iname '*.ts'
   # - shell: bash
