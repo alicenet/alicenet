@@ -1,0 +1,34 @@
+name: Alicenet CI
+
+on:
+  push:
+    branches: [ main, candidate ]
+  pull_request:
+    branches: [ main, candidate ]
+
+env:
+  NODE_VERSION: 16.x
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+    - uses: actions/checkout@v3
+    - uses: MadNet/tree/main/.github/action@add-ci
+
+
+  solidity-unit-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+      - uses: actions/checkout@v3
+      - uses: MadNet/tree/main/.github/action@add-ci
+      - run: npm run clean && npm run compile
+      # - run: npm run test-parallel
+
