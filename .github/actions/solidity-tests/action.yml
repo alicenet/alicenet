@@ -10,7 +10,8 @@ runs:
   steps:
   - shell: bash
     working-directory: ./bridge
-    run: npm run clean && npm run compile
+    # run: npm run clean && npm run compile
+    run: ls
   - shell: bash
     run: find ./test/aToken ./test/bToken ./test/chai-setup.ts ./test/contract-mocks -type f -iname '*.ts'
   - shell: bash
