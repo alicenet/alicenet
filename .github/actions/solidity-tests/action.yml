@@ -15,4 +15,13 @@ runs:
     run: echo ${{ inputs.test-group }}
   - shell: bash
     working-directory: ./bridge
+    run: ls ./test
+  - shell: bash
+    working-directory: ./bridge
+    run: ls ./test | grep "^${{ inputs.test-group }}"
+  - shell: bash
+    working-directory: ./bridge
+    run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' '
+  - shell: bash
+    working-directory: ./bridge
     run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find {} -type f -iname '*.ts'
