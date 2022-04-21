@@ -77,4 +77,3 @@ jobs:
       - uses: ./.github/actions/node-cache
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
-
