@@ -13,7 +13,7 @@ runs:
     # run: npm run clean && npm run compile
     run: find --help
   - shell: bash
-    run: find -path ./test -type f -iname '*.ts'
+    run: find -P ./test -type f -iname '*.ts'
   # - shell: bash
   #   working-directory: ./bridge
   #   run: ls ./test | grep "^[${{ inputs.test-group }}]" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find {} -type f -iname '*.ts'
