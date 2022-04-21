@@ -7,7 +7,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - uses: ./.github/actions/node-cache
   - shell: bash
     run: npm run clean && npm run compile
   - shell: bash

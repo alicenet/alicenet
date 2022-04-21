@@ -28,6 +28,7 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
+      - uses: ./.github/actions/node-cache
       - uses: ./.github/actions/solidity-tests
         #running tests from the folders starting with A to D
         with:
