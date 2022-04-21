@@ -17,7 +17,7 @@ jobs:
         working-directory: ./bridge
     steps:
     - uses: actions/checkout@v3
-    - uses: MadNet/Madnet@add-ci
+    - uses: ./.github/actions/node-cache
 
 
   solidity-unit-tests:
@@ -28,7 +28,7 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: MadNet/Madnet@add-ci
+      - uses: ./.github/actions/node-cache
       - run: npm run clean && npm run compile
       # - run: npm run test-parallel
 
