@@ -1,15 +1,14 @@
 name: 'Run the solidity unit tests in groups'
 description: 'Run the solidity unit tests in groups'
+inputs:
+  test-group:  # id of input
+    description: 'Range of the starting letter of the folder contains the tests that will be run'
+    required: true
 runs:
   using: "composite"
-  defaults:
-    run:
-      shell: bash
-  inputs:
-    test-group:  # id of input
-      description: 'Range of the starting letter of the folder contains the tests that will be run'
-      required: true
   steps:
   - uses: ./.github/actions/node-cache
-  - run: npm run clean && npm run compile
-  - run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find {} -type f -iname '*.ts' | xargs npm run test-parallel --
+  - shell: bash
+    run: npm run clean && npm run compile
+  - shell: bash
+    run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find {} -type f -iname '*.ts' | xargs npm run test-parallel --
