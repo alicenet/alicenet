@@ -20,7 +20,7 @@ jobs:
     - uses: ./.github/actions/node-cache
 
 
-  solidity-unit-tests:
+  solidity-unit-tests-1:
     runs-on: ubuntu-latest
     needs: build
     defaults:
@@ -28,7 +28,8 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run clean && npm run compile
-      # - run: npm run test-parallel
+      - uses: ./.github/actions/solidity-tests
+        #running tests from the folders starting with A to D
+        with:
+          test-group: "a-d"
 
