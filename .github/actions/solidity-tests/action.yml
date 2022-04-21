@@ -3,6 +3,9 @@ description: 'Run the solidity unit tests in groups'
 runs:
   using: "composite"
   inputs:
+  defaults:
+    run:
+      shell: bash
   test-group:  # id of input
     description: 'Range of the starting letter of the folder contains the tests that will be run'
     required: true
