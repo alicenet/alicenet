@@ -6,6 +6,9 @@ inputs:
     required: true
 runs:
   using: "composite"
+  defaults:
+    run:
+      working-directory: ./bridge
   steps:
   - shell: bash
     run: npm run clean && npm run compile
