@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-group: ["a-d", "e", "f-p", "r-s", "t-z"]
+        test-group: ["[a-d]", "[e]", "[f-p]", "[r-s]", "[t-z]"]
     needs: build
     defaults:
       run:
