@@ -2,13 +2,13 @@ name: 'Run the solidity unit tests in groups'
 description: 'Run the solidity unit tests in groups'
 runs:
   using: "composite"
-  inputs:
   defaults:
     run:
       shell: bash
-  test-group:  # id of input
-    description: 'Range of the starting letter of the folder contains the tests that will be run'
-    required: true
+  inputs:
+    test-group:  # id of input
+      description: 'Range of the starting letter of the folder contains the tests that will be run'
+      required: true
   steps:
   - uses: ./.github/actions/node-cache
   - run: npm run clean && npm run compile
