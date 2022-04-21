@@ -28,7 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-group: ["[a-d]", "[e]", "[f-p]", "[r-s]", "[t-z]"]
+        test-group:         ["[a-d]", "[e]"          , "ethdkg"     , "ethdkg"             , "[f-p]", "[r-s]", "[t-z]"]
+        sub-filter-include: [""     , ""             , "phases"     , "phases/accusations" , ""     , ""     , ""     ]
+        sub-filter-exclude: [""     , "ethdkg/phases", "accusations", ""                   , ""     , ""     , ""     ]
     needs: build
     defaults:
       run:
@@ -39,6 +41,8 @@ jobs:
       - uses: ./.github/actions/solidity-tests
         with:
           test-group: ${{ matrix.test-group }}
+          sub-filter-include: ${{ matrix.sub-filter-include }}
+          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
   solidity-linter:
     runs-on: ubuntu-latest

@@ -1,8 +1,14 @@
 name: 'Run the solidity unit tests in groups'
 description: 'Run the solidity unit tests in groups'
 inputs:
-  test-group:  # id of input
-    description: 'Range of the starting letter of the folder contains the tests that will be run'
+  test-group:
+    description: 'Regex to math the folder inside the test folder'
+    required: true
+  sub-filter-include:
+    description: 'Sub folder to include in the search'
+    required: true
+  sub-filter-exclude:
+    description: 'Sub folder to exclude in the search'
     required: true
 runs:
   using: "composite"
@@ -13,4 +19,4 @@ runs:
     run: npm run clean && npm run compile
   - shell: bash
     working-directory: ./bridge
-    run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{} | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' | xargs npm run test-parallel --
+    run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{}/${{ inputs.sub-filter-include }} | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | xargs npm run test-parallel --
