@@ -11,9 +11,6 @@ runs:
   - shell: bash
     working-directory: ./bridge
     run: npm run clean && npm run compile
-  # - shell: bash
-  #   working-directory: ./bridge
-  #   run: find -P ./test/aToken ./test/bToken ./test/chai-setup.ts ./test/contract-mocks' -type f -iname '*.ts
   - shell: bash
     working-directory: ./bridge
-    run: ls ./test -d */ | grep "^[${{ inputs.test-group }}]" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find -path {} -type f -iname '*.ts'
+    run: ls ./test | grep "^[${{ inputs.test-group }}]" | xargs -n 1 -I {} echo ./test/{} | tr -s '\n' ' ' | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' | xargs npm run test-parallel
