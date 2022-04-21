@@ -13,4 +13,4 @@ runs:
     run: npm run clean && npm run compile
   - shell: bash
     working-directory: ./bridge
-    run: ls ./test | grep "^[${{ inputs.test-group }}]" | xargs -n 1 -I {} echo ./test/{} | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' | xargs npm run test-parallel --
+    run: ls ./test | grep "^[${{ inputs.test-group }}]" | xargs -n 1 -I {} echo ./test/{} | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' | xargs npm run test --
