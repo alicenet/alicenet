@@ -20,7 +20,7 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - name: Cache
+    - name: Node Cache
       uses: actions/cache@v3.0.2
       with:
         path: '**/node_modules'
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Download Cache
+      - name: Node Cache
         id: node-cache
         uses: actions/cache@v3.0.2
         with:
