@@ -12,19 +12,25 @@ runs:
       shell: bash
       working-directory: ${{ inputs.execution-folder }}
       run: |
-        OUTPUT=$(sed -n '/abiExporter:/,/}/p' ./hardhat.config.ts | \
+        # getting the list of contracts from the ./hardhat.config.ts in the abiExporter.only field
+        sed -n '/abiExporter:/,/}/p' ./hardhat.config.ts | \
         sed -n '/only:/,/]/p' | \
         sed 's/only://' | \
         sed 's/[][,"]//g' | \
-        xargs -n 1 -I {} echo "'**/"{}".sol'")
+        xargs -n 1 -I {} echo {}".sol" | tr '\n' ' ' > ./myfile.txt
+        IFS=$' '
+        rm -rf ./myhash.txt
+        # compute the hash of each file
+        for i in $(cat ./myfile.txt)
+        do
+            find ./contracts -type f -iname "$i" -print -exec cat {} \; | sha256sum | cut -d' ' -f1 >> ./myhash.txt
+        done
+        # compute the final hash
+        OUTPUT=cat ./myhash.txt | sha256sum | cut -d' ' -f1
         echo $OUTPUT
         printf "HASHLIST=${OUTPUT}" | tee --append "$GITHUB_ENV"
     - shell: bash
       run: echo ${{ env.HASHLIST }}
-    uses: theowenyoung/folder-hash@v2.0.1
-      with:
-        path: |
-          ${{ env.HASHLIST }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
