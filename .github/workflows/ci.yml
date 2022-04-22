@@ -28,18 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # when adding a new test folder to the smart contracts make sure to
+        # name it starting with 0-9 or A-Z
         include:
-          - test-group: "[a-d]"
-          - test-group: "[e]"
+          - test-group: "[0-9a-dA-D]"
+          - test-group: "[eE]"
             sub-filter-exclude: "ethdkg/phases"
           - test-group: "ethdkg"
             sub-filter-include: "phases"
-            matrix.sub-filter-exclude: "accusations"
+            sub-filter-exclude: "accusations"
           - test-group: "ethdkg"
             sub-filter-include: "phases/accusations"
-          - test-group: "[f-q]"
-          - test-group: "[r-s]"
-          - test-group: "[t-z]"
+          - test-group: "[f-qF-Q]"
+          - test-group: "[r-sR-S]"
+          - test-group: "[t-zT-Z]"
 
     needs: build
     defaults:
