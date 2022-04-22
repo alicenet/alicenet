@@ -18,12 +18,12 @@ runs:
         sed 's/[][,"]//g' | \
         xargs -n 1 -I {} echo "'**/"{}".sol'" | \
         tr '\n' ',')
-        echo "::set-output name=hash::$OUTPUT\n"
+        echo "::set-output name=hash-list::$OUTPUT\n"
         echo $OUTPUT
     - shell: bash
-      run: echo ${{ steps.compute-hash.hash }}
+      run: echo ${{ steps.compute-hash.hash-list }}
     - shell: bash
-      run: echo ${{ hashFiles( ${{ steps.compute-hash.hash }}) }}
+      run: echo ${{ hashFiles( ${{ steps.compute-hash.hash-list }}) }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
