@@ -90,16 +90,16 @@ jobs:
         os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - uses: ./.github/actions/golang-cache
-      - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
+      # - uses: ./.github/actions/node-cache
+      # - uses: ./.github/actions/golang-cache
+      # - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
       - uses: ./.github/actions/smart-contract-cache
         with:
           execution-folder: "./bridge"
-      - uses: ./.github/actions/alicenet-cache
-      - run: make build
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.0.0
-        with:
-          name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
-          path: ./madnet
+      # - uses: ./.github/actions/alicenet-cache
+      # - run: make build
+      # - name: Upload a Build Artifact
+      #   uses: actions/upload-artifact@v3.0.0
+      #   with:
+      #     name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
+      #     path: ./madnet
