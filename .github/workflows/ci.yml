@@ -83,8 +83,11 @@ jobs:
 
 
   golang-build:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     needs: solidity-build
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
@@ -104,6 +107,6 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
-          name: alicenet-v${GITHUB_REF##*/}-${{ runner.os }}
+          name: alicenet-v${{ github.head_ref || github.ref_name }} }-${{ matrix.os }}
           path: ./madnet
 
