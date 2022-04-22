@@ -24,7 +24,6 @@ jobs:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/node-cache
 
-
   solidity-unit-tests:
     runs-on: ubuntu-20.04
     strategy:
@@ -81,7 +80,6 @@ jobs:
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
 
-
   golang-build:
     runs-on: ${{ matrix.os }}
     needs: solidity-build
@@ -123,7 +121,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
 
-  golang-unit tests:
+  golang-unit-tests:
     runs-on: ${{ matrix.os }}
     needs: golang-build
     strategy:
