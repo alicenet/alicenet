@@ -5,6 +5,7 @@ runs:
   steps:
   - uses: actions/cache@v3
     name: "Cache capnpro and other artifacts (swagger)"
+    id: alicenet-cache
     with:
       path: |
         localrpc/swagger-bindata/bindata.go
@@ -14,5 +15,7 @@ runs:
         **/*.pb.gw.go
         **/*_mngen.go
         **/*_mngen_test.go
-      key: ${{ runner.os }}-go-${{ hashFiles('localrpc/swagger-bindata/bindata.go', 'localrpc/swagger/localstate.swagger.json', '**/*.pb.go', '**/*.capnp.go', '**/*.pb.gw.go', '**/*_mngen.go', '**/*_mngen_test.go') }}
-
+      key: ${{ runner.os }}-go-${{ hashFiles('**/*.proto', './cmd/mngen/**', './localrpc/swagger/**') }}
+  - if: steps.alicenet-cache.outputs.cache-hit != 'true'
+    shell: bash
+    run: make generate-go

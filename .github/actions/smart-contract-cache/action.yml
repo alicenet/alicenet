@@ -1,10 +1,19 @@
 name: 'Cache contract bindings'
 description: 'Cache contract bindings'
+inputs:
+  execution-folder:
+    description: 'Folder to execute the npm actions'
+    required: true
 runs:
   using: "composite"
   steps:
     - uses: actions/cache@v3
       name: "Cache contract bindings"
+      id: smart-contract-cache
       with:
         path: ./bridge/bindings
-        key: ${{ runner.os }}-go-${{ hashFiles('./bridge/bindings/**') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('**/hardhat.config.ts') }}
+    - if: steps.smart-contract-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.execution-folder }}
+      run: npm run build

@@ -93,9 +93,9 @@ jobs:
       - uses: ./.github/actions/node-cache
       - uses: ./.github/actions/golang-cache
       - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
-      - run: cd ./bridge && npm run build
       - uses: ./.github/actions/smart-contract-cache
-      - run: make generate-go
+        with:
+          execution-folder: "./bridge"
       - uses: ./.github/actions/alicenet-cache
       - run: make build
       - name: Upload a Build Artifact
