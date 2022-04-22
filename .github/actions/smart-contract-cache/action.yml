@@ -23,7 +23,7 @@ runs:
     - shell: bash
       run: echo
     - shell: bash
-      run: OUTPUT=${{ steps.compute-hash.outputs.hash-list }} echo ${{ hashFiles($OUTPUT) }}
+      run: echo ${{ hashFiles(format('{0}', steps.compute-hash.outputs.hash-list)) }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
