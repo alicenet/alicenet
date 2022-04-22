@@ -37,7 +37,7 @@ jobs:
             matrix.sub-filter-exclude: "accusations"
           - test-group: "ethdkg"
             sub-filter-include: "phases/accusations"
-          - test-group: "[f-p]"
+          - test-group: "[f-q]"
           - test-group: "[r-s]"
           - test-group: "[t-z]"
 

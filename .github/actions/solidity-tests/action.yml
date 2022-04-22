@@ -19,4 +19,13 @@ runs:
     run: npm run clean && npm run compile
   - shell: bash
     working-directory: ./bridge
-    run: ls ./test | grep "^${{ inputs.test-group }}" | xargs -n 1 -I {} echo ./test/{}/${{ inputs.sub-filter-include }} | xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | xargs npm run test --
+    run: |
+      SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
+      if [ "$SUB_FILTER_INCLUDE" = "/" ];  then
+        SUB_FILTER_INCLUDE=""
+      fi
+      ls ./test | \
+      grep "^${{ inputs.test-group }}" | \
+      xargs -n 1 -I {} echo ./test/{}$SUB_FILTER_INCLUDE | \
+      xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | \
+      xargs npm run test --
