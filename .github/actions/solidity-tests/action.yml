@@ -21,6 +21,8 @@ runs:
     working-directory: ./bridge
     run: |
       SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
+      # if inputs.sub-filter-include is empty we have to remove '/' if not
+      # the find command bellow will fail
       if [[ "$SUB_FILTER_INCLUDE" == "/" ]];  then
         SUB_FILTER_INCLUDE=""
       fi
@@ -28,4 +30,4 @@ runs:
       grep "^${{ inputs.test-group }}" | \
       xargs -n 1 -I {} echo ./test/{}$SUB_FILTER_INCLUDE | \
       xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | \
-      xargs npm run test --
+      xargs npm run test-parallel --
