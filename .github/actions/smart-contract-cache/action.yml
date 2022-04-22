@@ -18,7 +18,7 @@ runs:
         sed 's/[][,"]//g' | \
         xargs -n 1 -I {} echo "'**/"{}".sol'" | \
         tr '\n' ',')
-        echo "::set-output name=hash-list::$OUTPUT\n"
+        echo "::set-output name=hash-list::$OUTPUT"
         echo $OUTPUT
     - shell: bash
       run: echo ${{ steps.compute-hash.outputs.hash-list }}
