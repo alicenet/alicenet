@@ -1,0 +1,12 @@
+name: 'Configure the environment for alicenet'
+description: 'Configure the environment for alicenet'
+runs:
+  using: "composite"
+  steps:
+    - uses: ./.github/actions/node-cache
+    - uses: ./.github/actions/golang-cache
+    - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
+    - uses: ./.github/actions/smart-contract-cache
+      with:
+        execution-folder: "./bridge"
+    - uses: ./.github/actions/alicenet-cache
