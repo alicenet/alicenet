@@ -8,7 +8,6 @@ runs:
   using: "composite"
   steps:
     - name: "Compute file hash"
-      id: compute-hash
       shell: bash
       working-directory: ${{ inputs.execution-folder }}
       run: |
@@ -26,7 +25,7 @@ runs:
             find ./contracts -type f -iname "$i" -print -exec cat {} \; | sha256sum | cut -d' ' -f1 >> ./myhash.txt
         done
         # compute the final hash
-        OUTPUT=cat ./myhash.txt | sha256sum | cut -d' ' -f1
+        OUTPUT=$(cat ./myhash.txt | sha256sum | cut -d' ' -f1)
         echo $OUTPUT
         printf "HASHLIST=${OUTPUT}" | tee --append "$GITHUB_ENV"
     - shell: bash
