@@ -21,9 +21,9 @@ runs:
         echo "::set-output name=hash-list::$OUTPUT"
         echo $OUTPUT
     - shell: bash
-      run: echo ${{ steps.compute-hash.outputs.hash-list }}
+      run: echo
     - shell: bash
-      run: echo ${{ hashFiles(steps.compute-hash.outputs.hash-list) }}
+      run: OUTPUT=${{ steps.compute-hash.outputs.hash-list }} echo ${{ hashFiles($OUTPUT) }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
