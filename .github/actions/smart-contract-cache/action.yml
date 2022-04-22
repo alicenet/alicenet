@@ -22,7 +22,7 @@ runs:
       id: smart-contract-cache
       with:
         path: ./bridge/bindings
-        key: ${{ runner.os }}-go-${{ hashFiles(step.compute-hash.hash) }}
+        key: ${{ runner.os }}-go-${{ hashFiles(steps.compute-hash.hash) }}
     - if: steps.smart-contract-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ${{ inputs.execution-folder }}

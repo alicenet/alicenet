@@ -103,4 +103,3 @@ jobs:
         with:
           name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
           path: ./madnet
-
