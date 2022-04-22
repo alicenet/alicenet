@@ -25,61 +25,61 @@ jobs:
     - uses: ./.github/actions/node-cache
 
 
-  # solidity-unit-tests:
-  #   runs-on: ubuntu-20.04
-  #   strategy:
-  #     matrix:
-  #       # when adding a new test folder to the smart contracts make sure to
-  #       # name it starting with 0-9 or A-Z
-  #       include:
-  #         - test-group: "[0-9a-dA-D]"
-  #         - test-group: "[eE]"
-  #           sub-filter-exclude: "ethdkg/phases"
-  #         - test-group: "ethdkg"
-  #           sub-filter-include: "phases"
-  #           sub-filter-exclude: "accusations"
-  #         - test-group: "ethdkg"
-  #           sub-filter-include: "phases/accusations"
-  #         - test-group: "[f-qF-Q]"
-  #         - test-group: "[r-sR-S]"
-  #         - test-group: "[t-zT-Z]"
+  solidity-unit-tests:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        # when adding a new test folder to the smart contracts make sure to
+        # name it starting with 0-9 or A-Z
+        include:
+          - test-group: "[0-9a-dA-D]"
+          - test-group: "[eE]"
+            sub-filter-exclude: "ethdkg/phases"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases"
+            sub-filter-exclude: "accusations"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases/accusations"
+          - test-group: "[f-qF-Q]"
+          - test-group: "[r-sR-S]"
+          - test-group: "[t-zT-Z]"
 
-  #   needs: solidity-build
-  #   defaults:
-  #     run:
-  #       working-directory: ./bridge
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: ./.github/actions/node-cache
-  #     - uses: ./.github/actions/solidity-tests
-  #       with:
-  #         test-group: ${{ matrix.test-group }}
-  #         sub-filter-include: ${{ matrix.sub-filter-include }}
-  #         sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
+    needs: solidity-build
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/node-cache
+      - uses: ./.github/actions/solidity-tests
+        with:
+          test-group: ${{ matrix.test-group }}
+          sub-filter-include: ${{ matrix.sub-filter-include }}
+          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  # solidity-linter:
-  #   runs-on: ubuntu-20.04
-  #   needs: solidity-build
-  #   defaults:
-  #     run:
-  #       working-directory: ./bridge
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: ./.github/actions/node-cache
-  #     - run: npm run lint-solidity
+  solidity-linter:
+    runs-on: ubuntu-20.04
+    needs: solidity-build
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/node-cache
+      - run: npm run lint-solidity
 
-  # typescript-linter:
-  #   runs-on: ubuntu-20.04
-  #   needs: solidity-build
-  #   defaults:
-  #     run:
-  #       working-directory: ./bridge
-  #       shell: bash
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: ./.github/actions/node-cache
-  #     - run: npm run clean && npm run compile && npm run typechain
-  #     - run: npm run lint
+  typescript-linter:
+    runs-on: ubuntu-20.04
+    needs: solidity-build
+    defaults:
+      run:
+        working-directory: ./bridge
+        shell: bash
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/node-cache
+      - run: npm run clean && npm run compile && npm run typechain
+      - run: npm run lint
 
 
   golang-build:
@@ -100,7 +100,7 @@ jobs:
 
   golang-vet:
     runs-on: ${{ matrix.os }}
-    needs: solidity-build
+    needs: golang-build
     continue-on-error: true
     strategy:
       matrix:
@@ -109,3 +109,28 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - run: go vet ./...
+
+  golang-linter:
+    runs-on: ${{ matrix.os }}
+    needs: golang-build
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+
+  golang-unit tests:
+    runs-on: ${{ matrix.os }}
+    needs: golang-build
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      # packages where the tests are not passing: ["blockchain", "badgerTrie", "consensus", "transport"]
+      - run: go test $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus|/transport') -v -coverprofile cover.out
