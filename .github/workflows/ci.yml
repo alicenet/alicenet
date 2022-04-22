@@ -87,8 +87,9 @@ jobs:
     needs: solidity-build
     steps:
       - uses: actions/checkout@v3
-      - run: make generate-go
+      - uses: ./.github/actions/node-cache
       - run: cd ./bridge && npm run build
+      - run: make generate-go
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
