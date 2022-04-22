@@ -15,20 +15,14 @@ concurrency:
 
 jobs:
 
-  golang-build:
+  solidity-build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bridge
     steps:
-      - uses: actions/checkout@v3
-      - run: make generate-go
-
-  # solidity-build:
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./bridge
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: ./.github/actions/node-cache
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/node-cache
 
 
   # solidity-unit-tests:
@@ -50,7 +44,7 @@ jobs:
   #         - test-group: "[r-sR-S]"
   #         - test-group: "[t-zT-Z]"
 
-  #   needs: build
+  #   needs: solidity-build
   #   defaults:
   #     run:
   #       working-directory: ./bridge
@@ -65,7 +59,7 @@ jobs:
 
   # solidity-linter:
   #   runs-on: ubuntu-latest
-  #   needs: build
+  #   needs: solidity-build
   #   defaults:
   #     run:
   #       working-directory: ./bridge
@@ -76,7 +70,7 @@ jobs:
 
   # typescript-linter:
   #   runs-on: ubuntu-latest
-  #   needs: build
+  #   needs: solidity-build
   #   defaults:
   #     run:
   #       working-directory: ./bridge
@@ -86,4 +80,17 @@ jobs:
   #     - uses: ./.github/actions/node-cache
   #     - run: npm run clean && npm run compile && npm run typechain
   #     - run: npm run lint
+
+
+  golang-build:
+    runs-on: ubuntu-latest
+    needs: solidity-build
+    steps:
+      - uses: actions/checkout@v3
+      - run: make generate-go
+      - run: cd ./bridge && npm run build
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - run: make build
 

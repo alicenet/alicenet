@@ -16,7 +16,7 @@ generate-bridge:
 	export PASS_PERMVARS=1 &&\
 	mkdir bridge/node_modules 2>/dev/null || true &&\
 	docker/update-container.sh docker/generate-bridge/Dockerfile madnet-generate-bridge "-v $$PWD/bridge:/app -v /app/node_modules/" &&\
-	docker start -ia madnet-generate-bridge
+	docker start -a madnet-generate-bridge
 
 generate-go:
 	export MSYS_NO_PATHCONV=1 &&\
