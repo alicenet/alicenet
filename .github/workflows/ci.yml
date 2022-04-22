@@ -119,7 +119,7 @@ jobs:
             **/*.pb.gw.go
             **/*_mngen.go
             **/*_mngen_test.go
-          key: ${{ runner.os }}-go-${{ hashFiles("localrpc/swagger-bindata/bindata.go", "localrpc/swagger/localstate.swagger.json", "**/*.pb.go", "**/*.capnp.go", "**/*.pb.gw.go", "**/*_mngen.go", "**/*_mngen_test.go") }}
+          key: ${{ runner.os }}-go-${{ hashFiles('localrpc/swagger-bindata/bindata.go', 'localrpc/swagger/localstate.swagger.json', '**/*.pb.go', '**/*.capnp.go', '**/*.pb.gw.go', '**/*_mngen.go', '**/*_mngen_test.go') }}
       - run: make build
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
