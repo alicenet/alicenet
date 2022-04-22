@@ -16,8 +16,7 @@ runs:
         sed -n '/only:/,/]/p' | \
         sed 's/only://' | \
         sed 's/[][,"]//g' | \
-        xargs -n 1 -I {} echo "'**/"{}".sol'" | \
-        tr '\n' ',')
+        xargs -n 1 -I {} echo "'**/"{}".sol'")
         echo $OUTPUT
         printf "HASHLIST=${OUTPUT}" | tee --append "$GITHUB_ENV"
     - shell: bash
