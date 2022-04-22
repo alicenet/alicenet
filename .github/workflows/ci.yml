@@ -14,68 +14,76 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+
+  golang-build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-    - uses: actions/checkout@v3
-    - uses: ./.github/actions/node-cache
-
-
-  solidity-unit-tests:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # when adding a new test folder to the smart contracts make sure to
-        # name it starting with 0-9 or A-Z
-        include:
-          - test-group: "[0-9a-dA-D]"
-          - test-group: "[eE]"
-            sub-filter-exclude: "ethdkg/phases"
-          - test-group: "ethdkg"
-            sub-filter-include: "phases"
-            sub-filter-exclude: "accusations"
-          - test-group: "ethdkg"
-            sub-filter-include: "phases/accusations"
-          - test-group: "[f-qF-Q]"
-          - test-group: "[r-sR-S]"
-          - test-group: "[t-zT-Z]"
-
-    needs: build
-    defaults:
-      run:
-        working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - uses: ./.github/actions/solidity-tests
-        with:
-          test-group: ${{ matrix.test-group }}
-          sub-filter-include: ${{ matrix.sub-filter-include }}
-          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
+      - run: make generate-go
 
-  solidity-linter:
-    runs-on: ubuntu-latest
-    needs: build
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run lint-solidity
+  # solidity-build:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./bridge
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: ./.github/actions/node-cache
 
-  typescript-linter:
-    runs-on: ubuntu-latest
-    needs: build
-    defaults:
-      run:
-        working-directory: ./bridge
-        shell: bash
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run clean && npm run compile && npm run typechain
-      - run: npm run lint
+
+  # solidity-unit-tests:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       # when adding a new test folder to the smart contracts make sure to
+  #       # name it starting with 0-9 or A-Z
+  #       include:
+  #         - test-group: "[0-9a-dA-D]"
+  #         - test-group: "[eE]"
+  #           sub-filter-exclude: "ethdkg/phases"
+  #         - test-group: "ethdkg"
+  #           sub-filter-include: "phases"
+  #           sub-filter-exclude: "accusations"
+  #         - test-group: "ethdkg"
+  #           sub-filter-include: "phases/accusations"
+  #         - test-group: "[f-qF-Q]"
+  #         - test-group: "[r-sR-S]"
+  #         - test-group: "[t-zT-Z]"
+
+  #   needs: build
+  #   defaults:
+  #     run:
+  #       working-directory: ./bridge
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/node-cache
+  #     - uses: ./.github/actions/solidity-tests
+  #       with:
+  #         test-group: ${{ matrix.test-group }}
+  #         sub-filter-include: ${{ matrix.sub-filter-include }}
+  #         sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
+
+  # solidity-linter:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   defaults:
+  #     run:
+  #       working-directory: ./bridge
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/node-cache
+  #     - run: npm run lint-solidity
+
+  # typescript-linter:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   defaults:
+  #     run:
+  #       working-directory: ./bridge
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/node-cache
+  #     - run: npm run clean && npm run compile && npm run typechain
+  #     - run: npm run lint
+
