@@ -18,12 +18,12 @@ runs:
         sed 's/[][,"]//g' | \
         xargs -n 1 -I {} echo "'**/"{}".sol'" | \
         tr '\n' ',')
-        echo "::set-output name=hash-list::$OUTPUT"
         echo $OUTPUT
+        printf "HASHLIST=${OUTPUT}" | tee --append "$GITHUB_ENV"
     - shell: bash
-      run: echo ${{ steps.compute-hash.outputs.hash-list }}
+      run: echo ${{ env.HASHLIST }}
     - shell: bash
-      run: echo ${{ hashFiles(format('{0}.yaml', steps.compute-hash.outputs.hash-list)) }}
+      run: echo ${{ hashFiles(format('{0}', env.HASHLIST)) }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
