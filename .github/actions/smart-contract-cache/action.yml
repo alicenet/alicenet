@@ -12,6 +12,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.execution-folder }}
       run: |
+        ls
         OUTPUT=$(sed -n '/abiExporter:/,/}/p' ./hardhat.config.ts | \
         sed -n '/only:/,/]/p' | \
         sed 's/only://' | \
@@ -19,13 +20,15 @@ runs:
         xargs -n 1 -I {} echo "'**/"{}".sol'" | \
         tr '\n' ',')
         echo "::set-output name=hash::$OUTPUT\n"
-    - uses: actions/cache@v3
-      name: "Cache contract bindings"
-      id: smart-contract-cache
-      with:
-        path: ./bridge/bindings
-        key: ${{ runner.os }}-go-${{ hashFiles(steps.compute-hash.hash) }}
-    - if: steps.smart-contract-cache.outputs.cache-hit != 'true'
-      shell: bash
-      working-directory: ${{ inputs.execution-folder }}
-      run: npm run build
+        echo $OUTPUT
+
+    # - uses: actions/cache@v3
+    #   name: "Cache contract bindings"
+    #   id: smart-contract-cache
+    #   with:
+    #     path: ./bridge/bindings
+    #     key: ${{ runner.os }}-go-${{ hashFiles(steps.compute-hash.hash) }}
+    # - if: steps.smart-contract-cache.outputs.cache-hit != 'true'
+    #   shell: bash
+    #   working-directory: ${{ inputs.execution-folder }}
+    #   run: npm run build
