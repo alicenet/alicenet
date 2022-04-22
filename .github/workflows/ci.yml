@@ -91,7 +91,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - run: go vet ./...
       - run: make build
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
@@ -102,6 +101,7 @@ jobs:
   golang-vet:
     runs-on: ${{ matrix.os }}
     needs: solidity-build
+    continue-on-error: true
     strategy:
       matrix:
         os: [ubuntu-20.04]
