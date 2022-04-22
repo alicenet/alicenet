@@ -97,24 +97,18 @@ jobs:
           path: ./madnet
 
   golang-vet:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     needs: golang-build
     continue-on-error: true
-    strategy:
-      matrix:
-        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - run: go vet ./...
 
   golang-linter:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     needs: golang-build
     continue-on-error: true
-    strategy:
-      matrix:
-        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
