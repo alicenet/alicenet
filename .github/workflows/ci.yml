@@ -81,6 +81,7 @@ jobs:
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
 
+
   golang-build:
     runs-on: ${{ matrix.os }}
     needs: solidity-build
