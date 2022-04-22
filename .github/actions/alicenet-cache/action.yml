@@ -1,0 +1,18 @@
+name: 'Cache capnpro and other artifacts (swagger)'
+description: 'Cache capnpro and other artifacts (swagger)'
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/cache@v3
+    name: "Cache capnpro and other artifacts (swagger)"
+    with:
+      path: |
+        localrpc/swagger-bindata/bindata.go
+        localrpc/swagger/localstate.swagger.json
+        **/*.pb.go
+        **/*.capnp.go
+        **/*.pb.gw.go
+        **/*_mngen.go
+        **/*_mngen_test.go
+      key: ${{ runner.os }}-go-${{ hashFiles('localrpc/swagger-bindata/bindata.go', 'localrpc/swagger/localstate.swagger.json', '**/*.pb.go', '**/*.capnp.go', '**/*.pb.gw.go', '**/*_mngen.go', '**/*_mngen_test.go') }}
+

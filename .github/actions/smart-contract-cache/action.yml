@@ -1,0 +1,10 @@
+name: 'Cache contract bindings'
+description: 'Cache contract bindings'
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache@v3
+      name: "Cache contract bindings"
+      with:
+        path: ./bridge/bindings
+        key: ${{ runner.os }}-go-${{ hashFiles('./bridge/bindings/**') }}

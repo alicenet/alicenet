@@ -91,35 +91,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - uses: ./.github/actions/golang-cache
       - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
       - run: cd ./bridge && npm run build
-      - uses: actions/cache@v3
-        name: "Cache contract bindings"
-        with:
-          path: ./bridge/bindings
-          key: ${{ runner.os }}-go-${{ hashFiles('./bridge/bindings/**') }}
+      - uses: ./.github/actions/smart-contract-cache
       - run: make generate-go
-      - uses: actions/cache@v3
-        name: "Cache capnpro and other artifacts (swagger)"
-        with:
-          path: |
-            localrpc/swagger-bindata/bindata.go
-            localrpc/swagger/localstate.swagger.json
-            **/*.pb.go
-            **/*.capnp.go
-            **/*.pb.gw.go
-            **/*_mngen.go
-            **/*_mngen_test.go
-          key: ${{ runner.os }}-go-${{ hashFiles('localrpc/swagger-bindata/bindata.go', 'localrpc/swagger/localstate.swagger.json', '**/*.pb.go', '**/*.capnp.go', '**/*.pb.gw.go', '**/*_mngen.go', '**/*_mngen_test.go') }}
+      - uses: ./.github/actions/alicenet-cache
       - run: make build
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
