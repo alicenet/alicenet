@@ -107,6 +107,6 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
-          name: alicenet-v${{ github.head_ref || github.ref_name }} }-${{ matrix.os }}
+          name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
           path: ./madnet
 
