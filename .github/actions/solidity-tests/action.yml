@@ -21,7 +21,7 @@ runs:
     working-directory: ./bridge
     run: |
       SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
-      if [ "$SUB_FILTER_INCLUDE" = "/" ];  then
+      if [[ "$SUB_FILTER_INCLUDE" == "/" ]];  then
         SUB_FILTER_INCLUDE=""
       fi
       ls ./test | \
