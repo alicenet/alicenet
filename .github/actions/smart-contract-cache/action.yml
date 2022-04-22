@@ -9,6 +9,7 @@ runs:
   steps:
     - name: "Compute file hash"
       id: compute-hash
+      shell: bash
       run: |
         OUTPUT=$(sed -n '/abiExporter:/,/}/p' ./hardhat.config.ts | \
         sed -n '/only:/,/]/p' | \
