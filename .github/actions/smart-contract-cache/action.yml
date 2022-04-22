@@ -22,8 +22,10 @@ runs:
         printf "HASHLIST=${OUTPUT}" | tee --append "$GITHUB_ENV"
     - shell: bash
       run: echo ${{ env.HASHLIST }}
-    - shell: bash
-      run: echo ${{ hashFiles(format('{0}', env.HASHLIST)) }}
+    uses: theowenyoung/folder-hash@v2.0.1
+      with:
+        path: |
+          ${{ env.HASHLIST }}
 
     # - uses: actions/cache@v3
     #   name: "Cache contract bindings"
