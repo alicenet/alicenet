@@ -13,4 +13,11 @@ interface IValidatorVault {
     function skimExcessToken(address to_) external returns (uint256 excess);
 
     function estimateStakedAmount(uint256 stakePosition_) external view returns (uint256);
+
+    function getAdjustmentPrice(uint256 adjustmentAmount_) external view returns (uint256);
+
+    function getAdjustmentPerUser(uint256 adjustmentAmount_)
+        external
+        view
+        returns (uint256 userAdjustmentAmount, uint256 numValidators);
 }

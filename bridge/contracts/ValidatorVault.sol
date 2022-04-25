@@ -17,12 +17,11 @@ contract ValidatorVault is
 {
     struct Vault {
         uint256 _amount;
-        uint256 _lastUpdatedAt;
+        uint256 _accumulator;
     }
 
-    uint256 public dilutionEpoch;
+    uint256 public globalAccumulator;
     uint256 public totalReserve;
-    mapping(uint256 => uint256) internal _dilutionAdjustments;
     mapping(uint256 => Vault) internal _vaults;
 
     constructor()
@@ -49,8 +48,7 @@ contract ValidatorVault is
         );
 
         totalReserve += totalAdjustmentAmount;
-        dilutionEpoch++;
-        _dilutionAdjustments[dilutionEpoch] = userAdjustmentAmount;
+        globalAccumulator += userAdjustmentAmount;
         // update minimum amount to become a validator to take into account the AToken dilution
         uint256 stakeAmount = IValidatorPool(_validatorPoolAddress()).getStakeAmount();
         stakeAmount += userAdjustmentAmount;
@@ -60,7 +58,7 @@ contract ValidatorVault is
     function depositStake(uint256 stakePosition_, uint256 amount_) public onlyValidatorPool {
         _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
         totalReserve += amount_;
-        _vaults[stakePosition_] = Vault(amount_, dilutionEpoch);
+        _vaults[stakePosition_] = Vault(amount_, globalAccumulator);
     }
 
     function withdrawStake(uint256 stakePosition_) public onlyValidatorPool returns (uint256) {
@@ -102,16 +100,56 @@ contract ValidatorVault is
         return userVault._amount;
     }
 
+    function getAdjustmentPrice(uint256 adjustmentAmount_) public view returns (uint256) {
+        return _getAdjustmentPrice(adjustmentAmount_);
+    }
+
+    function getAdjustmentPerUser(uint256 adjustmentAmount_)
+        public
+        view
+        returns (uint256 userAdjustmentAmount, uint256 numValidators)
+    {
+        return _getAdjustmentPerUser(adjustmentAmount_);
+    }
+
+    function _getAdjustmentPrice(uint256 adjustmentAmount_) internal view returns (uint256) {
+        (uint256 userAdjustmentAmount, uint256 numValidators) = _getAdjustmentPerUser(
+            adjustmentAmount_
+        );
+        uint256 totalAdjustmentAmount = userAdjustmentAmount * numValidators;
+        return totalAdjustmentAmount;
+    }
+
+    function _getAdjustmentPerUser(uint256 adjustmentAmount_)
+        internal
+        view
+        returns (uint256 userAdjustmentAmount, uint256 numValidators)
+    {
+        numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
+        // if there's no validators there's no need to adjust the dilution
+        if (numValidators == 0) {
+            return (0, 0);
+        }
+        // the adjustmentAmount should be equally divisible by the number of validators staked at the moment
+        userAdjustmentAmount = (adjustmentAmount_ / numValidators);
+    }
+
     function _updateVaultWithDilution(uint256 stakePosition_)
         internal
         view
         returns (Vault memory userVault)
     {
         userVault = _vaults[stakePosition_];
-        uint256 latestDilutionEpoch = dilutionEpoch;
-        for (uint256 i = userVault._lastUpdatedAt; i < latestDilutionEpoch; i++) {
-            userVault._amount += _dilutionAdjustments[i];
+        uint256 _globalAccumulator = globalAccumulator;
+        uint256 deltaAccumulator;
+        // handling a 'possible' overflow in the global accumulator
+        if (userVault._accumulator > _globalAccumulator) {
+            deltaAccumulator = type(uint256).max - userVault._accumulator;
+            deltaAccumulator += _globalAccumulator;
+        } else {
+            deltaAccumulator = _globalAccumulator - userVault._accumulator;
         }
-        userVault._lastUpdatedAt = dilutionEpoch;
+        userVault._amount += deltaAccumulator;
+        userVault._accumulator = _globalAccumulator;
     }
 }
