@@ -20,6 +20,7 @@ local-geth/*
 **/desktop.ini
 **/.directory
 .idea/
+.history
 
 # generated files
 scripts/generated
@@ -32,4 +33,3 @@ localstate.swagger.json
 **/*_mngen_test.go
 node_modules/
 **/package-lock.json
-package.json
