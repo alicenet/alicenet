@@ -16,7 +16,7 @@ import {
   validSnapshot1024,
 } from "../../snapshots/assets/4-validators-snapshots-1";
 import { validatorsSnapshots as validatorsSnapshots2 } from "../../snapshots/assets/4-validators-snapshots-2";
-import { createValidators, stakeValidators } from "../setup";
+import { commitSnapshots, createValidators, stakeValidators } from "../setup";
 
 describe("ValidatorPool: Consensus dependent logic ", async () => {
   let fixture: Fixture;
@@ -51,6 +51,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   });
 
   it("Should not allow pausing “consensus” before 1.5 without snapshots", async function () {
+    await commitSnapshots(fixture, 1);
     await expect(
       factoryCallAnyFixture(
         fixture,
