@@ -14,7 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 defaults:
-  timeout-minutes: 10
   run:
     shell: bash
 
@@ -22,6 +21,7 @@ jobs:
 
   solidity-build:
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: ./bridge
@@ -31,6 +31,7 @@ jobs:
 
   solidity-unit-tests:
     runs-on: ubuntu-20.04
+    timeout-minutes: 15
     strategy:
       matrix:
         # when adding a new test folder to the smart contracts make sure to
@@ -63,6 +64,7 @@ jobs:
 
   solidity-linter:
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     needs: solidity-build
     defaults:
       run:
@@ -74,6 +76,7 @@ jobs:
 
   typescript-linter:
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     needs: solidity-build
     defaults:
       run:
@@ -87,6 +90,7 @@ jobs:
 
   golang-build:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     needs: solidity-build
     strategy:
       matrix:
@@ -103,6 +107,7 @@ jobs:
 
   golang-vet:
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     needs: golang-build
     continue-on-error: true
     steps:
@@ -112,6 +117,7 @@ jobs:
 
   golang-linter:
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     needs: golang-build
     continue-on-error: true
     steps:
@@ -122,6 +128,7 @@ jobs:
 
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     needs: golang-build
     strategy:
       matrix:
