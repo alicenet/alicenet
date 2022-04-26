@@ -11,14 +11,12 @@ contract ATokenMinterMock is ImmutableAToken, ImmutableValidatorVault {
     function mint(address to, uint256 amount) public {
         // minting dilution adjustment
         uint256 dilutionAdjustment = amount / 10;
-        uint256 adjustmentPrice = IValidatorVault(_validatorVaultAddress())
-            .IValidatorVault(_validatorVaultAddress())
-            .getAdjustmentPrice(adjustmentPrice);
+        uint256 adjustmentPrice = IValidatorVault(_validatorVaultAddress()).getAdjustmentPrice(
+            dilutionAdjustment
+        );
 
-        IValidatorVault(_validatorVaultAddress())
-            .IValidatorVault(_validatorVaultAddress())
-            .depositDilutionAdjustment();
+        IAToken(_aTokenAddress()).externalMint(to, amount + adjustmentPrice);
 
-        IAToken(_aTokenAddress()).externalMint(to, amount + dilutionAdjustment);
+        IValidatorVault(_validatorVaultAddress()).depositDilutionAdjustment(adjustmentPrice);
     }
 }

@@ -32,21 +32,16 @@ contract ValidatorVault is
     {}
 
     function depositDilutionAdjustment(uint256 adjustmentAmount_) public onlyATokenMinter {
-        uint256 numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        // if there's no validators there's no need to adjust the dilution
-        if (numValidators == 0) {
-            return;
-        }
-        // the adjustmentAmount should be equally divisible by the number of validators staked at the moment
-        uint256 userAdjustmentAmount = (adjustmentAmount_ / numValidators);
+        (uint256 userAdjustmentAmount, uint256 numValidators) = _getAdjustmentPerUser(
+            adjustmentAmount_
+        );
         uint256 totalAdjustmentAmount = userAdjustmentAmount * numValidators;
 
-        _safeTransferFromERC20(
-            IERC20Transferable(_aTokenAddress()),
-            msg.sender,
-            totalAdjustmentAmount
-        );
+        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, adjustmentAmount_);
 
+        // we transfer the whole amount that was sent to this contract, but only keep track of the amount
+        // that is perfectly divisible by the number of validators staked at the moment. The excess can be
+        // retrieved via skimExcess function
         totalReserve += totalAdjustmentAmount;
         globalAccumulator += userAdjustmentAmount;
         // update minimum amount to become a validator to take into account the AToken dilution
