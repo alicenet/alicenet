@@ -96,13 +96,17 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
     steps:
+      - name: "Sanitize branch name"
+        run: |
+            echo "BRANCH_NAME=$(echo ${{ github.head_ref || github.ref_name }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
+            echo "OPERATING_SYSTEM=$(echo ${{ matrix.os }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - run: make build
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
-          name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
+          name: alicenet-${{ env.BRANCH_NAME }}-${{ env.OPERATING_SYSTEM }}
           path: ./madnet
 
   golang-vet:
@@ -145,3 +149,5 @@ jobs:
         run: |
           set -euo pipefail
           go test -json -v $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus|/transport|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+
+
