@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -37,7 +38,96 @@ func makeDataIndex() *DataIndex {
 	return index
 }
 
+//Create n entries, return pag entries
 func TestDataIndexAdd(t *testing.T) {
+	dir, err := ioutil.TempDir("", "badger-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	opts := badger.DefaultOptions(dir)
+	db, err := badger.Open(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	index := makeDataIndex()
+	owner := &objs.Owner{}
+	owner = makeOwner()
+	n := 20
+	pag := 13
+	insertedEntries := make([]*objs.PaginationResponse, n)
+
+	for i := 0; i < n; i++ {
+		utxoID := crypto.Hasher([]byte(fmt.Sprintf("utxoID%d", i)))
+		dataIndex := trie.Hasher([]byte(fmt.Sprintf("dataIndex%d", i)))
+		insertedEntries[i] = &objs.PaginationResponse{
+			UTXOID: utxoID,
+			Index:  dataIndex,
+		}
+
+		err = db.Update(func(txn *badger.Txn) error {
+			err := index.Add(txn, utxoID, owner, dataIndex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			val, err := index.Contains(txn, owner, dataIndex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !val {
+				// Value should be present
+				t.Fatal("Should be present")
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	startIndex := make([]byte, 0)
+	exclude := make(map[string]bool)
+	err = db.View(func(txn *badger.Txn) error {
+		response, err := index.PaginateDataStores(txn, owner, pag, startIndex, exclude)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(response) != pag {
+			t.Fatal("Wrong response length")
+		}
+
+		found := 0
+		for _, entry := range response {
+			_, ok := exclude[string(entry.UTXOID)]
+			if !ok {
+				t.Fatal("Exclude should contain UTXOID")
+			}
+
+			for i := 0; i < n; i++ {
+				if bytes.Compare(insertedEntries[i].Index, entry.Index) == 0 && bytes.Compare(insertedEntries[i].UTXOID, entry.UTXOID) == 0 {
+					found++
+				}
+			}
+		}
+
+		if found != pag {
+			t.Fatal("Wrong items in the response")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDataIndexAddFastSync(t *testing.T) {
 	dir, err := ioutil.TempDir("", "badger-test")
 	if err != nil {
 		t.Fatal(err)
@@ -58,18 +148,6 @@ func TestDataIndexAdd(t *testing.T) {
 	owner := &objs.Owner{}
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	dataIndex := trie.Hasher([]byte("dataIndex"))
-
-	err = db.Update(func(txn *badger.Txn) error {
-		// Add value
-		err := index.Add(txn, utxoID, owner, dataIndex)
-		if err == nil {
-			t.Fatal("Should raise an error (1)")
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	owner = makeOwner()
 	err = db.Update(func(txn *badger.Txn) error {
@@ -92,9 +170,9 @@ func TestDataIndexAdd(t *testing.T) {
 	}
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := index.Add(txn, utxoID, owner, dataIndex)
-		if err == nil {
-			t.Fatal("Should raise an error (2)")
+		err := index.AddFastSync(txn, utxoID, owner, dataIndex)
+		if err != nil {
+			t.Fatal("Override shouldn't raise an error")
 		}
 		return nil
 	})
@@ -387,6 +465,72 @@ func TestDataIndexMakeRefKey(t *testing.T) {
 	refKey := diRefKey.MarshalBinary()
 	if !bytes.Equal(refKey, trueRefKey) {
 		t.Fatal("refKey does not match!")
+	}
+}
+
+func TestDataIndexPaginateDataStores(t *testing.T) {
+	dir, err := ioutil.TempDir("", "badger-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	opts := badger.DefaultOptions(dir)
+	db, err := badger.Open(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	index := makeDataIndex()
+	owner := &objs.Owner{}
+	utxoID := crypto.Hasher([]byte("utxoID"))
+	dataIndex := trie.Hasher([]byte("dataIndex"))
+
+	err = db.Update(func(txn *badger.Txn) error {
+		// Add value
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err == nil {
+			t.Fatal("Should raise an error (1)")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	owner = makeOwner()
+	err = db.Update(func(txn *badger.Txn) error {
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		val, err := index.Contains(txn, owner, dataIndex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !val {
+			// Value should be present
+			t.Fatal("Should be present")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.Update(func(txn *badger.Txn) error {
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err == nil {
+			t.Fatal("Should raise an error (2)")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
