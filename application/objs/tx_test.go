@@ -181,7 +181,7 @@ func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData []byte,
 }
 
 func TestTx(t *testing.T) {
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	storage := makeStorage(msg)
 
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -1081,7 +1081,7 @@ func TestTxCallTxHashBad2(t *testing.T) {
 }
 
 func TestTxValidateFeesGood1(t *testing.T) {
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	storage := makeStorage(msg)
 
 	tx := &Tx{}
@@ -1120,7 +1120,7 @@ func TestTxValidateFeesGood1(t *testing.T) {
 
 func TestTxValidateFeesGood2(t *testing.T) {
 	// Is valid CleanupTx; Validate the fees
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	msg.SetMinTxFee(big.NewInt(1))
 	storage := makeStorage(msg)
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -1167,7 +1167,7 @@ func TestTxValidateFeesGood2(t *testing.T) {
 }
 
 func TestTxValidateFeesBad1(t *testing.T) {
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	storage := makeStorage(msg)
 
 	tx := &Tx{}
@@ -1221,7 +1221,7 @@ func TestTxValidateFeesBad3(t *testing.T) {
 	tx.Vout = []*TXOut{utxo2}
 	tx.Fee = uint256.Zero()
 
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	minTxFee := big.NewInt(1)
 	msg.SetMinTxFee(minTxFee)
 	storage := makeStorage(msg)
@@ -1260,7 +1260,7 @@ func TestTxValidateFeesBad4(t *testing.T) {
 	tx.Vout = []*TXOut{utxo2}
 	tx.Fee = uint256.Zero()
 
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	minTxFee := big.NewInt(1)
 	msg.SetMinTxFee(minTxFee)
 	storage := makeStorage(msg)
@@ -1648,7 +1648,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	// This does a full test of validation logic;
 	// these fees should not affect the validity of the cleanup transaction
 	// because no fees apply in this case.
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	dsFeeBig := big.NewInt(100)
 	msg.SetDataStoreEpochFee(dsFeeBig)
 	vsFeeBig := big.NewInt(1000)

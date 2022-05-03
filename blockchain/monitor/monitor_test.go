@@ -19,8 +19,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -162,31 +160,6 @@ func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ether
 
 func (mt *mockTask) GetExecutionData() interface{} {
 	return mt.DkgTask
-}
-
-//
-// Mock implementation of interfaces.AdminHandler
-//
-type mockAdminHandler struct {
-}
-
-func (ah *mockAdminHandler) AddPrivateKey([]byte, constants.CurveSpec) error {
-	return nil
-}
-
-func (ah *mockAdminHandler) AddSnapshot(*objs.BlockHeader, bool) error {
-	return nil
-}
-func (ah *mockAdminHandler) AddValidatorSet(*objs.ValidatorSet) error {
-	return nil
-}
-
-func (ah *mockAdminHandler) RegisterSnapshotCallback(func(*objs.BlockHeader) error) {
-
-}
-
-func (ah *mockAdminHandler) SetSynchronized(v bool) {
-
 }
 
 //
@@ -353,7 +326,7 @@ func TestMonitorPersist(t *testing.T) {
 	database := &db.Database{}
 	database.Init(rawDb)
 
-	mon, err := monitor.NewMonitor(database, database, &mockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
+	mon, err := monitor.NewMonitor(database, database, &interfaces.MockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -366,7 +339,7 @@ func TestMonitorPersist(t *testing.T) {
 	mon.PersistState()
 
 	//
-	newMon, err := monitor.NewMonitor(database, database, &mockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(database, database, &interfaces.MockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
 	newMon.LoadState()
@@ -379,7 +352,7 @@ func TestMonitorPersist(t *testing.T) {
 func TestBidirectionalMarshaling(t *testing.T) {
 
 	// setup
-	adminHandler := &mockAdminHandler{}
+	adminHandler := &interfaces.MockAdminHandler{}
 	depositHandler := &mockDepositHandler{}
 	eth := &mockEthereum{}
 	logger := logging.GetLogger("test")

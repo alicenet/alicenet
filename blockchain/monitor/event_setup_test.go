@@ -15,7 +15,7 @@ import (
 func TestRegisteringETHDKGEvents(t *testing.T) {
 
 	var em *objects.EventMap = objects.NewEventMap()
-	var adminHandler interfaces.AdminHandler = new(mockAdminHandler)
+	var adminHandler interfaces.AdminHandler = new(interfaces.MockAdminHandler)
 
 	monitor.RegisterETHDKGEvents(em, adminHandler)
 

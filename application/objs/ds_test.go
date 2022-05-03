@@ -1120,7 +1120,7 @@ func TestDSIsExpired(t *testing.T) {
 }
 
 func TestDSValidateFee(t *testing.T) {
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	storage := makeStorage(msg)
 
 	utxo := &TXOut{}

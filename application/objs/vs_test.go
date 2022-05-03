@@ -886,7 +886,7 @@ func TestValueStoreMakeTxIn(t *testing.T) {
 }
 
 func TestValueStoreValidateFee(t *testing.T) {
-	msg := makeMockStorageGetter()
+	msg := MakeMockStorageGetter()
 	storage := makeStorage(msg)
 
 	utxo := &TXOut{}

@@ -146,7 +146,7 @@ func (rb *Handler) HandleP2PGetPendingTxs(ctx context.Context, r *pb.GetPendingT
 		var err error
 		txi, _, err := rb.app.PendingTxGet(txn, 1, r.TxHashes)
 		if err != nil {
-			return nil
+			return err
 		}
 		for _, tx := range txi {
 			txb, err := tx.MarshalBinary()
