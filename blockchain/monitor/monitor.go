@@ -452,7 +452,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					PersistStateCB: persistMonitorCB,
 					State:          monitorState.EthDKG,
 				}
-				err = tasks.StartTask(log, wg, eth, task, dkgData, &onFinishCB)
+				err = tasks.StartTask(ctx, log, wg, eth, task, dkgData, &onFinishCB)
 				if err != nil {
 					return err
 				}
@@ -512,7 +512,7 @@ func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Eth
 	task := tasks.NewSnapshotTask(eth.GetDefaultAccount())
 	task.BlockHeader = bh
 
-	tasks.StartTask(logger, wg, eth, task, nil, nil)
+	tasks.StartTask(ctx, logger, wg, eth, task, nil, nil)
 
 	return nil
 }
