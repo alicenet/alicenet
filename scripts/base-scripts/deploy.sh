@@ -7,13 +7,15 @@ BRIDGE_DIR=./bridge
 NETWORK=${1:-"dev"}
 
 cd $BRIDGE_DIR
-
+# if on hardhat network this switches automine on to deploy faster
+npx hardhat setHardhatIntervalMining --network $NETWORK --enable-auto-mine
 # Deploy a dummy erc20 token called legacy, so we can turn them into ATokens to proceed with the
 # other tasks. This task also updates the deploymentArgsTemplate with the legacyToken address and
 # saves it in the ./scripts/generated folder
 npx hardhat --network "$NETWORK" deployLegacyTokenAndUpdateDeploymentArgs
 # Copy the deployList to the generated folder so we have deploymentList and deploymentArgsTemplate in the same folder
 cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
+
 
 npx hardhat --network "$NETWORK" --show-stack-traces deployContracts --input-folder ../scripts/generated
 addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
@@ -26,7 +28,8 @@ done
 cp ../scripts/base-files/owner.toml ../scripts/generated/owner.toml
 sed -e "s/registryAddress = .*/registryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" > "../scripts/generated/owner.toml".bk &&\
 mv "../scripts/generated/owner.toml".bk "../scripts/generated/owner.toml"
-
+#funds validator accounts  
+npx hardhat fundValidators
 cd $CURRENT_WD
 
 if [[ ! -z "${SKIP_REGISTRATION}" ]]; then
@@ -36,6 +39,9 @@ fi
 
 FACTORY_ADDRESS="$(echo "$addr" | sed -e 's/^"//' -e 's/"$//')"
 ./scripts/main.sh register
+cd $BRIDGE_DIR
+npx hardhat setHardhatIntervalMining --network $NETWORK
+cd $CURRENT_WD
 if command -v gnome-terminal &>/dev/null; then
     i=1
     for filePath in $(ls ./scripts/generated/config | xargs); do
