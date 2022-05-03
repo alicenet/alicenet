@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,128 +65,60 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	t.RLock()
 	defer t.RUnlock()
 
+	var txn *types.Transaction
+	retryReceiptWaitCount := uint64(0)
+	maximumReceiptRetryAmount := uint64(6)
+	isToWaitFinalityDelay := false
 	for {
 		dangerousRand.Seed(time.Now().UnixNano())
 		n := dangerousRand.Intn(60) // n will be between 0 and 60
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		// wait some random time
 		case <-time.After(time.Duration(n) * time.Second):
 		}
 
-		if !t.ShouldRetry(ctx, logger, eth) {
-			// no need for snapshot
-			return nil
+		var err error
+
+		if !isToWaitFinalityDelay {
+			retryReceiptWaitCount, err = t.tryCommitSnapshot(ctx, logger, eth, txn, retryReceiptWaitCount, maximumReceiptRetryAmount)
 		}
-
-		// do the actual snapshot
-		err := func() error {
-			txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
-			if err != nil {
-				logger.Warnf("Failed to generate transaction options: %v", err)
-				return nil
-			}
-
-			txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
-			if err != nil {
-				logger.Warnf("Snapshot failed: %v", err)
-				return nil
-			} else {
-				rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-				if err != nil {
-					logger.Warnf("Snapshot failed to retreive receipt: %v", err)
-					return nil
-				}
-
-				if rcpt.Status != 1 {
-					logger.Warnf("Snapshot receipt status != 1")
-					return context.DeadlineExceeded
-				}
-
-				logger.Info("Snapshot succeeded")
-			}
-
-			return nil
-		}()
 
 		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				select {
-				case <-ctx.Done():
-					return err
-				default:
-				}
-				continue
-			}
-		}
-
-		// check/wait for finality delay
-		err = func() error {
-			subctx, cf := context.WithTimeout(ctx, 5*time.Second)
-			defer cf()
-			initialHeight, err := eth.GetCurrentHeight(subctx)
-			if err != nil {
+			select {
+			case <-ctx.Done():
 				return err
+			default:
 			}
-
-			currentHeight := initialHeight
-			for {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(time.Second * 5):
-				}
-
-				err := func() error {
-					subctx, cf := context.WithTimeout(ctx, 5*time.Second)
-					defer cf()
-					testHeight, err := eth.GetCurrentHeight(subctx)
-					if err != nil {
-						return err
-					}
-
-					if testHeight > initialHeight+eth.GetFinalityDelay() {
-						return context.DeadlineExceeded
-					}
-
-					if testHeight > currentHeight {
-						if !t.ShouldRetry(ctx, logger, eth) {
-							// no need for snapshot
-							currentHeight = testHeight
-							if currentHeight >= initialHeight+eth.GetFinalityDelay() {
-								// todo: figure how to get the doTask() func to return nil
-								return nil
-							}
-						}
-					}
-
-					return nil
-				}()
-
-				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						select {
-						case <-ctx.Done():
-							return err
-						default:
-						}
-						continue
-					}
-				}
-			}
-		}()
-
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				select {
-				case <-ctx.Done():
-					return err
-				default:
-				}
-				continue
-			}
+			logger.Debugf("Retrying snapshot after failed tx")
+			continue
 		}
 
+		isToWaitFinalityDelay = true
+		logger.Debugf("Waiting for finality delay")
+
+		err = waitFinalityDelay(ctx, logger, eth)
+
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return err
+			default:
+			}
+			logger.Debugf("Retrying snapshot after everything: %v", err)
+			continue
+		}
+
+		// someone else already did the snapshot
+		if !t.ShouldRetry(ctx, logger, eth) {
+			logger.Debug("Snapshot already sent! Exiting!")
+			return nil
+		}
+
+		txn = nil
+		retryReceiptWaitCount = 0
+		isToWaitFinalityDelay = false
 	}
 }
 
@@ -221,4 +154,89 @@ func (*SnapshotTask) DoDone(logger *logrus.Entry) {
 
 func (*SnapshotTask) GetExecutionData() interface{} {
 	return nil
+}
+
+func (t *SnapshotTask) tryCommitSnapshot(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, txn *types.Transaction, retryReceiptWaitCount uint64, maximumReceiptRetryAmount uint64) (uint64, error) {
+	// do the actual snapshot
+	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
+	if err != nil {
+		logger.Debugf("Failed to generate transaction options: %v", err)
+		return 0, err
+	}
+	if txn == nil || retryReceiptWaitCount > maximumReceiptRetryAmount {
+		txn, err = eth.Contracts().Snapshots().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
+		if err != nil {
+			logger.Errorf("Failed to send snapshot: %v", err)
+			// we don't return the Error because we want to wait the finality delay
+			// to retry because maybe another validator did the tx
+			return 0, nil
+		}
+	}
+
+	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	if err != nil {
+		logger.Debugf("Snapshot failed to retrieve receipt: %v", err)
+		retryReceiptWaitCount++
+		return retryReceiptWaitCount, err
+	}
+
+	if rcpt.Status != 1 {
+		logger.Debugf("Snapshot receipt status != 1")
+		// we don't return the Error because we want to wait the finality delay
+		// to retry because maybe another validator did the tx
+		return 0, nil
+	}
+
+	logger.Info("Snapshot tx succeeded! Waiting for confirmation delay!")
+	return 0, nil
+}
+
+func waitFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	// check/wait for finality delay
+	subctx, cf := context.WithTimeout(ctx, 5*time.Second)
+	defer cf()
+	initialHeight, err := eth.GetCurrentHeight(subctx)
+	if err != nil {
+		logger.Debugf("Error to get current eth height")
+		return err
+	}
+
+	finalityDelay := eth.GetFinalityDelay()
+	isDone := false
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Second * 5):
+		}
+
+		isDone, err = checkCurrentHeight(ctx, logger, eth, initialHeight, finalityDelay)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return err
+			default:
+			}
+			logger.Debugf("Finality delay failed: %v", err)
+			continue
+		} else if isDone {
+			return nil
+		}
+	}
+}
+
+func checkCurrentHeight(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, initialHeight uint64, finalityDelay uint64) (bool, error) {
+	subctx, cf := context.WithTimeout(ctx, 5*time.Second)
+	defer cf()
+	testHeight, err := eth.GetCurrentHeight(subctx)
+	if err != nil {
+		logger.Debugf("Error to get test eth height")
+		return false, err
+	}
+	logger.Debugf("Waiting for finality delay initial block: %v current block: %v", initialHeight, testHeight)
+
+	if testHeight > initialHeight+finalityDelay {
+		return true, nil
+	}
+	return false, nil
 }
