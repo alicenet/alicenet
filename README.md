@@ -1,4 +1,4 @@
-# MadNet
+# AliceNet
 
 ## Requirements
 #### Always required
@@ -9,7 +9,7 @@
 #### Required for working on Solidity contracts
 * [Node 16](https://nodejs.org/en/download/)
 
-## Build MadNet
+## Build AliceNet
 First, this repository needs to be cloned, and be the current working dir.
 
 <br />
@@ -58,7 +58,7 @@ This command:
 * (re)generates a new swagger json file based on the grpc endpoints
 * (re)generates a Go source file containing the swagger json file in binary format, so it can be baked into the final executable
 
-Rerun this command every time you made changes to the public API surface of MadNet.
+Rerun this command every time you made changes to the public API surface of AliceNet.
 
 <br />
 
@@ -123,7 +123,7 @@ This will print out blocks at which ethDKG events will happen.
 > For a quicker local setup, you might want to change the `scripts/base-files/baseConfig` template and
 > set `finalityDelay` from `6` -> `1` to speed up the ethdkg process.
 
-Once it has been completed and MadNet starts mining blocks, the system is ready.
+Once it has been completed and AliceNet starts mining blocks, the system is ready.
 
 Deposits are required in order to submit DataStores. Run the following at least 4 times in order to deposit enough funds
 to inject datastores.
@@ -193,7 +193,7 @@ $ n i lts
 
 # WHAT'S NEXT
 
-Now that MadNet is successfully running on your machine, connect it
+Now that AliceNet is successfully running on your machine, connect it
 with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 
 # TEST
@@ -201,7 +201,7 @@ with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 ### Random Kill and Restart
 
 Randomly kill and restart the individual validators. There should be no noticeable change in the behavior of the other
-validators and MadNet consensus should not be affected.
+validators and AliceNet consensus should not be affected.
 
 ### Extended Kill and Restart
 
