@@ -252,6 +252,9 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					utils.DebugTrace(pt.logger, err)
 					continue
 				}
+				if tx == nil {
+					continue
+				}
 				if ok := pt.checkSize(maxBytes, byteCount); !ok {
 					break
 				}
@@ -271,41 +274,22 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					continue
 				}
 				txs = append(txs, tx)
-				if !allowConflict {
+				if !allowConflict && len(txs) > 1 {
 					if _, err := txs.ValidateUnique(nil); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
-				}
-				if !allowConflict {
 					if _, err := txs.ValidateDataStoreIndexes(nil); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
-				}
-				byteCount += constants.HashLen
-			}
-			if !allowConflict {
-				for {
-					if len(txs) == 0 {
-						break
-					}
-					if len(txs) == 1 {
-						break
-					}
 					if err := pt.checkIsValid(txnState, txs, currentHeight); err != nil {
-						if len(txs) == 2 {
-							txs = objs.TxVec{txs[0]}
-							break
-						}
-						if len(txs) >= 3 {
-							txs = objs.TxVec{txs[0]}
-							txs = append(txs, txs[2:]...)
-						}
+						txs = txs[0 : len(txs)-1]
 						continue
 					}
-					break
+
 				}
+				byteCount += constants.HashLen
 			}
 			return nil
 		}()
