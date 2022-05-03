@@ -186,11 +186,6 @@ task(
 
 task("registerValidators", "registers validators")
   .addParam("factoryAddress", "address of the factory deploying the contract")
-  .addFlag(
-    "migrateFromLegacy",
-    "Flag indicating if the script should try to migrate legacy tokens to ATokens. " +
-      "Only necessary if you only have legacy tokens and want to register validators with them!"
-  )
   .addVariadicPositionalParam(
     "addresses",
     "validators' addresses",
@@ -204,23 +199,28 @@ task("registerValidators", "registers validators")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const lockTime = 1;
+
+    // checking factory address
+    factory
+      .lookup(hre.ethers.utils.formatBytes32String("AToken"))
+      .catch((error: any) => {
+        throw new Error(
+          `Invalid factory-address ${taskArgs.factoryAddress}!\n${error}`
+        );
+      });
     const validatorAddresses: string[] = taskArgs.addresses;
-    const stakingTokenIds: BigNumber[] = [];
+    console.log(validatorAddresses);
+    // Make sure that admin is the named account at position 0
+    const [admin] = await hre.ethers.getSigners();
+    console.log(`Admin address: ${admin.address}`);
 
-    const aToken = await hre.ethers.getContractAt(
-      "AToken",
-      await factory.lookup(hre.ethers.utils.formatBytes32String("AToken"))
-    );
-    console.log(`AToken Address: ${aToken.address}`);
+    const registrationContract = await (
+      await hre.ethers.getContractFactory("RegisterValidators")
+    )
+      .connect(admin)
+      .deploy(taskArgs.factoryAddress);
+    await registrationContract.deployTransaction.wait(3);
 
-    const publicStaking = await hre.ethers.getContractAt(
-      "PublicStaking",
-      await factory.lookup(
-        hre.ethers.utils.formatBytes32String("PublicStaking")
-      )
-    );
-    console.log(`publicStaking Address: ${publicStaking.address}`);
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
       await factory.lookup(
@@ -228,91 +228,27 @@ task("registerValidators", "registers validators")
       )
     );
     console.log(`validatorPool Address: ${validatorPool.address}`);
-    console.log(await validatorPool.getMaxNumValidators());
-    const stakeAmountATokenWei = await validatorPool.getStakeAmount();
+    console.log("Staking validators");
+    await (
+      await factory.delegateCallAny(
+        registrationContract.address,
+        registrationContract.interface.encodeFunctionData("stakeValidators", [
+          validatorAddresses.length,
+        ])
+      )
+    ).wait(3);
 
-    console.log(
-      `Minimum amount ATokenWei to stake: ${stakeAmountATokenWei.toBigInt()}`
-    );
+    console.log("Registering validators");
+    await (
+      await factory.delegateCallAny(
+        registrationContract.address,
+        registrationContract.interface.encodeFunctionData(
+          "registerValidators",
+          [validatorAddresses]
+        )
+      )
+    ).wait(3);
 
-    // Make sure that admin is the named account at position 0
-    const [admin] = await hre.ethers.getSigners();
-    console.log(`Admin address: ${admin.address}`);
-
-    const totalStakeAmt = stakeAmountATokenWei.mul(validatorAddresses.length);
-    if (taskArgs.migrateFromLegacy) {
-      const legacyToken = await hre.ethers.getContractAt(
-        "ERC20",
-        await aToken.getLegacyTokenAddress()
-      );
-
-      const input = aToken.interface.encodeFunctionData("allowMigration");
-      await factory.connect(admin).callAny(aToken.address, 0, input);
-
-      console.log(`Legacy Token Address: ${legacyToken.address}`);
-      console.log(
-        `Legacy Token Balance: ${(
-          await legacyToken.balanceOf(admin.address)
-        ).toBigInt()}`
-      );
-      await (
-        await legacyToken.connect(admin).approve(aToken.address, totalStakeAmt)
-      ).wait();
-      await (await aToken.connect(admin).migrate(totalStakeAmt)).wait();
-    }
-    // approve tokens
-    let tx = await aToken
-      .connect(admin)
-      .approve(
-        publicStaking.address,
-        stakeAmountATokenWei.mul(validatorAddresses.length)
-      );
-    await tx.wait();
-    console.log(
-      `Approved allowance to validatorPool of: ${stakeAmountATokenWei
-        .mul(validatorAddresses.length)
-        .toNumber()} ATokenWei`
-    );
-
-    console.log("Starting the registration process...");
-    // mint PublicStaking positions to validators
-    for (let i = 0; i < validatorAddresses.length; i++) {
-      let tx = await publicStaking
-        .connect(admin)
-        .mintTo(factory.address, stakeAmountATokenWei, lockTime);
-      await tx.wait();
-      const tokenId = BigNumber.from(await getTokenIdFromTx(hre.ethers, tx));
-      console.log(`Minted PublicStaking.tokenID ${tokenId}`);
-      stakingTokenIds.push(tokenId);
-      const iface = new hre.ethers.utils.Interface([
-        "function approve(address,uint256)",
-      ]);
-      const input = iface.encodeFunctionData("approve", [
-        validatorPool.address,
-        tokenId,
-      ]);
-      tx = await factory
-        .connect(admin)
-        .callAny(publicStaking.address, 0, input);
-
-      await tx.wait();
-      console.log(`Approved tokenID:${tokenId} to ValidatorPool`);
-    }
-
-    console.log(
-      `registering ${validatorAddresses.length} validators with ValidatorPool...`
-    );
-    // add validators to the ValidatorPool
-    // await validatorPool.registerValidators(validatorAddresses, stakingTokenIds)
-    const iface = new hre.ethers.utils.Interface([
-      "function registerValidators(address[],uint256[])",
-    ]);
-    const input = iface.encodeFunctionData("registerValidators", [
-      validatorAddresses,
-      stakingTokenIds,
-    ]);
-    tx = await factory.connect(admin).callAny(validatorPool.address, 0, input);
-    await tx.wait();
     console.log("done");
   });
 
@@ -450,6 +386,40 @@ task(
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait();
+  });
+
+task("initializeEthdkg", "Start the ethdkg process")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+
+    console.log("Initializing ETHDKG");
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(
+          validatorPool.address,
+          0,
+          validatorPool.interface.encodeFunctionData("initializeETHDKG")
+        )
+    ).wait(3);
+    console.log("Done");
   });
 
 task("transferEth", "transfers eth from default account to receiver")
@@ -600,7 +570,6 @@ task("getEthBalance", "gets AToken balance of account")
     console.log(bal);
     return bal;
   });
-
 
 function notSoRandomNumBetweenRange(max: number, min: number): number {
   return Math.floor(Math.random() * (max - min + 1) + min);

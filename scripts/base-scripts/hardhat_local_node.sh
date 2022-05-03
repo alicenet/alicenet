@@ -1,8 +1,10 @@
+#!/bin/bash
 
-#!/bin/sh
 CURRENT_WD=$PWD
 BRIDGE_DIR=./bridge
-NETWORK=${1:-"dev"}
+
+make build
+
 cd $BRIDGE_DIR
 
 npx hardhat node
