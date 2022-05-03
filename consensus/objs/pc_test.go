@@ -102,4 +102,13 @@ func TestPreCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	preVotes, err := pc2.MakeImplPreVotes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(preVotes) != 2 {
+		t.Fatal("invalid preVotes length")
+	}
 }

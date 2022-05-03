@@ -1,6 +1,7 @@
 package objs
 
 import (
+	"github.com/MadBase/MadNet/constants"
 	"testing"
 
 	"github.com/MadBase/MadNet/crypto"
@@ -65,4 +66,38 @@ func TestPClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	bclaimsEqual(t, pclms.BClaims, pclms2.BClaims)
+
+	pclms2.BClaims.ChainID++
+	pclms2Bytes, err := pclms2.MarshalBinary()
+	pclms2Err := &PClaims{}
+	err = pclms2Err.UnmarshalBinary(pclms2Bytes)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	pclms2.BClaims.ChainID--
+	pclms2.BClaims.Height++
+	pclms2Bytes, err = pclms2.MarshalBinary()
+	pclms2Err = &PClaims{}
+	err = pclms2Err.UnmarshalBinary(pclms2Bytes)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	pclms2.BClaims.Height--
+	pclms2.BClaims.PrevBlock = make([]byte, constants.HashLen)
+	pclms2Bytes, err = pclms2.MarshalBinary()
+	pclms2Err = &PClaims{}
+	err = pclms2Err.UnmarshalBinary(pclms2Bytes)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+
+	pclms2.BClaims.PrevBlock = []byte{1, 2, 3}
+	pclms2Bytes, err = pclms2.MarshalBinary()
+	pclms2Err = &PClaims{}
+	err = pclms2Err.UnmarshalBinary(pclms2Bytes)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
 }

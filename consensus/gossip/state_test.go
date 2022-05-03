@@ -58,6 +58,17 @@ func TestState(t *testing.T) {
 	_ = nrl
 	_ = nhl
 	_ = bh
+
+	cert, err := nrl.MakeRoundCert(bnSigners[0], bnShares)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cert.ValidateSignature(&crypto.BNGroupValidator{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = DB.Update(func(txn *badger.Txn) error {
 		vs := makeValidatorSet(1, groupk, secpSigners, bnSigners)
 		err := database.SetValidatorSet(txn, vs)

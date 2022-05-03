@@ -124,6 +124,15 @@ func TestNextHeight(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	nhcbytes, err := nh.NHClaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nhc := nh2.NHClaims
+	err = nhc.UnmarshalBinary(nhcbytes)
+	if err != nil {
+		t.Fatal(err)
+	}
 	nh3, err := nh2.Plagiarize(secpSigner, gk)
 	if err != nil {
 		t.Fatal(err)
