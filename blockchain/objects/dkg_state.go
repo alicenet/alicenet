@@ -19,79 +19,77 @@ var (
 
 // DkgState is used to track the state of the ETHDKG
 type DkgState struct {
-	sync.RWMutex
+	sync.RWMutex `json:"-"`
 
-	IsValidator        bool
-	Phase              EthDKGPhase
-	PhaseLength        uint64
-	ConfirmationLength uint64
-	PhaseStart         uint64
-	MPKSetAtBlock      uint64
-	CompletionAtBlock  uint64
+	IsValidator        bool        `json:"isValidator"`
+	Phase              EthDKGPhase `json:"phase"`
+	PhaseLength        uint64      `json:"phaseLength"`
+	ConfirmationLength uint64      `json:"confirmationLength"`
+	PhaseStart         uint64      `json:"phaseStart"`
 
 	// Local validator info
 	////////////////////////////////////////////////////////////////////////////
 	// Account is the Ethereum account corresponding to the Ethereum Public Key
 	// of the local Validator
-	Account accounts.Account
+	Account accounts.Account `json:"account"`
 	// Index is the Base-1 index of the local Validator which is used
 	// during the Share Distribution phase for verifiable secret sharing.
 	// REPEAT: THIS IS BASE-1
-	Index int
+	Index int `json:"index"`
 	// ValidatorAddresses stores all validator addresses at the beginning of ETHDKG
-	ValidatorAddresses []common.Address
+	ValidatorAddresses []common.Address `json:"validatorAddresses"`
 	// NumberOfValidators is equal to len(ValidatorAddresses)
-	NumberOfValidators int
+	NumberOfValidators int `json:"numberOfValidators"`
 	// ETHDKG nonce
-	Nonce uint64
+	Nonce uint64 `json:"nonce"`
 	// ValidatorThreshold is the threshold number of validators for the system.
 	// If n = NumberOfValidators and t = threshold, then
 	// 			t+1 > 2*n/3
-	ValidatorThreshold int
+	ValidatorThreshold int `json:"validatorThreshold"`
 	// TransportPrivateKey is the private key corresponding to TransportPublicKey.
-	TransportPrivateKey *big.Int
+	TransportPrivateKey *big.Int `json:"transportPrivateKey"`
 	// TransportPublicKey is the public key used in EthDKG.
 	// This public key is used for secret communication over the open channel
 	// of Ethereum.
-	TransportPublicKey [2]*big.Int
+	TransportPublicKey [2]*big.Int `json:"transportPublicKey"`
 	// SecretValue is the secret value which is to be shared during
 	// the verifiable secret sharing.
 	// The sum of all the secret values of all the participants
 	// is the master secret key, the secret key of the master public key
 	// (MasterPublicKey)
-	SecretValue *big.Int
+	SecretValue *big.Int `json:"secretValue"`
 	// PrivateCoefficients is the private polynomial which is used to share
 	// the shared secret. This is performed via Shamir Secret Sharing.
-	PrivateCoefficients []*big.Int
+	PrivateCoefficients []*big.Int `json:"privateCoefficients"`
 	// MasterPublicKey is the public key for the entire group.
 	// As mentioned above, the secret key called the master secret key
 	// and is the sum of all the shared secrets of all the participants.
-	MasterPublicKey [4]*big.Int
+	MasterPublicKey [4]*big.Int `json:"masterPublicKey"`
 	// GroupPrivateKey is the local Validator's portion of the master secret key.
 	// This is also denoted gskj.
-	GroupPrivateKey *big.Int
+	GroupPrivateKey *big.Int `json:"groupPrivateKey"`
 
 	// Remote validator info
 	////////////////////////////////////////////////////////////////////////////
 	// Participants is the list of Validators
-	Participants map[common.Address]*Participant // Index, Address & PublicKey
+	Participants map[common.Address]*Participant `json:"participants"`
 
 	// Share Dispute Phase
 	//////////////////////////////////////////////////
 	// These are the participants with bad shares
-	BadShares map[common.Address]*Participant
+	BadShares map[common.Address]*Participant `json:"badShares"`
 
 	// Group Public Key (GPKj) Accusation Phase
 	//////////////////////////////////////////////////
 	// DishonestValidatorsIndices stores the list indices of dishonest
 	// validators
-	DishonestValidators ParticipantList // Calculated for group accusation
+	DishonestValidators ParticipantList `json:"dishonestValidators"`
 	// HonestValidatorsIndices stores the list indices of honest
 	// validators
-	HonestValidators ParticipantList // "
+	HonestValidators ParticipantList `json:"honestValidators"`
 	// Inverse stores the multiplicative inverses
 	// of elements. This may be used in GPKJGroupAccusation logic.
-	Inverse []*big.Int // "
+	Inverse []*big.Int `json:"inverse"`
 }
 
 // GetSortedParticipants returns the participant list sorted by Index field
@@ -120,7 +118,7 @@ func (state *DkgState) OnAddressRegistered(account common.Address, index int, no
 		Address:   account,
 		Index:     index,
 		PublicKey: publicKey,
-		Phase:     uint8(RegistrationOpen),
+		Phase:     RegistrationOpen,
 		Nonce:     nonce,
 	}
 
@@ -144,7 +142,7 @@ func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.
 		return dkg.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
 	}
 
-	state.Participants[account].Phase = uint8(ShareDistribution)
+	state.Participants[account].Phase = ShareDistribution
 	state.Participants[account].DistributedSharesHash = distributedSharesHash
 	state.Participants[account].Commitments = commitments
 	state.Participants[account].EncryptedShares = encryptedShares
@@ -171,7 +169,6 @@ func (state *DkgState) OnKeyShareSubmissionComplete(mpkSubmissionStartBlock uint
 func (state *DkgState) OnMPKSet(gpkjSubmissionStartBlock uint64) {
 	state.Phase = GPKJSubmission
 	state.PhaseStart = gpkjSubmissionStartBlock
-	state.MPKSetAtBlock = gpkjSubmissionStartBlock
 }
 
 // OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event
@@ -184,7 +181,7 @@ func (state *DkgState) OnGPKJSubmissionComplete(disputeGPKjStartBlock uint64) {
 func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
 	state.Phase = KeyShareSubmission
 
-	state.Participants[account].Phase = uint8(KeyShareSubmission)
+	state.Participants[account].Phase = KeyShareSubmission
 	state.Participants[account].KeyShareG1s = keyShareG1
 	state.Participants[account].KeyShareG1CorrectnessProofs = keyShareG1CorrectnessProof
 	state.Participants[account].KeyShareG2s = keyShareG2
@@ -193,7 +190,7 @@ func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2
 // OnGPKjSubmitted processes data from GPKjSubmitted event
 func (state *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
 	state.Participants[account].GPKj = gpkj
-	state.Participants[account].Phase = uint8(GPKJSubmission)
+	state.Participants[account].Phase = GPKJSubmission
 }
 
 // OnCompletion processes data from ValidatorSetCompleted event
@@ -214,16 +211,16 @@ func NewDkgState(account accounts.Account) *DkgState {
 type Participant struct {
 	// Address is the Ethereum address corresponding to the Ethereum Public Key
 	// for the Participant.
-	Address common.Address
+	Address common.Address `json:"address"`
 	// Index is the Base-1 index of the participant.
 	// This is used during the Share Distribution phase to perform
 	// verifyiable secret sharing.
 	// REPEAT: THIS IS BASE-1
-	Index int
+	Index int `json:"index"`
 	// PublicKey is the TransportPublicKey of Participant.
-	PublicKey [2]*big.Int
-	Nonce     uint64
-	Phase     uint8
+	PublicKey [2]*big.Int `json:"publicKey"`
+	Nonce     uint64      `json:"nonce"`
+	Phase     EthDKGPhase `json:"phase"`
 
 	// Share Distribution Phase
 	//////////////////////////////////////////////////
@@ -232,33 +229,33 @@ type Participant struct {
 	// in Shamir Secret Sharing protocol.
 	// The first coefficient (constant term) is the public commitment
 	// corresponding to the secret share (SecretValue).
-	Commitments [][2]*big.Int
+	Commitments [][2]*big.Int `json:"commitments"`
 	// EncryptedShares are the encrypted secret shares
 	// in the Shamir Secret Sharing protocol.
-	EncryptedShares       []*big.Int
-	DistributedSharesHash [32]byte
+	EncryptedShares       []*big.Int `json:"encryptedShares"`
+	DistributedSharesHash [32]byte   `json:"distributedSharesHash"`
 
-	CommitmentsFirstCoefficient [2]*big.Int
+	CommitmentsFirstCoefficient [2]*big.Int `json:"commitmentsFirstCoefficient"`
 
 	// Key Share Submission Phase
 	//////////////////////////////////////////////////
 	// KeyShareG1s stores the key shares of G1 element
 	// for each participant
-	KeyShareG1s [2]*big.Int
+	KeyShareG1s [2]*big.Int `json:"keyShareG1s"`
 
 	// KeyShareG1CorrectnessProofs stores the proofs of each
 	// G1 element for each participant.
-	KeyShareG1CorrectnessProofs [2]*big.Int
+	KeyShareG1CorrectnessProofs [2]*big.Int `json:"keyShareG1CorrectnessProofs"`
 
 	// KeyShareG2s stores the key shares of G2 element
 	// for each participant.
 	// Adding all the G2 shares together produces the
 	// master public key (MasterPublicKey).
-	KeyShareG2s [4]*big.Int
+	KeyShareG2s [4]*big.Int `json:"keyShareG2s"`
 
 	// GPKj is the local Validator's portion of the master public key.
 	// This is also denoted GroupPublicKey.
-	GPKj [4]*big.Int
+	GPKj [4]*big.Int `json:"gpkj"`
 }
 
 // ParticipantList is a required type alias since the Sort interface is awful
@@ -306,4 +303,31 @@ func (pl ParticipantList) Less(i, j int) bool {
 // Swap swaps elements i and j within the collection
 func (pl ParticipantList) Swap(i, j int) {
 	pl[i], pl[j] = pl[j], pl[i]
+}
+
+type ETHDKGTaskData struct {
+	PersistStateCB func()
+	State          *DkgState
+}
+
+// NewETHDKGTaskData creates an isntance of ETHDKGTaskData
+func NewETHDKGTaskData(state *DkgState) ETHDKGTaskData {
+	return ETHDKGTaskData{
+		PersistStateCB: func() {
+			// placeholder
+		},
+		State: state,
+	}
+}
+
+func (e *ETHDKGTaskData) LockState() func() {
+	e.State.Lock()
+	unlocked := false
+
+	return func() {
+		if !unlocked {
+			unlocked = true
+			e.State.Unlock()
+		}
+	}
 }

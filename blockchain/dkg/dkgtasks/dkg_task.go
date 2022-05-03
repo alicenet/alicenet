@@ -1,10 +1,11 @@
 package dkgtasks
 
 import (
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strings"
+
+	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type ExecutionData struct {
@@ -25,6 +26,8 @@ type TxOpts struct {
 }
 
 func (d *ExecutionData) Clear() {
+	d.State.Lock()
+	defer d.State.Unlock()
 	d.TxOpts = &TxOpts{
 		TxHashes: make([]common.Hash, 0),
 	}

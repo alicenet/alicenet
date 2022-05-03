@@ -30,7 +30,8 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 		err = tasks[idx].DoWork(ctx, logger, eth)
@@ -91,7 +92,8 @@ func TestMPKSubmissionBad1(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	task := suite.mpkSubmissionTasks[0]
-	err := task.Initialize(ctx, logger, eth, dkgStates[0])
+	dkgData := objects.NewETHDKGTaskData(dkgStates[0])
+	err := task.Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 	eth.Commit()
 
@@ -124,7 +126,8 @@ func TestMPKSubmissionBad2(t *testing.T) {
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	err := task.Initialize(ctx, log, eth, nil)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
 
@@ -148,7 +151,8 @@ func TestMPKSubmissionBad4(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
-	err := task.Initialize(ctx, log, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
 
@@ -167,7 +171,8 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 
@@ -219,7 +224,9 @@ func TestMPKSubmission_LeaderElection(t *testing.T) {
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		tasks[idx].Initialize(ctx, logger, eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
 
 		if tasks[idx].AmILeading(ctx, eth, logger) {

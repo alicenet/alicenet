@@ -2,12 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
@@ -29,6 +30,17 @@ func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint6
 func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	logger.Info("DisputeMissingShareDistributionTask Initializing...")
+
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
+	}
 
 	return nil
 }
@@ -161,7 +173,7 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx conte
 	for _, p := range t.State.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != t.State.Nonce ||
-			p.Phase != uint8(objects.ShareDistribution) ||
+			p.Phase != objects.ShareDistribution ||
 			p.DistributedSharesHash == emptySharesHash) {
 			// did not distribute shares
 			accusableParticipants = append(accusableParticipants, p.Address)

@@ -17,9 +17,10 @@ var (
 )
 
 type Block struct {
-	Start uint64          `json:"start"`
-	End   uint64          `json:"end"`
-	Task  interfaces.Task `json:"-"`
+	Start     uint64          `json:"start"`
+	End       uint64          `json:"end"`
+	Task      interfaces.Task `json:"-"`
+	IsRunning bool            `json:"isRunning"`
 }
 
 type innerBlock struct {
@@ -74,6 +75,25 @@ func (s *SequentialSchedule) PurgePrior(now uint64) {
 			delete(s.Ranges, taskID)
 		}
 	}
+}
+
+func (s *SequentialSchedule) SetRunning(taskId uuid.UUID, running bool) error {
+	block, present := s.Ranges[taskId.String()]
+	if !present {
+		return ErrNotScheduled
+	}
+
+	block.IsRunning = running
+	return nil
+}
+
+func (s *SequentialSchedule) IsRunning(taskId uuid.UUID) (bool, error) {
+	block, present := s.Ranges[taskId.String()]
+	if !present {
+		return false, ErrNotScheduled
+	}
+
+	return block.IsRunning, nil
 }
 
 func (s *SequentialSchedule) Find(now uint64) (uuid.UUID, error) {

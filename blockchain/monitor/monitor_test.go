@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"math"
 	"math/big"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/etest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -33,46 +32,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-func setupEthereum(t *testing.T, mineInterval time.Duration) interfaces.Ethereum {
-
-	n := 4
-	privKeys := etest.SetupPrivateKeys(n)
-	eth, err := blockchain.NewEthereumSimulator(
-		privKeys,
-		1,
-		time.Second*2,
-		time.Second*5,
-		0,
-		big.NewInt(math.MaxInt64),
-		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
-	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
-	assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
-	defer eth.Close()
-
-	// c := eth.Contracts()
-
-	go func() {
-		for {
-			time.Sleep(mineInterval)
-			eth.Commit()
-		}
-	}()
-
-	// Unlock deploy account and make sure it has a balance
-	acct := eth.GetDefaultAccount()
-	err = eth.UnlockAccount(acct)
-	assert.Nil(t, err, "Failed to unlock deploy account")
-
-	// _, _, err = c.DeployContracts(context.TODO(), acct)
-	// assert.Nil(t, err, "Failed to deploy contracts...")
-	panic("needs deployment")
-
-	return eth
-}
 
 //
 //
@@ -436,7 +395,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	assert.Equal(t, taskStruct.State, taskStruct2.State)
 
 	wg := &sync.WaitGroup{}
-	tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil)
+	tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
 	wg.Wait()
 
 	assert.True(t, taskStruct.DoneCalled)

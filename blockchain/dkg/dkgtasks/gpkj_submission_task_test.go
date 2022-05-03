@@ -30,7 +30,8 @@ func TestGPKjSubmissionGoodAllValid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -75,7 +76,8 @@ func TestGPKjSubmissionBad1(t *testing.T) {
 	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
-	err := task.Initialize(ctx, log, eth, nil)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
 
@@ -100,7 +102,8 @@ func TestGPKjSubmissionBad2(t *testing.T) {
 	log := logger.WithField("TaskID", "foo")
 	adminHandler := new(adminHandlerMock)
 	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
-	err := task.Initialize(ctx, log, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -136,7 +139,8 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 
 		eth.Commit()
@@ -166,7 +170,8 @@ func TestGPKjSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -193,7 +198,8 @@ func TestGPKjSubmission_ShouldRetry_returnsTrue(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 
 		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)

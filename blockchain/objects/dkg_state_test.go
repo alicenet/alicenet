@@ -2,10 +2,15 @@ package objects_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"math/big"
 	"testing"
 
+	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParticipantCopy(t *testing.T) {
@@ -58,4 +63,117 @@ func TestParticipantListExtractIndices(t *testing.T) {
 			t.Fatal("invalid indices when looping")
 		}
 	}
+}
+
+func TestMarshalAndUnmarshalBigInt(t *testing.T) {
+
+	// generate transport keys
+	priv, pub, err := math.GenerateKeys()
+	assert.Nil(t, err)
+
+	// marshal privkey
+	rawPrivData, err := json.Marshal(priv)
+	assert.Nil(t, err)
+	rawPubData, err := json.Marshal(pub)
+	assert.Nil(t, err)
+
+	priv2 := &big.Int{}
+	pub2 := [2]*big.Int{}
+
+	err = json.Unmarshal(rawPrivData, priv2)
+	assert.Nil(t, err)
+	err = json.Unmarshal(rawPubData, &pub2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, priv, priv2)
+	assert.Equal(t, pub, pub2)
+}
+
+func TestMarshalAndUnmarshalAccount(t *testing.T) {
+	addr := common.Address{}
+	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
+
+	// create a DkgState obj
+	acct := accounts.Account{
+		Address: addr,
+		URL: accounts.URL{
+			Scheme: "http",
+			Path:   "",
+		},
+	}
+
+	// marshal acct
+	rawData, err := json.Marshal(acct)
+	assert.Nil(t, err)
+
+	acct2 := &accounts.Account{}
+
+	err = json.Unmarshal(rawData, acct2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, acct, *acct2)
+}
+
+func TestMarshalAndUnmarshalParticipant(t *testing.T) {
+	addr := common.Address{}
+	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
+
+	// generate transport keys
+	_, pub, err := math.GenerateKeys()
+	assert.Nil(t, err)
+
+	// create a Participant obj
+	participant := objects.Participant{
+		Address:   addr,
+		Index:     1,
+		PublicKey: pub,
+		Nonce:     1,
+		Phase:     objects.RegistrationOpen,
+	}
+
+	// marshal
+	rawData, err := json.Marshal(participant)
+	assert.Nil(t, err)
+
+	t.Logf("rawData: %s", rawData)
+
+	participant2 := &objects.Participant{}
+
+	err = json.Unmarshal(rawData, participant2)
+	assert.Nil(t, err)
+	assert.Equal(t, participant.PublicKey, participant2.PublicKey)
+
+}
+
+func TestMarshalAndUnmarshalDkgState(t *testing.T) {
+	addr := common.Address{}
+	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
+
+	// create a DkgState obj
+	state := objects.NewDkgState(accounts.Account{
+		Address: addr,
+		URL: accounts.URL{
+			Scheme: "file",
+			Path:   "",
+		},
+	})
+
+	// generate transport keys
+	priv, pub, err := math.GenerateKeys()
+	assert.Nil(t, err)
+	state.TransportPrivateKey = priv
+	state.TransportPublicKey = pub
+
+	// marshal
+	rawData, err := json.Marshal(state)
+	assert.Nil(t, err)
+
+	t.Logf("rawData: %s", rawData)
+
+	state2 := &objects.DkgState{}
+
+	err = json.Unmarshal(rawData, state2)
+	assert.Nil(t, err)
+	assert.Equal(t, state.TransportPrivateKey, state2.TransportPrivateKey)
+	assert.Equal(t, state.TransportPublicKey, state2.TransportPublicKey)
 }

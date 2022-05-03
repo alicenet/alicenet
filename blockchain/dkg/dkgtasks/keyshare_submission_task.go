@@ -2,12 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
@@ -29,22 +30,42 @@ func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
 func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
 	logger.Info("KeyshareSubmissionTask Initialize()")
 
-	// Generate the key shares
-	g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
-	if err != nil {
-		return err
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
 	}
 
 	me := t.State.Account.Address
 
-	t.State.Participants[me].KeyShareG1s = g1KeyShare
-	t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
-	t.State.Participants[me].KeyShareG2s = g2KeyShare
+	// check if task already defined key shares
+	if t.State.Participants[me].KeyShareG1s[0] == nil ||
+		t.State.Participants[me].KeyShareG1s[1] == nil ||
+		(t.State.Participants[me].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+			t.State.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
+
+		// Generate the key shares
+		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
+		if err != nil {
+			return err
+		}
+
+		t.State.Participants[me].KeyShareG1s = g1KeyShare
+		t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
+		t.State.Participants[me].KeyShareG2s = g2KeyShare
+
+		unlock()
+		dkgData.PersistStateCB()
+	} else {
+		logger.Infof("KeyshareSubmissionTask Initialize(): key shares already defined")
+	}
 
 	return nil
 }

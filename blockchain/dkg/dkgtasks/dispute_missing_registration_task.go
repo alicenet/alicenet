@@ -2,12 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
@@ -29,6 +30,17 @@ func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, en
 func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 
 	logger.Info("DisputeMissingRegistrationTask Initializing...")
+
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
+	}
 
 	return nil
 }
@@ -164,7 +176,7 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 
 		if isValidator && (!ok ||
 			participant.Nonce != t.State.Nonce ||
-			participant.Phase != uint8(objects.RegistrationOpen) ||
+			participant.Phase != objects.RegistrationOpen ||
 			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {
 

@@ -2,12 +2,13 @@ package dkgtasks
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // DisputeMissingGPKjTask stores the data required to dispute shares
@@ -30,6 +31,17 @@ func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64
 // If any are invalid, disputes will be issued.
 func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	logger.Info("Initializing DisputeMissingGPKjTask...")
+
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
+	}
 
 	return nil
 }
@@ -161,7 +173,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, e
 	for _, p := range t.State.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != t.State.Nonce ||
-			p.Phase != uint8(objects.GPKJSubmission) ||
+			p.Phase != objects.GPKJSubmission ||
 			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[2].Cmp(big.NewInt(0)) == 0 &&

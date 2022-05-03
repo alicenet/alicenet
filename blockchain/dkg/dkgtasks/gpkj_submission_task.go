@@ -3,13 +3,14 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
@@ -33,38 +34,56 @@ func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, ad
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
 func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	t.State.Lock()
-	defer t.State.Unlock()
 
 	logger.Info("GPKSubmissionTask Initialize()...")
 
-	// Collecting all the participants encrypted shares to be used for the GPKj
-	var participantsList = t.State.GetSortedParticipants()
-	encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
-	for _, participant := range participantsList {
-		logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
-		encryptedShares = append(encryptedShares, participant.EncryptedShares)
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
 	}
 
-	// Generate the GPKj
-	groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
-		t.State.TransportPrivateKey, t.State.PrivateCoefficients,
-		encryptedShares, t.State.Index, participantsList)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"t.State.Index": t.State.Index,
-		}).Errorf("Could not generate group keys: %v", err)
-		return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
 	}
 
-	t.State.GroupPrivateKey = groupPrivateKey
-	t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
+	if t.State.GroupPrivateKey == nil ||
+		t.State.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
-	// Pass private key on to consensus
-	logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
-	err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
-	if err != nil {
-		return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
+		// Collecting all the participants encrypted shares to be used for the GPKj
+		var participantsList = t.State.GetSortedParticipants()
+		encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
+		for _, participant := range participantsList {
+			logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
+			encryptedShares = append(encryptedShares, participant.EncryptedShares)
+		}
+
+		// Generate the GPKj
+		groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
+			t.State.TransportPrivateKey, t.State.PrivateCoefficients,
+			encryptedShares, t.State.Index, participantsList)
+		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"t.State.Index": t.State.Index,
+			}).Errorf("Could not generate group keys: %v", err)
+			return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
+		}
+
+		t.State.GroupPrivateKey = groupPrivateKey
+		t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
+
+		// Pass private key on to consensus
+		logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
+		err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
+		if err != nil {
+			return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
+		}
+
+		unlock()
+		dkgData.PersistStateCB()
+	} else {
+		logger.Infof("GPKSubmissionTask Initialize(): group private-public key already defined")
 	}
 
 	return nil

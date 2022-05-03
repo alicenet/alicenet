@@ -29,7 +29,8 @@ func TestShareDistributionGood(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		shareDistributionTask := suite.shareDistTasks[idx]
-		err := shareDistributionTask.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := shareDistributionTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = shareDistributionTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -70,7 +71,8 @@ func TestShareDistributionBad1(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		task.Initialize(ctx, logger, suite.eth, dkgData)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, we just add 1 to the first commitment (y component)
@@ -130,7 +132,8 @@ func TestShareDistributionBad2(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		task.Initialize(ctx, logger, suite.eth, dkgData)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, change the one of the commitments to 0
@@ -193,7 +196,8 @@ func TestShareDistributionBad4(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		task.Initialize(ctx, logger, suite.eth, dkgData)
 
 		// if we're on the last account, we just add 1 to the first commitment (y component)
 		com := state.Participants[accounts[idx].Address].Commitments
@@ -244,7 +248,8 @@ func TestShareDistributionBad5(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		task.Initialize(ctx, logger, suite.eth, dkgData)
 
 		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		if idx == badShareIdx {
@@ -295,7 +300,8 @@ func TestShareDistributionBad6(t *testing.T) {
 	task := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	err := task.Initialize(ctx, log, eth, nil)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
 
@@ -318,7 +324,8 @@ func TestShareDistributionBad7(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logging.GetLogger("test").WithField("Validator", acct.Address.String())
 	task := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
-	err := task.Initialize(ctx, log, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -338,7 +345,8 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		err := task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
@@ -359,7 +367,8 @@ func TestShareDistributionShouldRetryFalse(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		err := task.Initialize(ctx, logger, suite.eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)

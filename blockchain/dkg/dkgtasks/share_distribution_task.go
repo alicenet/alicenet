@@ -3,12 +3,13 @@ package dkgtasks
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
@@ -30,32 +31,51 @@ func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64)
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
 func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	t.State.Lock()
-	defer t.State.Unlock()
+
+	logger.Infof("ShareDistributionTask Initialize()")
+
+	dkgData, ok := state.(objects.ETHDKGTaskData)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	unlock := dkgData.LockState()
+	defer unlock()
+	if dkgData.State != t.State {
+		t.State = dkgData.State
+	}
 
 	if t.State.Phase != objects.ShareDistribution {
 		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
-	participants := t.State.GetSortedParticipants()
-	numParticipants := len(participants)
-	threshold := math.ThresholdForUserCount(numParticipants)
+	if t.State.SecretValue == nil {
 
-	// Generate shares
-	encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-		t.State.TransportPrivateKey, participants)
-	if err != nil {
-		logger.Errorf("Failed to generate shares: %v", err)
-		return err
+		participants := t.State.GetSortedParticipants()
+		numParticipants := len(participants)
+		threshold := math.ThresholdForUserCount(numParticipants)
+
+		// Generate shares
+		encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
+			t.State.TransportPrivateKey, participants)
+		if err != nil {
+			logger.Errorf("Failed to generate shares: %v %#v", err, participants)
+			return err
+		}
+
+		// Store calculated values
+		t.State.Participants[t.State.Account.Address].Commitments = commitments
+		t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
+
+		t.State.PrivateCoefficients = privateCoefficients
+		t.State.SecretValue = privateCoefficients[0]
+		t.State.ValidatorThreshold = threshold
+
+		unlock()
+		dkgData.PersistStateCB()
+	} else {
+		logger.Infof("ShareDistributionTask Initialize(): encrypted shares already defined")
 	}
-
-	// Store calculated values
-	t.State.Participants[t.State.Account.Address].Commitments = commitments
-	t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
-
-	t.State.PrivateCoefficients = privateCoefficients
-	t.State.SecretValue = privateCoefficients[0]
-	t.State.ValidatorThreshold = threshold
 
 	return nil
 }

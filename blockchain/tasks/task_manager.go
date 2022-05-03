@@ -3,12 +3,13 @@ package tasks
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"sync"
-	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -22,11 +23,14 @@ var (
 
 const NonceToLowError = "nonce too low"
 
-func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}) error {
+func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}, onFinishCB *func()) error {
 
 	wg.Add(1)
 	go func() {
 		defer task.DoDone(logger.WithField("Method", "DoDone"))
+		if onFinishCB != nil {
+			defer (*onFinishCB)()
+		}
 		defer wg.Done()
 
 		retryCount := eth.RetryCount()

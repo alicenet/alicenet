@@ -29,7 +29,11 @@ func main() {
 		1*time.Second,
 		5*time.Second,
 		0,
-		big.NewInt(math.MaxInt64))
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
 
 	if err != nil {
 		panic(err)
@@ -37,7 +41,7 @@ func main() {
 
 	defer eth.Close()
 
-	signals := make(chan os.Signal)
+	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	<-signals
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +22,9 @@ func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
@@ -50,7 +53,9 @@ func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
@@ -79,7 +84,9 @@ func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)
@@ -106,7 +113,9 @@ func TestShouldRetryTrue(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		shouldRetry := suite.dispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.eth)
@@ -124,7 +133,9 @@ func TestShouldNotRetryAfterSuccessfullyAccusingAllMissingParticipants(t *testin
 	accounts := suite.eth.GetKnownAccounts()
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
-		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, suite.dkgStates[idx])
+		state := suite.dkgStates[idx]
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
 		err = suite.dispMissingRegTasks[idx].DoWork(ctx, logger, suite.eth)

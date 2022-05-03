@@ -28,7 +28,8 @@ func TestCompletionAllGood(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -57,7 +58,8 @@ func TestCompletionAllGood(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := completionTasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := completionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger)
 		err = completionTasks[idx].DoWork(ctx, logger, eth)
@@ -92,7 +94,8 @@ func TestCompletion_StartFromCompletion(t *testing.T) {
 		state := dkgStates[idx]
 		task := suite.completionTasks[idx]
 
-		err := task.Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := task.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		amILeading := task.AmILeading(ctx, eth, logger)
 
@@ -142,7 +145,8 @@ func TestCompletionBad1(t *testing.T) {
 	task := dkgtasks.NewCompletionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	err := task.Initialize(ctx, log, eth, nil)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
 
@@ -164,7 +168,8 @@ func TestCompletionBad2(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := dkgtasks.NewCompletionTask(state, 1, 100)
-	err := task.Initialize(ctx, log, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err := task.Initialize(ctx, log, eth, dkgData)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -185,7 +190,8 @@ func TestCompletionBad3(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -215,8 +221,8 @@ func TestCompletionBad3(t *testing.T) {
 
 	// Do bad Completion task; this should fail because we are past
 	state := dkgStates[0]
-
-	err = completionTasks[0].Initialize(ctx, logger, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +247,8 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		err := tasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
 
@@ -275,8 +282,8 @@ func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-
-		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, state)
+		dkgData := objects.NewETHDKGTaskData(state)
+		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -305,8 +312,8 @@ func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
 
 	// Do bad Completion task; this should fail because we are past
 	state := dkgStates[0]
-
-	err = completionTasks[0].Initialize(ctx, logger, eth, state)
+	dkgData := objects.NewETHDKGTaskData(state)
+	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 
 	shouldRetry := completionTasks[0].ShouldRetry(ctx, logger, eth)
