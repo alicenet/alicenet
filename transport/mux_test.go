@@ -159,7 +159,8 @@ func TestMux(t *testing.T) {
 		go asyncSend2(wg, []byte(strings.Join([]string{"hi2", strconv.Itoa(i)}, ":")))
 	}
 	wg.Wait()
-	err = t1mc.ClientConn().Close()
+	// check close on transport close
+	err = t1mc.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,13 +207,13 @@ func TestMux2(t *testing.T) {
 	}
 	nodePrivKey2Hex := serializeTransportPrivateKey(nodePrivKey2)
 
-	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, t1Port, t1Host)
+	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, 3002, t1Host)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer transport1.Close()
 
-	transport2, err := NewP2PTransport(logger, testCID, nodePrivKey2Hex, t2Port, t2Host)
+	transport2, err := NewP2PTransport(logger, testCID, nodePrivKey2Hex, 4002, t2Host)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,8 +268,8 @@ func TestMux2(t *testing.T) {
 		t.Fatal("t2 nil")
 	}
 
-	// check close on serverconn
-	err = t1mc.ServerConn().Close()
+	// check close on transport close
+	err = t1mc.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,13 +315,13 @@ func TestMux3(t *testing.T) {
 	}
 	nodePrivKey2Hex := serializeTransportPrivateKey(nodePrivKey2)
 
-	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, t1Port, t1Host)
+	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, 3003, t1Host)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer transport1.Close()
 
-	transport2, err := NewP2PTransport(logger, testCID, nodePrivKey2Hex, t2Port, t2Host)
+	transport2, err := NewP2PTransport(logger, testCID, nodePrivKey2Hex, 4003, t2Host)
 	if err != nil {
 		t.Fatal(err)
 	}
