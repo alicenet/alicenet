@@ -1,0 +1,48 @@
+[loglevel]
+ethereum = "info"
+consensus = "debug"
+badger = "fatal"
+
+[chain]
+id = 1337
+stateDB = "testDB"
+stateDBInMemory = false
+transactionDB = ""
+transactionDBInMemory = true
+monitorDB = "testDB/validatorMon/"
+monitorDBInMemory = false
+
+[bootnode]
+listeningAddress = "0.0.0.0:9243"
+cacheSize = 20
+
+[transport]
+originLimit = 50
+privateKey = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
+p2pListeningAddress = "0.0.0.0:9344"
+discoveryListeningAddress = "0.0.0.0:9445"
+localStateListeningAddress = "0.0.0.0:9884"
+peerLimitMax = 24
+peerLimitMin = 0
+upnp = false
+
+[monitor]
+batchSize = 1000
+interval = "7s"
+timeout = "1h"
+
+[edge]
+ethTimeout = "5s"
+
+[utils]
+status = true
+
+[validator]
+rewardAccount = "0x615695C4a4D6a60830e5fca4901FbA099DF26271"
+rewardCurveSpec = 1
+symmetricKey = "someSuperFancySecretThatWillBeHashed"
+
+[firewalld]
+enabled = false
+socketFile = "/tmp/madnet_firewalld"
