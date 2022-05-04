@@ -563,6 +563,51 @@ task("getBTokenBalance", "gets BToken balance of account")
     return bal;
   });
 
+task(
+  "setMinEthereumBlocksPerSnapshot",
+  "Set the minimum number of ethereum blocks that we should wait between snapshots"
+)
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addParam(
+    "blockNum",
+    "Minimum block of ethereum to wait between snapshots",
+    -1,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const snapshots = await hre.ethers.getContractAt(
+      "Snapshots",
+      await factory.callStatic.lookup(
+        hre.ethers.utils.formatBytes32String("Snapshots")
+      )
+    );
+
+    if (taskArgs.blockNum < 0) {
+      throw new Error("block-num not passed or the value was smaller than 0!");
+    }
+
+    const [admin] = await hre.ethers.getSigners();
+    const adminSigner = await hre.ethers.getSigner(admin.address);
+    const input = snapshots.interface.encodeFunctionData(
+      "setMinimumIntervalBetweenSnapshots",
+      [taskArgs.blockNum]
+    );
+    console.log(
+      `Setting the setMinimumIntervalBetweenSnapshots to ${taskArgs.blockNum}`
+    );
+    const rept = await (
+      await factory.connect(adminSigner).callAny(snapshots.address, 0, input)
+    ).wait(3);
+    if (rept.status != 1) {
+      throw new Error(`Receipt indicates failure: ${rept}`);
+    }
+    console.log("Done");
+  });
+
 task("getEthBalance", "gets AToken balance of account")
   .addParam("account", "address of account to get balance of")
   .setAction(async (taskArgs, hre) => {
