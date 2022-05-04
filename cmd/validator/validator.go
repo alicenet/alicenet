@@ -293,7 +293,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consReqHandler.Init(consDB, app, storage)
 	consDlManager.Init(consDB, app, consReqClient)
 	consLSHandler.Init(consDB, consDlManager)
-	consGossipHandlers.Init(consDB, peerManager.P2PClient(), app, consLSHandler, storage)
+	consGossipHandlers.Init(chainID, consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)

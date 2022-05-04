@@ -52,6 +52,8 @@ const config: HardhatUserConfig = {
       gasPrice: "auto",
       accounts: [
         "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
+        "0x8de84c4eb40a9d32804ebc4005075eed5d64efc92ba26b6ec04d399f5a9b7bd1",
+        "0x65a81057728efda8858d5d53094a093203d35cb7437d16f7635594788517bdd2",
       ],
       gasMultiplier: 2,
     },

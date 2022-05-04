@@ -42,6 +42,7 @@ export const UPGRADE_PROXY = "upgradeProxy";
 export const UPGRADEABLE_DEPLOYMENT: string = "deployUpgradeable";
 export const UTILS = "Utils";
 export const INITIALIZER = "initialize";
+export const HARDHAT_CHAIN_ID = 1337;
 export const env = (): string => {
   let _env = process.env.DEPLOYMENT_ENVIRONMENT;
   if (typeof _env === "undefined") {
