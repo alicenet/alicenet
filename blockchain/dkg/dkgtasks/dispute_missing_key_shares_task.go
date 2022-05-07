@@ -35,9 +35,14 @@ func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *lo
 		return objects.ErrCanNotContinue
 	}
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
@@ -58,6 +63,11 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("DisputeMissingKeySharesTask doTask()")
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
@@ -69,7 +79,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing key shares: %v", accusableParticipants)
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txnOpts: %v", err)
 		}
@@ -117,6 +127,12 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
 	logger.Info("DisputeMissingKeySharesTask ShouldRetry()")
 
 	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
@@ -124,7 +140,7 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 		return false
 	}
 
-	if t.State.Phase != objects.KeyShareSubmission {
+	if taskState.Phase != objects.KeyShareSubmission {
 		return false
 	}
 
@@ -154,8 +170,14 @@ func (t *DisputeMissingKeySharesTask) GetExecutionData() interface{} {
 }
 
 func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return nil, objects.ErrCanNotContinue
+	}
+
 	var accusableParticipants []common.Address
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
 	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
@@ -168,9 +190,9 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 	}
 
 	// find participants who did not submit they key shares
-	for _, p := range t.State.Participants {
+	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
-		if isValidator && (p.Nonce != t.State.Nonce ||
+		if isValidator && (p.Nonce != taskState.Nonce ||
 			p.Phase != objects.KeyShareSubmission ||
 			(p.KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
 				p.KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) ||

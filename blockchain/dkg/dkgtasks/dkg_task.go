@@ -4,14 +4,14 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type ExecutionData struct {
 	Start          uint64
 	End            uint64
-	State          *objects.DkgState
+	State          interfaces.TaskState
 	Success        bool
 	StartBlockHash common.Hash
 	TxOpts         *TxOpts
@@ -42,7 +42,7 @@ func (t *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewExecutionData(state *objects.DkgState, start uint64, end uint64) *ExecutionData {
+func NewExecutionData(state interfaces.TaskState, start uint64, end uint64) *ExecutionData {
 	return &ExecutionData{
 		State:   state,
 		Start:   start,

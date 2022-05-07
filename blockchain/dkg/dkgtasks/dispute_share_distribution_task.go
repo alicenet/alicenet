@@ -42,20 +42,24 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.Phase != objects.DisputeShareDistribution && t.State.Phase != objects.ShareDistribution {
+	if taskState.Phase != objects.DisputeShareDistribution && taskState.Phase != objects.ShareDistribution {
 		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
-	var participantsList = t.State.GetSortedParticipants()
+	var participantsList = taskState.GetSortedParticipants()
 	// Loop through all participants and check to see if shares are valid
-	for idx := 0; idx < t.State.NumberOfValidators; idx++ {
+	for idx := 0; idx < taskState.NumberOfValidators; idx++ {
 		participant := participantsList[idx]
 
 		var emptyHash [32]byte
@@ -63,8 +67,8 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 			continue
 		}
 
-		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
-		valid, present, err := math.VerifyDistributedShares(t.State, participant)
+		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, taskState.Index)
+		valid, present, err := math.VerifyDistributedShares(taskState, participant)
 		if err != nil {
 			// A major error occured; we cannot continue
 			logger.Errorf("VerifyDistributedShares broke; Participant Address: %v", participant.Address.Hex())
@@ -76,7 +80,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 		}
 		if !valid {
 			logger.Warningf("Invalid share from %v", participant.Address.Hex())
-			t.State.BadShares[participant.Address] = participant
+			taskState.BadShares[participant.Address] = participant
 		}
 	}
 
@@ -97,11 +101,16 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("DisputeShareDistributionTask doTask()")
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -115,7 +124,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		txnOpts.GasTipCap = t.TxOpts.GasTipCap
 	}
 
-	for _, participant := range t.State.BadShares {
+	for _, participant := range taskState.BadShares {
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
 		if err != nil {
@@ -127,15 +136,15 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		}
 
 		dishonestAddress := participant.Address
-		encryptedShares := t.State.Participants[participant.Address].EncryptedShares
-		commitments := t.State.Participants[participant.Address].Commitments
+		encryptedShares := taskState.Participants[participant.Address].EncryptedShares
+		commitments := taskState.Participants[participant.Address].Commitments
 
 		// Construct shared key
 		disputePublicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)
 		if err != nil {
 			return err
 		}
-		sharedKeyG1 := cloudflare.GenerateSharedSecretG1(t.State.TransportPrivateKey, disputePublicKeyG1)
+		sharedKeyG1 := cloudflare.GenerateSharedSecretG1(taskState.TransportPrivateKey, disputePublicKeyG1)
 		sharedKey, err := bn256.G1ToBigIntArray(sharedKeyG1)
 		if err != nil {
 			return err
@@ -143,9 +152,9 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 		// Construct shared key proof
 		g1Base := new(cloudflare.G1).ScalarBaseMult(common.Big1)
-		transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(t.State.TransportPrivateKey)
+		transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(taskState.TransportPrivateKey)
 		sharedKeyProof, err := cloudflare.GenerateDLEQProofG1(
-			g1Base, transportPublicKeyG1, disputePublicKeyG1, sharedKeyG1, t.State.TransportPrivateKey, rand.Reader)
+			g1Base, transportPublicKeyG1, disputePublicKeyG1, sharedKeyG1, taskState.TransportPrivateKey, rand.Reader)
 		if err != nil {
 			return err
 		}
@@ -190,23 +199,29 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 		return false
 	}
 
-	if t.State.Phase != objects.DisputeShareDistribution {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	if taskState.Phase != objects.DisputeShareDistribution {
+		return false
+	}
+
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
 		logger.Error("could not get BadParticipants")
 	}
 
 	logger.WithFields(logrus.Fields{
-		"state.BadShares":     len(t.State.BadShares),
+		"state.BadShares":     len(taskState.BadShares),
 		"eth.badParticipants": badParticipants,
 	}).Debug("DisputeShareDistributionTask ShouldRetry2()")
 
 	// if there is someone that wasn't accused we need to retry
-	return len(t.State.BadShares) != int(badParticipants.Int64())
+	return len(taskState.BadShares) != int(badParticipants.Int64())
 }
 
 // DoDone creates a log entry saying task is complete

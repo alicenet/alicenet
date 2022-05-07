@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -102,6 +103,9 @@ func (state *DkgState) GetSortedParticipants() ParticipantList {
 
 	return list
 }
+
+// asserting that DkgState struct implements interface interfaces.TaskState
+var _ interfaces.TaskState = &DkgState{}
 
 // OnRegistrationOpened processes data from RegistrationOpened event
 func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmationLength, nonce uint64) {

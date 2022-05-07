@@ -41,19 +41,23 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.GroupPrivateKey == nil ||
-		t.State.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
+	if taskState.GroupPrivateKey == nil ||
+		taskState.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
 		// Collecting all the participants encrypted shares to be used for the GPKj
-		var participantsList = t.State.GetSortedParticipants()
-		encryptedShares := make([][]*big.Int, 0, t.State.NumberOfValidators)
+		var participantsList = taskState.GetSortedParticipants()
+		encryptedShares := make([][]*big.Int, 0, taskState.NumberOfValidators)
 		for _, participant := range participantsList {
 			logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
 			encryptedShares = append(encryptedShares, participant.EncryptedShares)
@@ -61,17 +65,17 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 
 		// Generate the GPKj
 		groupPrivateKey, groupPublicKey, err := math.GenerateGroupKeys(
-			t.State.TransportPrivateKey, t.State.PrivateCoefficients,
-			encryptedShares, t.State.Index, participantsList)
+			taskState.TransportPrivateKey, taskState.PrivateCoefficients,
+			encryptedShares, taskState.Index, participantsList)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
-				"t.State.Index": t.State.Index,
+				"t.State.Index": taskState.Index,
 			}).Errorf("Could not generate group keys: %v", err)
 			return dkg.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 		}
 
-		t.State.GroupPrivateKey = groupPrivateKey
-		t.State.Participants[t.State.Account.Address].GPKj = groupPublicKey
+		taskState.GroupPrivateKey = groupPrivateKey
+		taskState.Participants[taskState.Account.Address].GPKj = groupPublicKey
 
 		// Pass private key on to consensus
 		logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
@@ -103,10 +107,15 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.Infof("GPKSubmissionTask doTask(): %v", t.State.Account.Address)
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	logger.Infof("GPKSubmissionTask doTask(): %v", taskState.Account.Address)
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -121,7 +130,7 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	}
 
 	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, t.State.Participants[t.State.Account.Address].GPKj)
+	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, taskState.Participants[taskState.Account.Address].GPKj)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
@@ -156,18 +165,24 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 		return false
 	}
 
-	if t.State.Phase != objects.GPKJSubmission {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
+	if taskState.Phase != objects.GPKJSubmission {
 		return false
 	}
 
 	//Check if my GPKj is submitted, if not should retry
-	me := t.State.Account
+	me := taskState.Account
 	callOpts := eth.GetCallOpts(ctx, me)
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)
-	if err == nil && participantState.Gpkj[0].Cmp(t.State.Participants[me.Address].GPKj[0]) == 0 &&
-		participantState.Gpkj[1].Cmp(t.State.Participants[me.Address].GPKj[1]) == 0 &&
-		participantState.Gpkj[2].Cmp(t.State.Participants[me.Address].GPKj[2]) == 0 &&
-		participantState.Gpkj[3].Cmp(t.State.Participants[me.Address].GPKj[3]) == 0 {
+	if err == nil && participantState.Gpkj[0].Cmp(taskState.Participants[me.Address].GPKj[0]) == 0 &&
+		participantState.Gpkj[1].Cmp(taskState.Participants[me.Address].GPKj[1]) == 0 &&
+		participantState.Gpkj[2].Cmp(taskState.Participants[me.Address].GPKj[2]) == 0 &&
+		participantState.Gpkj[3].Cmp(taskState.Participants[me.Address].GPKj[3]) == 0 {
 		return false
 	}
 

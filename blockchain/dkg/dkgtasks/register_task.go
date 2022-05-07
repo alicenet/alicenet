@@ -41,22 +41,27 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 		return objects.ErrCanNotContinue
 	}
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.TransportPrivateKey == nil ||
-		t.State.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
+	if taskState.TransportPrivateKey == nil ||
+		taskState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
 		logger.Infof("RegisterTask Initialize(): generating private-public transport keys")
 		priv, pub, err := math.GenerateKeys()
 		if err != nil {
 			return err
 		}
-		t.State.TransportPrivateKey = priv
-		t.State.TransportPublicKey = pub
+		taskState.TransportPrivateKey = priv
+		taskState.TransportPublicKey = pub
 
 		unlock()
 		dkgData.PersistStateCB()
@@ -81,6 +86,11 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	// Is there any point in running? Make sure we're both initialized and within block range
 	block, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -90,7 +100,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	logger.Info("RegisterTask doTask()")
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -105,9 +115,9 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	}
 
 	// Register
-	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(t.State.TransportPublicKey))
-	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(t.State.TransportPublicKey))
-	txn, err := eth.Contracts().Ethdkg().Register(txnOpts, t.State.TransportPublicKey)
+	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(taskState.TransportPublicKey))
+	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(taskState.TransportPublicKey))
+	txn, err := eth.Contracts().Ethdkg().Register(txnOpts, taskState.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
 		return err
@@ -145,14 +155,20 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return false
 	}
 
-	if t.State.Phase != objects.RegistrationOpen {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	if taskState.Phase != objects.RegistrationOpen {
+		return false
+	}
+
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
 	var needsRegistration bool
-	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, t.State.Account.Address, t.State.TransportPublicKey)
+	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)
 	logger.Infof("registration status: %v", status)
 	if err != nil {
 		needsRegistration = true

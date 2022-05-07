@@ -292,8 +292,10 @@ func TestDisputeShareDistributionTask_DoRetry_returnsTrue(t *testing.T) {
 	// Do Should Retry
 	for idx := 0; idx < n; idx++ {
 		task := suite.disputeShareDistTasks[idx]
-		task.State.BadShares = make(map[common.Address]*objects.Participant)
-		task.State.BadShares[accounts[idx].Address] = &objects.Participant{}
+		taskState, ok := task.State.(*objects.DkgState)
+		assert.True(t, ok)
+		taskState.BadShares = make(map[common.Address]*objects.Participant)
+		taskState.BadShares[accounts[idx].Address] = &objects.Participant{}
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
 	}

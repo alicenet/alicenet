@@ -33,7 +33,7 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
 		err = tasks[idx].DoWork(ctx, logger, eth)
 		if amILeading {
 			assert.Nil(t, err)
@@ -174,7 +174,7 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
 
 		if amILeading {
 			hadLeaders = true
@@ -206,7 +206,8 @@ func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
+		taskState := tasks[idx].State.(*objects.DkgState)
+		taskState.MasterPublicKey[0] = big.NewInt(1)
 
 		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
 		assert.True(t, shouldRetry)
@@ -229,7 +230,7 @@ func TestMPKSubmission_LeaderElection(t *testing.T) {
 		tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
 
-		if tasks[idx].AmILeading(ctx, eth, logger) {
+		if tasks[idx].AmILeading(ctx, eth, logger, dkgData.State) {
 			leaders++
 		}
 	}

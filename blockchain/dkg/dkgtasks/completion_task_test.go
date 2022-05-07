@@ -61,7 +61,7 @@ func TestCompletionAllGood(t *testing.T) {
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := completionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
 		err = completionTasks[idx].DoWork(ctx, logger, eth)
 		if amILeading {
 			assert.Nil(t, err)
@@ -97,7 +97,7 @@ func TestCompletion_StartFromCompletion(t *testing.T) {
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := task.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := task.AmILeading(ctx, eth, logger)
+		amILeading := task.AmILeading(ctx, eth, logger, dkgData.State)
 
 		if amILeading {
 			hasLeader = true
@@ -250,7 +250,7 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
 
 		if amILeading {
 			hadLeaders = true

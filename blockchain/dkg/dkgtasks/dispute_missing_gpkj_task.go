@@ -36,10 +36,14 @@ func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
@@ -62,6 +66,11 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("DisputeMissingGPKjTask doTask()")
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting accusableParticipants: %v", err)
@@ -71,7 +80,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing gpkj: %v", accusableParticipants)
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting txnOpts: %v", err)
 		}
@@ -126,7 +135,13 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	if t.State.Phase != objects.GPKJSubmission {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
+	if taskState.Phase != objects.GPKJSubmission {
 		return false
 	}
 
@@ -156,8 +171,14 @@ func (t *DisputeMissingGPKjTask) GetExecutionData() interface{} {
 }
 
 func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return nil, objects.ErrCanNotContinue
+	}
+
 	var accusableParticipants []common.Address
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
 	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
@@ -170,9 +191,9 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, e
 	}
 
 	// find participants who did not submit GPKj
-	for _, p := range t.State.Participants {
+	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
-		if isValidator && (p.Nonce != t.State.Nonce ||
+		if isValidator && (p.Nonce != taskState.Nonce ||
 			p.Phase != objects.GPKJSubmission ||
 			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&

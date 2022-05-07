@@ -40,14 +40,23 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.Phase != objects.DisputeGPKJSubmission && t.State.Phase != objects.GPKJSubmission {
+	taskState, ok = t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	if taskState.Phase != objects.DisputeGPKJSubmission && taskState.Phase != objects.GPKJSubmission {
 		return fmt.Errorf("%w because it's not DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -56,7 +65,7 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		groupCommitments [][][2]*big.Int
 	)
 
-	var participantList = t.State.GetSortedParticipants()
+	var participantList = taskState.GetSortedParticipants()
 
 	for _, participant := range participantList {
 		// Build array
@@ -69,7 +78,7 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		return dkg.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
-	inverse, err := math.InverseArrayForUserCount(t.State.NumberOfValidators)
+	inverse, err := math.InverseArrayForUserCount(taskState.NumberOfValidators)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
@@ -78,9 +87,9 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 	logger.Debugf("Dishonest indices: %v", dishonest.ExtractIndices())
 	logger.Debugf("  Missing indices: %v", missing.ExtractIndices())
 
-	t.State.DishonestValidators = dishonest
-	t.State.HonestValidators = honest
-	t.State.Inverse = inverse
+	taskState.DishonestValidators = dishonest
+	taskState.HonestValidators = honest
+	taskState.Inverse = inverse
 
 	return nil
 }
@@ -101,14 +110,19 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 	logger.Info("GPKJDisputeTask doTask()")
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	// Perform group accusation
-	logger.Infof("   Honest indices: %v", t.State.HonestValidators.ExtractIndices())
-	logger.Infof("Dishonest indices: %v", t.State.DishonestValidators.ExtractIndices())
+	logger.Infof("   Honest indices: %v", taskState.HonestValidators.ExtractIndices())
+	logger.Infof("Dishonest indices: %v", taskState.DishonestValidators.ExtractIndices())
 
 	var groupEncryptedSharesHash [][32]byte
 	var groupCommitments [][][2]*big.Int
 	var validatorAddresses []common.Address
-	var participantList = t.State.GetSortedParticipants()
+	var participantList = taskState.GetSortedParticipants()
 
 	for _, participant := range participantList {
 		// Get group encrypted shares
@@ -127,10 +141,10 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -145,7 +159,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 	}
 
 	// Loop through dishonest participants and perform accusation
-	for _, dishonestParticipant := range t.State.DishonestValidators {
+	for _, dishonestParticipant := range taskState.DishonestValidators {
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, dishonestParticipant.Address)
 		if err != nil {
@@ -191,16 +205,22 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 
 	logger.Info("GPKJDisputeTask ShouldRetry()")
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
 	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
 
-	if t.State.Phase != objects.DisputeGPKJSubmission {
+	if taskState.Phase != objects.DisputeGPKJSubmission {
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
 		logger.Error("could not get BadParticipants")
@@ -208,11 +228,11 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 	}
 
 	logger.WithFields(logrus.Fields{
-		"state.BadShares":     len(t.State.BadShares),
+		"state.BadShares":     len(taskState.BadShares),
 		"eth.badParticipants": badParticipants,
 	}).Debug("DisputeGPKjTask ShouldRetry2()")
 
-	return len(t.State.DishonestValidators) != int(badParticipants.Int64())
+	return len(taskState.DishonestValidators) != int(badParticipants.Int64())
 }
 
 // DoDone creates a log entry saying task is complete

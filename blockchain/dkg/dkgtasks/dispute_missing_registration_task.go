@@ -36,9 +36,14 @@ func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger 
 		return objects.ErrCanNotContinue
 	}
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
@@ -59,6 +64,11 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("DisputeMissingRegistrationTask doTask()")
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
@@ -70,7 +80,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing registrations: %v", accusableParticipants)
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
 			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
 		}
@@ -125,7 +135,13 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 		return false
 	}
 
-	if t.State.Phase != objects.RegistrationOpen {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
+	if taskState.Phase != objects.RegistrationOpen {
 		return false
 	}
 
@@ -155,8 +171,14 @@ func (t *DisputeMissingRegistrationTask) GetExecutionData() interface{} {
 }
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return nil, objects.ErrCanNotContinue
+	}
+
 	var accusableParticipants []common.Address
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
 
 	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
@@ -169,13 +191,13 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 	}
 
 	// find participants who did not register
-	for _, addr := range t.State.ValidatorAddresses {
+	for _, addr := range taskState.ValidatorAddresses {
 
-		participant, ok := t.State.Participants[addr]
+		participant, ok := taskState.Participants[addr]
 		_, isValidator := validatorsMap[addr]
 
 		if isValidator && (!ok ||
-			participant.Nonce != t.State.Nonce ||
+			participant.Nonce != taskState.Nonce ||
 			participant.Phase != objects.RegistrationOpen ||
 			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {

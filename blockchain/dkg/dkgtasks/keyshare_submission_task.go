@@ -36,30 +36,34 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	me := t.State.Account.Address
+	me := taskState.Account.Address
 
 	// check if task already defined key shares
-	if t.State.Participants[me].KeyShareG1s[0] == nil ||
-		t.State.Participants[me].KeyShareG1s[1] == nil ||
-		(t.State.Participants[me].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
-			t.State.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
+	if taskState.Participants[me].KeyShareG1s[0] == nil ||
+		taskState.Participants[me].KeyShareG1s[1] == nil ||
+		(taskState.Participants[me].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+			taskState.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
 
 		// Generate the key shares
-		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
+		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(taskState.SecretValue)
 		if err != nil {
 			return err
 		}
 
-		t.State.Participants[me].KeyShareG1s = g1KeyShare
-		t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
-		t.State.Participants[me].KeyShareG2s = g2KeyShare
+		taskState.Participants[me].KeyShareG1s = g1KeyShare
+		taskState.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
+		taskState.Participants[me].KeyShareG2s = g2KeyShare
 
 		unlock()
 		dkgData.PersistStateCB()
@@ -86,13 +90,18 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("KeyshareSubmissionTask doTask()")
 
 	// Setup
-	me := t.State.Account
+	me := taskState.Account
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -109,13 +118,13 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	// Submit Keyshares
 	logger.Infof("submitting key shares: %v %v %v %v",
 		me.Address,
-		t.State.Participants[me.Address].KeyShareG1s,
-		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
-		t.State.Participants[me.Address].KeyShareG2s)
+		taskState.Participants[me.Address].KeyShareG1s,
+		taskState.Participants[me.Address].KeyShareG1CorrectnessProofs,
+		taskState.Participants[me.Address].KeyShareG2s)
 	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
-		t.State.Participants[me.Address].KeyShareG1s,
-		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
-		t.State.Participants[me.Address].KeyShareG2s)
+		taskState.Participants[me.Address].KeyShareG1s,
+		taskState.Participants[me.Address].KeyShareG1CorrectnessProofs,
+		taskState.Participants[me.Address].KeyShareG2s)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
@@ -151,9 +160,13 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	state := t.State
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
 
-	me := state.Account
+	me := taskState.Account
 	callOpts := eth.GetCallOpts(ctx, me)
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
@@ -168,7 +181,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	}
 
 	// Check the key share submission status
-	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
+	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
 	if err != nil {
 		logger.Errorf("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true

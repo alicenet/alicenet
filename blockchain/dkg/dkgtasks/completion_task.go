@@ -38,13 +38,23 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 		return objects.ErrCanNotContinue
 	}
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.Phase != objects.DisputeGPKJSubmission {
+	taskState, ok = t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	if taskState.Phase != objects.DisputeGPKJSubmission {
 		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -75,21 +85,26 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("CompletionTask doTask()")
 
-	if t.isTaskCompleted(ctx, eth) {
+	if t.isTaskCompleted(ctx, eth, taskState) {
 		t.Success = true
 		return nil
 	}
 
 	// submit if I'm a leader for this task
-	if !t.AmILeading(ctx, eth, logger) {
+	if !t.AmILeading(ctx, eth, logger, taskState) {
 		return errors.New("not leading Completion yet")
 	}
 
 	// Setup
 	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -147,10 +162,16 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	if t.isTaskCompleted(ctx, eth) {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
+	if t.isTaskCompleted(ctx, eth, taskState) {
 		logger.WithFields(logrus.Fields{
-			"t.State.Phase":      t.State.Phase,
-			"t.State.PhaseStart": t.State.PhaseStart,
+			"t.State.Phase":      taskState.Phase,
+			"t.State.PhaseStart": taskState.PhaseStart,
 		}).Info("CompletionTask ShouldRetry - will not retry because it's done")
 		return false
 	}
@@ -172,9 +193,10 @@ func (t *CompletionTask) GetExecutionData() interface{} {
 	return t.ExecutionData
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum, taskState *objects.DkgState) bool {
 	c := eth.Contracts()
-	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, t.State.Account))
+
+	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, taskState.Account))
 	if err != nil {
 		return false
 	}
@@ -182,7 +204,7 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Eth
 	return phase == uint8(objects.Completion)
 }
 
-func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
+func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry, taskState *objects.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -190,7 +212,7 @@ func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+	amILeading := dkg.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,

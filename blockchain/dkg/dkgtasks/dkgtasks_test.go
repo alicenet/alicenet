@@ -562,7 +562,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 		dkgData := objects.NewETHDKGTaskData(state)
 		err := task.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		if task.AmILeading(ctx, eth, logger) {
+		if task.AmILeading(ctx, eth, logger, dkgData.State) {
 			err = task.DoWork(ctx, logger, eth)
 			assert.Nil(t, err)
 		}

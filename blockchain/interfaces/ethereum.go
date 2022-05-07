@@ -159,6 +159,11 @@ type Task interface {
 	GetExecutionData() interface{}
 }
 
+type TaskState interface {
+	Lock()
+	Unlock()
+}
+
 type AdminClient interface {
 	SetAdminHandler(AdminHandler)
 }

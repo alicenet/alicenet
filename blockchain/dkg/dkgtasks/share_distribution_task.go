@@ -39,37 +39,42 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return objects.ErrCanNotContinue
 	}
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	unlock := dkgData.LockState()
 	defer unlock()
-	if dkgData.State != t.State {
+	if dkgData.State != taskState {
 		t.State = dkgData.State
 	}
 
-	if t.State.Phase != objects.ShareDistribution {
+	if taskState.Phase != objects.ShareDistribution {
 		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
-	if t.State.SecretValue == nil {
+	if taskState.SecretValue == nil {
 
-		participants := t.State.GetSortedParticipants()
+		participants := taskState.GetSortedParticipants()
 		numParticipants := len(participants)
 		threshold := math.ThresholdForUserCount(numParticipants)
 
 		// Generate shares
 		encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-			t.State.TransportPrivateKey, participants)
+			taskState.TransportPrivateKey, participants)
 		if err != nil {
 			logger.Errorf("Failed to generate shares: %v %#v", err, participants)
 			return err
 		}
 
 		// Store calculated values
-		t.State.Participants[t.State.Account.Address].Commitments = commitments
-		t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
+		taskState.Participants[taskState.Account.Address].Commitments = commitments
+		taskState.Participants[taskState.Account.Address].EncryptedShares = encryptedShares
 
-		t.State.PrivateCoefficients = privateCoefficients
-		t.State.SecretValue = privateCoefficients[0]
-		t.State.ValidatorThreshold = threshold
+		taskState.PrivateCoefficients = privateCoefficients
+		taskState.SecretValue = privateCoefficients[0]
+		taskState.ValidatorThreshold = threshold
 
 		unlock()
 		dkgData.PersistStateCB()
@@ -95,14 +100,19 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
 	logger.Info("ShareDistributionTask doTask()")
 
 	c := eth.Contracts()
-	me := t.State.Account.Address
+	me := taskState.Account.Address
 	logger.Debugf("me:%v", me.Hex())
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
@@ -117,7 +127,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	}
 
 	// Distribute shares
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
+	txn, err := c.Ethdkg().DistributeShares(txnOpts, taskState.Participants[me].EncryptedShares, taskState.Participants[me].Commitments)
 	if err != nil {
 		logger.Errorf("distributing shares failed: %v", err)
 		return err
@@ -155,13 +165,19 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return false
 	}
 
-	if t.State.Phase != objects.ShareDistribution {
+	taskState, ok := t.State.(*objects.DkgState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return false
+	}
+
+	if taskState.Phase != objects.ShareDistribution {
 		return false
 	}
 
 	// If it's generally good to retry, let's try to be more specific
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
+	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, taskState.Account.Address)
 	if err != nil {
 		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)
 		return true
