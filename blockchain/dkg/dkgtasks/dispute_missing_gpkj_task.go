@@ -7,13 +7,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeMissingGPKjTask stores the data required to dispute shares
 type DisputeMissingGPKjTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that DisputeMissingGPKjTask struct implements interface interfaces.Task
@@ -22,7 +23,7 @@ var _ interfaces.Task = &DisputeMissingGPKjTask{}
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -32,7 +33,7 @@ func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64
 func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	logger.Info("Initializing DisputeMissingGPKjTask...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

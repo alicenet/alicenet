@@ -16,6 +16,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
@@ -310,7 +311,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		dkgStates[idx] = state
 		regTasks[idx] = regTask
 		dispMissingRegTasks[idx] = dispMissingRegTask
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err = regTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 
@@ -409,7 +410,7 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 
 		shareDistTask := suite.shareDistTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := shareDistTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -495,7 +496,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -559,10 +560,12 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 		task := suite.mpkSubmissionTasks[idx]
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
+		taskState, ok := dkgData.State.(*objects.DkgState)
+		assert.True(t, ok)
 		err := task.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		if task.AmILeading(ctx, eth, logger, dkgData.State) {
+		if task.AmILeading(ctx, eth, logger, taskState) {
 			err = task.DoWork(ctx, logger, eth)
 			assert.Nil(t, err)
 		}
@@ -616,7 +619,7 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 
 		gpkjSubTask := suite.gpkjSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := gpkjSubTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 

@@ -7,13 +7,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
@@ -22,7 +23,7 @@ var _ interfaces.Task = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -31,7 +32,7 @@ func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger 
 
 	logger.Info("DisputeMissingRegistrationTask Initializing...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

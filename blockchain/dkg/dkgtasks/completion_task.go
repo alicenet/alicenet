@@ -9,13 +9,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // CompletionTask contains required state for safely performing a registration
 type CompletionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
@@ -24,7 +25,7 @@ var _ interfaces.Task = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -33,7 +34,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 
 	logger.Info("CompletionTask Initialize()...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

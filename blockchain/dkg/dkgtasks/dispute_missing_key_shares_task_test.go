@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +28,7 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 		state := dkgStates[idx]
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
@@ -58,7 +58,7 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 		state := dkgStates[idx]
 		disputeMissingKeyshareTask := suite.disputeMissingKeyshareTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = disputeMissingKeyshareTask.DoWork(ctx, logger, eth)
@@ -92,7 +92,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 		state := dkgStates[idx]
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
@@ -122,7 +122,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 		state := dkgStates[idx]
 		disputeMissingKeyshareTask := suite.disputeMissingKeyshareTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = disputeMissingKeyshareTask.DoWork(ctx, logger, eth)
@@ -154,7 +154,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 		state := dkgStates[idx]
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
@@ -184,7 +184,7 @@ func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
 		state := dkgStates[idx]
 		disputeMissingKeyshareTask := suite.disputeMissingKeyshareTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 

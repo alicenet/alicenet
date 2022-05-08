@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -129,7 +128,7 @@ func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 	return err
 }
 
-func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, execData *dkgtasks.ExecutionData, retryCount int, retryDelay time.Duration) error {
+func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, execData *ExecutionData, retryCount int, retryDelay time.Duration) error {
 	logger.WithFields(logrus.Fields{
 		"GasFeeCap": execData.TxOpts.GasFeeCap,
 		"GasTipCap": execData.TxOpts.GasTipCap,
@@ -170,7 +169,7 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task) error {
 	// TxOpts or TxHash are empty means that no tx was queued, this could happen
 	// if there's nobody to accuse during the dispute
-	execData, ok := task.GetExecutionData().(*dkgtasks.ExecutionData)
+	execData, ok := task.GetExecutionData().(*ExecutionData)
 	if !ok || execData.TxOpts == nil || execData.TxOpts.TxHashes == nil || len(execData.TxOpts.TxHashes) == 0 {
 		return nil
 	}
@@ -336,7 +335,7 @@ func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
 }
 
 func clearTxOpts(task interfaces.Task) {
-	execData, ok := task.GetExecutionData().(*dkgtasks.ExecutionData)
+	execData, ok := task.GetExecutionData().(*ExecutionData)
 	if ok && execData != nil {
 		execData.Clear()
 	}

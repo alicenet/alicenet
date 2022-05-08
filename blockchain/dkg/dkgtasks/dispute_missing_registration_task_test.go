@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +23,7 @@ func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -54,7 +54,7 @@ func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -85,7 +85,7 @@ func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -114,7 +114,7 @@ func TestShouldRetryTrue(t *testing.T) {
 
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -134,7 +134,7 @@ func TestShouldNotRetryAfterSuccessfullyAccusingAllMissingParticipants(t *testin
 	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 	for idx := 0; idx < len(suite.dkgStates); idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.dispMissingRegTasks[idx].Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 

@@ -56,7 +56,7 @@ func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
 
 	state := objects.NewDkgState(accounts.Account{})
 	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTask.TxOpts = &dkgtasks.TxOpts{
+	dkgTask.TxOpts = &tasks.TxOpts{
 		Nonce: big.NewInt(1),
 	}
 

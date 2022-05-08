@@ -8,12 +8,13 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
@@ -22,7 +23,7 @@ var _ interfaces.Task = &KeyshareSubmissionTask{}
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -32,7 +33,7 @@ func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64
 func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
 	logger.Info("KeyshareSubmissionTask Initialize()")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

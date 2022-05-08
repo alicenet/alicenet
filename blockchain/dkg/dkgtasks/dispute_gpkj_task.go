@@ -9,6 +9,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,7 +18,7 @@ import (
 
 // DisputeGPKjTask contains required state for performing a group accusation
 type DisputeGPKjTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that DisputeGPKjTask struct implements interface interfaces.Task
@@ -26,7 +27,7 @@ var _ interfaces.Task = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -36,7 +37,7 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	logger.Info("GPKJDisputeTask Initialize()...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

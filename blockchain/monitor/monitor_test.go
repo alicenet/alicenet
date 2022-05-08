@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
-
 	aobjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
@@ -94,7 +92,7 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 type mockTask struct {
 	DoneCalled bool
 	State      *objects.DkgState
-	DkgTask    *dkgtasks.ExecutionData
+	DkgTask    *tasks.ExecutionData
 }
 
 func (mt *mockTask) DoDone(logger *logrus.Entry) {
@@ -326,7 +324,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	populateMonitor(mon.State, addr0, EPOCH)
 
 	mockTsk := &mockTask{
-		DkgTask: dkgtasks.NewExecutionData(nil, 1, 40),
+		DkgTask: tasks.NewExecutionData(nil, 1, 40),
 	}
 	// Schedule some tasks
 	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)

@@ -448,7 +448,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					monitorState.Schedule.SetRunning(uuid, false)
 					monitorState.Schedule.Remove(uuid)
 				}
-				dkgData := objects.ETHDKGTaskData{
+				dkgData := tasks.TaskData{
 					PersistStateCB: persistMonitorCB,
 					State:          monitorState.EthDKG,
 				}

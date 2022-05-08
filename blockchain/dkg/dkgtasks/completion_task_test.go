@@ -9,6 +9,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func TestCompletionAllGood(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
@@ -58,10 +59,10 @@ func TestCompletionAllGood(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := completionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
+		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger, state)
 		err = completionTasks[idx].DoWork(ctx, logger, eth)
 		if amILeading {
 			assert.Nil(t, err)
@@ -94,10 +95,10 @@ func TestCompletion_StartFromCompletion(t *testing.T) {
 		state := dkgStates[idx]
 		task := suite.completionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := task.Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := task.AmILeading(ctx, eth, logger, dkgData.State)
+		amILeading := task.AmILeading(ctx, eth, logger, state)
 
 		if amILeading {
 			hasLeader = true
@@ -145,7 +146,7 @@ func TestCompletionBad1(t *testing.T) {
 	task := dkgtasks.NewCompletionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
@@ -168,7 +169,7 @@ func TestCompletionBad2(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := dkgtasks.NewCompletionTask(state, 1, 100)
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -186,18 +187,18 @@ func TestCompletionBad3(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.gpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		dkgData := tasks.NewTaskData(state)
+		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, tasksVec[idx].Success)
 	}
 
 	height, err := suite.eth.GetCurrentHeight(ctx)
@@ -221,7 +222,7 @@ func TestCompletionBad3(t *testing.T) {
 
 	// Do bad Completion task; this should fail because we are past
 	state := dkgStates[0]
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
 	if err != nil {
 		t.Fatal(err)
@@ -242,23 +243,23 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do Completion task
-	tasks := suite.completionTasks
+	tasksVec := suite.completionTasks
 	var hadLeaders bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		dkgData := tasks.NewTaskData(state)
+		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
+		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
 
 		if amILeading {
 			hadLeaders = true
 			// only perform ETHDKG completion if validator is leading
-			assert.True(t, tasks[idx].ShouldRetry(ctx, logger, eth))
-			err = tasks[idx].DoWork(ctx, logger, eth)
+			assert.True(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
+			err = tasksVec[idx].DoWork(ctx, logger, eth)
 			assert.Nil(t, err)
-			assert.False(t, tasks[idx].ShouldRetry(ctx, logger, eth))
+			assert.False(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
 		}
 	}
 
@@ -267,7 +268,7 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 	// any task is able to tell if ETHDKG still needs completion
 	// if for any reason no validator lead the process,
 	// then all tasks will have ShouldRetry() returning true
-	assert.False(t, tasks[0].ShouldRetry(ctx, logger, eth))
+	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 
 func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
@@ -282,7 +283,7 @@ func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
 		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
@@ -312,7 +313,7 @@ func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
 
 	// Do bad Completion task; this should fail because we are past
 	state := dkgStates[0]
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 

@@ -9,13 +9,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 	adminHandler interfaces.AdminHandler
 }
 
@@ -25,7 +26,7 @@ var _ interfaces.Task = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 		adminHandler:  adminHandler,
 	}
 }
@@ -37,7 +38,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("GPKSubmissionTask Initialize()...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

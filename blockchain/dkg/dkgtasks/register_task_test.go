@@ -8,6 +8,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
@@ -93,7 +94,7 @@ func TestRegisterTask(t *testing.T) {
 
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, log, eth, dkgData)
 	assert.Nil(t, err)
 
@@ -144,7 +145,7 @@ func TestRegistrationGood2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Do Register task
-	tasks := make([]*dkgtasks.RegisterTask, n)
+	tasksVec := make([]*dkgtasks.RegisterTask, n)
 	dkgStates := make([]*objects.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
@@ -159,15 +160,15 @@ func TestRegistrationGood2(t *testing.T) {
 		)
 
 		dkgStates[idx] = state
-		tasks[idx] = registrationTask
-		dkgData := objects.NewETHDKGTaskData(state)
-		err = tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		tasksVec[idx] = registrationTask
+		dkgData := tasks.NewTaskData(state)
+		err = tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, tasksVec[idx].Success)
 	}
 
 	// Check public keys are present and valid; last will be invalid
@@ -237,7 +238,7 @@ func TestRegistrationBad1(t *testing.T) {
 
 	logger = logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -295,7 +296,7 @@ func TestRegistrationBad2(t *testing.T) {
 	)
 	logger = logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -386,7 +387,7 @@ func TestRegistrationBad5(t *testing.T) {
 	)
 	logger = logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 	err = registrationTask.DoWork(ctx, logger, eth)
@@ -470,7 +471,7 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, log, eth, dkgData)
 	assert.Nil(t, err)
 
@@ -560,7 +561,7 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err = registrationTask.Initialize(ctx, log, eth, dkgData)
 	assert.Nil(t, err)
 

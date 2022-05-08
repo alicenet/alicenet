@@ -9,12 +9,13 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
@@ -23,7 +24,7 @@ var _ interfaces.Task = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -34,7 +35,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 
 	logger.Infof("ShareDistributionTask Initialize()")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

@@ -10,13 +10,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
@@ -25,7 +26,7 @@ var _ interfaces.Task = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -36,7 +37,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 	logger.Info("MPKSubmissionTask Initialize()...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

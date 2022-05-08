@@ -93,6 +93,8 @@ type DkgState struct {
 	Inverse []*big.Int `json:"inverse"`
 }
 
+var _ interfaces.TaskState = &DkgState{}
+
 // GetSortedParticipants returns the participant list sorted by Index field
 func (state *DkgState) GetSortedParticipants() ParticipantList {
 	var list = make(ParticipantList, len(state.Participants))
@@ -307,31 +309,4 @@ func (pl ParticipantList) Less(i, j int) bool {
 // Swap swaps elements i and j within the collection
 func (pl ParticipantList) Swap(i, j int) {
 	pl[i], pl[j] = pl[j], pl[i]
-}
-
-type ETHDKGTaskData struct {
-	PersistStateCB func()
-	State          *DkgState
-}
-
-// NewETHDKGTaskData creates an isntance of ETHDKGTaskData
-func NewETHDKGTaskData(state *DkgState) ETHDKGTaskData {
-	return ETHDKGTaskData{
-		PersistStateCB: func() {
-			// placeholder
-		},
-		State: state,
-	}
-}
-
-func (e *ETHDKGTaskData) LockState() func() {
-	e.State.Lock()
-	unlocked := false
-
-	return func() {
-		if !unlocked {
-			unlocked = true
-			e.State.Unlock()
-		}
-	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +19,7 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
@@ -27,7 +28,7 @@ var _ interfaces.Task = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -38,7 +39,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 
 	logger.Info("DisputeShareDistributionTask Initialize()")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

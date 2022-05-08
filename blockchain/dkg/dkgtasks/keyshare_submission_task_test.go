@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -59,7 +60,7 @@ func TestKeyShareSubmissionBad3(t *testing.T) {
 
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.NotNil(t, err)
 	}
@@ -82,7 +83,7 @@ func TestKeyShareSubmissionBad4(t *testing.T) {
 		state := suite.dkgStates[idx]
 		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 

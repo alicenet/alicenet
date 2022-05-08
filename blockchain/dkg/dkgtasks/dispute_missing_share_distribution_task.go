@@ -7,13 +7,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
 type DisputeMissingShareDistributionTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that DisputeMissingShareDistributionTask struct implements interface interfaces.Task
@@ -22,7 +23,7 @@ var _ interfaces.Task = &DisputeMissingShareDistributionTask{}
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -31,7 +32,7 @@ func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, lo
 
 	logger.Info("DisputeMissingShareDistributionTask Initializing...")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

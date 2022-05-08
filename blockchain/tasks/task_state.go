@@ -1,4 +1,4 @@
-package dkgtasks
+package tasks
 
 import (
 	"math/big"
@@ -49,5 +49,32 @@ func NewExecutionData(state interfaces.TaskState, start uint64, end uint64) *Exe
 		End:     end,
 		Success: false,
 		TxOpts:  &TxOpts{TxHashes: make([]common.Hash, 0)},
+	}
+}
+
+type TaskData struct {
+	PersistStateCB func()
+	State          interfaces.TaskState
+}
+
+// NewTaskData creates an instance of TaskData
+func NewTaskData(state interfaces.TaskState) TaskData {
+	return TaskData{
+		// placeholder
+		PersistStateCB: func() {
+		},
+		State: state,
+	}
+}
+
+func (e *TaskData) LockState() func() {
+	e.State.Lock()
+	unlocked := false
+
+	return func() {
+		if !unlocked {
+			unlocked = true
+			e.State.Unlock()
+		}
 	}
 }

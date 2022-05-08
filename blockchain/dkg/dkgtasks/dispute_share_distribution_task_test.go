@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
@@ -80,7 +81,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 		state := suite.dkgStates[idx]
 
 		task := suite.shareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 
@@ -122,7 +123,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 
 		disputeShareDistributionTask, _, _, _, _, _, _, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, logger, nextPhaseAt)
 
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = disputeShareDistributionTask.DoWork(ctx, logger, suite.eth)
@@ -169,7 +170,7 @@ func TestShareDisputeBad1(t *testing.T) {
 	task := dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
@@ -201,7 +202,7 @@ func TestShareDisputeBad2(t *testing.T) {
 	for k := 0; k < len(state.Participants); k++ {
 		state.Participants[accts[k].Address] = &objects.Participant{}
 	}
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -228,7 +229,7 @@ func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 		state := suite.dkgStates[idx]
 
 		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
@@ -275,7 +276,7 @@ func TestDisputeShareDistributionTask_DoRetry_returnsTrue(t *testing.T) {
 		state := suite.dkgStates[idx]
 
 		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
+		dkgData := tasks.NewTaskData(state)
 		err := task.Initialize(ctx, logger, suite.eth, dkgData)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)

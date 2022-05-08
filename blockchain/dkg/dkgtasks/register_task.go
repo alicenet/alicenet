@@ -8,12 +8,13 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	*ExecutionData
+	*tasks.ExecutionData
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
@@ -22,7 +23,7 @@ var _ interfaces.Task = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		ExecutionData: tasks.NewExecutionData(state, start, end),
 	}
 }
 
@@ -36,7 +37,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	logger.Infof("RegisterTask Initialize()")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
+	dkgData, ok := state.(tasks.TaskData)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}

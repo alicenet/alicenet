@@ -9,6 +9,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -26,25 +27,25 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	tasks := suite.mpkSubmissionTasks
+	tasksVec := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		dkgData := tasks.NewTaskData(state)
+		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		if amILeading {
 			assert.Nil(t, err)
-			assert.True(t, tasks[idx].Success)
+			assert.True(t, tasksVec[idx].Success)
 		} else {
-			if tasks[idx].ShouldRetry(ctx, logger, eth) {
+			if tasksVec[idx].ShouldRetry(ctx, logger, eth) {
 				assert.NotNil(t, err)
-				assert.False(t, tasks[idx].Success)
+				assert.False(t, tasksVec[idx].Success)
 			} else {
 				assert.Nil(t, err)
-				assert.True(t, tasks[idx].Success)
+				assert.True(t, tasksVec[idx].Success)
 			}
 
 		}
@@ -92,7 +93,7 @@ func TestMPKSubmissionBad1(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	task := suite.mpkSubmissionTasks[0]
-	dkgData := objects.NewETHDKGTaskData(dkgStates[0])
+	dkgData := tasks.NewTaskData(dkgStates[0])
 	err := task.Initialize(ctx, logger, eth, dkgData)
 	assert.Nil(t, err)
 	eth.Commit()
@@ -126,7 +127,7 @@ func TestMPKSubmissionBad2(t *testing.T) {
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
@@ -151,7 +152,7 @@ func TestMPKSubmissionBad4(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
-	dkgData := objects.NewETHDKGTaskData(state)
+	dkgData := tasks.NewTaskData(state)
 	err := task.Initialize(ctx, log, eth, dkgData)
 	assert.NotNil(t, err)
 }
@@ -166,23 +167,23 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	tasks := suite.mpkSubmissionTasks
+	tasksVec := suite.mpkSubmissionTasks
 	var hadLeaders bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		dkgData := tasks.NewTaskData(state)
+		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger, dkgData.State)
+		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
 
 		if amILeading {
 			hadLeaders = true
 			// only perform MPK submission if validator is leading
-			assert.True(t, tasks[idx].ShouldRetry(ctx, logger, eth))
-			err = tasks[idx].DoWork(ctx, logger, eth)
+			assert.True(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
+			err = tasksVec[idx].DoWork(ctx, logger, eth)
 			assert.Nil(t, err)
-			assert.False(t, tasks[idx].ShouldRetry(ctx, logger, eth))
+			assert.False(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
 		}
 	}
 
@@ -192,7 +193,7 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	// any task is able to tell if MPK still needs submission.
 	// if for any reason no validator lead the submission,
 	// then all tasks will have ShouldRetry() returning true
-	assert.False(t, tasks[0].ShouldRetry(ctx, logger, eth))
+	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 
 func TestMPKSubmission_ShouldRetry_returnsTrue(t *testing.T) {
@@ -223,14 +224,14 @@ func TestMPKSubmission_LeaderElection(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	leaders := 0
 	// Do MPK Submission task
-	tasks := suite.mpkSubmissionTasks
+	tasksVec := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		dkgData := tasks.NewTaskData(state)
+		tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
 		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
 
-		if tasks[idx].AmILeading(ctx, eth, logger, dkgData.State) {
+		if tasksVec[idx].AmILeading(ctx, eth, logger, state) {
 			leaders++
 		}
 	}

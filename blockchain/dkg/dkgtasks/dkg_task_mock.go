@@ -2,27 +2,29 @@ package dkgtasks
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
-	"math/big"
 )
 
 type DkgTaskMock struct {
-	*ExecutionData
+	*tasks.ExecutionData
 	mock.Mock
 }
 
 func NewDkgTaskMock(state *objects.DkgState, start uint64, end uint64) *DkgTaskMock {
 	dkgTaskMock := &DkgTaskMock{}
-	dkgTaskMock.ExecutionData = &ExecutionData{
+	dkgTaskMock.ExecutionData = &tasks.ExecutionData{
 		Start:   start,
 		End:     end,
 		State:   state,
 		Success: false,
-		TxOpts:  &TxOpts{},
+		TxOpts:  &tasks.TxOpts{},
 	}
 
 	return dkgTaskMock
