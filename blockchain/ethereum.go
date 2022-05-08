@@ -689,6 +689,14 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	}
 	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
+	txMaxFeeThresholdInGwei := new(big.Int).SetUint64(eth.GetTxMaxFeeThresholdInGwei())
+	// make sure that the max fee that we are going to pay on this tx doesn't pass the limit that we set on config
+	txMaxFeeThresholdInWei := new(big.Int).Mul(txMaxFeeThresholdInGwei, new(big.Int).SetUint64(1_000_000_000))
+	if feeCap.Cmp(txMaxFeeThresholdInWei) > 0 {
+		return nil, fmt.Errorf("max tx fee computed: %v is greater than limit set on config: %v", feeCap.String(), txMaxFeeThresholdInWei.String())
+	}
+
+	eth.logger.Infof("Creating TX with maximum fee:%v and miners tip:%v", feeCap, tipCap, txMaxFeeThresholdInWei)
 	opts.Context = ctx
 	opts.GasFeeCap = new(big.Int).Set(feeCap)
 	opts.GasTipCap = new(big.Int).Set(tipCap)

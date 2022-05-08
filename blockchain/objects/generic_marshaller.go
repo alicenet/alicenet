@@ -44,9 +44,9 @@ func (registry *TypeRegistry) lookupName(tipe reflect.Type) (string, bool) {
 	registry.RLock()
 	defer registry.RUnlock()
 
-	present, name := registry.a[tipe]
+	name, present := registry.a[tipe]
 
-	return present, name
+	return name, present
 }
 
 func (registry *TypeRegistry) lookupType(name string) (reflect.Type, bool) {

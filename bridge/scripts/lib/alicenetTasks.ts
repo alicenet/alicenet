@@ -789,12 +789,14 @@ task("fundValidators", "manually put 100 eth in each validator account")
       }
     });
 
+    const minAmount = 90n
+    const maxAmount = 100n
     for (const account of accounts) {
       const bal = await hre.ethers.provider.getBalance(account);
-      if (bal.lt(hre.ethers.utils.parseEther("90.0"))) {
+      if (bal.lt(hre.ethers.utils.parseEther(minAmount.toString()))) {
         const txResponse = await signers[0].sendTransaction({
           to: account,
-          value: hre.ethers.utils.parseEther("100.0"),
+          value: hre.ethers.utils.parseEther((maxAmount-bal.toBigInt()).toString()),
         });
         await txResponse.wait();
         console.log(

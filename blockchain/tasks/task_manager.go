@@ -23,7 +23,7 @@ var (
 
 const NonceToLowError = "nonce too low"
 
-func StartTask(ctx context.Context, logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}, onFinishCB *func()) error {
+func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}, onFinishCB *func()) error {
 
 	wg.Add(1)
 	go func() {
@@ -41,7 +41,7 @@ func StartTask(ctx context.Context, logger *logrus.Entry, wg *sync.WaitGroup, et
 		}).Info("StartTask()...")
 
 		// Setup
-		ctx, cancel := context.WithCancel(ctx)
+		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		initializationLogger := logger.WithField("Method", "Initialize")

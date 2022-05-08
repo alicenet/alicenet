@@ -106,7 +106,7 @@ func NewMonitor(cdb *db.Database,
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(ctx, wg, eth, logger, bh)
+		return PersistSnapshot(ctx, wg, eth, logger, bh, cdb)
 	})
 
 	schedule := objects.NewSequentialSchedule(tr, adminHandler)
@@ -452,7 +452,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					PersistStateCB: persistMonitorCB,
 					State:          monitorState.EthDKG,
 				}
-				err = tasks.StartTask(ctx, log, wg, eth, task, dkgData, &onFinishCB)
+				err = tasks.StartTask(log, wg, eth, task, dkgData, &onFinishCB)
 				if err != nil {
 					return err
 				}
@@ -507,12 +507,15 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader) error {
+func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database) error {
 
-	task := tasks.NewSnapshotTask(eth.GetDefaultAccount())
-	task.BlockHeader = bh
+	if bh == nil {
+		return errors.New("Invalid blockHeader for snapshot")
+	}
 
-	tasks.StartTask(ctx, logger, wg, eth, task, nil, nil)
+	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), db, bh)
+
+	tasks.StartTask(logger, wg, eth, task, nil, nil)
 
 	return nil
 }
