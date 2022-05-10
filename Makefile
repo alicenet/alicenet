@@ -1,5 +1,8 @@
+SHELL=/bin/bash
+
 BINARY_NAME=madnet
 RACE_DETECTOR=madrace
+
 YELLOW=\033[0;33;1m
 NOCOL=\033[31;0m
 
@@ -21,15 +24,17 @@ generate-bridge:
 generate-go:
 	export MSYS_NO_PATHCONV=1 &&\
 	export PASS_PERMVARS=1 &&\
-	./docker/update-container.sh docker/generate-go/Dockerfile madnet-generate-go "-v $$PWD:/app -v /app/bridge -v /app/.git" &&\
-	docker start -a madnet-generate-go
+	./docker/update-container.sh docker/generate-go/Dockerfile madnet-generate-go "-v $$PWD:/app -v /app/bridge -v $$PWD/bridge/bindings:/app/bridge/bindings -v /app/.git" &&\
+	docker start -ia madnet-generate-go
 
 clean:
 	go clean
-	rm -f $(BINARY_NAME)
-	rm -f $(RACE_DETECTOR)
-	rm -rf localrpc/swagger-bindata/bindata.go localrpc/swagger/localstate.swagger.json **/*.pb.go **/*.capnp.go **/*.pb.gw.go **/*_mngen.go **/*_mngen_test.go bridge/artifacts bridge/bindings bridge/cache bridge/typechain-types bridge/node_modules
-
+	rm -f $(BINARY_NAME) $(RACE_DETECTOR) localrpc/swagger-bindata/bindata.go localrpc/swagger/localstate.swagger.json
+	shopt -s globstar && rm -rf \
+		**/*.capnp.go \
+		test/mocks/*.mockgen.go \
+		proto/*.pb.go proto/*.pb.gw.go proto/*_mngen.go proto/*_mngen_test.go \
+		bridge/artifacts bridge/bindings bridge/cache bridge/typechain-types bridge/node_modules
+	
 	docker container rm -vf madnet-generate-go madnet-generate-bridge 2> /dev/null
 	docker image rm -f madnet-generate-go madnet-generate-bridge 2> /dev/null
-	docker builder prune -f

@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/utils"
@@ -69,7 +68,7 @@ type DownloadResponse interface {
 }
 
 type typeProxy struct {
-	appmock.Application
+	interfaces.Application
 	reqBusView
 	databaseView
 }
@@ -230,7 +229,7 @@ func NewBlockHeaderDownloadResponse(req *BlockHeaderDownloadRequest, bh *objs.Bl
 
 type txResult struct {
 	logger     *logrus.Logger
-	appHandler appmock.Application
+	appHandler interfaces.Application
 	txs        []interfaces.Transaction
 	txHashes   map[string]bool
 }

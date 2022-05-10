@@ -129,23 +129,23 @@ type SelectorMap interface {
 type Contracts interface {
 	LookupContracts(ctx context.Context, registryAddress common.Address) error
 
-	Ethdkg() *bindings.ETHDKG
+	Ethdkg() bindings.IETHDKG
 	EthdkgAddress() common.Address
-	AToken() *bindings.AToken
+	AToken() bindings.IAToken
 	ATokenAddress() common.Address
-	BToken() *bindings.BToken
+	BToken() bindings.IBToken
 	BTokenAddress() common.Address
-	PublicStaking() *bindings.PublicStaking
+	PublicStaking() bindings.IPublicStaking
 	PublicStakingAddress() common.Address
-	ValidatorStaking() *bindings.ValidatorStaking
+	ValidatorStaking() bindings.IValidatorStaking
 	ValidatorStakingAddress() common.Address
-	ContractFactory() *bindings.AliceNetFactory
+	ContractFactory() bindings.IAliceNetFactory
 	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address
-	Snapshots() *bindings.Snapshots
-	ValidatorPool() *bindings.ValidatorPool
+	Snapshots() bindings.ISnapshots
+	ValidatorPool() bindings.IValidatorPool
 	ValidatorPoolAddress() common.Address
-	Governance() *bindings.Governance
+	Governance() bindings.IGovernance
 	GovernanceAddress() common.Address
 }
 

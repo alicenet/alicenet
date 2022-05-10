@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/consensus/request"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/middleware"
 	"github.com/MadBase/MadNet/utils"
@@ -401,7 +401,7 @@ type workFunc func()
 type SnapShotManager struct {
 	sync.Mutex
 
-	appHandler     appmock.Application
+	appHandler     interfaces.Application
 	requestBus     *request.Client
 	database       *db.Database
 	logger         *logrus.Logger

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/dman"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -17,6 +16,7 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
+	"github.com/MadBase/MadNet/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -32,7 +32,7 @@ type Engine struct {
 	sstore   *Store
 
 	RequestBus *request.Client
-	appHandler appmock.Application
+	appHandler interfaces.Application
 
 	logger     *logrus.Logger
 	secpSigner *crypto.Secp256k1Signer
@@ -52,7 +52,7 @@ type Engine struct {
 }
 
 // Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client, storage dynamics.StorageGetter) {
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app interfaces.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf

@@ -27,6 +27,7 @@ scripts/generated
 localstate.swagger.json
 **/swagger-bindata/bindata.go
 **/*.pb.go
+test/mocks/*.mockgen.go
 **/*.capnp.go
 **/*.pb.gw.go
 **/*_mngen.go

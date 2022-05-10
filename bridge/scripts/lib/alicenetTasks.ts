@@ -602,7 +602,7 @@ task(
     const rept = await (
       await factory.connect(adminSigner).callAny(snapshots.address, 0, input)
     ).wait(3);
-    if (rept.status != 1) {
+    if (rept.status !== 1) {
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
@@ -789,14 +789,16 @@ task("fundValidators", "manually put 100 eth in each validator account")
       }
     });
 
-    const minAmount = 90n
-    const maxAmount = 100n
+    const minAmount = 90n;
+    const maxAmount = 100n;
     for (const account of accounts) {
       const bal = await hre.ethers.provider.getBalance(account);
       if (bal.lt(hre.ethers.utils.parseEther(minAmount.toString()))) {
         const txResponse = await signers[0].sendTransaction({
           to: account,
-          value: hre.ethers.utils.parseEther((maxAmount-bal.toBigInt()).toString()),
+          value: hre.ethers.utils.parseEther(
+            (maxAmount - bal.toBigInt()).toString()
+          ),
         });
         await txResponse.wait();
         console.log(

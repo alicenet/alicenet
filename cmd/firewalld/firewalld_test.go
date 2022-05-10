@@ -11,7 +11,7 @@ import (
 
 	"github.com/MadBase/MadNet/cmd/firewalld/lib"
 	"github.com/MadBase/MadNet/cmd/firewalld/mock"
-	"github.com/MadBase/MadNet/utils/testutils"
+	"github.com/MadBase/MadNet/test/testutils"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 

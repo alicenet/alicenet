@@ -15,7 +15,8 @@ runs:
         **/*.pb.gw.go
         **/*_mngen.go
         **/*_mngen_test.go
-      key: ${{ runner.os }}-go-${{ hashFiles('**/*.proto', './cmd/mngen/**', './localrpc/swagger/**') }}
+        test/mocks/**
+      key: ${{ runner.os }}-go-${{ hashFiles('**/*.proto', './cmd/mngen/**', './localrpc/swagger/**', '**/generate.go') }}
   - if: steps.alicenet-cache.outputs.cache-hit != 'true'
     shell: bash
     run: make generate-go

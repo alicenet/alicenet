@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/appmock"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
@@ -43,14 +42,14 @@ type Handlers struct {
 	logger      *logrus.Logger
 	ethAcct     []byte
 	ethPubk     []byte
-	appHandler  appmock.Application
+	appHandler  interfaces.Application
 	storage     dynamics.StorageGetter
 	ReceiveLock chan interfaces.Lockable
 	ipcServer   *ipc.Server
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte, storage dynamics.StorageGetter, ipcs *ipc.Server) {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler interfaces.Application, ethPubk []byte, storage dynamics.StorageGetter, ipcs *ipc.Server) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx

@@ -3,42 +3,42 @@ package tasks_test
 import (
 	"errors"
 	"math/big"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/mock"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsAdminClient(t *testing.T) {
-	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
+func TestStartTask_initializeTask_HappyPath(t *testing.T) {
+	eth := mocks.NewMockEthereum()
+	task := mocks.NewMockTask()
 
-	task := &dkgtasks.GPKjSubmissionTask{}
-	isAdminClient := reflect.TypeOf(task).Implements(adminInterface)
+	wg := sync.WaitGroup{}
+	tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	wg.Wait()
 
-	assert.True(t, isAdminClient)
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.NotCalled(t, task.DoRetryFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
 }
 
 func TestStartTask_initializeTask_Error(t *testing.T) {
-	logger := logging.GetLogger("test")
-
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
-
-	dkgTask.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("initialize error"))
+	eth := mocks.NewMockEthereum()
+	task := mocks.NewMockTask()
+	task.InitializeFunc.SetDefaultReturn(errors.New("initialize error"))
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	ethMock := &interfaces.EthereumMock{}
 	ethMock.On("RetryCount").Return(3)
@@ -46,14 +46,22 @@ func TestStartTask_initializeTask_Error(t *testing.T) {
 
 	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTask, nil, nil)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTask.Success)
+	mockrequire.NotCalled(t, task.DoWorkFunc)
+	mockrequire.NotCalled(t, task.DoRetryFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+
 }
 
-func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
-	logger := logging.GetLogger("test")
+func TestStartTask_executeTask_ErrorRetry(t *testing.T) {
+	eth := mocks.NewMockEthereum()
+	eth.RetryCountFunc.SetDefaultReturn(10)
 
+<<<<<<< HEAD
 	state := objects.NewDkgState(accounts.Account{})
 	dkgTask := dkgtasks.NewDkgTaskMock(state, 1, 100)
 	dkgTask.TxOpts = &tasks.TxOpts{
@@ -73,23 +81,33 @@ func TestStartTask_executeTask_NonceTooLowError(t *testing.T) {
 
 	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTask, nil, nil)
 
+=======
+	task := mocks.NewMockTask()
+	task.ShouldRetryFunc.SetDefaultReturn(true)
+	task.DoWorkFunc.SetDefaultReturn(errors.New("DoWork_error"))
+	task.DoRetryFunc.SetDefaultReturn(errors.New(tasks.NonceToLowError))
+
+	wg := sync.WaitGroup{}
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTask.Success)
-	assert.Nil(t, dkgTask.TxOpts.Nonce)
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.CalledN(t, task.DoRetryFunc, 10)
+	mockrequire.Called(t, task.DoDoneFunc)
 }
 
 // Happy path with mined tx present after finality delay
 func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
-	logger := logging.GetLogger("test")
+	task := mocks.NewMockTaskWithExecutionData(1, 100)
+	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.TxOpts.TxHashes = append(dkgTaskMock.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
-	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	eth := mocks.NewMockEthereum()
+	eth.GethClientMock.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	gethClientMock := &interfaces.GethClientMock{}
 	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
@@ -119,24 +137,33 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 
 	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, nil, nil)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTaskMock.Success)
-	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
-	assert.Equal(t, uint64(1), dkgTaskMock.TxOpts.MinedInBlock)
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
+	assert.Equal(t, uint64(1), task.ExecutionData.TxOpts.MinedInBlock)
 }
 
 // Tx was mined, but it's not present after finality delay
 func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
-	logger := logging.GetLogger("test")
 	minedInBlock := 9
 
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	task := mocks.NewMockTaskWithExecutionData(1, 100)
+	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+
+	eth := mocks.NewMockEthereum()
+	eth.GethClientMock.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(2)}, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{}, errors.New("error getting receipt"))
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	gethClientMock := &interfaces.GethClientMock{}
 	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
@@ -179,26 +206,33 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 
 	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, nil, nil)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTaskMock.Success)
-	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
 }
 
 // Tx was mined after a retry because of a failed receipt
 func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
-	logger := logging.GetLogger("test")
 	minedInBlock := 7
 
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
-	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	task := mocks.NewMockTaskWithExecutionData(1, 100)
+	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	task.ShouldRetryFunc.SetDefaultReturn(true)
+
+	eth := mocks.NewMockEthereum()
+	eth.GethClientMock.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: 0}, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	gethClientMock := &interfaces.GethClientMock{}
 	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, false, nil)
@@ -239,26 +273,34 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 
 	tasks.StartTask(logger.WithField("Task", 0), &wg, ethMock, dkgTaskMock, nil, nil)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTaskMock.Success)
-	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.Called(t, task.DoRetryFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
 func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
-	logger := logging.GetLogger("test")
 	minedInBlock := 10
 
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
-	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	task := mocks.NewMockTaskWithExecutionData(1, 100)
+	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+
+	eth := mocks.NewMockEthereum()
+	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
+	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
+	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	gethClientMock := &interfaces.GethClientMock{}
 	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
@@ -302,28 +344,36 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	expectedGasFeeCap := big.NewInt(203569)
 	expectedGasTipCap := big.NewInt(52)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTaskMock.Success)
-	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
-	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
-	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
+	expectedGasFeeCap := big.NewInt(213534)
+	expectedGasTipCap := big.NewInt(55)
+
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
+	assert.Equal(t, expectedGasFeeCap, task.ExecutionData.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, task.ExecutionData.TxOpts.GasTipCap)
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
 func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *testing.T) {
-	logger := logging.GetLogger("test")
-	minedInBlock := 10
+	task := mocks.NewMockTaskWithExecutionData(1, 100)
 
-	state := objects.NewDkgState(accounts.Account{})
-	dkgTaskMock := dkgtasks.NewDkgTaskMock(state, 1, 100)
-	dkgTaskMock.On("Initialize", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("DoWork", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	dkgTaskMock.On("ShouldRetry", mock.Anything, mock.Anything, mock.Anything).Return(true)
-	dkgTaskMock.On("DoRetry", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	eth := mocks.NewMockEthereum()
+	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
+	for i := 0; i < 20; i++ {
+		eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+	}
+	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
+	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
 
 	wg := sync.WaitGroup{}
+<<<<<<< HEAD
 
 	gethClientMock := &interfaces.GethClientMock{}
 	gethClientMock.On("TransactionByHash", mock.Anything, mock.Anything).Return(&types.Transaction{}, true, nil).Once()
@@ -367,11 +417,14 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	expectedGasFeeCap := big.NewInt(200000)
 	expectedGasTipCap := big.NewInt(89)
 
+=======
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+>>>>>>> upstream/candidate
 	wg.Wait()
 
-	assert.False(t, dkgTaskMock.Success)
-	assert.NotEqual(t, 0, len(dkgTaskMock.TxOpts.TxHashes))
-	assert.Equal(t, uint64(minedInBlock), dkgTaskMock.TxOpts.MinedInBlock)
-	assert.Equal(t, expectedGasFeeCap, dkgTaskMock.TxOpts.GasFeeCap)
-	assert.Equal(t, expectedGasTipCap, dkgTaskMock.TxOpts.GasTipCap)
+	expectedGasFeeCap := big.NewInt(1000000)
+
+	mockrequire.Called(t, task.DoWorkFunc)
+	mockrequire.Called(t, task.DoDoneFunc)
+	assert.Equal(t, expectedGasFeeCap, task.ExecutionData.TxOpts.GasFeeCap)
 }

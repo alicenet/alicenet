@@ -16,23 +16,23 @@ import (
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
 	eth                     *EthereumDetails
-	ethdkg                  *bindings.ETHDKG
+	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
-	aToken                  *bindings.AToken
+	aToken                  bindings.IAToken
 	aTokenAddress           common.Address
-	bToken                  *bindings.BToken
+	bToken                  bindings.IBToken
 	bTokenAddress           common.Address
-	publicStaking           *bindings.PublicStaking
+	publicStaking           bindings.IPublicStaking
 	publicStakingAddress    common.Address
-	validatorStaking        *bindings.ValidatorStaking
+	validatorStaking        bindings.IValidatorStaking
 	validatorStakingAddress common.Address
-	contractFactory         *bindings.AliceNetFactory
+	contractFactory         bindings.IAliceNetFactory
 	contractFactoryAddress  common.Address
-	snapshots               *bindings.Snapshots
+	snapshots               bindings.ISnapshots
 	snapshotsAddress        common.Address
-	validatorPool           *bindings.ValidatorPool
+	validatorPool           bindings.IValidatorPool
 	validatorPoolAddress    common.Address
-	governance              *bindings.Governance
+	governance              bindings.IGovernance
 	governanceAddress       common.Address
 }
 
@@ -158,7 +158,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 	return nil
 }
 
-func (c *ContractDetails) Ethdkg() *bindings.ETHDKG {
+func (c *ContractDetails) Ethdkg() bindings.IETHDKG {
 	return c.ethdkg
 }
 
@@ -166,7 +166,7 @@ func (c *ContractDetails) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *ContractDetails) AToken() *bindings.AToken {
+func (c *ContractDetails) AToken() bindings.IAToken {
 	return c.aToken
 }
 
@@ -174,7 +174,7 @@ func (c *ContractDetails) ATokenAddress() common.Address {
 	return c.aTokenAddress
 }
 
-func (c *ContractDetails) BToken() *bindings.BToken {
+func (c *ContractDetails) BToken() bindings.IBToken {
 	return c.bToken
 }
 
@@ -182,7 +182,7 @@ func (c *ContractDetails) BTokenAddress() common.Address {
 	return c.bTokenAddress
 }
 
-func (c *ContractDetails) PublicStaking() *bindings.PublicStaking {
+func (c *ContractDetails) PublicStaking() bindings.IPublicStaking {
 	return c.publicStaking
 }
 
@@ -190,7 +190,7 @@ func (c *ContractDetails) PublicStakingAddress() common.Address {
 	return c.publicStakingAddress
 }
 
-func (c *ContractDetails) ValidatorStaking() *bindings.ValidatorStaking {
+func (c *ContractDetails) ValidatorStaking() bindings.IValidatorStaking {
 	return c.validatorStaking
 }
 
@@ -198,7 +198,7 @@ func (c *ContractDetails) ValidatorStakingAddress() common.Address {
 	return c.validatorStakingAddress
 }
 
-func (c *ContractDetails) ContractFactory() *bindings.AliceNetFactory {
+func (c *ContractDetails) ContractFactory() bindings.IAliceNetFactory {
 	return c.contractFactory
 }
 
@@ -206,7 +206,7 @@ func (c *ContractDetails) ContractFactoryAddress() common.Address {
 	return c.contractFactoryAddress
 }
 
-func (c *ContractDetails) Snapshots() *bindings.Snapshots {
+func (c *ContractDetails) Snapshots() bindings.ISnapshots {
 	return c.snapshots
 }
 
@@ -214,7 +214,7 @@ func (c *ContractDetails) SnapshotsAddress() common.Address {
 	return c.snapshotsAddress
 }
 
-func (c *ContractDetails) ValidatorPool() *bindings.ValidatorPool {
+func (c *ContractDetails) ValidatorPool() bindings.IValidatorPool {
 	return c.validatorPool
 }
 
@@ -222,7 +222,7 @@ func (c *ContractDetails) ValidatorPoolAddress() common.Address {
 	return c.validatorPoolAddress
 }
 
-func (c *ContractDetails) Governance() *bindings.Governance {
+func (c *ContractDetails) Governance() bindings.IGovernance {
 	return c.governance
 }
 

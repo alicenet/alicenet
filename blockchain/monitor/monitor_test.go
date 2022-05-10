@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 	"testing"
@@ -17,22 +16,18 @@ import (
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/test/mocks"
+
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
 )
 
-//
-//
 //
 func createSharedKey(addr common.Address) [4]*big.Int {
 
@@ -132,150 +127,6 @@ func (dh *mockDepositHandler) Add(*badger.Txn, uint32, []byte, *big.Int, *aobjs.
 }
 
 //
-// Mock implementation of interfaces.Ethereum
-//
-type mockEthereum struct {
-}
-
-func (eth *mockEthereum) ChainID() *big.Int {
-	return nil
-}
-
-func (eth *mockEthereum) GetFinalityDelay() uint64 {
-	return 12
-}
-
-func (eth *mockEthereum) Close() error {
-	return nil
-}
-
-func (eth *mockEthereum) Commit() {
-
-}
-
-func (eth *mockEthereum) IsEthereumAccessible() bool {
-	return false
-}
-
-func (eth *mockEthereum) GetCallOpts(context.Context, accounts.Account) *bind.CallOpts {
-	return nil
-}
-
-func (eth *mockEthereum) GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) LoadAccounts(string) {}
-
-func (eth *mockEthereum) LoadPasscodes(string) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccount(accounts.Account) error {
-	return nil
-}
-
-func (eth *mockEthereum) UnlockAccountWithPasscode(accounts.Account, string) error {
-	return nil
-}
-
-func (eth *mockEthereum) TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetAccount(addr common.Address) (accounts.Account, error) {
-	return accounts.Account{Address: addr}, nil
-}
-func (eth *mockEthereum) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetBalance(common.Address) (*big.Int, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetGethClient() interfaces.GethClient {
-	return nil
-}
-
-func (eth *mockEthereum) GetCoinbaseAddress() common.Address {
-	return eth.GetDefaultAccount().Address
-}
-
-func (eth *mockEthereum) GetCurrentHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-
-func (eth *mockEthereum) GetDefaultAccount() accounts.Account {
-	return accounts.Account{}
-}
-func (eth *mockEthereum) GetEndpoint() string {
-	return "na"
-}
-func (eth *mockEthereum) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetFinalizedHeight(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetPeerCount(context.Context) (uint64, error) {
-	return 0, nil
-}
-func (eth *mockEthereum) GetSnapshot() ([]byte, error) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetSyncProgress() (bool, *ethereum.SyncProgress, error) {
-	return false, nil, nil
-}
-func (eth *mockEthereum) GetTimeoutContext() (context.Context, context.CancelFunc) {
-	return nil, nil
-}
-func (eth *mockEthereum) GetValidators(context.Context) ([]common.Address, error) {
-	return nil, nil
-}
-
-func (eth *mockEthereum) GetKnownAccounts() []accounts.Account {
-	return []accounts.Account{}
-}
-
-func (eth *mockEthereum) KnownSelectors() interfaces.SelectorMap {
-	return nil
-}
-
-func (eth *mockEthereum) Queue() interfaces.TxnQueue {
-	return nil
-}
-
-func (eth *mockEthereum) RetryCount() int {
-	return 0
-}
-func (eth *mockEthereum) RetryDelay() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Timeout() time.Duration {
-	return time.Second
-}
-
-func (eth *mockEthereum) Contracts() interfaces.Contracts {
-	return nil
-}
-
-func (eth *mockEthereum) GetTxFeePercentageToIncrease() int {
-	return 50
-}
-
-func (eth *mockEthereum) GetTxMaxFeeThresholdInGwei() uint64 {
-	return math.MaxInt64
-}
-
-func (eth *mockEthereum) GetTxCheckFrequency() time.Duration {
-	return 5 * time.Second
-}
-
-func (eth *mockEthereum) GetTxTimeoutForReplacement() time.Duration {
-	return 30 * time.Second
-}
-
-//
 // Actual tests
 //
 func TestMonitorPersist(t *testing.T) {
@@ -285,7 +136,8 @@ func TestMonitorPersist(t *testing.T) {
 	database := &db.Database{}
 	database.Init(rawDb)
 
-	mon, err := monitor.NewMonitor(database, database, &interfaces.MockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
+	eth := mocks.NewMockBaseEthereum()
+	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -298,7 +150,7 @@ func TestMonitorPersist(t *testing.T) {
 	mon.PersistState()
 
 	//
-	newMon, err := monitor.NewMonitor(database, database, &interfaces.MockAdminHandler{}, &mockDepositHandler{}, &mockEthereum{}, 1*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
 	newMon.LoadState()
@@ -311,9 +163,9 @@ func TestMonitorPersist(t *testing.T) {
 func TestBidirectionalMarshaling(t *testing.T) {
 
 	// setup
-	adminHandler := &interfaces.MockAdminHandler{}
+	adminHandler := mocks.NewMockAdminHandler()
 	depositHandler := &mockDepositHandler{}
-	eth := &mockEthereum{}
+	eth := mocks.NewMockBaseEthereum()
 	logger := logging.GetLogger("test")
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
