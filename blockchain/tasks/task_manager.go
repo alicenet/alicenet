@@ -231,7 +231,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 			logger.Infof("the tx %s was not mined", execData.TxOpts.GetHexTxsHashes())
 
 			if time.Now().After(txReplacement) {
-				logger.Infof("replacing tx %s with higher fee", execData.TxOpts.GetHexTxsHashes())
+				logger.Infof("tx timed out: replacing tx %s with higher fee", execData.TxOpts.GetHexTxsHashes())
 
 				err = retryTaskWithFeeReplacement(ctx, logger, eth, task, execData, retryCount, retryDelay)
 				if err != nil {
@@ -240,6 +240,8 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 				// set new Tx replacement time
 				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
 			} else if receipt != nil && receipt.Status != uint64(1) {
+				logger.Infof("tx timed out: recreating tx %s", execData.TxOpts.GetHexTxsHashes())
+
 				// if the receipt indicates tx failed, then retry creating new tx
 				clearTxOpts(task)
 				err = retryTask(ctx, logger, eth, task, retryCount, retryDelay)

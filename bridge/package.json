@@ -13,7 +13,7 @@
     "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
     "clean": "rm -rf typechain-types && hardhat clean && rm -rf bindings artifacts",
     "compile": "hardhat compile",
-    "generate": "hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh",
+    "generate": "hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh && ./generate-iface.sh",
     "build": "npm run clean && npm run compile && npm run generate"
   },
   "devDependencies": {

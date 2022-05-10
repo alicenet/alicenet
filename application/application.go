@@ -17,7 +17,6 @@ import (
 	"github.com/MadBase/MadNet/application/utxohandler"
 	"github.com/MadBase/MadNet/application/wrapper"
 	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/consensus/appmock"
 	consensusdb "github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
@@ -26,7 +25,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-var _ appmock.Application = (*Application)(nil)
+var _ interfaces.Application = (*Application)(nil)
 
 // Application ...
 type Application struct {

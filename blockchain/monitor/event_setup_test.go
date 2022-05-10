@@ -8,6 +8,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/MadBase/MadNet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ import (
 func TestRegisteringETHDKGEvents(t *testing.T) {
 
 	var em *objects.EventMap = objects.NewEventMap()
-	var adminHandler interfaces.AdminHandler = new(interfaces.MockAdminHandler)
+	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()
 
 	monitor.RegisterETHDKGEvents(em, adminHandler)
 

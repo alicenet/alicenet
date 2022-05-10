@@ -20,6 +20,8 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go &&\
     go install github.com/elazarl/go-bindata-assetfs/... &&\
     go install github.com/MadBase/go-capnproto2/v2/capnpc-go &&\
     go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway &&\
-    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 &&\
+    go install github.com/derision-test/go-mockgen/cmd/go-mockgen &&\
+    go install golang.org/x/tools/cmd/goimports
+    
 CMD go generate -x ./... 

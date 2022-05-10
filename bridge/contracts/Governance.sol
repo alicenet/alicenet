@@ -7,6 +7,7 @@ import {GovernanceErrorCodes} from "contracts/libraries/errorCodes/GovernanceErr
 /// @custom:salt Governance
 /// @custom:deploy-type deployUpgradeable
 contract Governance is IGovernor {
+    // dummy contract
     address internal immutable _factory;
 
     constructor() {

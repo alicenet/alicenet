@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/utils/testutils"
+	"github.com/MadBase/MadNet/test/testutils"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
