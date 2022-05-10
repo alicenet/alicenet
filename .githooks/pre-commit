@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+format_go() {
+	changed_go=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$') || true
+
+	for File in $changed_go
+	do
+		echo "Formatting staged version of ${File}..."
+		perms=$(git ls-files -s $File | cut -f 1 -d " ") # get the chmod permissions of the staged version of the file
+		blobid=$(git show :$File | gofmt | git hash-object -w --stdin) # get contents of the staged version of the file, format it, and create a new git object with those contents
+		git update-index --cacheinfo $perms $blobid $File # set the currently staged file to the new git object that was just created
+	done
+	
+	if [ ! -z $changed_go ]
+	then
+		echo "Formatting working tree versions of staged go files..."
+		gofmt -w $changed_go || true # also format working tree version so users files don't go out of sync
+	fi
+}
+
+format_bridge() {
+	changed_bridge=$(git diff --cached --name-only --diff-filter=ACM | grep '^bridge/') || true
+	
+	if [ ! -z $changed_bridge ]
+	then
+		cd bridge
+		npm run format-staged
+	fi
+}
+
+format_go
+format_bridge
+
+echo "Finished running pre-commit hooks"

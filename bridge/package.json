@@ -10,11 +10,13 @@
     "lint": "eslint test/**/*.ts scripts/**/*.ts",
     "test": "hardhat test --show-stack-traces",
     "test-parallel": "npm run test -- --parallel",
-    "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.test.ts' './**/*.js' './**/*.json'",
+    "format": "prettier --write './**/*.sol' './**/*.ts' './**/*.js' './**/*.json'",
+    "format-staged": "pretty-quick --staged --pattern \"**/*.*(sol|ts|js|json)\"",
     "clean": "rm -rf typechain-types && hardhat clean && rm -rf bindings artifacts",
     "compile": "hardhat compile",
     "generate": "hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh && ./generate-iface.sh",
-    "build": "npm run clean && npm run compile && npm run generate"
+    "build": "npm run clean && npm run compile && npm run generate",
+    "postinstall": "sh ../scripts/base-scripts/init-githooks.sh"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
@@ -56,6 +58,7 @@
     "prettier": "^2.5.1",
     "prettier-plugin-organize-imports": "^2.3.4",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "pretty-quick": "^3.1.3",
     "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.20",
