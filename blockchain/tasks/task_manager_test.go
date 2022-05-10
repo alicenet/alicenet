@@ -12,16 +12,14 @@ import (
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/test/mocks"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStartTask_initializeTask_HappyPath(t *testing.T) {
 	eth := mocks.NewMockEthereum()
-	task := mocks.NewMockTask()
+	task := mocks.NewMockITask()
 
 	wg := sync.WaitGroup{}
 	tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
@@ -34,7 +32,7 @@ func TestStartTask_initializeTask_HappyPath(t *testing.T) {
 
 func TestStartTask_initializeTask_Error(t *testing.T) {
 	eth := mocks.NewMockEthereum()
-	task := mocks.NewMockTask()
+	task := mocks.NewMockITask()
 	task.InitializeFunc.SetDefaultReturn(errors.New("initialize error"))
 
 	wg := sync.WaitGroup{}
@@ -51,7 +49,7 @@ func TestStartTask_executeTask_ErrorRetry(t *testing.T) {
 	eth := mocks.NewMockEthereum()
 	eth.RetryCountFunc.SetDefaultReturn(10)
 
-	task := mocks.NewMockTask()
+	task := mocks.NewMockITask()
 	task.ShouldRetryFunc.SetDefaultReturn(true)
 	task.DoWorkFunc.SetDefaultReturn(errors.New("DoWork_error"))
 	task.DoRetryFunc.SetDefaultReturn(errors.New(tasks.NonceToLowError))
@@ -67,29 +65,29 @@ func TestStartTask_executeTask_ErrorRetry(t *testing.T) {
 
 // Happy path with mined tx present after finality delay
 func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
-	task := mocks.NewMockTaskWithExecutionData(1, 100)
-	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	task := mocks.NewMockITaskWithExecutionData(1, 100)
+	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
 	eth.GethClientMock.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
 	mockrequire.Called(t, task.DoDoneFunc)
-	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
-	assert.Equal(t, uint64(1), task.ExecutionData.TxOpts.MinedInBlock)
+	assert.Len(t, task.Task.TxOpts.TxHashes, 1)
+	assert.Equal(t, uint64(1), task.Task.TxOpts.MinedInBlock)
 }
 
 // Tx was mined, but it's not present after finality delay
 func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	minedInBlock := 9
 
-	task := mocks.NewMockTaskWithExecutionData(1, 100)
-	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	task := mocks.NewMockITaskWithExecutionData(1, 100)
+	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
 	eth.GethClientMock.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
@@ -99,21 +97,21 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
 	mockrequire.Called(t, task.DoDoneFunc)
-	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
-	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
+	assert.Len(t, task.Task.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.Task.TxOpts.MinedInBlock, uint64(minedInBlock))
 }
 
 // Tx was mined after a retry because of a failed receipt
 func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	minedInBlock := 7
 
-	task := mocks.NewMockTaskWithExecutionData(1, 100)
-	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	task := mocks.NewMockITaskWithExecutionData(1, 100)
+	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 	task.ShouldRetryFunc.SetDefaultReturn(true)
 
 	eth := mocks.NewMockEthereum()
@@ -123,22 +121,22 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
 	mockrequire.Called(t, task.DoRetryFunc)
 	mockrequire.Called(t, task.DoDoneFunc)
-	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
-	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
+	assert.Len(t, task.Task.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.Task.TxOpts.MinedInBlock, uint64(minedInBlock))
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
 func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	minedInBlock := 10
 
-	task := mocks.NewMockTaskWithExecutionData(1, 100)
-	task.ExecutionData.TxOpts.TxHashes = append(task.ExecutionData.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
+	task := mocks.NewMockITaskWithExecutionData(1, 100)
+	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
 	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
@@ -148,7 +146,7 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	wg.Wait()
 
 	expectedGasFeeCap := big.NewInt(213534)
@@ -156,15 +154,15 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 
 	mockrequire.Called(t, task.DoWorkFunc)
 	mockrequire.Called(t, task.DoDoneFunc)
-	assert.Len(t, task.ExecutionData.TxOpts.TxHashes, 1)
-	assert.Equal(t, task.ExecutionData.TxOpts.MinedInBlock, uint64(minedInBlock))
-	assert.Equal(t, expectedGasFeeCap, task.ExecutionData.TxOpts.GasFeeCap)
-	assert.Equal(t, expectedGasTipCap, task.ExecutionData.TxOpts.GasTipCap)
+	assert.Len(t, task.Task.TxOpts.TxHashes, 1)
+	assert.Equal(t, task.Task.TxOpts.MinedInBlock, uint64(minedInBlock))
+	assert.Equal(t, expectedGasFeeCap, task.Task.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasTipCap, task.Task.TxOpts.GasTipCap)
 }
 
 // Tx reached replacement timeout, tx mined after retry with replacement
 func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *testing.T) {
-	task := mocks.NewMockTaskWithExecutionData(1, 100)
+	task := mocks.NewMockITaskWithExecutionData(1, 100)
 
 	eth := mocks.NewMockEthereum()
 	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
@@ -175,12 +173,12 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	wg.Wait()
 
 	expectedGasFeeCap := big.NewInt(1000000)
 
 	mockrequire.Called(t, task.DoWorkFunc)
 	mockrequire.Called(t, task.DoDoneFunc)
-	assert.Equal(t, expectedGasFeeCap, task.ExecutionData.TxOpts.GasFeeCap)
+	assert.Equal(t, expectedGasFeeCap, task.Task.TxOpts.GasFeeCap)
 }

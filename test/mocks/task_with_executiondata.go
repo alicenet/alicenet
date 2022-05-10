@@ -4,22 +4,22 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/accounts"
 	common "github.com/ethereum/go-ethereum/common"
 	logrus "github.com/sirupsen/logrus"
 )
 
-type MockTaskWithExecutionData struct {
-	*MockTask
-	ExecutionData *dkgtasks.ExecutionData
+type MockITaskWithExecutionData struct {
+	*MockITask
+	Task *tasks.Task
 }
 
-func NewMockTaskWithExecutionData(start uint64, end uint64) *MockTaskWithExecutionData {
-	task := NewMockTask()
-	ed := dkgtasks.NewExecutionData(objects.NewDkgState(accounts.Account{}), start, end)
+func NewMockITaskWithExecutionData(start uint64, end uint64) *MockITaskWithExecutionData {
+	task := NewMockITask()
+	ed := tasks.NewTask(objects.NewDkgState(accounts.Account{}), start, end)
 	task.GetExecutionDataFunc.SetDefaultReturn(ed)
 	task.DoWorkFunc.SetDefaultHook(func(context.Context, *logrus.Entry, interfaces.Ethereum) error {
 		ed.TxOpts.TxHashes = append(ed.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))
@@ -32,5 +32,5 @@ func NewMockTaskWithExecutionData(start uint64, end uint64) *MockTaskWithExecuti
 		return nil
 	})
 	task.DoRetryFunc.SetDefaultHook(task.DoWork)
-	return &MockTaskWithExecutionData{MockTask: task, ExecutionData: ed}
+	return &MockITaskWithExecutionData{MockITask: task, Task: ed}
 }
