@@ -18,41 +18,29 @@ import (
 
 // DisputeGPKjTask contains required state for performing a group accusation
 type DisputeGPKjTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeGPKjTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeGPKjTask{}
+var _ interfaces.ITask = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in the GPKjDispute phase.
 // Here, we determine if anyone submitted an invalid gpkj.
-func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	logger.Info("GPKJDisputeTask Initialize()...")
 
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
-	taskState, ok = t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -244,6 +232,6 @@ func (t *DisputeGPKjTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("GPKJDisputeTask done")
 }
 
-func (t *DisputeGPKjTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeGPKjTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

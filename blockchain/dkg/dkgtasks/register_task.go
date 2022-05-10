@@ -14,16 +14,16 @@ import (
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
-var _ interfaces.Task = &RegisterTask{}
+var _ interfaces.ITask = &RegisterTask{}
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
@@ -33,24 +33,16 @@ func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *Registe
 // These keys are *not* used otherwise.
 // Also get the list of existing validators from the pool to assert accusation
 // in later phases
-func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	logger.Infof("RegisterTask Initialize()")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	if taskState.TransportPrivateKey == nil ||
@@ -63,9 +55,6 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 		}
 		taskState.TransportPrivateKey = priv
 		taskState.TransportPublicKey = pub
-
-		unlock()
-		dkgData.PersistStateCB()
 	} else {
 		logger.Infof("RegisterTask Initialize(): private-public transport keys already defined")
 	}
@@ -190,6 +179,6 @@ func (t *RegisterTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("RegisterTask done")
 }
 
-func (t *RegisterTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *RegisterTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

@@ -92,6 +92,7 @@ func NewMonitor(cdb *db.Database,
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	tr.RegisterInstanceType(&tasks.SnapshotTask{})
 
 	eventMap := objects.NewEventMap()
 	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler)
@@ -101,17 +102,17 @@ func NewMonitor(cdb *db.Database,
 
 	wg := new(sync.WaitGroup)
 
+	schedule := objects.NewSequentialSchedule(tr, adminHandler)
+	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
+	State := objects.NewMonitorState(dkgState, schedule)
+
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(ctx, wg, eth, logger, bh, cdb)
+		return PersistSnapshot(ctx, wg, eth, logger, bh, cdb, schedule)
 	})
-
-	schedule := objects.NewSequentialSchedule(tr, adminHandler)
-	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
-	State := objects.NewMonitorState(dkgState, schedule)
 
 	return &monitor{
 		adminHandler:   adminHandler,
@@ -448,11 +449,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					monitorState.Schedule.SetRunning(uuid, false)
 					monitorState.Schedule.Remove(uuid)
 				}
-				dkgData := tasks.TaskData{
-					PersistStateCB: persistMonitorCB,
-					State:          monitorState.EthDKG,
-				}
-				err = tasks.StartTask(log, wg, eth, task, dkgData, &onFinishCB)
+				err = tasks.StartTask(log, wg, eth, task, persistMonitorCB, onFinishCB)
 				if err != nil {
 					return err
 				}
@@ -507,15 +504,15 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database) error {
+func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database, scheduler *objects.SequentialSchedule) error {
 
 	if bh == nil {
-		return errors.New("Invalid blockHeader for snapshot")
+		return errors.New("invalid blockHeader for snapshot")
 	}
 
-	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), db, bh)
+	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), db, bh, 0, 0)
 
-	tasks.StartTask(logger, wg, eth, task, nil, nil)
+	scheduler.Schedule(0, 0, task)
 
 	return nil
 }

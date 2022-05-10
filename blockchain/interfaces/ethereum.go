@@ -149,19 +149,25 @@ type Contracts interface {
 	GovernanceAddress() common.Address
 }
 
-// Task the interface requirements of a task
-type Task interface {
+// ITask the interface requirements of a task
+type ITask interface {
 	DoDone(*logrus.Entry)
 	DoRetry(context.Context, *logrus.Entry, Ethereum) error
 	DoWork(context.Context, *logrus.Entry, Ethereum) error
-	Initialize(context.Context, *logrus.Entry, Ethereum, interface{}) error
+	Initialize(context.Context, *logrus.Entry, Ethereum) error
 	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
-	GetExecutionData() interface{}
+	GetExecutionData() ITaskExecutionData
 }
 
-type TaskState interface {
+type ITaskState interface {
 	Lock()
 	Unlock()
+}
+
+type ITaskExecutionData interface {
+	Lock()
+	Unlock()
+	ClearTxData()
 }
 
 type AdminClient interface {
@@ -170,11 +176,11 @@ type AdminClient interface {
 
 // Schedule simple interface to a block based schedule
 type Schedule interface {
-	Schedule(start uint64, end uint64, thing Task) (uuid.UUID, error)
+	Schedule(start uint64, end uint64, thing ITask) (uuid.UUID, error)
 	Purge()
 	PurgePrior(now uint64)
 	Find(now uint64) (uuid.UUID, error)
-	Retrieve(taskId uuid.UUID) (Task, error)
+	Retrieve(taskId uuid.UUID) (ITask, error)
 	Length() int
 	Remove(taskId uuid.UUID) error
 	Status(logger *logrus.Entry)

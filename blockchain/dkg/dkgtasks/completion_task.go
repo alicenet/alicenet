@@ -14,43 +14,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CompletionTask contains required state for safely performing a registration
+// CompletionTask contains required state for safely complete ETHDKG
 type CompletionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &CompletionTask{}
+var _ interfaces.ITask = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in the Completion phase
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	logger.Info("CompletionTask Initialize()...")
 
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
 	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
-	taskState, ok = t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -190,8 +177,8 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
 }
 
-func (t *CompletionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *CompletionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
 
 func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum, taskState *objects.DkgState) bool {

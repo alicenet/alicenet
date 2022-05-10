@@ -9,7 +9,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -29,10 +28,7 @@ func TestGPKjSubmissionGoodAllValid(t *testing.T) {
 	// Do GPKj Submission task
 	tasksVec := suite.gpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -77,8 +73,7 @@ func TestGPKjSubmissionBad1(t *testing.T) {
 	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -103,8 +98,8 @@ func TestGPKjSubmissionBad2(t *testing.T) {
 	log := logger.WithField("TaskID", "foo")
 	adminHandler := new(adminHandlerMock)
 	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+
+	err := task.Initialize(ctx, log, eth)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -132,16 +127,12 @@ func TestGPKjSubmissionBad3(t *testing.T) {
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth
-	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Initialize GPKj Submission task
 	tasksVec := suite.gpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
@@ -166,16 +157,12 @@ func TestGPKjSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth
-	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
 	tasksVec := suite.gpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -194,16 +181,12 @@ func TestGPKjSubmission_ShouldRetry_returnsTrue(t *testing.T) {
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth
-	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
 	tasksVec := suite.gpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		shouldRetry := tasksVec[idx].ShouldRetry(ctx, logger, eth)

@@ -17,10 +17,10 @@ var (
 )
 
 type Block struct {
-	Start     uint64          `json:"start"`
-	End       uint64          `json:"end"`
-	Task      interfaces.Task `json:"-"`
-	IsRunning bool            `json:"isRunning"`
+	Start     uint64           `json:"start"`
+	End       uint64           `json:"end"`
+	Task      interfaces.ITask `json:"-"`
+	IsRunning bool             `json:"isRunning"`
 }
 
 type innerBlock struct {
@@ -48,7 +48,7 @@ func (s *SequentialSchedule) Initialize(typeRegistry *TypeRegistry, adminHandler
 	s.marshaller = typeRegistry
 }
 
-func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.Task) (uuid.UUID, error) {
+func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.ITask) (uuid.UUID, error) {
 
 	for _, block := range s.Ranges {
 		if start < block.End && block.Start < end {
@@ -106,7 +106,7 @@ func (s *SequentialSchedule) Find(now uint64) (uuid.UUID, error) {
 	return nil, ErrNothingScheduled
 }
 
-func (s *SequentialSchedule) Retrieve(taskId uuid.UUID) (interfaces.Task, error) {
+func (s *SequentialSchedule) Retrieve(taskId uuid.UUID) (interfaces.ITask, error) {
 	block, present := s.Ranges[taskId.String()]
 	if !present {
 		return nil, ErrNotScheduled
@@ -183,7 +183,7 @@ func (ss *SequentialSchedule) UnmarshalJSON(raw []byte) error {
 			adminClient.SetAdminHandler(ss.adminHandler)
 		}
 
-		ss.Ranges[k] = &Block{Start: v.Start, End: v.End, Task: t.(interfaces.Task)}
+		ss.Ranges[k] = &Block{Start: v.Start, End: v.End, Task: t.(interfaces.ITask)}
 	}
 
 	return nil

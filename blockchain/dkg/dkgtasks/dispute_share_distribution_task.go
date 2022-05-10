@@ -19,39 +19,31 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeShareDistributionTask{}
+var _ interfaces.ITask = &DisputeShareDistributionTask{}
 
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for DisputeShareDistributionTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
+	t.State.Lock()
+	defer t.State.Unlock()
 	logger.Info("DisputeShareDistributionTask Initialize()")
 
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	if taskState.Phase != objects.DisputeShareDistribution && taskState.Phase != objects.ShareDistribution {
@@ -233,6 +225,6 @@ func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Info("DisputeShareDistributionTask done")
 }
 
-func (t *DisputeShareDistributionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeShareDistributionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

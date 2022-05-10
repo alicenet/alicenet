@@ -3,12 +3,14 @@ package tasks
 import (
 	"context"
 	"errors"
+	"math/big"
 	dangerousRand "math/rand"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
@@ -18,38 +20,54 @@ import (
 
 // SnapshotTask pushes a snapshot to Ethereum
 type SnapshotTask struct {
+	*Task
+}
+
+// asserting that SnapshotTask struct implements interface interfaces.Task
+var _ interfaces.ITask = &SnapshotTask{}
+
+type SnapshotState struct {
 	sync.RWMutex
-	acct        accounts.Account
+	account     accounts.Account
 	blockHeader *objs.BlockHeader
 	rawBclaims  []byte
 	rawSigGroup []byte
 	consensusDb *db.Database
 }
 
-// asserting that SnapshotTask struct implements interface interfaces.Task
-var _ interfaces.Task = &SnapshotTask{}
+// asserting that SnapshotState struct implements interface interfaces.ITaskState
+var _ interfaces.ITaskState = &SnapshotState{}
 
-func NewSnapshotTask(account accounts.Account, db *db.Database, bh *objs.BlockHeader) *SnapshotTask {
+func NewSnapshotTask(account accounts.Account, db *db.Database, bh *objs.BlockHeader, start uint64, end uint64) *SnapshotTask {
 	return &SnapshotTask{
-		acct:        account,
-		blockHeader: bh,
-		consensusDb: db,
+		Task: NewTask(&SnapshotState{
+			account:     account,
+			blockHeader: bh,
+			consensusDb: db,
+		}, start, end),
 	}
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, _ interface{}) error {
+func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	rawBClaims, err := t.blockHeader.BClaims.MarshalBinary()
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	logger.Info("CompletionTask Initialize()...")
+
+	taskState, ok := t.State.(*SnapshotState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
+
+	rawBClaims, err := taskState.blockHeader.BClaims.MarshalBinary()
 	if err != nil {
 		logger.Errorf("Unable to marshal block header for snapshot: %v", err)
 		return err
 	}
 
-	t.Lock()
-	defer t.Unlock()
-
-	t.rawBclaims = rawBClaims
-	t.rawSigGroup = t.blockHeader.SigGroup
+	taskState.rawBclaims = rawBClaims
+	taskState.rawSigGroup = taskState.blockHeader.SigGroup
 
 	return nil
 }
@@ -64,8 +82,13 @@ func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth in
 
 func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
-	t.Lock()
-	defer t.Unlock()
+	t.State.Lock()
+	defer t.State.Unlock()
+
+	taskState, ok := t.State.(*SnapshotState)
+	if !ok {
+		return objects.ErrCanNotContinue
+	}
 
 	dangerousRand.Seed(time.Now().UnixNano())
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
@@ -82,14 +105,14 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return nil
 	}
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.account)
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
 		logger.Debugf("Failed to generate transaction options: %v", err)
 		return err
 	}
-	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
+	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, taskState.rawSigGroup, taskState.rawBclaims)
 	if err != nil {
 		logger.Debugf("Failed to send snapshot: %v", err)
 		// TODO: ?we should ignore any revert on contract execution and wait the confirmation delay to try again
@@ -99,16 +122,10 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return err
 	}
 
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-	if err != nil {
-		logger.Debugf("Snapshot failed to retrieve receipt: %v", err)
-		return err
-	}
-
-	if rcpt.Status != 1 {
-		logger.Debugf("Snapshot receipt status != 1")
-		return err
-	}
+	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
+	t.TxOpts.GasFeeCap = txn.GasFeeCap()
+	t.TxOpts.GasTipCap = txn.GasTipCap()
+	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
 	logger.Info("Snapshot tx succeeded!")
 	return nil
@@ -119,9 +136,15 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	t.RLock()
 	defer t.RUnlock()
 
+	taskState, ok := t.State.(*SnapshotState)
+	if !ok {
+		logger.Error("Invalid convertion of taskState object")
+		return true
+	}
+
 	var height uint32
-	err := t.consensusDb.View(func(txn *badger.Txn) error {
-		bh, err := t.consensusDb.GetLastSnapshot(txn)
+	err := taskState.consensusDb.View(func(txn *badger.Txn) error {
+		bh, err := taskState.consensusDb.GetLastSnapshot(txn)
 		if err != nil {
 			return err
 		}
@@ -132,12 +155,12 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return nil
 	})
 	if err != nil {
-		logger.Debugf("Snapshot for height %v was not found on from db: %v", t.blockHeader.BClaims.Height, err)
+		logger.Debugf("Snapshot for height %v was not found on from db: %v", taskState.blockHeader.BClaims.Height, err)
 		return true
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if t.blockHeader.BClaims.Height != 0 && t.blockHeader.BClaims.Height < height {
+	if taskState.blockHeader.BClaims.Height != 0 && taskState.blockHeader.BClaims.Height < height {
 		return false
 	}
 
@@ -147,6 +170,6 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 func (*SnapshotTask) DoDone(logger *logrus.Entry) {
 }
 
-func (*SnapshotTask) GetExecutionData() interface{} {
-	return nil
+func (t *SnapshotTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

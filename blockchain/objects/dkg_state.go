@@ -93,7 +93,7 @@ type DkgState struct {
 	Inverse []*big.Int `json:"inverse"`
 }
 
-var _ interfaces.TaskState = &DkgState{}
+var _ interfaces.ITaskState = &DkgState{}
 
 // GetSortedParticipants returns the participant list sorted by Index field
 func (state *DkgState) GetSortedParticipants() ParticipantList {
@@ -107,7 +107,7 @@ func (state *DkgState) GetSortedParticipants() ParticipantList {
 }
 
 // asserting that DkgState struct implements interface interfaces.TaskState
-var _ interfaces.TaskState = &DkgState{}
+var _ interfaces.ITaskState = &DkgState{}
 
 // OnRegistrationOpened processes data from RegistrationOpened event
 func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmationLength, nonce uint64) {

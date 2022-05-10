@@ -9,7 +9,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -31,8 +30,7 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
 		err = tasksVec[idx].DoWork(ctx, logger, eth)
@@ -93,8 +91,7 @@ func TestMPKSubmissionBad1(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	task := suite.mpkSubmissionTasks[0]
-	dkgData := tasks.NewTaskData(dkgStates[0])
-	err := task.Initialize(ctx, logger, eth, dkgData)
+	err := task.Initialize(ctx, logger, eth)
 	assert.Nil(t, err)
 	eth.Commit()
 
@@ -127,8 +124,7 @@ func TestMPKSubmissionBad2(t *testing.T) {
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -152,8 +148,8 @@ func TestMPKSubmissionBad4(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := dkgtasks.NewMPKSubmissionTask(state, 1, 100)
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -172,8 +168,7 @@ func TestMPKSubmission_ShouldRetry_returnsFalse(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
 
@@ -227,8 +222,8 @@ func TestMPKSubmission_LeaderElection(t *testing.T) {
 	tasksVec := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		state := suite.dkgStates[idx]
-		dkgData := tasks.NewTaskData(state)
-		tasksVec[idx].Initialize(ctx, logger, eth, dkgData)
+
+		tasksVec[idx].Initialize(ctx, logger, eth)
 		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
 
 		if tasksVec[idx].AmILeading(ctx, eth, logger, state) {

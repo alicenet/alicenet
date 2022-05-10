@@ -13,13 +13,15 @@ import (
 )
 
 type DkgTaskMock struct {
-	*tasks.ExecutionData
+	*tasks.Task
 	mock.Mock
 }
 
+var _ interfaces.ITask = &DkgTaskMock{}
+
 func NewDkgTaskMock(state *objects.DkgState, start uint64, end uint64) *DkgTaskMock {
 	dkgTaskMock := &DkgTaskMock{}
-	dkgTaskMock.ExecutionData = &tasks.ExecutionData{
+	dkgTaskMock.Task = &tasks.Task{
 		Start:   start,
 		End:     end,
 		State:   state,
@@ -59,8 +61,8 @@ func (d *DkgTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth inte
 	return args.Error(0)
 }
 
-func (d *DkgTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	args := d.Called(ctx, logger, eth, state)
+func (d *DkgTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+	args := d.Called(ctx, logger, eth)
 	return args.Error(0)
 }
 
@@ -69,6 +71,6 @@ func (d *DkgTaskMock) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth
 	return args.Bool(0)
 }
 
-func (d *DkgTaskMock) GetExecutionData() interface{} {
-	return d.ExecutionData
+func (d *DkgTaskMock) GetExecutionData() interfaces.ITaskExecutionData {
+	return d.Task
 }

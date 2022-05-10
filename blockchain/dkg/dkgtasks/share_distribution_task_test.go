@@ -9,7 +9,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -26,12 +25,11 @@ func TestShareDistributionGood(t *testing.T) {
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		shareDistributionTask := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := shareDistributionTask.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := shareDistributionTask.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = shareDistributionTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -72,8 +70,8 @@ func TestShareDistributionBad1(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		task.Initialize(ctx, logger, suite.eth)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, we just add 1 to the first commitment (y component)
@@ -133,8 +131,8 @@ func TestShareDistributionBad2(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		task.Initialize(ctx, logger, suite.eth)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, change the one of the commitments to 0
@@ -197,8 +195,8 @@ func TestShareDistributionBad4(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		task.Initialize(ctx, logger, suite.eth)
 
 		// if we're on the last account, we just add 1 to the first commitment (y component)
 		com := state.Participants[accounts[idx].Address].Commitments
@@ -249,8 +247,8 @@ func TestShareDistributionBad5(t *testing.T) {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		task.Initialize(ctx, logger, suite.eth)
 
 		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		if idx == badShareIdx {
@@ -301,8 +299,7 @@ func TestShareDistributionBad6(t *testing.T) {
 	task := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -325,8 +322,8 @@ func TestShareDistributionBad7(t *testing.T) {
 	state := objects.NewDkgState(acct)
 	log := logging.GetLogger("test").WithField("Validator", acct.Address.String())
 	task := dkgtasks.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
-	dkgData := tasks.NewTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+
+	err := task.Initialize(ctx, log, eth)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -342,12 +339,11 @@ func TestShareDistributionShouldRetryTrue(t *testing.T) {
 	// Do Share Distribution task
 	//shareDistributionTasks := make([]*dkgtasks.ShareDistributionTask, n)
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
@@ -364,12 +360,11 @@ func TestShareDistributionShouldRetryFalse(t *testing.T) {
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
 		task := suite.shareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)

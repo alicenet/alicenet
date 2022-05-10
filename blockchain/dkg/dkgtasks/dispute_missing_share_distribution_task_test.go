@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,11 +17,9 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
-		state := suite.dkgStates[idx]
 		task := suite.disputeMissingShareDistTasks[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -45,10 +42,9 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
-		state := suite.dkgStates[idx]
 		task := suite.disputeMissingShareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -73,8 +69,8 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	for idx := range accounts {
 		state := suite.dkgStates[idx]
 		task := suite.disputeMissingShareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 
 		if idx == n-1 {
@@ -112,10 +108,9 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
-		state := suite.dkgStates[idx]
 		task := suite.disputeMissingShareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
 		assert.True(t, shouldRetry)
@@ -131,10 +126,9 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Test", "Test1")
 
 	for idx := range accounts {
-		state := suite.dkgStates[idx]
 		task := suite.disputeMissingShareDistTasks[idx]
-		dkgData := tasks.NewTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+
+		err := task.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = task.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -160,13 +154,10 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBad
 
 	// Do Share Dispute task
 	for idx := range accounts {
-		state := suite.dkgStates[idx]
-
 		// disputeMissingShareDist
 		disputeMissingShareDistTask := suite.disputeMissingShareDistTasks[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := disputeMissingShareDistTask.Initialize(ctx, logger, suite.eth, dkgData)
+		err := disputeMissingShareDistTask.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = disputeMissingShareDistTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)
@@ -177,7 +168,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBad
 		// disputeShareDist
 		disputeShareDistTask := suite.disputeShareDistTasks[idx]
 
-		err = disputeShareDistTask.Initialize(ctx, logger, suite.eth, dkgData)
+		err = disputeShareDistTask.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)
 		err = disputeShareDistTask.DoWork(ctx, logger, suite.eth)
 		assert.Nil(t, err)

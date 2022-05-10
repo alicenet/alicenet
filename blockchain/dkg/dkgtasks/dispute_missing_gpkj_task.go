@@ -14,40 +14,24 @@ import (
 
 // DisputeMissingGPKjTask stores the data required to dispute shares
 type DisputeMissingGPKjTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeMissingGPKjTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeMissingGPKjTask{}
+var _ interfaces.ITask = &DisputeMissingGPKjTask{}
 
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for DisputeMissingGPKjTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("Initializing DisputeMissingGPKjTask...")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
 	return nil
 }
 
@@ -167,8 +151,8 @@ func (t *DisputeMissingGPKjTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Info("DisputeMissingGPKjTask done")
 }
 
-func (t *DisputeMissingGPKjTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeMissingGPKjTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
 
 func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

@@ -15,40 +15,32 @@ import (
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &ShareDistributionTask{}
+var _ interfaces.ITask = &ShareDistributionTask{}
 
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for ShareDistribution.
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
-func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	logger.Infof("ShareDistributionTask Initialize()")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	if taskState.Phase != objects.ShareDistribution {
@@ -76,9 +68,6 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		taskState.PrivateCoefficients = privateCoefficients
 		taskState.SecretValue = privateCoefficients[0]
 		taskState.ValidatorThreshold = threshold
-
-		unlock()
-		dkgData.PersistStateCB()
 	} else {
 		logger.Infof("ShareDistributionTask Initialize(): encrypted shares already defined")
 	}
@@ -204,6 +193,6 @@ func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
 }
 
-func (t *ShareDistributionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *ShareDistributionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

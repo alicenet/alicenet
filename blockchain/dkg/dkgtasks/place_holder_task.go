@@ -12,11 +12,13 @@ type PlaceHolder struct {
 	state *objects.DkgState
 }
 
+var _ interfaces.ITask = &PlaceHolder{}
+
 func NewPlaceHolder(state *objects.DkgState) *PlaceHolder {
 	return &PlaceHolder{state: state}
 }
 
-func (ph *PlaceHolder) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (ph *PlaceHolder) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Infof("ph dowork")
 	return nil
 }
@@ -39,6 +41,6 @@ func (ph *PlaceHolder) DoDone(logger *logrus.Entry) {
 	logger.Infof("ph done")
 }
 
-func (ph *PlaceHolder) GetExecutionData() interface{} {
+func (ph *PlaceHolder) GetExecutionData() interfaces.ITaskExecutionData {
 	return nil
 }

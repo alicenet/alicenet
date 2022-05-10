@@ -22,13 +22,13 @@ var (
 
 const NonceToLowError = "nonce too low"
 
-func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.Task, state interface{}, onFinishCB *func()) error {
+func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.ITask, persistStateCB func(), onFinishCB func()) error {
 
 	wg.Add(1)
 	go func() {
 		defer task.DoDone(logger.WithField("Method", "DoDone"))
 		if onFinishCB != nil {
-			defer (*onFinishCB)()
+			defer onFinishCB()
 		}
 		defer wg.Done()
 
@@ -44,7 +44,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 		defer cancel()
 
 		initializationLogger := logger.WithField("Method", "Initialize")
-		err := initializeTask(ctx, logger, eth, task, state, retryCount, retryDelay)
+		err := initializeTask(ctx, logger, eth, task, retryCount, retryDelay)
 		if err != nil {
 			initializationLogger.Errorf("Failed to initialize task: %v", err)
 			return
@@ -68,11 +68,11 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 }
 
 // initializeTask initialize the Task and retry if needed
-func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, state interface{}, retryCount int, retryDelay time.Duration) error {
+func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
 
-	err = task.Initialize(ctx, logger, eth, state)
+	err = task.Initialize(ctx, logger, eth)
 	for err != nil && count < retryCount {
 		if errors.Is(err, objects.ErrCanNotContinue) {
 			return err
@@ -83,7 +83,7 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Et
 			return err
 		}
 
-		err = task.Initialize(ctx, logger, eth, state)
+		err = task.Initialize(ctx, logger, eth)
 		count++
 	}
 
@@ -91,7 +91,7 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Et
 }
 
 // executeTask execute the Task and retry if needed
-func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, retryCount int, retryDelay time.Duration) error {
+func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	// Clearing TxOpts used for tx gas and nonce replacement
 	clearTxOpts(task)
 	err := task.DoWork(ctx, logger, eth)
@@ -103,7 +103,7 @@ func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ether
 	return err
 }
 
-func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, retryCount int, retryDelay time.Duration) error {
+func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
 	for count < retryCount && task.ShouldRetry(ctx, logger, eth) {
@@ -128,7 +128,7 @@ func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 	return err
 }
 
-func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task, execData *ExecutionData, retryCount int, retryDelay time.Duration) error {
+func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, execData *Task, retryCount int, retryDelay time.Duration) error {
 	logger.WithFields(logrus.Fields{
 		"GasFeeCap": execData.TxOpts.GasFeeCap,
 		"GasTipCap": execData.TxOpts.GasTipCap,
@@ -166,10 +166,10 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 // if the Tx was mined wait for FinalityDelay to confirm the Tx
 // if the Tx wasn't mined during the txTimeoutForReplacement we increase the Fee
 // to make sure the Tx will have priority for the next mined blocks
-func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.Task) error {
+func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask) error {
 	// TxOpts or TxHash are empty means that no tx was queued, this could happen
 	// if there's nobody to accuse during the dispute
-	execData, ok := task.GetExecutionData().(*ExecutionData)
+	execData, ok := task.GetExecutionData().(*Task)
 	if !ok || execData.TxOpts == nil || execData.TxOpts.TxHashes == nil || len(execData.TxOpts.TxHashes) == 0 {
 		return nil
 	}
@@ -334,9 +334,9 @@ func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
 	return time.Now().Add(timeoutForReplacement)
 }
 
-func clearTxOpts(task interfaces.Task) {
-	execData, ok := task.GetExecutionData().(*ExecutionData)
+func clearTxOpts(task interfaces.ITask) {
+	execData, ok := task.GetExecutionData().(*Task)
 	if ok && execData != nil {
-		execData.Clear()
+		execData.ClearTxData()
 	}
 }

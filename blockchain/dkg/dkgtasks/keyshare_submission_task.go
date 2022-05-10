@@ -14,38 +14,32 @@ import (
 
 // KeyshareSubmissionTask is the task for submitting Keyshare information
 type KeyshareSubmissionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &KeyshareSubmissionTask{}
+var _ interfaces.ITask = &KeyshareSubmissionTask{}
 
 // NewKeyshareSubmissionTask creates a new task
 func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
 	return &KeyshareSubmissionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in KeyShareSubmission phase.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
+
 	logger.Info("KeyshareSubmissionTask Initialize()")
 
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	me := taskState.Account.Address
@@ -65,9 +59,6 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 		taskState.Participants[me].KeyShareG1s = g1KeyShare
 		taskState.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
 		taskState.Participants[me].KeyShareG2s = g2KeyShare
-
-		unlock()
-		dkgData.PersistStateCB()
 	} else {
 		logger.Infof("KeyshareSubmissionTask Initialize(): key shares already defined")
 	}
@@ -203,6 +194,6 @@ func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
 }
 
-func (t *KeyshareSubmissionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *KeyshareSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

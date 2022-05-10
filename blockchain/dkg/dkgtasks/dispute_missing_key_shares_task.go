@@ -14,39 +14,22 @@ import (
 
 // DisputeMissingKeySharesTask stores the data required to dispute shares
 type DisputeMissingKeySharesTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeMissingKeySharesTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeMissingKeySharesTask{}
+var _ interfaces.ITask = &DisputeMissingKeySharesTask{}
 
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for DisputeMissingKeySharesTask.
-func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("Initializing DisputeMissingKeySharesTask...")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
 	return nil
 }
 
@@ -166,8 +149,8 @@ func (t *DisputeMissingKeySharesTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Info("DisputeMissingKeySharesTask done")
 }
 
-func (t *DisputeMissingKeySharesTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeMissingKeySharesTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
 
 func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

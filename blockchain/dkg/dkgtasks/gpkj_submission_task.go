@@ -16,41 +16,33 @@ import (
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 	adminHandler interfaces.AdminHandler
 }
 
 // asserting that GPKjSubmissionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &GPKjSubmissionTask{}
+var _ interfaces.ITask = &GPKjSubmissionTask{}
 
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
-		adminHandler:  adminHandler,
+		Task:         tasks.NewTask(state, start, end),
+		adminHandler: adminHandler,
 	}
 }
 
 // Initialize prepares for work to be done in GPKjSubmission phase.
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
-func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
+	t.State.Lock()
+	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask Initialize()...")
 
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	if taskState.GroupPrivateKey == nil ||
@@ -84,9 +76,6 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		if err != nil {
 			return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
 		}
-
-		unlock()
-		dkgData.PersistStateCB()
 	} else {
 		logger.Infof("GPKSubmissionTask Initialize(): group private-public key already defined")
 	}
@@ -203,6 +192,6 @@ func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler interfaces.AdminHandle
 	t.adminHandler = adminHandler
 }
 
-func (t *GPKjSubmissionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *GPKjSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }

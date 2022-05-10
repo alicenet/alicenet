@@ -14,40 +14,22 @@ import (
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeMissingRegistrationTask{}
+var _ interfaces.ITask = &DisputeMissingRegistrationTask{}
 
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for Dispute Registration.
-func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
+func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DisputeMissingRegistrationTask Initializing...")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
 	return nil
 }
 
@@ -167,8 +149,8 @@ func (t *DisputeMissingRegistrationTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("DisputeMissingRegistrationTask done")
 }
 
-func (t *DisputeMissingRegistrationTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeMissingRegistrationTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

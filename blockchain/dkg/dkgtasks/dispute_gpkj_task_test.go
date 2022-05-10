@@ -7,7 +7,6 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/logging"
@@ -34,8 +33,7 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 		state := dkgStates[idx]
 		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := gpkjSubmissionTask.Initialize(ctx, logger, eth, dkgData)
+		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		err = gpkjSubmissionTask.DoWork(ctx, logger, eth)
@@ -68,8 +66,7 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
-		dkgData := tasks.NewTaskData(state)
-		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, dkgData)
+		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		err = disputeBadGPKjTask.DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -104,8 +101,7 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 		state := dkgStates[idx]
 		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := gpkjSubmissionTask.Initialize(ctx, logger, eth, dkgData)
+		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		// inject bad GPKj data
@@ -151,8 +147,7 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
-		dkgData := tasks.NewTaskData(state)
-		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, dkgData)
+		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		err = disputeBadGPKjTask.DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -188,8 +183,7 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 		state := dkgStates[idx]
 		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
 
-		dkgData := tasks.NewTaskData(state)
-		err := gpkjSubmissionTask.Initialize(ctx, logger, eth, dkgData)
+		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		err = gpkjSubmissionTask.DoWork(ctx, logger, eth)
@@ -224,8 +218,7 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 
 		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
 
-		dkgData := tasks.NewTaskData(state)
-		err := disputeBadGPKjTask.Initialize(ctx, logger, eth, dkgData)
+		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		if idx == badAccuserIdx {
 			state.DishonestValidators = objects.ParticipantList{state.GetSortedParticipants()[accusedIdx].Copy()}

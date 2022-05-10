@@ -14,39 +14,22 @@ import (
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
 type DisputeMissingShareDistributionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that DisputeMissingShareDistributionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeMissingShareDistributionTask{}
+var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize begins the setup phase for DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
+func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DisputeMissingShareDistributionTask Initializing...")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-	taskState, ok := t.State.(*objects.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
-	}
-
 	return nil
 }
 
@@ -166,8 +149,8 @@ func (t *DisputeMissingShareDistributionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Info("DisputeMissingShareDistributionTask done")
 }
 
-func (t *DisputeMissingShareDistributionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *DisputeMissingShareDistributionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
 
 func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {

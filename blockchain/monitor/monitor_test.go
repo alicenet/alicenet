@@ -92,8 +92,10 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 type mockTask struct {
 	DoneCalled bool
 	State      *objects.DkgState
-	DkgTask    *tasks.ExecutionData
+	DkgTask    *tasks.Task
 }
+
+var _ interfaces.ITask = &mockTask{}
 
 func (mt *mockTask) DoDone(logger *logrus.Entry) {
 	mt.DoneCalled = true
@@ -107,7 +109,7 @@ func (mt *mockTask) DoWork(context.Context, *logrus.Entry, interfaces.Ethereum) 
 	return nil
 }
 
-func (mt *mockTask) Initialize(context.Context, *logrus.Entry, interfaces.Ethereum, interface{}) error {
+func (mt *mockTask) Initialize(context.Context, *logrus.Entry, interfaces.Ethereum) error {
 	return nil
 }
 
@@ -115,7 +117,7 @@ func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ether
 	return false
 }
 
-func (mt *mockTask) GetExecutionData() interface{} {
+func (mt *mockTask) GetExecutionData() interfaces.ITaskExecutionData {
 	return mt.DkgTask
 }
 
@@ -324,7 +326,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	populateMonitor(mon.State, addr0, EPOCH)
 
 	mockTsk := &mockTask{
-		DkgTask: tasks.NewExecutionData(nil, 1, 40),
+		DkgTask: tasks.NewTask(nil, 1, 40),
 	}
 	// Schedule some tasks
 	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)

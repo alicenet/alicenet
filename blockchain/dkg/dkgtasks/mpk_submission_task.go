@@ -17,40 +17,32 @@ import (
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	*tasks.ExecutionData
+	*tasks.Task
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &MPKSubmissionTask{}
+var _ interfaces.ITask = &MPKSubmissionTask{}
 
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		ExecutionData: tasks.NewExecutionData(state, start, end),
+		Task: tasks.NewTask(state, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in MPKSubmission phase.
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+
+	t.State.Lock()
+	defer t.State.Unlock()
 
 	logger.Info("MPKSubmissionTask Initialize()...")
-
-	dkgData, ok := state.(tasks.TaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != taskState {
-		t.State = dkgData.State
 	}
 
 	if taskState.Phase != objects.MPKSubmission {
@@ -117,9 +109,6 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 		// Master public key is all we generate here so save it
 		taskState.MasterPublicKey = mpk
-
-		unlock()
-		dkgData.PersistStateCB()
 	} else {
 		logger.Infof("MPKSubmissionTask Initialize(): mpk already defined")
 	}
@@ -232,10 +221,9 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
 }
 
-func (t *MPKSubmissionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+func (t *MPKSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
+	return t.Task
 }
-
 func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
 
 	taskState, ok := t.State.(*objects.DkgState)

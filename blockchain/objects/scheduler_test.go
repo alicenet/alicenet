@@ -21,7 +21,7 @@ func TestSchedule(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -44,7 +44,7 @@ func TestPurge(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -71,7 +71,7 @@ func TestPurgePrior(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -98,7 +98,7 @@ func TestFailSchedule(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -124,7 +124,7 @@ func TestFailSchedule2(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(1, 2, task)
 	assert.Nil(t, err)
@@ -140,7 +140,7 @@ func TestFailSchedule3(t *testing.T) {
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
 	var err error
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err = s.Schedule(7, 15, task)
 	assert.Nil(t, err)
@@ -167,7 +167,7 @@ func TestFind(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	id, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -197,7 +197,7 @@ func TestFailFind(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -211,7 +211,7 @@ func TestFailFind2(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var task interfaces.Task
+	var task interfaces.ITask
 
 	_, err := s.Schedule(5, 15, task)
 	assert.Nil(t, err)
@@ -330,7 +330,9 @@ func TestMarshal(t *testing.T) {
 type adminTaskMock struct {
 }
 
-func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+var _ interfaces.ITask = &adminTaskMock{}
+
+func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	return nil
 }
 func (ph *adminTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
@@ -351,6 +353,6 @@ func (ph *adminTaskMock) DoDone(logger *logrus.Entry) {
 func (ph *adminTaskMock) SetAdminHandler(adminHandler *admin.Handlers) {
 }
 
-func (ph *adminTaskMock) GetExecutionData() interface{} {
+func (ph *adminTaskMock) GetExecutionData() interfaces.ITaskExecutionData {
 	return nil
 }
