@@ -6,7 +6,10 @@ RACE_DETECTOR=madrace
 YELLOW=\033[0;33;1m
 NOCOL=\033[31;0m
 
-build:
+init:
+	./scripts/base-scripts/init-githooks.sh
+
+build: init
 	go build -o $(BINARY_NAME) ./cmd/main.go;
 
 race:
@@ -14,14 +17,14 @@ race:
 
 generate: generate-bridge generate-go
 
-generate-bridge:
+generate-bridge: init
 	export MSYS_NO_PATHCONV=1 &&\
 	export PASS_PERMVARS=1 &&\
 	mkdir bridge/node_modules 2>/dev/null || true &&\
 	docker/update-container.sh docker/generate-bridge/Dockerfile madnet-generate-bridge "-v $$PWD/bridge:/app -v /app/node_modules/" &&\
 	docker start -a madnet-generate-bridge
 
-generate-go:
+generate-go: init
 	export MSYS_NO_PATHCONV=1 &&\
 	export PASS_PERMVARS=1 &&\
 	./docker/update-container.sh docker/generate-go/Dockerfile madnet-generate-go "-v $$PWD:/app -v /app/bridge -v $$PWD/bridge/bindings:/app/bridge/bindings -v /app/.git" &&\
