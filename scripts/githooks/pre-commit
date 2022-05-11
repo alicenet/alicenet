@@ -23,9 +23,9 @@ format_bridge() {
 	changed_bridge=$(git diff --cached --name-only --diff-filter=ACM | grep '^bridge/') || true
 	
 	if [[ ! -z $changed_bridge ]]
-	then 
+	then
 		cd bridge
-		npm run format-staged
+		npm run format-staged || (echo '' && echo 'Did you run "npm install" in the "bridge" folder?' && exit 1)
 	fi
 }
 
