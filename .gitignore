@@ -33,3 +33,4 @@ test/mocks/*.mockgen.go
 **/*_mngen.go
 **/*_mngen_test.go
 node_modules/
+.vscode/settings.json

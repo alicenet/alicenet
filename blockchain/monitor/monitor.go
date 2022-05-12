@@ -510,7 +510,7 @@ func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Eth
 		return errors.New("invalid blockHeader for snapshot")
 	}
 
-	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), db, bh, 0, 0)
+	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0)
 
 	scheduler.Schedule(0, 0, task)
 

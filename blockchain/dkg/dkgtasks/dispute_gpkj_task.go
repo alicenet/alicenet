@@ -130,7 +130,10 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "getting call opts failed: %v", err)
+	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
@@ -209,7 +212,11 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		logger.Error("could not get call opts disputeDPKj")
+		return true
+	}
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
 		logger.Error("could not get BadParticipants")

@@ -224,12 +224,13 @@ func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
 func (t *MPKSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
 	return t.Task
 }
+
 func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
-		logger.Error("Invalid convertion of taskState object")
-		return false
+		logger.Error("MPKSubmissionTask ShouldRetry() invalid convertion of taskState object")
+		return true
 	}
 
 	if taskState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
@@ -239,7 +240,12 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.
 		return false
 	}
 
-	isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(eth.GetCallOpts(ctx, taskState.Account))
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		logger.Error(fmt.Sprintf("MPKSubmissionTask ShouldRetry() failed getting call options: %v", err))
+		return true
+	}
+	isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(callOpts)
 	if err == nil && isMPKSet {
 		return false
 	}

@@ -52,7 +52,8 @@ func TestShareDistributionBad1(t *testing.T) {
 
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
-		callOpts := suite.eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := suite.eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := suite.eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
@@ -114,7 +115,8 @@ func TestShareDistributionBad2(t *testing.T) {
 
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
-		callOpts := suite.eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := suite.eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := suite.eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
@@ -178,7 +180,8 @@ func TestShareDistributionBad4(t *testing.T) {
 
 	// Check public keys are present and valid
 	for idx, acct := range accounts {
-		callOpts := eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 

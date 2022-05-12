@@ -17,7 +17,8 @@ func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
 	defer suite.eth.Close()
 	accounts := suite.eth.GetKnownAccounts()
 	ctx := context.Background()
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 
 	// Check key shares are present and valid
 	for idx, acct := range accounts {

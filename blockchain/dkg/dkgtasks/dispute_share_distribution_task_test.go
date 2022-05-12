@@ -55,8 +55,10 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 		}
 	}
 
+	callOptions, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
@@ -130,11 +132,11 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 		assert.True(t, disputeShareDistributionTask.Success)
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(badShares), badParticipants.Uint64())
-
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 
 	// assert bad participants are not validators anymore, i.e, they were fined and evicted
 	for i := 0; i < badShares; i++ {

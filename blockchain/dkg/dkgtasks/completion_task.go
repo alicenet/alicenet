@@ -80,7 +80,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 
 	logger.Info("CompletionTask doTask()")
 
-	if t.isTaskCompleted(ctx, eth, taskState) {
+	if t.isTaskCompleted(ctx, eth, logger, taskState) {
 		t.Success = true
 		return nil
 	}
@@ -152,11 +152,11 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
-		logger.Error("Invalid convertion of taskState object")
+		logger.Errorf("Invalid convertion of taskState object")
 		return false
 	}
 
-	if t.isTaskCompleted(ctx, eth, taskState) {
+	if t.isTaskCompleted(ctx, eth, logger, taskState) {
 		logger.WithFields(logrus.Fields{
 			"t.State.Phase":      taskState.Phase,
 			"t.State.PhaseStart": taskState.PhaseStart,
@@ -181,11 +181,17 @@ func (t *CompletionTask) GetExecutionData() interfaces.ITaskExecutionData {
 	return t.Task
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum, taskState *objects.DkgState) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry, taskState *objects.DkgState) bool {
 	c := eth.Contracts()
 
-	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, taskState.Account))
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
+		logger.Debugf("error getting call opts in completion task: %v", err)
+		return false
+	}
+	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
+	if err != nil {
+		logger.Debugf("error getting ethdkg phases in completion task: %v", err)
 		return false
 	}
 

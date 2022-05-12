@@ -703,13 +703,18 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	return opts, nil
 }
 
-func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) *bind.CallOpts {
+func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Account) (*bind.CallOpts, error) {
 
+	finalizedHeightU64, err := eth.GetFinalizedHeight(ctx)
+	if err != nil {
+		return nil, err
+	}
+	finalizedHeight := new(big.Int).SetUint64(finalizedHeightU64)
 	return &bind.CallOpts{
-		BlockNumber: nil,
+		BlockNumber: finalizedHeight,
 		Context:     ctx,
 		Pending:     false,
-		From:        account.Address}
+		From:        account.Address}, nil
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked
@@ -815,7 +820,11 @@ func (eth *EthereumDetails) GetSnapshot() ([]byte, error) {
 
 func (eth *EthereumDetails) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
-	validatorAddresses, err := c.ValidatorPool().GetValidatorsAddresses(eth.GetCallOpts(ctx, eth.defaultAccount))
+	callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
+	if err != nil {
+		return nil, err
+	}
+	validatorAddresses, err := c.ValidatorPool().GetValidatorsAddresses(callOpts)
 	if err != nil {
 		eth.logger.Warnf("Could not call contract:%v", err)
 		return nil, err

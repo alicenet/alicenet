@@ -31,7 +31,8 @@ func TestDoTaskSuccessOneParticipantAccused(t *testing.T) {
 		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
@@ -60,7 +61,8 @@ func TestDoTaskSuccessThreeParticipantAccused(t *testing.T) {
 		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
@@ -89,7 +91,8 @@ func TestDoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 		assert.True(t, suite.dispMissingRegTasks[idx].Success)
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())

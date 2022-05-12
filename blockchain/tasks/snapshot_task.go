@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	dangerousRand "math/rand"
 	"strings"
@@ -11,9 +10,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )
@@ -28,22 +25,20 @@ var _ interfaces.ITask = &SnapshotTask{}
 
 type SnapshotState struct {
 	sync.RWMutex
-	account     accounts.Account
-	blockHeader *objs.BlockHeader
-	rawBclaims  []byte
-	rawSigGroup []byte
-	consensusDb *db.Database
+	Account     accounts.Account
+	RawBClaims  []byte
+	RawSigGroup []byte
+	BlockHeader *objs.BlockHeader
 }
 
 // asserting that SnapshotState struct implements interface interfaces.ITaskState
 var _ interfaces.ITaskState = &SnapshotState{}
 
-func NewSnapshotTask(account accounts.Account, db *db.Database, bh *objs.BlockHeader, start uint64, end uint64) *SnapshotTask {
+func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint64, end uint64) *SnapshotTask {
 	return &SnapshotTask{
 		Task: NewTask(&SnapshotState{
-			account:     account,
-			blockHeader: bh,
-			consensusDb: db,
+			Account:     account,
+			BlockHeader: bh,
 		}, start, end),
 	}
 }
@@ -60,14 +55,14 @@ func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 		return objects.ErrCanNotContinue
 	}
 
-	rawBClaims, err := taskState.blockHeader.BClaims.MarshalBinary()
+	rawBClaims, err := taskState.BlockHeader.BClaims.MarshalBinary()
 	if err != nil {
 		logger.Errorf("Unable to marshal block header for snapshot: %v", err)
 		return err
 	}
 
-	taskState.rawBclaims = rawBClaims
-	taskState.rawSigGroup = taskState.blockHeader.SigGroup
+	taskState.RawBClaims = rawBClaims
+	taskState.RawSigGroup = taskState.BlockHeader.SigGroup
 
 	return nil
 }
@@ -105,14 +100,14 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 		return nil
 	}
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
 		logger.Debugf("Failed to generate transaction options: %v", err)
 		return err
 	}
-	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, taskState.rawSigGroup, taskState.rawBclaims)
+	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, taskState.RawSigGroup, taskState.RawBClaims)
 	if err != nil {
 		logger.Debugf("Failed to send snapshot: %v", err)
 		// TODO: ?we should ignore any revert on contract execution and wait the confirmation delay to try again
@@ -142,25 +137,20 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return true
 	}
 
-	var height uint32
-	err := taskState.consensusDb.View(func(txn *badger.Txn) error {
-		bh, err := taskState.consensusDb.GetLastSnapshot(txn)
-		if err != nil {
-			return err
-		}
-		if bh == nil {
-			return errors.New("invalid snapshot bh was read from the db")
-		}
-		height = bh.BClaims.Height
-		return nil
-	})
+	opts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		logger.Debugf("Snapshot for height %v was not found on from db: %v", taskState.blockHeader.BClaims.Height, err)
+		logger.Errorf("SnapshotsTask.ShouldRetry() failed to get call options: %v", err)
+		return true
+	}
+
+	height, err := eth.Contracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
+	if err != nil {
+		logger.Errorf("Failed to determine height: %v", err)
 		return true
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if taskState.blockHeader.BClaims.Height != 0 && taskState.blockHeader.BClaims.Height < height {
+	if taskState.BlockHeader.BClaims.Height != 0 && taskState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
 		return false
 	}
 

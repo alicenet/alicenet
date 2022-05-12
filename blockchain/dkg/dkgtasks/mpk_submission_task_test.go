@@ -51,7 +51,8 @@ func TestMPKSubmissionGoodAllValid(t *testing.T) {
 
 	// Validate MPK
 	for idx, acct := range accounts {
-		callOpts := eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(callOpts)
 		assert.Nil(t, err)
 		assert.True(t, isMPKSet)

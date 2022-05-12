@@ -167,7 +167,11 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 
 	//Check if my GPKj is submitted, if not should retry
 	me := taskState.Account
-	callOpts := eth.GetCallOpts(ctx, me)
+	callOpts, err := eth.GetCallOpts(ctx, me)
+	if err != nil {
+		logger.Debug("PKSubmissionTask ShouldRetry() failed getting call opts")
+		return true
+	}
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)
 	if err == nil && participantState.Gpkj[0].Cmp(taskState.Participants[me.Address].GPKj[0]) == 0 &&
 		participantState.Gpkj[1].Cmp(taskState.Participants[me.Address].GPKj[1]) == 0 &&

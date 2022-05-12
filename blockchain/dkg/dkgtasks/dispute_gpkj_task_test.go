@@ -49,7 +49,8 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 		}
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)
@@ -130,7 +131,8 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 		}
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)
@@ -199,7 +201,8 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 		}
 	}
 
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)

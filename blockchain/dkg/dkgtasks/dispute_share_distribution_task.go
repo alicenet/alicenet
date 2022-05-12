@@ -101,11 +101,14 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 	logger.Info("DisputeShareDistributionTask doTask()")
 
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting call options: %v", err)
+	}
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return dkg.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting txn opts: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -202,10 +205,15 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		logger.Error(fmt.Sprintf("DisputeShareDistribution.ShouldRetry() could not get call options: %v", err))
+		return true
+	}
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
-		logger.Error("could not get BadParticipants")
+		logger.Error(fmt.Sprintf("DisputeShareDistribution.ShouldRetry() could not get BadParticipants: %v", err))
+		return true
 	}
 
 	logger.WithFields(logrus.Fields{

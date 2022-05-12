@@ -3,6 +3,7 @@ package dkgevents
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -18,12 +19,14 @@ import (
 // todo: improve this
 func isValidator(eth interfaces.Ethereum, logger *logrus.Entry, acct accounts.Account) (bool, error) {
 	ctx := context.Background()
-	callOpts := eth.GetCallOpts(ctx, acct)
+	callOpts, err := eth.GetCallOpts(ctx, acct)
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("cannot check if I'm a validator, failed getting call options: %v", err))
+	}
 	isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, acct.Address)
 	if err != nil {
-		return false, errors.New("cannot check if I'm a validator")
+		return false, errors.New(fmt.Sprintf("cannot check if I'm a validator :%v", err))
 	}
-
 	if !isValidator {
 		logger.Info("cannot take part in ETHDKG because I'm not a validator")
 		return false, nil
@@ -52,11 +55,13 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
 
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	if err != nil {
+		return dkg.LogReturnErrorf(logger, "failed to get call options to retrieve validators address from pool: %v", err)
+	}
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return err
-		// return dkg.LogReturnErrorf(logger, "ProcessRegistrationOpened(): Unable to get validatorAddresses from ValidatorPool: %v", err)
+		return dkg.LogReturnErrorf(logger, "failed to retrieve validator data from validator pool: %v", err)
 	}
 
 	dkgState, registrationEnds, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(

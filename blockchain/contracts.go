@@ -63,7 +63,11 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 		// Just a help for looking up other contracts
 		lookup := func(name string) (common.Address, error) {
 			salt := StringToBytes32(name)
-			addr, err := contractFactory.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), salt)
+			callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
+			if err != nil {
+				logger.Errorf("Failed to generate call options for lookup of \"%v\": %v", name, err)
+			}
+			addr, err := contractFactory.Lookup(callOpts, salt)
 			if err != nil {
 				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
 			} else {

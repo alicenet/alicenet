@@ -118,7 +118,10 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
 	defer cancel()
 
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	if err != nil {
+		return err
+	}
 
 	rawBClaims, err := c.Snapshots().GetBlockClaimsFromSnapshot(callOpts, epoch)
 	if err != nil {

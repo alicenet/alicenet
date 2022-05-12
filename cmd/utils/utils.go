@@ -92,7 +92,11 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 	}
 
 	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.Background(), acct)
+	callOpts, err := eth.GetCallOpts(context.Background(), acct)
+	if err != nil {
+		logger.Warnf("Failed to get call options: %v", err)
+		return
+	}
 
 	logger.Infof("ValidatorPool() address is %v", c.ValidatorPoolAddress().Hex())
 	isValidator, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)

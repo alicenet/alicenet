@@ -108,7 +108,10 @@ func TestCompletion_StartFromCompletion(t *testing.T) {
 	assert.True(t, hasLeader)
 	assert.False(t, suite.completionTasks[0].ShouldRetry(ctx, logger, eth))
 
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount()))
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
+
+	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(objects.Completion), phase)
 

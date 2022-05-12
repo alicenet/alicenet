@@ -161,7 +161,10 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 	}
 
 	var accusableParticipants []common.Address
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		return nil, dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
+	}
 
 	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {

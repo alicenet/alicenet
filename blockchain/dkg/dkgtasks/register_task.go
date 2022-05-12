@@ -147,7 +147,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
-		logger.Error("Invalid convertion of taskState object")
+		logger.Error("RegisterTask ShouldRetry invalid convertion of taskState object")
 		return false
 	}
 
@@ -155,7 +155,11 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return false
 	}
 
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		logger.Errorf("RegisterTask ShouldRetry failed getting call options: %v", err)
+		return true
+	}
 
 	var needsRegistration bool
 	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)

@@ -28,7 +28,9 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 		assert.True(t, task.Success)
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(1), badParticipants.Uint64())
 }
@@ -53,7 +55,9 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 		assert.True(t, task.Success)
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(n), badParticipants.Uint64())
 }
@@ -94,7 +98,9 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 		}
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
@@ -177,11 +183,11 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBad
 		assert.True(t, disputeShareDistTask.Success)
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(2), badParticipants.Uint64())
-
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 
 	//assert bad participants are not validators anymore, i.e, they were fined and evicted
 	isValidator, err := suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[3].Account.Address)

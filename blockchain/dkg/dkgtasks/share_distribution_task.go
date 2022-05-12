@@ -166,7 +166,11 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	}
 
 	// If it's generally good to retry, let's try to be more specific
-	callOpts := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	if err != nil {
+		logger.Errorf("ShareDistributionTask.ShoudRetry() failed getting call options: %v", err)
+		return true
+	}
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, taskState.Account.Address)
 	if err != nil {
 		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)

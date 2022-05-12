@@ -37,7 +37,8 @@ func TestRegisterTask(t *testing.T) {
 	c := eth.Contracts()
 
 	// Check status
-	callOpts := eth.GetCallOpts(ctx, acct)
+	callOpts, err := eth.GetCallOpts(ctx, acct)
+	assert.Nil(t, err)
 	valid, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	assert.Nil(t, err, "Failed checking validator status")
 	assert.True(t, valid)
@@ -138,7 +139,8 @@ func TestRegistrationGood2(t *testing.T) {
 	//ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	//defer cf()
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
@@ -171,7 +173,8 @@ func TestRegistrationGood2(t *testing.T) {
 
 	// Check public keys are present and valid; last will be invalid
 	for idx, acct := range accounts {
-		callOpts := eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
@@ -219,7 +222,8 @@ func TestRegistrationBad1(t *testing.T) {
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
@@ -277,7 +281,8 @@ func TestRegistrationBad2(t *testing.T) {
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
@@ -367,7 +372,8 @@ func TestRegistrationBad5(t *testing.T) {
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
@@ -413,7 +419,8 @@ func TestRegisterTaskShouldRetryFalse(t *testing.T) {
 	c := eth.Contracts()
 
 	// Check status
-	callOpts := eth.GetCallOpts(ctx, acct)
+	callOpts, err := eth.GetCallOpts(ctx, acct)
+	assert.Nil(t, err)
 	valid, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	assert.Nil(t, err, "Failed checking validator status")
 	assert.True(t, valid)
@@ -501,7 +508,8 @@ func TestRegisterTaskShouldRetryTrue(t *testing.T) {
 	c := eth.Contracts()
 
 	// Check status
-	callOpts := eth.GetCallOpts(ctx, acct)
+	callOpts, err := eth.GetCallOpts(ctx, acct)
+	assert.Nil(t, err)
 	valid, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	assert.Nil(t, err, "Failed checking validator status")
 	assert.True(t, valid)

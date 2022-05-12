@@ -278,7 +278,8 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.NotNil(t, event)
 
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	validatorAddresses, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	assert.Nil(t, err)
 
@@ -382,7 +383,8 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
-	callOpts := suite.eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount())
+	callOpts, err := suite.eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount())
+	assert.Nil(t, err)
 	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, phase, uint8(objects.ShareDistribution))

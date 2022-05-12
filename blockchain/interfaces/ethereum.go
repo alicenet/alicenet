@@ -26,7 +26,7 @@ type Ethereum interface {
 
 	IsEthereumAccessible() bool
 
-	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
+	GetCallOpts(context.Context, accounts.Account) (*bind.CallOpts, error)
 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
 
 	UnlockAccount(accounts.Account) error

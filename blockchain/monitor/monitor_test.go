@@ -267,3 +267,55 @@ func TestWrapDoNotContinue(t *testing.T) {
 
 	t.Logf("Nice2Err: %v", nice2Err)
 }
+
+// func TestTaskPersistance(t *testing.T) {
+// 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
+// 	assert.Nil(t, err)
+
+// 	database := &db.Database{}
+// 	database.Init(rawDb)
+
+// 	eth := mocks.NewMockBaseEthereum()
+// 	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+// 	assert.Nil(t, err)
+
+// 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
+// 	EPOCH := uint32(1)
+// 	populateMonitor(mon.State, addr0, EPOCH)
+
+// 	snapshotTask := &tasks.SnapshotTask{
+// 		Task: tasks.NewTask(&tasks.SnapshotState{
+// 			account:     addr0,
+// 			blockHeader: bh,
+// 			consensusDb: db,
+// 		}, start, end),
+// 	}
+// 	// Schedule some tasks
+// 	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)
+// 	assert.Nil(t, err)
+
+// 	_, err = mon.State.Schedule.Schedule(3, 4, mockTsk)
+// 	assert.Nil(t, err)
+
+// 	_, err = mon.State.Schedule.Schedule(5, 6, mockTsk)
+// 	assert.Nil(t, err)
+
+// 	_, err = mon.State.Schedule.Schedule(7, 8, mockTsk)
+// 	assert.Nil(t, err)
+
+// 	raw, err := json.Marshal(mon)
+// 	assert.Nil(t, err)
+// 	t.Logf("Raw: %v", string(raw))
+
+// 	mon.PersistState()
+
+// 	//
+// 	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+// 	assert.Nil(t, err)
+
+// 	newMon.LoadState()
+
+// 	newRaw, err := json.Marshal(mon)
+// 	assert.Nil(t, err)
+// 	t.Logf("NewRaw: %v", string(newRaw))
+// }

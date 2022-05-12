@@ -64,7 +64,8 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 		assert.True(t, disputeMissingKeyshareTask.Success)
 	}
 
-	callOpts := eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(unsubmittedKeyShares), badParticipants.Int64())

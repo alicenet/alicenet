@@ -39,7 +39,8 @@ func TestGPKjSubmissionGoodAllValid(t *testing.T) {
 
 	// Check gpkjs and signatures are present and valid
 	for idx, acct := range accounts {
-		callOpts := eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 

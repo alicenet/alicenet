@@ -159,7 +159,11 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	}
 
 	me := taskState.Account
-	callOpts := eth.GetCallOpts(ctx, me)
+	callOpts, err := eth.GetCallOpts(ctx, me)
+	if err != nil {
+		logger.Debugf("KeyshareSubmissionTask ShouldRetry failed getting call options: %v", err)
+		return true
+	}
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
