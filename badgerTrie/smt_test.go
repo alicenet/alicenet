@@ -10,13 +10,10 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"os"
-	"runtime"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
-
-	"time"
 
 	"fmt"
 	"testing"
@@ -958,7 +955,7 @@ func TestParseBatchNoPanic(t *testing.T) {
 			} else {
 				data = GetFreshData(1, i)[0]
 			}
-			smt.parseBatch(data)
+			smt.parseBatch(data)//nolint:errcheck			
 		}
 	}
 }
@@ -1521,6 +1518,7 @@ func TestSnapShotDrop(t *testing.T) {
 	}
 }
 
+/*
 func benchmark10MAccounts10Ktps(db *badger.DB, smt *SMT, b *testing.B) {
 	fmt.Println("\nLoading b.N x 1000 accounts")
 	newkeys := GetFreshData(1000, 32)
@@ -1574,7 +1572,7 @@ func benchmark10MAccounts10Ktps(db *badger.DB, smt *SMT, b *testing.B) {
 	}
 }
 
-/*
+
 //go test -run=BenchmarkSMT -bench=. -benchmem -test.benchtime=20s
 func BenchmarkSMT(b *testing.B) {
 	dir, err := ioutil.TempDir("", "badger-test")

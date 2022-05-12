@@ -114,7 +114,7 @@ func (f *funder) setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	}
 	return f.setupSecpSigner(privk)
 }
-
+//nolint:unused
 func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	signer := &crypto.BNSigner{}
 	err := signer.SetPrivk(privk)
@@ -188,7 +188,10 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	}
 	valueOut := uint256.Zero()
 	for _, r := range recipients {
-		valueOut.Add(valueOut, uint256.One())
+		_, err := valueOut.Add(valueOut, uint256.One())
+		if err != nil {
+			return nil, err
+		}
 		newOwner := &aobjs.ValueStoreOwner{}
 		newOwner.New(r.acct, f.getCurveSpec(r.signer))
 		newValueStore := &aobjs.ValueStore{
@@ -201,7 +204,11 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 			TxHash: make([]byte, constants.HashLen),
 		}
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			return nil, err
+		}
+
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	if consumedValue.Gt(valueOut) {
@@ -222,17 +229,26 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 			TxHash: make([]byte, constants.HashLen),
 		}
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
-	tx.SetTxHash()
+	err := tx.SetTxHash()
+	if err != nil {
+		return nil, err
+	}
 	for idx, consumedUtxo := range consumedUtxos {
 		consumedVS, err := consumedUtxo.ValueStore()
 		if err != nil {
 			return nil, err
 		}
 		txIn := tx.Vin[idx]
-		consumedVS.Sign(txIn, signer)
+		err = consumedVS.Sign(txIn, signer)
+		if err != nil {
+			return nil, err
+		}
 	}
 	txb, err := tx.MarshalBinary()
 	if err != nil {

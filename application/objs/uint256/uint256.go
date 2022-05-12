@@ -401,11 +401,7 @@ func (u *Uint256) IsZero() bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	z := new(Uint256).SetZero()
-	if u.Eq(z) {
-		return true
-	}
-	return false
+	return u.val.IsZero()
 }
 
 // DSPIMinDeposit returns constants.DSPIMinDeposit as Uint256

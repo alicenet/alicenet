@@ -12,11 +12,13 @@ func (e *ErrInvalid) Error() string {
 	return "the object is invalid: " + e.Err.Error()
 }
 
+//nolint:errcheck
 func (e *ErrInvalid) Wrap(err error) *ErrInvalid {
 	e.Err.Wrap(err) // call method of embedded Err
 	return e        // but return own reference to enable chaining
 }
 
+//nolint:errcheck
 func (e *ErrInvalid) Trace(i ...interface{}) *ErrInvalid {
 	e.Err.trace(1, i...) // call method of embedded Err
 	return e             // but return own reference to enable chaining

@@ -24,7 +24,8 @@ func TestStartTask_initializeTask_HappyPath(t *testing.T) {
 	task := mocks.NewMockTask()
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
@@ -38,7 +39,8 @@ func TestStartTask_initializeTask_Error(t *testing.T) {
 	task.InitializeFunc.SetDefaultReturn(errors.New("initialize error"))
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.NotCalled(t, task.DoWorkFunc)
@@ -57,7 +59,8 @@ func TestStartTask_executeTask_ErrorRetry(t *testing.T) {
 	task.DoRetryFunc.SetDefaultReturn(errors.New(tasks.NonceToLowError))
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
@@ -75,7 +78,8 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
@@ -99,7 +103,8 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
@@ -123,7 +128,8 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	mockrequire.Called(t, task.DoWorkFunc)
@@ -148,7 +154,8 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	expectedGasFeeCap := big.NewInt(213534)
@@ -175,7 +182,8 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
 
 	wg := sync.WaitGroup{}
-	tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, objects.NewDkgState(accounts.Account{}), nil)
+	assert.NoError(t, err)
 	wg.Wait()
 
 	expectedGasFeeCap := big.NewInt(1000000)

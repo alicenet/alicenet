@@ -7,5 +7,4 @@ package mocks
 //go:generate go-mockgen -f -i Ethereum --prefix=Base -o interfaces_base.mockgen.go github.com/MadBase/MadNet/blockchain/interfaces
 
 // Mocks created from bindings:
-
 //go:generate go-mockgen -f -i IETHDKG -i IGovernance -i IAToken -i IBToken -i IAliceNetFactory -i IPublicStaking -i ISnapshots -i IValidatorPool -i IValidatorStaking  -o bindings.mockgen.go github.com/MadBase/MadNet/bridge/bindings

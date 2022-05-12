@@ -866,7 +866,10 @@ func TestUint256AddModNils(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (5)")
 	}
-	m.FromUint64(5)
+	_, err = m.FromUint64(5)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	two := Two()
 	res, err := u.AddMod(a, b, m)

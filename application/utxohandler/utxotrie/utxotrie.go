@@ -27,6 +27,7 @@ func setRootForHeight(txn *badger.Txn, height uint32, root []byte) error {
 	return utils.SetValue(txn, key, root)
 }
 
+//nolint:unused,deadcode
 func getRootForHeight(txn *badger.Txn, height uint32) ([]byte, error) {
 	key := makeheightKey(height)
 	return utils.GetValue(txn, key)

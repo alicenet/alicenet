@@ -13,6 +13,7 @@ type PeerClient interface {
 	Feedback(int)
 }
 
+//nolint:unused,deadcode
 type peerClient struct {
 	PeerClient
 }

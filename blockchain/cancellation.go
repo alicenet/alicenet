@@ -17,9 +17,12 @@ func SleepWithContext(ctx context.Context, delay time.Duration) error {
 }
 
 // SlowReturn combines Sleep with returning specified bool value
-func SlowReturn(ctx context.Context, delay time.Duration, value bool) bool {
-	SleepWithContext(ctx, delay)
-	return value
+func SlowReturn(ctx context.Context, delay time.Duration, value bool) (bool, error) {
+	err := SleepWithContext(ctx, delay)
+	if err != nil {
+		return false, err
+	}
+	return value, nil
 }
 
 // CloneBigInt makes a deep copy of a big.Int

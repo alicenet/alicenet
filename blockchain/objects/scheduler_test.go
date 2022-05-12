@@ -232,7 +232,8 @@ func TestRemove(t *testing.T) {
 
 	assert.Equal(t, 1, s.Length())
 
-	s.Remove(taskID)
+	err = s.Remove(taskID)
+	assert.Nil(t, err)
 
 	assert.Equal(t, 0, s.Length())
 }

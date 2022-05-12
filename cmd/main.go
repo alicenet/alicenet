@@ -270,7 +270,11 @@ func main() {
 		for cmd := range options {
 			// Find all the flags
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-				flag.Value.Set(viper.GetString(flag.Name))
+				err := flag.Value.Set(viper.GetString(flag.Name))
+				if err != nil {
+					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)
+					panic(err)
+				}
 			})
 		}
 
@@ -278,6 +282,9 @@ func main() {
 	})
 
 	// Really start application here
-	rootCommand.Execute()
+	err := rootCommand.Execute()
+	if err != nil {
+		logger.Fatalf("Execute() failed:%q", err)
+	}
 	logger.Debugf("main() -- Configuration:%q", config.Configuration.Ethereum)
 }

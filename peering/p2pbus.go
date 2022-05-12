@@ -106,6 +106,7 @@ type GossipTransactionMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipTransactionAck struct {
 	resp *pb.GossipTransactionAck
 	err  error
@@ -117,6 +118,7 @@ type GossipProposalMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipProposalAck struct {
 	resp *pb.GossipProposalAck
 	err  error
@@ -128,6 +130,7 @@ type GossipPreVoteMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipPreVoteAck struct {
 	resp *pb.GossipPreVoteAck
 	err  error
@@ -139,6 +142,7 @@ type GossipPreVoteNilMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipPreVoteNilAck struct {
 	resp *pb.GossipPreVoteNilAck
 	err  error
@@ -150,6 +154,7 @@ type GossipPreCommitMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipPreCommitAck struct {
 	resp *pb.GossipPreCommitAck
 	err  error
@@ -161,6 +166,7 @@ type GossipPreCommitNilMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipPreCommitNilAck struct {
 	resp *pb.GossipPreCommitNilAck
 	err  error
@@ -172,6 +178,7 @@ type GossipNextRoundMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipNextRoundAck struct {
 	resp *pb.GossipNextRoundAck
 	err  error
@@ -183,6 +190,7 @@ type GossipNextHeightMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipNextHeightAck struct {
 	resp *pb.GossipNextHeightAck
 	err  error
@@ -194,6 +202,7 @@ type GossipBlockHeaderMessage struct {
 	opts []grpc.CallOption
 }
 
+//nolint:structcheck,unused
 type GossipBlockHeaderAck struct {
 	resp *pb.GossipBlockHeaderAck
 	err  error
@@ -271,7 +280,6 @@ type P2PBus struct {
 	gossipTxChan      <-chan interface{}
 	closeChan         <-chan struct{}
 	maxRequestWorkers int
-	minRequestWorkers int
 	metricChan        chan error
 	workerKillChan    chan struct{}
 	errMetric         int

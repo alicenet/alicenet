@@ -1,6 +1,11 @@
 package db
 
 import (
+	"io/ioutil"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/constants"
@@ -8,10 +13,6 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"io/ioutil"
-	"os"
-	"strconv"
-	"testing"
 )
 
 func TestSetAndGetUTXO_Success(t *testing.T) {
@@ -113,6 +114,9 @@ func TestSetAndGetUTXO_Error(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = db.View(func(txn *badger.Txn) error {
 		_, err := GetUTXO(txn, key)
@@ -121,6 +125,9 @@ func TestSetAndGetUTXO_Error(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSetAndGetTx_Success(t *testing.T) {
@@ -150,6 +157,9 @@ func TestSetAndGetTx_Success(t *testing.T) {
 	consumedUTXOs = append(consumedUTXOs, consumedUTXO)
 
 	txsIn, err := consumedUTXOs.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	generatedUTXOs := objs.Vout{}
 	generatedUTXO, _ := makeVS(t, ownerSigner, 0)
@@ -238,6 +248,9 @@ func TestGetTx_Error(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func makeVS(t *testing.T, ownerSigner objs.Signer, i int) (*objs.TXOut, *objs.ValueStore) {

@@ -35,7 +35,10 @@ func (em *EventMap) Register(ID string, name string, fn EventProcessor) error {
 	em.Lock()
 	defer em.Unlock()
 
-	em.RegisterLocked(ID, name, fn)
+	err := em.RegisterLocked(ID, name, fn)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -3,6 +3,10 @@ package request
 import (
 	"context"
 	"errors"
+	"math/big"
+	"strconv"
+	"testing"
+
 	appObjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -18,9 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"math/big"
-	"strconv"
-	"testing"
 )
 
 type HandlerMock struct {
@@ -49,8 +50,7 @@ type mockRawDB struct {
 }
 
 func (m *mockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
-	strKey := string(key)
-	strValue, ok := m.rawDB[strKey]
+	strValue, ok := m.rawDB[string(key)]
 	if !ok {
 		return nil, errors.New("key not present")
 	}
@@ -59,9 +59,8 @@ func (m *mockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
 }
 
 func (m *mockRawDB) SetValue(txn *badger.Txn, key []byte, value []byte) error {
-	strKey := string(key)
 	strValue := string(value)
-	m.rawDB[strKey] = strValue
+	m.rawDB[string(key)] = strValue
 	return nil
 }
 
@@ -118,6 +117,7 @@ func TestHandler_HandleP2PStatus_Ok(t *testing.T) {
 		}
 		return nil
 	})
+	assert.Nil(t, err)
 
 	resp, err := hndlr.HandleP2PStatus(ctx, &proto.StatusRequest{})
 	assert.Nil(t, err)
@@ -146,6 +146,10 @@ func TestHandler_HandleP2PGetBlockHeaders_Ok(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+		return
+	}
 
 	resp, err := hndlr.HandleP2PGetBlockHeaders(ctx, &proto.GetBlockHeadersRequest{BlockNumbers: []uint32{1}})
 	assert.Nil(t, err)
@@ -336,6 +340,9 @@ func createTx(t *testing.T) *appObjs.Tx {
 	}
 
 	txsIn, err := consumedUTXOs.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	generatedUTXOs := appObjs.Vout{}
 	generatedUTXO, _ := makeVS(t, ownerSigner, 0)

@@ -341,9 +341,16 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		if err != nil {
 			panic(err)
 		}
-		valueOut.Add(valueOut, valuePlusFee)
+		_, err = valueOut.Add(valueOut, valuePlusFee)
+		if err != nil {
+			panic(err)
+		}
+
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	if consumedValue.Gt(valueOut) {
@@ -376,14 +383,20 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 			panic(err)
 		}
 	}
-	tx.SetTxHash()
+	err = tx.SetTxHash()
+	if err != nil {
+		panic(err)
+	}
 	for idx, consumedUtxo := range consumedUtxos {
 		consumedVS, err := consumedUtxo.ValueStore()
 		if err != nil {
 			return nil, err
 		}
 		txIn := tx.Vin[idx]
-		consumedVS.Sign(txIn, signer)
+		err = consumedVS.Sign(txIn, signer)
+		if err != nil {
+			return nil, err
+		}
 	}
 	txb, err := tx.MarshalBinary()
 	if err != nil {
@@ -547,7 +560,10 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 		}
 		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
 		//valueOut += deposit
-		valueOut.Add(valueOut, deposit)
+		_, err = valueOut.Add(valueOut, deposit)
+		if err != nil {
+			return nil, err
+		}
 		newOwner := &aobjs.DataStoreOwner{}
 		newOwner.New(ownerAcct, f.getCurveSpec(signer))
 		newDataStore := &aobjs.DataStore{
@@ -603,7 +619,10 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 		}
 		tx.Vout = append(tx.Vout, newUTXO)
 		//valueOut += diff
-		valueOut.Add(valueOut, diff)
+		_,err = valueOut.Add(valueOut, diff)
+		if err != nil {
+			panic(err)
+		}
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
 	err = tx.Vout.SetTxOutIdx()
@@ -747,14 +766,17 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 
 	dsTxIn, err := ds.MakeTxIn()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Print(err.Error())
 		os.Exit(1)
 	}
 	tx.Vin = append(tx.Vin, dsTxIn)
 	consumedUtxos = append(consumedUtxos, ds)
 	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
 
-	consumedValue.Add(consumedValue, v)
+	_,err = consumedValue.Add(consumedValue, v)
+	if err != nil {
+		panic(err)
+	}
 	valueOut := uint256.Zero()
 	{
 		en, err := f.client.GetEpochNumber(ctx)
@@ -762,7 +784,10 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 			return nil, err
 		}
 		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		valueOut.Add(valueOut, deposit)
+		_,err = valueOut.Add(valueOut, deposit)
+		if err != nil {
+			panic(err)
+		}
 		newOwner := &aobjs.DataStoreOwner{}
 		newOwner.New(ownerAcct, f.getCurveSpec(signer))
 		newDataStore := &aobjs.DataStore{
@@ -787,7 +812,10 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 		fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
 		fmt.Printf("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s\n", index, deposit, eoe, msg)
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewDataStore(newDataStore)
+		err = newUTXO.NewDataStore(newDataStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
@@ -809,14 +837,26 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 			TxHash: make([]byte, constants.HashLen),
 		}
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
-		valueOut.Add(valueOut, diff)
+		_, err = valueOut.Add(valueOut, diff)
+		if err != nil {
+			panic(err)
+		}
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	tx.Vout.SetTxOutIdx()
+	err = tx.Vout.SetTxOutIdx()
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	tx.SetTxHash()
+	err = tx.SetTxHash()
+	if err != nil {
+		return nil, err
+	}
 	for _, newUtxo := range tx.Vout {
 		switch {
 		case newUtxo.HasDataStore():
@@ -839,18 +879,24 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 				return nil, err
 			}
 			txIn := tx.Vin[idx]
-			consumedVS.Sign(txIn, signer)
+			err = consumedVS.Sign(txIn, signer)
+			if err != nil {
+				return nil, err
+			}
 		case consumedUtxo.HasDataStore():
 			consumedDS, err := consumedUtxo.DataStore()
 			if err != nil {
 				return nil, err
 			}
 			txIn := tx.Vin[idx]
-			consumedDS.Sign(txIn, signer)
+			err = consumedDS.Sign(txIn, signer)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	bn, err = f.client.GetBlockNumber(ctx)
+	_, err = f.client.GetBlockNumber(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -948,14 +994,17 @@ func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Si
 
 	dsTxIn, err := ds.MakeTxIn()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Print(err.Error())
 		os.Exit(1)
 	}
 	tx.Vin = append(tx.Vin, dsTxIn)
 	consumedUtxos = append(consumedUtxos, ds)
 	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
 
-	consumedValue.Add(consumedValue, v)
+	_, err = consumedValue.Add(consumedValue, v)
+	if err != nil {
+		return nil, err
+	}
 	valueOut := uint256.Zero()
 	{
 		en, err := f.client.GetEpochNumber(ctx)
@@ -963,7 +1012,10 @@ func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Si
 			return nil, err
 		}
 		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		valueOut.Add(valueOut, deposit)
+		_, err = valueOut.Add(valueOut, deposit)
+		if err != nil {
+			return nil, err
+		}
 		newOwner := &aobjs.DataStoreOwner{}
 		newOwner.New(ownerAcct, f.getCurveSpec(signer))
 		newDataStore := &aobjs.DataStore{
@@ -988,7 +1040,10 @@ func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Si
 		fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
 		fmt.Printf("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s\n", index, deposit, eoe, msg)
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewDataStore(newDataStore)
+		err = newUTXO.NewDataStore(newDataStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
@@ -1010,14 +1065,26 @@ func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Si
 			TxHash: make([]byte, constants.HashLen),
 		}
 		newUTXO := &aobjs.TXOut{}
-		newUTXO.NewValueStore(newValueStore)
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			return nil, err
+		}
 		tx.Vout = append(tx.Vout, newUTXO)
-		valueOut.Add(valueOut, diff)
+		_, err = valueOut.Add(valueOut, diff)
+		if err != nil {
+			return nil, err
+		}
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	tx.Vout.SetTxOutIdx()
+	err = tx.Vout.SetTxOutIdx()
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	tx.SetTxHash()
+	err = tx.SetTxHash()
+	if err != nil {
+		return nil, err
+	}
 	for _, newUtxo := range tx.Vout {
 		switch {
 		case newUtxo.HasDataStore():
@@ -1040,18 +1107,24 @@ func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Si
 				return nil, err
 			}
 			txIn := tx.Vin[idx]
-			consumedVS.Sign(txIn, signer)
+			err = consumedVS.Sign(txIn, signer)
+			if err != nil {
+				return nil, err
+			}
 		case consumedUtxo.HasDataStore():
 			consumedDS, err := consumedUtxo.DataStore()
 			if err != nil {
 				return nil, err
 			}
 			txIn := tx.Vin[idx]
-			consumedDS.Sign(txIn, signer)
+			err = consumedDS.Sign(txIn, signer)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	bn, err = f.client.GetBlockNumber(ctx)
+	_, err = f.client.GetBlockNumber(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1098,19 +1171,28 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		f.blockingSendTx(ctx, f.client, tx)
+		err = f.blockingSendTx(ctx, f.client, tx)
+		if err != nil {
+			panic(err)
+		}
 		time.Sleep(5 * time.Second)
 		tx, err = f.setupDataStoreTransaction2(ctx, f.signer, f.acct, strings.Join([]string{*mPtr, "two"}, "-"), *iPtr)
 		if err != nil {
 			panic(err)
 		}
-		f.blockingSendTx(ctx, f.client, tx)
+		err = f.blockingSendTx(ctx, f.client, tx)
+		if err != nil {
+			panic(err)
+		}
 		time.Sleep(5 * time.Second)
 		tx, err = f.setupDataStoreTransaction3(ctx, f.signer, f.acct, strings.Join([]string{*mPtr, "three"}, "-"), *iPtr)
 		if err != nil {
 			panic(err)
 		}
-		f.blockingSendTx(ctx, f.client, tx)
+		err = f.blockingSendTx(ctx, f.client, tx)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		numChildren := *nPtr
 		baseIdx := *bPtr

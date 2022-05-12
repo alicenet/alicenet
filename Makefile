@@ -28,7 +28,8 @@ generate-go: init
 	export MSYS_NO_PATHCONV=1 &&\
 	export PASS_PERMVARS=1 &&\
 	./docker/update-container.sh docker/generate-go/Dockerfile madnet-generate-go "-v $$PWD:/app -v /app/bridge -v $$PWD/bridge/bindings:/app/bridge/bindings -v /app/.git" &&\
-	docker start -ia madnet-generate-go
+	docker start -ia madnet-generate-go &&\
+	chmod -R 777 ./test/
 
 clean:
 	go clean
@@ -38,6 +39,6 @@ clean:
 		test/mocks/*.mockgen.go \
 		proto/*.pb.go proto/*.pb.gw.go proto/*_mngen.go proto/*_mngen_test.go \
 		bridge/artifacts bridge/bindings bridge/cache bridge/typechain-types bridge/node_modules
-	
+
 	docker container rm -vf madnet-generate-go madnet-generate-bridge 2> /dev/null
 	docker image rm -f madnet-generate-go madnet-generate-bridge 2> /dev/null

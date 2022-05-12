@@ -102,7 +102,10 @@ func TestA(t *testing.T) {
 			return fmt.Errorf("Expected 0 messages, instead got %v", msgs)
 		}
 
-		write([]byte(`{"jsonrpc":"2.0","id":"sub","method":"subscribe"}`))
+		err = write([]byte(`{"jsonrpc":"2.0","id":"sub","method":"subscribe"}`))
+		if err != nil {
+			return fmt.Errorf("Error writing to server: %v", err)
+		}
 		time.Sleep(100 * time.Millisecond)
 		err = s.Push(PeersUpdate{Addrs: []string{"11.22.33.44:55", "33.44.55.66:77", "55.66.77.88:99"}, Seq: 0})
 		if err != nil {

@@ -1,11 +1,12 @@
 package objs
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/MadBase/MadNet/crypto"
 	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
 )
 
 func TestOwnState(t *testing.T) {
@@ -67,19 +68,26 @@ func TestOwnState(t *testing.T) {
 		TxHshLst: txHashListList[0],
 	}
 
-	os := &OwnState{}
-	os = nil
-	binary, err := os.MarshalBinary()
+	ows := make([]*OwnState, 1)
+	binary, err := ows[0].MarshalBinary()
 	if err == nil {
 		t.Fatal("Should raise an error")
 	}
 
-	err = os.UnmarshalBinary(binary)
+	// os := &OwnState{}
+	// os = nil
+	// binary, err = os.MarshalBinary()
+	// log.Println(err)
+	// if err == nil {
+	// 	t.Fatal("Should raise an error")
+	// }
+
+	err = ows[0].UnmarshalBinary(binary)
 	if err == nil {
 		t.Fatal("Should raise an error")
 	}
 
-	os = &OwnState{
+	ows[0] = &OwnState{
 		VAddr:             secpKey,
 		SyncToBH:          bh,
 		MaxBHSeen:         bh,
@@ -87,17 +95,17 @@ func TestOwnState(t *testing.T) {
 		PendingSnapShot:   bh,
 	}
 
-	binary, err = os.MarshalBinary()
+	binary, err = ows[0].MarshalBinary()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = os.UnmarshalBinary(binary)
+	err = ows[0].UnmarshalBinary(binary)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newOs, err := os.Copy()
+	newOs, err := ows[0].Copy()
 	if err != nil {
 		t.Fatal(err)
 	}

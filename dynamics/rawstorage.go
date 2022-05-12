@@ -70,10 +70,7 @@ func (rs *RawStorage) Copy() (*RawStorage, error) {
 // IsValid returns true if we can successfully make a copy
 func (rs *RawStorage) IsValid() bool {
 	_, err := rs.Copy()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // UpdateValue updates the field with the appropriate value.

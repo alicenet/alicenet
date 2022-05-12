@@ -2,26 +2,29 @@ package atomicswap
 
 import (
 	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/constants"
+	// "github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
-	capnp "github.com/MadBase/go-capnproto2/v2"
+	// "github.com/MadBase/MadNet/utils"
+	// capnp "github.com/MadBase/go-capnproto2/v2"
 )
 
 // Marshal will marshal the AtomicSwap object.
 func Marshal(v mdefs.AtomicSwap) ([]byte, error) {
 	return nil, errorz.ErrInvalid{}.New("AtomicSwap not activated")
+	/* TODO: uncomment once activated
 	raw, err := capnp.Canonicalize(v.Struct)
 	if err != nil {
 		return nil, err
 	}
 	out := utils.CopySlice(raw)
 	return out, nil
+	*/
 }
 
 // Unmarshal will unmarshal the AtomicSwap object.
 func Unmarshal(data []byte) (mdefs.AtomicSwap, error) {
 	return mdefs.AtomicSwap{}, errorz.ErrInvalid{}.New("AtomicSwap not activated")
+	/* TODO: uncomment once activated
 	var err error
 	fn := func() (mdefs.AtomicSwap, error) {
 		defer func() {
@@ -40,11 +43,13 @@ func Unmarshal(data []byte) (mdefs.AtomicSwap, error) {
 		return mdefs.AtomicSwap{}, err
 	}
 	return obj, nil
+		*/
 }
 
 // Validate will validate the AtomicSwap object
 func Validate(v mdefs.AtomicSwap) error {
 	return errorz.ErrInvalid{}.New("AtomicSwap not activated")
+	/* TODO: uncomment once activated
 	if !v.HasASPreImage() {
 		return errorz.ErrInvalid{}.New("atomicswap capn obj does not have ASPreImage")
 	}
@@ -55,4 +60,5 @@ func Validate(v mdefs.AtomicSwap) error {
 		return errorz.ErrInvalid{}.New("atomicswap capn obj is not valid: invalid TxHash; incorrect byte length")
 	}
 	return nil
+		*/
 }

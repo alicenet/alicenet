@@ -147,13 +147,15 @@ func TestMonitorPersist(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
 
-	mon.PersistState()
+	err = mon.PersistState()
+	assert.Nil(t, err)
 
 	//
 	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
-	newMon.LoadState()
+	err = newMon.LoadState()
+	assert.Nil(t, err)
 
 	newRaw, err := json.Marshal(mon)
 	assert.Nil(t, err)
@@ -247,7 +249,8 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	assert.Equal(t, taskStruct.State, taskStruct2.State)
 
 	wg := &sync.WaitGroup{}
-	tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
+	err = tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
+	assert.Nil(t, err)
 	wg.Wait()
 
 	assert.True(t, taskStruct.DoneCalled)

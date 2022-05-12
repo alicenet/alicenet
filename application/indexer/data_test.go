@@ -57,8 +57,7 @@ func TestDataIndexAdd(t *testing.T) {
 	defer db.Close()
 
 	index := makeDataIndex()
-	owner := &objs.Owner{}
-	owner = makeOwner()
+	owner := makeOwner()
 	n := 20
 	pag := 13
 	insertedEntries := make([]*objs.PaginationResponse, n)
@@ -111,7 +110,7 @@ func TestDataIndexAdd(t *testing.T) {
 			}
 
 			for i := 0; i < n; i++ {
-				if bytes.Compare(insertedEntries[i].Index, entry.Index) == 0 && bytes.Compare(insertedEntries[i].UTXOID, entry.UTXOID) == 0 {
+				if bytes.Equal(insertedEntries[i].Index, entry.Index) && bytes.Equal(insertedEntries[i].UTXOID, entry.UTXOID) {
 					found++
 				}
 			}
@@ -145,11 +144,10 @@ func TestDataIndexAddFastSync(t *testing.T) {
 	defer db.Close()
 
 	index := makeDataIndex()
-	owner := &objs.Owner{}
+	owner := makeOwner()
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	dataIndex := trie.Hasher([]byte("dataIndex"))
 
-	owner = makeOwner()
 	err = db.Update(func(txn *badger.Txn) error {
 		err := index.Add(txn, utxoID, owner, dataIndex)
 		if err != nil {

@@ -34,7 +34,10 @@ func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 	pt.LastPaginatedType = LastPaginatedType(data[0])
 
 	TotalValue := &uint256.Uint256{}
-	TotalValue.UnmarshalBinary(data[1:33])
+	err := TotalValue.UnmarshalBinary(data[1:33])
+	if err != nil {
+		return err
+	}
 	pt.TotalValue = TotalValue
 
 	pt.LastKey = make([]byte, 0, 96)

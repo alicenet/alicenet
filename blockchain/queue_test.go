@@ -19,7 +19,8 @@ func TestEnqueue(t *testing.T) {
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		q.Put(5)
+		err := q.Put(5)
+		assert.Nil(t, err)
 	}()
 
 	for i := 0; i < 5; i++ {

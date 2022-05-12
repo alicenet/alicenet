@@ -102,10 +102,7 @@ func (srpc *Handlers) Stop() {
 }
 
 func (srpc *Handlers) safe() bool {
-	if srpc.safecount == 0 {
-		return false
-	}
-	return true
+	return srpc.safecount != 0
 }
 
 func (srpc *Handlers) SafeMonitor() {

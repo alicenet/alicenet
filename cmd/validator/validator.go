@@ -90,7 +90,10 @@ func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keysto
 		for {
 			time.Sleep(30 * time.Second)
 			ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
-			eth.Queue().Status(ctx)
+			err := eth.Queue().Status(ctx)
+			if err != nil {
+				logger.Errorf("Queue status: %v", err)
+			}
 			cf()
 		}
 	}()
@@ -337,13 +340,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 	defer mon.Close()
 
-	go ipcServer.Start()
+	go ipcServer.Start() //nolint:errcheck
 	defer ipcServer.Close()
 
 	go peerManager.Start()
 	defer peerManager.Close()
 
-	go consGossipClient.Start()
+	go consGossipClient.Start()//nolint:errcheck
 	defer consGossipClient.Close()
 
 	go consDlManager.Start()
@@ -362,7 +365,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
 
-	signals := make(chan os.Signal)
+	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	consSync.Start()

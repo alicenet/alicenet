@@ -14,6 +14,7 @@ type backpressureCallOption struct {
 	*grpc.EmptyCallOption
 }
 
+//nolint:unused
 func (pm *backpressureCallOption) pushback() {}
 
 // WithNoBlocking generates a grpc.CallOption that is honored by the methods

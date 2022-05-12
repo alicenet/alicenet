@@ -85,6 +85,9 @@ func TestNextRound(t *testing.T) {
 
 	nrcl.RClaims.Height++
 	nrclBytes, err := nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
 	nrcErr := &NRClaims{}
 	err = nrcErr.UnmarshalBinary(nrclBytes)
 	if err == nil {
@@ -94,6 +97,9 @@ func TestNextRound(t *testing.T) {
 	nrcl.RClaims.Height--
 	nrcl.RClaims.Round++
 	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
 	nrcErr = &NRClaims{}
 	err = nrcErr.UnmarshalBinary(nrclBytes)
 	if err == nil {
@@ -103,26 +109,35 @@ func TestNextRound(t *testing.T) {
 	nrcl.RClaims.Round--
 	nrcl.RClaims.ChainID++
 	nrclBytes, err = nrcl.MarshalBinary()
-	nrcErr = &NRClaims{}
-	err = nrcErr.UnmarshalBinary(nrclBytes)
-	if err == nil {
+	if err != nil {
 		t.Fatal("Should have raised error (3)")
 	}
-
-	nrcl.RClaims.ChainID--
-	nrcl.RClaims.PrevBlock = make([]byte, constants.HashLen)
-	nrclBytes, err = nrcl.MarshalBinary()
 	nrcErr = &NRClaims{}
 	err = nrcErr.UnmarshalBinary(nrclBytes)
 	if err == nil {
 		t.Fatal("Should have raised error (4)")
 	}
 
-	nrcl.RClaims.PrevBlock = []byte{1, 2, 3}
+	nrcl.RClaims.ChainID--
+	nrcl.RClaims.PrevBlock = make([]byte, constants.HashLen)
 	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal("Should have raised error (5)")
+	}
 	nrcErr = &NRClaims{}
 	err = nrcErr.UnmarshalBinary(nrclBytes)
 	if err == nil {
-		t.Fatal("Should have raised error (5)")
+		t.Fatal("Should have raised error (6)")
+	}
+
+	nrcl.RClaims.PrevBlock = []byte{1, 2, 3}
+	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal("Should have raised error (7)")
+	}
+	nrcErr = &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (8)")
 	}
 }

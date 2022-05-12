@@ -3,6 +3,9 @@ package consensus
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/admin"
@@ -12,8 +15,6 @@ import (
 	mncrypto "github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -235,8 +236,7 @@ func TestSynchronizer_SafeOk(t *testing.T) {
 }
 
 func stopSync(sync *Synchronizer) {
-	select {
-	case <-time.After(timeToStop):
+	 <-time.After(timeToStop)
 		sync.Stop()
-	}
+	
 }

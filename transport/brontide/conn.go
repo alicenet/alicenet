@@ -49,8 +49,8 @@ func (c *Conn) wrapClose(newClose func() error) {
 func (c *Conn) Close() error {
 	c.closeOnce.Do(func() {
 		close(c.closeChan)
-		go c.conn.Close()
-		go c.closeFn()
+		go c.conn.Close() //nolint:errcheck
+		go c.closeFn() //nolint:errcheck
 	})
 	return nil
 }
