@@ -183,17 +183,10 @@ func TestBidirectionalMarshaling(t *testing.T) {
 		DkgTask: dkgtasks.NewExecutionData(nil, 1, 40),
 	}
 	// Schedule some tasks
-	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(3, 4, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(5, 6, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(7, 8, mockTsk)
-	assert.Nil(t, err)
+	mon.State.Schedule.Schedule(1, 2, mockTsk)
+	mon.State.Schedule.Schedule(3, 4, mockTsk)
+	mon.State.Schedule.Schedule(5, 6, mockTsk)
+	mon.State.Schedule.Schedule(7, 8, mockTsk)
 
 	// Marshal
 	mon.TypeRegistry.RegisterInstanceType(mockTsk)

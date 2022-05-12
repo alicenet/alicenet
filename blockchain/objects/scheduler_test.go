@@ -20,20 +20,15 @@ func TestSchedule(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(1, 2, task)
-	assert.Nil(t, err)
+	s.Schedule(1, 2, task)
 
-	_, err = s.Schedule(3, 4, task)
-	assert.Nil(t, err)
+	s.Schedule(3, 4, task)
 
-	_, err = s.Schedule(5, 6, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 6, task)
 
-	_, err = s.Schedule(7, 8, task)
-	assert.Nil(t, err)
+	s.Schedule(7, 8, task)
 
 	assert.Equal(t, 4, s.Length())
 }
@@ -43,20 +38,15 @@ func TestPurge(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(1, 2, task)
-	assert.Nil(t, err)
+	s.Schedule(1, 2, task)
 
-	_, err = s.Schedule(3, 4, task)
-	assert.Nil(t, err)
+	s.Schedule(3, 4, task)
 
-	_, err = s.Schedule(5, 6, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 6, task)
 
-	_, err = s.Schedule(7, 8, task)
-	assert.Nil(t, err)
+	s.Schedule(7, 8, task)
 
 	assert.Equal(t, 4, s.Length())
 
@@ -70,20 +60,15 @@ func TestPurgePrior(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(1, 2, task)
-	assert.Nil(t, err)
+	s.Schedule(1, 2, task)
 
-	_, err = s.Schedule(3, 4, task)
-	assert.Nil(t, err)
+	s.Schedule(3, 4, task)
 
-	_, err = s.Schedule(5, 6, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 6, task)
 
-	_, err = s.Schedule(7, 8, task)
-	assert.Nil(t, err)
+	s.Schedule(7, 8, task)
 
 	assert.Equal(t, 4, s.Length())
 
@@ -97,23 +82,13 @@ func TestFailSchedule(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
 
-	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(5, 15, task)
-	assert.Nil(t, err)
-
-	_, err = s.Schedule(4, 6, task)
-	assert.NotNil(t, err)
-
-	_, err = s.Schedule(6, 14, task)
-	assert.NotNil(t, err)
-
-	_, err = s.Schedule(14, 16, task)
-	assert.NotNil(t, err)
-
-	_, err = s.Schedule(4, 16, task)
-	assert.NotNil(t, err)
+	s.Schedule(5, 15, task)
+	s.Schedule(4, 6, task)
+	s.Schedule(6, 14, task)
+	s.Schedule(14, 16, task)
+	s.Schedule(4, 16, task)
 
 	assert.Equal(t, 1, s.Length())
 }
@@ -126,11 +101,9 @@ func TestFailSchedule2(t *testing.T) {
 	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(1, 2, task)
-	assert.Nil(t, err)
+	s.Schedule(1, 2, task)
 
-	_, err = s.Schedule(2, 3, task)
-	t.Log("error:", err)
+	s.Schedule(2, 3, task)
 	assert.Nil(t, err)
 }
 
@@ -142,23 +115,22 @@ func TestFailSchedule3(t *testing.T) {
 	var err error
 	var task interfaces.Task
 
-	_, err = s.Schedule(7, 15, task)
+	s.Schedule(7, 15, task)
+
+	s.Schedule(15, 17, task)
+
 	assert.Nil(t, err)
 
-	_, err = s.Schedule(15, 17, task)
-	t.Log("error:", err)
-	assert.Nil(t, err)
+	s.Schedule(15, 21, task)
 
-	_, err = s.Schedule(15, 21, task)
-	t.Log("error:", err)
 	assert.NotNil(t, err)
 
-	_, err = s.Schedule(1, 7, task)
-	t.Log("error:", err)
+	s.Schedule(1, 7, task)
+
 	assert.Nil(t, err)
 
-	_, err = s.Schedule(1, 8, task)
-	t.Log("error:", err)
+	s.Schedule(1, 8, task)
+
 	assert.NotNil(t, err)
 }
 
@@ -169,8 +141,7 @@ func TestFind(t *testing.T) {
 
 	var task interfaces.Task
 
-	id, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	id := s.Schedule(5, 15, task)
 
 	taskID, err := s.Find(10)
 	assert.Nil(t, err)
@@ -199,10 +170,9 @@ func TestFailFind(t *testing.T) {
 
 	var task interfaces.Task
 
-	_, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 15, task)
 
-	_, err = s.Find(4)
+	_, err := s.Find(4)
 	assert.Equal(t, objects.ErrNothingScheduled, err)
 }
 
@@ -213,10 +183,9 @@ func TestFailFind2(t *testing.T) {
 
 	var task interfaces.Task
 
-	_, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 15, task)
 
-	_, err = s.Find(15)
+	_, err := s.Find(15)
 	assert.Equal(t, objects.ErrNothingScheduled, err)
 }
 
@@ -227,12 +196,11 @@ func TestRemove(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 
-	taskID, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	taskID := s.Schedule(5, 15, task)
 
 	assert.Equal(t, 1, s.Length())
 
-	err = s.Remove(taskID)
+	err := s.Remove(taskID)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 0, s.Length())
@@ -247,13 +215,12 @@ func TestFailRemove(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 
 	// Schedule something but don't bother saving the id
-	_, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 15, task)
 	assert.Equal(t, 1, s.Length())
 
 	// Make up a random id
 	taskID := uuid.NewRandom()
-	err = s.Remove(taskID)
+	err := s.Remove(taskID)
 	assert.Equal(t, objects.ErrNotScheduled, err)
 
 	// Nothing should have been removed
@@ -270,10 +237,9 @@ func TestRetreive(t *testing.T) {
 	// tasks.RegisterTask(task)
 
 	// Schedule something
-	taskID, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	taskID := s.Schedule(5, 15, task)
 
-	_, err = s.Retrieve(taskID)
+	_, err := s.Retrieve(taskID)
 	assert.Nil(t, err)
 }
 
@@ -287,10 +253,9 @@ func TestFailRetrieve(t *testing.T) {
 	// tasks.RegisterTask(task)
 
 	// Schedule something
-	_, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	s.Schedule(5, 15, task)
 
-	_, err = s.Retrieve(uuid.NewRandom())
+	_, err := s.Retrieve(uuid.NewRandom())
 	assert.Equal(t, objects.ErrNotScheduled, err)
 }
 
@@ -302,8 +267,7 @@ func TestMarshal(t *testing.T) {
 	s := objects.NewSequentialSchedule(m, nil)
 
 	// Schedule something
-	taskID, err := s.Schedule(5, 15, task)
-	assert.Nil(t, err)
+	taskID := s.Schedule(5, 15, task)
 	assert.NotNil(t, taskID)
 	assert.Equal(t, 1, s.Length())
 

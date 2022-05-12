@@ -273,7 +273,6 @@ func main() {
 				err := flag.Value.Set(viper.GetString(flag.Name))
 				if err != nil {
 					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)
-					panic(err)
 				}
 			})
 		}

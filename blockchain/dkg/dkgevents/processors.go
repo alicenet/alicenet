@@ -94,10 +94,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds,
 	}).Info("Scheduling NewRegisterTask")
 
-	_, err = state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, registrationTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(dkgState.PhaseStart, registrationEnds, registrationTask)
 
 	// schedule DisputeRegistration
 	logger.WithFields(logrus.Fields{
@@ -105,10 +102,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, st
 		"PhaseEnd":   registrationEnds + dkgState.PhaseLength,
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	_, err = state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, disputeMissingRegistrationTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(registrationEnds, registrationEnds+dkgState.PhaseLength, disputeMissingRegistrationTask)
 
 	state.Schedule.Status(logger)
 
@@ -195,10 +189,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"PhaseEnd":   shareDistributionEnd,
 	}).Info("Scheduling NewShareDistributionTask")
 
-	_, err = state.Schedule.Schedule(shareDistributionStart, shareDistributionEnd, shareDistributionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(shareDistributionStart, shareDistributionEnd, shareDistributionTask)
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
 	logger.WithFields(logrus.Fields{
@@ -206,10 +197,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"PhaseEnd":   disputeEnd,
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	_, err = state.Schedule.Schedule(disputeStart, disputeEnd, disputeMissingShareDistributionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeStart, disputeEnd, disputeMissingShareDistributionTask)
 
 	// schedule DisputeDistributeSharesTask
 	logger.WithFields(logrus.Fields{
@@ -217,10 +205,7 @@ func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, 
 		"PhaseEnd":   disputeEnd,
 	}).Info("Scheduling NewDisputeDistributeSharesTask")
 
-	_, err = state.Schedule.Schedule(disputeStart, disputeEnd, disputeBadSharesTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeStart, disputeEnd, disputeBadSharesTask)
 
 	return nil
 }
@@ -296,21 +281,12 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	state.Schedule.Purge()
 
 	// schedule DisputeShareDistributionTask
-	_, err = state.Schedule.Schedule(disputeShareDistributionStart, disputeShareDistributionEnd, disputeShareDistributionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeShareDistributionStart, disputeShareDistributionEnd, disputeShareDistributionTask)
 
 	// schedule SubmitKeySharesPhase
-	_, err = state.Schedule.Schedule(submitKeySharesPhaseStart, submitKeySharesPhaseEnd, keyshareSubmissionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(submitKeySharesPhaseStart, submitKeySharesPhaseEnd, keyshareSubmissionTask)
 	// schedule DisputeMissingKeySharesPhase
-	_, err = state.Schedule.Schedule(missingKeySharesDisputeStart, missingKeySharesDisputeEnd, disputeMissingKeySharesTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(missingKeySharesDisputeStart, missingKeySharesDisputeEnd, disputeMissingKeySharesTask)
 
 	return nil
 }
@@ -408,10 +384,7 @@ func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.E
 	state.Schedule.Purge()
 
 	// schedule MPKSubmissionTask
-	_,err = state.Schedule.Schedule(phaseStart, phaseEnd, mpkSubmissionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(phaseStart, phaseEnd, mpkSubmissionTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -459,10 +432,7 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	state.Schedule.Purge()
 
 	// schedule GPKJSubmissionTask
-	_, err = state.Schedule.Schedule(gpkjSubmissionStart, gpkjSubmissionEnd, gpkjSubmissionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(gpkjSubmissionStart, gpkjSubmissionEnd, gpkjSubmissionTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -471,10 +441,7 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	}).Info("Scheduling GPKJSubmissionTask")
 
 	// schedule DisputeMissingGPKjTask
-	_, err = state.Schedule.Schedule(disputeMissingGPKjStart, disputeMissingGPKjEnd, disputeMissingGPKjTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeMissingGPKjStart, disputeMissingGPKjEnd, disputeMissingGPKjTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -483,10 +450,7 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, state *objects
 	}).Info("Scheduling DisputeMissingGPKjTask")
 
 	// schedule DisputeGPKjTask
-	_, err = state.Schedule.Schedule(disputeMissingGPKjStart, disputeMissingGPKjEnd, disputeGPKjTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeMissingGPKjStart, disputeMissingGPKjEnd, disputeGPKjTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -540,10 +504,7 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 	state.Schedule.Purge()
 
 	// schedule DisputeGPKJSubmissionTask
-	_, err = state.Schedule.Schedule(disputeGPKjPhaseStart, disputeGPKjPhaseEnd, disputeGPKjTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(disputeGPKjPhaseStart, disputeGPKjPhaseEnd, disputeGPKjTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
@@ -552,10 +513,7 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 	}).Info("Scheduling NewGPKJDisputeTask")
 
 	// schedule Completion
-	_, err = state.Schedule.Schedule(completionStart, completionEnd, completionTask)
-	if err != nil {
-		return err
-	}
+	state.Schedule.Schedule(completionStart, completionEnd, completionTask)
 
 	logger.WithFields(logrus.Fields{
 		"BlockNumber":     event.BlockNumber,
