@@ -28,7 +28,8 @@ generate-go: init
 	export MSYS_NO_PATHCONV=1 &&\
 	export PASS_PERMVARS=1 &&\
 	./docker/update-container.sh docker/generate-go/Dockerfile madnet-generate-go "-v $$PWD:/app -v /app/bridge -v $$PWD/bridge/bindings:/app/bridge/bindings -v /app/.git" &&\
-	docker start -ia madnet-generate-go
+	docker start -ia madnet-generate-go &&\
+	chmod -R 777 ./test/
 
 clean:
 	go clean

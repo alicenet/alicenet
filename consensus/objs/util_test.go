@@ -6,6 +6,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeTxRoot(t *testing.T) {
@@ -188,7 +189,9 @@ func TestExtractRCertAnyBad(t *testing.T) {
 			t.Errorf("Should panic")
 		}
 	}()
-	ExtractRCertAny(nil)
+	rcert, err := ExtractRCertAny(nil)
+	assert.Nil(t, rcert)
+	assert.NotNil(t, err)
 }
 
 func TestExtractRCertBad(t *testing.T) {

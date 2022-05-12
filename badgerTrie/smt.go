@@ -159,7 +159,7 @@ func (s *SMT) update(txn *badger.Txn, root []byte, keys, values, batch [][]byte,
 			// create a new shortcut batch.
 			// simply storing the value will make it hard to move up the
 			// shortcut in case of sibling deletion
-			batch = make([][]byte, 31, 31)
+			batch = make([][]byte, 31)
 			node := s.leafHash(keys[0], values[0], root, batch, 0, height)
 			ch <- mresult{node, false, nil}
 		}
@@ -430,7 +430,7 @@ func (s *SMT) loadChildren(txn *badger.Txn, root []byte, height, iBatch int, bat
 	if height%4 == 0 {
 		if len(root) == 0 {
 			// create a new default batch
-			batch = make([][]byte, 31, 31)
+			batch = make([][]byte, 31)
 			batch[0] = []byte{0}
 		} else {
 			var err error
@@ -460,7 +460,7 @@ func (s *SMT) loadBatch(txn *badger.Txn, root []byte) ([][]byte, error) {
 	val, exists := s.db.updatedNodes[node]
 	s.db.updatedMux.RUnlock()
 	if exists {
-		newVal := make([][]byte, 31, 31)
+		newVal := make([][]byte, 31)
 		copy(newVal, val)
 		return newVal, nil
 	}
@@ -479,7 +479,7 @@ func (s *SMT) loadBatch(txn *badger.Txn, root []byte) ([][]byte, error) {
 
 // parseBatch decodes the byte data into a slice of nodes and bitmap
 func (s *SMT) parseBatch(val []byte) ([][]byte, error) {
-	batch := make([][]byte, 31, 31)
+	batch := make([][]byte, 31)
 	if len(val) == 0 {
 		return nil, errors.New("length of input value should be higher than zero")
 	}
@@ -491,7 +491,7 @@ func (s *SMT) parseBatch(val []byte) ([][]byte, error) {
 	// check if the batch root is a shortcut
 	if bitIsSet(val, 31) {
 		if len(val) < 70 {
-			return nil, errors.New(fmt.Sprintf("length of input value should be seventy-one for a shortcut: got %v %x", len(val), val))
+			return nil, fmt.Errorf("length of input value should be seventy-one for a shortcut: got %v %x", len(val), val)
 		}
 		batch[0] = []byte{1}
 		batch[1] = val[4 : 4+33]
@@ -685,6 +685,7 @@ func (s *SMT) getInteriorNodesNext(batch [][]byte, idx, subtreeHeight, height in
 	return unfinishedLeaves, res, true
 }
 
+//nolint:unused
 func (s *SMT) getUnsyncedNodes(txn *badger.Txn, batch [][]byte, idx, subtreeHeight, height int, root []byte) ([][]byte, []byte) {
 	lidx := idx*2 + 1
 	ridx := idx*2 + 2

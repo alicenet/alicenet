@@ -95,7 +95,10 @@ func TestSocket(t *testing.T) {
 			return fmt.Errorf("Unexpected messages: %v", msgs)
 		}
 
-		write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		err := write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		if err != nil {
+			return fmt.Errorf("Error writing: %v", err)
+		}
 		var calls mock.Calls
 		testutils.WaitUntil(func() bool { calls = im.Calls(); return len(calls.Update) >= 1 })
 
@@ -111,7 +114,10 @@ func TestSocket(t *testing.T) {
 		}
 
 		im.GetRet = mock.GetRet{Ret: lib.NewAddresSet([]string{"22.33.44.55:6666"})}
-		write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		err = write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		if err != nil {
+			return fmt.Errorf("Error writing: %v", err)
+		}
 		testutils.WaitUntil(func() bool { calls = im.Calls(); return len(calls.Update) >= 2 })
 
 		if calls.Get != 2 {

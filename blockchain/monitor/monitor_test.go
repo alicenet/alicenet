@@ -147,13 +147,15 @@ func TestMonitorPersist(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
 
-	mon.PersistState()
+	err = mon.PersistState()
+	assert.Nil(t, err)
 
 	//
 	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
 	assert.Nil(t, err)
 
-	newMon.LoadState()
+	err = newMon.LoadState()
+	assert.Nil(t, err)
 
 	newRaw, err := json.Marshal(mon)
 	assert.Nil(t, err)
@@ -181,17 +183,10 @@ func TestBidirectionalMarshaling(t *testing.T) {
 		DkgTask: tasks.NewTask(nil, 1, 40),
 	}
 	// Schedule some tasks
-	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(3, 4, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(5, 6, mockTsk)
-	assert.Nil(t, err)
-
-	_, err = mon.State.Schedule.Schedule(7, 8, mockTsk)
-	assert.Nil(t, err)
+	mon.State.Schedule.Schedule(1, 2, mockTsk)
+	mon.State.Schedule.Schedule(3, 4, mockTsk)
+	mon.State.Schedule.Schedule(5, 6, mockTsk)
+	mon.State.Schedule.Schedule(7, 8, mockTsk)
 
 	// Marshal
 	mon.TypeRegistry.RegisterInstanceType(mockTsk)
@@ -247,7 +242,8 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	assert.Equal(t, taskStruct.State, taskStruct2.State)
 
 	wg := &sync.WaitGroup{}
-	tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
+	err = tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
+	assert.Nil(t, err)
 	wg.Wait()
 
 	assert.True(t, taskStruct.DoneCalled)

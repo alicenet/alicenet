@@ -4,6 +4,9 @@ import "github.com/MadBase/MadNet/dynamics"
 
 func NewMockStorage() *dynamics.Storage {
 	storage := &dynamics.Storage{}
-	storage.Init(NewMockDb(), NewMockLogger())
+	err := storage.Init(NewMockDb(), NewMockLogger())
+	if err != nil {
+		panic(err)
+	}
 	return storage
 }

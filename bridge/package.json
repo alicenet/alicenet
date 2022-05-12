@@ -16,7 +16,7 @@
     "compile": "hardhat compile",
     "generate": "hardhat go-go-gen --out bindings --pkg bindings --in bindings/bindings-artifacts && ./bindings/generate.sh && ./generate-iface.sh",
     "build": "npm run clean && npm run compile && npm run generate",
-    "postinstall": "sh ../scripts/base-scripts/init-githooks.sh"
+    "postinstall": "sh ../scripts/base-scripts/init-githooks.sh || true"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",

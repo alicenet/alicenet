@@ -200,11 +200,11 @@ func TestConcurrentHandshakes(t *testing.T) {
 		// connect to the listener.
 		remotePriv, err := secp256k1.NewPrivateKey(secp256k1.S256())
 		if err != nil {
-			t.Fatalf("unable to generate private key: %v", err)
+			panic(fmt.Errorf("unable to create remote privkey: %v", err))
 		}
 		remoteConn, err := Dial(remotePriv, testProtocol, testProtoVer, testChainID, 9001, netAddr, net.Dial)
 		if err != nil {
-			t.Errorf("Error in concurrent dial: %v", err)
+			panic(fmt.Errorf("Error in concurrent dial: %v", err))
 		}
 		connChan <- maybeNetConn{remoteConn, err}
 	}()

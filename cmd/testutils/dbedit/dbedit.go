@@ -133,18 +133,22 @@ func rsFn(rs *objs.RoundState) *objs.RoundState {
 	return rsin
 }
 
+//nolint:unused,deadcode
 func PrefixOwnValidatingState() []byte {
 	return []byte("aa")
 }
 
+//nolint:unused,deadcode
 func PrefixCurrentRoundState() []byte {
 	return []byte("ab")
 }
 
+//nolint:unused,deadcode
 func PrefixHistoricRoundState() []byte {
 	return []byte("ac")
 }
 
+//nolint:unused,deadcode
 func printBH(bh *objs.BlockHeader) {
 	fmt.Printf("   CHAINID: %v\n", bh.BClaims.ChainID)
 	fmt.Printf("    HEIGHT: %v\n", bh.BClaims.Height)

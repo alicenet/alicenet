@@ -2,9 +2,9 @@ name: Alicenet CI
 
 on:
   push:
-    branches: [ main, candidate ]
+    branches: [main, candidate]
   pull_request:
-    branches: [ main, candidate ]
+    branches: [main, candidate]
 
 env:
   NODE_VERSION: 16.x
@@ -18,7 +18,6 @@ defaults:
     shell: bash
 
 jobs:
-
   solidity-build:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -26,8 +25,8 @@ jobs:
       run:
         working-directory: ./bridge
     steps:
-    - uses: actions/checkout@v3
-    - uses: ./.github/actions/node-cache
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/node-cache
 
   solidity-unit-tests:
     runs-on: ubuntu-20.04
@@ -98,8 +97,8 @@ jobs:
     steps:
       - name: "Sanitize branch name"
         run: |
-            echo "BRANCH_NAME=$(echo ${{ github.head_ref || github.ref_name }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
-            echo "OPERATING_SYSTEM=$(echo ${{ matrix.os }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$(echo ${{ github.head_ref || github.ref_name }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
+          echo "OPERATING_SYSTEM=$(echo ${{ matrix.os }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - run: make build
@@ -127,8 +126,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      - name: install-golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+      - name: run golangci-lint
+        run: golangci-lint run ./...
 
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
@@ -149,4 +151,3 @@ jobs:
         run: |
           set -euo pipefail
           go test -json -v $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
-

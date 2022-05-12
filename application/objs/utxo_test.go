@@ -1341,3 +1341,12 @@ func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
 		t.Fatal("Incorrect height for ValueStore in CannotBeMinedBeforeHeight")
 	}
 }
+
+func asEqual(t *testing.T, as1, as2 *AtomicSwap) {
+	aspi1 := as1.ASPreImage
+	aspi2 := as2.ASPreImage
+	aspiEqual(t, aspi1, aspi2)
+	if !bytes.Equal(as1.TxHash, as2.TxHash) {
+		t.Fatal("Do not agree on TxHash!")
+	}
+}

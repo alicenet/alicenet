@@ -15,9 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// pseudo-constants
-var initialMessage []byte = []byte("Hello")
-
 func TestCalculateThreshold(t *testing.T) {
 	threshold := math.ThresholdForUserCount(4)
 	assert.Equal(t, 2, threshold)
@@ -446,19 +443,17 @@ func TestGenerateMasterPublicKey(t *testing.T) {
 	privateKeys[participants[0].Address] = private
 
 	// Generate encrypted shares on behalf of participants
-	encryptedShares := [][]*big.Int{}
 	keyShare1s := [][2]*big.Int{}
 	keyShare2s := [][4]*big.Int{}
 	for _, participant := range participants {
 		privateKey := privateKeys[participant.Address]
 
-		participantEncryptedShares, participantPrivateCoefficients, _, err := math.GenerateShares(privateKey, participants)
+		_, participantPrivateCoefficients, _, err := math.GenerateShares(privateKey, participants)
 		assert.Nil(t, err)
 
 		keyShare1, _, keyShare2, err := math.GenerateKeyShare(participantPrivateCoefficients[0])
 		assert.Nil(t, err)
 
-		encryptedShares = append(encryptedShares, participantEncryptedShares)
 		keyShare1s = append(keyShare1s, keyShare1)
 		keyShare2s = append(keyShare2s, keyShare2)
 	}
@@ -748,7 +743,9 @@ func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
 
 	// Generating a valid ethereum address
 	key, _ := crypto.GenerateKey()
-	transactor := bind.NewKeyedTransactor(key)
+	chainId := big.NewInt(1337)
+	transactor, err := bind.NewKeyedTransactorWithChainID(key, chainId)
+	assert.Nil(t, err, "failed to create transactor")
 
 	// Generate a public key
 	privateKey, publicKey, err := math.GenerateKeys()

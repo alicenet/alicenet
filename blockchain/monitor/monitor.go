@@ -257,7 +257,7 @@ func (mon *monitor) Start() error {
 	return nil
 }
 
-func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelChan <-chan bool) error {
+func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelChan <-chan bool) {
 
 	defer wg.Done()
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
@@ -271,19 +271,25 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 		}
 		select {
 		case <-gcTimer:
-			mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio)
+			err := mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio)
+			if err != nil {
+				logger.Errorf("Failed to run value log GC: %v", err)
+			}
 			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
 		case <-cancelChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
 			cf()
-			return nil
+			return
 		case tick := <-time.After(tock):
 			mon.logger.WithTime(tick).Debug("Tick")
 
 			oldMonitorState := mon.State.Clone()
 
 			persistMonitorCB := func() {
-				mon.PersistState()
+				err := mon.PersistState()
+				if err != nil {
+					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
+				}
 			}
 
 			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB); err != nil {
@@ -446,8 +452,14 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					"TaskName": taskName})
 
 				onFinishCB := func() {
-					monitorState.Schedule.SetRunning(uuid, false)
-					monitorState.Schedule.Remove(uuid)
+					err := monitorState.Schedule.SetRunning(uuid, false)
+					if err != nil {
+						logEntry.WithError(err).Error("Failed to set task to not running")
+					}
+					err = monitorState.Schedule.Remove(uuid)
+					if err != nil {
+						logEntry.WithError(err).Error("Failed to remove task from schedule")
+					}
 				}
 				err = tasks.StartTask(log, wg, eth, task, persistMonitorCB, onFinishCB)
 				if err != nil {

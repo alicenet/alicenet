@@ -85,6 +85,7 @@ func (ps *activePeerStore) del(c interfaces.NodeAddr) {
 	}
 }
 
+//nolint:unused,deadcode
 func (ps *activePeerStore) get(c interfaces.NodeAddr) (interfaces.P2PClient, bool) {
 	ps.RLock()
 	defer ps.RUnlock()
@@ -127,6 +128,7 @@ func (ps *activePeerStore) random() (string, bool) {
 }
 
 // random returns a random active peer
+//nolint:unused,deadcode
 func (ps *activePeerStore) randomClient() (interfaces.P2PClient, bool) {
 	ps.RLock()
 	defer ps.RUnlock()
@@ -148,6 +150,7 @@ func (ps *activePeerStore) randomClient() (interfaces.P2PClient, bool) {
 }
 
 // getPeers returns the set of active peers
+//nolint:unused,deadcode
 func (ps *activePeerStore) getPeers() ([]interfaces.P2PClient, bool) {
 	ps.RLock()
 	defer ps.RUnlock()

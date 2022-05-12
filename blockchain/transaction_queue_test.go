@@ -20,7 +20,8 @@ func TestTransferFunds(t *testing.T) {
 	assert.Equal(t, n, len(accounts))
 
 	for _, acct := range accounts {
-		eth.UnlockAccount(acct)
+		err := eth.UnlockAccount(acct)
+		assert.Nil(t, err)
 	}
 
 	owner := accounts[0]
@@ -36,5 +37,8 @@ func TestTransferFunds(t *testing.T) {
 
 	queue := eth.Queue()
 
-	queue.QueueAndWait(ctx, txn)
+	receipt, err := queue.QueueAndWait(ctx, txn)
+	assert.Nil(t, err)
+	assert.NotNil(t, receipt)
+	assert.Equal(t, txn.Hash(), receipt.TxHash)
 }

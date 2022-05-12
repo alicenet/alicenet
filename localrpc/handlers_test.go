@@ -578,7 +578,6 @@ func TestHandlers_HandleLocalStateIterateNameSpace(t *testing.T) {
 }
 */
 var hash []byte
-var signature []byte
 var newValueStore *objs.ValueStore
 var vsValue *uint256.Uint256 = uint256.One()
 var vsFee *uint256.Uint256 = uint256.One()

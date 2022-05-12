@@ -52,10 +52,7 @@ func (ll *LinkedList) Unmarshal(v []byte) error {
 
 // IsValid returns true if LinkedList is valid
 func (ll *LinkedList) IsValid() bool {
-	if ll.epochLastUpdated == 0 {
-		return false
-	}
-	return true
+	return ll.epochLastUpdated != 0
 }
 
 // CreateLinkedList creates the first node in a LinkedList.

@@ -60,7 +60,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("Snapshot Block Header %x", bh)
+			fmt.Printf("Snapshot Block Header %#v\n", bh)
 		case "GetSnapshotByHeight":
 			hb, ok := new(big.Int).SetString(*height, 10)
 			if !ok {

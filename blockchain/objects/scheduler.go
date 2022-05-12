@@ -48,19 +48,10 @@ func (s *SequentialSchedule) Initialize(typeRegistry *TypeRegistry, adminHandler
 	s.marshaller = typeRegistry
 }
 
-func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.ITask) (uuid.UUID, error) {
-
-	for _, block := range s.Ranges {
-		if start < block.End && block.Start < end {
-			return nil, ErrOverlappingSchedule
-		}
-	}
-
+func (s *SequentialSchedule) Schedule(start uint64, end uint64, thing interfaces.ITask) uuid.UUID {
 	id := uuid.NewRandom()
-
 	s.Ranges[id.String()] = &Block{Start: start, End: end, Task: thing}
-
-	return id, nil
+	return id
 }
 
 func (s *SequentialSchedule) Purge() {

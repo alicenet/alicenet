@@ -290,7 +290,6 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 
 	// schedule SubmitKeySharesPhase
 	state.Schedule.Schedule(submitKeySharesPhaseStart, submitKeySharesPhaseEnd, keyshareSubmissionTask)
-
 	// schedule DisputeMissingKeySharesPhase
 	state.Schedule.Schedule(missingKeySharesDisputeStart, missingKeySharesDisputeEnd, disputeMissingKeySharesTask)
 

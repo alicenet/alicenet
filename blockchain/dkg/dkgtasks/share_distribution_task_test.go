@@ -72,7 +72,8 @@ func TestShareDistributionBad1(t *testing.T) {
 
 		task := suite.shareDistTasks[idx]
 
-		task.Initialize(ctx, logger, suite.eth)
+		err := task.Initialize(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, we just add 1 to the first commitment (y component)
@@ -81,7 +82,8 @@ func TestShareDistributionBad1(t *testing.T) {
 			com[0][1].Add(com[0][1], big.NewInt(1))
 		}
 
-		task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		suite.eth.Commit()
 
@@ -134,7 +136,8 @@ func TestShareDistributionBad2(t *testing.T) {
 
 		task := suite.shareDistTasks[idx]
 
-		task.Initialize(ctx, logger, suite.eth)
+		err := task.Initialize(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		com := state.Participants[accounts[idx].Address].Commitments
 		// if we're on the last account, change the one of the commitments to 0
@@ -144,7 +147,8 @@ func TestShareDistributionBad2(t *testing.T) {
 			com[0][1].Set(common.Big0)
 		}
 
-		task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		suite.eth.Commit()
 
@@ -199,7 +203,8 @@ func TestShareDistributionBad4(t *testing.T) {
 
 		task := suite.shareDistTasks[idx]
 
-		task.Initialize(ctx, logger, suite.eth)
+		err := task.Initialize(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		// if we're on the last account, we just add 1 to the first commitment (y component)
 		com := state.Participants[accounts[idx].Address].Commitments
@@ -209,7 +214,8 @@ func TestShareDistributionBad4(t *testing.T) {
 			state.Participants[accounts[idx].Address].Commitments = com
 		}
 
-		task.DoWork(ctx, logger, eth)
+		err = task.DoWork(ctx, logger, eth)
+		assert.Nil(t, err)
 
 		eth.Commit()
 
@@ -251,7 +257,8 @@ func TestShareDistributionBad5(t *testing.T) {
 
 		task := suite.shareDistTasks[idx]
 
-		task.Initialize(ctx, logger, suite.eth)
+		err := task.Initialize(ctx, logger, suite.eth)
+		assert.Nil(t, err)
 
 		encryptedShares := state.Participants[accounts[idx].Address].EncryptedShares
 		if idx == badShareIdx {
@@ -260,7 +267,8 @@ func TestShareDistributionBad5(t *testing.T) {
 			state.Participants[accounts[idx].Address].EncryptedShares = encryptedShares
 		}
 
-		task.DoWork(ctx, logger, eth)
+		err = task.DoWork(ctx, logger, eth)
+		assert.Nil(t, err)
 
 		eth.Commit()
 

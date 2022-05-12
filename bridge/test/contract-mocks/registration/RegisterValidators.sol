@@ -15,12 +15,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "hardhat/console.sol";
 
 contract ExternalStoreRegistration is ImmutableFactory {
-    uint256[4] internal _tokenIDs;
     uint256 internal _counter;
+    uint256[] internal _tokenIDs;
 
     constructor(address factory_) ImmutableFactory(factory_) {}
 
-    function storeTokenIds(uint256[4] memory tokenIDs) public onlyFactory {
+    function storeTokenIds(uint256[] memory tokenIDs) public onlyFactory {
         _tokenIDs = tokenIDs;
     }
 
@@ -28,12 +28,20 @@ contract ExternalStoreRegistration is ImmutableFactory {
         _counter++;
     }
 
-    function getTokenIds() public view returns (uint256[4] memory) {
-        return _tokenIDs;
+    function getTokenIds() public view returns (uint256[] memory) {
+        uint256[] memory ret = new uint256[](_tokenIDs.length);
+        for (uint256 i = 0; i < _tokenIDs.length; i++) {
+            ret[i] = _tokenIDs[i];
+        }
+        return ret;
     }
 
     function getCounter() public view returns (uint256) {
         return _counter;
+    }
+
+    function getTokenIDsLength() public view returns (uint256) {
+        return _tokenIDs.length;
     }
 }
 
@@ -69,7 +77,7 @@ contract RegisterValidators is
         // Minting 4 aTokensWei to stake the validators
         IATokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), numValidators);
         IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), numValidators);
-        uint256[4] memory tokenIDs;
+        uint256[] memory tokenIDs = new uint256[](numValidators);
         for (uint256 i; i < numValidators; i++) {
             // minting publicStaking position for the factory
             tokenIDs[i] = IStakingNFT(_publicStakingAddress()).mint(1);
@@ -79,11 +87,11 @@ contract RegisterValidators is
     }
 
     function registerValidators(address[] calldata validatorsAccounts_) public {
-        uint256[] memory tokenIDs = new uint256[](4);
-        uint256[4] memory tokenIDs_ = _externalStore.getTokenIds();
-        for (uint256 i = 0; i < tokenIDs.length; i++) {
-            tokenIDs[i] = tokenIDs_[i];
-        }
+        require(
+            validatorsAccounts_.length == _externalStore.getTokenIDsLength(),
+            "Incorrect validators account length!"
+        );
+        uint256[] memory tokenIDs = _externalStore.getTokenIds();
         ////////////// Registering validators /////////////////////////
         IValidatorPool(_validatorPoolAddress()).registerValidators(validatorsAccounts_, tokenIDs);
     }

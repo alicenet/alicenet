@@ -158,7 +158,7 @@ func acceptLoop(log *logrus.Logger, transport interfaces.P2PTransport, handler *
 			return
 		}
 		// bind the connection to serve the request
-		go handler.HandleConnection(conn)
+		go handler.HandleConnection(conn) //nolint:errcheck
 		// force drop the connection after 10 seconds
 		go forceCleanup(conn)
 	}
