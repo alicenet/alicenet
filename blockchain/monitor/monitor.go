@@ -635,6 +635,7 @@ func (es *eventSorter) wrkr() {
 			wrk.err = errors.New("timeouts exhausted")
 			es.Lock()
 			es.done[wrk.block] = wrk
+			es.Unlock()
 		}()
 	}
 }

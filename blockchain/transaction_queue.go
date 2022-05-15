@@ -54,7 +54,7 @@ type TransactionProfile struct {
 // Behind is the struct used while monitoring Ethereum transactions
 type Behind struct {
 	sync.Mutex
-	// it is for more efficent and easier to get state correct on waiting txs with
+	// it is for more efficient and easier to get state correct on waiting txs with
 	// a map instead of array - this does come at the expense of deterministic
 	// ordering while polling for receipts, but this is insignificant at this time
 	waitingTxns    map[common.Hash]context.Context                // Just a MAP of transactions whose receipts we're looking for

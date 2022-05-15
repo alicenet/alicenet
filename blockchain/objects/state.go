@@ -19,7 +19,7 @@ import (
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
 	Version                uint8                   `json:"version"`
-	CommunicationFailures  uint32                  `json:"communicationFailtures"`
+	CommunicationFailures  uint32                  `json:"communicationFailures"`
 	EthereumInSync         bool                    `json:"-"`
 	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
 	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
