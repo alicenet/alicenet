@@ -696,7 +696,10 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 		return nil, fmt.Errorf("max tx fee computed: %v is greater than limit set on config: %v", feeCap.String(), txMaxFeeThresholdInWei.String())
 	}
 
-	eth.logger.Infof("Creating TX with maximum fee:%v and miners tip:%v", feeCap, tipCap, txMaxFeeThresholdInWei)
+	eth.logger.WithFields(logrus.Fields{
+		"MinerTip":          tipCap,
+		"MaximumGasAllowed": txMaxFeeThresholdInWei.String(),
+	}).Infof("Creating TX with MaximumGasPrice: %v WEI", feeCap)
 	opts.Context = ctx
 	opts.GasFeeCap = new(big.Int).Set(feeCap)
 	opts.GasTipCap = new(big.Int).Set(tipCap)
@@ -792,12 +795,7 @@ func (eth *EthereumDetails) TransferEther(from common.Address, to common.Address
 
 // GetCurrentHeight gets the height of the endpoints chain
 func (eth *EthereumDetails) GetCurrentHeight(ctx context.Context) (uint64, error) {
-	header, err := eth.client.HeaderByNumber(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-
-	return header.Number.Uint64(), nil
+	return eth.client.BlockNumber(ctx)
 }
 
 // GetFinalizedHeight gets the height of the endpoints chain at which is is considered finalized

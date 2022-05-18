@@ -73,6 +73,7 @@ type GethClient interface {
 	// geth.ChainReader
 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+	BlockNumber(ctx context.Context) (uint64, error)
 	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
 	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
