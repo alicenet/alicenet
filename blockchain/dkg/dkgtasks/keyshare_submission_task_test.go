@@ -11,7 +11,7 @@ import (
 )
 
 // We test to ensure that everything behaves correctly.
-func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
+func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 	n := 5
 	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
 	defer suite.eth.Close()
@@ -42,7 +42,7 @@ func TestKeyShareSubmissionGoodAllValid(t *testing.T) {
 // We raise an error with invalid inputs.
 // This comes from invalid SecretValue in state.
 // In practice, this should never arise, though.
-func TestKeyShareSubmissionBad3(t *testing.T) {
+func TestKeyShareSubmission_Bad3(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)
@@ -68,7 +68,7 @@ func TestKeyShareSubmissionBad3(t *testing.T) {
 // We raise an error with invalid inputs.
 // Here, we mess up KeyShare information before submission
 // so that we raise an error on submission.
-func TestKeyShareSubmissionBad4(t *testing.T) {
+func TestKeyShareSubmission_Bad4(t *testing.T) {
 	n := 5
 	var phaseLength uint16 = 100
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, phaseLength)

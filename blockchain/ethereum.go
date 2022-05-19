@@ -308,7 +308,7 @@ func NewEthereumEndpoint(
 	defer cancel()
 	rpcClient, rpcErr := rpc.DialContext(ctx, endpoint)
 	if rpcErr != nil {
-		logger.Errorf("Error in NewEthereumEndpoint at rpc.DialContext: %v", err)
+		logger.Errorf("Error in NewEthereumEndpoint at rpc.DialContext: %v", rpcErr)
 		return nil, rpcErr
 	}
 	ethClient := ethclient.NewClient(rpcClient)

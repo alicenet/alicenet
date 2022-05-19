@@ -14,7 +14,7 @@ import (
 )
 
 // We test to ensure that everything behaves correctly.
-func TestGPKjDisputeNoBadGPKj(t *testing.T) {
+func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
@@ -84,7 +84,7 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 }
 
 // Here, we have a malicious gpkj submission.
-func TestGPKjDispute1Invalid(t *testing.T) {
+func TestGPKjDispute_1Invalid(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
@@ -168,7 +168,7 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 
 // We test to ensure that everything behaves correctly.
 // Here, we have a malicious accusation.
-func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
+func TestGPKjDispute_GoodMaliciousAccusation(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
 	suite := StartFromMPKSubmissionPhase(t, n, 100)

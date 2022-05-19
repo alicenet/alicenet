@@ -176,10 +176,7 @@ case $1 in
     ;;
     hardhat_node)
         ./scripts/base-scripts/hardhat_node.sh &
-        GETH_PID="$!"
-        
-        trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
-        
+        trap 'pkill -9 -f hardhat' SIGTERM
         wait
     ;;
     hardhat_local_node)

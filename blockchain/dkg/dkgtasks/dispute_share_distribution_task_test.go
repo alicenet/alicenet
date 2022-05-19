@@ -17,7 +17,7 @@ import (
 )
 
 // We test to ensure that everything behaves correctly.
-func TestShareDisputeGoodAllValid(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_1_GoodAllValid(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
@@ -65,7 +65,7 @@ func TestShareDisputeGoodAllValid(t *testing.T) {
 // In this test, we have one validator submit invalid information.
 // This causes another validator to submit a dispute against him,
 // causing a stake-slashing event.
-func TestShareDisputeGoodMaliciousShare(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 	n := 5
 	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
 	defer suite.eth.Close()
@@ -151,7 +151,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 // We begin by submitting invalid information.
 // This test is meant to raise an error resulting from an invalid argument
 // for the Ethereum interface.
-func TestShareDisputeBad1(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_1_Bad1(t *testing.T) {
 	n := 4
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
@@ -179,7 +179,7 @@ func TestShareDisputeBad1(t *testing.T) {
 // for the Ethereum interface;
 // this should raise an error resulting from not successfully completing
 // ShareDistribution phase.
-func TestShareDisputeBad2(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_2_Bad2(t *testing.T) {
 	n := 4
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
@@ -208,7 +208,7 @@ func TestShareDisputeBad2(t *testing.T) {
 	}
 }
 
-func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsFalse(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
@@ -254,7 +254,7 @@ func TestDisputeShareDistributionTask_DoRetry_returnsFalse(t *testing.T) {
 	}
 }
 
-func TestDisputeShareDistributionTask_DoRetry_returnsTrue(t *testing.T) {
+func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsTrue(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()

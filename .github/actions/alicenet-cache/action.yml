@@ -20,3 +20,4 @@ runs:
   - if: steps.alicenet-cache.outputs.cache-hit != 'true'
     shell: bash
     run: make generate-go
+

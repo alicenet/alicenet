@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"math/big"
 	"sync"
 	"testing"
@@ -167,7 +168,10 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	// setup
 	adminHandler := mocks.NewMockAdminHandler()
 	depositHandler := &mockDepositHandler{}
-	eth := mocks.NewMockBaseEthereum()
+
+	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(5)
+	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	defer eth.Close()
 	logger := logging.GetLogger("test")
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -179,8 +183,10 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	assert.Nil(t, err)
 	populateMonitor(mon.State, addr0, EPOCH)
 
+	acct := eth.GetKnownAccounts()[0]
+	state := objects.NewDkgState(acct)
 	mockTsk := &mockTask{
-		DkgTask: dkgtasks.NewExecutionData(nil, 1, 40),
+		DkgTask: dkgtasks.NewExecutionData(state, 1, 40),
 	}
 	// Schedule some tasks
 	mon.State.Schedule.Schedule(1, 2, mockTsk)

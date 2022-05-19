@@ -5,14 +5,11 @@ set -x
 CURRENT_WD=$PWD
 BRIDGE_DIR=./bridge
 
-cd $BRIDGE_DIR
+cd $BRIDGE_DIR || exit
 
 npx hardhat node --show-stack-traces &
-GETH_PID="$!"
-
-trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
-
+trap 'pkill -9 -f hardhat' SIGTERM
 wait
 
-cd $CURRENT_WD
+cd "$CURRENT_WD" || exit
 

@@ -142,6 +142,9 @@ func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
 		Params:  make([]byte, 0),
 	}
 
+	if target < currentBlock {
+		return
+	}
 	blocksToMine := target - currentBlock
 	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
 

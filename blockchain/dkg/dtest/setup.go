@@ -16,7 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -284,20 +284,23 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 }
 
 func GetMadnetRootPath() []string {
-	_, b, _, _ := runtime.Caller(0)
 
-	// Root folder of this project
-	root := filepath.Dir(b)
-	pathNodes := strings.Split(root, string(os.PathSeparator))
 	rootPath := []string{string(os.PathSeparator)}
-	//rootPath[0] = string(os.PathSeparator)
 
-	for _, node := range pathNodes {
-		rootPath = append(rootPath, node)
+	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/MadBase/MadNet")
+	stdout, err := cmd.Output()
+	if err != nil {
+		log.Printf("Error getting project root path: %v", err)
+		return rootPath
+	}
 
-		if node == "MadNet" {
-			break
-		}
+	path := string(stdout)
+	path = strings.ReplaceAll(path, "'", "")
+	path = strings.ReplaceAll(path, "\n", "")
+
+	pathNodes := strings.Split(path, string(os.PathSeparator))
+	for _, pathNode := range pathNodes {
+		rootPath = append(rootPath, pathNode)
 	}
 
 	return rootPath
@@ -496,11 +499,19 @@ func StartHardHatNode(eth *blockchain.EthereumDetails) error {
 	eth.SetClose(func() error {
 		fmt.Printf("closing hardhat node %v..\n", cmd.Process.Pid)
 		err := cmd.Process.Signal(syscall.SIGTERM)
-
-		// err := cmd.Process.Kill()
 		if err != nil {
 			return err
 		}
+
+		//err = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+		//if err != nil {
+		//	return err
+		//}
+
+		//err = cmd.Process.Kill()
+		//if err != nil {
+		//	return err
+		//}
 
 		_, err = cmd.Process.Wait()
 		if err != nil {
@@ -510,6 +521,30 @@ func StartHardHatNode(eth *blockchain.EthereumDetails) error {
 		fmt.Printf("hardhat node closed\n")
 		return nil
 	})
+
+	return nil
+}
+
+func InitializeValidatorFiles(n int) error {
+
+	rootPath := GetMadnetRootPath()
+	scriptPath := append(rootPath, "scripts")
+	scriptPath = append(scriptPath, "main.sh")
+	scriptPathJoined := filepath.Join(scriptPath...)
+	fmt.Println("scriptPathJoined2: ", scriptPathJoined)
+
+	cmd := exec.Cmd{
+		Path:   scriptPathJoined,
+		Args:   []string{scriptPathJoined, "init", strconv.Itoa(n)},
+		Dir:    filepath.Join(rootPath...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("could not generate validator files: %s", err)
+	}
 
 	return nil
 }
@@ -540,7 +575,8 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 	// if there is an error with our execution
 	// handle it here
 	if err != nil {
-		return fmt.Errorf("could not execute deploy script: %s", err)
+		log.Printf("Could not execute deploy script: %s", err)
+		return err
 	}
 
 	// inits contracts

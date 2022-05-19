@@ -2,9 +2,11 @@ name: Alicenet CI
 
 on:
   push:
-    branches: [main, candidate]
+    branches: [ main, candidate ]
+    paths:
+      - "blockchain"
   pull_request:
-    branches: [main, candidate]
+    branches: [ main, candidate ]
 
 env:
   NODE_VERSION: 16.x
@@ -27,14 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
-
+    
   solidity-unit-tests:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     strategy:
       matrix:
-        # when adding a new test folder to the smart contracts make sure to
-        # name it starting with 0-9 or A-Z
         include:
           - test-group: "[0-9a-dA-D]"
           - test-group: "[eE]"
@@ -47,7 +47,6 @@ jobs:
           - test-group: "[f-qF-Q]"
           - test-group: "[r-sR-S]"
           - test-group: "[t-zT-Z]"
-
     needs: solidity-build
     defaults:
       run:
@@ -60,7 +59,7 @@ jobs:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-
+    
   solidity-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -72,7 +71,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
       - run: npm run lint-solidity
-
+    
   typescript-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -86,14 +85,14 @@ jobs:
       - uses: ./.github/actions/node-cache
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
-
+  
   golang-build:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     needs: solidity-build
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ ubuntu-20.04 ]
     steps:
       - name: "Sanitize branch name"
         run: |
@@ -117,7 +116,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - run: go vet ./...
-
+    
   golang-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -131,23 +130,76 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
       - name: run golangci-lint
         run: golangci-lint run ./...
-
+  
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
     needs: golang-build
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ ubuntu-20.04 ]
     steps:
+        # Checkout and tool to format the test output
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      # tool to format the test output
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      # Run tests with nice formatting. Save the original log in /tmp/gotest.log
-      # packages where the tests are stuck: ["blockchain", "badgerTrie", "consensus", "transport"]
-      - name: Run tests
+      - name: Run unit tests
+        timeout-minutes: 20
         run: |
           set -euo pipefail
           go test -json -v $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus/dman|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+
+  golang-blockchain-tests:
+    runs-on: ${{ matrix.os }}
+    needs: golang-build
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-20.04 ]
+        test-cmd: [
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
+          github.com/MadBase/MadNet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
+          github.com/MadBase/MadNet/blockchain,
+          github.com/MadBase/MadNet/blockchain/dkg,
+          github.com/MadBase/MadNet/blockchain/dkg/math,
+          github.com/MadBase/MadNet/blockchain/monitor,
+          github.com/MadBase/MadNet/blockchain/objects,
+          github.com/MadBase/MadNet/blockchain/tasks
+        ]
+    steps:
+      # Checkout and tool to format the test output
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+
+      # Run matrix blockchain unit tests
+      - name: Run tests ${{ matrix.test-cmd }}
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          ./scripts/main.sh init 5
+          go test -v -timeout=45m ${{ matrix.test-cmd }}
