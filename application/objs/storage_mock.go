@@ -26,7 +26,7 @@ func MakeMockStorageGetter() *MockStorageGetter {
 	return msg
 }
 
-func makeStorage(msg dynamics.StorageGetter) *wrapper.Storage {
+func MakeStorage(msg dynamics.StorageGetter) *wrapper.Storage {
 	storage := wrapper.NewStorage(msg)
 	return storage
 }

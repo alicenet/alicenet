@@ -1,9 +1,12 @@
 package dkgtasks
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/crypto/bn256"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
@@ -227,12 +230,28 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.
 		return false
 	}
 
-	isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(eth.GetCallOpts(ctx, t.State.Account))
-	if err == nil && isMPKSet {
+	callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+
+	mpkHash, err := eth.Contracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
+	if err != nil {
+		return true
+	}
+
+	logger.WithField("Method", "shouldSubmitMPK").Debugf("mpkHash received")
+
+	mpkHashBin, err := bn256.MarshalBigIntSlice(t.State.MasterPublicKey[:])
+	if err != nil {
+		return true
+	}
+	mpkHashSlice := crypto.Hasher(mpkHashBin)
+
+	if bytes.Equal(mpkHash[:], mpkHashSlice) {
+		logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is different from the received")
 		return false
 	}
 
-	return !isMPKSet
+	logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is equal to the received")
+	return true
 }
 
 func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {

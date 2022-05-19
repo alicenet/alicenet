@@ -183,7 +183,7 @@ func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData []byte,
 
 func TestTx(t *testing.T) {
 	msg := MakeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -1081,7 +1081,7 @@ func TestTxCallTxHashBad2(t *testing.T) {
 
 func TestTxValidateFeesGood1(t *testing.T) {
 	msg := MakeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 
 	tx := &Tx{}
 
@@ -1121,7 +1121,7 @@ func TestTxValidateFeesGood2(t *testing.T) {
 	// Is valid CleanupTx; Validate the fees
 	msg := MakeMockStorageGetter()
 	msg.SetMinTxFee(big.NewInt(1))
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
 		t.Fatal(err)
@@ -1167,7 +1167,7 @@ func TestTxValidateFeesGood2(t *testing.T) {
 
 func TestTxValidateFeesBad1(t *testing.T) {
 	msg := MakeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 
 	tx := &Tx{}
 	err := tx.ValidateFees(0, nil, storage)
@@ -1223,7 +1223,7 @@ func TestTxValidateFeesBad3(t *testing.T) {
 	msg := MakeMockStorageGetter()
 	minTxFee := big.NewInt(1)
 	msg.SetMinTxFee(minTxFee)
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 	err = tx.ValidateFees(0, Vout{utxo1}, storage)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -1262,7 +1262,7 @@ func TestTxValidateFeesBad4(t *testing.T) {
 	msg := MakeMockStorageGetter()
 	minTxFee := big.NewInt(1)
 	msg.SetMinTxFee(minTxFee)
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 	err = tx.ValidateFees(0, nil, storage)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -1655,7 +1655,7 @@ func TestTxIsCleanupTxGood3(t *testing.T) {
 	tfFeeBig := big.NewInt(10000)
 	msg.SetMinTxFee(tfFeeBig)
 	msg.SetDataStoreEpochFee(dsFeeBig)
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {

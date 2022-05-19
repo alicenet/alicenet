@@ -10,7 +10,7 @@ import (
 
 func initializeStorage() *Storage {
 	storageLogger := newLogger()
-	mock := &mockRawDB{}
+	mock := &MockRawDB{}
 	mock.rawDB = make(map[string]string)
 
 	s := &Storage{}
@@ -41,7 +41,7 @@ func initializeStorageWithFirstNode() *Storage {
 // Test Storage Init with nothing initialized
 func TestStorageInit1(t *testing.T) {
 	storageLogger := newLogger()
-	mock := &mockRawDB{}
+	mock := &MockRawDB{}
 	mock.rawDB = make(map[string]string)
 
 	s := &Storage{}
@@ -70,7 +70,7 @@ func TestStorageInit1(t *testing.T) {
 
 func TestStorageStartGood(t *testing.T) {
 	storageLogger := newLogger()
-	mock := &mockRawDB{}
+	mock := &MockRawDB{}
 	mock.rawDB = make(map[string]string)
 
 	s := &Storage{}

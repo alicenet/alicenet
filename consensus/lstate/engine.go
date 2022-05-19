@@ -126,9 +126,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				return err
 			}
 			if !safe {
-				bh, _ := ce.database.GetCommittedBlockHeader(txn, bHeight)
-				ce.database.SetCommittedBlockHeader(txn, bh)
-				utils.DebugTrace(ce.logger, nil, "not safe")
+				utils.DebugTrace(ce.logger, nil, "Waiting snapshot completion")
 				updateLocalState = false
 			} else {
 				// if it's safe to proceed, we update ownState with the latest
