@@ -22,6 +22,22 @@ var (
 	ErrUnknownRequest = errors.New("unknown request type")
 )
 
+type ErrRecoverable struct {
+	message string
+}
+
+func (e *ErrRecoverable) Error() string {
+	return e.message
+}
+
+type ErrNonRecoverable struct {
+	message string
+}
+
+func (e *ErrNonRecoverable) Error() string {
+	return e.message
+}
+
 // Internal struct to keep track of transactions that are being monitoring
 type TransactionInfo struct {
 	ctx                  context.Context         // ctx used for calling the monitoring a certain tx
@@ -29,7 +45,7 @@ type TransactionInfo struct {
 	txConfirmationBlocks uint64                  // number of blocks that we should wait to consider a tx valid (return the receipt)
 	selector             interfaces.FuncSelector // 4 bytes that identify the function being called by the tx
 	functionSignature    string                  // function signature as we see on the smart contracts
-	commitedHeight       uint64                  // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
+	committedHeight      uint64                  // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
 	isStale              bool                    // flag to keep track if a tx is sitting too long in the txPool without being mined
 }
 
@@ -76,7 +92,7 @@ type TransactionProfile struct {
 type Behind struct {
 	sync.RWMutex
 	lastProcessedBlock  *BlockInfo                                     // Last ethereum block that we checked for receipts
-	waitingTxns         map[common.Hash]*TransactionInfo               // Just a MAP of transactions whose receipts we're looking for
+	monitorTxns         chan TransactionInfo                           // Just a MAP of transactions whose receipts we're looking for
 	readyTxns           map[common.Hash]*types.Receipt                 // All the transaction -> receipt pairs we know of
 	groups              map[uint64][]*TransactionInfo                  // A group is just an ID and a list of transactions
 	aggregates          map[interfaces.FuncSelector]TransactionProfile // Struct to keep track of the gas metrics used by the system
@@ -120,137 +136,171 @@ func (b *Behind) Loop() {
 
 			go b.process(req, handler)
 		case <-time.After(pollingTime):
+			// If there's no tx to be monitored just return
+			if len(b.waitingTxns) == 0 {
+				return
+			}
 			b.collectReceipts()
 		}
 	}
 	b.logger.Debug("finished")
 }
 
-func (b *Behind) collectReceipts() {
-	b.Lock()
-	defer b.Unlock()
+type TxMonitorWorker struct {
+	ctx                 context.Context       //
+	client              interfaces.GethClient // An interface with the Geth functionality we need
+	logger              *logrus.Entry         // Logger to log messages
+	monitoredTx         TransactionInfo       //
+	txNotFoundMaxBlocks uint64                // How many blocks we should wait for removing a tx in case we don't find it in the ethereum chain
+	pollingTime         time.Duration         // time which we should poll the ethereum node to check for new blocks
+	networkTimeout      time.Duration         // max timeout for all rpc call requests during an iteration
+	maxTxStaleBlocks    uint64                // Number of blocks to wait for a tx in the memory pool w/o returning to the caller asking for retry
+	lastProcessedBlock  *BlockInfo            // Last ethereum block that we checked for receipts
+	requestTx           chan TransactionInfo  //
+	responseTx          chan Response         //
+}
 
-	// If there's no tx to be monitored just return
-	if len(b.waitingTxns) == 0 {
-		return
+func (t *TxMonitorWorker) monitor() {
+
+	for {
+		select {
+		case <-t.ctx.Done():
+			t.logger.Tracef("Finalizing worker! Parent ctx cancelled!")
+			return
+		case <-time.After(t.pollingTime):
+			rcpt, err := t.collectReceipt()
+			if err != nil {
+				var errNonRecoverable *ErrNonRecoverable
+				if errors.As(err, &errNonRecoverable) {
+					t.responseTx <- Response{err: err}
+				} else {
+					// logging recoverable errors
+					t.logger.Tracef("error trying to get tx/receipt: %v", err)
+				}
+			}
+			// // todo: keep this?
+			// // This only happens using a SimulatedBackend during tests
+			// if isTestRun() {
+			// 	if rcpt == nil {
+			// 		t.logger.Debugf("receipt is nil: %v", t.monitoredTx.txn.Hash().Hex())
+			// 		return
+			// 	}
+			// }
+
+			if rcpt != nil {
+				t.responseTx <- Response{rcpt: rcpt}
+			}
+
+			// 	b.readyTxns[txn] = rcpt
+
+			// 	var profile TransactionProfile
+			// 	var selector [4]byte
+			// 	var sig string
+			// 	var present bool
+
+			// 	if selector, present = b.selectors[txn]; present {
+			// 		profile = b.aggregates[selector]
+			// 		sig = b.knownSelectors.Signature(selector)
+			// 	} else {
+			// 		profile = TransactionProfile{}
+			// 	}
+
+			// 	// Update transaction profile
+			// 	profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
+			// 	if profile.MaximumGas < rcpt.GasUsed {
+			// 		profile.MaximumGas = rcpt.GasUsed
+			// 	}
+			// 	if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
+			// 		profile.MinimumGas = rcpt.GasUsed
+			// 	}
+			// 	profile.TotalCount++
+			// 	profile.TotalGas += rcpt.GasUsed
+			// 	if rcpt.Status == uint64(1) {
+			// 		profile.TotalSuccess++
+			// 	}
+
+			// 	b.aggregates[selector] = profile
+			// }
+
+			// // Cleaning expired transactions
+			// for _, txn := range expiredTxs {
+			// 	delete(b.waitingTxns, txn.txn.Hash())
+			// }
+			// b.lastProcessedBlock = blockInfo
+			// 	}
+		}
 	}
 
-	// this was set to one hour in an earlier version. This had
-	// the potential to starve other services waiting for the lock.
-	// Since this will be performed approx every 1 second,
-	// there is no need to wait more than what is the worst possible read
-	// speed that would allow the node to remain in sync if a significant
-	// number of requests took this long - 6 seconds is pretty long
-	// delay, but we only expect this to take 250 Milliseconds per request
-	// in a normal setting. Hence the actual runtime is likely very short.
-	ctx, cf := context.WithTimeout(context.Background(), 6*time.Second)
+}
+
+func (t *TxMonitorWorker) collectReceipt() (*types.Receipt, error) {
+	ctx, cf := context.WithTimeout(context.Background(), t.networkTimeout)
 	defer cf()
 
-	blockHeader, err := b.client.HeaderByNumber(ctx, nil)
+	blockHeader, err := t.client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		b.logger.Errorf("error getting latest block number from ethereum node: %v", err)
-		return
+		return nil, &ErrRecoverable{fmt.Sprintf("error getting latest block number from ethereum node: %v", err)}
 	}
 	blockInfo := &BlockInfo{
 		blockHeader.Number.Uint64(),
 		blockHeader.Hash(),
 	}
 
-	// we already processed the last block we just return
-	if blockInfo.Equal(b.lastProcessedBlock) {
-		return
+	// if we already processed the last block we just return
+	if blockInfo.Equal(t.lastProcessedBlock) {
+		return nil, nil
 	}
 
-	var expiredTxs map[common.Hash]*TransactionInfo
-	for txn, txnInfo := range b.waitingTxns {
-		select {
-		case <-txnInfo.ctx.Done():
-			// the go-routine who wanted this information has stopped caring. This
-			// most likely indicates a failure, and cancellation of polling
-			// prevents a memory leak so we add this to txs that will be removed after the processing
-			b.logger.Tracef("context for tx %v is finished, marking it to be excluded!", txn.Hex())
-			expiredTxs[txn] = txnInfo
-		default:
-			// if this is the first time seeing a tx, mark
-			if txnInfo.commitedHeight == 0 {
-				txnInfo.commitedHeight = blockInfo.height
+	select {
+	case <-t.monitoredTx.ctx.Done():
+		// the go-routine who wanted this information has stopped caring. This most
+		// likely indicates a failure, and cancellation of polling prevents a memory
+		// leak
+		return nil, &ErrNonRecoverable{fmt.Sprintf("context for tx %v is finished!", t.monitoredTx.txn.Hash().Hex())}
+	default:
+		// if this is the first time seeing a tx, add the committedHeight to keep track
+		// for how long we are monitoring the same tx
+		if t.monitoredTx.committedHeight == 0 {
+			t.monitoredTx.committedHeight = blockInfo.height
+		}
+		txnHash := t.monitoredTx.txn.Hash()
+		txnHex := txnHash.Hex()
+		blockTimeSpan := blockInfo.height - t.monitoredTx.committedHeight
+
+		_, isPending, err := t.client.TransactionByHash(ctx, txnHash)
+		if err != nil {
+			// if we couldn't locate a tx after NotFoundMaxBlocks blocks, probably means that it was dropped
+			if err == ethereum.NotFound && (blockTimeSpan >= t.txNotFoundMaxBlocks) {
+				return nil, &ErrNonRecoverable{fmt.Sprintf("could not find tx %v and %v blocks have passed!", txnHex, t.txNotFoundMaxBlocks)}
 			}
-			_, isPending, err := b.client.TransactionByHash(ctx, txn)
+			// probably a network error, should retry
+			return nil, &ErrRecoverable{fmt.Sprintf("error getting tx: %v: %v", txnHex, err)}
+		}
+
+		if isPending {
+			if blockTimeSpan >= t.maxTxStaleBlocks {
+				t.monitoredTx.isStale = true
+				return nil, &ErrNonRecoverable{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks, please retry!", txnHex, t.maxTxStaleBlocks)}
+			}
+		} else {
+			// tx is not pending, so check for receipt
+			rcpt, err := t.client.TransactionReceipt(ctx, txnHash)
 			if err != nil {
-				// if we couldn't locate a tx after 100 blocks, probably means that it was dropped
-				if err == ethereum.NotFound && (blockInfo.height-txnInfo.commitedHeight >= 100) {
-					b.logger.Tracef("could not find tx and 100 blocks have passed, marking tx %v to be excluded!", txn.Hex(), err)
-					expiredTxs[txn] = txnInfo
-				}
-				b.logger.Tracef("error getting tx: %v: %v", txn, err)
-				continue
+				// if receipt not found, we had an edge case, probably tx was mined (isPending
+				// == false), then we had a chain re-org, now the tx is back to the memPool or
+				// was dropped, we should retry, and the logic above should see if the tx was
+				// dropped or not in the next iteration
+				return nil, &ErrRecoverable{fmt.Sprintf("error getting receipt: %v: %v", txnHex, err)}
 			}
 
-			if isPending {
-				if blockInfo.height-txnInfo.commitedHeight >= 10 {
-					txnInfo.isStale = true
-
-				}
-				continue
+			if blockInfo.height >= rcpt.BlockNumber.Uint64()+t.monitoredTx.txConfirmationBlocks {
+				t.lastProcessedBlock = blockInfo
+				return rcpt, nil
 			}
-
-			// context is good on the tx level object, so check for receipt
-			rcpt, err := b.client.TransactionReceipt(ctx, txn)
-			if err != nil {
-				// couldn't find the receipt, checking if the tx in the txPool (pending)
-				if err == ethereum.NotFound {
-					b.logger.Errorf("error getting receipt: %v: %v", txn, err)
-				}
-
-				b.logger.Errorf("error getting receipt for tx: %v error: %v", txn.Hex(), err)
-				return
-			}
-
-			// This only happens using a SimulatedBackend during tests
-			if isTestRun() {
-				if rcpt == nil {
-					b.logger.Debugf("receipt is nil: %v", txn.Hex())
-					return
-				}
-			}
-
-			b.readyTxns[txn] = rcpt
-
-			var profile TransactionProfile
-			var selector [4]byte
-			var sig string
-			var present bool
-
-			if selector, present = b.selectors[txn]; present {
-				profile = b.aggregates[selector]
-				sig = b.knownSelectors.Signature(selector)
-			} else {
-				profile = TransactionProfile{}
-			}
-
-			// Update transaction profile
-			profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
-			if profile.MaximumGas < rcpt.GasUsed {
-				profile.MaximumGas = rcpt.GasUsed
-			}
-			if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
-				profile.MinimumGas = rcpt.GasUsed
-			}
-			profile.TotalCount++
-			profile.TotalGas += rcpt.GasUsed
-			if rcpt.Status == uint64(1) {
-				profile.TotalSuccess++
-			}
-
-			b.aggregates[selector] = profile
 		}
 	}
-
-	// Cleaning expired transactions
-	for _, txn := range expiredTxs {
-		delete(b.waitingTxns, txn.txn.Hash())
-	}
-	b.lastProcessedBlock = blockInfo
+	t.lastProcessedBlock = blockInfo
+	return nil, nil
 }
 
 func (b *Behind) process(req *Request, handler func(req *Request) *Response) {
