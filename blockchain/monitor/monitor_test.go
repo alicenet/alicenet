@@ -137,7 +137,7 @@ func TestMonitorPersist(t *testing.T) {
 	database.Init(rawDb)
 
 	eth := mocks.NewMockBaseEthereum()
-	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan uint64))
 	assert.Nil(t, err)
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -151,7 +151,7 @@ func TestMonitorPersist(t *testing.T) {
 	assert.Nil(t, err)
 
 	//
-	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan uint64))
 	assert.Nil(t, err)
 
 	err = newMon.LoadState()
@@ -175,7 +175,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	EPOCH := uint32(1)
 
 	// Setup monitor state
-	mon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1)
+	mon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan uint64))
 	assert.Nil(t, err)
 	populateMonitor(mon.State, addr0, EPOCH)
 
@@ -195,7 +195,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	t.Logf("RawData:%v", string(raw))
 
 	// Unmarshal
-	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan uint64))
 	assert.Nil(t, err)
 
 	newMon.TypeRegistry.RegisterInstanceType(mockTsk)

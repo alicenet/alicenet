@@ -57,6 +57,9 @@ type monitor struct {
 	State          *objects.MonitorState
 	wg             *sync.WaitGroup
 	batchSize      uint64
+
+	//for communication with the TasksScheduler
+	currentBlockChan chan<- uint64
 }
 
 // NewMonitor creates a new Monitor
@@ -67,7 +70,8 @@ func NewMonitor(cdb *db.Database,
 	eth interfaces.Ethereum,
 	tickInterval time.Duration,
 	timeout time.Duration,
-	batchSize uint64) (*monitor, error) {
+	batchSize uint64,
+	currentBlockChan chan<- uint64) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -77,22 +81,22 @@ func NewMonitor(cdb *db.Database,
 	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
 	//    in advance.
-	tr := &objects.TypeRegistry{}
-
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&tasks.SnapshotTask{})
+	//tr := &objects.TypeRegistry{}
+	//
+	//tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
+	//tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	//tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
+	//tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	//tr.RegisterInstanceType(&tasks.SnapshotTask{})
 
 	eventMap := objects.NewEventMap()
 	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler)
@@ -106,6 +110,7 @@ func NewMonitor(cdb *db.Database,
 	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
 	State := objects.NewMonitorState(dkgState, schedule)
 
+	//TODO: What to do with this after adding the new TasksScheduler???
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
@@ -121,15 +126,16 @@ func NewMonitor(cdb *db.Database,
 		eventMap:       eventMap,
 		cdb:            cdb,
 		db:             db,
-		TypeRegistry:   tr,
-		logger:         logger,
-		tickInterval:   tickInterval,
-		timeout:        timeout,
-		cancelChan:     make(chan bool, 1),
-		statusChan:     make(chan string, 1),
-		State:          State,
-		wg:             wg,
-		batchSize:      batchSize,
+		//TypeRegistry:   tr,
+		logger:           logger,
+		tickInterval:     tickInterval,
+		timeout:          timeout,
+		cancelChan:       make(chan bool, 1),
+		statusChan:       make(chan string, 1),
+		State:            State,
+		wg:               wg,
+		batchSize:        batchSize,
+		currentBlockChan: currentBlockChan,
 	}, nil
 
 }
@@ -292,7 +298,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 				}
 			}
 
-			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB); err != nil {
+			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB, mon.currentBlockChan); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
@@ -340,7 +346,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func(), currentBlockChan chan<- uint64) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -428,6 +434,11 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			}
 			forceExit = true
 		}
+
+		//sending the currentBlock to the TasksScheduler to process all the tasks during this block
+		currentBlockChan <- currentBlock
+
+		//TODO: move this logic to the TasksScheduler
 
 		// Check if any tasks are scheduled
 		logEntry.Debug("Looking for scheduled task")

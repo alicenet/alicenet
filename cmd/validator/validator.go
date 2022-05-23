@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"os"
 	"os/signal"
 	"syscall"
@@ -301,11 +302,18 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
+	// Setup tasks scheduler
+	currentBlockChan := make(chan uint64)
+	tasksChan := make(chan tasks.TaskToSchedule)
+	defer close(currentBlockChan)
+	defer close(tasksChan)
+	tasksScheduler := tasks.NewTasksScheduler(consAdminHandlers, eth, currentBlockChan, tasksChan)
+
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
 	monitorTimeout := config.Configuration.Monitor.Timeout
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize))
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), currentBlockChan)
 	if err != nil {
 		panic(err)
 	}
@@ -333,6 +341,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	go statusLogger.Run()
 	defer statusLogger.Close()
+
+	err = tasksScheduler.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer tasksScheduler.Close()
 
 	err = mon.Start()
 	if err != nil {
