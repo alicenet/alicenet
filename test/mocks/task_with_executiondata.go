@@ -2,10 +2,10 @@ package mocks
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/accounts"
 	common "github.com/ethereum/go-ethereum/common"

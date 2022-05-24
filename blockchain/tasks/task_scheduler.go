@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
@@ -13,16 +14,27 @@ import (
 )
 
 var (
-	ErrOverlappingSchedule = errors.New("overlapping schedule range")
-	ErrNothingScheduled    = errors.New("nothing schedule for time")
-	ErrNotScheduled        = errors.New("scheduled task not found")
+	ErrNothingScheduled = errors.New("nothing schedule for time")
+	ErrNotScheduled     = errors.New("scheduled task not found")
+	ErrWrongParams      = errors.New("wrong start/end height for the task")
+	ErrTaskExpired      = errors.New("the task is already expired")
 )
 
-type Block struct {
+const (
+	heightToleranceBeforeRemoving uint64 = 50
+)
+
+type TaskRequest struct {
+	Id        string           `json:"id"`
 	Start     uint64           `json:"start"`
 	End       uint64           `json:"end"`
-	Task      interfaces.ITask `json:"-"`
 	IsRunning bool             `json:"isRunning"`
+	Task      interfaces.ITask `json:"-"`
+}
+
+type TaskResponse struct {
+	Id  string
+	Err error
 }
 
 type innerBlock struct {
@@ -31,15 +43,17 @@ type innerBlock struct {
 	WrappedTask *objects.InstanceWrapper
 }
 
-type Scheduler struct {
-	Ranges           map[string]*Block       `json:"ranges"`
-	eth              interfaces.Ethereum     `json:"-"`
-	adminHandler     interfaces.AdminHandler `json:"-"`
-	marshaller       *objects.TypeRegistry   `json:"-"`
-	cancelChan       chan bool               `json:"-"`
-	currentBlockChan <-chan uint64           `json:"-"`
-	tasksChan        <-chan interfaces.ITask `json:"-"`
-	logger           *logrus.Entry           `json:"-"`
+type TasksScheduler struct {
+	Schedule               map[string]*TaskRequest `json:"schedule"`
+	LastHeightSeen         uint64                  `json:"last_height_seen"`
+	eth                    interfaces.Ethereum     `json:"-"`
+	adminHandler           interfaces.AdminHandler `json:"-"`
+	marshaller             *objects.TypeRegistry   `json:"-"`
+	cancelChan             chan bool               `json:"-"`
+	lastFinalizedBlockChan <-chan uint64           `json:"-"`
+	taskRequestChan        <-chan interfaces.ITask `json:"-"`
+	taskResponseChan       chan TaskResponse       `json:"-"`
+	logger                 *logrus.Entry           `json:"-"`
 	//TODO: add db for recovery (Should be a separate db or a shared one with the monitor???)
 }
 
@@ -47,49 +61,50 @@ type innerSequentialSchedule struct {
 	Ranges map[string]*innerBlock
 }
 
-func NewTasksScheduler(adminHandler interfaces.AdminHandler, eth interfaces.Ethereum, currentBlockChan <-chan uint64, tasksChan <-chan interfaces.ITask) *Scheduler {
+func NewTasksScheduler(adminHandler interfaces.AdminHandler, eth interfaces.Ethereum, lastFinalizedBlockChan <-chan uint64, taskRequestChan <-chan interfaces.ITask) *TasksScheduler {
 	tr := &objects.TypeRegistry{}
 
 	//TODO: refactor, import cycle not allowed. Move dkgtasks inside tasks package???
-	//tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	//tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	//tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	//tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	//tr.RegisterInstanceType(&SnapshotTask{})
+	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
+	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	tr.RegisterInstanceType(&SnapshotTask{})
 
-	s := &Scheduler{
-		Ranges:           make(map[string]*Block),
-		eth:              eth,
-		adminHandler:     adminHandler,
-		marshaller:       tr,
-		cancelChan:       make(chan bool, 1),
-		currentBlockChan: currentBlockChan,
-		tasksChan:        tasksChan,
+	s := &TasksScheduler{
+		Schedule:               make(map[string]*TaskRequest),
+		eth:                    eth,
+		adminHandler:           adminHandler,
+		marshaller:             tr,
+		cancelChan:             make(chan bool, 1),
+		lastFinalizedBlockChan: lastFinalizedBlockChan,
+		taskRequestChan:        taskRequestChan,
+		taskResponseChan:       make(chan TaskResponse, 100),
 	}
 
-	logger := logging.GetLogger("tasks_scheduler").WithField("Ranges", s.Ranges)
+	logger := logging.GetLogger("tasks_scheduler").WithField("Schedule", s.Schedule)
 	s.logger = logger
 
 	return s
 }
 
-func (s *Scheduler) Start() error {
+func (s *TasksScheduler) Start() error {
 	//TODO: load the last saved state for recovery
 
 	go s.eventLoop()
 	return nil
 }
 
-func (s *Scheduler) eventLoop() {
+func (s *TasksScheduler) eventLoop() {
 	ctx, cf := context.WithCancel(context.Background())
 
 	for {
@@ -100,166 +115,175 @@ func (s *Scheduler) eventLoop() {
 			s.purge()
 			cf()
 			return
-		case task := <-s.tasksChan:
-			go s.schedule(task)
-		case currentBlock := <-s.currentBlockChan:
-			err := s.processBlock(ctx, currentBlock)
-			s.logger.WithError(err).Errorf("Failed to processBlock %d", currentBlock)
+		case block := <-s.lastFinalizedBlockChan:
+			s.LastHeightSeen = block
+		case taskRequest := <-s.taskRequestChan:
+			err := s.schedule(ctx, taskRequest)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+			}
+		case taskResponse := <-s.taskResponseChan:
+			//TODO: process task response
+		default:
+			toStart, expired, unresponsive := s.findTasks()
+			err := s.startTasks(ctx, toStart)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to processBlock %d", s.LastHeightSeen)
+			}
+
+			err = s.killExpiredTasks(ctx, expired)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", s.LastHeightSeen)
+			}
+
+			err = s.removeUnresponsiveTasks(ctx, unresponsive)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to removeUnresponsiveTasks %d", s.LastHeightSeen)
+			}
 		}
 	}
 }
 
-func (s *Scheduler) Close() {
+func (s *TasksScheduler) Close() {
+	close(s.taskResponseChan)
 	s.cancelChan <- true
 }
 
-func (s *Scheduler) processBlock(ctx context.Context, currentBlock uint64) error {
+func (s *TasksScheduler) schedule(ctx context.Context, task interfaces.ITask) error {
 	select {
 	case <-ctx.Done():
-		s.logger.Debugf("context ended with error: %s", ctx.Err())
-		s.purge()
-		return nil
+		return ctx.Err()
 	default:
-		s.logger.Debug("Looking for scheduled task")
-		uuid, err := s.find(currentBlock)
-		if err == nil {
-			isRunning, err := s.isRunning(uuid)
+		start := task.GetExecutionData().GetStart()
+		end := task.GetExecutionData().GetEnd()
+
+		if start >= end {
+			return ErrWrongParams
+		}
+
+		if end <= s.LastHeightSeen {
+			return ErrTaskExpired
+		}
+
+		id := uuid.NewRandom()
+		s.Schedule[id.String()] = &TaskRequest{Id: id.String(), Start: start, End: end, Task: task}
+	}
+	return nil
+}
+
+func (s *TasksScheduler) startTasks(ctx context.Context, tasks []*TaskRequest) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		s.logger.Debug("Looking for starting tasks")
+		for i := 0; i < len(tasks); i++ {
+			task := tasks[i]
+			taskName, _ := objects.GetNameType(task)
+			s.logger.Infof("Task name: %s is about to start", taskName)
+
+			//TODO: run the task in a go routine
+			task.IsRunning = true
+		}
+
+	}
+
+	return nil
+}
+
+func (s *TasksScheduler) killExpiredTasks(ctx context.Context, tasks []*TaskRequest) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		s.logger.Debug("Looking for killing expired tasks")
+
+		for i := 0; i < len(tasks); i++ {
+			task := tasks[i]
+			taskName, _ := objects.GetNameType(task)
+			s.logger.Infof("Task name: %s is about to be killed", taskName)
+			task.Task.GetExecutionData().Close()
+		}
+
+	}
+
+	return nil
+}
+
+func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []*TaskRequest) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		s.logger.Debug("Looking for removing unresponsive tasks")
+
+		for i := 0; i < len(tasks); i++ {
+			task := tasks[i]
+			taskName, _ := objects.GetNameType(task)
+			s.logger.Infof("Task name: %s is about to be removed", taskName)
+
+			err := s.remove(task.Id)
 			if err != nil {
-				s.logger.WithError(err).Error("Failed to execute isRunning")
+				s.logger.WithError(err).Errorf("Failed to remove unresponsive task id: %s", task.Id)
 			}
-
-			if !isRunning {
-				task, err := s.retrieve(uuid)
-				if err != nil {
-					s.logger.WithError(err).Error("Failed to execute retrieve")
-				}
-
-				taskName, _ := objects.GetNameType(task)
-				s.logger.Infof("Task name: %s", taskName)
-
-				//onFinishCB := func() {
-				//	err := monitorState.Schedule.SetRunning(uuid, false)
-				//	if err != nil {
-				//		logEntry.WithError(err).Error("Failed to set task to not running")
-				//	}
-				//	err = monitorState.Schedule.Remove(uuid)
-				//	if err != nil {
-				//		logEntry.WithError(err).Error("Failed to remove task from schedule")
-				//	}
-				//}
-				//
-				//err = StartTask(log, wg, eth, task, persistMonitorCB, onFinishCB)
-				//if err != nil {
-				//	return err
-				//}
-				//err = monitorState.Schedule.SetRunning(uuid, true)
-				//if err != nil {
-				//	return err
-				//}
-
-				//TODO: spawn go routine executing a task using a new Task Manager
-				//log := s.logger.WithFields(logrus.Fields{
-				//	"TaskID":   uuid.String(),
-				//	"TaskName": taskName})
-			}
-
-		} else if err == objects.ErrNothingScheduled {
-			s.logger.Debug("No tasks scheduled")
-		} else {
-			s.logger.Warnf("Error retrieving scheduled task: %v", err)
 		}
+
 	}
 
 	return nil
 }
 
-func (s *Scheduler) schedule(task interfaces.ITask) uuid.UUID {
-	id := uuid.NewRandom()
-	s.Ranges[id.String()] = &Block{Start: task.GetExecutionData().GetStart(), End: task.GetExecutionData().GetEnd(), Task: task}
-	return id
-}
-
-func (s *Scheduler) purge() {
-	for taskID := range s.Ranges {
-		delete(s.Ranges, taskID)
+func (s *TasksScheduler) purge() {
+	for _, request := range s.Schedule {
+		request.Task.GetExecutionData().Close()
 	}
+	s.Schedule = make(map[string]*TaskRequest)
 }
 
-func (s *Scheduler) purgePrior(now uint64) {
-	for taskID, block := range s.Ranges {
-		if block.Start <= now && block.End <= now {
-			delete(s.Ranges, taskID)
+func (s *TasksScheduler) findTasks() ([]*TaskRequest, []*TaskRequest, []*TaskRequest) {
+	toStart := make([]*TaskRequest, 0)
+	expired := make([]*TaskRequest, 0)
+	unresponsive := make([]*TaskRequest, 0)
+
+	for _, taskRequest := range s.Schedule {
+		if taskRequest.End+heightToleranceBeforeRemoving <= s.LastHeightSeen {
+			unresponsive = append(unresponsive, taskRequest)
+			continue
+		}
+
+		if taskRequest.End <= s.LastHeightSeen {
+			expired = append(expired, taskRequest)
+			continue
+		}
+
+		if taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen && !taskRequest.IsRunning {
+			toStart = append(toStart, taskRequest)
+			continue
 		}
 	}
+	return toStart, expired, unresponsive
 }
 
-func (s *Scheduler) setRunning(taskId uuid.UUID, running bool) error {
-	block, present := s.Ranges[taskId.String()]
+func (s *TasksScheduler) length() int {
+	return len(s.Schedule)
+}
+
+func (s *TasksScheduler) remove(id string) error {
+	_, present := s.Schedule[id]
 	if !present {
 		return ErrNotScheduled
 	}
 
-	block.IsRunning = running
-	return nil
-}
-
-func (s *Scheduler) isRunning(taskId uuid.UUID) (bool, error) {
-	block, present := s.Ranges[taskId.String()]
-	if !present {
-		return false, ErrNotScheduled
-	}
-
-	return block.IsRunning, nil
-}
-
-func (s *Scheduler) find(now uint64) (uuid.UUID, error) {
-
-	for taskId, block := range s.Ranges {
-		if block.Start <= now && block.End > now {
-			return uuid.Parse(taskId), nil
-		}
-	}
-	return nil, ErrNothingScheduled
-}
-
-func (s *Scheduler) retrieve(taskId uuid.UUID) (interfaces.ITask, error) {
-	block, present := s.Ranges[taskId.String()]
-	if !present {
-		return nil, ErrNotScheduled
-	}
-
-	return block.Task, nil
-}
-
-func (s *Scheduler) length() int {
-	return len(s.Ranges)
-}
-
-func (s *Scheduler) remove(taskId uuid.UUID) error {
-	id := taskId.String()
-
-	_, present := s.Ranges[id]
-	if !present {
-		return ErrNotScheduled
-	}
-
-	delete(s.Ranges, id)
+	delete(s.Schedule, id)
 
 	return nil
 }
 
-func (s *Scheduler) status(logger *logrus.Entry) {
-	for _, block := range s.Ranges {
-		name, _ := objects.GetNameType(block.Task)
-		logger.Infof("Schedule %p Task %v Range %v and %v", s, name, block.Start, block.End)
-	}
-}
-
-func (s *Scheduler) MarshalJSON() ([]byte, error) {
+func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
 
 	ws := &innerSequentialSchedule{Ranges: make(map[string]*innerBlock)}
 
-	for k, v := range s.Ranges {
+	for k, v := range s.Schedule {
 		wt, err := s.marshaller.WrapInstance(v.Task)
 		if err != nil {
 			return []byte{}, err
@@ -275,7 +299,7 @@ func (s *Scheduler) MarshalJSON() ([]byte, error) {
 	return raw, nil
 }
 
-func (s *Scheduler) UnmarshalJSON(raw []byte) error {
+func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 	aa := &innerSequentialSchedule{}
 
 	err := json.Unmarshal(raw, aa)
@@ -285,7 +309,7 @@ func (s *Scheduler) UnmarshalJSON(raw []byte) error {
 
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
 
-	s.Ranges = make(map[string]*Block)
+	s.Schedule = make(map[string]*TaskRequest)
 	for k, v := range aa.Ranges {
 		t, err := s.marshaller.UnwrapInstance(v.WrappedTask)
 		if err != nil {
@@ -299,7 +323,7 @@ func (s *Scheduler) UnmarshalJSON(raw []byte) error {
 			adminClient.SetAdminHandler(s.adminHandler)
 		}
 
-		s.Ranges[k] = &Block{Start: v.Start, End: v.End, Task: t.(interfaces.ITask)}
+		s.Schedule[k] = &TaskRequest{Start: v.Start, End: v.End, Task: t.(interfaces.ITask)}
 	}
 
 	return nil

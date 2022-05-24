@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
+	objects2 "github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
@@ -53,14 +54,14 @@ type monitor struct {
 	logger         *logrus.Entry
 	cancelChan     chan bool
 	statusChan     chan string
-	TypeRegistry   *objects.TypeRegistry
+	TypeRegistry   *objects2.TypeRegistry
 	State          *objects.MonitorState
 	wg             *sync.WaitGroup
 	batchSize      uint64
 
 	//for communication with the TasksScheduler
-	currentBlockChan chan<- uint64
-	taskChan         chan<- interfaces.ITask
+	lastFinalizedBlockChan chan<- uint64
+	taskRequestChan        chan<- interfaces.ITask
 }
 
 // NewMonitor creates a new Monitor
@@ -72,8 +73,8 @@ func NewMonitor(cdb *db.Database,
 	tickInterval time.Duration,
 	timeout time.Duration,
 	batchSize uint64,
-	currentBlockChan chan<- uint64,
-	taskChan chan<- interfaces.ITask) (*monitor, error) {
+	lastFinalizedBlockChan chan<- uint64,
+	taskRequestChan chan<- interfaces.ITask) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -84,7 +85,7 @@ func NewMonitor(cdb *db.Database,
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
 	//    in advance.
 	//TODO: remove this
-	tr := &objects.TypeRegistry{}
+	tr := &objects2.TypeRegistry{}
 
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
@@ -102,15 +103,15 @@ func NewMonitor(cdb *db.Database,
 	tr.RegisterInstanceType(&tasks.SnapshotTask{})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskChan)
+	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan)
 	if err != nil {
 		return nil, err
 	}
 
 	wg := new(sync.WaitGroup)
 
-	schedule := objects.NewSequentialSchedule(tr, adminHandler)
-	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
+	schedule := tasks.NewSequentialSchedule(tr, adminHandler)
+	dkgState := objects2.NewDkgState(eth.GetDefaultAccount())
 	State := objects.NewMonitorState(dkgState, schedule)
 
 	//TODO: What to do with this after adding the new TasksScheduler???
@@ -130,17 +131,17 @@ func NewMonitor(cdb *db.Database,
 		cdb:            cdb,
 		db:             db,
 		//TODO: remove this
-		TypeRegistry:     tr,
-		logger:           logger,
-		tickInterval:     tickInterval,
-		timeout:          timeout,
-		cancelChan:       make(chan bool, 1),
-		statusChan:       make(chan string, 1),
-		State:            State,
-		wg:               wg,
-		batchSize:        batchSize,
-		currentBlockChan: currentBlockChan,
-		taskChan:         taskChan,
+		TypeRegistry:           tr,
+		logger:                 logger,
+		tickInterval:           tickInterval,
+		timeout:                timeout,
+		cancelChan:             make(chan bool, 1),
+		statusChan:             make(chan string, 1),
+		State:                  State,
+		wg:                     wg,
+		batchSize:              batchSize,
+		lastFinalizedBlockChan: lastFinalizedBlockChan,
+		taskRequestChan:        taskRequestChan,
 	}, nil
 
 }
@@ -257,7 +258,7 @@ func (mon *monitor) Start() error {
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof("Current Tasks: %v", len(mon.State.Schedule.Ranges))
 	for id, block := range mon.State.Schedule.Ranges {
-		taskName, _ := objects.GetNameType(block.Task)
+		taskName, _ := objects2.GetNameType(block.Task)
 		logger.Infof("...ID: %v Name: %v Between: %v and %v", id, taskName, block.Start, block.End)
 	}
 	logger.Info(strings.Repeat("-", 80))
@@ -303,7 +304,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 				}
 			}
 
-			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB, mon.currentBlockChan); err != nil {
+			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB, mon.lastFinalizedBlockChan); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
@@ -351,7 +352,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func(), currentBlockChan chan<- uint64) error {
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func(), lastFinalizedBlockChan chan<- uint64) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -440,9 +441,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			forceExit = true
 		}
 
-		//sending the currentBlock to the TasksScheduler to process all the tasks during this block
-		currentBlockChan <- currentBlock
-
 		//TODO: move this logic to the TasksScheduler
 
 		// Check if any tasks are scheduled
@@ -461,7 +459,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 					return err
 				}
 
-				taskName, _ := objects.GetNameType(task)
+				taskName, _ := objects2.GetNameType(task)
 
 				log := logEntry.WithFields(logrus.Fields{
 					"TaskID":   uuid.String(),
@@ -487,7 +485,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 				}
 			}
 
-		} else if err == objects.ErrNothingScheduled {
+		} else if err == tasks.ErrNothingScheduled {
 			logEntry.Debug("No tasks scheduled")
 		} else {
 			logEntry.Warnf("Error retrieving scheduled task: %v", err)
@@ -497,6 +495,11 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		if forceExit {
 			break
 		}
+	}
+
+	if monitorState.HighestBlockFinalized != processed {
+		//sending the lastFinalizedBlock to the TasksScheduler to process all the tasks during this block
+		lastFinalizedBlockChan <- processed
 	}
 
 	// Only after batch is processed do we update monitor State
@@ -532,7 +535,7 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database, scheduler *objects.SequentialSchedule) error {
+func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database, scheduler *tasks.SequentialSchedule) error {
 
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")

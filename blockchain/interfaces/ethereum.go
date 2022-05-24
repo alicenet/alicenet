@@ -171,6 +171,7 @@ type ITaskExecutionData interface {
 	ClearTxData()
 	GetStart() uint64
 	GetEnd() uint64
+	Close()
 }
 
 type AdminClient interface {

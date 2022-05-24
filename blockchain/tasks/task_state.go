@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"math/big"
 	"strings"
 	"sync"
@@ -15,6 +16,8 @@ type Task struct {
 	End            uint64
 	State          interfaces.ITaskState
 	Success        bool
+	Ctx            context.Context
+	Cf             context.CancelFunc
 	StartBlockHash common.Hash
 	TxOpts         *TxOpts
 }
@@ -39,11 +42,15 @@ func (t *TxOpts) GetHexTxsHashes() string {
 }
 
 func NewTask(state interfaces.ITaskState, start uint64, end uint64) *Task {
+	ctx, cf := context.WithCancel(context.Background())
+
 	return &Task{
 		State:   state,
 		Start:   start,
 		End:     end,
 		Success: false,
+		Ctx:     ctx,
+		Cf:      cf,
 		TxOpts:  &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
 }
@@ -57,13 +64,21 @@ func (d *Task) ClearTxData() {
 }
 
 func (d *Task) GetStart() uint64 {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.Start
 }
 
 func (d *Task) GetEnd() uint64 {
+	d.RLock()
+	defer d.RUnlock()
+	return d.End
+}
+
+func (d *Task) Close() {
 	d.Lock()
 	defer d.Unlock()
-	return d.End
+	if d.Cf != nil {
+		d.Cf()
+	}
 }

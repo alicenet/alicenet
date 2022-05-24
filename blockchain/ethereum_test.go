@@ -2,13 +2,13 @@ package blockchain_test
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
 	"math"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"

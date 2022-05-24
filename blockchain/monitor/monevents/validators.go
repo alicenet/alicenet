@@ -3,10 +3,10 @@ package monevents
 import (
 	"bytes"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks"
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -114,7 +114,7 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
 			state.EthDKG.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
 
-		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
+		return tasks.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
 	}
 
 	// state update

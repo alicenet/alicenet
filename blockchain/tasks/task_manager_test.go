@@ -1,4 +1,4 @@
-package tasks_test
+package tasks
 
 import (
 	"errors"
@@ -12,7 +12,6 @@ import (
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/test/mocks"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +21,7 @@ func TestStartTask_initializeTask_HappyPath(t *testing.T) {
 	task := mocks.NewMockITask()
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -37,7 +36,7 @@ func TestStartTask_initializeTask_Error(t *testing.T) {
 	task.InitializeFunc.SetDefaultReturn(errors.New("initialize error"))
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("", nil), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -54,10 +53,10 @@ func TestStartTask_executeTask_ErrorRetry(t *testing.T) {
 	task := mocks.NewMockITask()
 	task.ShouldRetryFunc.SetDefaultReturn(true)
 	task.DoWorkFunc.SetDefaultReturn(errors.New("DoWork_error"))
-	task.DoRetryFunc.SetDefaultReturn(errors.New(tasks.NonceToLowError))
+	task.DoRetryFunc.SetDefaultReturn(errors.New(NonceToLowError))
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -76,7 +75,7 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -101,7 +100,7 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -126,7 +125,7 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -152,7 +151,7 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 
@@ -180,7 +179,7 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	eth.GethClientMock.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
 
 	wg := sync.WaitGroup{}
-	err := tasks.StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
+	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
 	assert.NoError(t, err)
 	wg.Wait()
 

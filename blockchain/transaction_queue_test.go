@@ -2,11 +2,11 @@ package blockchain_test
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -18,7 +18,7 @@ func TestRegisteringETHDKGEvents(t *testing.T) {
 	var em *objects.EventMap = objects.NewEventMap()
 	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()
 
-	monitor.RegisterETHDKGEvents(em, adminHandler)
+	monitor.RegisterETHDKGEvents(em, adminHandler, make(chan interfaces.ITask))
 
 	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {

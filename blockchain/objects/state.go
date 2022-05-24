@@ -3,6 +3,8 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 	"strings"
 	"sync"
@@ -18,37 +20,22 @@ import (
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
-	Version                uint8                   `json:"version"`
-	CommunicationFailures  uint32                  `json:"communicationFailures"`
-	EthereumInSync         bool                    `json:"-"`
-	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
-	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
-	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
-	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
-	EndpointInSync         bool                    `json:"-"`
-	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
-	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
-	PeerCount              uint32                  `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
-	Validators             map[uint32][]Validator  `json:"validators"`
-	Schedule               *SequentialSchedule     `json:"schedule"`
-	EthDKG                 *DkgState               `json:"ethDKG"`
+	Version                uint8                     `json:"version"`
+	CommunicationFailures  uint32                    `json:"communicationFailures"`
+	EthereumInSync         bool                      `json:"-"`
+	HighestBlockProcessed  uint64                    `json:"highestBlockProcessed"`
+	HighestBlockFinalized  uint64                    `json:"highestBlockFinalized"`
+	HighestEpochProcessed  uint32                    `json:"highestEpochProcessed"`
+	HighestEpochSeen       uint32                    `json:"highestEpochSeen"`
+	EndpointInSync         bool                      `json:"-"`
+	LatestDepositProcessed uint32                    `json:"latestDepositProcessed"`
+	LatestDepositSeen      uint32                    `json:"latestDepositSeen"`
+	PeerCount              uint32                    `json:"peerCount"`
+	ValidatorSets          map[uint32]ValidatorSet   `json:"validatorSets"`
+	Validators             map[uint32][]Validator    `json:"validators"`
+	Schedule               *tasks.SequentialSchedule `json:"schedule"`
+	EthDKG                 *objects.DkgState         `json:"ethDKG"`
 }
-
-// EthDKGPhase is used to indicate what phase we are currently in
-type EthDKGPhase uint8
-
-// These are the valid phases of ETHDKG
-const (
-	RegistrationOpen EthDKGPhase = iota
-	ShareDistribution
-	DisputeShareDistribution
-	KeyShareSubmission
-	MPKSubmission
-	GPKJSubmission
-	DisputeGPKJSubmission
-	Completion
-)
 
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {
@@ -71,7 +58,7 @@ type Share struct {
 	EncryptedShares []*big.Int
 }
 
-func NewMonitorState(dkgState *DkgState, schedule *SequentialSchedule) *MonitorState {
+func NewMonitorState(dkgState *objects.DkgState, schedule *tasks.SequentialSchedule) *MonitorState {
 	return &MonitorState{
 		EthDKG:        dkgState,
 		Schedule:      schedule,

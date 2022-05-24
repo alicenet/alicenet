@@ -2,9 +2,9 @@ package monitor
 
 import (
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/monevents"
 	"github.com/MadBase/MadNet/blockchain/objects"
@@ -69,12 +69,12 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler, tasksChan chan<- interfaces.ITask) {
+func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	var eventProcessorMap map[string]objects.EventProcessor = make(map[string]objects.EventProcessor)
 	eventProcessorMap["RegistrationOpened"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		err := dkgevents.ProcessRegistrationOpenedNewScheduler(eth, logger, state, log, tasksChan)
+		err := dkgevents.ProcessRegistrationOpenedNewScheduler(eth, logger, state, log, taskRequestChan)
 		if err != nil {
 			logger.Debugf("Error during ProcessRegistrationOpenedNewScheduler: %v", err)
 		}
@@ -111,9 +111,9 @@ func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHan
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, tasksChan chan<- interfaces.ITask) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, taskRequestChan chan<- interfaces.ITask) error {
 
-	RegisterETHDKGEvents(em, adminHandler, tasksChan)
+	RegisterETHDKGEvents(em, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()

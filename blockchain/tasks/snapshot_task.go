@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 	dangerousRand "math/rand"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
