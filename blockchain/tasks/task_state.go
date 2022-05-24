@@ -55,3 +55,15 @@ func (d *Task) ClearTxData() {
 		TxHashes: make([]common.Hash, 0),
 	}
 }
+
+func (d *Task) GetStart() uint64 {
+	d.Lock()
+	defer d.Unlock()
+	return d.Start
+}
+
+func (d *Task) GetEnd() uint64 {
+	d.Lock()
+	defer d.Unlock()
+	return d.End
+}

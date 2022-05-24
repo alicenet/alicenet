@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 	"reflect"
@@ -38,38 +38,33 @@ type Scheduler struct {
 	marshaller       *objects.TypeRegistry   `json:"-"`
 	cancelChan       chan bool               `json:"-"`
 	currentBlockChan <-chan uint64           `json:"-"`
-	tasksChan        <-chan TaskToSchedule   `json:"-"`
+	tasksChan        <-chan interfaces.ITask `json:"-"`
 	logger           *logrus.Entry           `json:"-"`
 	//TODO: add db for recovery (Should be a separate db or a shared one with the monitor???)
-}
-
-type TaskToSchedule struct {
-	Start uint64
-	End   uint64
-	Task  interfaces.ITask
 }
 
 type innerSequentialSchedule struct {
 	Ranges map[string]*innerBlock
 }
 
-func NewTasksScheduler(adminHandler interfaces.AdminHandler, eth interfaces.Ethereum, currentBlockChan <-chan uint64, tasksChan <-chan TaskToSchedule) *Scheduler {
+func NewTasksScheduler(adminHandler interfaces.AdminHandler, eth interfaces.Ethereum, currentBlockChan <-chan uint64, tasksChan <-chan interfaces.ITask) *Scheduler {
 	tr := &objects.TypeRegistry{}
 
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&SnapshotTask{})
+	//TODO: refactor, import cycle not allowed. Move dkgtasks inside tasks package???
+	//tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
+	//tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	//tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	//tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
+	//tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	//tr.RegisterInstanceType(&SnapshotTask{})
 
 	s := &Scheduler{
 		Ranges:           make(map[string]*Block),
@@ -80,6 +75,9 @@ func NewTasksScheduler(adminHandler interfaces.AdminHandler, eth interfaces.Ethe
 		currentBlockChan: currentBlockChan,
 		tasksChan:        tasksChan,
 	}
+
+	logger := logging.GetLogger("tasks_scheduler").WithField("Ranges", s.Ranges)
+	s.logger = logger
 
 	return s
 }
@@ -103,7 +101,7 @@ func (s *Scheduler) eventLoop() {
 			cf()
 			return
 		case task := <-s.tasksChan:
-			go s.schedule(task.Start, task.End, task.Task)
+			go s.schedule(task)
 		case currentBlock := <-s.currentBlockChan:
 			err := s.processBlock(ctx, currentBlock)
 			s.logger.WithError(err).Errorf("Failed to processBlock %d", currentBlock)
@@ -175,9 +173,9 @@ func (s *Scheduler) processBlock(ctx context.Context, currentBlock uint64) error
 	return nil
 }
 
-func (s *Scheduler) schedule(start uint64, end uint64, task interfaces.ITask) uuid.UUID {
+func (s *Scheduler) schedule(task interfaces.ITask) uuid.UUID {
 	id := uuid.NewRandom()
-	s.Ranges[id.String()] = &Block{Start: start, End: end, Task: task}
+	s.Ranges[id.String()] = &Block{Start: task.GetExecutionData().GetStart(), End: task.GetExecutionData().GetEnd(), Task: task}
 	return id
 }
 

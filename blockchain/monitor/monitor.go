@@ -60,6 +60,7 @@ type monitor struct {
 
 	//for communication with the TasksScheduler
 	currentBlockChan chan<- uint64
+	taskChan         chan<- interfaces.ITask
 }
 
 // NewMonitor creates a new Monitor
@@ -71,7 +72,8 @@ func NewMonitor(cdb *db.Database,
 	tickInterval time.Duration,
 	timeout time.Duration,
 	batchSize uint64,
-	currentBlockChan chan<- uint64) (*monitor, error) {
+	currentBlockChan chan<- uint64,
+	taskChan chan<- interfaces.ITask) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -81,25 +83,26 @@ func NewMonitor(cdb *db.Database,
 	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
 	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
 	//    in advance.
-	//tr := &objects.TypeRegistry{}
-	//
-	//tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	//tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	//tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	//tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	//tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	//tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	//tr.RegisterInstanceType(&tasks.SnapshotTask{})
+	//TODO: remove this
+	tr := &objects.TypeRegistry{}
+
+	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
+	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
+	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
+	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
+	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
+	tr.RegisterInstanceType(&tasks.SnapshotTask{})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler)
+	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskChan)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +129,8 @@ func NewMonitor(cdb *db.Database,
 		eventMap:       eventMap,
 		cdb:            cdb,
 		db:             db,
-		//TypeRegistry:   tr,
+		//TODO: remove this
+		TypeRegistry:     tr,
 		logger:           logger,
 		tickInterval:     tickInterval,
 		timeout:          timeout,
@@ -136,6 +140,7 @@ func NewMonitor(cdb *db.Database,
 		wg:               wg,
 		batchSize:        batchSize,
 		currentBlockChan: currentBlockChan,
+		taskChan:         taskChan,
 	}, nil
 
 }

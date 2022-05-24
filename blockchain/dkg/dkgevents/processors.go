@@ -35,6 +35,23 @@ func isValidator(eth interfaces.Ethereum, logger *logrus.Entry, acct accounts.Ac
 	return true, nil
 }
 
+func ProcessRegistrationOpenedNewScheduler(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, tasksChan chan<- interfaces.ITask) error {
+	logger.Info("ProcessRegistrationOpenedNewScheduler() ...")
+	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpened(log)
+	if err != nil {
+		return err
+	}
+
+	dkgState := objects.NewDkgState(state.EthDKG.Account)
+	registrationTaskStart := event.StartBlock.Uint64()
+	registrationTaskEnd := event.StartBlock.Uint64() + event.PhaseLength.Uint64()
+
+	registrationTask := dkgtasks.NewRegisterTask(dkgState, registrationTaskStart, registrationTaskEnd)
+
+	tasksChan <- registrationTask
+	return nil
+}
+
 func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info("ProcessRegistrationOpened() ...")

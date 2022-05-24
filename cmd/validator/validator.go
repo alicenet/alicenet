@@ -304,7 +304,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// Setup tasks scheduler
 	currentBlockChan := make(chan uint64)
-	tasksChan := make(chan tasks.TaskToSchedule)
+	tasksChan := make(chan interfaces.ITask)
 	defer close(currentBlockChan)
 	defer close(tasksChan)
 	tasksScheduler := tasks.NewTasksScheduler(consAdminHandlers, eth, currentBlockChan, tasksChan)
@@ -313,7 +313,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
 	monitorTimeout := config.Configuration.Monitor.Timeout
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), currentBlockChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), currentBlockChan, tasksChan)
 	if err != nil {
 		panic(err)
 	}

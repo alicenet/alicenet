@@ -169,6 +169,8 @@ type ITaskExecutionData interface {
 	Lock()
 	Unlock()
 	ClearTxData()
+	GetStart() uint64
+	GetEnd() uint64
 }
 
 type AdminClient interface {
