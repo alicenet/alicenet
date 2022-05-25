@@ -1,8 +1,6 @@
 package db
 
 import (
-	"io/ioutil"
-	"os"
 	"strconv"
 	"testing"
 
@@ -15,23 +13,25 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-func TestSetAndGetUTXO_Success(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+func setupDatabase(t *testing.T) *badger.DB {
+	t.Helper()
+	dir := t.TempDir()
 	opts := badger.DefaultOptions(dir)
 	db, err := badger.Open(opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return db
+}
 
+func TestSetAndGetUTXO_Success(t *testing.T) {
+	t.Parallel()
+	db := setupDatabase(t)
 	chainID := uint32(1)
 	value, err := new(uint256.Uint256).FromUint64(65537)
 	if err != nil {
@@ -62,7 +62,7 @@ func TestSetAndGetUTXO_Success(t *testing.T) {
 	err = db.Update(func(txn *badger.Txn) error {
 		err := SetUTXO(txn, key, utxo)
 		if err != nil {
-			t.Fatal("Shouldn't have raised error")
+			t.Fatal(err)
 		}
 		return nil
 	})
@@ -74,7 +74,7 @@ func TestSetAndGetUTXO_Success(t *testing.T) {
 	err = db.View(func(txn *badger.Txn) error {
 		result, err := GetUTXO(txn, key)
 		if err != nil {
-			t.Fatal("Shouldn't have raised error")
+			t.Fatal(err)
 		}
 
 		if result == nil {
@@ -89,25 +89,12 @@ func TestSetAndGetUTXO_Success(t *testing.T) {
 }
 
 func TestSetAndGetUTXO_Error(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := setupDatabase(t)
 
 	utxo := &objs.TXOut{}
 	key := make([]byte, 0)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := SetUTXO(txn, key, utxo)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -131,21 +118,8 @@ func TestSetAndGetUTXO_Error(t *testing.T) {
 }
 
 func TestSetAndGetTx_Success(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := setupDatabase(t)
 
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -197,7 +171,7 @@ func TestSetAndGetTx_Success(t *testing.T) {
 	err = db.Update(func(txn *badger.Txn) error {
 		err := SetTx(txn, key, tx)
 		if err != nil {
-			t.Fatal("Shouldn't have raised error")
+			t.Fatal(err)
 		}
 		return nil
 	})
@@ -209,7 +183,7 @@ func TestSetAndGetTx_Success(t *testing.T) {
 	err = db.View(func(txn *badger.Txn) error {
 		result, err := GetTx(txn, key)
 		if err != nil {
-			t.Fatal("Shouldn't have raised error")
+			t.Fatal(err)
 		}
 
 		if result == nil {
@@ -224,24 +198,11 @@ func TestSetAndGetTx_Success(t *testing.T) {
 }
 
 func TestGetTx_Error(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := setupDatabase(t)
 
 	key := make([]byte, 0)
-	err = db.View(func(txn *badger.Txn) error {
+	err := db.View(func(txn *badger.Txn) error {
 		_, err := GetUTXO(txn, key)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -254,6 +215,7 @@ func TestGetTx_Error(t *testing.T) {
 }
 
 func makeVS(t *testing.T, ownerSigner objs.Signer, i int) (*objs.TXOut, *objs.ValueStore) {
+	t.Helper()
 	cid := uint32(2)
 	val := uint256.One()
 
