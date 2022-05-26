@@ -133,7 +133,7 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	taskState, ok := t.State.(*SnapshotState)
 	if !ok {
-		logger.Error("Invalid convertion of taskState object")
+		logger.Error("Invalid conversion of taskState object")
 		return true
 	}
 

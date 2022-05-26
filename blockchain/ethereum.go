@@ -209,7 +209,7 @@ func NewEthereumSimulator(
 		}
 
 		if !worked {
-			panic(fmt.Errorf("error commiting evm_mine on rpc: %v", err))
+			panic(fmt.Errorf("error committing evm_mine on rpc: %v", err))
 		}
 	}
 
@@ -674,20 +674,21 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 
 	baseFee := block.BaseFee()
 
-	bmi64 := int64(2)
+	// This should give us 16 full blocks before we are priced out
+	bmi64 := int64(4)
 	bm := new(big.Int).SetInt64(bmi64)
 	bf := new(big.Int).Set(baseFee)
-	baseFee2x := new(big.Int).Mul(bm, bf)
+	baseFee4x := new(big.Int).Mul(bm, bf)
 
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
 		if err.Error() == ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND {
-			tipCap = big.NewInt(1)
+			tipCap = big.NewInt(1_000_000_000)
 		} else {
 			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 		}
 	}
-	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
+	feeCap := new(big.Int).Add(baseFee4x, new(big.Int).Set(tipCap))
 
 	txMaxFeeThresholdInGwei := new(big.Int).SetUint64(eth.GetTxMaxFeeThresholdInGwei())
 	// make sure that the max fee that we are going to pay on this tx doesn't pass the limit that we set on config
@@ -718,6 +719,19 @@ func (eth *EthereumDetails) GetCallOpts(ctx context.Context, account accounts.Ac
 		Context:     ctx,
 		Pending:     false,
 		From:        account.Address}, nil
+}
+
+// Function to call the smart contract state at the latest block seen by the
+// ethereum node. USE THIS FUNCTION CAREFULLY, THE LATEST BLOCK IS SUSCEPTIBLE
+// TO CHAIN RE-ORGS AND SHOULD NEVER BE USED AS TEST IF SOMETHING WAS COMMITTED
+// TO OUR CONTRACTS. IDEALLY, ONLY USE THIS FUNCTION FOR MONITORING FUNCTIONS
+// THAT DEPENDS ON THE LATEST BLOCK. Otherwise use GetCallOpts!!!
+func (eth *EthereumDetails) GetCallOptsLatestBlock(ctx context.Context, account accounts.Account) *bind.CallOpts {
+	return &bind.CallOpts{
+		BlockNumber: nil,
+		Context:     ctx,
+		Pending:     false,
+		From:        account.Address}
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked

@@ -209,6 +209,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	batchSize := config.Configuration.Monitor.BatchSize
 
 	eth, keys, publicKey := initEthereumConnection(logger)
+	defer eth.Close()
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
 	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
