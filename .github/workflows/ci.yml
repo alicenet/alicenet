@@ -133,7 +133,11 @@ jobs:
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -v $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus/dman|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -json -v -covermode=atomic -coverprofile=coverage.out $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus/dman|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+      - uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.out
+          verbose: true
 
   golang-blockchain-tests:
     runs-on: ${{ matrix.os }}
