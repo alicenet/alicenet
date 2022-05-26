@@ -198,6 +198,13 @@ with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 
 # TEST
 
+### Verbose log
+To show all the scripts logs in the console during tests you must set the env variable `ENABLE_SCRIPT_LOG` to `true`. 
+For instance to run blockchain tests you will execute
+```shell
+ENABLE_SCRIPT_LOG=true go test -v github.com/MadBase/MadNet/blockchain
+```
+
 ### Random Kill and Restart
 
 Randomly kill and restart the individual validators. There should be no noticeable change in the behavior of the other
