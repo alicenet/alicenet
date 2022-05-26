@@ -34,12 +34,12 @@ type SnapshotState struct {
 // asserting that SnapshotState struct implements interface interfaces.ITaskState
 var _ interfaces.ITaskState = &SnapshotState{}
 
-func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint64, end uint64) *SnapshotTask {
+func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint64, end uint64, ctx context.Context, cancel context.CancelFunc) *SnapshotTask {
 	return &SnapshotTask{
 		Task: NewTask(&SnapshotState{
 			Account:     account,
 			BlockHeader: bh,
-		}, start, end),
+		}, start, end).WithContext(ctx, cancel),
 	}
 }
 

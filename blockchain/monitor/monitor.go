@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
-	objects2 "github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"strings"
 	"sync"
 	"time"
@@ -54,7 +52,6 @@ type monitor struct {
 	logger         *logrus.Entry
 	cancelChan     chan bool
 	statusChan     chan string
-	TypeRegistry   *objects2.TypeRegistry
 	State          *objects.MonitorState
 	wg             *sync.WaitGroup
 	batchSize      uint64
@@ -81,27 +78,6 @@ func NewMonitor(cdb *db.Database,
 		"Timeout":  timeout.String(),
 	})
 
-	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
-	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
-	//    in advance.
-	//TODO: remove this
-	tr := &objects2.TypeRegistry{}
-
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&tasks.SnapshotTask{})
-
 	eventMap := objects.NewEventMap()
 	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan)
 	if err != nil {
@@ -109,10 +85,7 @@ func NewMonitor(cdb *db.Database,
 	}
 
 	wg := new(sync.WaitGroup)
-
-	schedule := tasks.NewSequentialSchedule(tr, adminHandler)
-	dkgState := objects2.NewDkgState(eth.GetDefaultAccount())
-	State := objects.NewMonitorState(dkgState, schedule)
+	State := objects.NewMonitorState()
 
 	//TODO: What to do with this after adding the new TasksScheduler???
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
@@ -120,18 +93,16 @@ func NewMonitor(cdb *db.Database,
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(ctx, wg, eth, logger, bh, cdb, schedule)
+		return PersistSnapshot(eth, bh, taskRequestChan, ctx, cf)
 	})
 
 	return &monitor{
-		adminHandler:   adminHandler,
-		depositHandler: depositHandler,
-		eth:            eth,
-		eventMap:       eventMap,
-		cdb:            cdb,
-		db:             db,
-		//TODO: remove this
-		TypeRegistry:           tr,
+		adminHandler:           adminHandler,
+		depositHandler:         depositHandler,
+		eth:                    eth,
+		eventMap:               eventMap,
+		cdb:                    cdb,
+		db:                     db,
 		logger:                 logger,
 		tickInterval:           tickInterval,
 		timeout:                timeout,
@@ -256,12 +227,6 @@ func (mon *monitor) Start() error {
 	logger.Infof("...Highest block processed: %v", mon.State.HighestBlockProcessed)
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
 	logger.Info(strings.Repeat("-", 80))
-	logger.Infof("Current Tasks: %v", len(mon.State.Schedule.Ranges))
-	for id, block := range mon.State.Schedule.Ranges {
-		taskName, _ := objects2.GetNameType(block.Task)
-		logger.Infof("...ID: %v Name: %v Between: %v and %v", id, taskName, block.Start, block.End)
-	}
-	logger.Info(strings.Repeat("-", 80))
 
 	mon.cancelChan = make(chan bool)
 	mon.wg.Add(1)
@@ -327,8 +292,6 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 func (m *monitor) MarshalJSON() ([]byte, error) {
 	m.State.RLock()
 	defer m.State.RUnlock()
-	m.State.EthDKG.RLock()
-	defer m.State.EthDKG.RUnlock()
 	rawData, err := json.Marshal(m.State)
 
 	if err != nil {
@@ -340,13 +303,6 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 
 func (m *monitor) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, m.State)
-	if err != nil {
-		if m.State.Schedule != nil {
-			m.State.Schedule.Initialize(m.TypeRegistry, m.adminHandler)
-			// TODO: VERIFY ALL TASKS SHOULD NOT BE RE-STARTED HERE
-			return nil
-		}
-	}
 	return err
 }
 
@@ -428,8 +384,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 
 	for i := 0; i < len(logsList); i++ {
 		currentBlock++
-		logEntry := logger.WithField("Block", currentBlock)
-
 		logs := logsList[i]
 
 		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
@@ -441,62 +395,13 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			forceExit = true
 		}
 
-		//TODO: move this logic to the TasksScheduler
-
-		// Check if any tasks are scheduled
-		logEntry.Debug("Looking for scheduled task")
-		uuid, err := monitorState.Schedule.Find(currentBlock)
-		if err == nil {
-			isRunning, err := monitorState.Schedule.IsRunning(uuid)
-			if err != nil {
-				return err
-			}
-
-			if !isRunning {
-
-				task, err := monitorState.Schedule.Retrieve(uuid)
-				if err != nil {
-					return err
-				}
-
-				taskName, _ := objects2.GetNameType(task)
-
-				log := logEntry.WithFields(logrus.Fields{
-					"TaskID":   uuid.String(),
-					"TaskName": taskName})
-
-				onFinishCB := func() {
-					err := monitorState.Schedule.SetRunning(uuid, false)
-					if err != nil {
-						logEntry.WithError(err).Error("Failed to set task to not running")
-					}
-					err = monitorState.Schedule.Remove(uuid)
-					if err != nil {
-						logEntry.WithError(err).Error("Failed to remove task from schedule")
-					}
-				}
-				err = tasks.StartTask(log, wg, eth, task, persistMonitorCB, onFinishCB)
-				if err != nil {
-					return err
-				}
-				err = monitorState.Schedule.SetRunning(uuid, true)
-				if err != nil {
-					return err
-				}
-			}
-
-		} else if err == tasks.ErrNothingScheduled {
-			logEntry.Debug("No tasks scheduled")
-		} else {
-			logEntry.Warnf("Error retrieving scheduled task: %v", err)
-		}
 		processed = currentBlock
-
 		if forceExit {
 			break
 		}
 	}
 
+	//TODO: Review this logic
 	if monitorState.HighestBlockFinalized != processed {
 		//sending the lastFinalizedBlock to the TasksScheduler to process all the tasks during this block
 		lastFinalizedBlockChan <- processed
@@ -535,15 +440,12 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database, scheduler *tasks.SequentialSchedule) error {
-
+func PersistSnapshot(eth interfaces.Ethereum, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
-
-	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0)
-
-	scheduler.Schedule(0, 0, task)
+	snapshotTask := tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
+	taskRequestChan <- snapshotTask
 
 	return nil
 }

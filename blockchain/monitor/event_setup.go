@@ -69,16 +69,12 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask) {
+func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask) {
 	ethDkgEvents := GetETHDKGEvents()
 
-	var eventProcessorMap map[string]objects.EventProcessor = make(map[string]objects.EventProcessor)
+	eventProcessorMap := make(map[string]objects.EventProcessor)
 	eventProcessorMap["RegistrationOpened"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		err := dkgevents.ProcessRegistrationOpenedNewScheduler(eth, logger, state, log, taskRequestChan)
-		if err != nil {
-			logger.Debugf("Error during ProcessRegistrationOpenedNewScheduler: %v", err)
-		}
-		return dkgevents.ProcessRegistrationOpened(eth, logger, state, log)
+		return dkgevents.ProcessRegistrationOpened(eth, logger, log, cdb, taskRequestChan)
 	}
 	eventProcessorMap["AddressRegistered"] = dkgevents.ProcessAddressRegistered
 	eventProcessorMap["RegistrationComplete"] = dkgevents.ProcessRegistrationComplete
@@ -113,7 +109,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHan
 
 func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, taskRequestChan chan<- interfaces.ITask) error {
 
-	RegisterETHDKGEvents(em, adminHandler, taskRequestChan)
+	RegisterETHDKGEvents(em, cdb, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()

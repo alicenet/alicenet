@@ -3,7 +3,11 @@ package objects
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/utils"
+	"github.com/dgraph-io/badger/v2"
 	"math/big"
 	"sync"
 
@@ -226,6 +230,62 @@ func NewDkgState(account accounts.Account) *DkgState {
 		BadShares:    make(map[common.Address]*Participant),
 		Participants: make(map[common.Address]*Participant),
 	}
+}
+
+func GetEthDkgStateKey() []byte {
+	return []byte("ethDkgStateKey")
+}
+
+func PersistEthDkgState(cdb *db.Database, logger *logrus.Entry, ethDkgState *DkgState) error {
+	rawData, err := json.Marshal(ethDkgState)
+	if err != nil {
+		return err
+	}
+
+	err = cdb.Update(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
+		logger.WithField("Key", keyLabel).Infof("Saving state")
+		if err := utils.SetValue(txn, GetEthDkgStateKey(), rawData); err != nil {
+			logger.Error("Failed to set Value")
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := cdb.Sync(); err != nil {
+		logger.Error("Failed to set sync")
+		return err
+	}
+
+	return nil
+}
+
+func LoadEthDkgState(cdb *db.Database, logger *logrus.Entry) (*DkgState, error) {
+	ethDkgState := &DkgState{}
+
+	if err := cdb.View(func(txn *badger.Txn) error {
+		keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
+		logger.WithField("Key", keyLabel).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, GetEthDkgStateKey())
+		if err != nil {
+			return err
+		}
+		// TODO: Cleanup loaded obj, this is a memory / storage leak
+		err = json.Unmarshal(rawData, ethDkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return ethDkgState, nil
+
 }
 
 // Participant contains what we know about other participants, i.e. public information

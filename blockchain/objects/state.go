@@ -3,8 +3,6 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 	"strings"
 	"sync"
@@ -20,21 +18,19 @@ import (
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
-	Version                uint8                     `json:"version"`
-	CommunicationFailures  uint32                    `json:"communicationFailures"`
-	EthereumInSync         bool                      `json:"-"`
-	HighestBlockProcessed  uint64                    `json:"highestBlockProcessed"`
-	HighestBlockFinalized  uint64                    `json:"highestBlockFinalized"`
-	HighestEpochProcessed  uint32                    `json:"highestEpochProcessed"`
-	HighestEpochSeen       uint32                    `json:"highestEpochSeen"`
-	EndpointInSync         bool                      `json:"-"`
-	LatestDepositProcessed uint32                    `json:"latestDepositProcessed"`
-	LatestDepositSeen      uint32                    `json:"latestDepositSeen"`
-	PeerCount              uint32                    `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet   `json:"validatorSets"`
-	Validators             map[uint32][]Validator    `json:"validators"`
-	Schedule               *tasks.SequentialSchedule `json:"schedule"`
-	EthDKG                 *objects.DkgState         `json:"ethDKG"`
+	Version                uint8                   `json:"version"`
+	CommunicationFailures  uint32                  `json:"communicationFailures"`
+	EthereumInSync         bool                    `json:"-"`
+	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
+	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
+	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
+	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
+	EndpointInSync         bool                    `json:"-"`
+	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
+	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
+	PeerCount              uint32                  `json:"peerCount"`
+	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
+	Validators             map[uint32][]Validator  `json:"validators"`
 }
 
 // ValidatorSet is summary information about a ValidatorSet
@@ -58,10 +54,8 @@ type Share struct {
 	EncryptedShares []*big.Int
 }
 
-func NewMonitorState(dkgState *objects.DkgState, schedule *tasks.SequentialSchedule) *MonitorState {
+func NewMonitorState() *MonitorState {
 	return &MonitorState{
-		EthDKG:        dkgState,
-		Schedule:      schedule,
 		ValidatorSets: make(map[uint32]ValidatorSet),
 		Validators:    make(map[uint32][]Validator),
 	}
@@ -82,7 +76,7 @@ func (s *MonitorState) String() string {
 // Clone builds a deep copy of a small portion of state
 // TODO Make this create a complete clone of state
 func (s *MonitorState) Clone() *MonitorState {
-	ns := NewMonitorState(s.EthDKG, s.Schedule)
+	ns := NewMonitorState()
 
 	ns.CommunicationFailures = s.CommunicationFailures
 	ns.EthereumInSync = s.EthereumInSync

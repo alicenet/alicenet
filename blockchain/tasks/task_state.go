@@ -2,16 +2,16 @@ package tasks
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strings"
 	"sync"
-
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Task struct {
 	sync.RWMutex
+	Id             string
 	Start          uint64
 	End            uint64
 	State          interfaces.ITaskState
@@ -32,9 +32,9 @@ type TxOpts struct {
 	MinedInBlock uint64
 }
 
-func (t *TxOpts) GetHexTxsHashes() string {
+func (to *TxOpts) GetHexTxsHashes() string {
 	var hashes strings.Builder
-	for _, txHash := range t.TxHashes {
+	for _, txHash := range to.TxHashes {
 		hashes.WriteString(txHash.Hex())
 		hashes.WriteString(" ")
 	}
@@ -55,30 +55,42 @@ func NewTask(state interfaces.ITaskState, start uint64, end uint64) *Task {
 	}
 }
 
-func (d *Task) ClearTxData() {
-	d.Lock()
-	defer d.Unlock()
-	d.TxOpts = &TxOpts{
+func (t *Task) WithContext(ctx context.Context, cancel context.CancelFunc) *Task {
+	t.Ctx = ctx
+	t.Cf = cancel
+	return t
+}
+
+func (t *Task) ClearTxData() {
+	t.Lock()
+	defer t.Unlock()
+	t.TxOpts = &TxOpts{
 		TxHashes: make([]common.Hash, 0),
 	}
 }
 
-func (d *Task) GetStart() uint64 {
-	d.RLock()
-	defer d.RUnlock()
-	return d.Start
+func (t *Task) GetStart() uint64 {
+	t.RLock()
+	defer t.RUnlock()
+	return t.Start
 }
 
-func (d *Task) GetEnd() uint64 {
-	d.RLock()
-	defer d.RUnlock()
-	return d.End
+func (t *Task) GetEnd() uint64 {
+	t.RLock()
+	defer t.RUnlock()
+	return t.End
 }
 
-func (d *Task) Close() {
-	d.Lock()
-	defer d.Unlock()
-	if d.Cf != nil {
-		d.Cf()
+func (t *Task) SetId(id string) {
+	t.Lock()
+	defer t.Unlock()
+	t.Id = id
+}
+
+func (t *Task) Close() {
+	t.Lock()
+	defer t.Unlock()
+	if t.Cf != nil {
+		t.Cf()
 	}
 }
