@@ -14,6 +14,7 @@ type Manager struct {
 }
 
 func NewManager() *Manager {
+	// todo: populate detector functions here
 	detector := NewDetector(make([]func(rs *objs.RoundState) (*Accusation, bool), 0))
 	m := &Manager{
 		detector: detector,
@@ -31,6 +32,7 @@ func (m *Manager) run() {
 		}
 
 		for _, rs := range rss {
+			// send round states to detector to be processed
 			m.detector.HandleRS(rs)
 		}
 
@@ -38,7 +40,7 @@ func (m *Manager) run() {
 	}
 }
 
-func (m *Manager) pollRS() ([]objs.RoundState, error) {
-	// todo: actual reading from DB to get validators' round states
-	return make([]objs.RoundState, 0), nil
+func (m *Manager) pollRS() ([]*objs.RoundState, error) {
+	// todo: read from DB to get validators' round states
+	return make([]*objs.RoundState, 0), nil
 }
