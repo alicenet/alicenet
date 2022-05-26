@@ -2,6 +2,7 @@ package localrpc
 
 import (
 	"context"
+	"embed"
 	"net"
 	"net/http"
 	"strings"
@@ -9,9 +10,7 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/interfaces"
-	bindata "github.com/MadBase/MadNet/localrpc/swagger-bindata"
 	pb "github.com/MadBase/MadNet/proto"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
@@ -31,6 +30,9 @@ type Handler struct {
 	log        *logrus.Logger
 	closeOnce  sync.Once
 }
+
+//go:embed swagger/*
+var swagger embed.FS
 
 // Close will shutdown the server handler.
 func (rpch *Handler) Close() error {
@@ -62,14 +64,11 @@ func NewStateServerHandler(logger *logrus.Logger, addr string, service interface
 	mux := http.NewServeMux()
 
 	// setup the swagger-ui fileserver using the embedded assets
-	fileServer := http.FileServer(&assetfs.AssetFS{
-		Asset:    bindata.Asset,
-		AssetDir: bindata.AssetDir,
-	})
+	fileServer := http.FileServer(http.FS(swagger))
 
 	// register the swagger fs handler with the server
 	prefix := "/swagger/"
-	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
+	mux.Handle(prefix, fileServer)
 	// add redirect to file server
 	mux.HandleFunc("/swagger.json", serveSwagger)
 

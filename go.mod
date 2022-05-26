@@ -6,10 +6,8 @@ require (
 	// github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
 	github.com/dgraph-io/badger/v2 v2.2007.4
-	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.16
-	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -68,7 +66,6 @@ require (
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jessevdk/go-flags v1.4.1-0.20181029123624-5de817a9aa20 // indirect
-	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -89,7 +86,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.10 // indirect
