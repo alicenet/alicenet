@@ -141,6 +141,11 @@ STATUS() {
 PRE_CHECK $1
 case $1 in
     init)
+        WD=$PWD
+        BRIDGE=./bridge
+        cd $BRIDGE &&
+        npm ci &&
+        cd $WD &&
         ./scripts/base-scripts/init-githooks.sh
         CREATE_CONFIGS $2
     ;;
