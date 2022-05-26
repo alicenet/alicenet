@@ -3,14 +3,13 @@ module github.com/MadBase/MadNet
 go 1.17
 
 require (
-	// github.com/MadBase/bridge v0.0.0-00010101000000-000000000000
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
+	github.com/derision-test/go-mockgen v1.1.4
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.1.5
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
@@ -25,19 +24,15 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
+	github.com/vburenin/ifacemaker v1.2.0
 	gitlab.com/NebulousLabs/go-upnp v0.0.0-20210414172302-67b91c9a5c03
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83
 	google.golang.org/grpc v1.40.0
-	google.golang.org/protobuf v1.27.1
-)
-
-require (
-	github.com/derision-test/go-mockgen v1.1.4
-	github.com/vburenin/ifacemaker v1.2.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
@@ -60,6 +55,7 @@ require (
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
