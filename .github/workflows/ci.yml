@@ -105,16 +105,6 @@ jobs:
         with:
           name: alicenet-${{ env.BRANCH_NAME }}-${{ env.OPERATING_SYSTEM }}
           path: ./madnet
-
-  golang-vet:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    needs: golang-build
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: go vet ./...
     
   golang-linter:
     runs-on: ubuntu-20.04
@@ -124,11 +114,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - name: install-golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
-      - name: run golangci-lint
-        run: golangci-lint run ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
   
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
