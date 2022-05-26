@@ -1,3 +1,5 @@
+//go:build flakes
+
 package dman
 
 import (

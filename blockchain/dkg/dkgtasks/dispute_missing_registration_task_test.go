@@ -1,3 +1,5 @@
+//go:build integration
+
 package dkgtasks_test
 
 import (

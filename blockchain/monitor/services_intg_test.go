@@ -1,14 +1,17 @@
+//go:build integration
+
 package monitor_test
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRegistrationOpenEvent(t *testing.T) {

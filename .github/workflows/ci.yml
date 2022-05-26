@@ -124,7 +124,6 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
     steps:
-        # Checkout and tool to format the test output
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
@@ -133,7 +132,7 @@ jobs:
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -v -covermode=atomic -coverprofile=coverage.out $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus/dman|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -json -v -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
       - uses: codecov/codecov-action@v1
         with:
           files: ./coverage.out
@@ -192,4 +191,4 @@ jobs:
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
-          go test -json -v -timeout=15m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -json -v -timeout=15m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
