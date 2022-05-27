@@ -9,26 +9,31 @@ import (
 )
 
 // a function that returns an Accusation interface object, and a bool indicating if an accusation has been found (true) or not (false)
-type detectorF = func(rs *objs.RoundState) (*Accusation, bool)
+type detectorLogic = func(rs *objs.RoundState) (*Accusation, bool)
 
 // Detector detects malicious behaviours in round state objects
 type Detector struct {
 	sync.Mutex
-	detectors      []detectorF
-	queueToProcess []*objs.RoundState
+	manager            *Manager
+	processingPipeline []detectorLogic
+	queueToProcess     []*objs.RoundState
 }
 
-func NewDetector(detectors []detectorF) *Detector {
+func NewDetector(manager *Manager, detectors []detectorLogic) *Detector {
 	d := &Detector{
-		detectors: detectors,
+		manager:            manager,
+		processingPipeline: detectors,
 	}
 
-	go d.run()
 	return d
 }
 
-// HandleRS adds a round state to the queue to be processed
-func (d *Detector) HandleRS(rs *objs.RoundState) {
+func (d *Detector) Start() {
+	go d.run()
+}
+
+// HandleRoundState adds a round state to the queue to be processed
+func (d *Detector) HandleRoundState(rs *objs.RoundState) {
 	d.Lock()
 	defer d.Unlock()
 	d.queueToProcess = append(d.queueToProcess, rs)
@@ -38,6 +43,12 @@ func (d *Detector) run() {
 	for {
 		time.Sleep(1 * time.Second)
 		d.Lock()
+
+		// only process round states if there's a manager to report to
+		if d.manager == nil {
+			d.Unlock()
+			continue
+		}
 
 		if len(d.queueToProcess) <= 0 {
 			d.Unlock()
@@ -53,12 +64,17 @@ func (d *Detector) run() {
 
 		fmt.Printf("Detector: processing round state %#v\n", rs)
 
-		for _, detector := range d.detectors {
+		for _, detector := range d.processingPipeline {
 			accusation, found := detector(rs)
 			if found {
 				fmt.Printf("Detector: found accusation: %#v\n", accusation)
+				// todo: send Accusation to Manager
+				err := d.manager.HandleAccusation(accusation)
+				if err != nil {
+					panic(fmt.Sprintf("Detector: could not handle accusation: %v", err))
+				}
+
 				// todo: block until we get a response from the accusation
-				// (*accusation).SubmitToSmartContracts()
 			}
 		}
 	}
