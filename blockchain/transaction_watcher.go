@@ -97,6 +97,13 @@ type MonitorResponse struct {
 	err                    error                  // errors that happened when processing the monitor request
 }
 
+// Response of the monitoring system
+type ReceiptResponse struct {
+	txnHash common.Hash    // Hash of the txs which this response belongs
+	err     error          // response error that happened during processing
+	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+}
+
 // Try to send a request monitor response in a channel. In case the channel is full, we just skip and log the error
 func SendMonitorResponse(responseChannel chan<- MonitorResponse, monitorResponse MonitorResponse, logger *logrus.Entry) {
 	select {
@@ -109,26 +116,34 @@ func SendMonitorResponse(responseChannel chan<- MonitorResponse, monitorResponse
 type ReceiptResponseChannel struct {
 	writeOnce sync.Once
 	channel   chan ReceiptResponse
+	isClosed  bool
+	logger    *logrus.Entry
 }
 
-func NewReceiptResponseChannel() *ReceiptResponseChannel {
-	return &ReceiptResponseChannel{channel: make(chan ReceiptResponse, 1)}
+func NewReceiptResponseChannel(logger *logrus.Entry) *ReceiptResponseChannel {
+	return &ReceiptResponseChannel{channel: make(chan ReceiptResponse, 1), logger: logger}
 }
 
 // send a receipt and close the receiptResponseChannel. This function should
 // only be called once. Additional calls will be no-op
 func (rc *ReceiptResponseChannel) SendReceipt(receipt ReceiptResponse) {
-	rc.writeOnce.Do(func() {
-		rc.channel <- receipt
-		close(rc.channel)
-	})
+	if !rc.isClosed {
+		select {
+		case rc.channel <- receipt:
+		default:
+			rc.logger.Debugf("Failed to write request response Channel")
+		}
+		rc.CloseChannel()
+	}
 }
 
-// Response of the monitoring system
-type ReceiptResponse struct {
-	txnHash common.Hash    // Hash of the txs which this response belongs
-	err     error          // response error that happened during processing
-	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+// Close the internal channel. This function should only be called once.
+// Additional calls will be no-op
+func (rc *ReceiptResponseChannel) CloseChannel() {
+	rc.writeOnce.Do(func() {
+		rc.isClosed = true
+		close(rc.channel)
+	})
 }
 
 // TransactionProfile to keep track of gas metrics in the overall system
@@ -264,7 +279,7 @@ func (b *Behind) collectReceipts() {
 	}
 
 	var expiredTxs []common.Hash
-	var finishedTxs []common.Hash
+	var finishedTxs map[common.Hash]MonitorWorkResponse
 
 	numWorkers := min(max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
@@ -277,7 +292,7 @@ func (b *Behind) collectReceipts() {
 			// likely indicates a failure, and cancellation of polling prevents a memory
 			// leak
 			b.logger.Debugf("context for tx %v is finished, marking it to be excluded!", txn.Hex())
-			expiredTxs = append(finishedTxs, txnInfo.txn.Hash())
+			expiredTxs = append(expiredTxs, txnInfo.txn.Hash())
 		default:
 			// if this is the first time seeing a tx
 			if txnInfo.startedMonitoringHeight == 0 {
@@ -304,32 +319,33 @@ func (b *Behind) collectReceipts() {
 			if workResponse.err != nil {
 				if _, ok := err.(*ErrRecoverable); !ok {
 					b.logger.Debugf("Couldn't get tx receipt for tx:%v cause: %v", workResponse.txnHash, workResponse.err)
-					//todo: send back the error on txnInfo response channel
-					if txnInfo, ok := b.monitoredTxns[workResponse.txnHash]; ok {
-
-						txnInfo.receiptResponseChannel <- ReceiptResponse{txnHash: workResponse.txnHash, err: workResponse.err}
-					}
-					finishedTxs = append(finishedTxs, workResponse.txnHash)
+					finishedTxs[workResponse.txnHash] = workResponse
 				}
 			} else if workResponse.receipt != nil {
 				b.logger.Debugf("Successfully got receipt for tx:%v", workResponse.txnHash)
-				//todo: clean the cache
 				b.receiptCache[workResponse.txnHash] = workResponse.receipt
-				if txnInfo, ok := b.monitoredTxns[workResponse.txnHash]; ok {
-					txnInfo.receiptResponseChannel <- ReceiptResponse{txnHash: workResponse.txnHash, receipt: workResponse.receipt}
-				}
-				//todo send response back to waiting service
-				finishedTxs = append(finishedTxs, workResponse.txnHash)
+				finishedTxs[workResponse.txnHash] = workResponse
 			}
 		}
 	}
 
-	// Cleaning expired, finished and failed transactions
-	for _, txnHash := range finishedTxs {
+	//todo: clean the cache
+	// Cleaning finished and failed transactions
+	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
+			txnInfo.receiptResponseChannel.SendReceipt(ReceiptResponse{txnHash: workResponse.txnHash, receipt: workResponse.receipt, err: workResponse.err})
 			delete(b.monitoredTxns, txnHash)
 		}
 	}
+
+	// Cleaning expired transactions
+	for _, txnHash := range expiredTxs {
+		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
+			txnInfo.receiptResponseChannel.CloseChannel()
+			delete(b.monitoredTxns, txnHash)
+		}
+	}
+
 	b.lastProcessedBlock = blockInfo
 }
 
@@ -418,7 +434,6 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx TransactionInfo
 		// probably a network error, should retry
 		return nil, &ErrRecoverable{fmt.Sprintf("error getting tx: %v: %v", txnHex, err)}
 	}
-
 	if isPending {
 		if blockTimeSpan >= constants.TxMaxStaleBlocks {
 			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks, please retry!", txnHex, constants.TxMaxStaleBlocks)}
