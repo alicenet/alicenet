@@ -346,9 +346,6 @@ func TestVerifySubtree(t *testing.T) {
 		keys := GetFreshData(1, 32)
 		values := GetFreshData(1, 32)
 
-		for i := 0; i < len(keys); i++ {
-			t.Logf("k::%x  \n\tv::%x\n", keys[i], values[i])
-		}
 		fn := func(txn *badger.Txn) error {
 			// Add data to empty trie
 			_, err := smt.Update(txn, keys, values)
@@ -408,18 +405,14 @@ func TestVerifySubtree(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Logf("idx: %v    value: %x\n   subBatch: %x\n", i, unfinished[i], subBatch)
 
 			if len(unfinished[i]) > 0 && bytes.Equal(subBatch[0], []byte{0}) {
-				//_, res = smt.verifyBatch(subBatch, 0, 4, 248, unfinished[i], false)
 				_, res := smt.verifyBatchEasy(subBatch, unfinished[i], 1)
 				if res != true {
 					t.Fatal("the sub tree verification did not succeed")
 				}
 
-				t.Logf("DONE WITH idx: %v    value: %x\n", i, unfinished[i])
 			} else {
-				//_, res = smt.verifyBatch(subBatch, 0, 1, 252, unfinished[i], false)
 				_, res := smt.verifyBatchEasy(subBatch, unfinished[i], 1)
 				if res != true {
 					t.Fatal("the sub tree verification did not succeed")
@@ -433,10 +426,6 @@ func TestVerifySubtree(t *testing.T) {
 					t.Fatal("RETURNED INTERIORNODESNEXT FOR SHORTCUT NODE")
 				}
 			}
-
-			// for i := 0; i < len(subBatch); i++ {
-			// t.Logf("%x\n", subBatch[i])
-			// }
 		}
 	}
 }
@@ -483,22 +472,15 @@ func TestSmtFastSync(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
 	smt2 := NewSMT(nil, Hasher, prefixFn)
 	loopStart := 1
-	//keys := GetFreshData(1024, 32)
-	//keys := make([][]byte6 numKeys/2)
 	keys := [][]byte{}
 	for i := loopStart; i < loopStart+depKeys; i++ {
 		iBytes := utils.MarshalUint32(uint32(i))
 		keys = append(keys, utils.ForceSliceToLength(iBytes, 32))
-		//keys[i-1] = utils.ForceSliceToLength(iBytes, 32)
 	}
 	keysNext := GetFreshDataUnsorted(randKeys, 32)
 	keys = append(keys, keysNext...)
 	values := GetFreshDataUnsorted(numKeys, 32)
-	//fmt.Println(len(keys))
-	//fmt.Println(len(values))
 	keysSorted, valuesSorted, err := utils.SortKVs(keys, values)
-	//keysSorted, valuesSorted := keys, values
-	//valuesSorted, keysSorted, err := utils.SortKVs(keys, values)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -529,16 +511,12 @@ func TestSmtFastSync(t *testing.T) {
 		}
 	}
 
-	///
 	leaves := []LeafNode{}
-	///
 	var subBatchStart []pending
 	err = db2.Update(func(txn *badger.Txn) error {
 
-		//var batch [][]byte
 		var batch []byte
 		err := db.View(func(txn2 *badger.Txn) error {
-			//tmp, err := smt.loadBatch(txn2, smt.Root)
 			tmp, err := GetNodeDB(txn2, prefixFn(), smt.Root)
 			if err != nil {
 				t.Fatal(err)
@@ -556,13 +534,10 @@ func TestSmtFastSync(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//tmp, lvs, err := smt2.storeFastSyncRoot(txn, batch, smt.Root)
-		//tmp, layer, lvs, err := smt2.StoreSnapShotNode(txn, batch, smt.Root, 0)
 		tmp, layer, lvs, err := smt2.StoreSnapShotNode(txn, batch, smt.Root, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
-		//t.Logf("SFSR: %x\n", tmp)
 		for i := 0; i < len(tmp); i++ {
 			subBatchStart = append(subBatchStart, pending{layer, tmp[i]})
 		}
@@ -955,7 +930,7 @@ func TestParseBatchNoPanic(t *testing.T) {
 			} else {
 				data = GetFreshData(1, i)[0]
 			}
-			smt.parseBatch(data)//nolint:errcheck			
+			smt.parseBatch(data) //nolint:errcheck
 		}
 	}
 }
@@ -1517,181 +1492,3 @@ func TestSnapShotDrop(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-/*
-func benchmark10MAccounts10Ktps(db *badger.DB, smt *SMT, b *testing.B) {
-	fmt.Println("\nLoading b.N x 1000 accounts")
-	newkeys := GetFreshData(1000, 32)
-	newvalues := GetFreshData(1000, 32)
-	for index := 0; index < b.N; index++ {
-		newvalues = GetFreshData(1000, 32)
-		newkeys = GetFreshData(1000, 32)
-		var end time.Time
-		fn := func(txn *badger.Txn) error {
-			_, _ = smt.Update(txn, newkeys, newvalues)
-			end = time.Now()
-			_, _ = smt.Commit(txn, 1)
-			return nil
-		}
-		start := time.Now()
-		err := db.Update(fn)
-		if err != nil {
-			b.Fatal(err)
-		}
-		end2 := time.Now()
-		fn2 := func(txn *badger.Txn) error {
-			for i, key := range newkeys {
-				val, _ := smt.Get(txn, key)
-				if !bytes.Equal(val, newvalues[i]) {
-					b.Fatal("new key not included")
-				}
-			}
-			return nil
-		}
-		err = db.View(fn2)
-		if err != nil {
-			b.Fatal(err)
-		}
-		end3 := time.Now()
-		elapsed := end.Sub(start)
-		elapsed2 := end2.Sub(end)
-		elapsed3 := end3.Sub(end2)
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
-		if index%100 == 0 {
-			err = db.RunValueLogGC(.25)
-			if err != nil {
-				if err != badger.ErrNoRewrite {
-					b.Fatal(err)
-				}
-			}
-		}
-		fmt.Println(index, " : update time : ", elapsed, "commit time : ", elapsed2,
-			"\n1000 Get time : ", elapsed3,
-			"\nRAM : ", m.Sys/1024/1024, " MiB")
-	}
-}
-
-
-//go test -run=BenchmarkSMT -bench=. -benchmem -test.benchtime=20s
-func BenchmarkSMT(b *testing.B) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			b.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer db.Close()
-	smt := NewSMT(nil, Hasher, prefixFn)
-	benchmark10MAccounts10Ktps(db, smt, b)
-}
-
-
-
-// if bit31 set => batch1 and batch2 are leaf nodes
-func TestPrintDB(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	smt := NewSMT(nil, Hasher, prefixFn)
-	keys := GetFreshData(10, 32)
-	//keys[0] = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-	//keys[1] = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}
-	values := GetFreshData(10, 32)
-	//values[0] = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}
-	//values[1] = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}
-	for i := 0; i < len(keys); i++ {
-		t.Logf("\nk::%x  \nv::%x\n", keys[i], values[i])
-	}
-	var root []byte
-	fn := func(txn *badger.Txn) error {
-		// Add data to empty trie
-		root, _ = smt.Update(txn, keys, values)
-		smt.Commit(txn, 1)
-		return nil
-	}
-	err = db.Update(fn)
-	if err != nil {
-		t.Error(err)
-	}
-	err = db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		prefix := []byte{}
-		prefix = append(prefix, smt.db.prefixFunc()...)
-		prefix = append(prefix, prefixNode()...)
-		opts.Prefix = prefix
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		j := 0
-		t.Logf("\nROOT: %x\n", root)
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			k := item.Key()
-			j++
-			err := item.Next(func(v []byte) error {
-				t.Logf("\nknum %d ::: key=%x, bitflag=%08b\n", j, k[len(smt.db.prefixFunc())+1:], v[:4])
-				if len(v) > 0 {
-					batch := smt.parseBatch(v)
-					wasKey := false
-					shortcut := false
-					for i, b := range batch {
-						if i == 0 {
-							if bytes.Equal(b, []byte{1}) {
-								shortcut = true
-							}
-						} else {
-							isLeaf := false
-							isKey := false
-							for k := 0; k < len(values); k++ {
-								if len(b) > 30 {
-									if bytes.Equal(values[k], b[:32]) {
-										if !wasKey {
-											t.Fatal("was key fail")
-										}
-										isLeaf = true
-										wasKey = false
-									}
-									if bytes.Equal(keys[k], b[:32]) {
-										isKey = true
-										wasKey = true
-									}
-								}
-							}
-							t.Logf("SC: %t  knum %d iK:%t iL:%t value %d =%x\n", shortcut, j, isKey, isLeaf, i, b)
-						}
-					}
-				}
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		t.Error(err)
-	}
-}
-*/
