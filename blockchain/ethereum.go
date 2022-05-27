@@ -62,12 +62,10 @@ type EthereumDetails struct {
 	chainID                   *big.Int
 	syncing                   func(ctx context.Context) (*ethereum.SyncProgress, error)
 	peerCount                 func(ctx context.Context) (uint64, error)
-	queue                     interfaces.TxnQueue
+	txWatcher                 interfaces.ITransactionWatcher
 	selectors                 interfaces.SelectorMap
 	txFeePercentageToIncrease int
-	txMaxFeeThresholdInGwei   uint64
-	txCheckFrequency          time.Duration
-	txTimeoutForReplacement   time.Duration
+	txMaxGasFeeAllowedInGwei  uint64
 }
 
 //NewEthereumSimulator returns a simulator for testing
@@ -145,7 +143,7 @@ func NewEthereumSimulator(
 		return nil, err
 	}
 	eth.client = client
-	eth.queue = NewTxnQueue(client, eth.selectors, timeout)
+	eth.queue = NewTransactionWatcher(client, eth.selectors)
 	eth.queue.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
@@ -262,9 +260,7 @@ func NewEthereumEndpoint(
 	retryDelay time.Duration,
 	finalityDelay int,
 	txFeePercentageToIncrease int,
-	txMaxFeeThresholdInGwei uint64,
-	txCheckFrequency time.Duration,
-	txTimeoutForReplacement time.Duration) (*EthereumDetails, error) {
+	txMaxGasFeeAllowedInGwei uint64) (*EthereumDetails, error) {
 
 	logger := logging.GetLogger("ethereum")
 
@@ -280,9 +276,7 @@ func NewEthereumEndpoint(
 		retryDelay:                retryDelay,
 		selectors:                 NewKnownSelectors(),
 		txFeePercentageToIncrease: txFeePercentageToIncrease,
-		txMaxFeeThresholdInGwei:   txMaxFeeThresholdInGwei,
-		txCheckFrequency:          txCheckFrequency,
-		txTimeoutForReplacement:   txTimeoutForReplacement}
+		txMaxGasFeeAllowedInGwei:  txMaxGasFeeAllowedInGwei}
 
 	eth.contracts = &ContractDetails{eth: eth}
 
@@ -313,8 +307,8 @@ func NewEthereumEndpoint(
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
-	eth.queue = NewTxnQueue(ethClient, eth.selectors, timeout)
-	eth.queue.StartLoop()
+	eth.transactionWatcher = NewTransactionWatcher(ethClient, eth.selectors)
+	eth.transactionWatcher.Start()
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)

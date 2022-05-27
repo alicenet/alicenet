@@ -43,9 +43,7 @@ type ethereumConfig struct {
 	TestEther                 string
 	Timeout                   time.Duration
 	TxFeePercentageToIncrease int
-	TxMaxFeeThresholdInGwei   uint64
-	TxCheckFrequency          time.Duration
-	TxTimeoutForReplacement   time.Duration
+	TxMaxGasFeeAllowedInGwei  uint64
 }
 
 type monitorConfig struct {

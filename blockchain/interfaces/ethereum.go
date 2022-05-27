@@ -108,15 +108,13 @@ type GethClient interface {
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 }
 
-type TxnQueue interface {
+type ITransactionWatcher interface {
+	Start()
 	Close()
 	QueueTransaction(ctx context.Context, txn *types.Transaction)
-	QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction)
-	QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
-	StartLoop()
-	Status(ctx context.Context) error
 	WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
-	WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error)
+	QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
+	Status(ctx context.Context) error
 }
 
 type FuncSelector [4]byte

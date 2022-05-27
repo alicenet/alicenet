@@ -62,6 +62,14 @@ func (e *ErrTransactionAlreadyQueued) Error() string {
 	return e.message
 }
 
+type ErrInvalidTransactionRequest struct {
+	message string
+}
+
+func (e *ErrInvalidTransactionRequest) Error() string {
+	return e.message
+}
+
 // Internal struct to keep track of transactions that are being monitoring
 type TransactionInfo struct {
 	ctx                     context.Context         // ctx used for calling the monitoring a certain tx
@@ -69,7 +77,13 @@ type TransactionInfo struct {
 	selector                interfaces.FuncSelector // 4 bytes that identify the function being called by the tx
 	functionSignature       string                  // function signature as we see on the smart contracts
 	startedMonitoringHeight uint64                  // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ReceiptResponseChannel // channel where the response will be sent
+	receiptResponseChannel  *ResponseChannel        // channel where the response will be sent
+}
+
+// Struct to keep track of the receipts
+type ReceiptInfo struct {
+	receipt           *types.Receipt // receipt object
+	retrievedAtHeight uint64         // block where receipt was added to the cache
 }
 
 // Internal struct to keep track of what blocks we already checked during monitoring
@@ -86,16 +100,29 @@ func (a *BlockInfo) Equal(b *BlockInfo) bool {
 
 // Type to do request against the tx receipt monitoring system. Ctx and response channel should be set
 type MonitorRequest struct {
-	ctx             context.Context        // tx ctx used for tx monitoring cancellation
-	txn             *types.Transaction     // the transaction that should watched
-	responseChannel chan<- MonitorResponse // channel where we going to send the channel where the response will be sent
+	ctx             context.Context    // tx ctx used for tx monitoring cancellation
+	txn             *types.Transaction // the transaction that should watched
+	responseChannel *ResponseChannel   // channel where we going to send the request response
+}
+
+// Interface to force the Response types to be passed as pointers to avoid
+// non-expected results with the sync.Once
+type IResponse interface {
+	GetTransactionHash() common.Hash
 }
 
 // Type that it's going to be used to reply a request
 type MonitorResponse struct {
-	receiptResponseChannel <-chan ReceiptResponse // channel where the result from the tx/receipt monitoring will be send
-	err                    error                  // errors that happened when processing the monitor request
+	txnHash                common.Hash      // Hash of the txs which this response belongs
+	err                    error            // errors that happened when processing the monitor request
+	receiptResponseChannel *ResponseChannel // non blocking channel where the result from the tx/receipt monitoring will be send
 }
+
+func (mr *MonitorResponse) GetTransactionHash() common.Hash {
+	return mr.txnHash
+}
+
+var _ IResponse = &MonitorResponse{}
 
 // Response of the monitoring system
 type ReceiptResponse struct {
@@ -104,42 +131,46 @@ type ReceiptResponse struct {
 	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
 }
 
-// Try to send a request monitor response in a channel. In case the channel is full, we just skip and log the error
-func SendMonitorResponse(responseChannel chan<- MonitorResponse, monitorResponse MonitorResponse, logger *logrus.Entry) {
-	select {
-	case responseChannel <- monitorResponse:
-	default:
-		logger.Debugf("Failed to write request response Channel")
-	}
+func (rr *ReceiptResponse) GetTransactionHash() common.Hash {
+	return rr.txnHash
 }
 
-type ReceiptResponseChannel struct {
+var _ IResponse = &ReceiptResponse{}
+
+// A response channel is basically a non-blocking channel that can only be
+// written and closed once. The internal channel is closed after the first
+// message is sent. Additional tries to send a message result in no-op. The
+// writes to the internal channel are non-blocking calls. If for some reason the
+// internal channel is full, the message is dropped and log is recorded. Only
+// first attempt to close the Response channel will result in the closing.
+// Additional calls are no-op.
+type ResponseChannel struct {
 	writeOnce sync.Once
-	channel   chan ReceiptResponse
-	isClosed  bool
-	logger    *logrus.Entry
+	channel   chan IResponse // internal channel
+	isClosed  bool           // flag to check if a channel is closed or not
+	logger    *logrus.Entry  // logger using for logging error when trying to write a response more than once
 }
 
-func NewReceiptResponseChannel(logger *logrus.Entry) *ReceiptResponseChannel {
-	return &ReceiptResponseChannel{channel: make(chan ReceiptResponse, 1), logger: logger}
+// Create a new response channel.
+func NewResponseChannel(logger *logrus.Entry) *ResponseChannel {
+	return &ResponseChannel{channel: make(chan IResponse, 1), logger: logger}
 }
 
-// send a receipt and close the receiptResponseChannel. This function should
-// only be called once. Additional calls will be no-op
-func (rc *ReceiptResponseChannel) SendReceipt(receipt ReceiptResponse) {
+// send a unique response and close the internal channel. Additional calls to
+// this function will be no-op
+func (rc *ResponseChannel) SendResponse(response IResponse) {
 	if !rc.isClosed {
 		select {
-		case rc.channel <- receipt:
+		case rc.channel <- response:
 		default:
-			rc.logger.Debugf("Failed to write request response Channel")
+			rc.logger.Debugf("Failed to write request to channel")
 		}
 		rc.CloseChannel()
 	}
 }
 
-// Close the internal channel. This function should only be called once.
-// Additional calls will be no-op
-func (rc *ReceiptResponseChannel) CloseChannel() {
+// Close the internal channel. Additional calls will be no-op
+func (rc *ResponseChannel) CloseChannel() {
 	rc.writeOnce.Do(func() {
 		rc.isClosed = true
 		close(rc.channel)
@@ -156,23 +187,26 @@ type TransactionProfile struct {
 	TotalSuccess uint64
 }
 
+// Internal struct used to send work requests to the workers that will retrieve
+// the receipts
 type MonitorWorkRequest struct {
-	txn    TransactionInfo
-	height uint64
+	txn    TransactionInfo // TransactionInfo object that contains the data that will be used to retrieve the receipt from the blockchain
+	height uint64          // Current height of the blockchain head
 }
 
+// Internal struct used by the workers to communicate the result from the receipt retrieval work
 type MonitorWorkResponse struct {
-	txnHash common.Hash
-	err     error
-	receipt *types.Receipt
+	txnHash common.Hash    // hash of transaction
+	err     error          // any error found during the receipt retrieve (can be NonRecoverable, Recoverable or TransactionState errors)
+	receipt *types.Receipt // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
 }
 
-// Backend structs used to monitor Ethereum transactions and retrieve their receipts
-type Behind struct {
+// Backend struct used to monitor Ethereum transactions and retrieve their receipts
+type WatcherBackend struct {
 	mainCtx              context.Context                                // main context for the background services
 	lastProcessedBlock   *BlockInfo                                     // Last ethereum block that we checked for receipts
 	monitoredTxns        map[common.Hash]TransactionInfo                // Map of transactions whose receipts we're looking for
-	receiptCache         map[common.Hash]*types.Receipt                 // Receipts retrieved from transactions
+	receiptCache         map[common.Hash]ReceiptInfo                    // Receipts retrieved from transactions
 	txConfirmationBlocks uint64                                         // number of ethereum blocks that we should wait to consider a receipt valid
 	aggregates           map[interfaces.FuncSelector]TransactionProfile // Struct to keep track of the gas metrics used by the system
 	client               interfaces.GethClient                          // An interface with the Geth functionality we need
@@ -181,7 +215,7 @@ type Behind struct {
 	requestChannel       <-chan MonitorRequest                          // Channel used to send request to this backend service
 }
 
-func (b *Behind) Loop() {
+func (b *WatcherBackend) Loop() {
 
 	poolingTime := time.After(constants.TxPollingTime)
 	for {
@@ -206,27 +240,27 @@ func (b *Behind) Loop() {
 	b.logger.Debug("finished")
 }
 
-func (b *Behind) queue(req MonitorRequest) {
+func (b *WatcherBackend) queue(req MonitorRequest) {
 
 	if req.txn == nil {
-		SendMonitorResponse(req.responseChannel, MonitorResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}}, b.logger)
+		req.responseChannel.SendResponse(&MonitorResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
 		return
 	}
 	if req.ctx == nil {
-		SendMonitorResponse(req.responseChannel, MonitorResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}}, b.logger)
+		req.responseChannel.SendResponse(&MonitorResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}})
 		return
 	}
 
 	txnHash := req.txn.Hash()
-	receiptResponseChannel := NewReceiptResponseChannel()
+	receiptResponseChannel := NewResponseChannel(b.logger)
 
 	// if we already have the records of the receipt for this tx we try to send the
 	// receipt back
 	if receipt, ok := b.receiptCache[txnHash]; ok {
-		receiptResponseChannel.SendReceipt(ReceiptResponse{receipt: receipt, txnHash: txnHash})
+		receiptResponseChannel.SendResponse(&ReceiptResponse{receipt: receipt.receipt, txnHash: txnHash})
 	} else {
 		if _, ok := b.monitoredTxns[txnHash]; ok {
-			SendMonitorResponse(req.responseChannel, MonitorResponse{err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}}, b.logger)
+			req.responseChannel.SendResponse(&MonitorResponse{err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
 			return
 		}
 
@@ -247,10 +281,10 @@ func (b *Behind) queue(req MonitorRequest) {
 		}
 		logEntry.Debug("Transaction queued")
 	}
-	SendMonitorResponse(req.responseChannel, MonitorResponse{receiptResponseChannel: receiptResponseChannel.channel}, b.logger)
+	req.responseChannel.SendResponse(&MonitorResponse{receiptResponseChannel: receiptResponseChannel})
 }
 
-func (b *Behind) collectReceipts() {
+func (b *WatcherBackend) collectReceipts() {
 
 	lenMonitoredTxns := len(b.monitoredTxns)
 
@@ -323,17 +357,16 @@ func (b *Behind) collectReceipts() {
 				}
 			} else if workResponse.receipt != nil {
 				b.logger.Debugf("Successfully got receipt for tx:%v", workResponse.txnHash)
-				b.receiptCache[workResponse.txnHash] = workResponse.receipt
+				b.receiptCache[workResponse.txnHash] = ReceiptInfo{receipt: workResponse.receipt, retrievedAtHeight: blockInfo.height}
 				finishedTxs[workResponse.txnHash] = workResponse
 			}
 		}
 	}
 
-	//todo: clean the cache
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
-			txnInfo.receiptResponseChannel.SendReceipt(ReceiptResponse{txnHash: workResponse.txnHash, receipt: workResponse.receipt, err: workResponse.err})
+			txnInfo.receiptResponseChannel.SendResponse(&ReceiptResponse{txnHash: workResponse.txnHash, receipt: workResponse.receipt, err: workResponse.err})
 			delete(b.monitoredTxns, txnHash)
 		}
 	}
@@ -346,25 +379,41 @@ func (b *Behind) collectReceipts() {
 		}
 	}
 
+	var expiredReceipts []common.Hash
+	// Marking expired receipts
+	for receiptTxnHash, receiptInfo := range b.receiptCache {
+		if blockInfo.height >= receiptInfo.retrievedAtHeight+constants.TxReceiptCacheMaxBlocks {
+			expiredReceipts = append(expiredReceipts, receiptTxnHash)
+		}
+	}
+
+	// being paranoic and excluding the expired receipts in another loop
+	for _, receiptTxHash := range expiredTxs {
+		delete(b.receiptCache, receiptTxHash)
+	}
+
 	b.lastProcessedBlock = blockInfo
 }
 
+// Structs that keep track of the data needed by the worker pool service. The
+// workerPool spawn multiple go routines (workers) to check and retrieve the
+// receipts.
 type WorkerPool struct {
 	wg                   *sync.WaitGroup
-	ctx                  context.Context            //
+	ctx                  context.Context            // Main context passed by the parent, used to cancel worker and the pool
 	ethClient            interfaces.GethClient      // An interface with the Geth functionality we need
 	logger               *logrus.Entry              // Logger to log messages
-	txConfirmationBlocks uint64                     //
-	requestWorkChannel   <-chan MonitorWorkRequest  //
-	responseWorkChannel  chan<- MonitorWorkResponse //
+	txConfirmationBlocks uint64                     // Number of blocks that we should wait in order to consider a receipt valid
+	requestWorkChannel   <-chan MonitorWorkRequest  // Channel where will be send the work requests
+	responseWorkChannel  chan<- MonitorWorkResponse // Channel where the work response will be send
 }
 
+// Creates a new WorkerPool service
 func NewWorkerPool(ctx context.Context, ethClient interfaces.GethClient, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, ethClient, logger, txConfirmationBlocks, requestWorkChannel, responseWorkChannel}
 }
 
-// Function to spawn the workers and wait for the job to be done. This function
-// sends a message in the completionChannel once all workers have finished
+// Function to spawn the workers and wait for the job to be done.
 func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 	for i := uint64(0); i < numWorkers; i++ {
 		w.wg.Add(1)
@@ -374,6 +423,10 @@ func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 	close(w.responseWorkChannel)
 }
 
+// Unit of work. A worker is spawned as go routine. A worker check and retrieve
+// receipts for multiple transactions. The worker will be executing while
+// there's transactions to be checked or there's a timeout (set by
+// constants.TxWorkerTimeout)
 func (w *WorkerPool) worker() {
 	ctx, cf := context.WithTimeout(w.ctx, constants.TxWorkerTimeout)
 	defer cf()
@@ -421,6 +474,7 @@ func (w *WorkerPool) worker() {
 	}
 }
 
+// Internal function used by the workers to check/retrieve the receipts for a given transaction
 func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx TransactionInfo, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
 	blockTimeSpan := currentHeight - monitoredTx.startedMonitoringHeight
@@ -462,92 +516,107 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx TransactionInfo
 	return nil, nil
 }
 
-type TxnQueueDetail struct {
-	backend          *Behind
-	logger           *logrus.Entry
-	closeMainContext context.CancelFunc
-	requestChannel   chan<- MonitorRequest
+// Struct that has the data necessary by the Transaction Watcher service. The
+// transaction watcher service is responsible for check, retrieve and cache
+// transaction receipts.
+type TransactionWatcher struct {
+	backend          *WatcherBackend       // backend service responsible for check, retrieving and caching the receipts
+	logger           *logrus.Entry         // logger used to log the message for the transaction watcher
+	closeMainContext context.CancelFunc    // function used to cancel the main context in the backend service
+	requestChannel   chan<- MonitorRequest // channel used to send request to the backend service to retrieve transactions
 }
 
-func NewTxnQueue(client interfaces.GethClient, sm interfaces.SelectorMap, txConfirmationBlocks uint64) *TxnQueueDetail {
-	reqChannel := make(chan MonitorRequest, 100)
+// Creates a new transaction watcher struct
+func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.SelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
+	requestChannel := make(chan MonitorRequest, 100)
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
 
-	b := &Behind{
+	backend := &WatcherBackend{
 		mainCtx:              mainCtx,
-		requestChannel:       reqChannel,
+		requestChannel:       requestChannel,
 		client:               client,
-		logger:               logging.GetLogger("ethereum").WithField("Component", "behind"),
+		logger:               logging.GetLogger("ethereum").WithField("Component", "TransactionWatcherBackend"),
 		monitoredTxns:        make(map[common.Hash]TransactionInfo),
-		receiptCache:         make(map[common.Hash]*types.Receipt),
+		receiptCache:         make(map[common.Hash]ReceiptInfo),
 		aggregates:           make(map[interfaces.FuncSelector]TransactionProfile),
-		knownSelectors:       sm,
+		knownSelectors:       selectMap,
 		lastProcessedBlock:   &BlockInfo{0, common.HexToHash("")},
 		txConfirmationBlocks: txConfirmationBlocks,
 	}
 
-	q := &TxnQueueDetail{
-		requestChannel:   reqChannel,
+	transactionWatcher := &TransactionWatcher{
+		requestChannel:   requestChannel,
 		closeMainContext: cf,
-		backend:          b,
-		logger:           logging.GetLogger("ethereum").WithField("Component", "infront"),
+		backend:          backend,
+		logger:           logging.GetLogger("ethereum").WithField("Component", "TransactionWatcher"),
 	}
-	return q
+	return transactionWatcher
 }
 
-func (f *TxnQueueDetail) StartLoop() {
+// Start the transaction watcher service
+func (f *TransactionWatcher) StartLoop() {
 	go f.backend.Loop()
 }
 
-func (f *TxnQueueDetail) Close() {
+// Close the transaction watcher service
+func (f *TransactionWatcher) Close() {
 	f.logger.Debug("closing request channel...")
 	close(f.requestChannel)
 	f.closeMainContext()
 }
 
-func (f *TxnQueueDetail) QueueTransaction(ctx context.Context, txn *types.Transaction) (<-chan ReceiptResponse, error) {
-	f.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing")
-	respChannel := make(chan MonitorResponse, 1)
-	defer close(respChannel)
+// Queue a transaction to be watched by the transaction watcher service. If a
+// transaction was accepted to be watched, a response channel is returned. The
+// response channel is where the receipt going to be sent by the tx watcher
+// backend.
+func (tw *TransactionWatcher) QueueTransaction(ctx context.Context, txn *types.Transaction) (<-chan IResponse, error) {
+	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing a transaction watcher")
+	respChannel := NewResponseChannel(tw.logger)
+	defer respChannel.CloseChannel()
 	req := MonitorRequest{ctx: ctx, txn: txn, responseChannel: respChannel}
-	f.requestChannel <- req
 	select {
-	case txResponseChannel, ok := <-req.responseChannel:
-		if !ok {
-			return nil, errors.New("response channel closed")
-		}
-		return txResponseChannel.receiptResponseChannel, txResponseChannel.err
+	case tw.requestChannel <- req:
 	case <-ctx.Done():
-		f.logger.Infof("context cancelled: %v", ctx.Err())
+		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled: %v", ctx.Err())}
+	}
+
+	select {
+	case txResponseChannel, ok := <-req.responseChannel.channel:
+		requestResponse, ok := txResponseChannel.(*MonitorResponse)
+		if !ok {
+			return nil, &ErrInvalidTransactionRequest{"invalid request response format"}
+		}
+		return requestResponse.receiptResponseChannel.channel, requestResponse.err
+	case <-ctx.Done():
+		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled: %v", ctx.Err())}
+	}
+}
+
+// function that wait for a transaction receipt. This is blocking function that will wait for a response in the input IResponse channel
+func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan IResponse) (*types.Receipt, error) {
+	select {
+	case resp, ok := <-receiptResponseChannel:
+		receiptResponse, ok := resp.(*ReceiptResponse)
+		if !ok {
+			return nil, &ErrInvalidTransactionRequest{"invalid request response format"}
+		}
+		return receiptResponse.receipt, receiptResponse.err
+	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
 }
 
-func (f *TxnQueueDetail) WaitTransaction(ctx context.Context, txResponseChannel <-chan ReceiptResponse) (*types.Receipt, error) {
-	select {
-	case resp, ok := <-txResponseChannel:
-		if !ok {
-			return nil, errors.New("tx response channel closed")
-		}
-		return resp.receipt, resp.err
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
-func (f *TxnQueueDetail) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
-	txResponseChannel, err := f.QueueTransaction(ctx, txn)
+// Queue a transaction and wait for its receipt
+func (f *TransactionWatcher) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+	receiptResponseChannel, err := f.QueueTransaction(ctx, txn)
 	if err != nil {
 		return nil, err
 	}
-	return f.WaitTransaction(ctx, txResponseChannel)
+	return f.WaitTransaction(ctx, receiptResponseChannel)
 }
 
-func isTestRun() bool {
-	return flag.Lookup("test.v") != nil
-}
-
+// function to compute the max between 2 uint64
 func max(a uint64, b uint64) uint64 {
 	if a > b {
 		return a
@@ -555,6 +624,7 @@ func max(a uint64, b uint64) uint64 {
 	return b
 }
 
+// function to compute the min between 2 uint64
 func min(a uint64, b uint64) uint64 {
 	if a > b {
 		return b
@@ -562,31 +632,6 @@ func min(a uint64, b uint64) uint64 {
 	return a
 }
 
-// func (f *TxnQueueDetail) QueueGroupTransaction(ctx context.Context, groupId uint64, txn *types.Transaction) (*Response, error) {
-// 	if groupId == 0 {
-// 		return nil, errors.New("groupTx should be greater than 0!")
-// 	}
-// 	respChannel := make(chan chan *Response, 1)
-// 	defer close(respChannel)
-// 	req := &Request{ctx: ctx, command: "queue", txn: txn, txGroup: groupId, respCh: respChannel}
-// 	response, err := f.requestWait(ctx, req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return response, nil
-// }
-
-// func (f *TxnQueueDetail) WaitGroupTransactions(ctx context.Context, txns []*types.Transaction) ([]*types.Receipt, error) {
-// 	respChannel := make(chan *Response, 1)
-// 	defer close(respChannel)
-// 	req := &Request{ctx: ctx, command: "wait", txGroup: groupId, respCh: respChannel}
-// 	resp, err := f.requestWait(ctx, req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if resp.rcpts == nil {
-// 		return nil, errors.New(fmt.Sprintf("no receipts were found for group: %v", groupId))
-// 	}
-
-// 	return resp.rcpts, nil
-// }
+func isTestRun() bool {
+	return flag.Lookup("test.v") != nil
+}
