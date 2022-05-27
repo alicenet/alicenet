@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/consensus/db"
+	utils2 "github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"math/big"
@@ -162,9 +161,9 @@ func (state *DkgState) OnRegistrationComplete(shareDistributionStartBlockNumber 
 // OnSharesDistributed processes data from SharesDistributed event
 func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
 	// compute distributed shares hash
-	distributedSharesHash, _, _, err := tasks.ComputeDistributedSharesHash(encryptedShares, commitments)
+	distributedSharesHash, _, _, err := utils2.ComputeDistributedSharesHash(encryptedShares, commitments)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
+		return utils2.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
 	}
 
 	state.Participants[account].Phase = ShareDistribution
@@ -236,51 +235,34 @@ func GetEthDkgStateKey() []byte {
 	return []byte("ethDkgStateKey")
 }
 
-func PersistEthDkgState(cdb *db.Database, logger *logrus.Entry, ethDkgState *DkgState) error {
+func PersistEthDkgState(txn *badger.Txn, logger *logrus.Entry, ethDkgState *DkgState) error {
 	rawData, err := json.Marshal(ethDkgState)
 	if err != nil {
 		return err
 	}
 
-	err = cdb.Update(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
-		logger.WithField("Key", keyLabel).Infof("Saving state")
-		if err := utils.SetValue(txn, GetEthDkgStateKey(), rawData); err != nil {
-			logger.Error("Failed to set Value")
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := cdb.Sync(); err != nil {
-		logger.Error("Failed to set sync")
+	keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
+	logger.WithField("Key", keyLabel).Infof("Saving state")
+	if err = utils.SetValue(txn, GetEthDkgStateKey(), rawData); err != nil {
+		logger.Error("Failed to set Value")
 		return err
 	}
 
 	return nil
 }
 
-func LoadEthDkgState(cdb *db.Database, logger *logrus.Entry) (*DkgState, error) {
+func LoadEthDkgState(txn *badger.Txn, logger *logrus.Entry) (*DkgState, error) {
 	ethDkgState := &DkgState{}
 
-	if err := cdb.View(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
-		logger.WithField("Key", keyLabel).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, GetEthDkgStateKey())
-		if err != nil {
-			return err
-		}
-		// TODO: Cleanup loaded obj, this is a memory / storage leak
-		err = json.Unmarshal(rawData, ethDkgState)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
+	keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
+	logger.WithField("Key", keyLabel).Infof("Looking up state")
+	rawData, err := utils.GetValue(txn, GetEthDkgStateKey())
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Cleanup loaded obj, this is a memory / storage leak
+	err = json.Unmarshal(rawData, ethDkgState)
+	if err != nil {
 		return nil, err
 	}
 

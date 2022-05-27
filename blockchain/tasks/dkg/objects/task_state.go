@@ -1,4 +1,4 @@
-package tasks
+package objects
 
 import (
 	"context"
@@ -12,12 +12,13 @@ import (
 type Task struct {
 	sync.RWMutex
 	Id             string
+	Name           string
 	Start          uint64
 	End            uint64
 	State          interfaces.ITaskState
 	Success        bool
 	Ctx            context.Context
-	Cf             context.CancelFunc
+	CancelFunc     context.CancelFunc
 	StartBlockHash common.Hash
 	TxOpts         *TxOpts
 }
@@ -41,24 +42,19 @@ func (to *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewTask(state interfaces.ITaskState, start uint64, end uint64) *Task {
+func NewTask(state interfaces.ITaskState, name string, start uint64, end uint64) *Task {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &Task{
-		State:   state,
-		Start:   start,
-		End:     end,
-		Success: false,
-		Ctx:     ctx,
-		Cf:      cf,
-		TxOpts:  &TxOpts{TxHashes: make([]common.Hash, 0)},
+		Name:       name,
+		State:      state,
+		Start:      start,
+		End:        end,
+		Success:    false,
+		Ctx:        ctx,
+		CancelFunc: cf,
+		TxOpts:     &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
-}
-
-func (t *Task) WithContext(ctx context.Context, cancel context.CancelFunc) *Task {
-	t.Ctx = ctx
-	t.Cf = cancel
-	return t
 }
 
 func (t *Task) ClearTxData() {
@@ -81,16 +77,29 @@ func (t *Task) GetEnd() uint64 {
 	return t.End
 }
 
+func (t *Task) GetName() string {
+	t.RLock()
+	defer t.RUnlock()
+	return t.Name
+}
+
 func (t *Task) SetId(id string) {
 	t.Lock()
 	defer t.Unlock()
 	t.Id = id
 }
 
+func (t *Task) SetContext(ctx context.Context, cancel context.CancelFunc) {
+	t.Lock()
+	defer t.Unlock()
+	t.Ctx = ctx
+	t.CancelFunc = cancel
+}
+
 func (t *Task) Close() {
 	t.Lock()
 	defer t.Unlock()
-	if t.Cf != nil {
-		t.Cf()
+	if t.CancelFunc != nil {
+		t.CancelFunc()
 	}
 }

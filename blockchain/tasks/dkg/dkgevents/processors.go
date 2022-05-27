@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/dgraph-io/badger/v2"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
@@ -15,6 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	ErrNotAValidator = errors.New("nothing schedule for time")
 )
 
 // todo: improve this
@@ -45,7 +50,7 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, lo
 
 	amIaValidator, err := isValidator(eth, logger, eth.GetDefaultAccount())
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "I'm not a validator: %v", err)
+		return utils.LogReturnErrorf(logger, "I'm not a validator: %v", err)
 	}
 
 	// get validators from ValidatorPool
@@ -54,11 +59,11 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, lo
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "failed to get call options to retrieve validators address from pool: %v", err)
+		return utils.LogReturnErrorf(logger, "failed to get call options to retrieve validators address from pool: %v", err)
 	}
-	validatorAddresses, err := tasks.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "failed to retrieve validator data from validator pool: %v", err)
+		return utils.LogReturnErrorf(logger, "failed to retrieve validator data from validator pool: %v", err)
 	}
 
 	dkgState, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(
@@ -100,9 +105,20 @@ func ProcessRegistrationOpened(eth interfaces.Ethereum, logger *logrus.Entry, lo
 
 	taskRequestChan <- disputeMissingRegistrationTask
 
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
+	err = cdb.Update(func(txn *badger.Txn) error {
+		err := objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "failed to save dkgState on ProcessRegistrationOpened: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
+	}
+
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationOpened: %v", err)
 	}
 
 	return nil
@@ -137,65 +153,94 @@ func ProcessAddressRegistered(eth interfaces.Ethereum, logger *logrus.Entry, log
 		return err
 	}
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		logger.WithFields(logrus.Fields{
+			"Account":       event.Account.Hex(),
+			"Index":         event.Index,
+			"numRegistered": event.Index,
+			"Nonce":         event.Nonce,
+			"PublicKey":     event.PublicKey,
+			"#Participants": len(dkgState.Participants),
+			"#Validators":   len(dkgState.ValidatorAddresses),
+		}).Info("Address registered!")
+
+		dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
+
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return err
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"Account":       event.Account.Hex(),
-		"Index":         event.Index,
-		"numRegistered": event.Index,
-		"Nonce":         event.Nonce,
-		"PublicKey":     event.PublicKey,
-		"#Participants": len(dkgState.Participants),
-		"#Validators":   len(dkgState.ValidatorAddresses),
-	}).Info("Address registered!")
-
-	dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
-
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
-	if err != nil {
-		return err
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessAddressRegistered: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask) error {
+func ProcessRegistrationComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 
 	logger.Info("ProcessRegistrationComplete() ...")
+	shareDistributionTask := &dkgtasks.ShareDistributionTask{}
+	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
+	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
-	if err != nil {
-		return err
-	}
+	err := cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-	if !dkgState.IsValidator {
+		if !dkgState.IsValidator {
+			return ErrNotAValidator
+		}
+
+		event, err := eth.Contracts().Ethdkg().ParseRegistrationComplete(log)
+		if err != nil {
+			return err
+		}
+
+		logger.WithFields(logrus.Fields{
+			"BlockNumber": event.BlockNumber,
+		}).Info("ETHDKG Registration Complete")
+
+		shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
+
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
 		return nil
-	}
+	})
 
-	event, err := eth.Contracts().Ethdkg().ParseRegistrationComplete(log)
 	if err != nil {
-		return err
+		//If Im not a Validator we just return nil
+		if errors.Is(err, ErrNotAValidator) {
+			return nil
+		}
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"BlockNumber": event.BlockNumber,
-	}).Info("ETHDKG Registration Complete")
-
-	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask := UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
-
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
-	if err != nil {
-		return err
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationComplete: %v", err)
 	}
 
-	//TODO: remove registrationTask and disputeMissingRegistrationTask
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": state.EthDKG.Phase,
-	//}).Info("Purging schedule")
-	//state.Schedule.Purge()
+	//Killing previous tasks
+	taskKillChan <- dkgtasks.RegisterTaskName
+	taskKillChan <- dkgtasks.DisputeMissingRegistrationTaskName
 
 	// schedule ShareDistribution phase
 	logger.WithFields(logrus.Fields{
@@ -255,57 +300,86 @@ func ProcessShareDistribution(eth interfaces.Ethereum, logger *logrus.Entry, log
 		"Commitments":     event.Commitments,
 	}).Info("Received share distribution")
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		err = dkgState.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
+		if err != nil {
+			return err
+		}
+
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return err
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
-	err = dkgState.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
-	if err != nil {
-		return err
-	}
-
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
-	if err != nil {
-		return err
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistribution: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask) error {
-
+func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 	logger.Info("ProcessShareDistributionComplete() ...")
+	disputeShareDistributionTask := &dkgtasks.DisputeShareDistributionTask{}
+	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
+	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
-	if err != nil {
-		return err
-	}
+	err := cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-	if !dkgState.IsValidator {
+		if !dkgState.IsValidator {
+			return ErrNotAValidator
+		}
+
+		event, err := eth.Contracts().Ethdkg().ParseShareDistributionComplete(log)
+		if err != nil {
+			return err
+		}
+
+		logger.WithFields(logrus.Fields{
+			"BlockNumber": event.BlockNumber,
+		}).Info("Received share distribution complete")
+
+		disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
 		return nil
-	}
+	})
 
-	event, err := eth.Contracts().Ethdkg().ParseShareDistributionComplete(log)
 	if err != nil {
-		return err
+		//If Im not a Validator we just return nil
+		if errors.Is(err, ErrNotAValidator) {
+			return nil
+		}
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"BlockNumber": event.BlockNumber,
-	}).Info("Received share distribution complete")
-
-	disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
-	if err != nil {
-		return err
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistributionComplete: %v", err)
 	}
 
-	//TODO: remove shareDistributionTask, disputeMissingShareDistributionTask and disputeBadSharesTask
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": state.EthDKG.Phase,
-	//}).Infof("Purging schedule")
-	//state.Schedule.Purge()
+	//Killing previous tasks
+	taskKillChan <- dkgtasks.ShareDistributionTaskName
+	taskKillChan <- dkgtasks.DisputeMissingShareDistributionTaskName
+	taskKillChan <- dkgtasks.DisputeShareDistributionTaskName
 
 	// schedule DisputeShareDistributionTask
 	logger.WithFields(logrus.Fields{
@@ -316,10 +390,10 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 
 	// schedule SubmitKeySharesPhase
 	logger.WithFields(logrus.Fields{
-		"TaskStart": keyshareSubmissionTask.GetStart(),
-		"TaskEnd":   keyshareSubmissionTask.GetEnd(),
-	}).Info("Scheduling NewKeyshareSubmissionTask")
-	taskRequestChan <- keyshareSubmissionTask
+		"TaskStart": keyShareSubmissionTask.GetStart(),
+		"TaskEnd":   keyShareSubmissionTask.GetEnd(),
+	}).Info("Scheduling NewKeyShareSubmissionTask")
+	taskRequestChan <- keyShareSubmissionTask
 
 	// schedule DisputeMissingKeySharesPhase
 	logger.WithFields(logrus.Fields{
@@ -331,7 +405,7 @@ func ProcessShareDistributionComplete(eth interfaces.Ethereum, logger *logrus.En
 	return nil
 }
 
-func UpdateStateOnShareDistributionComplete(state *objects.DkgState, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyshareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
+func UpdateStateOnShareDistributionComplete(state *objects.DkgState, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
 	state.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 
 	phaseEnd := state.PhaseStart + state.PhaseLength
@@ -340,7 +414,7 @@ func UpdateStateOnShareDistributionComplete(state *objects.DkgState, disputeShar
 	// schedule SubmitKeySharesPhase
 	submitKeySharesPhaseStart := phaseEnd
 	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + state.PhaseLength
-	keyshareSubmissionTask := dkgtasks.NewKeyshareSubmissionTask(state, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
+	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(state, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
 
 	// schedule DisputeMissingKeySharesPhase
 	missingKeySharesDisputeStart := submitKeySharesPhaseEnd
@@ -366,22 +440,33 @@ func ProcessKeyShareSubmitted(eth interfaces.Ethereum, logger *logrus.Entry, log
 		"KeyShareG2":                 event.KeyShareG2,
 	}).Info("Received key shares")
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return err
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
-	dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
-	if err != nil {
-		return err
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmitted: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask) error {
-
+func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
 	if err != nil {
 		return err
@@ -391,27 +476,42 @@ func ProcessKeyShareSubmissionComplete(eth interfaces.Ethereum, logger *logrus.E
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
-	if err != nil {
-		return err
-	}
+	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-	if dkgState.IsValidator {
+		if dkgState.IsValidator {
+			return ErrNotAValidator
+		}
+
+		// schedule MPK submission
+		mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
 		return nil
-	}
+	})
 
-	// schedule MPK submission
-	mpkSubmissionTask := UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
 	if err != nil {
-		return err
+		//If Im not a Validator we just return nil
+		if errors.Is(err, ErrNotAValidator) {
+			return nil
+		}
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	//TODO: remove disputeShareDistributionTask, keyshareSubmissionTask and disputeMissingKeySharesTask
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": state.EthDKG.Phase,
-	//}).Infof("Purging schedule")
-	//state.Schedule.Purge()
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmissionComplete: %v", err)
+	}
+
+	//Killing previous tasks
+	taskKillChan <- dkgtasks.KeyShareSubmissionTaskName
+	taskKillChan <- dkgtasks.DisputeMissingKeySharesTaskName
 
 	// schedule MPKSubmissionTask
 	taskRequestChan <- mpkSubmissionTask
@@ -434,7 +534,7 @@ func UpdateStateOnKeyShareSubmissionComplete(state *objects.DkgState, mpkSubmiss
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, adminHandler interfaces.AdminHandler, cdb *db.Database, taskRequestChan chan<- interfaces.ITask) error {
+func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, adminHandler interfaces.AdminHandler, cdb *db.Database, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 
 	event, err := eth.Contracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
@@ -447,26 +547,42 @@ func ProcessMPKSet(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
 		"MPK":         event.Mpk,
 	}).Info("ProcessMPKSet() ...")
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
-	if err != nil {
-		return err
-	}
+	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
+	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
+	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-	if dkgState.IsValidator {
+		if dkgState.IsValidator {
+			return ErrNotAValidator
+		}
+
+		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
 		return nil
-	}
+	})
 
-	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
 	if err != nil {
-		return err
+		//If Im not a Validator we just return nil
+		if errors.Is(err, ErrNotAValidator) {
+			return nil
+		}
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
-	//TODO: remove mpkSubmissionTask
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": dkgState.Phase,
-	//}).Infof("Purging schedule")
-	//state.Schedule.Purge()
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessMPKSet: %v", err)
+	}
+
+	//Killing previous tasks
+	taskKillChan <- dkgtasks.MPKSubmissionTaskName
 
 	// schedule GPKJSubmissionTask
 	logger.WithFields(logrus.Fields{
@@ -511,7 +627,7 @@ func UpdateStateOnMPKSet(state *objects.DkgState, gpkjSubmissionStartBlock uint6
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask
 }
 
-func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask) error {
+func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 
 	event, err := eth.Contracts().Ethdkg().ParseGPKJSubmissionComplete(log)
 	if err != nil {
@@ -522,26 +638,43 @@ func ProcessGPKJSubmissionComplete(eth interfaces.Ethereum, logger *logrus.Entry
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessGPKJSubmissionComplete() ...")
 
-	dkgState, err := objects.LoadEthDkgState(cdb, logger)
-	if err != nil {
-		return err
-	}
+	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
+	completionTask := &dkgtasks.CompletionTask{}
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-	if !dkgState.IsValidator {
+		if !dkgState.IsValidator {
+			return ErrNotAValidator
+		}
+
+		disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
 		return nil
-	}
+	})
 
-	disputeGPKjTask, completionTask := UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-	err = objects.PersistEthDkgState(cdb, logger, dkgState)
 	if err != nil {
-		return err
+		//If Im not a Validator we just return nil
+		if errors.Is(err, ErrNotAValidator) {
+			return nil
+		}
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
-	//TODO: remove gpkjSubmissionTask, disputeMissingGPKjTask and disputeGPKjTask
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": state.EthDKG.Phase,
-	//}).Infof("Purging schedule")
-	//state.Schedule.Purge()
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessGPKJSubmissionComplete: %v", err)
+	}
+
+	//Killing previous tasks
+	taskKillChan <- dkgtasks.GPKjSubmissionTaskName
+	taskKillChan <- dkgtasks.DisputeMissingGPKjTaskName
+	taskKillChan <- dkgtasks.DisputeGPKjTaskName
 
 	// schedule DisputeGPKJSubmissionTask
 	logger.WithFields(logrus.Fields{

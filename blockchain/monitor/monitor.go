@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -59,6 +59,7 @@ type monitor struct {
 	//for communication with the TasksScheduler
 	lastFinalizedBlockChan chan<- uint64
 	taskRequestChan        chan<- interfaces.ITask
+	taskKillChan           chan<- string
 }
 
 // NewMonitor creates a new Monitor
@@ -71,7 +72,8 @@ func NewMonitor(cdb *db.Database,
 	timeout time.Duration,
 	batchSize uint64,
 	lastFinalizedBlockChan chan<- uint64,
-	taskRequestChan chan<- interfaces.ITask) (*monitor, error) {
+	taskRequestChan chan<- interfaces.ITask,
+	taskKillChan chan<- string) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -79,7 +81,7 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan)
+	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan, taskKillChan)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +115,7 @@ func NewMonitor(cdb *db.Database,
 		batchSize:              batchSize,
 		lastFinalizedBlockChan: lastFinalizedBlockChan,
 		taskRequestChan:        taskRequestChan,
+		taskKillChan:           taskKillChan,
 	}, nil
 
 }
@@ -444,7 +447,7 @@ func PersistSnapshot(eth interfaces.Ethereum, bh *objs.BlockHeader, taskRequestC
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
-	snapshotTask := tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
+	snapshotTask := other_tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
 	taskRequestChan <- snapshotTask
 
 	return nil

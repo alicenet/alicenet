@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
@@ -25,7 +25,7 @@ var _ interfaces.ITask = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *objects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, MPKSubmissionTaskName, start, end),
 	}
 }
 
@@ -99,7 +99,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 		mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 		if err != nil && validMPK {
-			return tasks.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
+			return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
 		}
 
 		if !validMPK {
@@ -149,7 +149,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -165,7 +165,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	logger.Infof("submitting master public key:%v", taskState.MasterPublicKey)
 	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, taskState.MasterPublicKey)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 	t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -260,7 +260,7 @@ func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ether
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := tasks.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+	amILeading := utils.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,

@@ -8,6 +8,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
@@ -60,6 +61,7 @@ type TasksScheduler struct {
 	lastFinalizedBlockChan <-chan uint64           `json:"-"`
 	taskRequestChan        <-chan interfaces.ITask `json:"-"`
 	taskResponseChan       chan TaskResponse       `json:"-"`
+	taskKillChan           <-chan string           `json:"-"`
 	logger                 *logrus.Entry           `json:"-"`
 }
 
@@ -67,7 +69,7 @@ type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandler, lastFinalizedBlockChan <-chan uint64, taskRequestChan <-chan interfaces.ITask) *TasksScheduler {
+func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandler, lastFinalizedBlockChan <-chan uint64, taskRequestChan <-chan interfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
 	tr := &objects.TypeRegistry{}
 
 	//TODO: refactor, import cycle not allowed. Move dkgtasks inside tasks package???
@@ -78,13 +80,13 @@ func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandl
 	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
 	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
+	tr.RegisterInstanceType(&dkgtasks.KeyShareSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
 	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&SnapshotTask{})
+	tr.RegisterInstanceType(&other_tasks.SnapshotTask{})
 
 	s := &TasksScheduler{
 		Schedule:               make(map[string]*TaskRequest),
@@ -95,6 +97,7 @@ func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandl
 		lastFinalizedBlockChan: lastFinalizedBlockChan,
 		taskRequestChan:        taskRequestChan,
 		taskResponseChan:       make(chan TaskResponse, 100),
+		taskKillChan:           taskKillChan,
 	}
 
 	logger := logging.GetLogger("tasks_scheduler").WithField("Schedule", s.Schedule)
@@ -154,6 +157,11 @@ func (s *TasksScheduler) eventLoop() {
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
 			}
+		case taskToKill := <-s.taskKillChan:
+			err := s.killTaskByName(ctx, taskToKill)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskToKill)
+			}
 		default:
 			toStart, expired, unresponsive := s.findTasks()
 			err := s.startTasks(ctx, toStart)
@@ -161,7 +169,7 @@ func (s *TasksScheduler) eventLoop() {
 				s.logger.WithError(err).Errorf("Failed to processBlock %d", s.LastHeightSeen)
 			}
 
-			err = s.killExpiredTasks(ctx, expired)
+			err = s.killTasks(ctx, expired)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", s.LastHeightSeen)
 			}
@@ -233,6 +241,8 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []*TaskRequest) e
 			task := tasks[i]
 			taskName, _ := objects.GetNameType(task)
 			s.logger.Infof("Task name: %s is about to start", taskName)
+			taskCtx, taskCancelFunc := context.WithCancel(ctx)
+			task.Task.GetExecutionData().SetContext(taskCtx, taskCancelFunc)
 			task.Task.GetExecutionData().SetId(task.Id)
 
 			//TODO: run the task in a go routine
@@ -244,17 +254,25 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []*TaskRequest) e
 	return nil
 }
 
-func (s *TasksScheduler) killExpiredTasks(ctx context.Context, tasks []*TaskRequest) error {
+func (s *TasksScheduler) killTaskByName(ctx context.Context, taskName string) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		s.logger.Debug("Looking for killing expired tasks")
+		s.logger.Debugf("Looking for killing tasks by name %s", taskName)
+		return s.killTasks(ctx, s.findTasksByName(taskName))
 
+	}
+}
+
+func (s *TasksScheduler) killTasks(ctx context.Context, tasks []*TaskRequest) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			taskName, _ := objects.GetNameType(task)
-			s.logger.Infof("Task name: %s is about to be killed", taskName)
+			s.logger.Infof("Task name: %s and id: %s is about to be killed", task.Task.GetExecutionData().GetName(), task.Id)
 			task.Task.GetExecutionData().Close()
 		}
 
@@ -287,9 +305,6 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []*T
 }
 
 func (s *TasksScheduler) purge() {
-	for _, request := range s.Schedule {
-		request.Task.GetExecutionData().Close()
-	}
 	s.Schedule = make(map[string]*TaskRequest)
 }
 
@@ -317,6 +332,17 @@ func (s *TasksScheduler) findTasks() ([]*TaskRequest, []*TaskRequest, []*TaskReq
 		}
 	}
 	return toStart, expired, unresponsive
+}
+
+func (s *TasksScheduler) findTasksByName(taskName string) []*TaskRequest {
+	tasks := make([]*TaskRequest, 0)
+
+	for _, taskRequest := range s.Schedule {
+		if taskRequest.Task.GetExecutionData().GetName() == taskName {
+			tasks = append(tasks, taskRequest)
+		}
+	}
+	return tasks
 }
 
 func (s *TasksScheduler) length() int {

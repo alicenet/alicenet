@@ -5,10 +5,10 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"io"
 	"log"
 	"math/big"
@@ -116,7 +116,7 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 //	tr.RegisterInstanceType(&RegisterTask{})
 //	tr.RegisterInstanceType(&ShareDistributionTask{})
 //	tr.RegisterInstanceType(&DisputeShareDistributionTask{})
-//	tr.RegisterInstanceType(&KeyshareSubmissionTask{})
+//	tr.RegisterInstanceType(&KeyShareSubmissionTask{})
 //	tr.RegisterInstanceType(&MPKSubmissionTask{})
 //	tr.RegisterInstanceType(&GPKjSubmissionTask{})
 //	tr.RegisterInstanceType(&DisputeGPKjTask{})
@@ -239,7 +239,7 @@ type TestSuite struct {
 	shareDistTasks               []*ShareDistributionTask
 	disputeMissingShareDistTasks []*DisputeMissingShareDistributionTask
 	disputeShareDistTasks        []*DisputeShareDistributionTask
-	keyshareSubmissionTasks      []*KeyshareSubmissionTask
+	keyshareSubmissionTasks      []*KeyShareSubmissionTask
 	disputeMissingKeyshareTasks  []*DisputeMissingKeySharesTask
 	mpkSubmissionTasks           []*MPKSubmissionTask
 	gpkjSubmissionTasks          []*GPKjSubmissionTask
@@ -262,11 +262,11 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = tasks.SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
+	_, _, err = utils.SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// init ETHDKG on ValidatorPool, through ContractFactory
-	_, rcpt, err := tasks.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := utils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
@@ -276,7 +276,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := tasks.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	assert.Nil(t, err)
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
@@ -294,7 +294,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		// Set Registration success to true
-		state, _, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
+		state, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
 			accounts[idx],
 			event.StartBlock.Uint64(),
 			event.PhaseLength.Uint64(),
@@ -348,7 +348,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		assert.Nil(t, err)
 
 		for idx := 0; idx < n; idx++ {
-			shareDistributionTask, _, _, disputeMissingShareDistributionTask, disputeShareDistTask, _, _ := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
+			shareDistributionTask, disputeMissingShareDistributionTask, disputeShareDistTask := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
 
 			shareDistributionTasks[idx] = shareDistributionTask
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
@@ -440,7 +440,7 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 	}
 
 	disputeShareDistributionTasks := make([]*DisputeShareDistributionTask, n)
-	keyshareSubmissionTasks := make([]*KeyshareSubmissionTask, n)
+	keyshareSubmissionTasks := make([]*KeyShareSubmissionTask, n)
 	disputeMissingKeySharesTasks := make([]*DisputeMissingKeySharesTask, n)
 
 	if len(undistributedSharesIdx) == 0 {
@@ -451,9 +451,9 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 		// this means all validators distributed their shares and now the phase is
 		// set phase to DisputeShareDistribution
 		for i := 0; i < n; i++ {
-			disputeShareDistributionTask, dispShareStartBlock, _, keyshareSubmissionTask, _, _, disputeMissingKeySharesTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], logger, height)
+			disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], height)
 
-			dispShareDistStartBlock = dispShareStartBlock
+			dispShareDistStartBlock = disputeShareDistributionTask.GetStart()
 
 			disputeShareDistributionTasks[i] = disputeShareDistributionTask
 			keyshareSubmissionTasks[i] = keyshareSubmissionTask
@@ -524,8 +524,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 		// set phase to MPK
 		var mpkSubmissionTaskStart uint64
 		for i := 0; i < n; i++ {
-			mpkSubmissionTask, taskStart, _ := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], logger, height)
-			mpkSubmissionTaskStart = taskStart
+			mpkSubmissionTask := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], height)
+			mpkSubmissionTaskStart = mpkSubmissionTask.GetStart()
 
 			mpkSubmissionTasks[i] = mpkSubmissionTask
 		}
@@ -573,7 +573,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask, _, _, disputeMissingGPKjTask, disputeGPKjTask, _, _ := dkgevents.UpdateStateOnMPKSet(state, logger, height, new(adminHandlerMock))
+		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := dkgevents.UpdateStateOnMPKSet(state, height, new(adminHandlerMock))
 
 		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
 		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
@@ -656,9 +656,9 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 		// this means all validators submitted their GPKjs and now the phase is
 		// set phase to DisputeGPKjDistribution
 		for i := 0; i < n; i++ {
-			disputeGPKjTask, disputeGPKjStartBlock, _, completionTask, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(suite.dkgStates[i], logger, height)
+			disputeGPKjTask, completionTask := dkgevents.UpdateStateOnGPKJSubmissionComplete(suite.dkgStates[i], height)
 
-			dispGPKjStartBlock = disputeGPKjStartBlock
+			dispGPKjStartBlock = disputeGPKjTask.GetStart()
 
 			disputeGPKjTasks[i] = disputeGPKjTask
 			completionTasks[i] = completionTask

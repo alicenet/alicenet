@@ -43,10 +43,10 @@ func TestCompletionAllGood(t *testing.T) {
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		disputeGPKjTask, _, _, completionTask, start, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		disputeGPKjTask, completionTask := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, height)
 		disputeGPKjTasks[idx] = disputeGPKjTask
 		completionTasks[idx] = completionTask
-		completionStart = start
+		completionStart = completionTask.GetStart()
 	}
 
 	// Advance to Completion phase
@@ -201,10 +201,10 @@ func TestCompletionBad3(t *testing.T) {
 	var completionStart, completionEnd uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		_, _, _, completionTask, start, end := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		_, completionTask := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, height)
 		completionTasks[idx] = completionTask
-		completionStart = start
-		completionEnd = end
+		completionStart = completionTask.GetStart()
+		completionEnd = completionTask.GetEnd()
 	}
 
 	// Advance to Completion phase
@@ -289,10 +289,10 @@ func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		disputeGPKjTask, _, _, completionTask, start, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		disputeGPKjTask, completionTask := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, height)
 		disputeGPKjTasks[idx] = disputeGPKjTask
 		completionTasks[idx] = completionTask
-		completionStart = start
+		completionStart = completionTask.GetStart()
 	}
 
 	// Advance to Completion phase

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,7 +17,7 @@ import (
 
 // DisputeGPKjTask contains required state for performing a group accusation
 type DisputeGPKjTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that DisputeGPKjTask struct implements interface interfaces.Task
@@ -26,7 +26,7 @@ var _ interfaces.ITask = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, DisputeGPKjTaskName, start, end),
 	}
 }
 
@@ -63,12 +63,12 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	honest, dishonest, missing, err := math.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
 	inverse, err := math.InverseArrayForUserCount(taskState.NumberOfValidators)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
 
 	logger.Debugf("   Honest indices: %v", honest.ExtractIndices())
@@ -117,7 +117,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		es := participant.EncryptedShares
 		encryptedSharesBin, err := bn256.MarshalBigIntSlice(es)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "group accusation failed: %v", err)
+			return utils.LogReturnErrorf(logger, "group accusation failed: %v", err)
 		}
 		hashSlice := crypto.Hasher(encryptedSharesBin)
 		var hashSlice32 [32]byte
@@ -131,13 +131,13 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting call opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting call opts failed: %v", err)
 	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -154,7 +154,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, dishonestParticipant.Address)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
+			return utils.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
 		}
 
 		if !isValidator {
@@ -163,7 +163,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "group accusation failed: %v", err)
+			return utils.LogReturnErrorf(logger, "group accusation failed: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()

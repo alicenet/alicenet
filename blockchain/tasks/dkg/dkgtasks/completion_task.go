@@ -5,17 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
 type CompletionTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
@@ -24,7 +24,7 @@ var _ interfaces.ITask = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, CompletionTaskName, start, end),
 	}
 }
 
@@ -93,7 +93,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -108,7 +108,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	// Register
 	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "completion failed: %v", err)
+		return utils.LogReturnErrorf(logger, "completion failed: %v", err)
 	}
 
 	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
@@ -205,7 +205,7 @@ func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum
 	}
 
 	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := tasks.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+	amILeading := utils.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,

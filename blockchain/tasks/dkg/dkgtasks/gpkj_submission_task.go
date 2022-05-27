@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
 type GPKjSubmissionTask struct {
-	*tasks.Task
+	*objects.Task
 	adminHandler interfaces.AdminHandler
 }
 
@@ -25,7 +25,7 @@ var _ interfaces.ITask = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(state *objects.DkgState, start uint64, end uint64, adminHandler interfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         tasks.NewTask(state, start, end),
+		Task:         objects.NewTask(state, GPKjSubmissionTaskName, start, end),
 		adminHandler: adminHandler,
 	}
 }
@@ -63,7 +63,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 			logger.WithFields(logrus.Fields{
 				"t.State.Index": taskState.Index,
 			}).Errorf("Could not generate group keys: %v", err)
-			return tasks.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
+			return utils.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 		}
 
 		taskState.GroupPrivateKey = groupPrivateKey
@@ -106,7 +106,7 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -121,7 +121,7 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	// Do it
 	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, taskState.Participants[taskState.Account.Address].GPKj)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 	t.TxOpts.GasFeeCap = txn.GasFeeCap()

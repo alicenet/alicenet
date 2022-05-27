@@ -1,7 +1,8 @@
-package tasks
+package other_tasks
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 	dangerousRand "math/rand"
@@ -17,7 +18,7 @@ import (
 
 // SnapshotTask pushes a snapshot to Ethereum
 type SnapshotTask struct {
-	*Task
+	*objects.Task
 }
 
 // asserting that SnapshotTask struct implements interface interfaces.Task
@@ -35,12 +36,15 @@ type SnapshotState struct {
 var _ interfaces.ITaskState = &SnapshotState{}
 
 func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint64, end uint64, ctx context.Context, cancel context.CancelFunc) *SnapshotTask {
-	return &SnapshotTask{
-		Task: NewTask(&SnapshotState{
+	snapshotTask := &SnapshotTask{
+		Task: objects.NewTask(&SnapshotState{
 			Account:     account,
 			BlockHeader: bh,
-		}, start, end).WithContext(ctx, cancel),
+		}, dkgtasks.SnapshotTaskName, start, end),
 	}
+	snapshotTask.SetContext(ctx, cancel)
+
+	return snapshotTask
 }
 
 func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {

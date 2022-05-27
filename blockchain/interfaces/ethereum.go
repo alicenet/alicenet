@@ -171,7 +171,9 @@ type ITaskExecutionData interface {
 	ClearTxData()
 	GetStart() uint64
 	GetEnd() uint64
+	GetName() string
 	SetId(string)
+	SetContext(ctx context.Context, cancel context.CancelFunc)
 	Close()
 }
 

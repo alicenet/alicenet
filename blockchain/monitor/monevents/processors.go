@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	bobjs "github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
@@ -18,12 +17,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state *bobjs.MonitorState, log types.Log,
+func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
 	cdb *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	if !state.EthDKG.IsValidator {
+	dkgState := &objects.DkgState{}
+	var err error
+	err = cdb.View(func(txn *badger.Txn) error {
+		dkgState, err = objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !dkgState.IsValidator {
 		return nil
 	}
 
@@ -65,12 +79,27 @@ func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, state
 }
 
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract
-func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	adminHandler interfaces.AdminHandler) error {
+func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
+	cdb *db.Database) error {
 
 	logger.Info("ProcessValueUpdated() ...")
 
-	if !state.EthDKG.IsValidator {
+	dkgState := &objects.DkgState{}
+	var err error
+	err = cdb.View(func(txn *badger.Txn) error {
+		dkgState, err = objects.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !dkgState.IsValidator {
 		return nil
 	}
 
@@ -92,7 +121,7 @@ func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, state *o
 }
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *bobjs.MonitorState, log types.Log,
+func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
@@ -155,7 +184,7 @@ func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, state *
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event
-func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log) error {
 
 	logger.Info("ProcessValidatorMinorSlashed() ...")
 
@@ -175,7 +204,7 @@ func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry,
 }
 
 // ProcessValidatorMajorSlashed handles the Major Slash event
-func ProcessValidatorMajorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+func ProcessValidatorMajorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log) error {
 
 	logger.Info("ProcessValidatorMajorSlashed() ...")
 

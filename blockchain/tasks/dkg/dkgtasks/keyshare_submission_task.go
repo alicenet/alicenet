@@ -4,37 +4,37 @@ import (
 	"context"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
-// KeyshareSubmissionTask is the task for submitting Keyshare information
-type KeyshareSubmissionTask struct {
-	*tasks.Task
+// KeyShareSubmissionTask is the task for submitting Keyshare information
+type KeyShareSubmissionTask struct {
+	*objects.Task
 }
 
-// asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
-var _ interfaces.ITask = &KeyshareSubmissionTask{}
+// asserting that KeyShareSubmissionTask struct implements interface interfaces.Task
+var _ interfaces.ITask = &KeyShareSubmissionTask{}
 
-// NewKeyshareSubmissionTask creates a new task
-func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
-	return &KeyshareSubmissionTask{
-		Task: tasks.NewTask(state, start, end),
+// NewKeyShareSubmissionTask creates a new task
+func NewKeyShareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyShareSubmissionTask {
+	return &KeyShareSubmissionTask{
+		Task: objects.NewTask(state, KeyShareSubmissionTaskName, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in KeyShareSubmission phase.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.Info("KeyshareSubmissionTask Initialize()")
+	logger.Info("KeyShareSubmissionTask Initialize()")
 
 	taskState, ok := t.State.(*objects.DkgState)
 	if !ok {
@@ -59,25 +59,25 @@ func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 		taskState.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
 		taskState.Participants[me].KeyShareG2s = g2KeyShare
 	} else {
-		logger.Infof("KeyshareSubmissionTask Initialize(): key shares already defined")
+		logger.Infof("KeyShareSubmissionTask Initialize(): key shares already defined")
 	}
 
 	return nil
 }
 
 // DoWork is the first attempt at the performing the KeyShareSubmission phase
-func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *KeyShareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at the performing the KeyShareSubmission phase
-func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *KeyShareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -86,7 +86,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		return objects.ErrCanNotContinue
 	}
 
-	logger.Info("KeyshareSubmissionTask doTask()")
+	logger.Info("KeyShareSubmissionTask doTask()")
 
 	// Setup
 	me := taskState.Account
@@ -94,7 +94,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -117,7 +117,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		taskState.Participants[me.Address].KeyShareG1CorrectnessProofs,
 		taskState.Participants[me.Address].KeyShareG2s)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
+		return utils.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
 	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 	t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -140,11 +140,11 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.Info("KeyshareSubmissionTask ShouldRetry()")
+	logger.Info("KeyShareSubmissionTask ShouldRetry()")
 
 	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
@@ -160,13 +160,13 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	me := taskState.Account
 	callOpts, err := eth.GetCallOpts(ctx, me)
 	if err != nil {
-		logger.Debugf("KeyshareSubmissionTask ShouldRetry failed getting call options: %v", err)
+		logger.Debugf("KeyShareSubmissionTask ShouldRetry failed getting call options: %v", err)
 		return true
 	}
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		logger.Infof("KeyshareSubmissionTask ShouldRetry GetETHDKGPhase error: %v", err)
+		logger.Infof("KeyShareSubmissionTask ShouldRetry GetETHDKGPhase error: %v", err)
 		return true
 	}
 
@@ -178,7 +178,7 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	// Check the key share submission status
 	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
 	if err != nil {
-		logger.Errorf("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
+		logger.Errorf("KeyShareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true
 	}
 
@@ -190,13 +190,13 @@ func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 }
 
 // DoDone creates a log entry saying task is complete
-func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
+func (t *KeyShareSubmissionTask) DoDone(logger *logrus.Entry) {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
+	logger.WithField("Success", t.Success).Infof("KeyShareSubmissionTask done")
 }
 
-func (t *KeyshareSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
+func (t *KeyShareSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
 	return t.Task
 }

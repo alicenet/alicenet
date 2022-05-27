@@ -4,16 +4,16 @@ import (
 	"context"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
 // RegisterTask contains required state for safely performing a registration
 type RegisterTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that RegisterTask struct implements interface interfaces.Task
@@ -22,7 +22,7 @@ var _ interfaces.ITask = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *objects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, RegisterTaskName, start, end),
 	}
 }
 
@@ -91,7 +91,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/sirupsen/logrus"
 )
 
 // ShareDistributionTask stores the data required safely distribute shares
 type ShareDistributionTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that ShareDistributionTask struct implements interface interfaces.Task
@@ -23,7 +23,7 @@ var _ interfaces.ITask = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, ShareDistributionTaskName, start, end),
 	}
 }
 
@@ -103,7 +103,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,

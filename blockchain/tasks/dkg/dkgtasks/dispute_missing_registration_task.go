@@ -3,17 +3,17 @@ package dkgtasks
 import (
 	"context"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
@@ -22,7 +22,7 @@ var _ interfaces.ITask = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, DisputeMissingRegistrationTaskName, start, end),
 	}
 }
 
@@ -55,7 +55,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
+		return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
 	}
 
 	// accuse missing validators
@@ -64,7 +64,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
+			return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
 		}
 
 		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -78,7 +78,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
+			return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -162,12 +162,12 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return nil, tasks.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
 	}
 
-	validators, err := tasks.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return nil, tasks.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)

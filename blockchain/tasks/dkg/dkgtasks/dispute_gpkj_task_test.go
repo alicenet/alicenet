@@ -24,9 +24,6 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	// currentHeight, err := eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
-	// disputeGPKjStartBlock := currentHeight + suite.dkgStates[0].PhaseLength
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
@@ -65,7 +62,7 @@ func TestGPKjDisputeNoBadGPKj(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
+		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -93,9 +90,6 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	// currentHeight, err := eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
-	// disputeGPKjStartBlock := currentHeight + suite.dkgStates[0].PhaseLength
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
@@ -147,7 +141,7 @@ func TestGPKjDispute1Invalid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
+		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -176,9 +170,6 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 	eth := suite.eth
 	dkgStates := suite.dkgStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	// currentHeight, err := eth.GetCurrentHeight(ctx)
-	// assert.Nil(t, err)
-	// disputeGPKjStartBlock := currentHeight + suite.dkgStates[0].PhaseLength
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
@@ -219,7 +210,7 @@ func TestGPKjDisputeGoodMaliciousAccusation(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _, _, _, _, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, disputePhaseAt)
+		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)

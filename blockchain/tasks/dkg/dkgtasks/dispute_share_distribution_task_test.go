@@ -120,7 +120,7 @@ func TestShareDisputeGoodMaliciousShare(t *testing.T) {
 		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		disputeShareDistributionTask, _, _, _, _, _, _, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, logger, nextPhaseAt)
+		disputeShareDistributionTask, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, nextPhaseAt)
 
 		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.eth)
 		assert.Nil(t, err)

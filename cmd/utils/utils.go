@@ -2,8 +2,8 @@ package utils
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 	"os"
 	"strings"
@@ -193,7 +193,7 @@ func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, a
 		return 1
 	}
 
-	_, rcpt, err := tasks.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err := utils.InitializeETHDKG(eth, txnOpts, ctx)
 	if err != nil {
 		logger.Errorf("could not initialize ETHDKG: %v", err)
 		return 1

@@ -1,7 +1,7 @@
-package tasks_test
+package utils_test
 
 import (
-	"github.com/MadBase/MadNet/blockchain/tasks"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 	"testing"
 
@@ -39,7 +39,7 @@ func TestIntsToBigInts(t *testing.T) {
 	bigIntsTrue = append(bigIntsTrue, big8)
 	bigIntsTrue = append(bigIntsTrue, big13)
 
-	bigInts := tasks.IntsToBigInts(ints)
+	bigInts := utils.IntsToBigInts(ints)
 	if len(bigInts) != len(bigIntsTrue) {
 		t.Fatal("Invalid return length")
 	}

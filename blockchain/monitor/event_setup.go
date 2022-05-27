@@ -69,28 +69,42 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask) {
+func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
 	eventProcessorMap["RegistrationOpened"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return dkgevents.ProcessRegistrationOpened(eth, logger, log, cdb, taskRequestChan)
 	}
-	eventProcessorMap["AddressRegistered"] = dkgevents.ProcessAddressRegistered
-	eventProcessorMap["RegistrationComplete"] = dkgevents.ProcessRegistrationComplete
-	eventProcessorMap["SharesDistributed"] = dkgevents.ProcessShareDistribution
-	eventProcessorMap["ShareDistributionComplete"] = dkgevents.ProcessShareDistributionComplete
-	eventProcessorMap["KeyShareSubmitted"] = dkgevents.ProcessKeyShareSubmitted
-	eventProcessorMap["KeyShareSubmissionComplete"] = dkgevents.ProcessKeyShareSubmissionComplete
+	eventProcessorMap["AddressRegistered"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessAddressRegistered(eth, logger, log, cdb)
+	}
+	eventProcessorMap["RegistrationComplete"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessRegistrationComplete(eth, logger, log, cdb, taskRequestChan, taskKillChan)
+	}
+	eventProcessorMap["SharesDistributed"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessShareDistribution(eth, logger, log, cdb)
+	}
+	eventProcessorMap["ShareDistributionComplete"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessShareDistributionComplete(eth, logger, log, cdb, taskRequestChan, taskKillChan)
+	}
+	eventProcessorMap["KeyShareSubmitted"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessKeyShareSubmitted(eth, logger, log, cdb)
+	}
+	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessKeyShareSubmissionComplete(eth, logger, log, cdb, taskRequestChan, taskKillChan)
+	}
 	eventProcessorMap["MPKSet"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return dkgevents.ProcessMPKSet(eth, logger, state, log, adminHandler)
+		return dkgevents.ProcessMPKSet(eth, logger, log, adminHandler, cdb, taskRequestChan, taskKillChan)
 	}
 	eventProcessorMap["ValidatorMemberAdded"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return monevents.ProcessValidatorMemberAdded(eth, logger, state, log, adminHandler)
+		return monevents.ProcessValidatorMemberAdded(eth, logger, state, log, cdb)
 	}
-	eventProcessorMap["GPKJSubmissionComplete"] = dkgevents.ProcessGPKJSubmissionComplete
+	eventProcessorMap["GPKJSubmissionComplete"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return dkgevents.ProcessGPKJSubmissionComplete(eth, logger, log, cdb, taskRequestChan, taskKillChan)
+	}
 	eventProcessorMap["ValidatorSetCompleted"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
+		return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, cdb, adminHandler)
 	}
 
 	// actually register the events
@@ -107,9 +121,9 @@ func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler i
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, taskRequestChan chan<- interfaces.ITask) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 
-	RegisterETHDKGEvents(em, cdb, adminHandler, taskRequestChan)
+	RegisterETHDKGEvents(em, cdb, adminHandler, taskRequestChan, taskKillChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()
@@ -120,7 +134,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 
 	if err := em.RegisterLocked(depositReceived.ID.String(), depositReceived.Name,
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessDepositReceived(eth, logger, state, log, cdb, depositHandler)
+			return monevents.ProcessDepositReceived(eth, logger, log, cdb, depositHandler)
 		}); err != nil {
 		return err
 	}
@@ -134,7 +148,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 
 	if err := em.RegisterLocked(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessSnapshotTaken(eth, logger, state, log, adminHandler)
+			return monevents.ProcessSnapshotTaken(eth, logger, log, adminHandler)
 		}); err != nil {
 		return err
 	}
@@ -148,7 +162,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 
 	if err := em.RegisterLocked(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
 		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)
+			return monevents.ProcessValueUpdated(eth, logger, log, cdb)
 		}); err != nil {
 		return err
 	}
@@ -160,7 +174,10 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
 	}
 
-	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, monevents.ProcessValidatorMinorSlashed); err != nil {
+	processValidatorMinorSlashedFunc := func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return monevents.ProcessValidatorMinorSlashed(eth, logger, log)
+	}
+	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
 		panic(err)
 	}
 
@@ -170,7 +187,10 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event ValidatorPool.ValidatorMajorSlashed")
 	}
 
-	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, monevents.ProcessValidatorMajorSlashed); err != nil {
+	processValidatorMajorSlashedFunc := func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return monevents.ProcessValidatorMajorSlashed(eth, logger, log)
+	}
+	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)
 	}
 

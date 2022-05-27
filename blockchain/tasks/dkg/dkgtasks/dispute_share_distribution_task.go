@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +18,7 @@ import (
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	*tasks.Task
+	*objects.Task
 }
 
 // asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
@@ -27,7 +27,7 @@ var _ interfaces.ITask = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: tasks.NewTask(state, start, end),
+		Task: objects.NewTask(state, DisputeShareDistributionTaskName, start, end),
 	}
 }
 
@@ -102,12 +102,12 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting call options: %v", err)
+		return utils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting call options: %v", err)
 	}
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return tasks.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting txn opts: %v", err)
+		return utils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting txn opts: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -123,7 +123,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
+			return utils.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
 		}
 
 		if !isValidator {
@@ -157,7 +157,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		// Accuse participant
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
-			return tasks.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
+			return utils.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
