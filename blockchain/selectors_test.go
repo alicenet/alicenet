@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSelector(t *testing.T) {
+func TestSelector_Selector(t *testing.T) {
 	sm := blockchain.NewSelectorMap()
 
 	selector := sm.Selector("fdsfds")
@@ -17,7 +17,7 @@ func TestSelector(t *testing.T) {
 	assert.NotEqual(t, []byte{0, 0, 0, 0}, selector)
 }
 
-func TestSignature(t *testing.T) {
+func TestSelector_Signature(t *testing.T) {
 	sm := blockchain.NewSelectorMap()
 
 	testSig := "fdsfds"
@@ -29,7 +29,7 @@ func TestSignature(t *testing.T) {
 	assert.Equal(t, testSig, signature)
 }
 
-func TestConcurrency(t *testing.T) {
+func TestSelector_Concurrency(t *testing.T) {
 
 	sm := blockchain.NewSelectorMap()
 	iter := 10000

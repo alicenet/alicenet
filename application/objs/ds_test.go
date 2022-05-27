@@ -1121,7 +1121,7 @@ func TestDSIsExpired(t *testing.T) {
 
 func TestDSValidateFee(t *testing.T) {
 	msg := MakeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := MakeStorage(msg)
 
 	utxo := &TXOut{}
 	err := utxo.dataStore.ValidateFee(storage)
@@ -1162,7 +1162,7 @@ func TestDSValidateFee(t *testing.T) {
 	// Set perEpochFee to 1, raising an error
 	perEpochFee32 := uint32(1)
 	msg.SetDataStoreEpochFee(big.NewInt(int64(perEpochFee32)))
-	storage = makeStorage(msg)
+	storage = MakeStorage(msg)
 	err = ds.ValidateFee(storage)
 	if err == nil {
 		t.Fatal("Should have raised an error (4)")

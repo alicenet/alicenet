@@ -1,10 +1,14 @@
 package dkgtasks
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/crypto/bn256"
 
 	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/dkg/math"
@@ -245,12 +249,27 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth interfaces.
 		logger.Error(fmt.Sprintf("MPKSubmissionTask ShouldRetry() failed getting call options: %v", err))
 		return true
 	}
-	isMPKSet, err := eth.Contracts().Ethdkg().IsMasterPublicKeySet(callOpts)
-	if err == nil && isMPKSet {
+
+	mpkHash, err := eth.Contracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
+	if err != nil {
+		return true
+	}
+
+	logger.WithField("Method", "shouldSubmitMPK").Debugf("mpkHash received")
+
+	mpkHashBin, err := bn256.MarshalBigIntSlice(taskState.MasterPublicKey[:])
+	if err != nil {
+		return true
+	}
+	mpkHashSlice := crypto.Hasher(mpkHashBin)
+
+	if bytes.Equal(mpkHash[:], mpkHashSlice) {
+		logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is different from the received")
 		return false
 	}
 
-	return !isMPKSet
+	logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is equal to the received")
+	return true
 }
 
 func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry, taskState *objects.DkgState) bool {

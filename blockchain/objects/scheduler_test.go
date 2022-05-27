@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSchedule(t *testing.T) {
+func TestScheduler_Schedule(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -33,7 +33,7 @@ func TestSchedule(t *testing.T) {
 	assert.Equal(t, 4, s.Length())
 }
 
-func TestPurge(t *testing.T) {
+func TestScheduler_Purge(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -55,7 +55,7 @@ func TestPurge(t *testing.T) {
 	assert.Equal(t, 0, s.Length())
 }
 
-func TestPurgePrior(t *testing.T) {
+func TestScheduler_PurgePrior(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -77,23 +77,7 @@ func TestPurgePrior(t *testing.T) {
 	assert.Equal(t, 1, s.Length())
 }
 
-func TestFailSchedule(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.ITask
-
-	s.Schedule(5, 15, task)
-	s.Schedule(4, 6, task)
-	s.Schedule(6, 14, task)
-	s.Schedule(14, 16, task)
-	s.Schedule(4, 16, task)
-
-	assert.Equal(t, 1, s.Length())
-}
-
-func TestFailSchedule2(t *testing.T) {
+func TestScheduler_FailSchedule2(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -107,34 +91,7 @@ func TestFailSchedule2(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFailSchedule3(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var err error
-	var task interfaces.ITask
-
-	s.Schedule(7, 15, task)
-
-	s.Schedule(15, 17, task)
-
-	assert.Nil(t, err)
-
-	s.Schedule(15, 21, task)
-
-	assert.NotNil(t, err)
-
-	s.Schedule(1, 7, task)
-
-	assert.Nil(t, err)
-
-	s.Schedule(1, 8, task)
-
-	assert.NotNil(t, err)
-}
-
-func TestFind(t *testing.T) {
+func TestScheduler_Find(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -163,7 +120,7 @@ func TestFind(t *testing.T) {
 
 }
 
-func TestFailFind(t *testing.T) {
+func TestScheduler_FailFind(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -176,7 +133,7 @@ func TestFailFind(t *testing.T) {
 	assert.Equal(t, objects.ErrNothingScheduled, err)
 }
 
-func TestFailFind2(t *testing.T) {
+func TestScheduler_FailFind2(t *testing.T) {
 	m := &objects.TypeRegistry{}
 	s := objects.NewSequentialSchedule(m, nil)
 	assert.NotNil(t, s, "Scheduler should not be nil")
@@ -189,7 +146,7 @@ func TestFailFind2(t *testing.T) {
 	assert.Equal(t, objects.ErrNothingScheduled, err)
 }
 
-func TestRemove(t *testing.T) {
+func TestScheduler_Remove(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
@@ -206,7 +163,7 @@ func TestRemove(t *testing.T) {
 	assert.Equal(t, 0, s.Length())
 }
 
-func TestFailRemove(t *testing.T) {
+func TestScheduler_FailRemove(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
@@ -227,7 +184,7 @@ func TestFailRemove(t *testing.T) {
 	assert.Equal(t, 1, s.Length())
 }
 
-func TestRetreive(t *testing.T) {
+func TestScheduler_Retreive(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
@@ -243,7 +200,7 @@ func TestRetreive(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFailRetrieve(t *testing.T) {
+func TestScheduler_FailRetrieve(t *testing.T) {
 	acct := accounts.Account{}
 	state := objects.NewDkgState(acct)
 	task := dkgtasks.NewPlaceHolder(state)
@@ -259,7 +216,7 @@ func TestFailRetrieve(t *testing.T) {
 	assert.Equal(t, objects.ErrNotScheduled, err)
 }
 
-func TestMarshal(t *testing.T) {
+func TestScheduler_Marshal(t *testing.T) {
 	task := &adminTaskMock{}
 	m := &objects.TypeRegistry{}
 	m.RegisterInstanceType(&objects.Block{})

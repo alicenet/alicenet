@@ -1,3 +1,5 @@
+//go:build integration
+
 package dkgtasks_test
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
+func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
 	n := 5
 	unsubmittedKeyShares := 4
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
@@ -74,7 +76,7 @@ func TestDisputeMissingKeySharesTaskFourUnsubmittedKeyShare_DoWork_Success(t *te
 func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
 	n := 5
 	unsubmittedKeyShares := 1
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 300)
+	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 40)
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth

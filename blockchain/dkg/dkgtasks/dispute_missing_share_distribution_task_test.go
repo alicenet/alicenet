@@ -1,3 +1,5 @@
+//go:build integration
+
 package dkgtasks_test
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{4}, []int{}, 100)
 	defer suite.eth.Close()
@@ -35,7 +37,7 @@ func TestShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
 	assert.Equal(t, uint64(1), badParticipants.Uint64())
 }
 
-func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{0, 1, 2, 3, 4}, []int{}, 100)
 	defer suite.eth.Close()
@@ -62,7 +64,7 @@ func TestShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
 	assert.Equal(t, uint64(n), badParticipants.Uint64())
 }
 
-func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
@@ -105,7 +107,7 @@ func TestShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
 
-func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_2_DisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{0}, []int{}, 100)
 	defer suite.eth.Close()
@@ -123,7 +125,7 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryTrue(t *testing.T) {
 	}
 }
 
-func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_2_DisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
 	defer suite.eth.Close()
@@ -150,7 +152,7 @@ func TestDisputeMissingShareDistributionTask_ShouldRetryFalse(t *testing.T) {
 	}
 }
 
-func TestShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBadShares(t *testing.T) {
+func TestDisputeMissingShareDistributionTask_Group_2_ShouldAccuseOneValidatorWhoDidNotDistributeSharesAndAnotherSubmittedBadShares(t *testing.T) {
 	n := 5
 	suite := StartFromShareDistributionPhase(t, n, []int{4}, []int{3}, 100)
 	defer suite.eth.Close()

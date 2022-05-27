@@ -1,3 +1,5 @@
+//go:build integration
+
 package dkgtasks_test
 
 import (
@@ -15,8 +17,12 @@ import (
 )
 
 // We complete everything correctly, happy path
-func TestCompletionAllGood(t *testing.T) {
+func TestCompletion_Group_1_AllGood(t *testing.T) {
 	n := 4
+
+	err := dtest.InitializeValidatorFiles(5)
+	assert.Nil(t, err)
+
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
 	defer suite.eth.Close()
 	ctx := context.Background()
@@ -76,7 +82,7 @@ func TestCompletionAllGood(t *testing.T) {
 	}
 }
 
-func TestCompletion_StartFromCompletion(t *testing.T) {
+func TestCompletion_Group_1_StartFromCompletion(t *testing.T) {
 	n := 4
 	suite := StartFromCompletion(t, n, 100)
 	defer suite.eth.Close()
@@ -126,7 +132,7 @@ func TestCompletion_StartFromCompletion(t *testing.T) {
 // We begin by submitting invalid information.
 // This test is meant to raise an error resulting from an invalid argument
 // for the Ethereum interface.
-func TestCompletionBad1(t *testing.T) {
+func TestCompletion_Group_2_Bad1(t *testing.T) {
 	n := 4
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
@@ -149,7 +155,7 @@ func TestCompletionBad1(t *testing.T) {
 }
 
 // We test to ensure that everything behaves correctly.
-func TestCompletionBad2(t *testing.T) {
+func TestCompletion_Group_2_Bad2(t *testing.T) {
 	n := 4
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
@@ -174,7 +180,7 @@ func TestCompletionBad2(t *testing.T) {
 }
 
 // We complete everything correctly, but we do not complete in time
-func TestCompletionBad3(t *testing.T) {
+func TestCompletion_Group_2_Bad3(t *testing.T) {
 	n := 4
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
 	defer suite.eth.Close()
@@ -225,9 +231,9 @@ func TestCompletionBad3(t *testing.T) {
 	}
 }
 
-func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
+func TestCompletion_Group_3_ShouldRetry_returnsFalse(t *testing.T) {
 	n := 4
-	suite := StartFromCompletion(t, n, 100)
+	suite := StartFromCompletion(t, n, 40)
 	defer suite.eth.Close()
 	ctx := context.Background()
 	eth := suite.eth
@@ -262,7 +268,7 @@ func TestCompletion_ShouldRetry_returnsFalse(t *testing.T) {
 	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 
-func TestCompletion_ShouldRetry_returnsTrue(t *testing.T) {
+func TestCompletion_Group_3_ShouldRetry_returnsTrue(t *testing.T) {
 	n := 4
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
 	defer suite.eth.Close()

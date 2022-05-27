@@ -1,49 +1,61 @@
+//go:build integration
+
 package monitor_test
 
-/*
-type ServicesSuite struct {
-	suite.Suite
-	eth interfaces.Ethereum
-}
+import (
+	"context"
+	"math"
+	"math/big"
+	"testing"
+	"time"
 
-func (s *ServicesSuite) SetupTest() {
-	t := s.T()
+	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
+	"github.com/stretchr/testify/assert"
+)
 
+func TestRegistrationOpenEvent(t *testing.T) {
+
+	privateKeys, _ := dtest.InitializePrivateKeysAndAccounts(4)
 	eth, err := blockchain.NewEthereumSimulator(
-		"../../assets/test/keys",
-		"../../assets/test/passcodes.txt",
-		3,
-		2*time.Second,
-		5*time.Second,
+		privateKeys,
+		6,
+		10*time.Second,
+		30*time.Second,
 		0,
-		big.NewInt(9223372036854775807),
-		"0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-		"0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64,
+		5*time.Second,
+		30*time.Second)
+	defer eth.Close()
 
 	assert.Nil(t, err, "Error creating Ethereum simulator")
-
-	s.eth = eth
-}
-
-func (s *ServicesSuite) TestRegistrationOpenEvent() {
-	t := s.T()
-	eth := s.eth
 	c := eth.Contracts()
 	assert.NotNil(t, c, "Need a *Contracts")
 
-	height, err := s.eth.GetCurrentHeight(context.TODO())
+	err = dtest.StartHardHatNode(eth)
+	if err != nil {
+		t.Fatalf("error starting hardhat node: %v", err)
+	}
+
+	t.Logf("waiting on hardhat node to start...")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = dtest.WaitForHardHatNode(ctx)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	height, err := eth.GetCurrentHeight(context.TODO())
 	assert.Nil(t, err, "could not get height")
 	assert.Equal(t, uint64(0), height, "Height should be 0")
 
-	s.eth.Commit()
+	eth.Commit()
 
-	height, err = s.eth.GetCurrentHeight(context.TODO())
+	height, err = eth.GetCurrentHeight(context.TODO())
 	assert.Nil(t, err, "could not get height")
 	assert.Equal(t, uint64(1), height, "Height should be 1")
 }
-
-func TestServicesSuite(t *testing.T) {
-	suite.Run(t, new(ServicesSuite))
-}
-
-*/

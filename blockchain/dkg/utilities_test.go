@@ -8,7 +8,7 @@ import (
 	"github.com/holiman/uint256"
 )
 
-func TestFoo(t *testing.T) {
+func TestUtilities_AddOverflow(t *testing.T) {
 	a := uint256.NewInt(4)
 	b := uint256.NewInt(6).SetAllOne()
 	c := uint256.NewInt(8)
@@ -23,7 +23,7 @@ func TestFoo(t *testing.T) {
 	t.Logf("ptr c:%p d:%p", c, d)
 }
 
-func TestIntsToBigInts(t *testing.T) {
+func TestUtilities_IntsToBigInts(t *testing.T) {
 	ints := []int{1, 2, 3, 5, 8, 13}
 	big1 := big.NewInt(1)
 	big2 := big.NewInt(2)

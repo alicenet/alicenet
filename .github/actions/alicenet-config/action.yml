@@ -13,3 +13,4 @@ runs:
       with:
         execution-folder: "./bridge"
     - uses: ./.github/actions/alicenet-cache
+    - uses: ./.github/actions/geth-eth-cache

@@ -141,6 +141,11 @@ STATUS() {
 PRE_CHECK $1
 case $1 in
     init)
+        WD=$PWD
+        BRIDGE=./bridge
+        cd $BRIDGE &&
+        npm ci &&
+        cd $WD &&
         ./scripts/base-scripts/init-githooks.sh
         CREATE_CONFIGS $2
     ;;
@@ -176,10 +181,7 @@ case $1 in
     ;;
     hardhat_node)
         ./scripts/base-scripts/hardhat_node.sh &
-        GETH_PID="$!"
-        
-        trap "trap - SIGTERM && kill -- $GETH_PID" SIGTERM SIGINT SIGKILL EXIT
-        
+        trap 'pkill -9 -f hardhat' SIGTERM
         wait
     ;;
     hardhat_local_node)

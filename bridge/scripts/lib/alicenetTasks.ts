@@ -185,6 +185,7 @@ task(
   });
 
 task("registerValidators", "registers validators")
+  .addFlag("test")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addVariadicPositionalParam(
     "addresses",
@@ -219,7 +220,14 @@ task("registerValidators", "registers validators")
     )
       .connect(admin)
       .deploy(taskArgs.factoryAddress);
-    await registrationContract.deployTransaction.wait(3);
+
+    if (taskArgs.test) {
+      await hre.network.provider.send("hardhat_mine", [
+        hre.ethers.utils.hexValue(3),
+      ]);
+    } else {
+      await registrationContract.deployTransaction.wait(3);
+    }
 
     const validatorPool = await hre.ethers.getContractAt(
       "ValidatorPool",
@@ -229,25 +237,34 @@ task("registerValidators", "registers validators")
     );
     console.log(`validatorPool Address: ${validatorPool.address}`);
     console.log("Staking validators");
-    await (
-      await factory.delegateCallAny(
-        registrationContract.address,
-        registrationContract.interface.encodeFunctionData("stakeValidators", [
-          validatorAddresses.length,
-        ])
-      )
-    ).wait(3);
+    let tx = await factory.delegateCallAny(
+      registrationContract.address,
+      registrationContract.interface.encodeFunctionData("stakeValidators", [
+        validatorAddresses.length,
+      ])
+    );
+    if (taskArgs.test) {
+      await hre.network.provider.send("hardhat_mine", [
+        hre.ethers.utils.hexValue(3),
+      ]);
+    } else {
+      await tx.wait(3);
+    }
 
     console.log("Registering validators");
-    await (
-      await factory.delegateCallAny(
-        registrationContract.address,
-        registrationContract.interface.encodeFunctionData(
-          "registerValidators",
-          [validatorAddresses]
-        )
-      )
-    ).wait(3);
+    tx = await factory.delegateCallAny(
+      registrationContract.address,
+      registrationContract.interface.encodeFunctionData("registerValidators", [
+        validatorAddresses,
+      ])
+    );
+    if (taskArgs.test) {
+      await hre.network.provider.send("hardhat_mine", [
+        hre.ethers.utils.hexValue(3),
+      ]);
+    } else {
+      await tx.wait(3);
+    }
 
     console.log("done");
   });

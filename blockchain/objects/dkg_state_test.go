@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParticipantCopy(t *testing.T) {
+func TestDKGState_ParticipantCopy(t *testing.T) {
 	p := &objects.Participant{}
 	addrBytes := make([]byte, 20)
 	addrBytes[0] = 255
@@ -46,7 +46,7 @@ func TestParticipantCopy(t *testing.T) {
 	}
 }
 
-func TestParticipantListExtractIndices(t *testing.T) {
+func TestDKGState_ParticipantListExtractIndices(t *testing.T) {
 	p1 := &objects.Participant{Index: 1}
 	p2 := &objects.Participant{Index: 2}
 	p3 := &objects.Participant{Index: 3}
@@ -65,7 +65,7 @@ func TestParticipantListExtractIndices(t *testing.T) {
 	}
 }
 
-func TestMarshalAndUnmarshalBigInt(t *testing.T) {
+func TestDKGState_MarshalAndUnmarshalBigInt(t *testing.T) {
 
 	// generate transport keys
 	priv, pub, err := math.GenerateKeys()
@@ -89,7 +89,7 @@ func TestMarshalAndUnmarshalBigInt(t *testing.T) {
 	assert.Equal(t, pub, pub2)
 }
 
-func TestMarshalAndUnmarshalAccount(t *testing.T) {
+func TestDKGState_MarshalAndUnmarshalAccount(t *testing.T) {
 	addr := common.Address{}
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 
@@ -114,7 +114,7 @@ func TestMarshalAndUnmarshalAccount(t *testing.T) {
 	assert.Equal(t, acct, *acct2)
 }
 
-func TestMarshalAndUnmarshalParticipant(t *testing.T) {
+func TestDKGState_MarshalAndUnmarshalParticipant(t *testing.T) {
 	addr := common.Address{}
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 
@@ -145,7 +145,7 @@ func TestMarshalAndUnmarshalParticipant(t *testing.T) {
 
 }
 
-func TestMarshalAndUnmarshalDkgState(t *testing.T) {
+func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 	addr := common.Address{}
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 

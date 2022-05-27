@@ -76,10 +76,6 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 		utils.DebugTrace(ce.logger, err)
 		return false, nil
 	}
-	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
-		utils.DebugTrace(ce.logger, err)
-		return false, err
-	}
 	ok, err := ce.appHandler.IsValid(txn, chainID, rs.OwnState.SyncToBH.BClaims.Height+1, stateHash, txs)
 	if err != nil {
 		e := errorz.ErrInvalid{}.New("")

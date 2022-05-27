@@ -56,6 +56,7 @@ cd $CURRENT_WD
 ./scripts/main.sh register
 
 cd $BRIDGE_DIR
+npx hardhat --network $NETWORK setMinEthereumBlocksPerSnapshot --factory-address $FACTORY_ADDRESS --block-num 10
 npx hardhat setHardhatIntervalMining --network $NETWORK
 cd $CURRENT_WD
 
