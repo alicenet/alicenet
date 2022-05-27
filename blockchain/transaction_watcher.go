@@ -72,12 +72,12 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type TransactionInfo struct {
-	ctx                     context.Context         // ctx used for calling the monitoring a certain tx
-	txn                     *types.Transaction      // Transaction object
-	selector                interfaces.FuncSelector // 4 bytes that identify the function being called by the tx
-	functionSignature       string                  // function signature as we see on the smart contracts
-	startedMonitoringHeight uint64                  // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ResponseChannel        // channel where the response will be sent
+	ctx                     context.Context                   // ctx used for calling the monitoring a certain tx
+	txn                     *types.Transaction                // Transaction object
+	selector                interfaces.FuncSelector           // 4 bytes that identify the function being called by the tx
+	functionSignature       string                            // function signature as we see on the smart contracts
+	startedMonitoringHeight uint64                            // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
+	receiptResponseChannel  *ResponseChannel[ReceiptResponse] // channel where the response will be sent
 }
 
 // Struct to keep track of the receipts
@@ -100,29 +100,22 @@ func (a *BlockInfo) Equal(b *BlockInfo) bool {
 
 // Type to do request against the tx receipt monitoring system. Ctx and response channel should be set
 type MonitorRequest struct {
-	ctx             context.Context    // tx ctx used for tx monitoring cancellation
-	txn             *types.Transaction // the transaction that should watched
-	responseChannel *ResponseChannel   // channel where we going to send the request response
+	ctx             context.Context                   // tx ctx used for tx monitoring cancellation
+	txn             *types.Transaction                // the transaction that should watched
+	responseChannel *ResponseChannel[MonitorResponse] // channel where we going to send the request response
 }
 
-// Interface to force the Response types to be passed as pointers to avoid
-// non-expected results with the sync.Once
-type IResponse interface {
-	GetTransactionHash() common.Hash
+// Constrain interface used by the Response channel generics
+type transferable interface {
+	MonitorResponse | ReceiptResponse
 }
 
 // Type that it's going to be used to reply a request
 type MonitorResponse struct {
-	txnHash                common.Hash      // Hash of the txs which this response belongs
-	err                    error            // errors that happened when processing the monitor request
-	receiptResponseChannel *ResponseChannel // non blocking channel where the result from the tx/receipt monitoring will be send
+	txnHash                common.Hash                       // Hash of the txs which this response belongs
+	err                    error                             // errors that happened when processing the monitor request
+	receiptResponseChannel *ResponseChannel[ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
 }
-
-func (mr *MonitorResponse) GetTransactionHash() common.Hash {
-	return mr.txnHash
-}
-
-var _ IResponse = &MonitorResponse{}
 
 // Response of the monitoring system
 type ReceiptResponse struct {
@@ -131,12 +124,6 @@ type ReceiptResponse struct {
 	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
 }
 
-func (rr *ReceiptResponse) GetTransactionHash() common.Hash {
-	return rr.txnHash
-}
-
-var _ IResponse = &ReceiptResponse{}
-
 // A response channel is basically a non-blocking channel that can only be
 // written and closed once. The internal channel is closed after the first
 // message is sent. Additional tries to send a message result in no-op. The
@@ -144,21 +131,21 @@ var _ IResponse = &ReceiptResponse{}
 // internal channel is full, the message is dropped and log is recorded. Only
 // first attempt to close the Response channel will result in the closing.
 // Additional calls are no-op.
-type ResponseChannel struct {
+type ResponseChannel[T transferable] struct {
 	writeOnce sync.Once
-	channel   chan IResponse // internal channel
-	isClosed  bool           // flag to check if a channel is closed or not
-	logger    *logrus.Entry  // logger using for logging error when trying to write a response more than once
+	channel   chan *T       // internal channel
+	isClosed  bool          // flag to check if a channel is closed or not
+	logger    *logrus.Entry // logger using for logging error when trying to write a response more than once
 }
 
 // Create a new response channel.
-func NewResponseChannel(logger *logrus.Entry) *ResponseChannel {
-	return &ResponseChannel{channel: make(chan IResponse, 1), logger: logger}
+func NewResponseChannel[T transferable](logger *logrus.Entry) *ResponseChannel[T] {
+	return &ResponseChannel[T]{channel: make(chan *T, 1), logger: logger}
 }
 
 // send a unique response and close the internal channel. Additional calls to
 // this function will be no-op
-func (rc *ResponseChannel) SendResponse(response IResponse) {
+func (rc *ResponseChannel[T]) SendResponse(response *T) {
 	if !rc.isClosed {
 		select {
 		case rc.channel <- response:
@@ -170,7 +157,7 @@ func (rc *ResponseChannel) SendResponse(response IResponse) {
 }
 
 // Close the internal channel. Additional calls will be no-op
-func (rc *ResponseChannel) CloseChannel() {
+func (rc *ResponseChannel[T]) CloseChannel() {
 	rc.writeOnce.Do(func() {
 		rc.isClosed = true
 		close(rc.channel)
@@ -252,7 +239,7 @@ func (b *WatcherBackend) queue(req MonitorRequest) {
 	}
 
 	txnHash := req.txn.Hash()
-	receiptResponseChannel := NewResponseChannel(b.logger)
+	receiptResponseChannel := NewResponseChannel[ReceiptResponse](b.logger)
 
 	// if we already have the records of the receipt for this tx we try to send the
 	// receipt back
@@ -570,23 +557,20 @@ func (f *TransactionWatcher) Close() {
 // transaction was accepted to be watched, a response channel is returned. The
 // response channel is where the receipt going to be sent by the tx watcher
 // backend.
-func (tw *TransactionWatcher) QueueTransaction(ctx context.Context, txn *types.Transaction) (<-chan IResponse, error) {
+func (tw *TransactionWatcher) QueueTransaction(ctx context.Context, txn *types.Transaction) (<-chan *ReceiptResponse, error) {
 	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing a transaction watcher")
-	respChannel := NewResponseChannel(tw.logger)
+	respChannel := NewResponseChannel[MonitorResponse](tw.logger)
 	defer respChannel.CloseChannel()
 	req := MonitorRequest{ctx: ctx, txn: txn, responseChannel: respChannel}
+
 	select {
 	case tw.requestChannel <- req:
 	case <-ctx.Done():
-		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled: %v", ctx.Err())}
+		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled reqChannel: %v", ctx.Err())}
 	}
 
 	select {
-	case txResponseChannel, ok := <-req.responseChannel.channel:
-		requestResponse, ok := txResponseChannel.(*MonitorResponse)
-		if !ok {
-			return nil, &ErrInvalidTransactionRequest{"invalid request response format"}
-		}
+	case requestResponse := <-req.responseChannel.channel:
 		return requestResponse.receiptResponseChannel.channel, requestResponse.err
 	case <-ctx.Done():
 		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled: %v", ctx.Err())}
@@ -594,13 +578,9 @@ func (tw *TransactionWatcher) QueueTransaction(ctx context.Context, txn *types.T
 }
 
 // function that wait for a transaction receipt. This is blocking function that will wait for a response in the input IResponse channel
-func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan IResponse) (*types.Receipt, error) {
+func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *ReceiptResponse) (*types.Receipt, error) {
 	select {
-	case resp, ok := <-receiptResponseChannel:
-		receiptResponse, ok := resp.(*ReceiptResponse)
-		if !ok {
-			return nil, &ErrInvalidTransactionRequest{"invalid request response format"}
-		}
+	case receiptResponse := <-receiptResponseChannel:
 		return receiptResponse.receipt, receiptResponse.err
 	case <-ctx.Done():
 		return nil, ctx.Err()
