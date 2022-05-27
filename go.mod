@@ -1,6 +1,6 @@
 module github.com/MadBase/MadNet
 
-go 1.17
+go 1.18
 
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
