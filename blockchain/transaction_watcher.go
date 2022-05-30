@@ -188,6 +188,11 @@ type MonitorWorkResponse struct {
 	receipt *types.Receipt // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
 }
 
+// internal struct to send configs to the transaction watcher backend service
+type TransactionWatcherConfig struct {
+	txConfirmationBlocks uint64 // number of ethereum blocks that we should wait to consider a receipt valid
+}
+
 // Backend struct used to monitor Ethereum transactions and retrieve their receipts
 type WatcherBackend struct {
 	mainCtx              context.Context                                // main context for the background services
@@ -200,6 +205,7 @@ type WatcherBackend struct {
 	knownSelectors       interfaces.SelectorMap                         // Map with signature -> name
 	logger               *logrus.Entry                                  // Logger to log messages
 	requestChannel       <-chan MonitorRequest                          // Channel used to send request to this backend service
+	configChannel        <-chan TransactionWatcherConfig                // Channel used to pass configs from the watcher to the backend service
 }
 
 func (b *WatcherBackend) Loop() {
@@ -207,6 +213,13 @@ func (b *WatcherBackend) Loop() {
 	poolingTime := time.After(constants.TxPollingTime)
 	for {
 		select {
+		case config, ok := <-b.configChannel:
+			if !ok {
+				b.logger.Debugf("config channel closed, exiting")
+				return
+			}
+			b.txConfirmationBlocks = config.txConfirmationBlocks
+
 		case req, ok := <-b.requestChannel:
 			if !ok {
 				b.logger.Debugf("request channel closed, exiting")
@@ -507,11 +520,14 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx TransactionInfo
 // transaction watcher service is responsible for check, retrieve and cache
 // transaction receipts.
 type TransactionWatcher struct {
-	backend          *WatcherBackend       // backend service responsible for check, retrieving and caching the receipts
-	logger           *logrus.Entry         // logger used to log the message for the transaction watcher
-	closeMainContext context.CancelFunc    // function used to cancel the main context in the backend service
-	requestChannel   chan<- MonitorRequest // channel used to send request to the backend service to retrieve transactions
+	backend          *WatcherBackend                 // backend service responsible for check, retrieving and caching the receipts
+	logger           *logrus.Entry                   // logger used to log the message for the transaction watcher
+	closeMainContext context.CancelFunc              // function used to cancel the main context in the backend service
+	requestChannel   chan<- MonitorRequest           // channel used to send request to the backend service to retrieve transactions
+	configChannel    chan<- TransactionWatcherConfig // channel used to send config parameters to the backend service
 }
+
+// var _ interfaces.ITransactionWatcher = &TransactionWatcher{}
 
 // Creates a new transaction watcher struct
 func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.SelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
@@ -534,6 +550,7 @@ func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.Se
 
 	transactionWatcher := &TransactionWatcher{
 		requestChannel:   requestChannel,
+		configChannel:    make(chan TransactionWatcherConfig, 10),
 		closeMainContext: cf,
 		backend:          backend,
 		logger:           logging.GetLogger("ethereum").WithField("Component", "TransactionWatcher"),
@@ -550,14 +567,23 @@ func (f *TransactionWatcher) StartLoop() {
 func (f *TransactionWatcher) Close() {
 	f.logger.Debug("closing request channel...")
 	close(f.requestChannel)
+	close(f.configChannel)
 	f.closeMainContext()
 }
 
-// Queue a transaction to be watched by the transaction watcher service. If a
+func (f *TransactionWatcher) SetNumOfConfirmationBlocks(numBlocks uint64) {
+	select {
+	case f.configChannel <- TransactionWatcherConfig{txConfirmationBlocks: numBlocks}:
+	default:
+		f.logger.Error("Failed to set transaction watcher config! Channel is full!")
+	}
+}
+
+// Subscribe a transaction to be watched by the transaction watcher service. If a
 // transaction was accepted to be watched, a response channel is returned. The
 // response channel is where the receipt going to be sent by the tx watcher
 // backend.
-func (tw *TransactionWatcher) QueueTransaction(ctx context.Context, txn *types.Transaction) (<-chan *ReceiptResponse, error) {
+func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *ReceiptResponse, error) {
 	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing a transaction watcher")
 	respChannel := NewResponseChannel[MonitorResponse](tw.logger)
 	defer respChannel.CloseChannel()
@@ -588,8 +614,8 @@ func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptRespons
 }
 
 // Queue a transaction and wait for its receipt
-func (f *TransactionWatcher) QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
-	receiptResponseChannel, err := f.QueueTransaction(ctx, txn)
+func (f *TransactionWatcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error) {
+	receiptResponseChannel, err := f.SubscribeTransaction(ctx, txn)
 	if err != nil {
 		return nil, err
 	}
