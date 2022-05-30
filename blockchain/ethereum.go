@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -77,9 +78,8 @@ func NewEthereumSimulator(
 	finalityDelay int,
 	wei *big.Int,
 	txFeePercentageToIncrease int,
-	txMaxFeeThresholdInGwei uint64,
-	txCheckFrequency time.Duration,
-	txTimeoutForReplacement time.Duration) (*EthereumDetails, error) {
+	txMaxGasFeeAllowedInGwei uint64,
+) (*EthereumDetails, error) {
 	logger := logging.GetLogger("ethereum")
 
 	if len(privateKeys) < 1 {
@@ -105,10 +105,7 @@ func NewEthereumSimulator(
 	eth.timeout = timeout
 	eth.selectors = NewKnownSelectors()
 	eth.txFeePercentageToIncrease = txFeePercentageToIncrease
-	eth.txMaxFeeThresholdInGwei = txMaxFeeThresholdInGwei
-	eth.txCheckFrequency = txCheckFrequency
-	eth.txTimeoutForReplacement = txTimeoutForReplacement
-
+	eth.txMaxGasFeeAllowedInGwei = txMaxGasFeeAllowedInGwei
 	for idx, privateKey := range privateKeys {
 		account, err := eth.keystore.ImportECDSA(privateKey, "abc123")
 		if err != nil {
@@ -143,8 +140,8 @@ func NewEthereumSimulator(
 		return nil, err
 	}
 	eth.client = client
-	eth.queue = NewTransactionWatcher(client, eth.selectors)
-	eth.queue.StartLoop()
+	eth.txWatcher = NewTransactionWatcher(client, eth.selectors, constants.DefaultFinalityDelay)
+	eth.txWatcher.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
 	eth.peerCount = func(context.Context) (uint64, error) {
@@ -258,7 +255,6 @@ func NewEthereumEndpoint(
 	timeout time.Duration,
 	retryCount int,
 	retryDelay time.Duration,
-	finalityDelay int,
 	txFeePercentageToIncrease int,
 	txMaxGasFeeAllowedInGwei uint64) (*EthereumDetails, error) {
 
@@ -636,7 +632,7 @@ func (eth *EthereumDetails) GetTxFeePercentageToIncrease() int {
 }
 
 func (eth *EthereumDetails) GetTxMaxFeeThresholdInGwei() uint64 {
-	return eth.txMaxFeeThresholdInGwei
+	return eth.txMaxGasFeeAllowedInGwei
 }
 
 func (eth *EthereumDetails) GetTxCheckFrequency() time.Duration {
@@ -684,9 +680,9 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 	}
 	feeCap := new(big.Int).Add(baseFee4x, new(big.Int).Set(tipCap))
 
-	txMaxFeeThresholdInGwei := new(big.Int).SetUint64(eth.GetTxMaxFeeThresholdInGwei())
+	txMaxGasFeeAllowedInGwei := new(big.Int).SetUint64(eth.GetTxMaxFeeThresholdInGwei())
 	// make sure that the max fee that we are going to pay on this tx doesn't pass the limit that we set on config
-	txMaxFeeThresholdInWei := new(big.Int).Mul(txMaxFeeThresholdInGwei, new(big.Int).SetUint64(1_000_000_000))
+	txMaxFeeThresholdInWei := new(big.Int).Mul(txMaxGasFeeAllowedInGwei, new(big.Int).SetUint64(1_000_000_000))
 	if feeCap.Cmp(txMaxFeeThresholdInWei) > 0 {
 		return nil, fmt.Errorf("max tx fee computed: %v is greater than limit set on config: %v", feeCap.String(), txMaxFeeThresholdInWei.String())
 	}

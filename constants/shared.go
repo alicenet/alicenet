@@ -15,39 +15,43 @@ const (
 	// MaxUint64 is 2^64-1
 	MaxUint64 uint64 = 18446744073709551615
 
-	// ETHDKGDesperationDelay is after how many Etereum blocks more validators will start being allowed. Highly dependent on EpochLength
+	// ETHDKGDesperationDelay is after how many Ethereum blocks more validators will
+	// start being allowed. Highly dependent on EpochLength
 	ETHDKGDesperationDelay int = 8
 
-	// ETHDKGDesperationFactor determines how quickly more
-	// validators will be allowed to perform unique ETHDKG
-	// actions on MPKSubmission and Completion phases.
-	// The lower this factor is, the quicker more validators
-	// are elected as leaders.
+	// ETHDKGDesperationFactor determines how quickly more validators will be
+	// allowed to perform unique ETHDKG actions on MPKSubmission and Completion
+	// phases. The lower this factor is, the quicker more validators are elected as
+	// leaders.
 	ETHDKGDesperationFactor int = 8
+
+	// Default finality delay value. Mostly used as fallback in case we cannot
+	// retrieve the current finality delay used via smart contracts.
+	DefaultFinalityDelay uint64 = 12
 )
 
 // CurveSpec specifies the particular elliptic curve we are dealing with
 type CurveSpec uint8
 
 const (
-	// CurveSecp256k1 is the constant which specifies the curve Secp256k1;
-	// this is the curve used by Ethereum
+	// CurveSecp256k1 is the constant which specifies the curve Secp256k1; this is
+	// the curve used by Ethereum
 	CurveSecp256k1 CurveSpec = iota + 1
 
-	// CurveBN256Eth is the constant which specifies the curve BN256;
-	// this is the curve used in our crypto library for pairing-based crypto
+	// CurveBN256Eth is the constant which specifies the curve BN256; this is the
+	// curve used in our crypto library for pairing-based crypto
 	CurveBN256Eth
 )
 
 const (
-	// CurveBN256EthPubkeyLen specifies the length of the public key for the
-	// curve BN256; this is the uncompressed form
+	// CurveBN256EthPubkeyLen specifies the length of the public key for the curve
+	// BN256; this is the uncompressed form
 	CurveBN256EthPubkeyLen = 128
 )
 
 const (
-	// CurveSecp256k1SigLen is the length of a Secp256k1 recoverable-ECDSA
-	// digital signature
+	// CurveSecp256k1SigLen is the length of a Secp256k1 recoverable-ECDSA digital
+	// signature
 	CurveSecp256k1SigLen int = 65
 
 	// CurveBN256EthSigLen is the length of a BN256 digital signature
@@ -55,8 +59,7 @@ const (
 )
 
 const (
-	// OwnerLen is the constant which specifies the length of accounts
-	// in bytes
+	// OwnerLen is the constant which specifies the length of accounts in bytes
 	OwnerLen int = 20
 )
 
