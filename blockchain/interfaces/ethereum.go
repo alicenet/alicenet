@@ -16,6 +16,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Response of the monitoring system
+type ReceiptResponse struct {
+	TxnHash common.Hash    // Hash of the txs which this response belongs
+	Err     error          // response error that happened during processing
+	Receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+}
+
 //Ethereum contains state information about a connection to Ethereum
 type Ethereum interface {
 
@@ -27,6 +34,7 @@ type Ethereum interface {
 	IsEthereumAccessible() bool
 
 	GetCallOpts(context.Context, accounts.Account) (*bind.CallOpts, error)
+	GetCallOptsLatestBlock(ctx context.Context, account accounts.Account) *bind.CallOpts
 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
 
 	UnlockAccount(accounts.Account) error
@@ -50,10 +58,11 @@ type Ethereum interface {
 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
 	GetValidators(context.Context) ([]common.Address, error)
+	SetFinalityDelay(uint64)
 	GetFinalityDelay() uint64
 
 	KnownSelectors() SelectorMap
-	Queue() TxnQueue
+	TransactionWatcher() ITransactionWatcher
 
 	RetryCount() int
 	RetryDelay() time.Duration
@@ -61,9 +70,7 @@ type Ethereum interface {
 	Timeout() time.Duration
 
 	GetTxFeePercentageToIncrease() int
-	GetTxMaxFeeThresholdInGwei() uint64
-	GetTxCheckFrequency() time.Duration
-	GetTxTimeoutForReplacement() time.Duration
+	GetTxMaxGasFeeAllowedInGwei() uint64
 
 	Contracts() Contracts
 }
@@ -90,9 +97,6 @@ type GethClient interface {
 	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
 
-	// bind.ContractBackend
-	// -- bind.ContractCaller
-	// CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
 
 	// -- bind.ContractTransactor
@@ -109,11 +113,12 @@ type GethClient interface {
 }
 
 type ITransactionWatcher interface {
-	Start()
+	StartLoop()
 	Close()
-	QueueTransaction(ctx context.Context, txn *types.Transaction)
-	WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
-	QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
+	SetNumOfConfirmationBlocks(numBlocks uint64)
+	SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *ReceiptResponse, error)
+	WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *ReceiptResponse) (*types.Receipt, error)
+	SubscribeAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
 	Status(ctx context.Context) error
 }
 

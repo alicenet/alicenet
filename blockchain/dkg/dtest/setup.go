@@ -405,9 +405,7 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 		0,
 		big.NewInt(math.MaxInt64),
 		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
+		math.MaxInt64)
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
 	// assert.True(t, eth.IsEthereumAccessible(), "Web3 endpoint is not available.")
@@ -468,7 +466,7 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 			eth.Close()
 			t.Fatal("could not transfer ether")
 		}
-		rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+		rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
 		assert.Nil(t, err)
 		assert.NotNil(t, rcpt)
 	}

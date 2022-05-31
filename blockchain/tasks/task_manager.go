@@ -140,7 +140,7 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 		execData.TxOpts.GasFeeCap,
 		execData.TxOpts.GasTipCap,
 		eth.GetTxFeePercentageToIncrease(),
-		eth.GetTxMaxFeeThresholdInGwei())
+		eth.GetTxMaxGasFeeAllowedInGwei())
 	execData.TxOpts.GasFeeCap = gasFeeCap
 	execData.TxOpts.GasTipCap = gasTipCap
 
@@ -181,8 +181,8 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 
 	retryCount := eth.RetryCount()
 	retryDelay := eth.RetryDelay()
-	txCheckFrequency := eth.GetTxCheckFrequency()
-	txTimeoutForReplacement := eth.GetTxTimeoutForReplacement()
+	txCheckFrequency := 1 * time.Second
+	txTimeoutForReplacement := 10 * time.Second
 	txReplacement := getTxReplacementTime(txTimeoutForReplacement)
 	taskEnd := execData.End
 

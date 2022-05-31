@@ -201,7 +201,7 @@ func SetETHDKGPhaseLength(length uint16, eth interfaces.Ethereum, callOpts *bind
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
 	}
 
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -232,7 +232,7 @@ func InitializeETHDKG(eth interfaces.Ethereum, callOpts *bind.TransactOpts, ctx 
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(validatorPool, initializeETHDKG())")
 	}
 
-	rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
+	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
 	if err != nil {
 		return nil, nil, err
 	}

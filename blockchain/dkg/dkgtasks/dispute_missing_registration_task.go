@@ -93,7 +93,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 		}).Info("missing registration dispute fees")
 
 		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
+		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing registrations")
 	}

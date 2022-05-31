@@ -184,7 +184,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}).Info("MPK submission fees")
 
 	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
+	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	t.Success = true
 
 	return nil

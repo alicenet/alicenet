@@ -95,7 +95,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 		}).Info("missing gpkj dispute fees")
 
 		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
+		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing gpkj")
 	}

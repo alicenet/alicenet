@@ -124,7 +124,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	}).Info("registering fees")
 
 	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
+	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 
 	t.Success = true
 

@@ -126,7 +126,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 	logger.Info("CompletionTask sent completed call")
 
 	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
+	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 
 	logger.Info("CompletionTask complete!")
 	t.Success = true

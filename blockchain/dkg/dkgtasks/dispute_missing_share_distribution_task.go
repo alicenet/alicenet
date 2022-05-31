@@ -93,7 +93,7 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 		}).Info("missing share dispute fees")
 
 		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
+		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing distributed shares")
 	}

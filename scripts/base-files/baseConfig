@@ -42,15 +42,12 @@ keystore = ""
 timeout = "1h"
 passcodes = ""
 testEther = "f000000000000000000"
-finalityDelay = 6
 retryCount = 10
 retryDelay = "5s"
 startingBlock = 1
 registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
 txFeePercentageToIncrease = 50
-txMaxFeeThresholdInGwei = 1000000
-txCheckFrequency = "5s"
-txTimeoutForReplacement = "30s"
+txMaxGasFeeAllowedInGwei = 500
 
 [edge]
 ethTimeout = "5s"

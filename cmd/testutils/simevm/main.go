@@ -31,9 +31,7 @@ func main() {
 		0,
 		big.NewInt(math.MaxInt64),
 		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
+		math.MaxInt64)
 
 	if err != nil {
 		panic(err)

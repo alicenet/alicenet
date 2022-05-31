@@ -172,7 +172,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		}).Info("bad share dispute fees")
 
 		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
+		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	}
 
 	t.Success = true

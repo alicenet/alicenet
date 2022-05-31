@@ -178,7 +178,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		}).Info("bad gpkj dispute fees")
 
 		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
+		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	}
 
 	t.Success = true

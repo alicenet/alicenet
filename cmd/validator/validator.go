@@ -61,7 +61,6 @@ func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keysto
 		config.Configuration.Ethereum.Timeout,
 		config.Configuration.Ethereum.RetryCount,
 		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.FinalityDelay,
 		config.Configuration.Ethereum.TxFeePercentageToIncrease,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
 
@@ -84,11 +83,38 @@ func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keysto
 	}
 	utils.LogStatus(logger.WithField("Component", "validator"), eth)
 
+	// Get confirmation delay from the smart contracts
+	finalityDelay := constants.DefaultFinalityDelay
+	ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cf()
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	if err != nil {
+		logger.Errorf("Failed to get call opts to retrieve finality delay: %v", err)
+	} else {
+		phaseLength, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+		if err != nil {
+			logger.Errorf("Failed to get finality delay from smart contracts: %v using default finality delay %v", err, finalityDelay)
+		} else {
+			newFinalityDelay := phaseLength / 4
+			if newFinalityDelay > 0 {
+				finalityDelay = uint64(newFinalityDelay)
+			} else {
+				logger.Errorf("Smart contract finality delay was not set, using default finality delay %v", finalityDelay)
+			}
+		}
+	}
+
+	eth.SetFinalityDelay(finalityDelay)
+	eth.TransactionWatcher().SetNumOfConfirmationBlocks(finalityDelay)
+	// Starting the tx watcher
+	eth.TransactionWatcher().StartLoop()
+
+	// todo: fix this
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
 			ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
-			err := eth.Queue().Status(ctx)
+			err := eth.TransactionWatcher().Status(ctx)
 			if err != nil {
 				logger.Errorf("Queue status: %v", err)
 			}

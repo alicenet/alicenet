@@ -72,12 +72,12 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type TransactionInfo struct {
-	ctx                     context.Context                   // ctx used for calling the monitoring a certain tx
-	txn                     *types.Transaction                // Transaction object
-	selector                interfaces.FuncSelector           // 4 bytes that identify the function being called by the tx
-	functionSignature       string                            // function signature as we see on the smart contracts
-	startedMonitoringHeight uint64                            // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ResponseChannel[ReceiptResponse] // channel where the response will be sent
+	ctx                     context.Context                              // ctx used for calling the monitoring a certain tx
+	txn                     *types.Transaction                           // Transaction object
+	selector                interfaces.FuncSelector                      // 4 bytes that identify the function being called by the tx
+	functionSignature       string                                       // function signature as we see on the smart contracts
+	startedMonitoringHeight uint64                                       // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
+	receiptResponseChannel  *ResponseChannel[interfaces.ReceiptResponse] // channel where the response will be sent
 }
 
 // Struct to keep track of the receipts
@@ -107,21 +107,14 @@ type MonitorRequest struct {
 
 // Constrain interface used by the Response channel generics
 type transferable interface {
-	MonitorResponse | ReceiptResponse
+	MonitorResponse | interfaces.ReceiptResponse
 }
 
 // Type that it's going to be used to reply a request
 type MonitorResponse struct {
-	txnHash                common.Hash                       // Hash of the txs which this response belongs
-	err                    error                             // errors that happened when processing the monitor request
-	receiptResponseChannel *ResponseChannel[ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
-}
-
-// Response of the monitoring system
-type ReceiptResponse struct {
-	txnHash common.Hash    // Hash of the txs which this response belongs
-	err     error          // response error that happened during processing
-	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+	txnHash                common.Hash                                  // Hash of the txs which this response belongs
+	err                    error                                        // errors that happened when processing the monitor request
+	receiptResponseChannel *ResponseChannel[interfaces.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
 }
 
 // A response channel is basically a non-blocking channel that can only be
@@ -252,12 +245,12 @@ func (b *WatcherBackend) queue(req MonitorRequest) {
 	}
 
 	txnHash := req.txn.Hash()
-	receiptResponseChannel := NewResponseChannel[ReceiptResponse](b.logger)
+	receiptResponseChannel := NewResponseChannel[interfaces.ReceiptResponse](b.logger)
 
 	// if we already have the records of the receipt for this tx we try to send the
 	// receipt back
 	if receipt, ok := b.receiptCache[txnHash]; ok {
-		receiptResponseChannel.SendResponse(&ReceiptResponse{receipt: receipt.receipt, txnHash: txnHash})
+		receiptResponseChannel.SendResponse(&interfaces.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
 	} else {
 		if _, ok := b.monitoredTxns[txnHash]; ok {
 			req.responseChannel.SendResponse(&MonitorResponse{err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
@@ -366,7 +359,7 @@ func (b *WatcherBackend) collectReceipts() {
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
-			txnInfo.receiptResponseChannel.SendResponse(&ReceiptResponse{txnHash: workResponse.txnHash, receipt: workResponse.receipt, err: workResponse.err})
+			txnInfo.receiptResponseChannel.SendResponse(&interfaces.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
 			delete(b.monitoredTxns, txnHash)
 		}
 	}
@@ -527,7 +520,7 @@ type TransactionWatcher struct {
 	configChannel    chan<- TransactionWatcherConfig // channel used to send config parameters to the backend service
 }
 
-// var _ interfaces.ITransactionWatcher = &TransactionWatcher{}
+var _ interfaces.ITransactionWatcher = &TransactionWatcher{}
 
 // Creates a new transaction watcher struct
 func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.SelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
@@ -583,7 +576,7 @@ func (f *TransactionWatcher) SetNumOfConfirmationBlocks(numBlocks uint64) {
 // transaction was accepted to be watched, a response channel is returned. The
 // response channel is where the receipt going to be sent by the tx watcher
 // backend.
-func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *ReceiptResponse, error) {
+func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *interfaces.ReceiptResponse, error) {
 	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing a transaction watcher")
 	respChannel := NewResponseChannel[MonitorResponse](tw.logger)
 	defer respChannel.CloseChannel()
@@ -604,10 +597,10 @@ func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *typ
 }
 
 // function that wait for a transaction receipt. This is blocking function that will wait for a response in the input IResponse channel
-func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *ReceiptResponse) (*types.Receipt, error) {
+func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *interfaces.ReceiptResponse) (*types.Receipt, error) {
 	select {
 	case receiptResponse := <-receiptResponseChannel:
-		return receiptResponse.receipt, receiptResponse.err
+		return receiptResponse.Receipt, receiptResponse.Err
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -620,6 +613,11 @@ func (f *TransactionWatcher) SubscribeAndWait(ctx context.Context, txn *types.Tr
 		return nil, err
 	}
 	return f.WaitTransaction(ctx, receiptResponseChannel)
+}
+
+func (f *TransactionWatcher) Status(ctx context.Context) error {
+	f.logger.Error("Status function not implemented yet")
+	return nil
 }
 
 // function to compute the max between 2 uint64

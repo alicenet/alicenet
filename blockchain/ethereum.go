@@ -42,6 +42,8 @@ var (
 
 var ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND string = "Method eth_maxPriorityFeePerGas not found"
 
+var _ interfaces.Ethereum = &EthereumDetails{}
+
 type EthereumDetails struct {
 	logger                    *logrus.Logger
 	endpoint                  string
@@ -140,7 +142,7 @@ func NewEthereumSimulator(
 		return nil, err
 	}
 	eth.client = client
-	eth.txWatcher = NewTransactionWatcher(client, eth.selectors, constants.DefaultFinalityDelay)
+	eth.txWatcher = NewTransactionWatcher(client, eth.selectors, uint64(finalityDelay))
 	eth.txWatcher.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
@@ -266,7 +268,7 @@ func NewEthereumEndpoint(
 		accounts:                  make(map[common.Address]accounts.Account),
 		keys:                      make(map[common.Address]*keystore.Key),
 		passcodes:                 make(map[common.Address]string),
-		finalityDelay:             uint64(finalityDelay),
+		finalityDelay:             constants.DefaultFinalityDelay,
 		timeout:                   timeout,
 		retryCount:                retryCount,
 		retryDelay:                retryDelay,
@@ -303,8 +305,8 @@ func NewEthereumEndpoint(
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
-	eth.transactionWatcher = NewTransactionWatcher(ethClient, eth.selectors)
-	eth.transactionWatcher.Start()
+	// instantiate but don't initiate the new txWatcher with default finality Delay.
+	eth.txWatcher = NewTransactionWatcher(ethClient, eth.selectors, constants.DefaultFinalityDelay)
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)
@@ -330,6 +332,10 @@ func NewEthereumEndpoint(
 	return eth, nil
 }
 
+func (eth *EthereumDetails) SetFinalityDelay(newFinalityDelay uint64) {
+	eth.finalityDelay = newFinalityDelay
+}
+
 func (eth *EthereumDetails) GetFinalityDelay() uint64 {
 	return eth.finalityDelay
 }
@@ -339,7 +345,7 @@ func (eth *EthereumDetails) KnownSelectors() interfaces.SelectorMap {
 }
 
 func (eth *EthereumDetails) Close() error {
-	eth.queue.Close()
+	eth.txWatcher.Close()
 	return eth.close()
 }
 
@@ -371,8 +377,8 @@ func (eth *EthereumDetails) GetPeerCount(ctx context.Context) (uint64, error) {
 	return eth.peerCount(ctx)
 }
 
-func (eth *EthereumDetails) Queue() interfaces.TxnQueue {
-	return eth.queue
+func (eth *EthereumDetails) TransactionWatcher() interfaces.ITransactionWatcher {
+	return eth.txWatcher
 }
 
 func (eth *EthereumDetails) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
@@ -631,16 +637,8 @@ func (eth *EthereumDetails) GetTxFeePercentageToIncrease() int {
 	return eth.txFeePercentageToIncrease
 }
 
-func (eth *EthereumDetails) GetTxMaxFeeThresholdInGwei() uint64 {
+func (eth *EthereumDetails) GetTxMaxGasFeeAllowedInGwei() uint64 {
 	return eth.txMaxGasFeeAllowedInGwei
-}
-
-func (eth *EthereumDetails) GetTxCheckFrequency() time.Duration {
-	return eth.txCheckFrequency
-}
-
-func (eth *EthereumDetails) GetTxTimeoutForReplacement() time.Duration {
-	return eth.txTimeoutForReplacement
 }
 
 func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
@@ -664,11 +662,11 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 
 	baseFee := block.BaseFee()
 
-	// This should give us 16 full blocks before we are priced out
-	bmi64 := int64(4)
+	// This should give us 8 full blocks before we are priced out
+	bmi64 := int64(2)
 	bm := new(big.Int).SetInt64(bmi64)
 	bf := new(big.Int).Set(baseFee)
-	baseFee4x := new(big.Int).Mul(bm, bf)
+	baseFee2x := new(big.Int).Mul(bm, bf)
 
 	tipCap, err := eth.client.SuggestGasTipCap(subCtx)
 	if err != nil {
@@ -678,9 +676,9 @@ func (eth *EthereumDetails) GetTransactionOpts(ctx context.Context, account acco
 			return nil, fmt.Errorf("could not get suggested gas tip cap: %w", err)
 		}
 	}
-	feeCap := new(big.Int).Add(baseFee4x, new(big.Int).Set(tipCap))
+	feeCap := new(big.Int).Add(baseFee2x, new(big.Int).Set(tipCap))
 
-	txMaxGasFeeAllowedInGwei := new(big.Int).SetUint64(eth.GetTxMaxFeeThresholdInGwei())
+	txMaxGasFeeAllowedInGwei := new(big.Int).SetUint64(eth.GetTxMaxGasFeeAllowedInGwei())
 	// make sure that the max fee that we are going to pay on this tx doesn't pass the limit that we set on config
 	txMaxFeeThresholdInWei := new(big.Int).Mul(txMaxGasFeeAllowedInGwei, new(big.Int).SetUint64(1_000_000_000))
 	if feeCap.Cmp(txMaxFeeThresholdInWei) > 0 {
@@ -854,28 +852,3 @@ func logAndEat(logger *logrus.Logger, err error) {
 		logger.Error(err)
 	}
 }
-
-/*
-type Updater struct {
-	err     error
-	Logger  *logrus.Logger
-	Updater *bindings.DiamondUpdateFacet
-	TxnOpts *bind.TransactOpts
-}
-
-//
-func (u *Updater) Add(signature string, facet common.Address) *types.Transaction {
-	if u.err != nil {
-		return nil
-	}
-
-	selector := CalculateSelector(signature)
-	if u.Logger != nil {
-		u.Logger.Infof("Registering %v as %x with %v", signature, selector, facet.Hex())
-	}
-
-	txn, err := u.Updater.AddFacet(u.TxnOpts, selector, facet)
-	u.err = err
-	return txn
-}
-*/

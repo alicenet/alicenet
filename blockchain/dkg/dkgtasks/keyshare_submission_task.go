@@ -132,7 +132,7 @@ func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	}).Info("key share submission fees")
 
 	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
+	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
 	t.Success = true
 
 	return nil
