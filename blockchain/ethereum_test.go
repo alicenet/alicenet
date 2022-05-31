@@ -62,9 +62,7 @@ func TestEthereum_HardhatNode(t *testing.T) {
 		0,
 		big.NewInt(math.MaxInt64),
 		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
+		math.MaxInt64)
 	defer func() {
 		err := eth.Close()
 		if err != nil {
@@ -105,18 +103,16 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	defer eth.Close()
 
 	type args struct {
-		endpoint                  string
-		pathKeystore              string
-		pathPasscodes             string
-		defaultAccount            string
-		timeout                   time.Duration
-		retryCount                int
-		retryDelay                time.Duration
-		finalityDelay             int
-		txFeePercentageToIncrease int
-		txMaxFeeThresholdInGwei   uint64
-		txCheckFrequency          time.Duration
-		txTimeoutForReplacement   time.Duration
+		endpoint                    string
+		pathKeystore                string
+		pathPasscodes               string
+		defaultAccount              string
+		timeout                     time.Duration
+		retryCount                  int
+		retryDelay                  time.Duration
+		finalityDelay               int
+		txFeePercentageToIncrease   int
+		getTxMaxGasFeeAllowedInGwei uint64
 	}
 	tests := []struct {
 		name    string
@@ -127,7 +123,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 
 		{
 			name: "Create new ethereum endpoint failing with passcode file not found",
-			args: args{"", "", "", "", 0, 0, 0, 0, 0, 0, 0, 0},
+			args: args{"", "", "", "", 0, 0, 0, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				_, ok := err.(*fs.PathError)
@@ -139,7 +135,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 		},
 		{
 			name: "Create new ethereum endpoint failing with specified account not found",
-			args: args{"", "", "../assets/test/passcodes.txt", "", 0, 0, 0, 0, 0, 0, 0, 0},
+			args: args{"", "", "../assets/test/passcodes.txt", "", 0, 0, 0, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				if !errors.Is(err, blockchain.ErrAccountNotFound) {
@@ -160,9 +156,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 				eth.RetryDelay(),
 				int(eth.GetFinalityDelay()),
 				eth.GetTxFeePercentageToIncrease(),
-				eth.GetTxMaxFeeThresholdInGwei(),
-				eth.GetTxCheckFrequency(),
-				eth.GetTxTimeoutForReplacement(),
+				eth.GetTxMaxGasFeeAllowedInGwei(),
 			},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -185,9 +179,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 				eth.RetryDelay(),
 				int(eth.GetFinalityDelay()),
 				eth.GetTxFeePercentageToIncrease(),
-				eth.GetTxMaxFeeThresholdInGwei(),
-				eth.GetTxCheckFrequency(),
-				eth.GetTxTimeoutForReplacement(),
+				eth.GetTxMaxGasFeeAllowedInGwei(),
 			},
 			want: true,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -197,8 +189,8 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := blockchain.NewEthereumEndpoint(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.finalityDelay, tt.args.txFeePercentageToIncrease, tt.args.txMaxFeeThresholdInGwei, tt.args.txCheckFrequency, tt.args.txTimeoutForReplacement)
-			if !tt.wantErr(t, err, fmt.Sprintf("NewEthereumEndpoint(%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v)", tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.finalityDelay, tt.args.txFeePercentageToIncrease, tt.args.txMaxFeeThresholdInGwei, tt.args.txCheckFrequency, tt.args.txTimeoutForReplacement)) {
+			got, err := blockchain.NewEthereumEndpoint(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)
+			if !tt.wantErr(t, err, fmt.Sprintf("NewEthereumEndpoint(%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v)", tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)) {
 				return
 			}
 			if tt.want {

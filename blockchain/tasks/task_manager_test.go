@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -145,7 +144,6 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
-	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
 	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
 	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
 	eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
@@ -172,7 +170,6 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 	task := mocks.NewMockITaskWithExecutionData(1, 100)
 
 	eth := mocks.NewMockEthereum()
-	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(5 * time.Millisecond)
 	for i := 0; i < 20; i++ {
 		eth.GethClientMock.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
 	}

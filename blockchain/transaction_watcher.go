@@ -230,7 +230,6 @@ func (b *WatcherBackend) Loop() {
 			poolingTime = time.After(constants.TxPollingTime)
 		}
 	}
-	b.logger.Debug("finished")
 }
 
 func (b *WatcherBackend) queue(req MonitorRequest) {

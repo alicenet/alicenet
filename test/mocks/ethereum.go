@@ -12,9 +12,9 @@ import (
 
 type EthereumMock struct {
 	*MockBaseEthereum
-	GethClientMock *MockGethClient
-	QueueMock      *MockTxnQueue
-	ContractsMock  *MockContracts
+	GethClientMock         *MockGethClient
+	TransactionWatcherMock *MockITransactionWatcher
+	ContractsMock          *MockContracts
 
 	ETHDKGMock           *MockIETHDKG
 	GovernanceMock       *MockIGovernance
@@ -34,18 +34,16 @@ func NewMockEthereum() *EthereumMock {
 	eth.GetCurrentHeightFunc.SetDefaultHook(func(context.Context) (uint64, error) { bh++; return bh, nil })
 	eth.GetFinalityDelayFunc.SetDefaultReturn(6)
 	eth.GetTransactionOptsFunc.SetDefaultReturn(&bind.TransactOpts{}, nil)
-	eth.GetTxCheckFrequencyFunc.SetDefaultReturn(time.Millisecond)
-	eth.GetTxTimeoutForReplacementFunc.SetDefaultReturn(10 * time.Millisecond)
 	eth.RetryCountFunc.SetDefaultReturn(3)
 	eth.RetryDelayFunc.SetDefaultReturn(time.Millisecond)
 	eth.GetTxFeePercentageToIncreaseFunc.SetDefaultReturn(50)
-	eth.GetTxMaxFeeThresholdInGweiFunc.SetDefaultReturn(1000000)
+	eth.GetTxMaxGasFeeAllowedInGweiFunc.SetDefaultReturn(500)
 
 	geth := NewMockLinkedGethClient()
 	eth.GetGethClientFunc.SetDefaultReturn(geth)
 
-	queue := NewMockLinkedQueue()
-	eth.QueueFunc.SetDefaultReturn(queue)
+	txWatcher := NewMockLinkedTransactionWatcher()
+	eth.TransactionWatcherFunc.SetDefaultReturn(txWatcher)
 
 	contracts := NewMockContracts()
 	eth.ContractsFunc.SetDefaultReturn(contracts)
@@ -75,10 +73,10 @@ func NewMockEthereum() *EthereumMock {
 	contracts.ValidatorStakingFunc.SetDefaultReturn(validatorstaking)
 
 	return &EthereumMock{
-		MockBaseEthereum: eth,
-		GethClientMock:   geth,
-		QueueMock:        queue,
-		ContractsMock:    contracts,
+		MockBaseEthereum:       eth,
+		GethClientMock:         geth,
+		TransactionWatcherMock: txWatcher,
+		ContractsMock:          contracts,
 
 		ETHDKGMock:           ethdkg,
 		GovernanceMock:       governance,
@@ -97,10 +95,10 @@ func NewMockLinkedSnapshots() *MockISnapshots {
 	return m
 }
 
-func NewMockLinkedQueue() *MockTxnQueue {
-	queue := NewMockTxnQueue()
-	queue.WaitTransactionFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
-	return queue
+func NewMockLinkedTransactionWatcher() *MockITransactionWatcher {
+	txWatcher := NewMockITransactionWatcher()
+	txWatcher.WaitTransactionFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
+	return txWatcher
 }
 
 func NewMockLinkedGethClient() *MockGethClient {

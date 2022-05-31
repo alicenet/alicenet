@@ -1,5 +1,3 @@
-//go:build integration
-
 package blockchain_test
 
 import (
@@ -17,6 +15,10 @@ func TestTransferFunds(t *testing.T) {
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
 	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
 	defer eth.Close()
+
+	finalityDelay := uint64(6)
+	eth.SetFinalityDelay(finalityDelay)
+	eth.TransactionWatcher().SetNumOfConfirmationBlocks(finalityDelay)
 
 	accounts := eth.GetKnownAccounts()
 	assert.Equal(t, n, len(accounts))
@@ -37,9 +39,9 @@ func TestTransferFunds(t *testing.T) {
 	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
 	assert.Nil(t, err)
 
-	queue := eth.Queue()
+	txWatcher := eth.TransactionWatcher()
 
-	receipt, err := queue.QueueAndWait(ctx, txn)
+	receipt, err := txWatcher.SubscribeAndWait(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, receipt)
 	assert.Equal(t, txn.Hash(), receipt.TxHash)

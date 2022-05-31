@@ -25,9 +25,7 @@ func TestRegistrationOpenEvent(t *testing.T) {
 		0,
 		big.NewInt(math.MaxInt64),
 		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
+		math.MaxInt64)
 	defer eth.Close()
 
 	assert.Nil(t, err, "Error creating Ethereum simulator")
