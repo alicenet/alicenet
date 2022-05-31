@@ -17,6 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"reflect"
 	"strings"
+	"sync"
+	"time"
 )
 
 var (
@@ -30,11 +32,11 @@ const (
 	heightToleranceBeforeRemoving uint64 = 50
 )
 
-type TaskRequest struct {
+type TaskRequestInfo struct {
 	Id        string           `json:"id"`
 	Start     uint64           `json:"start"`
 	End       uint64           `json:"end"`
-	IsRunning bool             `json:"is_running"`
+	IsRunning bool             `json:"-"`
 	Task      interfaces.ITask `json:"-"`
 }
 
@@ -47,32 +49,52 @@ type innerBlock struct {
 	Id          string
 	Start       uint64
 	End         uint64
-	IsRunning   bool
 	WrappedTask *objects.InstanceWrapper
 }
 
 type TasksScheduler struct {
-	Schedule               map[string]*TaskRequest `json:"schedule"`
-	LastHeightSeen         uint64                  `json:"last_height_seen"`
-	database               *db.Database            `json:"-"`
-	adminHandler           interfaces.AdminHandler `json:"-"`
-	marshaller             *objects.TypeRegistry   `json:"-"`
-	cancelChan             chan bool               `json:"-"`
-	lastFinalizedBlockChan <-chan uint64           `json:"-"`
-	taskRequestChan        <-chan interfaces.ITask `json:"-"`
-	taskResponseChan       chan TaskResponse       `json:"-"`
-	taskKillChan           <-chan string           `json:"-"`
-	logger                 *logrus.Entry           `json:"-"`
+	Schedule         map[string]TaskRequestInfo `json:"schedule"`
+	LastHeightSeen   uint64                     `json:"last_height_seen"`
+	eth              interfaces.Ethereum        `json:"-"`
+	database         *db.Database               `json:"-"`
+	adminHandler     interfaces.AdminHandler    `json:"-"`
+	marshaller       *objects.TypeRegistry      `json:"-"`
+	cancelChan       chan bool                  `json:"-"`
+	taskRequestChan  <-chan interfaces.ITask    `json:"-"`
+	taskResponseChan *taskResponseChan          `json:"-"`
+	taskKillChan     <-chan string              `json:"-"`
+	logger           *logrus.Entry              `json:"-"`
+}
+
+type taskResponseChan struct {
+	writeOnce sync.Once
+	trChan    chan TaskResponse
+	isClosed  bool
+}
+
+type ITaskResponseChan interface {
+	Add(TaskResponse)
+}
+
+func (tr *taskResponseChan) close() {
+	tr.writeOnce.Do(func() {
+		tr.isClosed = true
+		close(tr.trChan)
+	})
+}
+
+func (tr *taskResponseChan) Add(taskResponse TaskResponse) {
+	if !tr.isClosed {
+		tr.trChan <- taskResponse
+	}
 }
 
 type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandler, lastFinalizedBlockChan <-chan uint64, taskRequestChan <-chan interfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
+func NewTasksScheduler(database *db.Database, eth interfaces.Ethereum, adminHandler interfaces.AdminHandler, taskRequestChan <-chan interfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
 	tr := &objects.TypeRegistry{}
-
-	//TODO: refactor, import cycle not allowed. Move dkgtasks inside tasks package???
 	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
 	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
@@ -89,15 +111,15 @@ func NewTasksScheduler(database *db.Database, adminHandler interfaces.AdminHandl
 	tr.RegisterInstanceType(&other_tasks.SnapshotTask{})
 
 	s := &TasksScheduler{
-		Schedule:               make(map[string]*TaskRequest),
-		database:               database,
-		adminHandler:           adminHandler,
-		marshaller:             tr,
-		cancelChan:             make(chan bool, 1),
-		lastFinalizedBlockChan: lastFinalizedBlockChan,
-		taskRequestChan:        taskRequestChan,
-		taskResponseChan:       make(chan TaskResponse, 100),
-		taskKillChan:           taskKillChan,
+		Schedule:         make(map[string]TaskRequestInfo),
+		database:         database,
+		eth:              eth,
+		adminHandler:     adminHandler,
+		marshaller:       tr,
+		cancelChan:       make(chan bool, 1),
+		taskRequestChan:  taskRequestChan,
+		taskResponseChan: &taskResponseChan{trChan: make(chan TaskResponse, 100)},
+		taskKillChan:     taskKillChan,
 	}
 
 	logger := logging.GetLogger("tasks_scheduler").WithField("Schedule", s.Schedule)
@@ -118,8 +140,7 @@ func (s *TasksScheduler) Start() error {
 	s.logger.Info(strings.Repeat("-", 80))
 	s.logger.Infof("Current Tasks: %d", len(s.Schedule))
 	for id, task := range s.Schedule {
-		taskName, _ := objects.GetNameType(task)
-		s.logger.Infof("...ID: %s Name: %s Between: %d and %d isRunning %t", id, taskName, task.Start, task.End, task.IsRunning)
+		s.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Task.GetExecutionData().GetName(), task.Start, task.End)
 	}
 	s.logger.Info(strings.Repeat("-", 80))
 
@@ -129,6 +150,7 @@ func (s *TasksScheduler) Start() error {
 
 func (s *TasksScheduler) eventLoop() {
 	ctx, cf := context.WithCancel(context.Background())
+	processingTime := time.After(3 * time.Second)
 
 	for {
 		select {
@@ -136,9 +158,8 @@ func (s *TasksScheduler) eventLoop() {
 			s.logger.Warnf("Received cancel request for event loop.")
 			s.purge()
 			cf()
+			s.taskResponseChan.close()
 			return
-		case block := <-s.lastFinalizedBlockChan:
-			s.LastHeightSeen = block
 		case taskRequest := <-s.taskRequestChan:
 			err := s.schedule(ctx, taskRequest)
 			if err != nil {
@@ -146,27 +167,36 @@ func (s *TasksScheduler) eventLoop() {
 			}
 			err = s.PersistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
 			}
-		case taskResponse := <-s.taskResponseChan:
+		case taskResponse := <-s.taskResponseChan.trChan:
 			err := s.processTaskResponse(ctx, taskResponse)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
 			}
 			err = s.PersistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
 			}
 		case taskToKill := <-s.taskKillChan:
 			err := s.killTaskByName(ctx, taskToKill)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskToKill)
 			}
-		default:
-			toStart, expired, unresponsive := s.findTasks()
-			err := s.startTasks(ctx, toStart)
+		case <-processingTime:
+			networkCtx, networkCf := context.WithTimeout(ctx, 1*time.Second)
+			height, err := s.eth.GetCurrentHeight(networkCtx)
+			networkCf()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to processBlock %d", s.LastHeightSeen)
+				s.logger.WithError(err).Debug("Failed to retrieve the latest height from eth node")
+				continue
+			}
+			s.LastHeightSeen = height
+
+			toStart, expired, unresponsive := s.findTasks()
+			err = s.startTasks(ctx, toStart)
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to startTasks %d", s.LastHeightSeen)
 			}
 
 			err = s.killTasks(ctx, expired)
@@ -180,14 +210,13 @@ func (s *TasksScheduler) eventLoop() {
 			}
 			err = s.PersistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
 			}
 		}
 	}
 }
 
 func (s *TasksScheduler) Close() {
-	close(s.taskResponseChan)
 	s.cancelChan <- true
 }
 
@@ -208,7 +237,7 @@ func (s *TasksScheduler) schedule(ctx context.Context, task interfaces.ITask) er
 		}
 
 		id := uuid.NewRandom()
-		s.Schedule[id.String()] = &TaskRequest{Id: id.String(), Start: start, End: end, Task: task}
+		s.Schedule[id.String()] = TaskRequestInfo{Id: id.String(), Start: start, End: end, Task: task}
 	}
 	return nil
 }
@@ -231,7 +260,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse T
 	return nil
 }
 
-func (s *TasksScheduler) startTasks(ctx context.Context, tasks []*TaskRequest) error {
+func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -239,8 +268,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []*TaskRequest) e
 		s.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			taskName, _ := objects.GetNameType(task)
-			s.logger.Infof("Task name: %s is about to start", taskName)
+			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetExecutionData().GetName())
 			taskCtx, taskCancelFunc := context.WithCancel(ctx)
 			task.Task.GetExecutionData().SetContext(taskCtx, taskCancelFunc)
 			task.Task.GetExecutionData().SetId(task.Id)
@@ -265,7 +293,7 @@ func (s *TasksScheduler) killTaskByName(ctx context.Context, taskName string) er
 	}
 }
 
-func (s *TasksScheduler) killTasks(ctx context.Context, tasks []*TaskRequest) error {
+func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -281,7 +309,7 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []*TaskRequest) er
 	return nil
 }
 
-func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []*TaskRequest) error {
+func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []TaskRequestInfo) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -290,8 +318,7 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []*T
 
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			taskName, _ := objects.GetNameType(task)
-			s.logger.Infof("Task name: %s is about to be removed", taskName)
+			s.logger.Infof("Task name: %s is about to be removed", task.Task.GetExecutionData().GetName())
 
 			err := s.remove(task.Id)
 			if err != nil {
@@ -305,13 +332,13 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []*T
 }
 
 func (s *TasksScheduler) purge() {
-	s.Schedule = make(map[string]*TaskRequest)
+	s.Schedule = make(map[string]TaskRequestInfo)
 }
 
-func (s *TasksScheduler) findTasks() ([]*TaskRequest, []*TaskRequest, []*TaskRequest) {
-	toStart := make([]*TaskRequest, 0)
-	expired := make([]*TaskRequest, 0)
-	unresponsive := make([]*TaskRequest, 0)
+func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []TaskRequestInfo) {
+	toStart := make([]TaskRequestInfo, 0)
+	expired := make([]TaskRequestInfo, 0)
+	unresponsive := make([]TaskRequestInfo, 0)
 
 	for _, taskRequest := range s.Schedule {
 		if taskRequest.End != 0 && taskRequest.End+heightToleranceBeforeRemoving <= s.LastHeightSeen {
@@ -334,8 +361,8 @@ func (s *TasksScheduler) findTasks() ([]*TaskRequest, []*TaskRequest, []*TaskReq
 	return toStart, expired, unresponsive
 }
 
-func (s *TasksScheduler) findTasksByName(taskName string) []*TaskRequest {
-	tasks := make([]*TaskRequest, 0)
+func (s *TasksScheduler) findTasksByName(taskName string) []TaskRequestInfo {
+	tasks := make([]TaskRequestInfo, 0)
 
 	for _, taskRequest := range s.Schedule {
 		if taskRequest.Task.GetExecutionData().GetName() == taskName {
@@ -396,7 +423,7 @@ func (s *TasksScheduler) LoadState() error {
 		if err != nil {
 			return err
 		}
-		// TODO: Cleanup loaded obj, this is a memory / storage leak
+
 		err = json.Unmarshal(rawData, s)
 		if err != nil {
 			return err
@@ -424,7 +451,7 @@ func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		ws.Schedule[k] = &innerBlock{Id: v.Id, Start: v.Start, End: v.End, IsRunning: v.IsRunning, WrappedTask: wt}
+		ws.Schedule[k] = &innerBlock{Id: v.Id, Start: v.Start, End: v.End, WrappedTask: wt}
 	}
 
 	raw, err := json.Marshal(&ws)
@@ -445,7 +472,7 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 
 	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
 
-	s.Schedule = make(map[string]*TaskRequest)
+	s.Schedule = make(map[string]TaskRequestInfo)
 	for k, v := range aa.Schedule {
 		t, err := s.marshaller.UnwrapInstance(v.WrappedTask)
 		if err != nil {
@@ -459,7 +486,7 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 			adminClient.SetAdminHandler(s.adminHandler)
 		}
 
-		s.Schedule[k] = &TaskRequest{Id: v.Id, Start: v.Start, End: v.End, IsRunning: v.IsRunning, Task: t.(interfaces.ITask)}
+		s.Schedule[k] = TaskRequestInfo{Id: v.Id, Start: v.Start, End: v.End, Task: t.(interfaces.ITask)}
 	}
 
 	return nil

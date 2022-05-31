@@ -260,7 +260,7 @@ func LoadEthDkgState(txn *badger.Txn, logger *logrus.Entry) (*DkgState, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Cleanup loaded obj, this is a memory / storage leak
+
 	err = json.Unmarshal(rawData, ethDkgState)
 	if err != nil {
 		return nil, err

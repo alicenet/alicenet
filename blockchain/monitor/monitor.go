@@ -57,9 +57,8 @@ type monitor struct {
 	batchSize      uint64
 
 	//for communication with the TasksScheduler
-	lastFinalizedBlockChan chan<- uint64
-	taskRequestChan        chan<- interfaces.ITask
-	taskKillChan           chan<- string
+	taskRequestChan chan<- interfaces.ITask
+	taskKillChan    chan<- string
 }
 
 // NewMonitor creates a new Monitor
@@ -71,7 +70,6 @@ func NewMonitor(cdb *db.Database,
 	tickInterval time.Duration,
 	timeout time.Duration,
 	batchSize uint64,
-	lastFinalizedBlockChan chan<- uint64,
 	taskRequestChan chan<- interfaces.ITask,
 	taskKillChan chan<- string) (*monitor, error) {
 
@@ -99,23 +97,22 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	return &monitor{
-		adminHandler:           adminHandler,
-		depositHandler:         depositHandler,
-		eth:                    eth,
-		eventMap:               eventMap,
-		cdb:                    cdb,
-		db:                     db,
-		logger:                 logger,
-		tickInterval:           tickInterval,
-		timeout:                timeout,
-		cancelChan:             make(chan bool, 1),
-		statusChan:             make(chan string, 1),
-		State:                  State,
-		wg:                     wg,
-		batchSize:              batchSize,
-		lastFinalizedBlockChan: lastFinalizedBlockChan,
-		taskRequestChan:        taskRequestChan,
-		taskKillChan:           taskKillChan,
+		adminHandler:    adminHandler,
+		depositHandler:  depositHandler,
+		eth:             eth,
+		eventMap:        eventMap,
+		cdb:             cdb,
+		db:              db,
+		logger:          logger,
+		tickInterval:    tickInterval,
+		timeout:         timeout,
+		cancelChan:      make(chan bool, 1),
+		statusChan:      make(chan string, 1),
+		State:           State,
+		wg:              wg,
+		batchSize:       batchSize,
+		taskRequestChan: taskRequestChan,
+		taskKillChan:    taskKillChan,
 	}, nil
 
 }
@@ -132,7 +129,7 @@ func (mon *monitor) LoadState() error {
 		if err != nil {
 			return err
 		}
-		// TODO: Cleanup loaded obj, this is a memory / storage leak
+
 		err = json.Unmarshal(rawData, mon)
 		if err != nil {
 			return err
@@ -272,7 +269,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 				}
 			}
 
-			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB, mon.lastFinalizedBlockChan); err != nil {
+			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
@@ -311,7 +308,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func(), lastFinalizedBlockChan chan<- uint64) error {
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -402,12 +399,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		if forceExit {
 			break
 		}
-	}
-
-	//TODO: Review this logic
-	if monitorState.HighestBlockFinalized != processed {
-		//sending the lastFinalizedBlock to the TasksScheduler to process all the tasks during this block
-		lastFinalizedBlockChan <- processed
 	}
 
 	// Only after batch is processed do we update monitor State

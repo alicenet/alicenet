@@ -303,19 +303,17 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
 	// Setup tasks scheduler
-	lastFinalizedBlockChan := make(chan uint64, 100)
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	taskKillChan := make(chan string, 100)
-	defer close(lastFinalizedBlockChan)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
-	tasksScheduler := tasks.NewTasksScheduler(consDB, consAdminHandlers, lastFinalizedBlockChan, taskRequestChan, taskKillChan)
+	tasksScheduler := tasks.NewTasksScheduler(consDB, eth, consAdminHandlers, taskRequestChan, taskKillChan)
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
 	monitorTimeout := config.Configuration.Monitor.Timeout
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), lastFinalizedBlockChan, taskRequestChan, taskKillChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), taskRequestChan, taskKillChan)
 	if err != nil {
 		panic(err)
 	}
