@@ -305,7 +305,7 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 
 	var expiredTxs []common.Hash
-	var finishedTxs map[common.Hash]MonitorWorkResponse
+	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
 
 	numWorkers := min(max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
@@ -380,7 +380,7 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 
 	// being paranoic and excluding the expired receipts in another loop
-	for _, receiptTxHash := range expiredTxs {
+	for _, receiptTxHash := range expiredReceipts {
 		delete(b.receiptCache, receiptTxHash)
 	}
 
