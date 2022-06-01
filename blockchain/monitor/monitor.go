@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/monitor/events"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
+
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -31,6 +33,10 @@ var (
 	// ErrUnknownResponse only used when response to a service is not of the expected type
 	ErrUnknownResponse = errors.New("response isn't in expected form")
 )
+
+func getStateKey() []byte {
+	return []byte("monitorStateKey")
+}
 
 // Monitor describes required functionality to monitor Ethereum
 type Monitor interface {
@@ -79,7 +85,7 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan, taskKillChan)
+	err := events.SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan, taskKillChan)
 	if err != nil {
 		return nil, err
 	}
@@ -241,8 +247,8 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
 		tock := mon.tickInterval
-		bmax := max(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
-		bmin := min(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
+		bmax := utils.Max(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
+		bmin := utils.Min(mon.State.HighestBlockFinalized, mon.State.HighestBlockProcessed)
 		if !(bmax-bmin < mon.batchSize) {
 			tock = time.Millisecond * 100
 		}
@@ -323,8 +329,8 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
 	ethInSyncBefore := monitorState.EthereumInSync
 	monitorState.EndpointInSync = inSync
-	bmax := max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
-	bmin := min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
+	bmax := utils.Max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
+	bmin := utils.Min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
 	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync
 	if ethInSyncBefore != monitorState.EthereumInSync {
 		adminHandler.SetSynchronized(monitorState.EthereumInSync)
@@ -556,7 +562,7 @@ func (es *eventSorter) wrkr() {
 }
 
 func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth interfaces.Ethereum, processed uint64, lastBlock uint64) ([][]types.Log, error) {
-	numworkers := max(min((max(lastBlock, processed)-min(lastBlock, processed))/4, 128), 1)
+	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {
 		for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {
@@ -581,18 +587,4 @@ func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, 
 		la = append(la, logsO.logs)
 	}
 	return la, nil
-}
-
-func max(a uint64, b uint64) uint64 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a uint64, b uint64) uint64 {
-	if a > b {
-		return b
-	}
-	return a
 }

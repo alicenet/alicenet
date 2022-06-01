@@ -20,3 +20,7 @@ type AdminHandler interface {
 type DepositHandler interface {
 	Add(*badger.Txn, uint32, []byte, *big.Int, *aobjs.Owner) error
 }
+
+type AdminClient interface {
+	SetAdminHandler(AdminHandler)
+}
