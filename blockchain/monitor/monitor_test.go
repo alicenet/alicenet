@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	objects2 "github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 	"sync"
 	"testing"
@@ -60,7 +61,7 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 			Path:   ""}}
 	state.EthDKG.Index = 1
 	state.EthDKG.SecretValue = big.NewInt(512)
-	meAsAParticipant := &objects.Participant{
+	meAsAParticipant := &objects2.Participant{
 		Address: state.EthDKG.Account.Address,
 		Index:   state.EthDKG.Index,
 	}
@@ -89,8 +90,8 @@ func populateMonitor(state *objects.MonitorState, addr0 common.Address, EPOCH ui
 //
 type mockTask struct {
 	DoneCalled bool
-	State      *objects.DkgState
-	DkgTask    *tasks.Task
+	State      *objects2.DkgState
+	DkgTask    *objects2.Task
 }
 
 var _ interfaces.ITask = &mockTask{}
@@ -140,7 +141,7 @@ func TestMonitorPersist(t *testing.T) {
 	database.Init(rawDb)
 
 	eth := mocks.NewMockBaseEthereum()
-	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
 	assert.Nil(t, err)
 
 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
@@ -154,7 +155,7 @@ func TestMonitorPersist(t *testing.T) {
 	assert.Nil(t, err)
 
 	//
-	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
 	assert.Nil(t, err)
 
 	err = newMon.LoadState()
@@ -181,14 +182,14 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	EPOCH := uint32(1)
 
 	// Setup monitor state
-	mon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1)
+	mon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
 	assert.Nil(t, err)
 	populateMonitor(mon.State, addr0, EPOCH)
 
 	acct := eth.GetKnownAccounts()[0]
 	state := objects.NewDkgState(acct)
 	mockTsk := &mockTask{
-		DkgTask: tasks.NewTask(nil, 1, 40),
+		DkgTask: objects2.NewTask(nil, "name", 1, 40),
 	}
 	// Schedule some tasks
 	mon.State.Schedule.Schedule(1, 2, mockTsk)
@@ -203,7 +204,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 	t.Logf("RawData:%v", string(raw))
 
 	// Unmarshal
-	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1)
+	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
 	assert.Nil(t, err)
 
 	newMon.TypeRegistry.RegisterInstanceType(mockTsk)
@@ -224,7 +225,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 
 	// Compare the schedules
 	_, err = newMon.State.Schedule.Find(9)
-	assert.Equal(t, objects.ErrNothingScheduled, err)
+	assert.Equal(t, tasks.ErrNothingScheduled, err)
 
 	//
 	taskID, err := newMon.State.Schedule.Find(1)
@@ -258,7 +259,7 @@ func TestBidirectionalMarshaling(t *testing.T) {
 }
 
 func TestWrapDoNotContinue(t *testing.T) {
-	genErr := objects.ErrCanNotContinue
+	genErr := objects2.ErrCanNotContinue
 	specErr := errors.New("neutrinos")
 
 	niceErr := errors.Wrapf(genErr, "Caused by %v", specErr)
