@@ -1,11 +1,11 @@
 package accusation
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/admin"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
@@ -18,20 +18,21 @@ type Manager struct {
 	detector     *Detector
 	database     *db.Database
 	logger       *logrus.Logger
-	adminHandler *admin.Handlers
+	adminHandler interfaces.AdminHandler
 	// isSynchronized *remoteVar
 }
 
-func NewManager(database *db.Database, logger *logrus.Logger) *Manager {
+func NewManager(adminHandler interfaces.AdminHandler, database *db.Database, logger *logrus.Logger) *Manager {
 	detectorLogics := make([]detectorLogic, 0)
 	detectorLogics = append(detectorLogics, detectMultipleProposal)
 	detectorLogics = append(detectorLogics, detectDoubleSpend)
 
 	detector := NewDetector(nil, detectorLogics)
 	m := &Manager{
-		detector: detector,
-		database: database,
-		logger:   logger,
+		detector:     detector,
+		database:     database,
+		logger:       logger,
+		adminHandler: adminHandler,
 	}
 	detector.manager = m
 
@@ -49,43 +50,67 @@ func (m *Manager) Stop() {
 
 func (m *Manager) run() {
 	// poll validators' roundStates
+	var height uint32 = 1
+	var round uint32 = 1
 	for {
+		time.Sleep(10 * time.Millisecond)
 
 		// only poll data if the node is synchronized
+		// todo: can we get this without requiring the adminHandler here? maybe a remoteVar()?
 		if !m.adminHandler.IsSynchronized() {
-			time.Sleep(1 * time.Second)
+			m.logger.Infof("AccusationManager: admin.Handler is not synchronized, skipping round state poll")
 			continue
 		}
 
 		// fetch round states from DB
-		rss, err := m.fetchRoundStates()
+		rss, nextHeight, nextRound, err := m.fetchRoundStates(height, round)
 		if err != nil {
-			panic(fmt.Sprintf("AccusationManager could not poll roundStates: %v", err))
+			m.logger.Infof("AccusationManager could not poll roundStates: %v", err)
+			continue
 		}
 
-		for _, rs := range rss {
-			// send round states to detector to be processed
-			m.detector.HandleRoundState(rs)
+		if len(rss) > 0 {
+
+			m.logger.Infof("AccusationManager: polling %d roundStates at height %d and round %d", len(rss), height, round)
+
+			for _, rs := range rss {
+				// send round states to detector to be processed
+				m.detector.HandleRoundState(rs)
+			}
 		}
 
-		time.Sleep(1 * time.Second)
+		height = nextHeight
+		round = nextRound
 	}
 }
 
-func (m *Manager) fetchRoundStates() ([]*objs.RoundState, error) {
+func (m *Manager) fetchRoundStates(height uint32, round uint32) ([]*objs.RoundState, uint32, uint32, error) {
 	roundStates := make([]*objs.RoundState, 0)
 
 	err := m.database.View(func(txn *badger.Txn) error {
 		// todo: load current polling height and round from DB, to resume operations in case of a node restart
-		vs, err := m.database.GetValidatorSet(txn, 0)
+		//rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Round
+		// hdr, err := m.database.GetCommittedBlockHeader(txn, height)
+		// if err != nil {
+		// 	m.logger.Errorf("AccusationManager could not fetch committed block header: %v", err)
+		// 	return err
+		// }
+		// m.logger.Infof("AccusationManager: fetching broadcast header at height %d", hdr.BClaims.Height)
+
+		vs, err := m.database.GetValidatorSet(txn, height)
 		if err != nil {
+			//m.logger.Errorf("AccusationManager could not fetch validator set: %t %v", err, err)
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return nil
+			}
 			return err
 		}
 
 		for _, validator := range vs.Validators {
 			// todo: check if it's better to get historic or current round states
-			rs, err := m.database.GetHistoricRoundState(txn, validator.VAddr, 0, 0)
+			rs, err := m.database.GetHistoricRoundState(txn, validator.VAddr, height, round)
 			if err != nil {
+				m.logger.Errorf("AccusationManager could not fetch historic round state: %v", err)
 				return err
 			}
 
@@ -96,12 +121,20 @@ func (m *Manager) fetchRoundStates() ([]*objs.RoundState, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, height, round, err
 	}
 
 	// todo: save current polling height and round from DB, to resume operations in case of a node restart
 
-	return roundStates, nil
+	// compute next height and round
+	if round >= 4 {
+		round = 1
+		height++
+	} else {
+		round++
+	}
+
+	return roundStates, height, round, nil
 }
 
 // HandleAccusation receives an accusation, stores it in the DB and sends it to the ethereum smart contracts

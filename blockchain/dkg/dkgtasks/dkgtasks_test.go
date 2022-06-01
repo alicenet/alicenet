@@ -68,6 +68,10 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
 
+func (ah *adminHandlerMock) IsSynchronized() bool {
+	return ah.setSynchronized
+}
+
 func validator(t *testing.T, idx int, eth interfaces.Ethereum, validatorAcct accounts.Account, adminHandler *adminHandlerMock, wg *sync.WaitGroup, tr *objects.TypeRegistry) {
 	defer wg.Done()
 

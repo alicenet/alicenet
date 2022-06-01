@@ -15,6 +15,7 @@ type AdminHandler interface {
 	AddValidatorSet(*objs.ValidatorSet) error
 	RegisterSnapshotCallback(func(*objs.BlockHeader) error)
 	SetSynchronized(v bool)
+	IsSynchronized() bool
 }
 
 type DepositHandler interface {

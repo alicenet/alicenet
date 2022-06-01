@@ -12,11 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/blockchain/dkg/dtest"
-
-	"github.com/alicenet/alicenet/blockchain/dkg/dkgtasks"
-
 	aobjs "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/blockchain/dkg/dkgtasks"
+	"github.com/alicenet/alicenet/blockchain/dkg/dtest"
 	"github.com/alicenet/alicenet/blockchain/interfaces"
 	"github.com/alicenet/alicenet/blockchain/monitor"
 	"github.com/alicenet/alicenet/blockchain/objects"
