@@ -12,7 +12,7 @@ import (
 // SetupPrivateKeys computes deterministic private keys for testing
 func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
 	if (n < 1) || (n >= 256) {
-		panic("invalid number for accouts")
+		panic("invalid number for accounts")
 	}
 	secp256k1N, _ := new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
 	baseBytes := make([]byte, 32)

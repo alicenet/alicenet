@@ -218,7 +218,6 @@ func (b *WatcherBackend) Loop() {
 				b.logger.Debugf("request channel closed, exiting")
 				return
 			}
-			b.logger.Debugf("received request: %v channel open: %v", req, ok)
 			if req.responseChannel == nil {
 				b.logger.Debug("Invalid request for txn without a response channel, ignoring")
 				continue
@@ -305,7 +304,7 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 
 	var expiredTxs []common.Hash
-	var finishedTxs map[common.Hash]MonitorWorkResponse
+	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
 
 	numWorkers := min(max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
@@ -342,15 +341,25 @@ func (b *WatcherBackend) collectReceipts() {
 			// main thread was killed
 			return
 		default:
+			logEntry := b.logger.WithFields(logrus.Fields{"txn": workResponse.txnHash})
 			if workResponse.err != nil {
-				if _, ok := err.(*ErrRecoverable); !ok {
-					b.logger.Debugf("Couldn't get tx receipt for tx:%v cause: %v", workResponse.txnHash, workResponse.err)
+				if _, ok := workResponse.err.(*ErrRecoverable); !ok {
+					logEntry.Debugf("Couldn't get tx receipt, err: %v", workResponse.err)
+					finishedTxs[workResponse.txnHash] = workResponse
+				} else {
+					logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", workResponse.err)
+				}
+			} else {
+				if workResponse.receipt != nil {
+					logEntry.WithFields(
+						logrus.Fields{
+							"mined":          workResponse.receipt.BlockNumber,
+							"current height": blockInfo.height,
+						},
+					).Debug("Successfully got receipt")
+					b.receiptCache[workResponse.txnHash] = ReceiptInfo{receipt: workResponse.receipt, retrievedAtHeight: blockInfo.height}
 					finishedTxs[workResponse.txnHash] = workResponse
 				}
-			} else if workResponse.receipt != nil {
-				b.logger.Debugf("Successfully got receipt for tx:%v", workResponse.txnHash)
-				b.receiptCache[workResponse.txnHash] = ReceiptInfo{receipt: workResponse.receipt, retrievedAtHeight: blockInfo.height}
-				finishedTxs[workResponse.txnHash] = workResponse
 			}
 		}
 	}
@@ -380,7 +389,7 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 
 	// being paranoic and excluding the expired receipts in another loop
-	for _, receiptTxHash := range expiredTxs {
+	for _, receiptTxHash := range expiredReceipts {
 		delete(b.receiptCache, receiptTxHash)
 	}
 
@@ -433,6 +442,7 @@ func (w *WorkerPool) worker() {
 			monitoredTx := work.txn
 			currentHeight := work.height
 			txnHash := monitoredTx.txn.Hash()
+		Loop:
 			for i := uint64(1); i <= constants.TxWorkerMaxWorkRetries; i++ {
 				select {
 				case <-monitoredTx.ctx.Done():
@@ -450,7 +460,7 @@ func (w *WorkerPool) worker() {
 					if err != nil {
 						// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
 						if _, ok := err.(*ErrRecoverable); ok && i < constants.TxWorkerMaxWorkRetries {
-							continue
+							continue Loop
 						}
 						// send nonRecoverable errors back to main or recoverable errors after constants.TxWorkerMaxWorkRetries
 						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
@@ -459,7 +469,7 @@ func (w *WorkerPool) worker() {
 						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}
 					}
 					//should continue getting other tx work
-					break
+					break Loop
 				}
 			}
 		}
@@ -524,28 +534,32 @@ var _ interfaces.ITransactionWatcher = &TransactionWatcher{}
 // Creates a new transaction watcher struct
 func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.SelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
 	requestChannel := make(chan MonitorRequest, 100)
+	configChannel := make(chan TransactionWatcherConfig, 10)
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
+
+	logger := logging.GetLogger("txwatcher")
 
 	backend := &WatcherBackend{
 		mainCtx:              mainCtx,
 		requestChannel:       requestChannel,
 		client:               client,
-		logger:               logging.GetLogger("ethereum").WithField("Component", "TransactionWatcherBackend"),
+		logger:               logger.WithField("Component", "TransactionWatcherBackend"),
 		monitoredTxns:        make(map[common.Hash]TransactionInfo),
 		receiptCache:         make(map[common.Hash]ReceiptInfo),
 		aggregates:           make(map[interfaces.FuncSelector]TransactionProfile),
 		knownSelectors:       selectMap,
 		lastProcessedBlock:   &BlockInfo{0, common.HexToHash("")},
 		txConfirmationBlocks: txConfirmationBlocks,
+		configChannel:        configChannel,
 	}
 
 	transactionWatcher := &TransactionWatcher{
 		requestChannel:   requestChannel,
-		configChannel:    make(chan TransactionWatcherConfig, 10),
+		configChannel:    configChannel,
 		closeMainContext: cf,
 		backend:          backend,
-		logger:           logging.GetLogger("ethereum").WithField("Component", "TransactionWatcher"),
+		logger:           logger.WithField("Component", "TransactionWatcher"),
 	}
 	return transactionWatcher
 }
@@ -576,7 +590,7 @@ func (f *TransactionWatcher) SetNumOfConfirmationBlocks(numBlocks uint64) {
 // response channel is where the receipt going to be sent by the tx watcher
 // backend.
 func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *interfaces.ReceiptResponse, error) {
-	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Queueing a transaction watcher")
+	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
 	respChannel := NewResponseChannel[MonitorResponse](tw.logger)
 	defer respChannel.CloseChannel()
 	req := MonitorRequest{ctx: ctx, txn: txn, responseChannel: respChannel}

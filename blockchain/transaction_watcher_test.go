@@ -2,18 +2,32 @@ package blockchain_test
 
 import (
 	"context"
+	"math"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain"
 	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
+	"github.com/MadBase/MadNet/logging"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTransferFunds(t *testing.T) {
-	n := 4
+	logger := logging.GetLogger("txwatcher")
+	logger.SetLevel(logrus.TraceLevel)
+	n := 2
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 100*time.Millisecond)
+	eth, err := blockchain.NewEthereumSimulator(
+		ecdsaPrivateKeys,
+		6,
+		10*time.Second,
+		30*time.Second,
+		0,
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64)
 	defer eth.Close()
 
 	finalityDelay := uint64(6)
