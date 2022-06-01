@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
 	"io/fs"
 	"math"
 	"math/big"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"

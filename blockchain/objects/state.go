@@ -31,24 +31,7 @@ type MonitorState struct {
 	PeerCount              uint32                  `json:"peerCount"`
 	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
 	Validators             map[uint32][]Validator  `json:"validators"`
-	Schedule               *SequentialSchedule     `json:"schedule"`
-	EthDKG                 *DkgState               `json:"ethDKG"`
 }
-
-// EthDKGPhase is used to indicate what phase we are currently in
-type EthDKGPhase uint8
-
-// These are the valid phases of ETHDKG
-const (
-	RegistrationOpen EthDKGPhase = iota
-	ShareDistribution
-	DisputeShareDistribution
-	KeyShareSubmission
-	MPKSubmission
-	GPKJSubmission
-	DisputeGPKJSubmission
-	Completion
-)
 
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {
@@ -71,10 +54,8 @@ type Share struct {
 	EncryptedShares []*big.Int
 }
 
-func NewMonitorState(dkgState *DkgState, schedule *SequentialSchedule) *MonitorState {
+func NewMonitorState() *MonitorState {
 	return &MonitorState{
-		EthDKG:        dkgState,
-		Schedule:      schedule,
 		ValidatorSets: make(map[uint32]ValidatorSet),
 		Validators:    make(map[uint32][]Validator),
 	}
@@ -95,7 +76,7 @@ func (s *MonitorState) String() string {
 // Clone builds a deep copy of a small portion of state
 // TODO Make this create a complete clone of state
 func (s *MonitorState) Clone() *MonitorState {
-	ns := NewMonitorState(s.EthDKG, s.Schedule)
+	ns := NewMonitorState()
 
 	ns.CommunicationFailures = s.CommunicationFailures
 	ns.EthereumInSync = s.EthereumInSync

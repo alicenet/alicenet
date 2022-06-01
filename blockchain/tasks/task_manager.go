@@ -3,15 +3,15 @@ package tasks
 import (
 	"context"
 	"errors"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -128,7 +128,7 @@ func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 	return err
 }
 
-func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, execData *Task, retryCount int, retryDelay time.Duration) error {
+func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, execData *objects.Task, retryCount int, retryDelay time.Duration) error {
 	logger.WithFields(logrus.Fields{
 		"GasFeeCap": execData.TxOpts.GasFeeCap,
 		"GasTipCap": execData.TxOpts.GasTipCap,
@@ -136,7 +136,7 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 	}).Info("retryTaskWithFeeReplacementFrom")
 
 	// increase gas and tip cap
-	gasFeeCap, gasTipCap := dkg.IncreaseFeeAndTipCap(
+	gasFeeCap, gasTipCap := utils.IncreaseFeeAndTipCap(
 		execData.TxOpts.GasFeeCap,
 		execData.TxOpts.GasTipCap,
 		eth.GetTxFeePercentageToIncrease(),
@@ -169,14 +169,14 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask) error {
 	// TxOpts or TxHash are empty means that no tx was queued, this could happen
 	// if there's nobody to accuse during the dispute
-	execData, ok := task.GetExecutionData().(*Task)
+	execData, ok := task.GetExecutionData().(*objects.Task)
 	if !ok || execData.TxOpts == nil || execData.TxOpts.TxHashes == nil || len(execData.TxOpts.TxHashes) == 0 {
 		return nil
 	}
 
 	currentBlock, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
+		return utils.LogReturnErrorf(logger, "failed to get current height %v", err)
 	}
 
 	retryCount := eth.RetryCount()
@@ -211,7 +211,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 
 			isTxConfirmed, err = waitForFinalityDelay(ctx, logger, eth, execData.TxOpts.TxHashes, eth.GetFinalityDelay(), execData.TxOpts.MinedInBlock, txCheckFrequency)
 			if err != nil {
-				return dkg.LogReturnErrorf(logger, "failed to retry task with error %v", err)
+				return utils.LogReturnErrorf(logger, "failed to retry task with error %v", err)
 			}
 			if isTxConfirmed {
 				logger.Infof("the tx %s is confirmed %t on height %d", execData.TxOpts.GetHexTxsHashes(), isTxMined, currentBlock)
@@ -221,7 +221,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 			// if Tx wasn't confirmed after being mined we execute task again
 			err = executeTask(ctx, logger, eth, task, retryCount, retryDelay)
 			if err != nil {
-				return dkg.LogReturnErrorf(logger, "failed to retry task with error %v", err)
+				return utils.LogReturnErrorf(logger, "failed to retry task with error %v", err)
 			}
 			// set new Tx replacement time
 			txReplacement = getTxReplacementTime(txTimeoutForReplacement)
@@ -234,7 +234,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 
 				err = retryTaskWithFeeReplacement(ctx, logger, eth, task, execData, retryCount, retryDelay)
 				if err != nil {
-					return dkg.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
+					return utils.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
 				}
 				// set new Tx replacement time
 				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
@@ -245,7 +245,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 				clearTxOpts(task)
 				err = retryTask(ctx, logger, eth, task, retryCount, retryDelay)
 				if err != nil {
-					return dkg.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
+					return utils.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
 				}
 				// set new Tx replacement time
 				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
@@ -255,7 +255,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 		//update the currentBlock
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		if err != nil {
-			return dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
+			return utils.LogReturnErrorf(logger, "failed to get current height %v", err)
 		}
 	}
 
@@ -285,7 +285,7 @@ func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfa
 		//update the currentBlock
 		currentBlock, err = eth.GetCurrentHeight(ctx)
 		if err != nil {
-			return false, dkg.LogReturnErrorf(logger, "failed to get current height %v", err)
+			return false, utils.LogReturnErrorf(logger, "failed to get current height %v", err)
 		}
 	}
 
@@ -337,7 +337,7 @@ func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
 }
 
 func clearTxOpts(task interfaces.ITask) {
-	execData, ok := task.GetExecutionData().(*Task)
+	execData, ok := task.GetExecutionData().(*objects.Task)
 	if ok && execData != nil {
 		execData.ClearTxData()
 	}

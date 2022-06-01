@@ -172,6 +172,12 @@ type ITaskExecutionData interface {
 	Lock()
 	Unlock()
 	ClearTxData()
+	GetStart() uint64
+	GetEnd() uint64
+	GetName() string
+	SetId(string)
+	SetContext(ctx context.Context, cancel context.CancelFunc)
+	Close()
 }
 
 type AdminClient interface {

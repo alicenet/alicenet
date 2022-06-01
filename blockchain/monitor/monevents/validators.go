@@ -3,12 +3,15 @@ package monevents
 import (
 	"bytes"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/dgraph-io/badger/v2"
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
+	dkg_obj "github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -16,7 +19,7 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
+func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database,
 	adminHandler interfaces.AdminHandler) error {
 
 	c := eth.Contracts()
@@ -63,24 +66,46 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	}
 	updatedState.ValidatorSets[epoch] = vs
 
-	err = checkValidatorSet(updatedState, epoch, logger, adminHandler)
+	err = checkValidatorSet(updatedState, epoch, logger, cdb, adminHandler)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
-		"Phase": state.EthDKG.Phase,
-	}).Infof("Purging schedule")
-	state.Schedule.Purge()
+	//TODO: remove all the EthDKG tasks
+	//logger.WithFields(logrus.Fields{
+	//	"Phase": state.EthDKG.Phase,
+	//}).Infof("Purging schedule")
+	//state.Schedule.Purge()
 
-	state.EthDKG.OnCompletion()
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := dkg_obj.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		dkgState.OnCompletion()
+
+		err = dkg_obj.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err = cdb.Sync(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	adminHandler interfaces.AdminHandler) error {
+func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database) error {
 
 	state.Lock()
 	defer state.Unlock()
@@ -103,22 +128,43 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 
-	// sanity check
-	if v.Account == state.EthDKG.Account.Address &&
-		state.EthDKG.Participants[event.Account].GPKj[0] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[1] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[2] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[3] != nil &&
-		(state.EthDKG.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+	err = cdb.Update(func(txn *badger.Txn) error {
+		dkgState, err := dkg_obj.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
 
-		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
+		// sanity check
+		if v.Account == dkgState.Account.Address &&
+			dkgState.Participants[event.Account].GPKj[0] != nil &&
+			dkgState.Participants[event.Account].GPKj[1] != nil &&
+			dkgState.Participants[event.Account].GPKj[2] != nil &&
+			dkgState.Participants[event.Account].GPKj[3] != nil &&
+			(dkgState.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
+				dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
+				dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
+				dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+
+			return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
+		}
+
+		// state update
+		dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
+		err = dkg_obj.PersistEthDkgState(txn, logger, dkgState)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessValidatorMemberAdded: %v", err)
 	}
 
-	// state update
-	state.EthDKG.OnGPKjSubmitted(event.Account, v.SharedKey)
+	if err = cdb.Sync(); err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessValidatorMemberAdded: %v", err)
+	}
 
 	if len(state.Validators[epoch]) < int(participantIndex) {
 		newValList := make([]objects.Validator, int(participantIndex))
@@ -144,7 +190,7 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 	return nil
 }
 
-func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus.Entry, adminHandler interfaces.AdminHandler) error {
+func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus.Entry, cdb *db.Database, adminHandler interfaces.AdminHandler) error {
 
 	logger = logger.WithField("Epoch", epoch)
 
@@ -160,9 +206,24 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 		logger.Warnf("No ValidatorMember received for epoch")
 	}
 
+	dkgState := &dkg_obj.DkgState{}
+	var err error
+	err = cdb.View(func(txn *badger.Txn) error {
+		dkgState, err = dkg_obj.LoadEthDkgState(txn, logger)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on checkValidatorSet: %v", err)
+	}
+
 	// See how many validator members we've seen and how many we expect
 	receivedCount := len(validators)
-	expectedCount := int(state.EthDKG.NumberOfValidators)
+	expectedCount := dkgState.NumberOfValidators
 
 	// Log validator set status
 	logger.WithFields(logrus.Fields{

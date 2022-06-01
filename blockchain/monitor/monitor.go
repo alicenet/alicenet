@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -53,10 +52,13 @@ type monitor struct {
 	logger         *logrus.Entry
 	cancelChan     chan bool
 	statusChan     chan string
-	TypeRegistry   *objects.TypeRegistry
 	State          *objects.MonitorState
 	wg             *sync.WaitGroup
 	batchSize      uint64
+
+	//for communication with the TasksScheduler
+	taskRequestChan chan<- interfaces.ITask
+	taskKillChan    chan<- string
 }
 
 // NewMonitor creates a new Monitor
@@ -67,69 +69,50 @@ func NewMonitor(cdb *db.Database,
 	eth interfaces.Ethereum,
 	tickInterval time.Duration,
 	timeout time.Duration,
-	batchSize uint64) (*monitor, error) {
+	batchSize uint64,
+	taskRequestChan chan<- interfaces.ITask,
+	taskKillChan chan<- string) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
 		"Timeout":  timeout.String(),
 	})
 
-	// Type registry is used to bidirectionally map a type name string to it's reflect.Type
-	// -- This lets us use a wrapper class and unmarshal something where we don't know its type
-	//    in advance.
-	tr := &objects.TypeRegistry{}
-
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyshareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&tasks.SnapshotTask{})
-
 	eventMap := objects.NewEventMap()
-	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler)
+	err := SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan, taskKillChan)
 	if err != nil {
 		return nil, err
 	}
 
 	wg := new(sync.WaitGroup)
+	State := objects.NewMonitorState()
 
-	schedule := objects.NewSequentialSchedule(tr, adminHandler)
-	dkgState := objects.NewDkgState(eth.GetDefaultAccount())
-	State := objects.NewMonitorState(dkgState, schedule)
-
+	//TODO: What to do with this after adding the new TasksScheduler???
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(ctx, wg, eth, logger, bh, cdb, schedule)
+		return PersistSnapshot(eth, bh, taskRequestChan, ctx, cf)
 	})
 
 	return &monitor{
-		adminHandler:   adminHandler,
-		depositHandler: depositHandler,
-		eth:            eth,
-		eventMap:       eventMap,
-		cdb:            cdb,
-		db:             db,
-		TypeRegistry:   tr,
-		logger:         logger,
-		tickInterval:   tickInterval,
-		timeout:        timeout,
-		cancelChan:     make(chan bool, 1),
-		statusChan:     make(chan string, 1),
-		State:          State,
-		wg:             wg,
-		batchSize:      batchSize,
+		adminHandler:    adminHandler,
+		depositHandler:  depositHandler,
+		eth:             eth,
+		eventMap:        eventMap,
+		cdb:             cdb,
+		db:              db,
+		logger:          logger,
+		tickInterval:    tickInterval,
+		timeout:         timeout,
+		cancelChan:      make(chan bool, 1),
+		statusChan:      make(chan string, 1),
+		State:           State,
+		wg:              wg,
+		batchSize:       batchSize,
+		taskRequestChan: taskRequestChan,
+		taskKillChan:    taskKillChan,
 	}, nil
 
 }
@@ -146,7 +129,7 @@ func (mon *monitor) LoadState() error {
 		if err != nil {
 			return err
 		}
-		// TODO: Cleanup loaded obj, this is a memory / storage leak
+
 		err = json.Unmarshal(rawData, mon)
 		if err != nil {
 			return err
@@ -244,12 +227,6 @@ func (mon *monitor) Start() error {
 	logger.Infof("...Highest block processed: %v", mon.State.HighestBlockProcessed)
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
 	logger.Info(strings.Repeat("-", 80))
-	logger.Infof("Current Tasks: %v", len(mon.State.Schedule.Ranges))
-	for id, block := range mon.State.Schedule.Ranges {
-		taskName, _ := objects.GetNameType(block.Task)
-		logger.Infof("...ID: %v Name: %v Between: %v and %v", id, taskName, block.Start, block.End)
-	}
-	logger.Info(strings.Repeat("-", 80))
 
 	mon.cancelChan = make(chan bool)
 	mon.wg.Add(1)
@@ -315,8 +292,6 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 func (m *monitor) MarshalJSON() ([]byte, error) {
 	m.State.RLock()
 	defer m.State.RUnlock()
-	m.State.EthDKG.RLock()
-	defer m.State.EthDKG.RUnlock()
 	rawData, err := json.Marshal(m.State)
 
 	if err != nil {
@@ -328,13 +303,6 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 
 func (m *monitor) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, m.State)
-	if err != nil {
-		if m.State.Schedule != nil {
-			m.State.Schedule.Initialize(m.TypeRegistry, m.adminHandler)
-			// TODO: VERIFY ALL TASKS SHOULD NOT BE RE-STARTED HERE
-			return nil
-		}
-	}
 	return err
 }
 
@@ -416,8 +384,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 
 	for i := 0; i < len(logsList); i++ {
 		currentBlock++
-		logEntry := logger.WithField("Block", currentBlock)
-
 		logs := logsList[i]
 
 		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
@@ -429,55 +395,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			forceExit = true
 		}
 
-		// Check if any tasks are scheduled
-		logEntry.Debug("Looking for scheduled task")
-		uuid, err := monitorState.Schedule.Find(currentBlock)
-		if err == nil {
-			isRunning, err := monitorState.Schedule.IsRunning(uuid)
-			if err != nil {
-				return err
-			}
-
-			if !isRunning {
-
-				task, err := monitorState.Schedule.Retrieve(uuid)
-				if err != nil {
-					return err
-				}
-
-				taskName, _ := objects.GetNameType(task)
-
-				log := logEntry.WithFields(logrus.Fields{
-					"TaskID":   uuid.String(),
-					"TaskName": taskName})
-
-				onFinishCB := func() {
-					err := monitorState.Schedule.SetRunning(uuid, false)
-					if err != nil {
-						logEntry.WithError(err).Error("Failed to set task to not running")
-					}
-					err = monitorState.Schedule.Remove(uuid)
-					if err != nil {
-						logEntry.WithError(err).Error("Failed to remove task from schedule")
-					}
-				}
-				err = tasks.StartTask(log, wg, eth, task, persistMonitorCB, onFinishCB)
-				if err != nil {
-					return err
-				}
-				err = monitorState.Schedule.SetRunning(uuid, true)
-				if err != nil {
-					return err
-				}
-			}
-
-		} else if err == objects.ErrNothingScheduled {
-			logEntry.Debug("No tasks scheduled")
-		} else {
-			logEntry.Warnf("Error retrieving scheduled task: %v", err)
-		}
 		processed = currentBlock
-
 		if forceExit {
 			break
 		}
@@ -516,15 +434,12 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(ctx context.Context, wg *sync.WaitGroup, eth interfaces.Ethereum, logger *logrus.Entry, bh *objs.BlockHeader, db *db.Database, scheduler *objects.SequentialSchedule) error {
-
+func PersistSnapshot(eth interfaces.Ethereum, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
-
-	task := tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0)
-
-	scheduler.Schedule(0, 0, task)
+	snapshotTask := other_tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
+	taskRequestChan <- snapshotTask
 
 	return nil
 }
