@@ -19,6 +19,7 @@ import (
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus"
+	"github.com/alicenet/alicenet/consensus/accusation"
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/dman"
@@ -319,6 +320,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
 
+	// setup Accusation Manager
+	accusationManager := accusation.NewManager(consAdminHandlers, consDB, logging.GetLogger("accusations"))
+
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -353,6 +357,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	go consGossipHandlers.Start()
 	defer consGossipHandlers.Close()
+
+	go accusationManager.Start()
+	defer accusationManager.Stop()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////
