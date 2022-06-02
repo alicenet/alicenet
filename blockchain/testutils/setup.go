@@ -7,7 +7,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+
 	ethereumInterface "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -31,10 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 )
-
-type nullWriter struct{}
-
-func (nullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
 
 // SetupPrivateKeys computes deterministic private keys for testing
 func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
@@ -311,8 +308,8 @@ func setCommandStdOut(cmd *exec.Cmd) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	} else {
-		cmd.Stdout = nullWriter{}
-		cmd.Stderr = nullWriter{}
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
 	}
 }
 
