@@ -1,16 +1,15 @@
-package objects_test
+package objects
 
 import (
 	"encoding/json"
-	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func createState() *objects.MonitorState {
+func createState() *MonitorState {
 
-	ms := &objects.MonitorState{
+	ms := &MonitorState{
 		Version:                0,
 		HighestBlockProcessed:  614,
 		HighestBlockFinalized:  911,
@@ -18,14 +17,14 @@ func createState() *objects.MonitorState {
 		HighestEpochSeen:       10,
 		LatestDepositProcessed: 1,
 		LatestDepositSeen:      5,
-		ValidatorSets:          map[uint32]objects.ValidatorSet{},
-		Validators:             map[uint32][]objects.Validator{614: {{Index: 7}}},
+		ValidatorSets:          map[uint32]ValidatorSet{},
+		Validators:             map[uint32][]Validator{614: {{Index: 7}}},
 	}
 
 	return ms
 }
 
-func assertStateMatch(t *testing.T, ms *objects.MonitorState) {
+func assertStateMatch(t *testing.T, ms *MonitorState) {
 	// Make sure the new struct looks like the old struct
 	assert.Equal(t, uint64(614), ms.HighestBlockProcessed)
 	assert.Equal(t, uint64(911), ms.HighestBlockFinalized)
@@ -52,7 +51,7 @@ func TestBidirectionalJson(t *testing.T) {
 	t.Logf("raw:%v", string(raw))
 
 	// Decode the bytes
-	ms2 := &objects.MonitorState{}
+	ms2 := &MonitorState{}
 	err = json.Unmarshal(raw, ms2)
 	assert.Nilf(t, err, "Should be no errors unmarshalling data")
 

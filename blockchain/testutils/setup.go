@@ -464,7 +464,7 @@ func RegisterValidators(eth *ethereum.EthereumDetails, validatorAddresses []stri
 	return nil
 }
 
-func advanceTo(t *testing.T, eth ethereumInterface.IEthereum, target uint64) {
+func AdvanceTo(t *testing.T, eth ethereumInterface.IEthereum, target uint64) {
 	currentBlock, err := eth.GetCurrentHeight(context.Background())
 	if err != nil {
 		panic(err)

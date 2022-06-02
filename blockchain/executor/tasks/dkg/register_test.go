@@ -4,6 +4,11 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/monitor/events"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 	"time"
@@ -16,7 +21,7 @@ import (
 
 func TestRegisterTask_Group_1_Task(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 
 	//This shouldn't be needed
 	//tr := &objects.TypeRegistry{}
@@ -24,7 +29,7 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -52,19 +57,19 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 	)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err = utils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err = dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
-	_, rcpt, err = utils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -74,11 +79,11 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 
 	//logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	// callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
-	_, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	_, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		acct,
 		openEvent.StartBlock.Uint64(),
 		openEvent.PhaseLength.Uint64(),
@@ -101,9 +106,9 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 // This test calls Initialize and DoWork.
 func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	n := 6
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -116,18 +121,18 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err := utils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	txn, rcpt, err := dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
-	txn, rcpt, err = utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	txn, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
-	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -137,15 +142,15 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
 	tasksVec := make([]*RegisterTask, n)
-	dkgStates := make([]*dkgObjects.DkgState, n)
+	dkgStates := make([]*state.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
-		state, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+		state, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 			accounts[idx],
 			event.StartBlock.Uint64(),
 			event.PhaseLength.Uint64(),
@@ -179,7 +184,7 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 		if (publicKey[0].Cmp(p.PublicKey[0]) != 0) || (publicKey[1].Cmp(p.PublicKey[1]) != 0) {
 			t.Fatal("Invalid public key")
 		}
-		if p.Phase != uint8(objects.RegistrationOpen) {
+		if p.Phase != uint8(state.RegistrationOpen) {
 			t.Fatal("Invalid participant phase")
 		}
 
@@ -190,9 +195,9 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 // This should raise an error and not allow that participant to proceed.
 func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -203,14 +208,14 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = utils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -220,11 +225,11 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
-	state, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	state, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		accounts[0],
 		event.StartBlock.Uint64(),
 		event.PhaseLength.Uint64(),
@@ -250,9 +255,9 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 // This should raise an error and not allow that participant to proceed.
 func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	n := 7
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -262,14 +267,14 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = utils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -279,11 +284,11 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
-	state, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	state, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		accounts[0],
 		event.StartBlock.Uint64(),
 		event.PhaseLength.Uint64(),
@@ -307,9 +312,9 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 // The initialization should fail because we dont allow less than 4 validators
 func TestRegisterTask_Group_2_Bad4(t *testing.T) {
 	n := 3
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -325,11 +330,11 @@ func TestRegisterTask_Group_2_Bad4(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = utils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, _, err = utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, _, err = dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.NotNil(t, err)
 }
 
@@ -338,9 +343,9 @@ func TestRegisterTask_Group_2_Bad4(t *testing.T) {
 // This should raise an error.
 func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	assert.NotNil(t, eth)
 	defer eth.Close()
 
@@ -350,19 +355,19 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = utils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// Do share distribution; afterward, we confirm who is valid and who is not
-	advanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
+	testutils.AdvanceTo(t, eth, event.StartBlock.Uint64()+event.PhaseLength.Uint64())
 
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
@@ -370,11 +375,11 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
-	_, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	_, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		accounts[0],
 		event.StartBlock.Uint64(),
 		event.PhaseLength.Uint64(),
@@ -394,7 +399,7 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 // ShouldRetry() return false because the registration was successful
 func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
@@ -405,7 +410,7 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -432,31 +437,31 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	// )
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err := utils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err := dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Start EthDKG
-	_, rcpt, err = utils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
-	_, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	_, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		accounts[0],
 		openEvent.StartBlock.Uint64(),
 		openEvent.PhaseLength.Uint64(),
@@ -482,7 +487,7 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 // ShouldRetry() return true because the registration was unsuccessful
 func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
 	t.Logf("ecdsaPrivateKeys:%v", ecdsaPrivateKeys)
 
@@ -493,7 +498,7 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -520,19 +525,19 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err = utils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err = dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Start EthDKG
-	_, rcpt, err = utils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -541,11 +546,11 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	defer cf()
 	//logger = logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	//callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
-	state, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(
+	state, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		accounts[0],
 		openEvent.StartBlock.Uint64(),
 		openEvent.PhaseLength.Uint64(),

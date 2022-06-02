@@ -4,6 +4,9 @@ package dkg
 
 import (
 	"context"
+	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 	"time"
@@ -16,16 +19,16 @@ import (
 //We test to ensure that everything behaves correctly.
 func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	n := 4
-	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	tasksVec := suite.mpkSubmissionTasks
+	tasksVec := suite.MpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
@@ -83,20 +86,20 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	// This should result in an error.
 	// EthDKG restart should be required.
 	n := 6
-	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
-	task := suite.mpkSubmissionTasks[0]
+	task := suite.MpkSubmissionTasks[0]
 	err := task.Initialize(ctx, logger, eth)
 	assert.Nil(t, err)
 	eth.Commit()
 
 	// Advance to gpkj submission phase; note we did *not* submit MPK
-	advanceTo(t, eth, task.Start+dkgStates[0].PhaseLength)
+	testutils.AdvanceTo(t, eth, task.Start+dkgStates[0].PhaseLength)
 
 	// Do MPK Submission task
 
@@ -108,10 +111,10 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 // This is caused by submitting invalid state information (state is nil).
 func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -120,7 +123,7 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 	defer cancel()
 
 	// Create a task to share distribution and make sure it succeeds
-	state := objects.NewDkgState(acct)
+	state := dkgState.NewDkgState(acct)
 	task := NewMPKSubmissionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
@@ -133,10 +136,10 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 // completing KeyShareSubmission phase.
 func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -145,7 +148,7 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	defer cancel()
 
 	// Do MPK Submission task
-	state := objects.NewDkgState(acct)
+	state := dkgState.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	task := NewMPKSubmissionTask(state, 1, 100)
 
@@ -155,15 +158,15 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 
 func TestMPKSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 	n := 4
-	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 40)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 40)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	tasksVec := suite.mpkSubmissionTasks
+	tasksVec := suite.MpkSubmissionTasks
 	var hadLeaders bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
@@ -193,16 +196,16 @@ func TestMPKSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 
 func TestMPKSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
 	n := 4
-	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	tasks := suite.mpkSubmissionTasks
+	tasks := suite.MpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		taskState := tasks[idx].State.(*dkgObjects.DkgState)
+		taskState := tasks[idx].State.(*dkgState.DkgState)
 		taskState.MasterPublicKey[0] = big.NewInt(1)
 
 		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
@@ -212,16 +215,16 @@ func TestMPKSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
 
 func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
 	n := 4
-	suite := StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	leaders := 0
 	// Do MPK Submission task
-	tasksVec := suite.mpkSubmissionTasks
+	tasksVec := suite.MpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 
 		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)

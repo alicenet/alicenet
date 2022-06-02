@@ -253,7 +253,7 @@ func GenerateKeyShares(dkgStates []*state.DkgState) {
 }
 
 // GenerateMasterPublicKey computes the mpk for the protocol.
-// This computes this by using all of the secret values from dkgStates.
+// This computes this by using all of the secret values from DKGStates.
 func GenerateMasterPublicKey(dkgStates []*state.DkgState) []*state.DkgState {
 	n := len(dkgStates)
 	msk := new(big.Int)

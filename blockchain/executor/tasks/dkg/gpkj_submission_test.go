@@ -4,6 +4,10 @@ package dkg
 
 import (
 	"context"
+	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/monitor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 	"time"
@@ -16,16 +20,16 @@ import (
 //We test to ensure that everything behaves correctly.
 func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasksVec := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -56,10 +60,10 @@ func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 // this should raise an error.
 func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -68,8 +72,8 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	defer cancel()
 
 	// Create a task to share distribution and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	adminHandler := new(adminHandlerMock)
+	state := dkgState.NewDkgState(acct)
+	adminHandler := new(interfaces.MockAdminHandler)
 	task := NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
@@ -82,10 +86,10 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 // the key share submission phase.
 func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -94,9 +98,9 @@ func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	defer cancel()
 
 	// Do bad Share Dispute task
-	state := objects.NewDkgState(acct)
+	state := dkgState.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
-	adminHandler := new(adminHandlerMock)
+	adminHandler := new(interfaces.MockAdminHandler)
 	task := NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 
 	err := task.Initialize(ctx, log, eth)
@@ -123,14 +127,14 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 	// and public key should fail verification.
 	// This should raise an error, as this is not allowed by the protocol.
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Initialize GPKj Submission task
-	tasksVec := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -142,7 +146,7 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 	// it does not pass the PairingCheck.
 	task := tasksVec[0]
 
-	taskState, ok := task.State.(*dkgObjects.DkgState)
+	taskState, ok := task.State.(*dkgState.DkgState)
 	assert.True(t, ok)
 
 	// Mess up GPKj; this will cause DoWork to fail
@@ -153,14 +157,14 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 
 func TestGPKjSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasksVec := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -177,14 +181,14 @@ func TestGPKjSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 
 func TestGPKjSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasksVec := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)

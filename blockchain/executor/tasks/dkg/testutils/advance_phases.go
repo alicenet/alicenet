@@ -3,52 +3,116 @@
 package testutils
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
-	"io"
-	"log"
+	"errors"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/monitor/events"
+	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
-	"net/http"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
-	"github.com/MadBase/MadNet/blockchain"
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestSuite struct {
-	eth              ethereumInterfaces.IEthereum
-	dkgStates        []*dkgObjects.DkgState
+	Eth              ethereumInterfaces.IEthereum
+	DKGStates        []*state.DkgState
 	ecdsaPrivateKeys []*ecdsa.PrivateKey
 
-	regTasks                     []*RegisterTask
-	dispMissingRegTasks          []*DisputeMissingRegistrationTask
-	shareDistTasks               []*ShareDistributionTask
-	disputeMissingShareDistTasks []*DisputeMissingShareDistributionTask
-	disputeShareDistTasks        []*DisputeShareDistributionTask
-	keyshareSubmissionTasks      []*KeyShareSubmissionTask
-	disputeMissingKeyshareTasks  []*DisputeMissingKeySharesTask
-	mpkSubmissionTasks           []*MPKSubmissionTask
-	gpkjSubmissionTasks          []*GPKjSubmissionTask
-	disputeMissingGPKjTasks      []*DisputeMissingGPKjTask
-	disputeGPKjTasks             []*DisputeGPKjTask
-	completionTasks              []*CompletionTask
+	regTasks                     []*dkg.RegisterTask
+	DispMissingRegTasks          []*dkg.DisputeMissingRegistrationTask
+	ShareDistTasks               []*dkg.ShareDistributionTask
+	DisputeMissingShareDistTasks []*dkg.DisputeMissingShareDistributionTask
+	DisputeShareDistTasks        []*dkg.DisputeShareDistributionTask
+	KeyshareSubmissionTasks      []*dkg.KeyShareSubmissionTask
+	DisputeMissingKeyshareTasks  []*dkg.DisputeMissingKeySharesTask
+	MpkSubmissionTasks           []*dkg.MPKSubmissionTask
+	GpkjSubmissionTasks          []*dkg.GPKjSubmissionTask
+	DisputeMissingGPKjTasks      []*dkg.DisputeMissingGPKjTask
+	DisputeGPKjTasks             []*dkg.DisputeGPKjTask
+	CompletionTasks              []*dkg.CompletionTask
+}
+
+func SetETHDKGPhaseLength(length uint16, eth ethereumInterfaces.IEthereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+	// Shorten ethdkg phase for testing purposes
+	ethdkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	input, err := ethdkgABI.Pack("setPhaseLength", uint16(length))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txn, err := eth.Contracts().ContractFactory().CallAny(callOpts, eth.Contracts().EthdkgAddress(), big.NewInt(0), input)
+	if err != nil {
+		return nil, nil, err
+	}
+	if txn == nil {
+		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
+	}
+
+	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if rcpt == nil {
+		return nil, nil, errors.New("non existent receipt for tx ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
+	}
+
+	return txn, rcpt, nil
+}
+
+func InitializeETHDKG(eth ethereumInterfaces.IEthereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+	// Shorten ethdkg phase for testing purposes
+	validatorPoolABI, err := abi.JSON(strings.NewReader(bindings.ValidatorPoolMetaData.ABI))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	input, err := validatorPoolABI.Pack("initializeETHDKG")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txn, err := eth.Contracts().ContractFactory().CallAny(callOpts, eth.Contracts().ValidatorPoolAddress(), big.NewInt(0), input)
+	if err != nil {
+		return nil, nil, err
+	}
+	if txn == nil {
+		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(validatorPool, initializeETHDKG())")
+	}
+
+	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if rcpt == nil {
+		return nil, nil, errors.New("non existent receipt for tx ContractFactory.CallAny(validatorPool, initializeETHDKG())")
+	}
+
+	return txn, rcpt, nil
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators int, phaseLength uint16) *TestSuite {
-	ecdsaPrivateKeys, accounts := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
 
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	ctx := context.Background()
@@ -59,14 +123,14 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = utils.SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
+	_, _, err = SetETHDKGPhaseLength(phaseLength, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// init ETHDKG on ValidatorPool, through ContractFactory
-	_, rcpt, err := utils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -78,20 +142,20 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 
 	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, uint8(objects.RegistrationOpen), phase)
+	assert.Equal(t, uint8(state.RegistrationOpen), phase)
 
 	valCount, err := eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(n), valCount.Uint64())
 
 	// Do Register task
-	regTasks := make([]*RegisterTask, n)
-	dispMissingRegTasks := make([]*DisputeMissingRegistrationTask, n)
-	dkgStates := make([]*dkgObjects.DkgState, n)
+	regTasks := make([]*dkg.RegisterTask, n)
+	dispMissingRegTasks := make([]*dkg.DisputeMissingRegistrationTask, n)
+	dkgStates := make([]*state.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		// Set Registration success to true
-		state, regTask, dispMissingRegTask := dkgevents.UpdateStateOnRegistrationOpened(
+		state, regTask, dispMissingRegTask := events.UpdateStateOnRegistrationOpened(
 			accounts[idx],
 			event.StartBlock.Uint64(),
 			event.PhaseLength.Uint64(),
@@ -136,16 +200,16 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		}
 	}
 
-	shareDistributionTasks := make([]*ShareDistributionTask, n)
-	disputeMissingShareDistributionTasks := make([]*DisputeMissingShareDistributionTask, n)
-	disputeShareDistTasks := make([]*DisputeShareDistributionTask, n)
+	shareDistributionTasks := make([]*dkg.ShareDistributionTask, n)
+	disputeMissingShareDistributionTasks := make([]*dkg.DisputeMissingShareDistributionTask, n)
+	disputeShareDistTasks := make([]*dkg.DisputeShareDistributionTask, n)
 
 	if unregisteredValidators == 0 {
 		height, err := eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 
 		for idx := 0; idx < n; idx++ {
-			shareDistributionTask, disputeMissingShareDistributionTask, disputeShareDistTask := dkgevents.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
+			shareDistributionTask, disputeMissingShareDistributionTask, disputeShareDistTask := events.UpdateStateOnRegistrationComplete(dkgStates[idx], height)
 
 			shareDistributionTasks[idx] = shareDistributionTask
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
@@ -153,21 +217,21 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 		}
 
 		// skip all the way to ShareDistribution phase
-		advanceTo(t, eth, shareDistributionTasks[0].Start)
+		testutils.AdvanceTo(t, eth, shareDistributionTasks[0].Start)
 	} else {
 		// this means some validators did not register, and the next phase is DisputeMissingRegistration
-		advanceTo(t, eth, dkgStates[0].PhaseStart+dkgStates[0].PhaseLength)
+		testutils.AdvanceTo(t, eth, dkgStates[0].PhaseStart+dkgStates[0].PhaseLength)
 	}
 
 	return &TestSuite{
-		eth:                          eth,
-		dkgStates:                    dkgStates,
+		Eth:                          eth,
+		DKGStates:                    dkgStates,
 		ecdsaPrivateKeys:             ecdsaPrivateKeys,
 		regTasks:                     regTasks,
-		dispMissingRegTasks:          dispMissingRegTasks,
-		shareDistTasks:               shareDistributionTasks,
-		disputeMissingShareDistTasks: disputeMissingShareDistributionTasks,
-		disputeShareDistTasks:        disputeShareDistTasks,
+		DispMissingRegTasks:          dispMissingRegTasks,
+		ShareDistTasks:               shareDistributionTasks,
+		DisputeMissingShareDistTasks: disputeMissingShareDistributionTasks,
+		DisputeShareDistTasks:        disputeShareDistTasks,
 	}
 }
 
@@ -176,19 +240,19 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
-	callOpts, err := suite.eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount())
+	callOpts, err := suite.Eth.GetCallOpts(ctx, suite.Eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := suite.Eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, phase, uint8(objects.ShareDistribution))
+	assert.Equal(t, phase, uint8(state.ShareDistribution))
 
-	height, err := suite.eth.GetCurrentHeight(ctx)
+	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	assert.GreaterOrEqual(t, height, suite.shareDistTasks[0].Start)
+	assert.GreaterOrEqual(t, height, suite.ShareDistTasks[0].Start)
 
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 
 		var skipLoop = false
 
@@ -202,9 +266,9 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 			continue
 		}
 
-		shareDistTask := suite.shareDistTasks[idx]
+		shareDistTask := suite.ShareDistTasks[idx]
 
-		err := shareDistTask.Initialize(ctx, logger, suite.eth)
+		err := shareDistTask.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
 		for _, badIdx := range badSharesIdx {
@@ -216,16 +280,16 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 			}
 		}
 
-		err = shareDistTask.DoWork(ctx, logger, suite.eth)
+		err = shareDistTask.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, shareDistTask.Success)
 
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			err = suite.dkgStates[j].OnSharesDistributed(
+			err = suite.DKGStates[j].OnSharesDistributed(
 				logger,
 				state.Account.Address,
 				state.Participants[state.Account.Address].EncryptedShares,
@@ -236,19 +300,19 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 
 	}
 
-	disputeShareDistributionTasks := make([]*DisputeShareDistributionTask, n)
-	keyshareSubmissionTasks := make([]*KeyShareSubmissionTask, n)
-	disputeMissingKeySharesTasks := make([]*DisputeMissingKeySharesTask, n)
+	disputeShareDistributionTasks := make([]*dkg.DisputeShareDistributionTask, n)
+	keyshareSubmissionTasks := make([]*dkg.KeyShareSubmissionTask, n)
+	disputeMissingKeySharesTasks := make([]*dkg.DisputeMissingKeySharesTask, n)
 
 	if len(undistributedSharesIdx) == 0 {
-		height, err := suite.eth.GetCurrentHeight(ctx)
+		height, err := suite.Eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 		var dispShareDistStartBlock uint64
 
 		// this means all validators distributed their shares and now the phase is
 		// set phase to DisputeShareDistribution
 		for i := 0; i < n; i++ {
-			disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask := dkgevents.UpdateStateOnShareDistributionComplete(suite.dkgStates[i], height)
+			disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask := events.UpdateStateOnShareDistributionComplete(suite.DKGStates[i], height)
 
 			dispShareDistStartBlock = disputeShareDistributionTask.GetStart()
 
@@ -257,15 +321,15 @@ func StartFromShareDistributionPhase(t *testing.T, n int, undistributedSharesIdx
 			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
 		}
 
-		suite.disputeShareDistTasks = disputeShareDistributionTasks
-		suite.keyshareSubmissionTasks = keyshareSubmissionTasks
-		suite.disputeMissingKeyshareTasks = disputeMissingKeySharesTasks
+		suite.DisputeShareDistTasks = disputeShareDistributionTasks
+		suite.KeyshareSubmissionTasks = keyshareSubmissionTasks
+		suite.DisputeMissingKeyshareTasks = disputeMissingKeySharesTasks
 
 		// skip all the way to DisputeShareDistribution phase
-		advanceTo(t, suite.eth, dispShareDistStartBlock)
+		testutils.AdvanceTo(t, suite.Eth, dispShareDistStartBlock)
 	} else {
 		// this means some validators did not distribute shares, and the next phase is DisputeMissingShareDistribution
-		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+		testutils.AdvanceTo(t, suite.Eth, suite.DKGStates[0].PhaseStart+suite.DKGStates[0].PhaseLength)
 	}
 
 	return suite
@@ -276,32 +340,32 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
-	keyshareSubmissionStartBlock := suite.keyshareSubmissionTasks[0].Start
-	advanceTo(t, suite.eth, keyshareSubmissionStartBlock)
+	keyshareSubmissionStartBlock := suite.KeyshareSubmissionTasks[0].Start
+	testutils.AdvanceTo(t, suite.Eth, keyshareSubmissionStartBlock)
 
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 
 		if idx >= n-undistributedShares {
 			continue
 		}
 
-		keyshareSubmissionTask := suite.keyshareSubmissionTasks[idx]
+		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.eth)
+		err := keyshareSubmissionTask.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		err = keyshareSubmissionTask.DoWork(ctx, logger, suite.eth)
+		err = keyshareSubmissionTask.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, keyshareSubmissionTask.Success)
 
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			suite.dkgStates[j].OnKeyShareSubmitted(
+			suite.DKGStates[j].OnKeyShareSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].KeyShareG1s,
 				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
@@ -310,31 +374,31 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, n int, undistributedShares i
 		}
 	}
 
-	mpkSubmissionTasks := make([]*MPKSubmissionTask, n)
+	mpkSubmissionTasks := make([]*dkg.MPKSubmissionTask, n)
 
 	if undistributedShares == 0 {
 		// at this point all the validators submitted their key shares
-		height, err := suite.eth.GetCurrentHeight(ctx)
+		height, err := suite.Eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 
 		// this means all validators submitted their respective key shares and now the phase is
 		// set phase to MPK
 		var mpkSubmissionTaskStart uint64
 		for i := 0; i < n; i++ {
-			mpkSubmissionTask := dkgevents.UpdateStateOnKeyShareSubmissionComplete(suite.dkgStates[i], height)
+			mpkSubmissionTask := events.UpdateStateOnKeyShareSubmissionComplete(suite.DKGStates[i], height)
 			mpkSubmissionTaskStart = mpkSubmissionTask.GetStart()
 
 			mpkSubmissionTasks[i] = mpkSubmissionTask
 		}
 
 		// skip all the way to MPKSubmission phase
-		advanceTo(t, suite.eth, mpkSubmissionTaskStart)
+		testutils.AdvanceTo(t, suite.Eth, mpkSubmissionTaskStart)
 	} else {
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
-		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+		testutils.AdvanceTo(t, suite.Eth, suite.DKGStates[0].PhaseStart+suite.DKGStates[0].PhaseLength)
 	}
 
-	suite.mpkSubmissionTasks = mpkSubmissionTasks
+	suite.MpkSubmissionTasks = mpkSubmissionTasks
 
 	return suite
 }
@@ -343,13 +407,13 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 	suite := StartFromKeyShareSubmissionPhase(t, n, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	dkgStates := suite.dkgStates
-	eth := suite.eth
+	dkgStates := suite.DKGStates
+	eth := suite.Eth
 
 	// Do MPK Submission task (once is enough)
 
 	for idx := 0; idx < n; idx++ {
-		task := suite.mpkSubmissionTasks[idx]
+		task := suite.MpkSubmissionTasks[idx]
 		state := dkgStates[idx]
 		err := task.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -361,25 +425,25 @@ func StartFromMPKSubmissionPhase(t *testing.T, n int, phaseLength uint16) *TestS
 
 	eth.Commit()
 
-	height, err := suite.eth.GetCurrentHeight(ctx)
+	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	gpkjSubmissionTasks := make([]*GPKjSubmissionTask, n)
-	disputeMissingGPKjTasks := make([]*DisputeMissingGPKjTask, n)
-	disputeGPKjTasks := make([]*DisputeGPKjTask, n)
+	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, n)
+	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
 
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := dkgevents.UpdateStateOnMPKSet(state, height, new(adminHandlerMock))
+		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := events.UpdateStateOnMPKSet(state, height, new(adminHandlerMock))
 
 		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
 		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
 		disputeGPKjTasks[idx] = disputeGPKjTask
 	}
 
-	suite.gpkjSubmissionTasks = gpkjSubmissionTasks
-	suite.disputeMissingGPKjTasks = disputeMissingGPKjTasks
-	suite.disputeGPKjTasks = disputeGPKjTasks
+	suite.GpkjSubmissionTasks = gpkjSubmissionTasks
+	suite.DisputeMissingGPKjTasks = disputeMissingGPKjTasks
+	suite.DisputeGPKjTasks = disputeGPKjTasks
 
 	return suite
 }
@@ -391,7 +455,7 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 
 		var skipLoop = false
 
@@ -405,9 +469,9 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 			continue
 		}
 
-		gpkjSubTask := suite.gpkjSubmissionTasks[idx]
+		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		err := gpkjSubTask.Initialize(ctx, logger, suite.eth)
+		err := gpkjSubTask.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
 		for _, badIdx := range badGPKjIdx {
@@ -425,16 +489,16 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 			}
 		}
 
-		err = gpkjSubTask.DoWork(ctx, logger, suite.eth)
+		err = gpkjSubTask.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, gpkjSubTask.Success)
 
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			suite.dkgStates[j].OnGPKjSubmitted(
+			suite.DKGStates[j].OnGPKjSubmitted(
 				state.Account.Address,
 				state.Participants[state.Account.Address].GPKj,
 			)
@@ -442,18 +506,18 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 
 	}
 
-	disputeGPKjTasks := make([]*DisputeGPKjTask, n)
-	completionTasks := make([]*CompletionTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 
 	if len(undistributedGPKjIdx) == 0 {
-		height, err := suite.eth.GetCurrentHeight(ctx)
+		height, err := suite.Eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 		var dispGPKjStartBlock uint64
 
 		// this means all validators submitted their GPKjs and now the phase is
 		// set phase to DisputeGPKjDistribution
 		for i := 0; i < n; i++ {
-			disputeGPKjTask, completionTask := dkgevents.UpdateStateOnGPKJSubmissionComplete(suite.dkgStates[i], height)
+			disputeGPKjTask, completionTask := events.UpdateStateOnGPKJSubmissionComplete(suite.DKGStates[i], height)
 
 			dispGPKjStartBlock = disputeGPKjTask.GetStart()
 
@@ -461,14 +525,14 @@ func StartFromGPKjPhase(t *testing.T, n int, undistributedGPKjIdx []int, badGPKj
 			completionTasks[i] = completionTask
 		}
 
-		suite.disputeGPKjTasks = disputeGPKjTasks
-		suite.completionTasks = completionTasks
+		suite.DisputeGPKjTasks = disputeGPKjTasks
+		suite.CompletionTasks = completionTasks
 
 		// skip all the way to DisputeGPKj phase
-		advanceTo(t, suite.eth, dispGPKjStartBlock)
+		testutils.AdvanceTo(t, suite.Eth, dispGPKjStartBlock)
 	} else {
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
-		advanceTo(t, suite.eth, suite.dkgStates[0].PhaseStart+suite.dkgStates[0].PhaseLength)
+		testutils.AdvanceTo(t, suite.Eth, suite.DKGStates[0].PhaseStart+suite.DKGStates[0].PhaseLength)
 	}
 
 	return suite
@@ -478,7 +542,7 @@ func StartFromCompletion(t *testing.T, n int, phaseLength uint16) *TestSuite {
 	suite := StartFromGPKjPhase(t, n, []int{}, []int{}, phaseLength)
 
 	// move to Completion phase
-	advanceTo(t, suite.eth, suite.completionTasks[0].Start+suite.dkgStates[0].ConfirmationLength)
+	testutils.AdvanceTo(t, suite.Eth, suite.CompletionTasks[0].Start+suite.DKGStates[0].ConfirmationLength)
 
 	return suite
 }

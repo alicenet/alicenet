@@ -1,4 +1,4 @@
-package txwatcher_test
+package txwatcher
 
 import (
 	"context"

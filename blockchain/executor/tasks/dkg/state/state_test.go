@@ -1,4 +1,4 @@
-package state_test
+package state
 
 import (
 	"bytes"
@@ -6,14 +6,13 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDKGState_ParticipantCopy(t *testing.T) {
-	p := &state.Participant{}
+	p := &Participant{}
 	addrBytes := make([]byte, 20)
 	addrBytes[0] = 255
 	addrBytes[19] = 255
@@ -46,12 +45,12 @@ func TestDKGState_ParticipantCopy(t *testing.T) {
 }
 
 func TestDKGState_ParticipantListExtractIndices(t *testing.T) {
-	p1 := &state.Participant{Index: 1}
-	p2 := &state.Participant{Index: 2}
-	p3 := &state.Participant{Index: 3}
-	p4 := &state.Participant{Index: 4}
+	p1 := &Participant{Index: 1}
+	p2 := &Participant{Index: 2}
+	p3 := &Participant{Index: 3}
+	p4 := &Participant{Index: 4}
 
-	pl := state.ParticipantList{p4, p2, p3, p1}
+	pl := ParticipantList{p4, p2, p3, p1}
 	indices := []int{4, 2, 3, 1}
 	retIndices := pl.ExtractIndices()
 	if len(indices) != len(retIndices) {
@@ -67,7 +66,7 @@ func TestDKGState_ParticipantListExtractIndices(t *testing.T) {
 func TestDKGState_MarshalAndUnmarshalBigInt(t *testing.T) {
 
 	// generate transport keys
-	priv, pub, err := state.GenerateKeys()
+	priv, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 
 	// marshal privkey
@@ -118,16 +117,16 @@ func TestDKGState_MarshalAndUnmarshalParticipant(t *testing.T) {
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 
 	// generate transport keys
-	_, pub, err := state.GenerateKeys()
+	_, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 
-	// create a state.Participant obj
-	participant := state.Participant{
+	// create a Participant obj
+	participant := Participant{
 		Address:   addr,
 		Index:     1,
 		PublicKey: pub,
 		Nonce:     1,
-		Phase:     state.RegistrationOpen,
+		Phase:     RegistrationOpen,
 	}
 
 	// marshal
@@ -136,7 +135,7 @@ func TestDKGState_MarshalAndUnmarshalParticipant(t *testing.T) {
 
 	t.Logf("rawData: %s", rawData)
 
-	participant2 := &state.Participant{}
+	participant2 := &Participant{}
 
 	err = json.Unmarshal(rawData, participant2)
 	assert.Nil(t, err)
@@ -149,7 +148,7 @@ func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 
 	// create a DkgState obj
-	state1 := state.NewDkgState(accounts.Account{
+	state1 := NewDkgState(accounts.Account{
 		Address: addr,
 		URL: accounts.URL{
 			Scheme: "file",
@@ -158,7 +157,7 @@ func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 	})
 
 	// generate transport keys
-	priv, pub, err := state.GenerateKeys()
+	priv, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 	state1.TransportPrivateKey = priv
 	state1.TransportPublicKey = pub
@@ -169,7 +168,7 @@ func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 
 	t.Logf("rawData: %s", rawData)
 
-	state2 := &state.DkgState{}
+	state2 := &DkgState{}
 
 	err = json.Unmarshal(rawData, state2)
 	assert.Nil(t, err)

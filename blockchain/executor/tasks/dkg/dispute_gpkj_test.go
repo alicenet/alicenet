@@ -4,6 +4,10 @@ package dkg
 
 import (
 	"context"
+	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/monitor/events"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 
@@ -17,18 +21,18 @@ import (
 func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
+		gpkjSubmissionTask := suite.GpkjSubmissionTasks[idx]
 
 		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -46,23 +50,23 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 		}
 	}
 
-	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := suite.Eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)
+	assert.Equal(t, uint8(dkgState.DisputeGPKJSubmission), phase)
 
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	disputePhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
+	disputePhaseAt := currentHeight + suite.DKGStates[0].ConfirmationLength
 
-	advanceTo(t, eth, disputePhaseAt)
+	testutils.AdvanceTo(t, eth, disputePhaseAt)
 
 	// Do dispute bad gpkj task
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
+		disputeBadGPKjTask, _ := events.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -83,18 +87,18 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 func TestGPKjDispute_1Invalid(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
+		gpkjSubmissionTask := suite.GpkjSubmissionTasks[idx]
 
 		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -125,23 +129,23 @@ func TestGPKjDispute_1Invalid(t *testing.T) {
 		}
 	}
 
-	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := suite.Eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)
+	assert.Equal(t, uint8(dkgState.DisputeGPKJSubmission), phase)
 
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	disputePhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
+	disputePhaseAt := currentHeight + suite.DKGStates[0].ConfirmationLength
 
-	advanceTo(t, eth, disputePhaseAt)
+	testutils.AdvanceTo(t, eth, disputePhaseAt)
 
 	// Do dispute bad gpkj task
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
+		disputeBadGPKjTask, _ := events.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -163,18 +167,18 @@ func TestGPKjDispute_1Invalid(t *testing.T) {
 func TestGPKjDispute_GoodMaliciousAccusation(t *testing.T) {
 	n := 5
 	unsubmittedGPKj := 0
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do gpkj submission task
 	for idx := 0; idx < n-unsubmittedGPKj; idx++ {
 		state := dkgStates[idx]
-		gpkjSubmissionTask := suite.gpkjSubmissionTasks[idx]
+		gpkjSubmissionTask := suite.GpkjSubmissionTasks[idx]
 
 		err := gpkjSubmissionTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -192,17 +196,17 @@ func TestGPKjDispute_GoodMaliciousAccusation(t *testing.T) {
 		}
 	}
 
-	callOpts, err := suite.eth.GetCallOpts(ctx, accounts[0])
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := suite.Eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, uint8(objects.DisputeGPKJSubmission), phase)
+	assert.Equal(t, uint8(dkgState.DisputeGPKJSubmission), phase)
 
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	disputePhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
+	disputePhaseAt := currentHeight + suite.DKGStates[0].ConfirmationLength
 
-	advanceTo(t, eth, disputePhaseAt)
+	testutils.AdvanceTo(t, eth, disputePhaseAt)
 
 	// Do dispute bad gpkj task
 	badAccuserIdx := 0
@@ -210,12 +214,12 @@ func TestGPKjDispute_GoodMaliciousAccusation(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		disputeBadGPKjTask, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
+		disputeBadGPKjTask, _ := events.UpdateStateOnGPKJSubmissionComplete(state, disputePhaseAt)
 
 		err := disputeBadGPKjTask.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 		if idx == badAccuserIdx {
-			state.DishonestValidators = objects.ParticipantList{state.GetSortedParticipants()[accusedIdx].Copy()}
+			state.DishonestValidators = dkgState.ParticipantList{state.GetSortedParticipants()[accusedIdx].Copy()}
 		}
 		err = disputeBadGPKjTask.DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
@@ -228,7 +232,7 @@ func TestGPKjDispute_GoodMaliciousAccusation(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), badParticipants.Int64())
 
-	nValidators, err := suite.eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
+	nValidators, err := suite.Eth.Contracts().ValidatorPool().GetValidatorsCount(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(4), nValidators.Uint64())
 
