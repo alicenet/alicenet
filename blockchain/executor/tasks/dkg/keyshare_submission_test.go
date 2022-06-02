@@ -7,8 +7,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )

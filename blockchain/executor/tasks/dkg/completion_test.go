@@ -7,10 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +16,7 @@ import (
 func TestCompletion_Group_1_AllGood(t *testing.T) {
 	n := 4
 
-	err := dtest.InitializeValidatorFiles(5)
+	err := InitializeValidatorFiles(5)
 	assert.Nil(t, err)
 
 	suite := StartFromMPKSubmissionPhase(t, n, 100)
@@ -134,10 +130,10 @@ func TestCompletion_Group_1_StartFromCompletion(t *testing.T) {
 // for the Ethereum interface.
 func TestCompletion_Group_2_Bad1(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -157,10 +153,10 @@ func TestCompletion_Group_2_Bad1(t *testing.T) {
 // We test to ensure that everything behaves correctly.
 func TestCompletion_Group_2_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]

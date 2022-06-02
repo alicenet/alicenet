@@ -3,11 +3,13 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+
 	//"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"math/big"
 	"sync"
+
+	"github.com/MadBase/MadNet/crypto/bn256"
+	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
 	"github.com/dgraph-io/badger/v2"
 

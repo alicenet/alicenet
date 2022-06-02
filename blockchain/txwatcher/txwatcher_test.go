@@ -1,16 +1,17 @@
-package txwatcher
+package txwatcher_test
 
 import (
 	"context"
+	"math"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/testutils"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"math"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func TestTransferFunds(t *testing.T) {

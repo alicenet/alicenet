@@ -7,9 +7,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/logging"

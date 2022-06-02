@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -23,7 +23,7 @@ func main() {
 
 	privateKeys = append(privateKeys, pk)
 
-	eth, err := blockchain.NewEthereumSimulator(
+	eth, err := ethereum.NewEthereumSimulator(
 		privateKeys,
 		6,
 		1*time.Second,
@@ -42,4 +42,8 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	<-signals
+}
+
+func NewEthereumSimulator(privateKeys []*ecdsa.PrivateKey, i1 int, duration1, duration2 time.Duration, i2 int, int *big.Int, i3, i4 int) {
+	panic("unimplemented")
 }

@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

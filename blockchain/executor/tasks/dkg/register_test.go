@@ -8,11 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"

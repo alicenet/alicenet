@@ -2,7 +2,11 @@ package lstate
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"math/big"
+	"strconv"
+	"testing"
+
+	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
@@ -12,9 +16,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"strconv"
-	"testing"
 )
 
 func TestStore_LoadLocalState_Ok(t *testing.T) {
