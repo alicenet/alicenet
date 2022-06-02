@@ -3,10 +3,11 @@ package testutils
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 
@@ -64,8 +65,8 @@ func InitializeNewNonDetDkgStateInfo(n int) ([]*dkgObjects.DkgState, []*ecdsa.Pr
 
 func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.DkgState, []*ecdsa.PrivateKey) {
 	// Get private keys for validators
-	privKeys := SetupPrivateKeys(n)
-	accountsArray := SetupAccounts(privKeys)
+	privKeys := testutils.SetupPrivateKeys(n)
+	accountsArray := testutils.SetupAccounts(privKeys)
 	dkgStates := []*dkgObjects.DkgState{}
 	threshold := crypto.CalcThreshold(n)
 
@@ -85,7 +86,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.D
 	for k := 0; k < n; k++ {
 		bigK := big.NewInt(int64(k))
 		// Get base DkgState
-		dkgState := objects.NewDkgState(accountsArray[k])
+		dkgState := dkgObjects.NewDkgState(accountsArray[k])
 		// Set Index
 		dkgState.Index = k + 1
 		// Set Number of Validators
@@ -141,9 +142,9 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.D
 	return dkgStates, privKeys
 }
 
-func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) objects.ParticipantList {
+func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) dkgObjects.ParticipantList {
 	n := len(dkgStates)
-	participants := make(objects.ParticipantList, int(n))
+	participants := make(dkgObjects.ParticipantList, int(n))
 	for idx := 0; idx < n; idx++ {
 		addr := dkgStates[idx].Account.Address
 		publicKey := [2]*big.Int{}
@@ -151,7 +152,7 @@ func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) objects.Participa
 		publicKey[1] = new(big.Int)
 		publicKey[0].Set(dkgStates[idx].TransportPublicKey[0])
 		publicKey[1].Set(dkgStates[idx].TransportPublicKey[1])
-		participant := &objects.Participant{}
+		participant := &dkgObjects.Participant{}
 		participant.Address = addr
 		participant.PublicKey = publicKey
 		participant.Index = dkgStates[idx].Index

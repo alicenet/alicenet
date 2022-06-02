@@ -2,10 +2,11 @@ package events
 
 import (
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"strings"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -68,7 +69,7 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) {
+func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler monInterfaces.IAdminHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
@@ -120,7 +121,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, cdb *db.Database, adminHandler i
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler monInterfaces.IAdminHandler, depositHandler monInterfaces.IDepositHandler, taskRequestChan chan<- interfaces.ITask, taskKillChan chan<- string) error {
 
 	RegisterETHDKGEvents(em, cdb, adminHandler, taskRequestChan, taskKillChan)
 

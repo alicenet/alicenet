@@ -2,9 +2,9 @@ package events
 
 import (
 	"fmt"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,7 +20,7 @@ func ProcessValueUpdated(eth ethereumInterfaces.IEthereum, logger *logrus.Entry,
 	dkgState := &dkgObjects.DkgState{}
 	var err error
 	err = cdb.View(func(txn *badger.Txn) error {
-		dkgState, err = objects.LoadEthDkgState(txn, logger)
+		dkgState, err = dkgObjects.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}

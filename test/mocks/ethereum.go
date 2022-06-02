@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"math/big"
 	"time"
 
@@ -10,10 +11,10 @@ import (
 )
 
 type EthereumMock struct {
-	*MockBaseEthereum
-	GethClientMock         *MockGethClient
+	*MockIEthereum
+	IEthereumClient        *MockIEthereumClient
 	TransactionWatcherMock *MockITransactionWatcher
-	ContractsMock          *MockContracts
+	ContractsMock          *MockIContracts
 
 	ETHDKGMock           *MockIETHDKG
 	GovernanceMock       *MockIGovernance
@@ -25,10 +26,10 @@ type EthereumMock struct {
 	ValidatorStakingMock *MockIValidatorStaking
 }
 
-var _ ethereumInterfaces.IEthereum = (*MockBaseEthereum)(nil)
+var _ ethereumInterfaces.IEthereum = (*MockIEthereum)(nil)
 
 func NewMockEthereum() *EthereumMock {
-	eth := NewMockBaseEthereum()
+	eth := NewMockIEthereum()
 	var bh uint64 = 0
 	eth.GetCurrentHeightFunc.SetDefaultHook(func(context.Context) (uint64, error) { bh++; return bh, nil })
 	eth.GetFinalityDelayFunc.SetDefaultReturn(6)
@@ -39,12 +40,12 @@ func NewMockEthereum() *EthereumMock {
 	eth.GetTxMaxGasFeeAllowedInGweiFunc.SetDefaultReturn(500)
 
 	geth := NewMockLinkedGethClient()
-	eth.GetGethClientFunc.SetDefaultReturn(geth)
+	eth.GetEthereumClientFunc.SetDefaultReturn(geth)
 
 	txWatcher := NewMockLinkedTransactionWatcher()
 	eth.TransactionWatcherFunc.SetDefaultReturn(txWatcher)
 
-	contracts := NewMockContracts()
+	contracts := NewMockIContracts()
 	eth.ContractsFunc.SetDefaultReturn(contracts)
 
 	ethdkg := NewMockIETHDKG()
@@ -72,8 +73,8 @@ func NewMockEthereum() *EthereumMock {
 	contracts.ValidatorStakingFunc.SetDefaultReturn(validatorstaking)
 
 	return &EthereumMock{
-		MockBaseEthereum:       eth,
-		GethClientMock:         geth,
+		MockIEthereum:          eth,
+		IEthereumClient:        geth,
 		TransactionWatcherMock: txWatcher,
 		ContractsMock:          contracts,
 
@@ -100,8 +101,8 @@ func NewMockLinkedTransactionWatcher() *MockITransactionWatcher {
 	return txWatcher
 }
 
-func NewMockLinkedGethClient() *MockGethClient {
-	geth := NewMockGethClient()
+func NewMockLinkedGethClient() *MockIEthereumClient {
+	geth := NewMockIEthereumClient()
 	geth.SuggestGasTipCapFunc.SetDefaultReturn(big.NewInt(15000), nil)
 	geth.SuggestGasPriceFunc.SetDefaultReturn(big.NewInt(1000), nil)
 	return geth

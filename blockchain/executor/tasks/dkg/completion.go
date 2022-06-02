@@ -26,7 +26,7 @@ type CompletionTask struct {
 var _ executorInterfaces.ITask = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *dkgdkgObjects.DkgState, start uint64, end uint64) *CompletionTask {
+func NewCompletionTask(state *dkgObjects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
 		Task: objects.NewTask(state, dkgConstants.CompletionTaskName, start, end),
 	}
@@ -40,7 +40,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 
 	logger.Info("CompletionTask Initialize()...")
 
-	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -76,7 +76,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth e
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -153,7 +153,7 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		logger.Errorf("Invalid convertion of taskState object")
 		return false
@@ -184,7 +184,7 @@ func (t *CompletionTask) GetExecutionData() executorInterfaces.ITaskExecutionDat
 	return t.Task
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgdkgObjects.DkgState) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgObjects.DkgState) bool {
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
@@ -201,7 +201,7 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterf
 	return phase == uint8(dkgObjects.Completion)
 }
 
-func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgdkgObjects.DkgState) bool {
+func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgObjects.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

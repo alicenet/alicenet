@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"math/big"
 	"sync"
 
@@ -155,9 +156,9 @@ func (state *DkgState) OnRegistrationComplete(shareDistributionStartBlockNumber 
 // OnSharesDistributed processes data from SharesDistributed event
 func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
 	// compute distributed shares hash
-	distributedSharesHash, _, _, err := utils2.ComputeDistributedSharesHash(encryptedShares, commitments)
+	distributedSharesHash, _, _, err := dkgUtils.ComputeDistributedSharesHash(encryptedShares, commitments)
 	if err != nil {
-		return utils2.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "ProcessShareDistribution: error calculating distributed shares hash: %v", err)
 	}
 
 	state.Participants[account].Phase = ShareDistribution

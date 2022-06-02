@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots"
+	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/objects"
@@ -47,8 +49,8 @@ type Monitor interface {
 
 type monitor struct {
 	sync.RWMutex
-	adminHandler   interfaces.AdminHandler
-	depositHandler interfaces.DepositHandler
+	adminHandler   monInterfaces.IAdminHandler
+	depositHandler monInterfaces.IDepositHandler
 	eth            ethereumInterfaces.IEthereum
 	eventMap       *objects.EventMap
 	db             *db.Database
@@ -70,8 +72,8 @@ type monitor struct {
 // NewMonitor creates a new Monitor
 func NewMonitor(cdb *db.Database,
 	db *db.Database,
-	adminHandler interfaces.AdminHandler,
-	depositHandler interfaces.DepositHandler,
+	adminHandler monInterfaces.IAdminHandler,
+	depositHandler monInterfaces.IDepositHandler,
 	eth ethereumInterfaces.IEthereum,
 	tickInterval time.Duration,
 	timeout time.Duration,
@@ -314,7 +316,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth ethereumInterfaces.IEthereum, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
+	eventMap *objects.EventMap, adminHandler monInterfaces.IAdminHandler, batchSize uint64, persistMonitorCB func()) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -444,7 +446,7 @@ func PersistSnapshot(eth ethereumInterfaces.IEthereum, bh *objs.BlockHeader, tas
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
-	snapshotTask := other_tasks.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
+	snapshotTask := snapshots.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
 	taskRequestChan <- snapshotTask
 
 	return nil

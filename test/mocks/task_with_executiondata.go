@@ -2,23 +2,24 @@ package mocks
 
 import (
 	"context"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	exObjects "github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/ethereum/go-ethereum/accounts"
-	common "github.com/ethereum/go-ethereum/common"
-	logrus "github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 type MockITaskWithExecutionData struct {
 	*MockITask
-	Task *objects.Task
+	Task *exObjects.Task
 }
 
-func NewMockITaskWithExecutionData(start uint64, end uint64) *MockITaskWithExecutionData {
+func NewMockITaskWithExecutionData(name string, start uint64, end uint64) *MockITaskWithExecutionData {
 	task := NewMockITask()
-	ed := objects.NewTask(objects.NewDkgState(accounts.Account{}), start, end)
+	ed := exObjects.NewTask(dkgObjects.NewDkgState(accounts.Account{}), name, start, end)
 	task.GetExecutionDataFunc.SetDefaultReturn(ed)
 	task.DoWorkFunc.SetDefaultHook(func(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 		ed.TxOpts.TxHashes = append(ed.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))
