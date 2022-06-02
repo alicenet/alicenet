@@ -3,15 +3,15 @@ package dkg
 import (
 	"context"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ var _ interfaces.ITask = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: objects.NewTask(state, ShareDistributionTaskName, start, end),
+		Task: objects.NewTask(state, constants.ShareDistributionTaskName, start, end),
 	}
 }
 
@@ -45,7 +45,7 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != objects.ShareDistribution {
+	if taskState.Phase != dkgObjects.ShareDistribution {
 		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
@@ -53,10 +53,10 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 
 		participants := taskState.GetSortedParticipants()
 		numParticipants := len(participants)
-		threshold := math.ThresholdForUserCount(numParticipants)
+		threshold := dkgUtils.ThresholdForUserCount(numParticipants)
 
 		// Generate shares
-		encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
+		encryptedShares, privateCoefficients, commitments, err := dkgUtils.GenerateShares(
 			taskState.TransportPrivateKey, participants)
 		if err != nil {
 			logger.Errorf("Failed to generate shares: %v %#v", err, participants)
@@ -106,7 +106,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -152,7 +152,7 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 	logger.Info("ShareDistributionTask ShouldRetry()")
 
 	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -163,7 +163,7 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return false
 	}
 
-	if taskState.Phase != objects.ShareDistribution {
+	if taskState.Phase != dkgObjects.ShareDistribution {
 		return false
 	}
 

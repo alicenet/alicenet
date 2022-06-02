@@ -2,14 +2,15 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -25,7 +26,7 @@ var _ interfaces.ITask = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		Task: objects.NewTask(state, DisputeMissingRegistrationTaskName, start, end),
+		Task: objects.NewTask(state, constants.DisputeMissingRegistrationTaskName, start, end),
 	}
 }
 
@@ -58,7 +59,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
 	}
 
 	// accuse missing validators
@@ -67,7 +68,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
 		}
 
 		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -81,7 +82,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -115,7 +116,7 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 
 	logger.Info("DisputeMissingRegistrationTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -126,7 +127,7 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 		return false
 	}
 
-	if taskState.Phase != objects.RegistrationOpen {
+	if taskState.Phase != dkgObjects.RegistrationOpen {
 		return false
 	}
 
@@ -165,12 +166,12 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
 	}
 
-	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)
@@ -186,7 +187,7 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 
 		if isValidator && (!ok ||
 			participant.Nonce != taskState.Nonce ||
-			participant.Phase != objects.RegistrationOpen ||
+			participant.Phase != dkgObjects.RegistrationOpen ||
 			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {
 

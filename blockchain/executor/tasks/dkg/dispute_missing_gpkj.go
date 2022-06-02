@@ -2,12 +2,14 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
 	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,7 +27,7 @@ var _ interfaces.ITask = &DisputeMissingGPKjTask{}
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		Task: objects.NewTask(state, DisputeMissingGPKjTaskName, start, end),
+		Task: objects.NewTask(state, constants.DisputeMissingGPKjTaskName, start, end),
 	}
 }
 
@@ -60,7 +62,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting accusableParticipants: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting accusableParticipants: %v", err)
 	}
 
 	// accuse missing validators
@@ -69,7 +71,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting txnOpts: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error getting txnOpts: %v", err)
 		}
 
 		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -83,7 +85,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotSubmitGPKJ(txnOpts, accusableParticipants)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error accusing missing gpkj: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingGPKjTask doTask() error accusing missing gpkj: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -117,7 +119,7 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	logger.Info("DisputeMissingGPKjTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -128,7 +130,7 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	if taskState.Phase != objects.GPKJSubmission {
+	if taskState.Phase != dkgObjects.GPKJSubmission {
 		return false
 	}
 
@@ -167,12 +169,12 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, e
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingGPKjTask failed getting call options: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingGPKjTask failed getting call options: %v", err)
 	}
 
-	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingGPKjTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingGPKjTask getAccusableParticipants() error getting validators: %v", err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)
@@ -184,7 +186,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, e
 	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != taskState.Nonce ||
-			p.Phase != objects.GPKJSubmission ||
+			p.Phase != dkgObjects.GPKJSubmission ||
 			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[2].Cmp(big.NewInt(0)) == 0 &&

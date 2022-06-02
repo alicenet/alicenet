@@ -4,15 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtil "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,7 +30,7 @@ var _ interfaces.ITask = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: objects.NewTask(state, DisputeShareDistributionTaskName, start, end),
+		Task: objects.NewTask(state, constants.DisputeShareDistributionTaskName, start, end),
 	}
 }
 
@@ -48,7 +48,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != objects.DisputeShareDistribution && taskState.Phase != objects.ShareDistribution {
+	if taskState.Phase != dkgObjects.DisputeShareDistribution && taskState.Phase != dkgObjects.ShareDistribution {
 		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
@@ -63,7 +63,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 		}
 
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, taskState.Index)
-		valid, present, err := math.VerifyDistributedShares(taskState, participant)
+		valid, present, err := dkgUtils.VerifyDistributedShares(taskState, participant)
 		if err != nil {
 			// A major error occured; we cannot continue
 			logger.Errorf("VerifyDistributedShares broke; Participant Address: %v", participant.Address.Hex())
@@ -105,12 +105,12 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting call options: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting call options: %v", err)
 	}
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting txn opts: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "DisputeShareDistribution.doTask() failed getting txn opts: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -126,7 +126,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
 		}
 
 		if !isValidator {
@@ -160,7 +160,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		// Accuse participant
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -192,7 +192,7 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 
 	logger.Info("DisputeShareDistributionTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtil.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -203,7 +203,7 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 		return false
 	}
 
-	if taskState.Phase != objects.DisputeShareDistribution {
+	if taskState.Phase != dkgObjects.DisputeShareDistribution {
 		return false
 	}
 

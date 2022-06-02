@@ -2,15 +2,15 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +25,7 @@ var _ interfaces.ITask = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(state *dkgObjects.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Task: objects.NewTask(state, RegisterTaskName, start, end),
+		Task: objects.NewTask(state, constants.RegisterTaskName, start, end),
 	}
 }
 
@@ -51,7 +51,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 		taskState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
 		logger.Infof("RegisterTask Initialize(): generating private-public transport keys")
-		priv, pub, err := math.GenerateKeys()
+		priv, pub, err := dkgUtils.GenerateKeys()
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -107,8 +107,8 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	}
 
 	// Register
-	logger.Infof("Registering  publicKey (%v) with ETHDKG", FormatPublicKey(taskState.TransportPublicKey))
-	logger.Debugf("registering on block %v with public key: %v", block, FormatPublicKey(taskState.TransportPublicKey))
+	logger.Infof("Registering  publicKey (%v) with ETHDKG", dkgUtils.FormatPublicKey(taskState.TransportPublicKey))
+	logger.Debugf("registering on block %v with public key: %v", block, dkgUtils.FormatPublicKey(taskState.TransportPublicKey))
 	txn, err := eth.Contracts().Ethdkg().Register(txnOpts, taskState.TransportPublicKey)
 	if err != nil {
 		logger.Errorf("registering failed: %v", err)
@@ -142,7 +142,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	defer t.State.Unlock()
 
 	logger.Info("RegisterTask ShouldRetry")
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -153,7 +153,7 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return false
 	}
 
-	if taskState.Phase != objects.RegistrationOpen {
+	if taskState.Phase != dkgObjects.RegistrationOpen {
 		return false
 	}
 
@@ -164,12 +164,12 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	var needsRegistration bool
-	status, err := CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)
+	status, err := dkgUtils.CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)
 	logger.Infof("registration status: %v", status)
 	if err != nil {
 		needsRegistration = true
 	} else {
-		if status != Registered && status != BadRegistration {
+		if status != dkgUtils.Registered && status != dkgUtils.BadRegistration {
 			needsRegistration = true
 		}
 	}

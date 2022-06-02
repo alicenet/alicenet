@@ -3,6 +3,8 @@ package dkg
 import (
 	"context"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
@@ -10,7 +12,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -29,7 +30,7 @@ var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: objects.NewTask(state, DisputeGPKjTaskName, start, end),
+		Task: objects.NewTask(state, constants.DisputeGPKjTaskName, start, end),
 	}
 }
 
@@ -47,7 +48,7 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != objects.DisputeGPKJSubmission && taskState.Phase != objects.GPKJSubmission {
+	if taskState.Phase != dkgObjects.DisputeGPKJSubmission && taskState.Phase != dkgObjects.GPKJSubmission {
 		return fmt.Errorf("%w because it's not DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -64,12 +65,12 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		groupCommitments = append(groupCommitments, participant.Commitments)
 	}
 
-	honest, dishonest, missing, err := math.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
+	honest, dishonest, missing, err := utils.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
-	inverse, err := math.InverseArrayForUserCount(taskState.NumberOfValidators)
+	inverse, err := utils.InverseArrayForUserCount(taskState.NumberOfValidators)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
@@ -205,12 +206,12 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 		return false
 	}
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
 
-	if taskState.Phase != objects.DisputeGPKJSubmission {
+	if taskState.Phase != dkgObjects.DisputeGPKJSubmission {
 		return false
 	}
 
@@ -241,6 +242,6 @@ func (t *DisputeGPKjTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("GPKJDisputeTask done")
 }
 
-func (t *DisputeGPKjTask) GetExecutionData() interfaces.ITaskExecutionData {
+func (t *DisputeGPKjTask) GetExecutionData() executorInterfaces.ITaskExecutionData {
 	return t.Task
 }

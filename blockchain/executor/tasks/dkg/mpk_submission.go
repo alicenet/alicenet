@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
 	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 
@@ -31,7 +32,7 @@ var _ interfaces.ITask = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(state *dkgObjects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(state, MPKSubmissionTaskName, start, end),
+		Task: objects.NewTask(state, exConstants.MPKSubmissionTaskName, start, end),
 	}
 }
 
@@ -50,7 +51,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != objects.MPKSubmission {
+	if taskState.Phase != dkgObjects.MPKSubmission {
 		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -103,7 +104,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 		logger.Infof("# Participants: %v\n", len(taskState.Participants))
 
-		mpk, err := math.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
+		mpk, err := utils.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 		if err != nil && validMPK {
 			return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
 		}
@@ -200,7 +201,7 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("MPKSubmissionTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -211,7 +212,7 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 		return false
 	}
 
-	if taskState.Phase != objects.MPKSubmission {
+	if taskState.Phase != dkgObjects.MPKSubmission {
 		return false
 	}
 

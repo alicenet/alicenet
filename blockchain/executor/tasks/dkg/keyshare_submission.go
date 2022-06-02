@@ -2,15 +2,15 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +25,7 @@ var _ interfaces.ITask = &KeyShareSubmissionTask{}
 // NewKeyShareSubmissionTask creates a new task
 func NewKeyShareSubmissionTask(state *dkgObjects.DkgState, start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		Task: objects.NewTask(state, KeyShareSubmissionTaskName, start, end),
+		Task: objects.NewTask(state, constants.KeyShareSubmissionTaskName, start, end),
 	}
 }
 
@@ -53,7 +53,7 @@ func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 			taskState.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
 
 		// Generate the key shares
-		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(taskState.SecretValue)
+		g1KeyShare, g1Proof, g2KeyShare, err := dkgUtils.GenerateKeyShare(taskState.SecretValue)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -120,7 +120,7 @@ func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 		taskState.Participants[me.Address].KeyShareG1CorrectnessProofs,
 		taskState.Participants[me.Address].KeyShareG2s)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
 	}
 	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 	t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -149,7 +149,7 @@ func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 
 	logger.Info("KeyShareSubmissionTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
@@ -174,18 +174,18 @@ func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	}
 
 	// DisputeShareDistribution || KeyShareSubmission
-	if phase != uint8(objects.DisputeShareDistribution) && phase != uint8(objects.KeyShareSubmission) {
+	if phase != uint8(dkgObjects.DisputeShareDistribution) && phase != uint8(dkgObjects.KeyShareSubmission) {
 		return false
 	}
 
 	// Check the key share submission status
-	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
+	status, err := dkgUtils.CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
 	if err != nil {
 		logger.Errorf("KeyShareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true
 	}
 
-	if status == KeyShared || status == BadKeyShared {
+	if status == dkgUtils.KeyShared || status == dkgUtils.BadKeyShared {
 		return false
 	}
 

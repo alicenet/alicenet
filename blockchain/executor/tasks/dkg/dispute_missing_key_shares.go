@@ -2,14 +2,15 @@ package dkg
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -25,7 +26,7 @@ var _ interfaces.ITask = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		Task: objects.NewTask(state, DisputeMissingKeySharesTaskName, start, end),
+		Task: objects.NewTask(state, constants.DisputeMissingKeySharesTaskName, start, end),
 	}
 }
 
@@ -58,7 +59,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting accusableParticipants: %v", err)
+		return dkgUtils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting accusableParticipants: %v", err)
 	}
 
 	// accuse missing validators
@@ -67,7 +68,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txnOpts: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error getting txnOpts: %v", err)
 		}
 
 		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
@@ -81,7 +82,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txnOpts, accusableParticipants)
 		if err != nil {
-			return utils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error accusing missing key shares: %v", err)
+			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask doTask() error accusing missing key shares: %v", err)
 		}
 		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
 		t.TxOpts.GasFeeCap = txn.GasFeeCap()
@@ -121,12 +122,12 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 
 	logger.Info("DisputeMissingKeySharesTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
 
-	if taskState.Phase != objects.KeyShareSubmission {
+	if taskState.Phase != dkgObjects.KeyShareSubmission {
 		return false
 	}
 
@@ -165,12 +166,12 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask failed getting call options: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask failed getting call options: %v", err)
 	}
 
-	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask getAccusableParticipants() error getting validators: %v", err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)
@@ -182,7 +183,7 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != taskState.Nonce ||
-			p.Phase != objects.KeyShareSubmission ||
+			p.Phase != dkgObjects.KeyShareSubmission ||
 			(p.KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
 				p.KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) ||
 			(p.KeyShareG1CorrectnessProofs[0].Cmp(big.NewInt(0)) == 0 &&
