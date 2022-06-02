@@ -14,7 +14,7 @@ import (
 type EthereumMock struct {
 	*MockIEthereum
 	IEthereumClient        *MockIEthereumClient
-	TransactionWatcherMock *MockITransactionWatcher
+	TransactionWatcherMock *MockIWatcher
 	ContractsMock          *MockIContracts
 
 	ETHDKGMock           *MockIETHDKG
@@ -96,9 +96,9 @@ func NewMockLinkedSnapshots() *MockISnapshots {
 	return m
 }
 
-func NewMockLinkedTransactionWatcher() *MockITransactionWatcher {
-	transaction := NewMockITransactionWatcher()
-	transaction.WaitTransactionFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
+func NewMockLinkedTransactionWatcher() *MockIWatcher {
+	transaction := NewMockIWatcher()
+	transaction.WaitFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
 	return transaction
 }
 

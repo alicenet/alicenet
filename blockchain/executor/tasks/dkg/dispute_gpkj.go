@@ -3,9 +3,10 @@ package dkg
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -181,7 +182,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		}).Info("bad gpkj dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+		eth.TransactionWatcher().Subscribe(ctx, txn)
 	}
 
 	t.Success = true

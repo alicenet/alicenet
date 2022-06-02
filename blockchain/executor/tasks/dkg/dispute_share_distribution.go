@@ -4,12 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtil "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
@@ -174,7 +175,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		}).Info("bad share dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+		eth.TransactionWatcher().Subscribe(ctx, txn)
 	}
 
 	t.Success = true

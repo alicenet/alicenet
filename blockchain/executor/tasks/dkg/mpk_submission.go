@@ -5,12 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/crypto"
@@ -186,7 +187,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}).Info("MPK submission fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+	eth.TransactionWatcher().Subscribe(ctx, txn)
 	t.Success = true
 
 	return nil

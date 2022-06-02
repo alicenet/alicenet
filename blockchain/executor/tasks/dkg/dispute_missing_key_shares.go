@@ -97,7 +97,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 		}).Info("missing key shares dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+		eth.TransactionWatcher().Subscribe(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing key shares")
 	}

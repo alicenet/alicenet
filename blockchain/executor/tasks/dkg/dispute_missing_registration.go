@@ -2,12 +2,13 @@ package dkg
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
@@ -96,7 +97,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 		}).Info("missing registration dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+		eth.TransactionWatcher().Subscribe(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing registrations")
 	}
