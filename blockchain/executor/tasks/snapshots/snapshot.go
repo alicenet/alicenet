@@ -8,10 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
@@ -41,14 +42,14 @@ func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint6
 		Task: objects.NewTask(&SnapshotState{
 			Account:     account,
 			BlockHeader: bh,
-		}, dkgtasks.SnapshotTaskName, start, end),
+		}, constants.SnapshotTaskName, start, end),
 	}
 	snapshotTask.SetContext(ctx, cancel)
 
 	return snapshotTask
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -72,15 +73,15 @@ func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 	return nil
 }
 
-func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -131,7 +132,7 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth int
 	return nil
 }
 
-func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
 
 	t.RLock()
 	defer t.RUnlock()

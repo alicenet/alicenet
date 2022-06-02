@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
+
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,10 +24,10 @@ type DisputeGPKjTask struct {
 }
 
 // asserting that DisputeGPKjTask struct implements interface interfaces.Task
-var _ interfaces.ITask = &DisputeGPKjTask{}
+var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
-func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
+func NewDisputeGPKjTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
 		Task: objects.NewTask(state, DisputeGPKjTaskName, start, end),
 	}
@@ -33,14 +35,14 @@ func NewDisputeGPKjTask(state *objects.DkgState, start uint64, end uint64) *Disp
 
 // Initialize prepares for work to be done in the GPKjDispute phase.
 // Here, we determine if anyone submitted an invalid gpkj.
-func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Info("GPKJDisputeTask Initialize()...")
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -84,22 +86,22 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 }
 
 // DoWork is the first attempt at submitting an invalid gpkj accusation
-func (t *DisputeGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting an invalid gpkj accusation
-func (t *DisputeGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Info("GPKJDisputeTask doTask()")
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -190,14 +192,14 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Info("GPKJDisputeTask ShouldRetry()")
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false

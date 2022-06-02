@@ -5,6 +5,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type FuncSelector [4]byte
+
 // Response of the monitoring system
 type ReceiptResponse struct {
 	TxnHash common.Hash    // Hash of the txs which this response belongs

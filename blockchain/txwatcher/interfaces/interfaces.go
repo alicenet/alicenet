@@ -17,9 +17,7 @@ type ITransactionWatcher interface {
 	Status(ctx context.Context) error
 }
 
-type FuncSelector [4]byte
-
-type SelectorMap interface {
-	Selector(signature string) FuncSelector
-	Signature(selector FuncSelector) string
+type ISelectorMap interface {
+	Selector(signature string) objects.FuncSelector
+	Signature(selector objects.FuncSelector) string
 }

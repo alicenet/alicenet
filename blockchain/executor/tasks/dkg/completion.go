@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	dkgConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	taskUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -20,34 +23,34 @@ type CompletionTask struct {
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
-var _ interfaces.ITask = &CompletionTask{}
+var _ executorInterfaces.ITask = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
+func NewCompletionTask(state *dkgdkgObjects.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: objects.NewTask(state, CompletionTaskName, start, end),
+		Task: objects.NewTask(state, dkgConstants.CompletionTaskName, start, end),
 	}
 }
 
 // Initialize prepares for work to be done in the Completion phase
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Info("CompletionTask Initialize()...")
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != objects.DisputeGPKJSubmission {
+	if taskState.Phase != dkgObjects.DisputeGPKJSubmission {
 		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
 	// setup leader election
-	block, err := eth.GetGethClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	block, err := eth.GetEthereumClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
 	if err != nil {
 		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
 	}
@@ -59,21 +62,21 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 }
 
 // DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -138,19 +141,19 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth i
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Info("CompletionTask ShouldRetry()")
 
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	generalRetry := taskUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
 	if !generalRetry {
 		return false
 	}
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgdkgObjects.DkgState)
 	if !ok {
 		logger.Errorf("Invalid convertion of taskState object")
 		return false
@@ -177,11 +180,11 @@ func (t *CompletionTask) DoDone(logger *logrus.Entry) {
 	logger.WithField("Success", t.Success).Infof("CompletionTask done")
 }
 
-func (t *CompletionTask) GetExecutionData() interfaces.ITaskExecutionData {
+func (t *CompletionTask) GetExecutionData() executorInterfaces.ITaskExecutionData {
 	return t.Task
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry, taskState *objects.DkgState) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgdkgObjects.DkgState) bool {
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
@@ -195,10 +198,10 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Eth
 		return false
 	}
 
-	return phase == uint8(objects.Completion)
+	return phase == uint8(dkgObjects.Completion)
 }
 
-func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry, taskState *objects.DkgState) bool {
+func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgdkgObjects.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

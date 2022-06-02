@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -137,86 +136,6 @@ func GenerateShares(transportPrivateKey *big.Int, participants objects.Participa
 	}
 
 	return encryptedShares, privateCoefficients, commitments, nil
-}
-
-// VerifyDistributedShares verifies the distributed shares and returns
-//		true/false if the share is valid/invalid;
-//		true/false if present/not present;
-// 		error if raised
-//
-// If an error is raised, then something unrecoverable has occured.
-func VerifyDistributedShares(dkgState *objects.DkgState, participant *objects.Participant) (bool, bool, error) {
-	if dkgState == nil {
-		return false, false, errors.New("invalid dkgState")
-	}
-	if participant == nil {
-		return false, false, errors.New("invalid participant")
-	}
-
-	// Check participant is not self
-	if dkgState.Index == participant.Index {
-		// We do not verify our own submission
-		return true, true, nil
-	}
-
-	n := dkgState.NumberOfValidators
-	// TODO: this hardcoded value should reference the minimum some place else
-	if n < 4 {
-		return false, false, errors.New("invalid participants; not enough validators")
-	}
-	threshold := ThresholdForUserCount(int(n))
-
-	// Get commitments
-	commitments := dkgState.Participants[participant.Address].Commitments
-	// Get encryptedShares
-	encryptedShares := dkgState.Participants[participant.Address].EncryptedShares
-
-	// confirm correct length of commitments
-	if len(commitments) != threshold+1 {
-		return false, false, errors.New("invalid commitments: incorrect length")
-	}
-
-	// confirm correct length of encryptedShares
-	if len(encryptedShares) != int(n)-1 {
-		return false, false, errors.New("invalid encryptedShares: incorrect length")
-	}
-
-	// Perform commitment conversions
-	publicCoefficients := make([]*cloudflare.G1, threshold+1)
-	for i := 0; i < threshold+1; i++ {
-		tmp, err := bn256.BigIntArrayToG1(commitments[i])
-		if err != nil {
-			return false, false, errors.New("invalid commitment: failed conversion")
-		}
-		publicCoefficients[i] = new(cloudflare.G1)
-		publicCoefficients[i].Set(tmp)
-	}
-
-	// Get public key
-	publicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)
-	if err != nil {
-		return false, false, err
-	}
-
-	// Decrypt secret
-	encShareIdx := dkgState.Index - 1
-	if participant.Index < dkgState.Index {
-		encShareIdx--
-	}
-	encryptedSecret := encryptedShares[encShareIdx]
-	secret := cloudflare.Decrypt(encryptedSecret, dkgState.TransportPrivateKey, publicKeyG1, dkgState.Index)
-
-	// Compare shared secret
-	valid, err := cloudflare.CompareSharedSecret(secret, dkgState.Index, publicCoefficients)
-	if err != nil {
-		return false, false, err
-	}
-	if !valid {
-		// Invalid shared secret; submit dispute
-		return false, true, nil
-	}
-	// Valid shared secret
-	return true, true, nil
 }
 
 // GenerateKeyShare returns G1 key share, G1 proof, and G2 key share
@@ -370,98 +289,4 @@ func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.
 	}
 
 	return gskj, gpkjBig, nil
-}
-
-// CategorizeGroupSigners returns 0 based indicies of honest participants, 0 based indicies of dishonest participants
-func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants objects.ParticipantList, commitments [][][2]*big.Int) (objects.ParticipantList, objects.ParticipantList, objects.ParticipantList, error) {
-	// Setup + sanity checks before starting
-	n := len(participants)
-	threshold := ThresholdForUserCount(n)
-
-	good := objects.ParticipantList{}
-	bad := objects.ParticipantList{}
-	missing := objects.ParticipantList{}
-
-	// len(publishedPublicKeys) must equal len(publishedSignatures) must equal len(participants)
-	if n != len(publishedPublicKeys) || n != len(commitments) {
-		return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf(
-			"mismatched public keys (%v), participants (%v), commitments (%v)", len(publishedPublicKeys), n, len(commitments))
-	}
-
-	// Require each commitment has length threshold+1
-	for k := 0; k < n; k++ {
-		if len(commitments[k]) != threshold+1 {
-			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf(
-				"invalid commitments: required (%v); actual (%v)", threshold+1, len(commitments[k]))
-		}
-	}
-
-	// We need commitments.
-	// 		For each participant, loop through and form gpkj* term.
-	//		Perform a PairingCheck to ensure valid gpkj.
-	//		If invalid, add to bad list.
-
-	g1Base := new(cloudflare.G1).ScalarBaseMult(common.Big1)
-	orderMinus1 := new(big.Int).Sub(cloudflare.Order, common.Big1)
-	h2Neg := new(cloudflare.G2).ScalarBaseMult(orderMinus1)
-
-	// commitments:
-	//		First dimension is participant index;
-	//		Second dimension is commitment number
-	for idx := 0; idx < n; idx++ {
-		// Loop through all participants to confirm each is valid
-		participant := participants[idx]
-
-		// If public key is all zeros, then no public key was submitted;
-		// add to missing.
-		big0 := big.NewInt(0)
-		if (publishedPublicKeys[idx][0] == nil ||
-			publishedPublicKeys[idx][1] == nil ||
-			publishedPublicKeys[idx][2] == nil ||
-			publishedPublicKeys[idx][3] == nil) || (publishedPublicKeys[idx][0].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][1].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][2].Cmp(big0) == 0 &&
-			publishedPublicKeys[idx][3].Cmp(big0) == 0) {
-			missing = append(missing, participant.Copy())
-			continue
-		}
-
-		j := participant.Index // participant index
-		jBig := big.NewInt(int64(j))
-
-		tmp0 := new(cloudflare.G1)
-		gpkj, err := bn256.BigIntArrayToG2(publishedPublicKeys[idx])
-		if err != nil {
-			return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G2: %v", err)
-		}
-
-		// Outer loop determines what needs to be exponentiated
-		for polyDegreeIdx := 0; polyDegreeIdx <= threshold; polyDegreeIdx++ {
-			tmp1 := new(cloudflare.G1)
-			// Inner loop loops through participants
-			for participantIdx := 0; participantIdx < n; participantIdx++ {
-				tmp2Big := commitments[participantIdx][polyDegreeIdx]
-				tmp2, err := bn256.BigIntArrayToG1(tmp2Big)
-				if err != nil {
-					return objects.ParticipantList{}, objects.ParticipantList{}, objects.ParticipantList{}, fmt.Errorf("error converting BigIntArray to G1: %v", err)
-				}
-				tmp1.Add(tmp1, tmp2)
-			}
-			polyDegreeIdxBig := big.NewInt(int64(polyDegreeIdx))
-			exponent := new(big.Int).Exp(jBig, polyDegreeIdxBig, cloudflare.Order)
-			tmp1.ScalarMult(tmp1, exponent)
-
-			tmp0.Add(tmp0, tmp1)
-		}
-
-		gpkjStar := new(cloudflare.G1).Set(tmp0)
-		validPair := cloudflare.PairingCheck([]*cloudflare.G1{gpkjStar, g1Base}, []*cloudflare.G2{h2Neg, gpkj})
-		if validPair {
-			good = append(good, participant.Copy())
-		} else {
-			bad = append(bad, participant.Copy())
-		}
-	}
-
-	return good, bad, missing, nil
 }

@@ -205,7 +205,7 @@ func TestMPKSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
 	// Do MPK Submission task
 	tasks := suite.mpkSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		taskState := tasks[idx].State.(*objects.DkgState)
+		taskState := tasks[idx].State.(*dkgObjects.DkgState)
 		taskState.MasterPublicKey[0] = big.NewInt(1)
 
 		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)

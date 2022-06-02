@@ -6,11 +6,12 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	dkg_obj "github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -20,7 +21,7 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database,
+func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database,
 	adminHandler interfaces.AdminHandler) error {
 
 	c := eth.Contracts()
@@ -106,7 +107,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database) error {
+func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database) error {
 
 	state.Lock()
 	defer state.Unlock()
@@ -192,7 +193,7 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 }
 
 // ProcessValidatorMajorSlashed handles the Major Slash event
-func ProcessValidatorMajorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log) error {
+func ProcessValidatorMajorSlashed(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log) error {
 
 	logger.Info("ProcessValidatorMajorSlashed() ...")
 
@@ -211,7 +212,7 @@ func ProcessValidatorMajorSlashed(eth interfaces.Ethereum, logger *logrus.Entry,
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event
-func ProcessValidatorMinorSlashed(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log) error {
+func ProcessValidatorMinorSlashed(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log) error {
 
 	logger.Info("ProcessValidatorMinorSlashed() ...")
 

@@ -12,7 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -49,7 +49,7 @@ type monitor struct {
 	sync.RWMutex
 	adminHandler   interfaces.AdminHandler
 	depositHandler interfaces.DepositHandler
-	eth            interfaces.Ethereum
+	eth            ethereumInterfaces.IEthereum
 	eventMap       *objects.EventMap
 	db             *db.Database
 	cdb            *db.Database
@@ -72,7 +72,7 @@ func NewMonitor(cdb *db.Database,
 	db *db.Database,
 	adminHandler interfaces.AdminHandler,
 	depositHandler interfaces.DepositHandler,
-	eth interfaces.Ethereum,
+	eth ethereumInterfaces.IEthereum,
 	tickInterval time.Duration,
 	timeout time.Duration,
 	batchSize uint64,
@@ -313,7 +313,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
-func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth interfaces.Ethereum, monitorState *objects.MonitorState, logger *logrus.Entry,
+func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth ethereumInterfaces.IEthereum, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
 
 	defer cf()
@@ -412,7 +412,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	return nil
 }
 
-func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
+func ProcessEvents(eth ethereumInterfaces.IEthereum, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
 	// Check all the logs for an event we want to process
@@ -440,7 +440,7 @@ func ProcessEvents(eth interfaces.Ethereum, monitorState *objects.MonitorState, 
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth interfaces.Ethereum, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
+func PersistSnapshot(eth ethereumInterfaces.IEthereum, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -452,7 +452,7 @@ func PersistSnapshot(eth interfaces.Ethereum, bh *objs.BlockHeader, taskRequestC
 
 // EndpointInSync Checks if our endpoint is good to use
 // -- This function is different. Because we need to be aware of errors, State is always updated
-func EndpointInSync(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) (bool, uint32, error) {
+func EndpointInSync(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) (bool, uint32, error) {
 
 	// Default to assuming everything is awful
 	inSync := false
@@ -500,7 +500,7 @@ type eventSorter struct {
 	wg      *sync.WaitGroup
 	pending chan *logWork
 	done    map[uint64]*logWork
-	eth     interfaces.Ethereum
+	eth     ethereumInterfaces.IEthereum
 }
 
 func (es *eventSorter) Start(num uint64) {
@@ -561,7 +561,7 @@ func (es *eventSorter) wrkr() {
 	}
 }
 
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth interfaces.Ethereum, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth ethereumInterfaces.IEthereum, processed uint64, lastBlock uint64) ([][]types.Log, error) {
 	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {

@@ -1,24 +1,27 @@
-package tasks
+package executor
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgtasks"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/other_tasks"
+	"reflect"
+	"strings"
+	"sync"
+	"time"
+
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/marshaller"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots"
+	monitorInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
-	"reflect"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
@@ -33,11 +36,11 @@ const (
 )
 
 type TaskRequestInfo struct {
-	Id        string           `json:"id"`
-	Start     uint64           `json:"start"`
-	End       uint64           `json:"end"`
-	IsRunning bool             `json:"-"`
-	Task      interfaces.ITask `json:"-"`
+	Id        string                   `json:"id"`
+	Start     uint64                   `json:"start"`
+	End       uint64                   `json:"end"`
+	IsRunning bool                     `json:"-"`
+	Task      executorInterfaces.ITask `json:"-"`
 }
 
 type TaskResponse struct {
@@ -49,21 +52,21 @@ type innerBlock struct {
 	Id          string
 	Start       uint64
 	End         uint64
-	WrappedTask *objects.InstanceWrapper
+	WrappedTask *marshaller.InstanceWrapper
 }
 
 type TasksScheduler struct {
-	Schedule         map[string]TaskRequestInfo `json:"schedule"`
-	LastHeightSeen   uint64                     `json:"last_height_seen"`
-	eth              interfaces.Ethereum        `json:"-"`
-	database         *db.Database               `json:"-"`
-	adminHandler     interfaces.AdminHandler    `json:"-"`
-	marshaller       *objects.TypeRegistry      `json:"-"`
-	cancelChan       chan bool                  `json:"-"`
-	taskRequestChan  <-chan interfaces.ITask    `json:"-"`
-	taskResponseChan *taskResponseChan          `json:"-"`
-	taskKillChan     <-chan string              `json:"-"`
-	logger           *logrus.Entry              `json:"-"`
+	Schedule         map[string]TaskRequestInfo      `json:"schedule"`
+	LastHeightSeen   uint64                          `json:"last_height_seen"`
+	eth              ethereumInterfaces.IEthereum    `json:"-"`
+	database         *db.Database                    `json:"-"`
+	adminHandler     monitorInterfaces.IAdminHandler `json:"-"`
+	marshaller       *marshaller.TypeRegistry        `json:"-"`
+	cancelChan       chan bool                       `json:"-"`
+	taskRequestChan  <-chan executorInterfaces.ITask `json:"-"`
+	taskResponseChan *taskResponseChan               `json:"-"`
+	taskKillChan     <-chan string                   `json:"-"`
+	logger           *logrus.Entry                   `json:"-"`
 }
 
 type taskResponseChan struct {
@@ -93,22 +96,21 @@ type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, eth interfaces.Ethereum, adminHandler interfaces.AdminHandler, taskRequestChan <-chan interfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
-	tr := &objects.TypeRegistry{}
-	tr.RegisterInstanceType(&dkgtasks.CompletionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkgtasks.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.KeyShareSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkgtasks.PlaceHolder{})
-	tr.RegisterInstanceType(&dkgtasks.RegisterTask{})
-	tr.RegisterInstanceType(&dkgtasks.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkgtasks.ShareDistributionTask{})
-	tr.RegisterInstanceType(&other_tasks.SnapshotTask{})
+func NewTasksScheduler(database *db.Database, eth ethereumInterfaces.IEthereum, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
+	tr := &marshaller.TypeRegistry{}
+	tr.RegisterInstanceType(&dkg.CompletionTask{})
+	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
+	tr.RegisterInstanceType(&dkg.DisputeMissingShareDistributionTask{})
+	tr.RegisterInstanceType(&dkg.DisputeMissingKeySharesTask{})
+	tr.RegisterInstanceType(&dkg.DisputeMissingGPKjTask{})
+	tr.RegisterInstanceType(&dkg.DisputeGPKjTask{})
+	tr.RegisterInstanceType(&dkg.GPKjSubmissionTask{})
+	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
+	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
+	tr.RegisterInstanceType(&dkg.RegisterTask{})
+	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
+	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
+	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
 
 	s := &TasksScheduler{
 		Schedule:         make(map[string]TaskRequestInfo),
@@ -220,7 +222,7 @@ func (s *TasksScheduler) Close() {
 	s.cancelChan <- true
 }
 
-func (s *TasksScheduler) schedule(ctx context.Context, task interfaces.ITask) error {
+func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.ITask) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -470,7 +472,7 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 		return err
 	}
 
-	adminInterface := reflect.TypeOf((*interfaces.AdminClient)(nil)).Elem()
+	adminInterface := reflect.TypeOf((*monitorInterfaces.IAdminClient)(nil)).Elem()
 
 	s.Schedule = make(map[string]TaskRequestInfo)
 	for k, v := range aa.Schedule {
@@ -482,11 +484,11 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 		// Marshalling service handlers is mostly non-sense, so
 		isAdminClient := reflect.TypeOf(t).Implements(adminInterface)
 		if isAdminClient {
-			adminClient := t.(interfaces.AdminClient)
+			adminClient := t.(monitorInterfaces.IAdminClient)
 			adminClient.SetAdminHandler(s.adminHandler)
 		}
 
-		s.Schedule[k] = TaskRequestInfo{Id: v.Id, Start: v.Start, End: v.End, Task: t.(interfaces.ITask)}
+		s.Schedule[k] = TaskRequestInfo{Id: v.Id, Start: v.Start, End: v.End, Task: t.(executorInterfaces.ITask)}
 	}
 
 	return nil

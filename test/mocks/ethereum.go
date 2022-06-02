@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	types "github.com/ethereum/go-ethereum/core/types"
 )
@@ -26,7 +25,7 @@ type EthereumMock struct {
 	ValidatorStakingMock *MockIValidatorStaking
 }
 
-var _ interfaces.Ethereum = (*MockBaseEthereum)(nil)
+var _ ethereumInterfaces.IEthereum = (*MockBaseEthereum)(nil)
 
 func NewMockEthereum() *EthereumMock {
 	eth := NewMockBaseEthereum()

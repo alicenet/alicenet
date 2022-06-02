@@ -145,7 +145,7 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 	// it does not pass the PairingCheck.
 	task := tasksVec[0]
 
-	taskState, ok := task.State.(*objects.DkgState)
+	taskState, ok := task.State.(*dkgObjects.DkgState)
 	assert.True(t, ok)
 
 	// Mess up GPKj; this will cause DoWork to fail

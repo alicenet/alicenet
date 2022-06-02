@@ -53,7 +53,7 @@ type IEthereum interface {
 	SetFinalityDelay(uint64)
 	GetFinalityDelay() uint64
 
-	KnownSelectors() txWatcherInterfaces.SelectorMap
+	KnownSelectors() txWatcherInterfaces.ISelectorMap
 	TransactionWatcher() txWatcherInterfaces.ITransactionWatcher
 
 	RetryCount() int

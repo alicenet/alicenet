@@ -13,7 +13,7 @@ import (
 	"time"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks"
@@ -100,19 +100,19 @@ func (mt *mockTask) DoDone(logger *logrus.Entry) {
 	mt.DoneCalled = true
 }
 
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, interfaces.Ethereum) error {
+func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 	return nil
 }
 
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, interfaces.Ethereum) error {
+func (mt *mockTask) DoWork(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 	return nil
 }
 
-func (mt *mockTask) Initialize(context.Context, *logrus.Entry, interfaces.Ethereum) error {
+func (mt *mockTask) Initialize(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 	return nil
 }
 
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, interfaces.Ethereum) bool {
+func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) bool {
 	return false
 }
 

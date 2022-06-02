@@ -6,9 +6,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -171,7 +168,7 @@ func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 
 	t.Logf("rawData: %s", rawData)
 
-	state2 := &objects.DkgState{}
+	state2 := &dkgObjects.DkgState{}
 
 	err = json.Unmarshal(rawData, state2)
 	assert.Nil(t, err)

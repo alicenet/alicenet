@@ -9,7 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-type AdminHandler interface {
+type IAdminHandler interface {
 	AddPrivateKey([]byte, constants.CurveSpec) error
 	AddSnapshot(header *objs.BlockHeader, safeToProceedConsensus bool) error
 	AddValidatorSet(*objs.ValidatorSet) error
@@ -17,10 +17,10 @@ type AdminHandler interface {
 	SetSynchronized(v bool)
 }
 
-type DepositHandler interface {
+type IDepositHandler interface {
 	Add(*badger.Txn, uint32, []byte, *big.Int, *aobjs.Owner) error
 }
 
-type AdminClient interface {
-	SetAdminHandler(AdminHandler)
+type IAdminClient interface {
+	SetAdminHandler(IAdminHandler)
 }

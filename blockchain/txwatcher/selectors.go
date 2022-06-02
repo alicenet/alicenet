@@ -1,37 +1,38 @@
-package blockchain
+package txwatcher
 
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	txWatcherInterfaces "github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
+	"github.com/MadBase/MadNet/blockchain/txwatcher/objects"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type SelectorMapDetail struct {
 	sync.RWMutex
-	signatures map[interfaces.FuncSelector]string
-	selectors  map[string]interfaces.FuncSelector
+	signatures map[objects.FuncSelector]string
+	selectors  map[string]objects.FuncSelector
 }
 
 func NewSelectorMap() *SelectorMapDetail {
 	return &SelectorMapDetail{
-		signatures: make(map[interfaces.FuncSelector]string, 20),
-		selectors:  make(map[string]interfaces.FuncSelector, 20)}
+		signatures: make(map[objects.FuncSelector]string, 20),
+		selectors:  make(map[string]objects.FuncSelector, 20)}
 }
 
-func NewKnownSelectors() interfaces.SelectorMap {
+func NewKnownSelectors() txWatcherInterfaces.ISelectorMap {
 	sm := &SelectorMapDetail{
-		signatures: make(map[interfaces.FuncSelector]string, 20),
-		selectors:  make(map[string]interfaces.FuncSelector, 20)}
+		signatures: make(map[objects.FuncSelector]string, 20),
+		selectors:  make(map[string]objects.FuncSelector, 20)}
 
 	// This let's us recognize contract deploy transactions
-	byteCodePrefix := interfaces.FuncSelector{0x60, 0x80, 0x60, 0x40}
+	byteCodePrefix := objects.FuncSelector{0x60, 0x80, 0x60, 0x40}
 
 	sm.selectors["_deploy_"] = byteCodePrefix
 	sm.signatures[byteCodePrefix] = "_deploy_"
 
 	// This is for simple ETH transfers
-	transferSelector := interfaces.FuncSelector{0x0, 0x0, 0x0, 0x0}
+	transferSelector := objects.FuncSelector{0x0, 0x0, 0x0, 0x0}
 
 	sm.selectors["_transfer_"] = transferSelector
 	sm.signatures[transferSelector] = "_transfer_"
@@ -148,7 +149,7 @@ func NewKnownSelectors() interfaces.SelectorMap {
 	return sm
 }
 
-func (selectorMap *SelectorMapDetail) Selector(signature string) interfaces.FuncSelector {
+func (selectorMap *SelectorMapDetail) Selector(signature string) objects.FuncSelector {
 
 	// First check if we already have it
 	selectorMap.RLock()
@@ -168,7 +169,7 @@ func (selectorMap *SelectorMapDetail) Selector(signature string) interfaces.Func
 	return selector
 }
 
-func (selectorMap *SelectorMapDetail) Signature(selector interfaces.FuncSelector) string {
+func (selectorMap *SelectorMapDetail) Signature(selector objects.FuncSelector) string {
 	selectorMap.RLock()
 	defer selectorMap.RUnlock()
 
@@ -176,7 +177,7 @@ func (selectorMap *SelectorMapDetail) Signature(selector interfaces.FuncSelector
 }
 
 // CalculateSelector calculates the hash of the supplied function signature
-func CalculateSelector(signature string) interfaces.FuncSelector {
+func CalculateSelector(signature string) objects.FuncSelector {
 	var selector [4]byte
 
 	selectorSlice := crypto.Keccak256([]byte(signature))[:4]
@@ -188,7 +189,7 @@ func CalculateSelector(signature string) interfaces.FuncSelector {
 	return selector
 }
 
-func ExtractSelector(data []byte) interfaces.FuncSelector {
+func ExtractSelector(data []byte) objects.FuncSelector {
 	var selector [4]byte
 
 	if len(data) >= 4 {

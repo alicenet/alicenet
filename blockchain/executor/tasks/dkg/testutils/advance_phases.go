@@ -15,75 +15,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
 
-func advanceTo(t *testing.T, eth interfaces.Ethereum, target uint64) {
-	currentBlock, err := eth.GetCurrentHeight(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
-	c := http.Client{}
-	msg := &blockchain.JsonrpcMessage{
-		Version: "2.0",
-		ID:      []byte("1"),
-		Method:  "hardhat_mine",
-		Params:  make([]byte, 0),
-	}
-
-	if target < currentBlock {
-		return
-	}
-	blocksToMine := target - currentBlock
-	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
-
-	if msg.Params, err = json.Marshal([]string{blocksToMineString}); err != nil {
-		panic(err)
-	}
-
-	log.Printf("hardhat_mine %v blocks to target height %v", blocksToMine, target)
-
-	var buff bytes.Buffer
-	err = json.NewEncoder(&buff).Encode(msg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	reader := bytes.NewReader(buff.Bytes())
-
-	resp, err := c.Post(
-		"http://127.0.0.1:8545",
-		"application/json",
-		reader,
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 type TestSuite struct {
-	eth              interfaces.Ethereum
-	dkgStates        []*objects.DkgState
+	eth              ethereumInterfaces.IEthereum
+	dkgStates        []*dkgObjects.DkgState
 	ecdsaPrivateKeys []*ecdsa.PrivateKey
 
 	regTasks                     []*RegisterTask
@@ -142,7 +87,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	// Do Register task
 	regTasks := make([]*RegisterTask, n)
 	dispMissingRegTasks := make([]*DisputeMissingRegistrationTask, n)
-	dkgStates := make([]*objects.DkgState, n)
+	dkgStates := make([]*dkgObjects.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		// Set Registration success to true

@@ -2,11 +2,12 @@ package validator
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/tasks"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 
 	"github.com/sirupsen/logrus"
 
@@ -14,8 +15,9 @@ import (
 
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/config"
@@ -51,10 +53,10 @@ var Command = cobra.Command{
 	Long:  "Runs a MadNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keystore.Key, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (ethereumInterfaces.IEthereum, *keystore.Key, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
-	eth, err := blockchain.NewEthereumEndpoint(
+	eth, err := ethereum.NewEthereumEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.Passcodes,
@@ -332,7 +334,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	taskKillChan := make(chan string, 100)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
-	tasksScheduler := tasks.NewTasksScheduler(consDB, eth, consAdminHandlers, taskRequestChan, taskKillChan)
+	tasksScheduler := executor.NewTasksScheduler(consDB, eth, consAdminHandlers, taskRequestChan, taskKillChan)
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)

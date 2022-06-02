@@ -147,7 +147,7 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 
 	// Do Register task
 	tasksVec := make([]*RegisterTask, n)
-	dkgStates := make([]*objects.DkgState, n)
+	dkgStates := make([]*dkgObjects.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 		state, registrationTask, _ := dkgevents.UpdateStateOnRegistrationOpened(

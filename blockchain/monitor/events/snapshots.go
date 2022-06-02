@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -10,7 +11,7 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
+func ProcessSnapshotTaken(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log,
 	adminHandler interfaces.AdminHandler) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")

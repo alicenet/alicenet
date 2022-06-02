@@ -1,17 +1,18 @@
-package tasks
+package executor
 
 import (
 	"context"
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ var (
 
 const NonceToLowError = "nonce too low"
 
-func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum, task interfaces.ITask, persistStateCB func(), onFinishCB func()) error {
+func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask, persistStateCB func(), onFinishCB func()) error {
 
 	wg.Add(1)
 	go func() {
@@ -68,7 +69,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 }
 
 // initializeTask initialize the Task and retry if needed
-func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
+func initializeTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
 
@@ -91,7 +92,7 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Et
 }
 
 // executeTask execute the Task and retry if needed
-func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
+func executeTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	// Clearing TxOpts used for tx gas and nonce replacement
 	clearTxOpts(task)
 	err := task.DoWork(ctx, logger, eth)
@@ -103,7 +104,7 @@ func executeTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ether
 	return err
 }
 
-func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
+func retryTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
 	for count < retryCount && task.ShouldRetry(ctx, logger, eth) {
@@ -128,7 +129,7 @@ func retryTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 	return err
 }
 
-func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask, execData *objects.Task, retryCount int, retryDelay time.Duration) error {
+func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask, execData *objects.Task, retryCount int, retryDelay time.Duration) error {
 	logger.WithFields(logrus.Fields{
 		"GasFeeCap": execData.TxOpts.GasFeeCap,
 		"GasTipCap": execData.TxOpts.GasTipCap,
@@ -166,7 +167,7 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 // if the Tx was mined wait for FinalityDelay to confirm the Tx
 // if the Tx wasn't mined during the txTimeoutForReplacement we increase the Fee
 // to make sure the Tx will have priority for the next mined blocks
-func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, task interfaces.ITask) error {
+func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, task executorInterfaces.ITask) error {
 	// TxOpts or TxHash are empty means that no tx was queued, this could happen
 	// if there's nobody to accuse during the dispute
 	execData, ok := task.GetExecutionData().(*objects.Task)
@@ -264,7 +265,7 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth interface
 	return nil
 }
 
-func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, txHashes []common.Hash, finalityDelay, txMinedInBlock uint64, txCheckFrequency time.Duration) (bool, error) {
+func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, txHashes []common.Hash, finalityDelay, txMinedInBlock uint64, txCheckFrequency time.Duration) (bool, error) {
 	var err error
 	currentBlock := txMinedInBlock
 	confirmationBlock := txMinedInBlock + finalityDelay
@@ -294,13 +295,13 @@ func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth interfa
 	return isTxMined, nil
 }
 
-func isTxMined(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, txHashes []common.Hash) (bool, *types.Receipt) {
+func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum, txHashes []common.Hash) (bool, *types.Receipt) {
 	var receipt *types.Receipt
 	var err error
 	var isTxPending bool
 	for _, txHash := range txHashes {
 		//check tx is pending
-		_, isTxPending, err = eth.GetGethClient().TransactionByHash(ctx, txHash)
+		_, isTxPending, err = eth.GetEthereumClient().TransactionByHash(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get tx with hash %s wit error %v", txHash.Hex(), err)
 			return false, nil
@@ -311,7 +312,7 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereu
 		}
 
 		//if tx was mined we can check the receipt
-		receipt, err = eth.GetGethClient().TransactionReceipt(ctx, txHash)
+		receipt, err = eth.GetEthereumClient().TransactionReceipt(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get receipt for tx %s with error %s ", txHash.Hex(), err.Error())
 			return false, nil
@@ -336,7 +337,7 @@ func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
 	return time.Now().Add(timeoutForReplacement)
 }
 
-func clearTxOpts(task interfaces.ITask) {
+func clearTxOpts(task executorInterfaces.ITask) {
 	execData, ok := task.GetExecutionData().(*objects.Task)
 	if ok && execData != nil {
 		execData.ClearTxData()

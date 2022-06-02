@@ -2,11 +2,18 @@ package objects
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/ethereum/go-ethereum/common"
+	"errors"
 	"math/big"
 	"strings"
 	"sync"
+
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/ethereum/go-ethereum/common"
+)
+
+// ErrCanNotContinue standard error if we must drop out of ETHDKG
+var (
+	ErrCanNotContinue = errors.New("can not continue distributed key generation")
 )
 
 type Task struct {

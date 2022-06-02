@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/bridge/bindings"
@@ -86,13 +86,13 @@ func deployNode(cmd *cobra.Command, args []string) {
 
 }
 
-func testMigrations(eth interfaces.Ethereum) error {
+func testMigrations(eth ethereumInterfaces.IEthereum) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	account := eth.GetDefaultAccount()
 	logger := logging.GetLogger("test")
-	client := eth.GetGethClient()
+	client := eth.GetEthereumClient()
 	c := eth.Contracts()
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, account)
@@ -145,14 +145,14 @@ func testMigrations(eth interfaces.Ethereum) error {
 	return nil
 }
 
-func deployMigrations(eth interfaces.Ethereum) error {
+func deployMigrations(eth ethereumInterfaces.IEthereum) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	account := eth.GetDefaultAccount()
 	logger := logging.GetLogger("deploy")
-	client := eth.GetGethClient()
+	client := eth.GetEthereumClient()
 	c := eth.Contracts()
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, account)

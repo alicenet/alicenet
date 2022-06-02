@@ -2,14 +2,12 @@ package utils
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 	"math/big"
 	"os"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,9 +37,9 @@ var SendWeiCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
+func setupEthereum(logger *logrus.Entry) (ethereumInterfaces.IEthereum, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
-	eth, err := blockchain.NewEthereumEndpoint(
+	eth, err := ethereum.NewEthereumEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.Passcodes,
@@ -67,7 +65,7 @@ func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
+func LogStatus(logger *logrus.Entry, eth ethereumInterfaces.IEthereum) {
 
 	acct := eth.GetDefaultAccount()
 	err := eth.UnlockAccount(acct)
@@ -139,8 +137,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	// Route command
 	var exitCode int
 	switch cmd.Use {
-	case "ethdkg":
-		exitCode = ethdkg(logger, eth, cmd, args)
 	case "sendwei":
 		exitCode = sendwei(logger, eth, cmd, args)
 	case "utils":
@@ -153,7 +149,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func sendwei(logger *logrus.Entry, eth ethereumInterfaces.IEthereum, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
@@ -173,37 +169,6 @@ func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, 
 			logger.Errorf("Transfer failed: %v", err)
 			return 1
 		}
-	}
-
-	return 0
-}
-
-func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
-
-	// Ethereum setup
-	acct := eth.GetDefaultAccount()
-	ctx := context.Background()
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
-	if err != nil {
-		logger.Errorf("Can not build transaction options: %v", err)
-		return 1
-	}
-
-	_, rcpt, err := utils.InitializeETHDKG(eth, txnOpts, ctx)
-	if err != nil {
-		logger.Errorf("could not initialize ETHDKG: %v", err)
-		return 1
-	}
-
-	logs := rcpt.Logs
-
-	logger.Infof("Found %v log events after initializing ethdkg", len(logs))
-
-	_, err = dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
-	if err != nil {
-		logger.Errorf("could not get ETHDKG RegistrationOpened event: %v", err)
-		return 1
 	}
 
 	return 0

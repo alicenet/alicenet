@@ -3,7 +3,7 @@ package events
 import (
 	"fmt"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
@@ -12,12 +12,12 @@ import (
 )
 
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract
-func ProcessValueUpdated(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
+func ProcessValueUpdated(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log,
 	cdb *db.Database) error {
 
 	logger.Info("ProcessValueUpdated() ...")
 
-	dkgState := &objects.DkgState{}
+	dkgState := &dkgObjects.DkgState{}
 	var err error
 	err = cdb.View(func(txn *badger.Txn) error {
 		dkgState, err = objects.LoadEthDkgState(txn, logger)

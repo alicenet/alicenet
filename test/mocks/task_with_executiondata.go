@@ -2,10 +2,10 @@ package mocks
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	common "github.com/ethereum/go-ethereum/common"
 	logrus "github.com/sirupsen/logrus"
@@ -20,7 +20,7 @@ func NewMockITaskWithExecutionData(start uint64, end uint64) *MockITaskWithExecu
 	task := NewMockITask()
 	ed := objects.NewTask(objects.NewDkgState(accounts.Account{}), start, end)
 	task.GetExecutionDataFunc.SetDefaultReturn(ed)
-	task.DoWorkFunc.SetDefaultHook(func(context.Context, *logrus.Entry, interfaces.Ethereum) error {
+	task.DoWorkFunc.SetDefaultHook(func(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 		ed.TxOpts.TxHashes = append(ed.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))
 		if ed.TxOpts.GasFeeCap == nil {
 			ed.TxOpts.GasFeeCap = big.NewInt(142356)

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
 	"io/fs"
 	"math"
 	"math/big"
@@ -15,13 +14,12 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T, n int) interfaces.Ethereum {
+func setupEthereum(t *testing.T, n int) IEthereum {
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
 	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)

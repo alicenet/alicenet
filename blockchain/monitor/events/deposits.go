@@ -3,10 +3,11 @@ package events
 import (
 	"errors"
 
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
@@ -15,12 +16,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth interfaces.Ethereum, logger *logrus.Entry, log types.Log,
+func ProcessDepositReceived(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log,
 	cdb *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	dkgState := &objects.DkgState{}
+	dkgState := &dkgObjects.DkgState{}
 	var err error
 	err = cdb.View(func(txn *badger.Txn) error {
 		dkgState, err = objects.LoadEthDkgState(txn, logger)

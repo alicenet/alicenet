@@ -4,10 +4,12 @@ import (
 	"context"
 	"math/big"
 
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -21,33 +23,33 @@ type DisputeMissingShareDistributionTask struct {
 var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 
 // NewDisputeMissingShareDistributionTask creates a new task
-func NewDisputeMissingShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
+func NewDisputeMissingShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
 		Task: objects.NewTask(state, DisputeMissingShareDistributionTaskName, start, end),
 	}
 }
 
 // Initialize begins the setup phase for DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	logger.Info("DisputeMissingShareDistributionTask Initializing...")
 	return nil
 }
 
 // DoWork is the first attempt at disputing distributed shares
-func (t *DisputeMissingShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeMissingShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeMissingShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeMissingShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -106,7 +108,7 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -118,7 +120,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 		return false
 	}
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
@@ -153,9 +155,9 @@ func (t *DisputeMissingShareDistributionTask) GetExecutionData() interfaces.ITas
 	return t.Task
 }
 
-func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
+func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return nil, objects.ErrCanNotContinue
 	}

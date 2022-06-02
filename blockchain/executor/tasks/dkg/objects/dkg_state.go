@@ -2,15 +2,14 @@ package objects
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	utils2 "github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/utils"
-	"github.com/dgraph-io/badger/v2"
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/dgraph-io/badger/v2"
+
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -29,11 +28,6 @@ const (
 	GPKJSubmission
 	DisputeGPKJSubmission
 	Completion
-)
-
-// ErrCanNotContinue standard error if we must drop out of ETHDKG
-var (
-	ErrCanNotContinue = errors.New("can not continue distributed key generation")
 )
 
 // DkgState is used to track the state of the ETHDKG

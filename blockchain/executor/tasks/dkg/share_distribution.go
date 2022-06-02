@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
+	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/math"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/blockchain/tasks/dkg/utils"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +24,7 @@ type ShareDistributionTask struct {
 var _ interfaces.ITask = &ShareDistributionTask{}
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
+func NewShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
 		Task: objects.NewTask(state, ShareDistributionTaskName, start, end),
 	}
@@ -31,14 +33,14 @@ func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64)
 // Initialize begins the setup phase for ShareDistribution.
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
-func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
 
 	logger.Infof("ShareDistributionTask Initialize()")
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -76,21 +78,21 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 }
 
 // DoWork is the first attempt at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
+func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
 	// Setup
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -143,7 +145,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 // ShouldRetry checks if it makes sense to try again
 // if the DKG process is in the right phase and blocks
 // range and the distributed share hash is empty, we retry
-func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -155,7 +157,7 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return false
 	}
 
-	taskState, ok := t.State.(*objects.DkgState)
+	taskState, ok := t.State.(*dkgObjects.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
