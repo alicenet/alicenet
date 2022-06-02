@@ -7,6 +7,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"io"
 	"io/ioutil"
 	"log"
@@ -180,8 +181,8 @@ func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
 	return &key.Address, key.PrivateKey, nil
 }
 
-func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) ethereumInterfaces.IEthereum {
-	eth, err := blockchain.NewEthereumSimulator(
+func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) ethereumInterface.IEthereum {
+	eth, err := ethereum.NewEthereumSimulator(
 		privateKeys,
 		6,
 		10*time.Second,
@@ -258,7 +259,7 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	return eth
 }
 
-func StartHardHatNode(eth *blockchain.EthereumDetails) error {
+func StartHardHatNode(eth *ethereum.EthereumDetails) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -338,7 +339,7 @@ func InitializeValidatorFiles(n int) error {
 	return nil
 }
 
-func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
+func StartDeployScripts(eth *ethereum.EthereumDetails, ctx context.Context) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -385,7 +386,7 @@ func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) er
 
 func WaitForHardHatNode(ctx context.Context) error {
 	c := http.Client{}
-	msg := &blockchain.JsonRPCMessage{
+	msg := &ethereum.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  "eth_chainId",
@@ -430,7 +431,7 @@ func WaitForHardHatNode(ctx context.Context) error {
 	return err
 }
 
-func RegisterValidators(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
+func RegisterValidators(eth *ethereum.EthereumDetails, validatorAddresses []string) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -470,7 +471,7 @@ func advanceTo(t *testing.T, eth ethereumInterface.IEthereum, target uint64) {
 	}
 
 	c := http.Client{}
-	msg := &blockchain.JsonrpcMessage{
+	msg := &ethereum.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  "hardhat_mine",

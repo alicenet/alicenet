@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"errors"
+	"github.com/MadBase/MadNet/blockchain/txwatcher"
 	"sync"
 	"time"
 
@@ -137,7 +138,7 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 	}).Info("retryTaskWithFeeReplacementFrom")
 
 	// increase gas and tip cap
-	gasFeeCap, gasTipCap := utils.IncreaseFeeAndTipCap(
+	gasFeeCap, gasTipCap := txwatcher.IncreaseFeeAndTipCap(
 		execData.TxOpts.GasFeeCap,
 		execData.TxOpts.GasTipCap,
 		eth.GetTxFeePercentageToIncrease(),

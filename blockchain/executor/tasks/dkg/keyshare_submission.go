@@ -10,7 +10,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,9 +23,9 @@ type KeyShareSubmissionTask struct {
 var _ interfaces.ITask = &KeyShareSubmissionTask{}
 
 // NewKeyShareSubmissionTask creates a new task
-func NewKeyShareSubmissionTask(state *dkgObjects.DkgState, start uint64, end uint64) *KeyShareSubmissionTask {
+func NewKeyShareSubmissionTask(dkgState *state.DkgState, start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		Task: objects.NewTask(state, constants.KeyShareSubmissionTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.KeyShareSubmissionTaskName, start, end),
 	}
 }
 
@@ -39,7 +39,7 @@ func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 
 	logger.Info("KeyShareSubmissionTask Initialize()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -53,7 +53,7 @@ func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 			taskState.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
 
 		// Generate the key shares
-		g1KeyShare, g1Proof, g2KeyShare, err := dkgUtils.GenerateKeyShare(taskState.SecretValue)
+		g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(taskState.SecretValue)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -154,7 +154,7 @@ func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
@@ -174,18 +174,18 @@ func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus
 	}
 
 	// DisputeShareDistribution || KeyShareSubmission
-	if phase != uint8(dkgObjects.DisputeShareDistribution) && phase != uint8(dkgObjects.KeyShareSubmission) {
+	if phase != uint8(state.DisputeShareDistribution) && phase != uint8(state.KeyShareSubmission) {
 		return false
 	}
 
 	// Check the key share submission status
-	status, err := dkgUtils.CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
+	status, err := state.CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, taskState.Participants[me.Address].KeyShareG1s)
 	if err != nil {
 		logger.Errorf("KeyShareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
 		return true
 	}
 
-	if status == dkgUtils.KeyShared || status == dkgUtils.BadKeyShared {
+	if status == state.KeyShared || status == state.BadKeyShared {
 		return false
 	}
 

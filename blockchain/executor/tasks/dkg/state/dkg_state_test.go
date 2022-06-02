@@ -1,9 +1,8 @@
-package objects
+package state
 
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"math/big"
 	"testing"
 
@@ -67,7 +66,7 @@ func TestDKGState_ParticipantListExtractIndices(t *testing.T) {
 func TestDKGState_MarshalAndUnmarshalBigInt(t *testing.T) {
 
 	// generate transport keys
-	priv, pub, err := utils.GenerateKeys()
+	priv, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 
 	// marshal privkey
@@ -118,7 +117,7 @@ func TestDKGState_MarshalAndUnmarshalParticipant(t *testing.T) {
 	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
 
 	// generate transport keys
-	_, pub, err := utils.GenerateKeys()
+	_, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 
 	// create a Participant obj
@@ -158,7 +157,7 @@ func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {
 	})
 
 	// generate transport keys
-	priv, pub, err := utils.GenerateKeys()
+	priv, pub, err := GenerateKeys()
 	assert.Nil(t, err)
 	state.TransportPrivateKey = priv
 	state.TransportPublicKey = pub

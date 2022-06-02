@@ -10,7 +10,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -24,9 +24,9 @@ type DisputeMissingKeySharesTask struct {
 var _ interfaces.ITask = &DisputeMissingKeySharesTask{}
 
 // NewDisputeMissingKeySharesTask creates a new task
-func NewDisputeMissingKeySharesTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
+func NewDisputeMissingKeySharesTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		Task: objects.NewTask(state, constants.DisputeMissingKeySharesTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeMissingKeySharesTaskName, start, end),
 	}
 }
 
@@ -50,7 +50,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -114,7 +114,7 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
@@ -127,7 +127,7 @@ func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *l
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.KeyShareSubmission {
+	if taskState.Phase != state.KeyShareSubmission {
 		return false
 	}
 
@@ -158,7 +158,7 @@ func (t *DisputeMissingKeySharesTask) GetExecutionData() interfaces.ITaskExecuti
 
 func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return nil, objects.ErrCanNotContinue
 	}
@@ -183,7 +183,7 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != taskState.Nonce ||
-			p.Phase != dkgObjects.KeyShareSubmission ||
+			p.Phase != state.KeyShareSubmission ||
 			(p.KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
 				p.KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) ||
 			(p.KeyShareG1CorrectnessProofs[0].Cmp(big.NewInt(0)) == 0 &&

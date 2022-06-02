@@ -10,7 +10,7 @@ import (
 	dkgConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	taskUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/MadBase/MadNet/constants"
@@ -26,9 +26,9 @@ type CompletionTask struct {
 var _ executorInterfaces.ITask = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *dkgObjects.DkgState, start uint64, end uint64) *CompletionTask {
+func NewCompletionTask(dkgState *state.DkgState, start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: objects.NewTask(state, dkgConstants.CompletionTaskName, start, end),
+		Task: objects.NewTask(dkgState, dkgConstants.CompletionTaskName, start, end),
 	}
 }
 
@@ -40,12 +40,12 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 
 	logger.Info("CompletionTask Initialize()...")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != dkgObjects.DisputeGPKJSubmission {
+	if taskState.Phase != state.DisputeGPKJSubmission {
 		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -76,7 +76,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth e
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -153,7 +153,7 @@ func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, 
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Errorf("Invalid convertion of taskState object")
 		return false
@@ -184,7 +184,7 @@ func (t *CompletionTask) GetExecutionData() executorInterfaces.ITaskExecutionDat
 	return t.Task
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgObjects.DkgState) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
@@ -198,10 +198,10 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterf
 		return false
 	}
 
-	return phase == uint8(dkgObjects.Completion)
+	return phase == uint8(state.Completion)
 }
 
-func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgObjects.DkgState) bool {
+func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

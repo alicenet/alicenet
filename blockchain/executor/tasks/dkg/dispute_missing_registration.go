@@ -10,7 +10,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -24,9 +24,9 @@ type DisputeMissingRegistrationTask struct {
 var _ interfaces.ITask = &DisputeMissingRegistrationTask{}
 
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
-func NewDisputeMissingRegistrationTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
+func NewDisputeMissingRegistrationTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		Task: objects.NewTask(state, constants.DisputeMissingRegistrationTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeMissingRegistrationTaskName, start, end),
 	}
 }
 
@@ -50,7 +50,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -121,13 +121,13 @@ func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.RegistrationOpen {
+	if taskState.Phase != state.RegistrationOpen {
 		return false
 	}
 
@@ -158,7 +158,7 @@ func (t *DisputeMissingRegistrationTask) GetExecutionData() interfaces.ITaskExec
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return nil, objects.ErrCanNotContinue
 	}
@@ -187,7 +187,7 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 
 		if isValidator && (!ok ||
 			participant.Nonce != taskState.Nonce ||
-			participant.Phase != dkgObjects.RegistrationOpen ||
+			participant.Phase != state.RegistrationOpen ||
 			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {
 

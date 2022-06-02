@@ -118,7 +118,7 @@ export const getCurrentState = async (
     };
     state.validators.push(validator);
   }
-  // Contract data
+  // Contract state
   const contractData = [
     {
       contractState: state.PublicStaking,

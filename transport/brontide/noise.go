@@ -40,7 +40,7 @@ const (
 	keyRotationInterval = 1000
 
 	// handshakeReadTimeout is a read timeout that will be enforced when
-	// waiting for data payloads during the various acts of Brontide. If
+	// waiting for state payloads during the various acts of Brontide. If
 	// the remote party fails to deliver the proper payload within this
 	// time frame, then we'll fail the connection.
 	handshakeReadTimeout = time.Second * 5
@@ -232,8 +232,8 @@ func (s *symmetricState) mixKey(input []byte) {
 	s.InitializeKey(s.tempKey)
 }
 
-// mixHash hashes the passed input data into the cumulative handshake digest.
-// The running result of this value (h) is used as the associated data in all
+// mixHash hashes the passed input state into the cumulative handshake digest.
+// The running result of this value (h) is used as the associated state in all
 // decryption/encryption operations.
 func (s *symmetricState) mixHash(data []byte) {
 	h := sha256.New()
@@ -244,7 +244,7 @@ func (s *symmetricState) mixHash(data []byte) {
 }
 
 // EncryptAndHash returns the authenticated encryption of the passed plaintext.
-// When encrypting the handshake digest (h) is used as the associated data to
+// When encrypting the handshake digest (h) is used as the associated state to
 // the AEAD cipher.
 func (s *symmetricState) EncryptAndHash(plaintext []byte) []byte {
 	ciphertext := s.Encrypt(s.handshakeDigest[:], nil, plaintext)
@@ -256,7 +256,7 @@ func (s *symmetricState) EncryptAndHash(plaintext []byte) []byte {
 
 // DecryptAndHash returns the authenticated decryption of the passed
 // ciphertext.  When encrypting the handshake digest (h) is used as the
-// associated data to the AEAD cipher.
+// associated state to the AEAD cipher.
 func (s *symmetricState) DecryptAndHash(ciphertext []byte) ([]byte, error) {
 	plaintext, err := s.Decrypt(s.handshakeDigest[:], nil, ciphertext)
 	if err != nil {

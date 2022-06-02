@@ -12,7 +12,7 @@ import (
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 
@@ -30,9 +30,9 @@ type MPKSubmissionTask struct {
 var _ interfaces.ITask = &MPKSubmissionTask{}
 
 // NewMPKSubmissionTask creates a new task
-func NewMPKSubmissionTask(state *dkgObjects.DkgState, start uint64, end uint64) *MPKSubmissionTask {
+func NewMPKSubmissionTask(dkgState *state.DkgState, start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(state, exConstants.MPKSubmissionTaskName, start, end),
+		Task: objects.NewTask(dkgState, exConstants.MPKSubmissionTaskName, start, end),
 	}
 }
 
@@ -46,12 +46,12 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 	logger.Info("MPKSubmissionTask Initialize()...")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != dkgObjects.MPKSubmission {
+	if taskState.Phase != state.MPKSubmission {
 		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -104,7 +104,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 
 		logger.Infof("# Participants: %v\n", len(taskState.Participants))
 
-		mpk, err := utils.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
+		mpk, err := state.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
 		if err != nil && validMPK {
 			return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
 		}
@@ -136,7 +136,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -206,13 +206,13 @@ func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entr
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.MPKSubmission {
+	if taskState.Phase != state.MPKSubmission {
 		return false
 	}
 
@@ -233,7 +233,7 @@ func (t *MPKSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
 
 func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) bool {
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("MPKSubmissionTask ShouldRetry() invalid convertion of taskState object")
 		return true
@@ -274,7 +274,7 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereumInt
 	return true
 }
 
-func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *dkgObjects.DkgState) bool {
+func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

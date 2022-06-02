@@ -94,7 +94,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	defer mutex.Unlock()
 	return ah.database.Update(func(txn *badger.Txn) error {
 		// Checking if we can exit earlier (mainly when reconstructing the chain
-		// from ethereum data)
+		// from ethereum state)
 		{
 			height := uint32(1)
 			if v.NotBefore >= 1 {
@@ -145,7 +145,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 
 // AddValidatorSetEdgecase adds a validator set to the db if we have the
 // expected block at the height 'v.NotBefore-1' (e.g syncing from the ethereum
-// data). Otherwise, it will mark the change to happen in the future once we
+// state). Otherwise, it will mark the change to happen in the future once we
 // have the required block
 func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
 	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)

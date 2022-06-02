@@ -2,25 +2,23 @@ package txwatcher
 
 import (
 	"context"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/logging"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"testing"
 	"time"
-
-	"github.com/MadBase/MadNet/blockchain/tasks/dkg/dtest"
-
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTransferFunds(t *testing.T) {
 	logger := logging.GetLogger("txwatcher")
 	logger.SetLevel(logrus.TraceLevel)
 	n := 2
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
-	eth, err := blockchain.NewEthereumSimulator(
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
+	eth, err := ethereum.NewEthereumSimulator(
 		ecdsaPrivateKeys,
 		6,
 		10*time.Second,
@@ -30,9 +28,6 @@ func TestTransferFunds(t *testing.T) {
 		50,
 		math.MaxInt64)
 	defer eth.Close()
-
-	logger := logging.GetLogger("ethereum")
-	logger.SetLevel(logrus.DebugLevel)
 
 	finalityDelay := uint64(6)
 	eth.SetFinalityDelay(finalityDelay)

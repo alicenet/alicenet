@@ -12,8 +12,8 @@ library BaseParserLibrary {
     uint256 internal constant _BYTES_HEADER_SIZE = 32;
 
     /// @notice Extracts a uint32 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint32
     /// @dev ~559 gas
     function extractUInt32(bytes memory src, uint256 offset) internal pure returns (uint32 val) {
@@ -43,8 +43,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint16 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint16
     /// @dev ~204 gas
     function extractUInt16(bytes memory src, uint256 offset) internal pure returns (uint16 val) {
@@ -72,8 +72,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint16 from a big endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint16
     /// @dev ~204 gas
     function extractUInt16FromBigEndian(bytes memory src, uint256 offset)
@@ -104,8 +104,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a bool from a bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return a bool
     /// @dev ~204 gas
     function extractBool(bytes memory src, uint256 offset) internal pure returns (bool) {
@@ -134,8 +134,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint256 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint256
     /// @dev ~5155 gas
     function extractUInt256(bytes memory src, uint256 offset) internal pure returns (uint256 val) {
@@ -162,8 +162,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint256 from a big endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint256
     /// @dev ~1400 gas
     function extractUInt256FromBigEndian(bytes memory src, uint256 offset)
@@ -286,7 +286,7 @@ library BaseParserLibrary {
     }
 
     /// @notice Reverts a bytes array. Can be used to convert an array from little endian to big endian and vice-versa.
-    /// @param orig the binary data
+    /// @param orig the binary state
     /// @return reversed the reverted bytes array
     /// @dev ~13832 gas
     function reverse(bytes memory orig) internal pure returns (bytes memory reversed) {
@@ -299,7 +299,7 @@ library BaseParserLibrary {
     /// @notice Copy 'len' bytes from memory address 'src', to address 'dest'. This function does not check the or destination, it only copies the bytes.
     /// @param src the pointer to the source
     /// @param dest the pointer to the destination
-    /// @param len the len of data to be copied
+    /// @param len the len of state to be copied
     function copy(
         uint256 src,
         uint256 dest,
@@ -326,7 +326,7 @@ library BaseParserLibrary {
         }
     }
 
-    /// @notice Returns a memory pointer to the data portion of the provided bytes array.
+    /// @notice Returns a memory pointer to the state portion of the provided bytes array.
     /// @param bts the bytes array to get a pointer from
     /// @return addr the pointer to the `bts` bytes array
     function dataPtr(bytes memory bts) internal pure returns (uint256 addr) {
@@ -375,7 +375,7 @@ library BaseParserLibrary {
     /// @notice Extracts a bytes32 extracted from `src`'s `offset` forward.
     /// @param src the source bytes array to extract from
     /// @param offset where to start extracting from
-    /// @return out the bytes32 data extracted from `src`
+    /// @return out the bytes32 state extracted from `src`
     /// @dev ~439 gas
     function extractBytes32(bytes memory src, uint256 offset) internal pure returns (bytes32 out) {
         require(

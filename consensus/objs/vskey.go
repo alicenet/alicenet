@@ -18,7 +18,7 @@ func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; vsk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	nb, _ := utils.UnmarshalUint32(data[2:6])

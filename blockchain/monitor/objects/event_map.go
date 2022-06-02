@@ -1,13 +1,14 @@
 package objects
 
 import (
+	"github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-type EventProcessor func(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, state *MonitorState, log types.Log) error
+type EventProcessor func(eth interfaces.IEthereum, logger *logrus.Entry, state *MonitorState, log types.Log) error
 
 type EventInformation struct {
 	Name      string

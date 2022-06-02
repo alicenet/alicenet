@@ -157,7 +157,7 @@ func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context,
 		if len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
 			if !ok {
-				return errors.New("server fault - data invalid for requested value")
+				return errors.New("server fault - state invalid for requested value")
 			}
 			tx = tmp
 		} else {
@@ -590,7 +590,7 @@ func (srpc *Handlers) HandleLocalStateGetMinedTransaction(ctx context.Context, r
 		if len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
 			if !ok {
-				return errors.New("server fault - data invalid for requested value")
+				return errors.New("server fault - state invalid for requested value")
 			}
 			tx = tmp
 		} else {

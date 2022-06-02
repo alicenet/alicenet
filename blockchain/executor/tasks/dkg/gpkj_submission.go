@@ -12,7 +12,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -23,13 +23,13 @@ type GPKjSubmissionTask struct {
 	adminHandler monInterfaces.IAdminHandler
 }
 
-// asserting that GPKjSubmissionTask struct implements interface interfaces.Task
+// asserting that GPKjSubmissionTask struct implements interface exInterfacesinterfaces.Task
 var _ interfaces.ITask = &GPKjSubmissionTask{}
 
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
-func NewGPKjSubmissionTask(state *dkgObjects.DkgState, start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
+func NewGPKjSubmissionTask(dkgState *state.DkgState, start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         objects.NewTask(state, exConstants.GPKjSubmissionTaskName, start, end),
+		Task:         objects.NewTask(dkgState, exConstants.GPKjSubmissionTaskName, start, end),
 		adminHandler: adminHandler,
 	}
 }
@@ -43,7 +43,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask Initialize()...")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -60,7 +60,7 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 		}
 
 		// Generate the GPKj
-		groupPrivateKey, groupPublicKey, err := dkgUtils.GenerateGroupKeys(
+		groupPrivateKey, groupPublicKey, err := state.GenerateGroupKeys(
 			taskState.TransportPrivateKey, taskState.PrivateCoefficients,
 			encryptedShares, taskState.Index, participantsList)
 		if err != nil {
@@ -100,7 +100,7 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -158,13 +158,13 @@ func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Ent
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.GPKJSubmission {
+	if taskState.Phase != state.GPKJSubmission {
 		return false
 	}
 

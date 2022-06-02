@@ -3,12 +3,16 @@ package testutils
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	gcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
 	"math/big"
+	"testing"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -55,19 +59,19 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
 
-func InitializeNewDetDkgStateInfo(n int) ([]*dkgObjects.DkgState, []*ecdsa.PrivateKey) {
+func InitializeNewDetDkgStateInfo(n int) ([]*state.DkgState, []*ecdsa.PrivateKey) {
 	return InitializeNewDkgStateInfo(n, true)
 }
 
-func InitializeNewNonDetDkgStateInfo(n int) ([]*dkgObjects.DkgState, []*ecdsa.PrivateKey) {
+func InitializeNewNonDetDkgStateInfo(n int) ([]*state.DkgState, []*ecdsa.PrivateKey) {
 	return InitializeNewDkgStateInfo(n, false)
 }
 
-func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.DkgState, []*ecdsa.PrivateKey) {
+func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*state.DkgState, []*ecdsa.PrivateKey) {
 	// Get private keys for validators
 	privKeys := testutils.SetupPrivateKeys(n)
 	accountsArray := testutils.SetupAccounts(privKeys)
-	dkgStates := []*dkgObjects.DkgState{}
+	dkgStates := []*state.DkgState{}
 	threshold := crypto.CalcThreshold(n)
 
 	// Make base for secret key
@@ -86,7 +90,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.D
 	for k := 0; k < n; k++ {
 		bigK := big.NewInt(int64(k))
 		// Get base DkgState
-		dkgState := dkgObjects.NewDkgState(accountsArray[k])
+		dkgState := state.NewDkgState(accountsArray[k])
 		// Set Index
 		dkgState.Index = k + 1
 		// Set Number of Validators
@@ -129,7 +133,7 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.D
 			dkgState.PrivateCoefficients = privCoefs
 		} else {
 			// Random shares
-			_, privCoefs, _, err := utils.GenerateShares(dkgState.TransportPrivateKey, dkgState.GetSortedParticipants())
+			_, privCoefs, _, err := state.GenerateShares(dkgState.TransportPrivateKey, dkgState.GetSortedParticipants())
 			if err != nil {
 				panic(err)
 			}
@@ -142,9 +146,9 @@ func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*dkgObjects.D
 	return dkgStates, privKeys
 }
 
-func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) dkgObjects.ParticipantList {
+func GenerateParticipantList(dkgStates []*state.DkgState) state.ParticipantList {
 	n := len(dkgStates)
-	participants := make(dkgObjects.ParticipantList, int(n))
+	participants := make(state.ParticipantList, int(n))
 	for idx := 0; idx < n; idx++ {
 		addr := dkgStates[idx].Account.Address
 		publicKey := [2]*big.Int{}
@@ -152,7 +156,7 @@ func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) dkgObjects.Partic
 		publicKey[1] = new(big.Int)
 		publicKey[0].Set(dkgStates[idx].TransportPublicKey[0])
 		publicKey[1].Set(dkgStates[idx].TransportPublicKey[1])
-		participant := &dkgObjects.Participant{}
+		participant := &state.Participant{}
 		participant.Address = addr
 		participant.PublicKey = publicKey
 		participant.Index = dkgStates[idx].Index
@@ -161,7 +165,7 @@ func GenerateParticipantList(dkgStates []*dkgObjects.DkgState) dkgObjects.Partic
 	return participants
 }
 
-func GenerateEncryptedSharesAndCommitments(dkgStates []*dkgObjects.DkgState) {
+func GenerateEncryptedSharesAndCommitments(dkgStates []*state.DkgState) {
 	n := len(dkgStates)
 	for k := 0; k < n; k++ {
 		dkgState := dkgStates[k]
@@ -200,7 +204,7 @@ func GeneratePublicCoefficients(privCoefs []*big.Int) [][2]*big.Int {
 	return publicCoefs
 }
 
-func GenerateEncryptedShares(dkgStates []*dkgObjects.DkgState, idx int) []*big.Int {
+func GenerateEncryptedShares(dkgStates []*state.DkgState, idx int) []*big.Int {
 	dkgState := dkgStates[idx]
 	// Get array of public keys and convert to cloudflare.G1
 	publicKeysBig := [][2]*big.Int{}
@@ -230,11 +234,11 @@ func GenerateEncryptedShares(dkgStates []*dkgObjects.DkgState, idx int) []*big.I
 	return encryptedShares
 }
 
-func GenerateKeyShares(dkgStates []*dkgObjects.DkgState) {
+func GenerateKeyShares(dkgStates []*state.DkgState) {
 	n := len(dkgStates)
 	for k := 0; k < n; k++ {
 		dkgState := dkgStates[k]
-		g1KeyShare, g1Proof, g2KeyShare, err := utils.GenerateKeyShare(dkgState.SecretValue)
+		g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(dkgState.SecretValue)
 		if err != nil {
 			panic(err)
 		}
@@ -250,7 +254,7 @@ func GenerateKeyShares(dkgStates []*dkgObjects.DkgState) {
 
 // GenerateMasterPublicKey computes the mpk for the protocol.
 // This computes this by using all of the secret values from dkgStates.
-func GenerateMasterPublicKey(dkgStates []*dkgObjects.DkgState) []*dkgObjects.DkgState {
+func GenerateMasterPublicKey(dkgStates []*state.DkgState) []*state.DkgState {
 	n := len(dkgStates)
 	msk := new(big.Int)
 	for k := 0; k < n; k++ {
@@ -268,7 +272,7 @@ func GenerateMasterPublicKey(dkgStates []*dkgObjects.DkgState) []*dkgObjects.Dkg
 	return dkgStates
 }
 
-func GenerateGPKJ(dkgStates []*dkgObjects.DkgState) {
+func GenerateGPKJ(dkgStates []*state.DkgState) {
 	n := len(dkgStates)
 	for k := 0; k < n; k++ {
 		dkgState := dkgStates[k]
@@ -283,7 +287,7 @@ func GenerateGPKJ(dkgStates []*dkgObjects.DkgState) {
 			}
 		}
 
-		groupPrivateKey, groupPublicKey, err := utils.GenerateGroupKeys(dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
+		groupPrivateKey, groupPublicKey, err := state.GenerateGroupKeys(dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
 			encryptedShares, dkgState.Index, dkgState.GetSortedParticipants())
 		if err != nil {
 			panic("Could not generate group keys")
@@ -320,4 +324,19 @@ func GetETHDKGRegistrationOpened(logs []*types.Log, eth ethereumInterfaces.IEthe
 		}
 	}
 	return nil, fmt.Errorf("event not found")
+}
+
+func GenerateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
+
+	// Generating a valid ethereum address
+	key, _ := gcrypto.GenerateKey()
+	chainId := big.NewInt(1337)
+	transactor, err := bind.NewKeyedTransactorWithChainID(key, chainId)
+	assert.Nil(t, err, "failed to create transactor")
+
+	// Generate a public key
+	privateKey, publicKey, err := state.GenerateKeys()
+	assert.Nilf(t, err, "failed to generate keys")
+
+	return transactor.From, privateKey, publicKey
 }

@@ -143,8 +143,8 @@ export async function hasConstructorArgs(
   return false;
 }
 /**
- * @description encodes init call data input to be used by the custom hardhat tasks
- * @param args values of the init call data as an array of strings where each string represents variable value
+ * @description encodes init call state input to be used by the custom hardhat tasks
+ * @param args values of the init call state as an array of strings where each string represents variable value
  * @returns the args array as a comma delimited string
  */
 export async function getEncodedInitCallData(

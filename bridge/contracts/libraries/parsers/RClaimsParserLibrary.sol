@@ -7,7 +7,7 @@ import {
 
 import "./BaseParserLibrary.sol";
 
-/// @title Library to parse the RClaims structure from a blob of capnproto data
+/// @title Library to parse the RClaims structure from a blob of capnproto state
 library RClaimsParserLibrary {
     struct RClaims {
         uint32 chainId;
@@ -19,18 +19,18 @@ library RClaimsParserLibrary {
     /** @dev size in bytes of a RCLAIMS cap'npro structure without the cap'n
       proto header bytes*/
     uint256 internal constant _RCLAIMS_SIZE = 56;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
+    /** @dev Number of bytes of a capnproto header, the state starts after the
       header */
     uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
-    @notice This function is for deserializing data directly from capnproto
+    @notice This function is for deserializing state directly from capnproto
             RClaims. It will skip the first 8 bytes (capnproto headers) and
             deserialize the RClaims Data. If RClaims is being extracted from
             inside of other structure (E.g RCert capnproto) use the
             `extractInnerRClaims(bytes, uint)` instead.
     */
-    /// @param src Binary data containing a RClaims serialized struct with Capn Proto headers
+    /// @param src Binary state containing a RClaims serialized struct with Capn Proto headers
     /// @dev Execution cost: 1506 gas
     function extractRClaims(bytes memory src) internal pure returns (RClaims memory rClaims) {
         return extractInnerRClaims(src, _CAPNPROTO_HEADER_SIZE);
@@ -42,8 +42,8 @@ library RClaimsParserLibrary {
             other structure (E.g RCert capnproto) or skipping the capnproto
             headers.
     */
-    /// @param src Binary data containing a RClaims serialized struct without Capn Proto headers
-    /// @param dataOffset offset to start reading the RClaims data from inside src
+    /// @param src Binary state containing a RClaims serialized struct without Capn Proto headers
+    /// @param dataOffset offset to start reading the RClaims state from inside src
     /// @dev Execution cost: 1332 gas
     function extractInnerRClaims(bytes memory src, uint256 dataOffset)
         internal

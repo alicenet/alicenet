@@ -49,7 +49,7 @@ func GetFreshDataUnsorted(size, length int) [][]byte {
 		}
 		data = append(data, Hasher(key)[:length])
 	}
-	//sort.Sort(DataArray(data))
+	//sort.Sort(DataArray(state))
 	return data
 }
 

@@ -22,7 +22,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @dev callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
      * @param value_: value in WEIs to send together the call
-     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
+     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
      */
     function callAny(
         address target_,
@@ -37,7 +37,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
      * @param target_: the address of the contract to be called
-     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
+     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
      */
     function delegateCallAny(address target_, bytes calldata cdata_)
         public
@@ -52,7 +52,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
-     * @param deployCode_ Hex encoded data with the deployment code of the contract to be deployed +
+     * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
@@ -69,7 +69,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * through the factory
      * @param value_ endowment value in WEIS for the created contract
      * @param salt_ salt used to determine the final determinist address for the deployed contract
-     * @param deployCode_ Hex encoded data with the deployment code of the contract to be deployed +
+     * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
@@ -108,7 +108,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev deployTemplate deploys a template contract with the universal code copy constructor that
      * deploys the contract+constructorArgs defined in the deployCode_ as the contracts runtime code.
-     * @param deployCode_ Hex encoded data with the deploymentCode + (constructor args appended if any)
+     * @param deployCode_ Hex encoded state with the deploymentCode + (constructor args appended if any)
      * @return contractAddr the address of the deployed template contract
      */
     function deployTemplate(bytes calldata deployCode_)
@@ -135,7 +135,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev multiCall allows EOA to make multiple function calls within a single transaction
      * impersonating the factory
-     * @param cdata_: array of hex encoded data with the function calls (function signature + arguments)
+     * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
     function multiCall(bytes[] calldata cdata_) public onlyOwner {
         _multiCall(cdata_);

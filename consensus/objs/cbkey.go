@@ -18,7 +18,7 @@ func (b *BlockHeaderHeightKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("BlockHeaderHeightKey.UnmarshalBinary; bhhk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("BlockHeaderHeightKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("BlockHeaderHeightKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	nb, err := utils.UnmarshalUint32(data[2:6])

@@ -130,7 +130,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				updateLocalState = false
 			} else {
 				// if it's safe to proceed, we update ownState with the latest
-				// data
+				// state
 				ownState, err := ce.database.GetOwnState(txn)
 				if err != nil {
 					return err

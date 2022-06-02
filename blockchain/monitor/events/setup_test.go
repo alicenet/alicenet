@@ -1,12 +1,12 @@
 package events
 
 import (
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	interfaces2 "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"strings"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -16,9 +16,10 @@ import (
 func TestRegisteringETHDKGEvents(t *testing.T) {
 
 	var em *objects.EventMap = objects.NewEventMap()
-	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()
+	db := mocks.NewTestDB()
+	var adminHandler interfaces2.IAdminHandler = mocks.NewMockIAdminHandler()
 
-	monitor.RegisterETHDKGEvents(em, adminHandler, make(chan interfaces.ITask))
+	RegisterETHDKGEvents(em, db, adminHandler, make(chan interfaces.ITask), make(chan string))
 
 	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {

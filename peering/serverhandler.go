@@ -77,7 +77,7 @@ func NewP2PDiscoveryServerHandler(logger *logrus.Logger, addr net.Addr, service 
 
 // NewP2PServerHandler returns a RPC ServerHandler for the Pz2P Service.
 func newP2PServerHandler(logger *logrus.Logger, addr net.Addr, service interfaces.P2PServer) *ServerHandler {
-	srvr := grpc.NewServer(grpc.ConnectionTimeout(constants.SrvrMsgTimeout))//, grpc.MaxConcurrentStreams(constants.P2PMaxConcurrentStreams), grpc.NumStreamWorkers(constants.P2PStreamWorkers)) //, grpc.ReadBufferSize(constants.ReadBufferSize))
+	srvr := grpc.NewServer(grpc.ConnectionTimeout(constants.SrvrMsgTimeout)) //, grpc.MaxConcurrentStreams(constants.P2PMaxConcurrentStreams), grpc.NumStreamWorkers(constants.P2PStreamWorkers)) //, grpc.ReadBufferSize(constants.ReadBufferSize))
 	pb.RegisterP2PServer(srvr, service)
 	handler := &ServerHandler{
 		listener: NewListener(logger, addr),

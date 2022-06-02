@@ -57,7 +57,7 @@ func TestValueIndexAdd(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 	owner = makeOwner()
 	err = db.Update(func(txn *badger.Txn) error {
@@ -68,7 +68,7 @@ func TestValueIndexAdd(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
@@ -114,7 +114,7 @@ func TestValueIndexDrop(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 

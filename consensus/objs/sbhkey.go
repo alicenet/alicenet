@@ -18,7 +18,7 @@ func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; sbhk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	b.Key = utils.CopySlice(data[2:])

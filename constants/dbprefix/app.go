@@ -1,6 +1,6 @@
 package dbprefix
 
-// All functions in this file are prefix designators for database data types.
+// All functions in this file are prefix designators for database state types.
 // These functions name the resource being referenced in the function name.
 // All prefixes should use two character length identifiers and should start
 // at `n` as the first character allowed at index zero of an identifier.

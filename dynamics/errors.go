@@ -23,7 +23,7 @@ var (
 	// in the database.
 	ErrKeyNotPresent = badger.ErrKeyNotFound
 
-	// ErrInvalidUpdateValue is an error which is returned when the data
+	// ErrInvalidUpdateValue is an error which is returned when the state
 	// for updating rawStorage is invalid.
 	ErrInvalidUpdateValue = errors.New("invalid update value for storage")
 

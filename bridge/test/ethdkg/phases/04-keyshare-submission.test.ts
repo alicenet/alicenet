@@ -104,7 +104,7 @@ describe("ETHDKG: Submit Key share", () => {
     ).to.be.revertedWith("141");
   });
 
-  it("should not allow submission of key shares with empty input data", async function () {
+  it("should not allow submission of key shares with empty input state", async function () {
     const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
 
     // Submit empty Key shares for all validators

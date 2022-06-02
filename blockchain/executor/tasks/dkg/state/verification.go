@@ -1,11 +1,10 @@
-package utils
+package state
 
 import (
 	"context"
 	"errors"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -130,7 +129,7 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 // 		error if raised
 //
 // If an error is raised, then something unrecoverable has occured.
-func VerifyDistributedShares(dkgState *dkgObjects.DkgState, participant *objects.Participant) (bool, bool, error) {
+func VerifyDistributedShares(dkgState *DkgState, participant *Participant) (bool, bool, error) {
 	if dkgState == nil {
 		return false, false, errors.New("invalid dkgState")
 	}

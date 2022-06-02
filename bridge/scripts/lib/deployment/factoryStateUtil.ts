@@ -156,7 +156,7 @@ export async function updateList(
     if (data.receipt !== undefined) {
       data.receipt = undefined;
     }
-    // write new data to config file
+    // write new state to config file
     await writeFactoryState(network, fieldName, output, usrPath);
   }
 }

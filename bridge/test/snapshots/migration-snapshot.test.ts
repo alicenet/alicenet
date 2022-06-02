@@ -36,7 +36,7 @@ describe("Snapshots: Migrate state", () => {
     ).to.be.revertedWith("2000");
   });
 
-  it("Should not be to do a migration with mismatch data length", async function () {
+  it("Should not be to do a migration with mismatch state length", async function () {
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [validSnapshot1024.GroupSignature],

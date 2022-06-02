@@ -1,4 +1,4 @@
-package utils
+package state
 
 import (
 	"crypto/rand"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -73,7 +72,7 @@ func GenerateKeys() (*big.Int, [2]*big.Int, error) {
 }
 
 // GenerateShares returns encrypted shares, private coefficients, and commitments
-func GenerateShares(transportPrivateKey *big.Int, participants objects.ParticipantList) ([]*big.Int, []*big.Int, [][2]*big.Int, error) {
+func GenerateShares(transportPrivateKey *big.Int, participants ParticipantList) ([]*big.Int, []*big.Int, [][2]*big.Int, error) {
 	if transportPrivateKey == nil {
 		return nil, nil, nil, errors.New("invalid transportPrivateKey")
 	}
@@ -235,7 +234,7 @@ func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int)
 }
 
 // GenerateGroupKeys returns the group private key, group public key, and a signature
-func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants objects.ParticipantList) (*big.Int, [4]*big.Int, error) {
+func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants ParticipantList) (*big.Int, [4]*big.Int, error) {
 	// setup
 	n := len(participants)
 	threshold := ThresholdForUserCount(n)
@@ -289,4 +288,35 @@ func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.
 	}
 
 	return gskj, gpkjBig, nil
+}
+
+// ComputeDistributedSharesHash computes the distributed shares hash, encrypted shares hash and commitments hash
+func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*big.Int) ([32]byte, [32]byte, [32]byte, error) {
+	var emptyBytes32 [32]byte
+
+	// encrypted shares hash
+	encryptedSharesBin, err := bn256.MarshalBigIntSlice(encryptedShares)
+	if err != nil {
+		return emptyBytes32, emptyBytes32, emptyBytes32, fmt.Errorf("ComputeDistributedSharesHash encryptedSharesBin failed: %v", err)
+	}
+	hashSlice := crypto.Hasher(encryptedSharesBin)
+	var encryptedSharesHash [32]byte
+	copy(encryptedSharesHash[:], hashSlice)
+
+	// commitments hash
+	commitmentsBin, err := bn256.MarshalG1BigSlice(commitments)
+	if err != nil {
+		return emptyBytes32, emptyBytes32, emptyBytes32, fmt.Errorf("ComputeDistributedSharesHash commitmentsBin failed: %v", err)
+	}
+	hashSlice = crypto.Hasher(commitmentsBin)
+	var commitmentsHash [32]byte
+	copy(commitmentsHash[:], hashSlice)
+
+	// distributed shares hash
+	var distributedSharesBin = append(encryptedSharesHash[:], commitmentsHash[:]...)
+	hashSlice = crypto.Hasher(distributedSharesBin)
+	var distributedSharesHash [32]byte
+	copy(distributedSharesHash[:], hashSlice)
+
+	return distributedSharesHash, encryptedSharesHash, commitmentsHash, nil
 }

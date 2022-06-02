@@ -5,12 +5,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSelector_Selector(t *testing.T) {
-	sm := blockchain.NewSelectorMap()
+	sm := NewSelectorMap()
 
 	selector := sm.Selector("fdsfds")
 
@@ -18,7 +17,7 @@ func TestSelector_Selector(t *testing.T) {
 }
 
 func TestSelector_Signature(t *testing.T) {
-	sm := blockchain.NewSelectorMap()
+	sm := NewSelectorMap()
 
 	testSig := "fdsfds"
 
@@ -31,7 +30,7 @@ func TestSelector_Signature(t *testing.T) {
 
 func TestSelector_Concurrency(t *testing.T) {
 
-	sm := blockchain.NewSelectorMap()
+	sm := NewSelectorMap()
 	iter := 10000
 	n := 10
 	wg := &sync.WaitGroup{}

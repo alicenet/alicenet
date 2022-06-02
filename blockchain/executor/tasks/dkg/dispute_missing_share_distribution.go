@@ -10,7 +10,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -24,9 +24,9 @@ type DisputeMissingShareDistributionTask struct {
 var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 
 // NewDisputeMissingShareDistributionTask creates a new task
-func NewDisputeMissingShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
+func NewDisputeMissingShareDistributionTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		Task: objects.NewTask(state, constants.DisputeMissingShareDistributionTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeMissingShareDistributionTaskName, start, end),
 	}
 }
 
@@ -50,7 +50,7 @@ func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -121,13 +121,13 @@ func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, l
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.ShareDistribution {
+	if taskState.Phase != state.ShareDistribution {
 		return false
 	}
 
@@ -158,7 +158,7 @@ func (t *DisputeMissingShareDistributionTask) GetExecutionData() interfaces.ITas
 
 func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return nil, objects.ErrCanNotContinue
 	}
@@ -184,7 +184,7 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx conte
 	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != taskState.Nonce ||
-			p.Phase != dkgObjects.ShareDistribution ||
+			p.Phase != state.ShareDistribution ||
 			p.DistributedSharesHash == emptySharesHash) {
 			// did not distribute shares
 			accusableParticipants = append(accusableParticipants, p.Address)

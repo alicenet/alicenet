@@ -3,7 +3,7 @@ package events
 import (
 	"bytes"
 	"fmt"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -20,15 +20,15 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database,
+func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, cdb *db.Database,
 	adminHandler monInterfaces.IAdminHandler) error {
 
 	c := eth.Contracts()
 
-	state.Lock()
-	defer state.Unlock()
+	monitorState.Lock()
+	defer monitorState.Unlock()
 
-	updatedState := state
+	updatedState := monitorState
 
 	event, err := c.Ethdkg().ParseValidatorSetCompleted(log)
 	if err != nil {
@@ -49,7 +49,7 @@ func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logr
 
 	epoch := uint32(event.Epoch.Int64())
 
-	vs := state.ValidatorSets[epoch]
+	vs := monitorState.ValidatorSets[epoch]
 	vs.NotBeforeMadNetHeight = uint32(event.AliceNetHeight.Uint64())
 	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
@@ -79,14 +79,14 @@ func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logr
 	//state.Schedule.Purge()
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := dkgObjects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
 
 		dkgState.OnCompletion()
 
-		err = dkgObjects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -106,10 +106,10 @@ func ProcessValidatorSetCompleted(eth ethereumInterfaces.IEthereum, logger *logr
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log, cdb *db.Database) error {
+func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, cdb *db.Database) error {
 
-	state.Lock()
-	defer state.Unlock()
+	monitorState.Lock()
+	defer monitorState.Unlock()
 
 	c := eth.Contracts()
 
@@ -130,7 +130,7 @@ func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logru
 	}
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := dkgObjects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -151,7 +151,7 @@ func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logru
 
 		// state update
 		dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
-		err = dkgObjects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -167,12 +167,12 @@ func ProcessValidatorMemberAdded(eth ethereumInterfaces.IEthereum, logger *logru
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessValidatorMemberAdded: %v", err)
 	}
 
-	if len(state.Validators[epoch]) < int(participantIndex) {
+	if len(monitorState.Validators[epoch]) < int(participantIndex) {
 		newValList := make([]objects.Validator, int(participantIndex))
-		copy(newValList, state.Validators[epoch])
-		state.Validators[epoch] = newValList
+		copy(newValList, monitorState.Validators[epoch])
+		monitorState.Validators[epoch] = newValList
 	}
-	state.Validators[epoch][arrayIndex] = v
+	monitorState.Validators[epoch][arrayIndex] = v
 	ptrGroupShare := [4]*big.Int{
 		v.SharedKey[0], v.SharedKey[1],
 		v.SharedKey[2], v.SharedKey[3]}
@@ -230,26 +230,26 @@ func ProcessValidatorMinorSlashed(eth ethereumInterfaces.IEthereum, logger *logr
 	return nil
 }
 
-func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus.Entry, cdb *db.Database, adminHandler monInterfaces.IAdminHandler) error {
+func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, cdb *db.Database, adminHandler monInterfaces.IAdminHandler) error {
 
 	logger = logger.WithField("Epoch", epoch)
 
 	// Make sure we've received a validator set event
-	validatorSet, present := state.ValidatorSets[epoch]
+	validatorSet, present := monitorState.ValidatorSets[epoch]
 	if !present {
 		logger.Warnf("No ValidatorSet received for epoch")
 	}
 
 	// Make sure we've received a validator member event
-	validators, present := state.Validators[epoch]
+	validators, present := monitorState.Validators[epoch]
 	if !present {
 		logger.Warnf("No ValidatorMember received for epoch")
 	}
 
-	dkgState := &dkgObjects.DkgState{}
+	dkgState := &state.DkgState{}
 	var err error
 	err = cdb.View(func(txn *badger.Txn) error {
-		dkgState, err = dkgObjects.LoadEthDkgState(txn, logger)
+		dkgState, err = state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}

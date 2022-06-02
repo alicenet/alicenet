@@ -12,7 +12,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,9 +28,9 @@ type DisputeShareDistributionTask struct {
 var _ interfaces.ITask = &DisputeShareDistributionTask{}
 
 // NewDisputeShareDistributionTask creates a new task
-func NewDisputeShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
+func NewDisputeShareDistributionTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: objects.NewTask(state, constants.DisputeShareDistributionTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeShareDistributionTaskName, start, end),
 	}
 }
 
@@ -43,12 +43,12 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 	defer t.State.Unlock()
 	logger.Info("DisputeShareDistributionTask Initialize()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != dkgObjects.DisputeShareDistribution && taskState.Phase != dkgObjects.ShareDistribution {
+	if taskState.Phase != state.DisputeShareDistribution && taskState.Phase != state.ShareDistribution {
 		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
@@ -63,7 +63,7 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 		}
 
 		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, taskState.Index)
-		valid, present, err := dkgUtils.VerifyDistributedShares(taskState, participant)
+		valid, present, err := state.VerifyDistributedShares(taskState, participant)
 		if err != nil {
 			// A major error occured; we cannot continue
 			logger.Errorf("VerifyDistributedShares broke; Participant Address: %v", participant.Address.Hex())
@@ -96,7 +96,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -197,13 +197,13 @@ func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.DisputeShareDistribution {
+	if taskState.Phase != state.DisputeShareDistribution {
 		return false
 	}
 

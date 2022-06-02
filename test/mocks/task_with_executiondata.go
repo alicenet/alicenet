@@ -4,7 +4,7 @@ import (
 	"context"
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	exObjects "github.com/MadBase/MadNet/blockchain/executor/objects"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -19,7 +19,7 @@ type MockITaskWithExecutionData struct {
 
 func NewMockITaskWithExecutionData(name string, start uint64, end uint64) *MockITaskWithExecutionData {
 	task := NewMockITask()
-	ed := exObjects.NewTask(dkgObjects.NewDkgState(accounts.Account{}), name, start, end)
+	ed := exObjects.NewTask(state.NewDkgState(accounts.Account{}), name, start, end)
 	task.GetExecutionDataFunc.SetDefaultReturn(ed)
 	task.DoWorkFunc.SetDefaultHook(func(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
 		ed.TxOpts.TxHashes = append(ed.TxOpts.TxHashes, common.BigToHash(big.NewInt(131231214123871239)))

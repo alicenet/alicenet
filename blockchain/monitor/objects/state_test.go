@@ -2,9 +2,9 @@ package objects_test
 
 import (
 	"encoding/json"
+	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
 	"github.com/stretchr/testify/assert"
 )
 

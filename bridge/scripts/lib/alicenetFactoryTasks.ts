@@ -102,7 +102,7 @@ task(
     // deploys the factory
     const factory = await factoryBase.deploy(futureFactoryAddress);
     await factory.deployTransaction.wait();
-    // record the data in a json file to be used in other tasks
+    // record the state in a json file to be used in other tasks
     const factoryData: FactoryData = {
       address: factory.address,
       owner: accounts[0],

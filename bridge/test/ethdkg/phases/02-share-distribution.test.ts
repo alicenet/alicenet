@@ -87,7 +87,7 @@ describe("ETHDKG: Distribute Shares", () => {
       validators4
     );
 
-    // distribute shares with empty data
+    // distribute shares with empty state
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))

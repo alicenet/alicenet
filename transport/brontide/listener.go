@@ -62,7 +62,7 @@ type Listener struct {
 }
 
 // NewListener returns a new net.Listener which enforces the Brontide scheme
-// during both initial connection establishment and data transfer.
+// during both initial connection establishment and state transfer.
 func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit int, pubkeyLimit int, originLimit int) (*Listener, error) {
 	listenAddr := net.JoinHostPort(host, strconv.Itoa(port))
 

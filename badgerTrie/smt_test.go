@@ -56,7 +56,7 @@ func testDb(t *testing.T, fn func(txn *badger.Txn) error) {
 func TestSmtUpdateAndGet(t *testing.T) {
 	fn := func(txn *badger.Txn) error {
 		smt := NewSMT(nil, Hasher, prefixFn)
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(10, 32)
 		values := GetFreshData(10, 32)
 		ch := make(chan mresult, 1)
@@ -105,7 +105,7 @@ func TestSmtUpdateAndGet(t *testing.T) {
 func TestSmtPublicUpdateAndGet(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
 	fn := func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(5, 32)
 		values := GetFreshData(5, 32)
 		root, err := smt.Update(txn, keys, values)
@@ -137,7 +137,7 @@ func TestSmtPublicUpdateAndGet(t *testing.T) {
 func TestSmtDelete(t *testing.T) {
 	fn := func(txn *badger.Txn) error {
 		smt := NewSMT(nil, Hasher, prefixFn)
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(10, 32)
 		values := GetFreshData(10, 32)
 		ch := make(chan mresult, 1)
@@ -347,7 +347,7 @@ func TestVerifySubtree(t *testing.T) {
 		values := GetFreshData(1, 32)
 
 		fn := func(txn *badger.Txn) error {
-			// Add data to empty trie
+			// Add state to empty trie
 			_, err := smt.Update(txn, keys, values)
 			if err != nil {
 				return err
@@ -495,7 +495,7 @@ func TestSmtFastSync(t *testing.T) {
 
 	for i := 0; i < len(keysSorted); i++ {
 		err = db.Update(func(txn *badger.Txn) error {
-			// Add data to empty trie
+			// Add state to empty trie
 			_, err := smt.Update(txn, [][]byte{keysSorted[i]}, [][]byte{valuesSorted[i]})
 			if err != nil {
 				return err
@@ -692,7 +692,7 @@ func TestTrieMerkleProof(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(10, 32)
 		values := GetFreshData(10, 32)
 		_, err := smt.Update(txn, keys, values)
@@ -746,7 +746,7 @@ func TestTrieMerkleProofCompressed(t *testing.T) {
 
 	smt := NewSMT(nil, Hasher, prefixFn)
 	err = db.Update(func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(10, 32)
 		values := GetFreshData(10, 32)
 		_, err := smt.Update(txn, keys, values)
@@ -801,7 +801,7 @@ func TestGetFinalLeafNodes(t *testing.T) {
 
 	smt := NewSMT(nil, Hasher, prefixFn)
 	err = db.Update(func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		// keys := GetFreshData(13, 32)
 		// values := GetFreshData(13, 32)
 
@@ -872,7 +872,7 @@ func TestGetFinalLeafNodesrRValues(t *testing.T) {
 
 	smt := NewSMT(nil, Hasher, prefixFn)
 	err = db.Update(func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(13, 32)
 		values := GetFreshData(13, 32)
 
@@ -954,7 +954,7 @@ func TestGetInteriorNodesNext(t *testing.T) {
 
 	smt := NewSMT(nil, Hasher, prefixFn)
 	err = db.Update(func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		keys := GetFreshData(13, 32)
 		values := GetFreshData(13, 32)
 
@@ -1108,7 +1108,7 @@ func TestDoubleUpdate(t *testing.T) {
 
 func TestSmtRaisesError(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
-	// Add data to empty trie
+	// Add state to empty trie
 	keys := GetFreshData(10, 32)
 	values := GetFreshData(10, 32)
 	fn := func(txn *badger.Txn) error {
@@ -1153,7 +1153,7 @@ func TestDiscard(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
 	keys := GetFreshData(20, 32)
 	fn1 := func(txn *badger.Txn) error {
-		// Add data to empty trie
+		// Add state to empty trie
 		values := GetFreshData(20, 32)
 		root, _ := smt.Update(txn, keys, values)
 		rootTest = root
@@ -1247,7 +1247,7 @@ func TestWalkers(t *testing.T) {
 	smt := NewSMT(nil, Hasher, prefixFn)
 	for i := 0; i < 30; i++ {
 		err = db.Update(func(txn *badger.Txn) error {
-			// Add data to empty trie
+			// Add state to empty trie
 			keysInitial := GetFreshData(10, 32)
 			valuesInitial := GetFreshData(10, 32)
 			_, err := smt.Update(txn, keysInitial, valuesInitial)

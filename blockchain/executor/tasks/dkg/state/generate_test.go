@@ -1,14 +1,12 @@
-package utils
+package state
 
 import (
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,12 +71,12 @@ func TestMath_GenerateShares(t *testing.T) {
 	assert.Equal(t, 2, threshold)
 
 	// Make n participants
-	participants := []*objects.Participant{}
+	participants := []*Participant{}
 	for idx := 0; idx < n; idx++ {
 
-		address, _, publicKey := generateTestAddress(t)
+		address, _, publicKey := testutils.GenerateTestAddress(t)
 
-		participant := &objects.Participant{
+		participant := &Participant{
 			Address:   address,
 			Index:     idx + 1,
 			PublicKey: publicKey}
@@ -101,18 +99,18 @@ func TestMath_GenerateShares(t *testing.T) {
 }
 
 func TestMath_GenerateSharesBad(t *testing.T) {
-	_, _, _, err := GenerateShares(nil, objects.ParticipantList{})
+	_, _, _, err := GenerateShares(nil, ParticipantList{})
 	if err == nil {
 		t.Fatal("Should have raised error (0)")
 	}
 
 	privateKey := big.NewInt(1)
-	_, _, _, err = GenerateShares(privateKey, objects.ParticipantList{})
+	_, _, _, err = GenerateShares(privateKey, ParticipantList{})
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	participants := objects.ParticipantList{nil, nil, nil, nil}
+	participants := ParticipantList{nil, nil, nil, nil}
 	_, _, _, err = GenerateShares(privateKey, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
@@ -124,12 +122,12 @@ func TestMath_GenerateKeyShare(t *testing.T) {
 	n := 4
 
 	// Make n participants
-	participants := []*objects.Participant{{Index: 0}}
+	participants := []*Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
-		address, _, publicKey := generateTestAddress(t)
+		address, _, publicKey := testutils.GenerateTestAddress(t)
 
-		participant := &objects.Participant{
+		participant := &Participant{
 			Address:   address,
 			Index:     idx + 1,
 			PublicKey: publicKey}
@@ -177,13 +175,13 @@ func TestMath_GenerateMasterPublicKey(t *testing.T) {
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*objects.Participant{{Index: 0}}
+	participants := []*Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
-		address, privateKey, publicKey := generateTestAddress(t)
+		address, privateKey, publicKey := testutils.GenerateTestAddress(t)
 
 		privateKeys[address] = privateKey
-		participant := &objects.Participant{
+		participant := &Participant{
 			Address:   address,
 			Index:     idx + 1,
 			PublicKey: publicKey}
@@ -250,11 +248,11 @@ func TestMath_GenerateGroupKeys(t *testing.T) {
 
 	// Make n participants
 	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*objects.Participant{{Index: 1}}
+	participants := []*Participant{{Index: 1}}
 	for idx := 0; idx < n; idx++ {
-		address, privateKey, publicKey := generateTestAddress(t)
+		address, privateKey, publicKey := testutils.GenerateTestAddress(t)
 		privateKeys[address] = privateKey
-		participant := &objects.Participant{
+		participant := &Participant{
 			Address:   address,
 			Index:     idx + 1,
 			PublicKey: publicKey,
@@ -304,8 +302,8 @@ func TestMath_GenerateGroupKeysBad1(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	participants := GenerateParticipantList(dkgStates)
+	dkgStates, _ := testutils.InitializeNewDkgStateInfo(n, deterministicShares)
+	participants := testutils.GenerateParticipantList(dkgStates)
 
 	// Start raising errors
 	// Raise error for nil transportPrivateKey
@@ -342,8 +340,8 @@ func TestMath_GenerateGroupKeysBad2(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	participants := GenerateParticipantList(dkgStates)
+	dkgStates, _ := testutils.InitializeNewDkgStateInfo(n, deterministicShares)
+	participants := testutils.GenerateParticipantList(dkgStates)
 
 	transportPrivateKey := big.NewInt(123456789)
 	index := 1
@@ -359,92 +357,10 @@ func TestMath_GenerateGroupKeysBad2(t *testing.T) {
 	}
 
 	// Reset participant list
-	participants = GenerateParticipantList(dkgStates)
+	participants = testutils.GenerateParticipantList(dkgStates)
 	// Raise an error for condensing commitments
 	_, _, err = GenerateGroupKeys(transportPrivateKey, privCoefs, encryptedShares, index, participants)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
-}
-
-// ---------------------------------------------------------------------------
-func generateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
-
-	// Generating a valid ethereum address
-	key, _ := crypto.GenerateKey()
-	chainId := big.NewInt(1337)
-	transactor, err := bind.NewKeyedTransactorWithChainID(key, chainId)
-	assert.Nil(t, err, "failed to create transactor")
-
-	// Generate a public key
-	privateKey, publicKey, err := GenerateKeys()
-	assert.Nilf(t, err, "failed to generate keys")
-
-	return transactor.From, privateKey, publicKey
-}
-
-// ---------------------------------------------------------------------------
-func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*objects.Participant, [][][2]*big.Int) {
-	// Make n participants
-	privateKeys := make(map[common.Address]*big.Int)
-	participants := []*objects.Participant{}
-
-	for idx := 0; idx < n; idx++ {
-
-		address, privateKey, publicKey := generateTestAddress(t)
-
-		privateKeys[address] = privateKey
-		participant := &objects.Participant{
-			Address:   address,
-			Index:     idx + 1,
-			PublicKey: publicKey}
-
-		participants = append(participants, participant)
-	}
-
-	// Overwrite the first
-	private, public, _ := GenerateKeys()
-	participants[0].PublicKey = public
-	privateKeys[participants[0].Address] = private
-
-	// Generate encrypted shares on behalf of participants
-	encryptedShares := [][]*big.Int{}
-	keyShare1s := [][2]*big.Int{}
-	keyShare2s := [][4]*big.Int{}
-	privateCoefficients := [][]*big.Int{}
-	commitmentArray := [][][2]*big.Int{}
-
-	for _, participant := range participants {
-		privateKey := privateKeys[participant.Address]
-
-		participantEncryptedShares, participantPrivateCoefficients, commitments, err := GenerateShares(privateKey, participants)
-		assert.Nil(t, err)
-
-		keyShare1, _, keyShare2, err := GenerateKeyShare(participantPrivateCoefficients[0])
-		assert.Nil(t, err)
-
-		encryptedShares = append(encryptedShares, participantEncryptedShares)
-		privateCoefficients = append(privateCoefficients, participantPrivateCoefficients)
-		keyShare1s = append(keyShare1s, keyShare1)
-		keyShare2s = append(keyShare2s, keyShare2)
-		commitmentArray = append(commitmentArray, commitments)
-	}
-
-	// Generate the master public key and sanity check it
-	masterPublicKey, err := GenerateMasterPublicKey(keyShare1s, keyShare2s)
-	assert.Nil(t, err, "failed to generate master public key")
-
-	publishedPublicKeys := [][4]*big.Int{}
-	//publishedSignatures := [][2]*big.Int{}
-	for idx, participant := range participants {
-		privateKey := privateKeys[participant.Address]
-
-		_, groupPublicKey, err := GenerateGroupKeys(privateKey, privateCoefficients[idx], encryptedShares, participant.Index, participants)
-		assert.Nil(t, err, "failed to generate group keys")
-
-		publishedPublicKeys = append(publishedPublicKeys, groupPublicKey)
-		//publishedSignatures = append(publishedSignatures, groupSignature)
-	}
-
-	return masterPublicKey, publishedPublicKeys, participants, commitmentArray
 }

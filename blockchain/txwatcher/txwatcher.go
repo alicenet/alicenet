@@ -6,6 +6,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
+	"github.com/MadBase/MadNet/blockchain/txwatcher/objects"
+	"github.com/MadBase/MadNet/utils"
 	"math/big"
 	"sync"
 	"time"
@@ -72,12 +76,12 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type TransactionInfo struct {
-	ctx                     context.Context                              // ctx used for calling the monitoring a certain tx
-	txn                     *types.Transaction                           // Transaction object
-	selector                interfaces.FuncSelector                      // 4 bytes that identify the function being called by the tx
-	functionSignature       string                                       // function signature as we see on the smart contracts
-	startedMonitoringHeight uint64                                       // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ResponseChannel[interfaces.ReceiptResponse] // channel where the response will be sent
+	ctx                     context.Context                           // ctx used for calling the monitoring a certain tx
+	txn                     *types.Transaction                        // Transaction object
+	selector                objects.FuncSelector                      // 4 bytes that identify the function being called by the tx
+	functionSignature       string                                    // function signature as we see on the smart contracts
+	startedMonitoringHeight uint64                                    // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
+	receiptResponseChannel  *ResponseChannel[objects.ReceiptResponse] // channel where the response will be sent
 }
 
 // Struct to keep track of the receipts
@@ -107,14 +111,14 @@ type MonitorRequest struct {
 
 // Constrain interface used by the Response channel generics
 type transferable interface {
-	MonitorResponse | interfaces.ReceiptResponse
+	MonitorResponse | objects.ReceiptResponse
 }
 
 // Type that it's going to be used to reply a request
 type MonitorResponse struct {
-	txnHash                common.Hash                                  // Hash of the txs which this response belongs
-	err                    error                                        // errors that happened when processing the monitor request
-	receiptResponseChannel *ResponseChannel[interfaces.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
+	txnHash                common.Hash                               // Hash of the txs which this response belongs
+	err                    error                                     // errors that happened when processing the monitor request
+	receiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
 }
 
 // A response channel is basically a non-blocking channel that can only be
@@ -170,7 +174,7 @@ type TransactionProfile struct {
 // Internal struct used to send work requests to the workers that will retrieve
 // the receipts
 type MonitorWorkRequest struct {
-	txn    TransactionInfo // TransactionInfo object that contains the data that will be used to retrieve the receipt from the blockchain
+	txn    TransactionInfo // TransactionInfo object that contains the state that will be used to retrieve the receipt from the blockchain
 	height uint64          // Current height of the blockchain head
 }
 
@@ -188,17 +192,17 @@ type TransactionWatcherConfig struct {
 
 // Backend struct used to monitor Ethereum transactions and retrieve their receipts
 type WatcherBackend struct {
-	mainCtx              context.Context                                // main context for the background services
-	lastProcessedBlock   *BlockInfo                                     // Last ethereum block that we checked for receipts
-	monitoredTxns        map[common.Hash]TransactionInfo                // Map of transactions whose receipts we're looking for
-	receiptCache         map[common.Hash]ReceiptInfo                    // Receipts retrieved from transactions
-	txConfirmationBlocks uint64                                         // number of ethereum blocks that we should wait to consider a receipt valid
-	aggregates           map[interfaces.FuncSelector]TransactionProfile // Struct to keep track of the gas metrics used by the system
-	client               interfaces.GethClient                          // An interface with the Geth functionality we need
-	knownSelectors       interfaces.SelectorMap                         // Map with signature -> name
-	logger               *logrus.Entry                                  // Logger to log messages
-	requestChannel       <-chan MonitorRequest                          // Channel used to send request to this backend service
-	configChannel        <-chan TransactionWatcherConfig                // Channel used to pass configs from the watcher to the backend service
+	mainCtx              context.Context                             // main context for the background services
+	lastProcessedBlock   *BlockInfo                                  // Last ethereum block that we checked for receipts
+	monitoredTxns        map[common.Hash]TransactionInfo             // Map of transactions whose receipts we're looking for
+	receiptCache         map[common.Hash]ReceiptInfo                 // Receipts retrieved from transactions
+	txConfirmationBlocks uint64                                      // number of ethereum blocks that we should wait to consider a receipt valid
+	aggregates           map[objects.FuncSelector]TransactionProfile // Struct to keep track of the gas metrics used by the system
+	client               ethereumInterfaces.IEthereumClient          // An interface with the Geth functionality we need
+	knownSelectors       interfaces.ISelectorMap                     // Map with signature -> name
+	logger               *logrus.Entry                               // Logger to log messages
+	requestChannel       <-chan MonitorRequest                       // Channel used to send request to this backend service
+	configChannel        <-chan TransactionWatcherConfig             // Channel used to pass configs from the watcher to the backend service
 }
 
 func (b *WatcherBackend) Loop() {
@@ -243,12 +247,12 @@ func (b *WatcherBackend) queue(req MonitorRequest) {
 	}
 
 	txnHash := req.txn.Hash()
-	receiptResponseChannel := NewResponseChannel[interfaces.ReceiptResponse](b.logger)
+	receiptResponseChannel := NewResponseChannel[objects.ReceiptResponse](b.logger)
 
 	// if we already have the records of the receipt for this tx we try to send the
 	// receipt back
 	if receipt, ok := b.receiptCache[txnHash]; ok {
-		receiptResponseChannel.SendResponse(&interfaces.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
+		receiptResponseChannel.SendResponse(&objects.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
 	} else {
 		if _, ok := b.monitoredTxns[txnHash]; ok {
 			req.responseChannel.SendResponse(&MonitorResponse{err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
@@ -306,7 +310,7 @@ func (b *WatcherBackend) collectReceipts() {
 	var expiredTxs []common.Hash
 	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
 
-	numWorkers := min(max(uint64(lenMonitoredTxns)/4, 128), 1)
+	numWorkers := utils.Min(utils.Max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
 	responseWorkChannel := make(chan MonitorWorkResponse, lenMonitoredTxns+3)
 
@@ -367,7 +371,7 @@ func (b *WatcherBackend) collectReceipts() {
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
-			txnInfo.receiptResponseChannel.SendResponse(&interfaces.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
+			txnInfo.receiptResponseChannel.SendResponse(&objects.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
 			delete(b.monitoredTxns, txnHash)
 		}
 	}
@@ -396,21 +400,21 @@ func (b *WatcherBackend) collectReceipts() {
 	b.lastProcessedBlock = blockInfo
 }
 
-// Structs that keep track of the data needed by the worker pool service. The
+// Structs that keep track of the state needed by the worker pool service. The
 // workerPool spawn multiple go routines (workers) to check and retrieve the
 // receipts.
 type WorkerPool struct {
 	wg                   *sync.WaitGroup
-	ctx                  context.Context            // Main context passed by the parent, used to cancel worker and the pool
-	ethClient            interfaces.GethClient      // An interface with the Geth functionality we need
-	logger               *logrus.Entry              // Logger to log messages
-	txConfirmationBlocks uint64                     // Number of blocks that we should wait in order to consider a receipt valid
-	requestWorkChannel   <-chan MonitorWorkRequest  // Channel where will be send the work requests
-	responseWorkChannel  chan<- MonitorWorkResponse // Channel where the work response will be send
+	ctx                  context.Context                    // Main context passed by the parent, used to cancel worker and the pool
+	ethClient            ethereumInterfaces.IEthereumClient // An interface with the Geth functionality we need
+	logger               *logrus.Entry                      // Logger to log messages
+	txConfirmationBlocks uint64                             // Number of blocks that we should wait in order to consider a receipt valid
+	requestWorkChannel   <-chan MonitorWorkRequest          // Channel where will be send the work requests
+	responseWorkChannel  chan<- MonitorWorkResponse         // Channel where the work response will be send
 }
 
 // Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, ethClient interfaces.GethClient, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+func NewWorkerPool(ctx context.Context, ethClient ethereumInterfaces.IEthereumClient, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, ethClient, logger, txConfirmationBlocks, requestWorkChannel, responseWorkChannel}
 }
 
@@ -532,7 +536,7 @@ type TransactionWatcher struct {
 var _ interfaces.ITransactionWatcher = &TransactionWatcher{}
 
 // Creates a new transaction watcher struct
-func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.SelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
+func NewTransactionWatcher(client ethereumInterfaces.IEthereumClient, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *TransactionWatcher {
 	requestChannel := make(chan MonitorRequest, 100)
 	configChannel := make(chan TransactionWatcherConfig, 10)
 	// main context that will cancel all workers and go routine
@@ -547,7 +551,7 @@ func NewTransactionWatcher(client interfaces.GethClient, selectMap interfaces.Se
 		logger:               logger.WithField("Component", "TransactionWatcherBackend"),
 		monitoredTxns:        make(map[common.Hash]TransactionInfo),
 		receiptCache:         make(map[common.Hash]ReceiptInfo),
-		aggregates:           make(map[interfaces.FuncSelector]TransactionProfile),
+		aggregates:           make(map[objects.FuncSelector]TransactionProfile),
 		knownSelectors:       selectMap,
 		lastProcessedBlock:   &BlockInfo{0, common.HexToHash("")},
 		txConfirmationBlocks: txConfirmationBlocks,
@@ -589,7 +593,7 @@ func (f *TransactionWatcher) SetNumOfConfirmationBlocks(numBlocks uint64) {
 // transaction was accepted to be watched, a response channel is returned. The
 // response channel is where the receipt going to be sent by the tx watcher
 // backend.
-func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *interfaces.ReceiptResponse, error) {
+func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error) {
 	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
 	respChannel := NewResponseChannel[MonitorResponse](tw.logger)
 	defer respChannel.CloseChannel()
@@ -610,7 +614,7 @@ func (tw *TransactionWatcher) SubscribeTransaction(ctx context.Context, txn *typ
 }
 
 // function that wait for a transaction receipt. This is blocking function that will wait for a response in the input IResponse channel
-func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *interfaces.ReceiptResponse) (*types.Receipt, error) {
+func (f *TransactionWatcher) WaitTransaction(ctx context.Context, receiptResponseChannel <-chan *objects.ReceiptResponse) (*types.Receipt, error) {
 	select {
 	case receiptResponse := <-receiptResponseChannel:
 		return receiptResponse.Receipt, receiptResponse.Err

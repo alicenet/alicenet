@@ -9,7 +9,7 @@ import (
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"math/big"
 
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,9 +25,9 @@ type DisputeMissingGPKjTask struct {
 var _ interfaces.ITask = &DisputeMissingGPKjTask{}
 
 // NewDisputeMissingGPKjTask creates a new task
-func NewDisputeMissingGPKjTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
+func NewDisputeMissingGPKjTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		Task: objects.NewTask(state, constants.DisputeMissingGPKjTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeMissingGPKjTaskName, start, end),
 	}
 }
 
@@ -55,7 +55,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 
 	logger.Info("DisputeMissingGPKjTask doTask()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -124,13 +124,13 @@ func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.GPKJSubmission {
+	if taskState.Phase != state.GPKJSubmission {
 		return false
 	}
 
@@ -161,7 +161,7 @@ func (t *DisputeMissingGPKjTask) GetExecutionData() interfaces.ITaskExecutionDat
 
 func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return nil, objects.ErrCanNotContinue
 	}
@@ -186,7 +186,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, e
 	for _, p := range taskState.Participants {
 		_, isValidator := validatorsMap[p.Address]
 		if isValidator && (p.Nonce != taskState.Nonce ||
-			p.Phase != dkgObjects.GPKJSubmission ||
+			p.Phase != state.GPKJSubmission ||
 			(p.GPKj[0].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[1].Cmp(big.NewInt(0)) == 0 &&
 				p.GPKj[2].Cmp(big.NewInt(0)) == 0 &&

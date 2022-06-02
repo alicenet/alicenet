@@ -17,7 +17,7 @@ import (
 )
 
 // Client serves incoming requests and handles routing of outgoing
-// requests for data from the consensus system.
+// requests for state from the consensus system.
 type Client struct {
 	client   pb.P2PClient
 	logger   *logrus.Logger

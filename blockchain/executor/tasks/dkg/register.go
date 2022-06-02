@@ -10,7 +10,7 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,9 +23,9 @@ type RegisterTask struct {
 var _ interfaces.ITask = &RegisterTask{}
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
-func NewRegisterTask(state *dkgObjects.DkgState, start uint64, end uint64) *RegisterTask {
+func NewRegisterTask(dkgState *state.DkgState, start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Task: objects.NewTask(state, constants.RegisterTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.RegisterTaskName, start, end),
 	}
 }
 
@@ -42,7 +42,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 
 	logger.Infof("RegisterTask Initialize()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -51,7 +51,7 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 		taskState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
 		logger.Infof("RegisterTask Initialize(): generating private-public transport keys")
-		priv, pub, err := dkgUtils.GenerateKeys()
+		priv, pub, err := state.GenerateKeys()
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -147,13 +147,13 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("RegisterTask ShouldRetry invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.RegistrationOpen {
+	if taskState.Phase != state.RegistrationOpen {
 		return false
 	}
 
@@ -164,12 +164,12 @@ func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	}
 
 	var needsRegistration bool
-	status, err := dkgUtils.CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)
+	status, err := state.CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, taskState.Account.Address, taskState.TransportPublicKey)
 	logger.Infof("registration status: %v", status)
 	if err != nil {
 		needsRegistration = true
 	} else {
-		if status != dkgUtils.Registered && status != dkgUtils.BadRegistration {
+		if status != state.Registered && status != state.BadRegistration {
 			needsRegistration = true
 		}
 	}

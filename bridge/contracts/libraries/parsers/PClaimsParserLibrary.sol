@@ -9,7 +9,7 @@ import "./BaseParserLibrary.sol";
 import "./BClaimsParserLibrary.sol";
 import "./RCertParserLibrary.sol";
 
-/// @title Library to parse the PClaims structure from a blob of capnproto data
+/// @title Library to parse the PClaims structure from a blob of capnproto state
 library PClaimsParserLibrary {
     struct PClaims {
         BClaimsParserLibrary.BClaims bClaims;
@@ -18,16 +18,16 @@ library PClaimsParserLibrary {
     /** @dev size in bytes of a PCLAIMS cap'npro structure without the cap'n
       proto header bytes*/
     uint256 internal constant _PCLAIMS_SIZE = 456;
-    /** @dev Number of bytes of a capnproto header, the data starts after the
+    /** @dev Number of bytes of a capnproto header, the state starts after the
       header */
     uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /**
-    @notice This function is for deserializing data directly from capnproto
+    @notice This function is for deserializing state directly from capnproto
             PClaims. Use `extractInnerPClaims()` if you are extracting PClaims
             from other capnproto structure (e.g Proposal).
     */
-    /// @param src Binary data containing a RCert serialized struct with Capn Proto headers
+    /// @param src Binary state containing a RCert serialized struct with Capn Proto headers
     /// @return pClaims the PClaims struct
     /// @dev Execution cost: 7725 gas
     function extractPClaims(bytes memory src) internal pure returns (PClaims memory pClaims) {
@@ -41,12 +41,12 @@ library PClaimsParserLibrary {
             headers. Since PClaims is composed of a BClaims struct which has not
             a fixed sized depending on the txCount value, this function returns
             the pClaims struct deserialized and its binary size. The
-            binary size must be used to adjust any other data that
+            binary size must be used to adjust any other state that
             is being deserialized after PClaims in case PClaims is being
             deserialized from inside another struct.
     */
-    /// @param src Binary data containing a PClaims serialized struct without Capn Proto headers
-    /// @param dataOffset offset to start reading the PClaims data from inside src
+    /// @param src Binary state containing a PClaims serialized struct without Capn Proto headers
+    /// @param dataOffset offset to start reading the PClaims state from inside src
     /// @return pClaims the PClaims struct
     /// @return pClaimsBinarySize the size of this PClaims
     /// @dev Execution cost: 7026 gas

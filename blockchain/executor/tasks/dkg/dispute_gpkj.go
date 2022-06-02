@@ -10,7 +10,7 @@ import (
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 
 	"github.com/MadBase/MadNet/crypto"
@@ -28,9 +28,9 @@ type DisputeGPKjTask struct {
 var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
-func NewDisputeGPKjTask(state *dkgObjects.DkgState, start uint64, end uint64) *DisputeGPKjTask {
+func NewDisputeGPKjTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: objects.NewTask(state, constants.DisputeGPKjTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.DisputeGPKjTaskName, start, end),
 	}
 }
 
@@ -43,12 +43,12 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 
 	logger.Info("GPKJDisputeTask Initialize()...")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != dkgObjects.DisputeGPKJSubmission && taskState.Phase != dkgObjects.GPKJSubmission {
+	if taskState.Phase != state.DisputeGPKJSubmission && taskState.Phase != state.GPKJSubmission {
 		return fmt.Errorf("%w because it's not DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
 	}
 
@@ -65,12 +65,12 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 		groupCommitments = append(groupCommitments, participant.Commitments)
 	}
 
-	honest, dishonest, missing, err := utils.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
+	honest, dishonest, missing, err := state.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to determine honest vs dishonest validators: %v", err)
 	}
 
-	inverse, err := utils.InverseArrayForUserCount(taskState.NumberOfValidators)
+	inverse, err := state.InverseArrayForUserCount(taskState.NumberOfValidators)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to calculate inversion: %v", err)
 	}
@@ -102,7 +102,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 
 	logger.Info("GPKJDisputeTask doTask()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -200,7 +200,7 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 
 	logger.Info("GPKJDisputeTask ShouldRetry()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
@@ -211,7 +211,7 @@ func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry,
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.DisputeGPKJSubmission {
+	if taskState.Phase != state.DisputeGPKJSubmission {
 		return false
 	}
 

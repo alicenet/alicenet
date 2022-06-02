@@ -68,7 +68,7 @@ describe("ValidatorPool: Registration logic", async () => {
     ).to.be.revertedWith("805");
   });
 
-  it("Should not allow registering validators if the size of the input data is not correct", async function () {
+  it("Should not allow registering validators if the size of the input state is not correct", async function () {
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "registerValidators", [
         validators.slice(0, 3),

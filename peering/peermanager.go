@@ -19,7 +19,7 @@ import (
 )
 
 // PeerManager is a self contained system for management of peering.
-// Other packages that need to send data to peers may subscribe to the
+// Other packages that need to send state to peers may subscribe to the
 // peer manager and be notified of active peers. This notification
 // occurs through the peer subscription system.
 type PeerManager struct {
@@ -321,7 +321,7 @@ func (ps *PeerManager) handleP2P(conn interfaces.P2PConn) {
 		}
 		return
 	}
-	// must be done synchronously to protect data races
+	// must be done synchronously to protect state races
 	gossipChan := make(chan interface{}, 5)
 	gossipTxChan := make(chan interface{}, 16)
 	key := client.NodeAddr().String() + fmt.Sprintf("%v", time.Now())
@@ -398,7 +398,7 @@ func (ps *PeerManager) GetPeers(ctx context.Context, req *pb.GetPeersRequest) (*
 //P2P SERVER STATUS LOGGER /////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// Status returns the data needed for the status logger.
+// Status returns the state needed for the status logger.
 func (ps *PeerManager) Status(smap map[string]interface{}) (map[string]interface{}, error) {
 	active, inactive := ps.Counts()
 	smap["Peers"] = fmt.Sprintf("%d/%d/%d/%d", ps.peeringMaxThreshold, active, ps.peeringCompleteThreshold, inactive)

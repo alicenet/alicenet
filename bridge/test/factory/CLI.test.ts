@@ -45,7 +45,7 @@ describe("Cli tasks", async () => {
     // check if the address is the predicted
     expect(factoryData.address).to.equal(futureFactoryAddress);
   });
-  // todo add init call data and check init vars
+  // todo add init call state and check init vars
   it("deploys MockInitializable contract with deployUpgradeableProxy", async () => {
     // deploys factory using the deployFactory task
     const factoryData: FactoryData = await deployFactory(run);

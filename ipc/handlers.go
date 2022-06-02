@@ -3,7 +3,7 @@ package ipc
 type errorObj struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    interface{} `json:"state,omitempty"`
 }
 
 type response struct {

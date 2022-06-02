@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"time"
 
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	dkgtasks "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
@@ -66,7 +67,7 @@ func ProcessRegistrationOpened(eth ethereumInterfaces.IEthereum, logger *logrus.
 	}
 	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "failed to retrieve validator data from validator pool: %v", err)
+		return utils.LogReturnErrorf(logger, "failed to retrieve validator state from validator pool: %v", err)
 	}
 
 	dkgState, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(
@@ -109,7 +110,7 @@ func ProcessRegistrationOpened(eth ethereumInterfaces.IEthereum, logger *logrus.
 	taskRequestChan <- disputeMissingRegistrationTask
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		err := objects.PersistEthDkgState(txn, logger, dkgState)
+		err := state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -127,8 +128,8 @@ func ProcessRegistrationOpened(eth ethereumInterfaces.IEthereum, logger *logrus.
 	return nil
 }
 
-func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*dkgObjects.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
-	dkgState := objects.NewDkgState(account)
+func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*state.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
+	dkgState := state.NewDkgState(account)
 	dkgState.OnRegistrationOpened(
 		startBlock,
 		phaseLength,
@@ -157,7 +158,7 @@ func ProcessAddressRegistered(eth ethereumInterfaces.IEthereum, logger *logrus.E
 	}
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -174,7 +175,7 @@ func ProcessAddressRegistered(eth ethereumInterfaces.IEthereum, logger *logrus.E
 
 		dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
 
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -201,7 +202,7 @@ func ProcessRegistrationComplete(eth ethereumInterfaces.IEthereum, logger *logru
 	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
 	err := cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -221,7 +222,7 @@ func ProcessRegistrationComplete(eth ethereumInterfaces.IEthereum, logger *logru
 
 		shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
 
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -242,8 +243,8 @@ func ProcessRegistrationComplete(eth ethereumInterfaces.IEthereum, logger *logru
 	}
 
 	//Killing previous tasks
-	taskKillChan <- dkgtasks.RegisterTaskName
-	taskKillChan <- dkgtasks.DisputeMissingRegistrationTaskName
+	taskKillChan <- constants.RegisterTaskName
+	taskKillChan <- constants.DisputeMissingRegistrationTaskName
 
 	// schedule ShareDistribution phase
 	logger.WithFields(logrus.Fields{
@@ -272,7 +273,7 @@ func ProcessRegistrationComplete(eth ethereumInterfaces.IEthereum, logger *logru
 	return nil
 }
 
-func UpdateStateOnRegistrationComplete(dkgState *dkgObjects.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, *dkgtasks.DisputeShareDistributionTask) {
+func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, *dkgtasks.DisputeShareDistributionTask) {
 	dkgState.OnRegistrationComplete(shareDistributionStartBlockNumber)
 
 	shareDistStartBlock := dkgState.PhaseStart
@@ -304,7 +305,7 @@ func ProcessShareDistribution(eth ethereumInterfaces.IEthereum, logger *logrus.E
 	}).Info("Received share distribution")
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -314,7 +315,7 @@ func ProcessShareDistribution(eth ethereumInterfaces.IEthereum, logger *logrus.E
 			return err
 		}
 
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -340,7 +341,7 @@ func ProcessShareDistributionComplete(eth ethereumInterfaces.IEthereum, logger *
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
 	err := cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -359,7 +360,7 @@ func ProcessShareDistributionComplete(eth ethereumInterfaces.IEthereum, logger *
 		}).Info("Received share distribution complete")
 
 		disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -380,9 +381,9 @@ func ProcessShareDistributionComplete(eth ethereumInterfaces.IEthereum, logger *
 	}
 
 	//Killing previous tasks
-	taskKillChan <- dkgtasks.ShareDistributionTaskName
-	taskKillChan <- dkgtasks.DisputeMissingShareDistributionTaskName
-	taskKillChan <- dkgtasks.DisputeShareDistributionTaskName
+	taskKillChan <- constants.ShareDistributionTaskName
+	taskKillChan <- constants.DisputeMissingShareDistributionTaskName
+	taskKillChan <- constants.DisputeShareDistributionTaskName
 
 	// schedule DisputeShareDistributionTask
 	logger.WithFields(logrus.Fields{
@@ -408,21 +409,21 @@ func ProcessShareDistributionComplete(eth ethereumInterfaces.IEthereum, logger *
 	return nil
 }
 
-func UpdateStateOnShareDistributionComplete(state *dkgObjects.DkgState, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
-	state.OnShareDistributionComplete(disputeShareDistributionStartBlock)
+func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
+	dkgState.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 
-	phaseEnd := state.PhaseStart + state.PhaseLength
-	disputeShareDistributionTask := dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, phaseEnd)
+	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
+	disputeShareDistributionTask := dkgtasks.NewDisputeShareDistributionTask(dkgState, dkgState.PhaseStart, phaseEnd)
 
 	// schedule SubmitKeySharesPhase
 	submitKeySharesPhaseStart := phaseEnd
-	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + state.PhaseLength
-	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(state, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
+	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + dkgState.PhaseLength
+	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(dkgState, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
 
 	// schedule DisputeMissingKeySharesPhase
 	missingKeySharesDisputeStart := submitKeySharesPhaseEnd
-	missingKeySharesDisputeEnd := missingKeySharesDisputeStart + state.PhaseLength
-	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(state, missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
+	missingKeySharesDisputeEnd := missingKeySharesDisputeStart + dkgState.PhaseLength
+	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(dkgState, missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
 
 	return disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
@@ -444,13 +445,13 @@ func ProcessKeyShareSubmitted(eth ethereumInterfaces.IEthereum, logger *logrus.E
 	}).Info("Received key shares")
 
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
 
 		dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -481,7 +482,7 @@ func ProcessKeyShareSubmissionComplete(eth ethereumInterfaces.IEthereum, logger 
 
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -492,7 +493,7 @@ func ProcessKeyShareSubmissionComplete(eth ethereumInterfaces.IEthereum, logger 
 
 		// schedule MPK submission
 		mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -513,8 +514,8 @@ func ProcessKeyShareSubmissionComplete(eth ethereumInterfaces.IEthereum, logger 
 	}
 
 	//Killing previous tasks
-	taskKillChan <- dkgtasks.KeyShareSubmissionTaskName
-	taskKillChan <- dkgtasks.DisputeMissingKeySharesTaskName
+	taskKillChan <- constants.KeyShareSubmissionTaskName
+	taskKillChan <- constants.DisputeMissingKeySharesTaskName
 
 	// schedule MPKSubmissionTask
 	taskRequestChan <- mpkSubmissionTask
@@ -528,16 +529,16 @@ func ProcessKeyShareSubmissionComplete(eth ethereumInterfaces.IEthereum, logger 
 	return nil
 }
 
-func UpdateStateOnKeyShareSubmissionComplete(state *dkgObjects.DkgState, mpkSubmissionStartBlock uint64) *dkgtasks.MPKSubmissionTask {
-	state.OnKeyShareSubmissionComplete(mpkSubmissionStartBlock)
+func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmissionStartBlock uint64) *dkgtasks.MPKSubmissionTask {
+	dkgState.OnKeyShareSubmissionComplete(mpkSubmissionStartBlock)
 
-	phaseEnd := state.PhaseStart + state.PhaseLength
-	mpkSubmissionTask := dkgtasks.NewMPKSubmissionTask(state, state.PhaseStart, phaseEnd)
+	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
+	mpkSubmissionTask := dkgtasks.NewMPKSubmissionTask(dkgState, dkgState.PhaseStart, phaseEnd)
 
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.IAdminHandler, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 
 	event, err := eth.Contracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
@@ -554,7 +555,7 @@ func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log t
 	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -564,7 +565,7 @@ func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log t
 		}
 
 		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -585,7 +586,7 @@ func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log t
 	}
 
 	//Killing previous tasks
-	taskKillChan <- dkgtasks.MPKSubmissionTaskName
+	taskKillChan <- constants.MPKSubmissionTaskName
 
 	// schedule GPKJSubmissionTask
 	logger.WithFields(logrus.Fields{
@@ -617,15 +618,15 @@ func ProcessMPKSet(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log t
 	return nil
 }
 
-func UpdateStateOnMPKSet(state *dkgObjects.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, *dkgtasks.DisputeGPKjTask) {
-	state.OnMPKSet(gpkjSubmissionStartBlock)
-	gpkjSubmissionEnd := state.PhaseStart + state.PhaseLength
-	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(state, state.PhaseStart, gpkjSubmissionEnd, adminHandler)
+func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.IAdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, *dkgtasks.DisputeGPKjTask) {
+	dkgState.OnMPKSet(gpkjSubmissionStartBlock)
+	gpkjSubmissionEnd := dkgState.PhaseStart + dkgState.PhaseLength
+	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(dkgState, dkgState.PhaseStart, gpkjSubmissionEnd, adminHandler)
 
 	disputeMissingGPKjStart := gpkjSubmissionEnd
-	disputeMissingGPKjEnd := disputeMissingGPKjStart + state.PhaseLength
-	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(state, disputeMissingGPKjStart, disputeMissingGPKjEnd)
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(state, disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeMissingGPKjEnd := disputeMissingGPKjStart + dkgState.PhaseLength
+	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(dkgState, disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState, disputeMissingGPKjStart, disputeMissingGPKjEnd)
 
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask
 }
@@ -644,7 +645,7 @@ func ProcessGPKJSubmissionComplete(eth ethereumInterfaces.IEthereum, logger *log
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	completionTask := &dkgtasks.CompletionTask{}
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := objects.LoadEthDkgState(txn, logger)
+		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
 		}
@@ -654,7 +655,7 @@ func ProcessGPKJSubmissionComplete(eth ethereumInterfaces.IEthereum, logger *log
 		}
 
 		disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = objects.PersistEthDkgState(txn, logger, dkgState)
+		err = state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
 		}
@@ -675,9 +676,9 @@ func ProcessGPKJSubmissionComplete(eth ethereumInterfaces.IEthereum, logger *log
 	}
 
 	//Killing previous tasks
-	taskKillChan <- dkgtasks.GPKjSubmissionTaskName
-	taskKillChan <- dkgtasks.DisputeMissingGPKjTaskName
-	taskKillChan <- dkgtasks.DisputeGPKjTaskName
+	taskKillChan <- constants.GPKjSubmissionTaskName
+	taskKillChan <- constants.DisputeMissingGPKjTaskName
+	taskKillChan <- constants.DisputeGPKjTaskName
 
 	// schedule DisputeGPKJSubmissionTask
 	logger.WithFields(logrus.Fields{
@@ -700,15 +701,15 @@ func ProcessGPKJSubmissionComplete(eth ethereumInterfaces.IEthereum, logger *log
 	return nil
 }
 
-func UpdateStateOnGPKJSubmissionComplete(state *dkgObjects.DkgState, disputeGPKjStartBlock uint64) (*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
-	state.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
+func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) (*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
+	dkgState.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
 
-	disputeGPKjPhaseEnd := state.PhaseStart + state.PhaseLength
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(state, state.PhaseStart, disputeGPKjPhaseEnd)
+	disputeGPKjPhaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
+	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState, dkgState.PhaseStart, disputeGPKjPhaseEnd)
 
 	completionStart := disputeGPKjPhaseEnd
-	completionEnd := completionStart + state.PhaseLength
-	completionTask := dkgtasks.NewCompletionTask(state, completionStart, completionEnd)
+	completionEnd := completionStart + dkgState.PhaseLength
+	completionTask := dkgtasks.NewCompletionTask(dkgState, completionStart, completionEnd)
 
 	return disputeGPKjTask, completionTask
 }

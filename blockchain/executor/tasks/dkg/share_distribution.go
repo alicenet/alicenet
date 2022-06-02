@@ -11,11 +11,11 @@ import (
 	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	dkgObjects "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/sirupsen/logrus"
 )
 
-// ShareDistributionTask stores the data required safely distribute shares
+// ShareDistributionTask stores the state required safely distribute shares
 type ShareDistributionTask struct {
 	*objects.Task
 }
@@ -24,9 +24,9 @@ type ShareDistributionTask struct {
 var _ interfaces.ITask = &ShareDistributionTask{}
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *dkgObjects.DkgState, start uint64, end uint64) *ShareDistributionTask {
+func NewShareDistributionTask(dkgState *state.DkgState, start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: objects.NewTask(state, constants.ShareDistributionTaskName, start, end),
+		Task: objects.NewTask(dkgState, constants.ShareDistributionTaskName, start, end),
 	}
 }
 
@@ -40,12 +40,12 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 
 	logger.Infof("ShareDistributionTask Initialize()")
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
 
-	if taskState.Phase != dkgObjects.ShareDistribution {
+	if taskState.Phase != state.ShareDistribution {
 		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
 	}
 
@@ -53,10 +53,10 @@ func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.E
 
 		participants := taskState.GetSortedParticipants()
 		numParticipants := len(participants)
-		threshold := dkgUtils.ThresholdForUserCount(numParticipants)
+		threshold := state.ThresholdForUserCount(numParticipants)
 
 		// Generate shares
-		encryptedShares, privateCoefficients, commitments, err := dkgUtils.GenerateShares(
+		encryptedShares, privateCoefficients, commitments, err := state.GenerateShares(
 			taskState.TransportPrivateKey, participants)
 		if err != nil {
 			logger.Errorf("Failed to generate shares: %v %#v", err, participants)
@@ -92,7 +92,7 @@ func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry
 	t.State.Lock()
 	defer t.State.Unlock()
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		return objects.ErrCanNotContinue
 	}
@@ -157,13 +157,13 @@ func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.
 		return false
 	}
 
-	taskState, ok := t.State.(*dkgObjects.DkgState)
+	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
 		logger.Error("Invalid convertion of taskState object")
 		return false
 	}
 
-	if taskState.Phase != dkgObjects.ShareDistribution {
+	if taskState.Phase != state.ShareDistribution {
 		return false
 	}
 

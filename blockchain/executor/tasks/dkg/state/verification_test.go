@@ -1,10 +1,11 @@
-package utils
+package state
 
 import (
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -16,8 +17,8 @@ func TestMath_VerifyDistributedSharesGood1(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	GenerateEncryptedSharesAndCommitments(dkgStates)
+	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
 		for partIdx := 0; partIdx < n; partIdx++ {
@@ -41,8 +42,8 @@ func TestMath_VerifyDistributedSharesGood2(t *testing.T) {
 	n := 5
 	// Test with random private coefficients
 	deterministicShares := false
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	GenerateEncryptedSharesAndCommitments(dkgStates)
+	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
 		for partIdx := 0; partIdx < n; partIdx++ {
@@ -66,8 +67,8 @@ func TestMath_VerifyDistributedSharesGood3(t *testing.T) {
 	n := 7
 	// Test with deterministic private coefficients
 	deterministicShares := false
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	GenerateEncryptedSharesAndCommitments(dkgStates)
+	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
 	badIdx := 0
@@ -105,8 +106,8 @@ func TestMath_VerifyDistributedSharesGood4(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := InitializeNewDkgStateInfo(n, deterministicShares)
-	GenerateEncryptedSharesAndCommitments(dkgStates)
+	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
 	badIdx := 0
@@ -146,7 +147,7 @@ func TestMath_VerifyDistributedSharesBad1(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
-	dkgState := &dkgObjects.DkgState{}
+	dkgState := &DkgState{}
 	_, _, err = VerifyDistributedShares(dkgState, nil)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
@@ -155,9 +156,9 @@ func TestMath_VerifyDistributedSharesBad1(t *testing.T) {
 
 func TestMath_VerifyDistributedSharesBad2(t *testing.T) {
 	// Test for error upon invalid number of participants
-	dkgState := &dkgObjects.DkgState{}
+	dkgState := &DkgState{}
 	dkgState.Index = 1
-	participant := &objects.Participant{}
+	participant := &Participant{}
 	participant.Index = 2
 	_, _, err := VerifyDistributedShares(dkgState, participant)
 	if err == nil {
@@ -171,20 +172,20 @@ func TestMath_VerifyDistributedSharesBad3(t *testing.T) {
 	threshold := ThresholdForUserCount(n)
 
 	// Setup keys
-	ecdsaPrivKeys := SetupPrivateKeys(n)
-	accountsArray := SetupAccounts(ecdsaPrivKeys)
+	ecdsaPrivKeys := testutils.SetupPrivateKeys(n)
+	accountsArray := testutils.SetupAccounts(ecdsaPrivKeys)
 
 	// Validator Setup
 	dkgIdx := 0
-	dkgState := objects.NewDkgState(accountsArray[dkgIdx])
+	dkgState := NewDkgState(accountsArray[dkgIdx])
 	dkgState.Index = dkgIdx + 1
 	dkgState.NumberOfValidators = n
 	dkgState.ValidatorThreshold = threshold
 
 	// Participant Setup
 	partIdx := 1
-	participantState := objects.NewDkgState(accountsArray[partIdx])
-	participant := &objects.Participant{}
+	participantState := NewDkgState(accountsArray[partIdx])
+	participant := &Participant{}
 	participant.Index = partIdx + 1
 	participant.Address = participantState.Account.Address
 	dkgState.Participants[participant.Address] = participant
@@ -377,4 +378,69 @@ func TestMath_CategorizeGroupSignersBad2(t *testing.T) {
 	assert.Equal(t, 0, len(dishonest))
 	t.Logf("%v participants are missing", len(missing))
 	assert.Equal(t, n, len(missing))
+}
+
+func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*Participant, [][][2]*big.Int) {
+	// Make n participants
+	privateKeys := make(map[common.Address]*big.Int)
+	participants := []*Participant{}
+
+	for idx := 0; idx < n; idx++ {
+
+		address, privateKey, publicKey := dkgTestUtils.GenerateTestAddress(t)
+
+		privateKeys[address] = privateKey
+		participant := &Participant{
+			Address:   address,
+			Index:     idx + 1,
+			PublicKey: publicKey}
+
+		participants = append(participants, participant)
+	}
+
+	// Overwrite the first
+	private, public, _ := GenerateKeys()
+	participants[0].PublicKey = public
+	privateKeys[participants[0].Address] = private
+
+	// Generate encrypted shares on behalf of participants
+	encryptedShares := [][]*big.Int{}
+	keyShare1s := [][2]*big.Int{}
+	keyShare2s := [][4]*big.Int{}
+	privateCoefficients := [][]*big.Int{}
+	commitmentArray := [][][2]*big.Int{}
+
+	for _, participant := range participants {
+		privateKey := privateKeys[participant.Address]
+
+		participantEncryptedShares, participantPrivateCoefficients, commitments, err := GenerateShares(privateKey, participants)
+		assert.Nil(t, err)
+
+		keyShare1, _, keyShare2, err := GenerateKeyShare(participantPrivateCoefficients[0])
+		assert.Nil(t, err)
+
+		encryptedShares = append(encryptedShares, participantEncryptedShares)
+		privateCoefficients = append(privateCoefficients, participantPrivateCoefficients)
+		keyShare1s = append(keyShare1s, keyShare1)
+		keyShare2s = append(keyShare2s, keyShare2)
+		commitmentArray = append(commitmentArray, commitments)
+	}
+
+	// Generate the master public key and sanity check it
+	masterPublicKey, err := GenerateMasterPublicKey(keyShare1s, keyShare2s)
+	assert.Nil(t, err, "failed to generate master public key")
+
+	publishedPublicKeys := [][4]*big.Int{}
+	//publishedSignatures := [][2]*big.Int{}
+	for idx, participant := range participants {
+		privateKey := privateKeys[participant.Address]
+
+		_, groupPublicKey, err := GenerateGroupKeys(privateKey, privateCoefficients[idx], encryptedShares, participant.Index, participants)
+		assert.Nil(t, err, "failed to generate group keys")
+
+		publishedPublicKeys = append(publishedPublicKeys, groupPublicKey)
+		//publishedSignatures = append(publishedSignatures, groupSignature)
+	}
+
+	return masterPublicKey, publishedPublicKeys, participants, commitmentArray
 }
