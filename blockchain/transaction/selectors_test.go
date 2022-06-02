@@ -1,16 +1,16 @@
-package txwatcher_test
+package transaction_test
 
 import (
 	"fmt"
 	"sync"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/txwatcher"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSelector_Selector(t *testing.T) {
-	sm := txwatcher.NewSelectorMap()
+	sm := transaction.NewSelectorMap()
 
 	selector := sm.Selector("fdsfds")
 
@@ -18,7 +18,7 @@ func TestSelector_Selector(t *testing.T) {
 }
 
 func TestSelector_Signature(t *testing.T) {
-	sm := txwatcher.NewSelectorMap()
+	sm := transaction.NewSelectorMap()
 
 	testSig := "fdsfds"
 
@@ -31,7 +31,7 @@ func TestSelector_Signature(t *testing.T) {
 
 func TestSelector_Concurrency(t *testing.T) {
 
-	sm := txwatcher.NewSelectorMap()
+	sm := transaction.NewSelectorMap()
 	iter := 10000
 	n := 10
 	wg := &sync.WaitGroup{}

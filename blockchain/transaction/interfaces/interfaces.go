@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/MadBase/MadNet/blockchain/txwatcher/objects"
+	"github.com/MadBase/MadNet/blockchain/transaction/objects"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

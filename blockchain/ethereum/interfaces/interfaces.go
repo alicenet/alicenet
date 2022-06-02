@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"time"
 
-	txWatcherInterfaces "github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
+	transactionInterfaces "github.com/MadBase/MadNet/blockchain/transaction/interfaces"
 	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -53,8 +53,8 @@ type IEthereum interface {
 	SetFinalityDelay(uint64)
 	GetFinalityDelay() uint64
 
-	KnownSelectors() txWatcherInterfaces.ISelectorMap
-	TransactionWatcher() txWatcherInterfaces.ITransactionWatcher
+	KnownSelectors() transactionInterfaces.ISelectorMap
+	TransactionWatcher() transactionInterfaces.ITransactionWatcher
 
 	RetryCount() int
 	RetryDelay() time.Duration

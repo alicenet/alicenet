@@ -2,9 +2,10 @@ package mocks
 
 import (
 	"context"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"math/big"
 	"time"
+
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -42,8 +43,8 @@ func NewMockEthereum() *EthereumMock {
 	geth := NewMockLinkedGethClient()
 	eth.GetEthereumClientFunc.SetDefaultReturn(geth)
 
-	txWatcher := NewMockLinkedTransactionWatcher()
-	eth.TransactionWatcherFunc.SetDefaultReturn(txWatcher)
+	transaction := NewMockLinkedTransactionWatcher()
+	eth.TransactionWatcherFunc.SetDefaultReturn(transaction)
 
 	contracts := NewMockIContracts()
 	eth.ContractsFunc.SetDefaultReturn(contracts)
@@ -75,7 +76,7 @@ func NewMockEthereum() *EthereumMock {
 	return &EthereumMock{
 		MockIEthereum:          eth,
 		IEthereumClient:        geth,
-		TransactionWatcherMock: txWatcher,
+		TransactionWatcherMock: transaction,
 		ContractsMock:          contracts,
 
 		ETHDKGMock:           ethdkg,
@@ -96,9 +97,9 @@ func NewMockLinkedSnapshots() *MockISnapshots {
 }
 
 func NewMockLinkedTransactionWatcher() *MockITransactionWatcher {
-	txWatcher := NewMockITransactionWatcher()
-	txWatcher.WaitTransactionFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
-	return txWatcher
+	transaction := NewMockITransactionWatcher()
+	transaction.WaitTransactionFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
+	return transaction
 }
 
 func NewMockLinkedGethClient() *MockIEthereumClient {

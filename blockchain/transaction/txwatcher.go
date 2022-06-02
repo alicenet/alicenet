@@ -1,4 +1,4 @@
-package txwatcher
+package transaction
 
 import (
 	"bytes"
@@ -6,13 +6,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
-	"github.com/MadBase/MadNet/blockchain/txwatcher/objects"
-	"github.com/MadBase/MadNet/utils"
 	"math/big"
 	"sync"
 	"time"
+
+	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction/objects"
+	"github.com/MadBase/MadNet/utils"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
@@ -542,7 +543,7 @@ func NewTransactionWatcher(client ethereumInterfaces.IEthereumClient, selectMap 
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
 
-	logger := logging.GetLogger("txwatcher")
+	logger := logging.GetLogger("transaction")
 
 	backend := &WatcherBackend{
 		mainCtx:              mainCtx,
