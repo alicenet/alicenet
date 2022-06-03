@@ -9,29 +9,14 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
-func setupDatabase(t *testing.T) *badger.DB {
-	t.Helper()
-	dir := t.TempDir()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Error(err)
-		}
-	})
-	return db
-}
-
 func TestSetAndGetUTXO_Success(t *testing.T) {
 	t.Parallel()
-	db := setupDatabase(t)
+	db := environment.SetupBadgerDatabase(t)
 	chainID := uint32(1)
 	value, err := new(uint256.Uint256).FromUint64(65537)
 	if err != nil {
@@ -90,7 +75,7 @@ func TestSetAndGetUTXO_Success(t *testing.T) {
 
 func TestSetAndGetUTXO_Error(t *testing.T) {
 	t.Parallel()
-	db := setupDatabase(t)
+	db := environment.SetupBadgerDatabase(t)
 
 	utxo := &objs.TXOut{}
 	key := make([]byte, 0)
@@ -119,7 +104,7 @@ func TestSetAndGetUTXO_Error(t *testing.T) {
 
 func TestSetAndGetTx_Success(t *testing.T) {
 	t.Parallel()
-	db := setupDatabase(t)
+	db := environment.SetupBadgerDatabase(t)
 
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
@@ -199,7 +184,7 @@ func TestSetAndGetTx_Success(t *testing.T) {
 
 func TestGetTx_Error(t *testing.T) {
 	t.Parallel()
-	db := setupDatabase(t)
+	db := environment.SetupBadgerDatabase(t)
 
 	key := make([]byte, 0)
 	err := db.View(func(txn *badger.Txn) error {

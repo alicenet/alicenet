@@ -2,13 +2,12 @@ package indexer
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -24,21 +23,8 @@ func makeValueIndex() *ValueIndex {
 }
 
 func TestValueIndexAdd(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeValueIndex()
 	owner := &objs.Owner{}
@@ -57,7 +43,7 @@ func TestValueIndexAdd(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 	owner = makeOwner()
 	err = db.Update(func(txn *badger.Txn) error {
@@ -68,26 +54,13 @@ func TestValueIndexAdd(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
 func TestValueIndexDrop(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeValueIndex()
 	owner := makeOwner()
@@ -114,26 +87,12 @@ func TestValueIndexDrop(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
 func TestValueIndexMakeKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeValueIndex()
 	owner := &objs.Owner{}
@@ -173,21 +132,7 @@ func TestValueIndexMakeKey(t *testing.T) {
 }
 
 func TestValueIndexMakeRefKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeValueIndex()
 	utxoID := crypto.Hasher([]byte("utxoID"))

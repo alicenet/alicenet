@@ -1,11 +1,10 @@
 package indexer
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	trie "github.com/MadBase/MadNet/badgerTrie"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
@@ -19,26 +18,13 @@ func makeRefCounter() *RefCounter {
 }
 
 func TestRefCounterIncrement(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	txHash := trie.Hasher([]byte("txHash"))
 	rc := makeRefCounter()
 	num := 100
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		for i := 1; i < num; i++ {
 			v, err := rc.Increment(txn, txHash)
 			if err != nil {
@@ -56,25 +42,12 @@ func TestRefCounterIncrement(t *testing.T) {
 }
 
 func TestRefCounterDecrement(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	txHash := trie.Hasher([]byte("txHash"))
 	rc := makeRefCounter()
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		// Attempting to decrement a counter already set to zero;
 		// no error is raised because no error is expected.
 		_, err := rc.Decrement(txn, txHash)

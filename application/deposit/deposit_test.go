@@ -2,14 +2,14 @@ package deposit
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"math/big"
-	"os"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -29,11 +29,12 @@ func newDepositHandler() *Handler {
 	return dh
 }
 
-func testingOwner() *objs.Owner {
+func testingOwner(t *testing.T) *objs.Owner {
+	t.Helper()
 	signer := &crypto.BNSigner{}
 	err := signer.SetPrivk([]byte("secret"))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	pubk, _ := signer.Pubkey()
 	acct := crypto.GetAccount(pubk)
@@ -41,7 +42,7 @@ func testingOwner() *objs.Owner {
 	curveSpec := constants.CurveSecp256k1
 	err = owner.New(acct, curveSpec)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return owner
 }
@@ -63,36 +64,20 @@ func (ms *mockSpender) spend(utxoID []byte) {
 }
 
 func TestDeposit(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
 	one := new(big.Int).SetInt64(1)
 	two := new(big.Int).SetInt64(2)
 	three := new(big.Int).SetInt64(3)
-	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner())
-		//err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), uint256.One(), testingOwner())
+	err := db.Update(func(txn *badger.Txn) error {
+		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,12 +114,11 @@ func TestDeposit(t *testing.T) {
 		if !v.Eq(uint256.One()) {
 			t.Fatal("not 1", v)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		utxoIDs, retVal, _, err := hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
+		utxoIDs, retVal, _, err := hndlr.GetValueForOwner(txn, testingOwner(t), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,14 +135,13 @@ func TestDeposit(t *testing.T) {
 		if !bytes.Equal(utxoIDs[1], utils.ForceSliceToLength(two.Bytes(), constants.HashLen)) {
 			t.Fatal("bad value")
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err == nil {
 			t.Fatal("did not fail")
 		}
 		mis.spend(utils.ForceSliceToLength(two.Bytes(), constants.HashLen))
-		//utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), 2)
-		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
+
+		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(t), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,8 +158,8 @@ func TestDeposit(t *testing.T) {
 		if !bytes.Equal(utxoIDs[1], utils.ForceSliceToLength(three.Bytes(), constants.HashLen)) {
 			t.Fatal("bad value")
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner(t))
+
 		if err == nil {
 			t.Fatal("did not fail")
 		}
@@ -188,8 +171,8 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//utxoIDs, retVal, err = hndlr.GetValueForOwner(txn, testingOwner(), 2)
-		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(), uint256.Two(), 256, nil)
+
+		utxoIDs, retVal, _, err = hndlr.GetValueForOwner(txn, testingOwner(t), uint256.Two(), 256, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -208,16 +191,7 @@ func TestDeposit(t *testing.T) {
 }
 
 func TestDepositMakeKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	////////////////////////////////////////
+	t.Parallel()
 	hndlr := newDepositHandler()
 
 	utxoID := make([]byte, constants.HashLen)
@@ -229,32 +203,13 @@ func TestDepositMakeKey(t *testing.T) {
 }
 
 func TestDepositGetInternal(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
 	one := new(big.Int).SetInt64(1)
-	two := new(big.Int).SetInt64(2)
-	three := new(big.Int).SetInt64(3)
-	_ = one
-	_ = two
-	_ = three
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		utxoID := utils.ForceSliceToLength(one.Bytes(), constants.HashLen)
 		// Check if utxoID present; should fail
 		found, missing, spent, err := hndlr.getInternal(txn, utxoID)
@@ -272,8 +227,8 @@ func TestDepositGetInternal(t *testing.T) {
 		}
 
 		// Add utxoID to database; check if present
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
+
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -328,32 +283,13 @@ func TestDepositGetInternal(t *testing.T) {
 }
 
 func TestDepositGet(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
 	one := new(big.Int).SetInt64(1)
-	two := new(big.Int).SetInt64(2)
-	three := new(big.Int).SetInt64(3)
-	_ = one
-	_ = two
-	_ = three
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		utxoID := utils.ForceSliceToLength(one.Bytes(), constants.HashLen)
 		found, missing, spent, err := hndlr.Get(txn, [][]byte{utxoID})
 		if err != nil {
@@ -372,7 +308,7 @@ func TestDepositGet(t *testing.T) {
 			t.Fatal("missing should match utxoID1 (1)")
 		}
 
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
 		if err != nil {
 			t.Fatal(err)
@@ -413,44 +349,23 @@ func TestDepositGet(t *testing.T) {
 }
 
 func TestDepositAdd(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
 	one := new(big.Int).SetInt64(1)
-	two := new(big.Int).SetInt64(2)
-	three := new(big.Int).SetInt64(3)
-	_ = one
-	_ = two
-	_ = three
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		utxoID := utils.ForceSliceToLength(one.Bytes(), constants.HashLen)
 
 		// Raise error for invalid owner
-		err = hndlr.Add(txn, testingChainID, utxoID, one, nil)
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), nil)
+		err := hndlr.Add(txn, testingChainID, utxoID, one, nil)
 		if err == nil {
 			t.Fatal("Should have raised error for invalid owner")
 		}
 
 		// Add valid UTXO and then confirm it is present
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -469,8 +384,7 @@ func TestDepositAdd(t *testing.T) {
 		}
 
 		// Re-add without changing anything
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		if err == nil {
 			t.Fatal("Should have raised error for being stale")
 		}
@@ -479,8 +393,7 @@ func TestDepositAdd(t *testing.T) {
 		mis.spend(utxoID)
 
 		// Re-add. Should raise an error
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		if err == nil {
 			t.Fatal("Should have raised error as UTXO already spent")
 		}
@@ -493,43 +406,23 @@ func TestDepositAdd(t *testing.T) {
 }
 
 func TestDepositRemove(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
 	one := new(big.Int).SetInt64(1)
-	two := new(big.Int).SetInt64(2)
-	three := new(big.Int).SetInt64(3)
-	_ = one
-	_ = two
-	_ = three
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		utxoID := utils.ForceSliceToLength(one.Bytes(), constants.HashLen)
 
 		// Swallows error if attempt to remove utxoID which is not present
-		err = hndlr.Remove(txn, utxoID)
+		err := hndlr.Remove(txn, utxoID)
 		if err != nil {
 			t.Fatal("Should have swallowed error")
 		}
 
 		// Add and then Remove utxo. Should not raise an error
-		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner())
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -546,31 +439,11 @@ func TestDepositRemove(t *testing.T) {
 }
 
 func TestDepositGetValueForOwner(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
-	one := new(big.Int).SetInt64(1)
-	two := new(big.Int).SetInt64(2)
-	three := new(big.Int).SetInt64(3)
-	_ = one
-	_ = two
-	_ = three
 	//minValue := uint32(32)
 	minValue, err := new(uint256.Uint256).FromUint64(32)
 	if err != nil {
@@ -589,22 +462,8 @@ func TestDepositGetValueForOwner(t *testing.T) {
 }
 
 func TestIsValid_Valid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
@@ -612,16 +471,16 @@ func TestIsValid_Valid(t *testing.T) {
 	two := new(big.Int).SetInt64(2)
 	three := new(big.Int).SetInt64(3)
 	n := 3
-	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner())
+	err := db.Update(func(txn *badger.Txn) error {
+		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -691,22 +550,8 @@ func TestIsValid_Valid(t *testing.T) {
 }
 
 func TestIsValid_Spent(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
@@ -714,16 +559,16 @@ func TestIsValid_Spent(t *testing.T) {
 	two := new(big.Int).SetInt64(2)
 	three := new(big.Int).SetInt64(3)
 	n := 3
-	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner())
+	err := db.Update(func(txn *badger.Txn) error {
+		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -795,22 +640,8 @@ func TestIsValid_Spent(t *testing.T) {
 }
 
 func TestIsValid_Missing(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
@@ -818,16 +649,16 @@ func TestIsValid_Missing(t *testing.T) {
 	two := new(big.Int).SetInt64(2)
 	three := new(big.Int).SetInt64(3)
 	n := 4
-	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner())
+	err := db.Update(func(txn *badger.Txn) error {
+		err := hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(one.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(two.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner())
+		err = hndlr.Add(txn, testingChainID, utils.ForceSliceToLength(three.Bytes(), constants.HashLen), one, testingOwner(t))
 		if err != nil {
 			t.Fatal(err)
 		}

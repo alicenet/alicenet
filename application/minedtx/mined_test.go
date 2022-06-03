@@ -2,12 +2,11 @@ package minedtx
 
 import (
 	"bytes"
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"testing"
 
 	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 
 	"github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/application/objs/uint256"
@@ -16,29 +15,31 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-func testingOwner() objs.Signer {
+func testingOwner(t *testing.T) objs.Signer {
+	t.Helper()
 	signer := &crypto.Secp256k1Signer{}
 	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return signer
 }
 
-func accountFromSigner(s objs.Signer) []byte {
+func accountFromSigner(t *testing.T, s objs.Signer) []byte {
+	t.Helper()
 	pubk, err := s.Pubkey()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return crypto.GetAccount(pubk)
 }
 
-func makeVS(ownerSigner objs.Signer) *objs.TXOut {
+func makeVS(t *testing.T, ownerSigner objs.Signer) *objs.TXOut {
+	t.Helper()
 	cid := uint32(2)
-	//val := uint32(1)
 	val := uint256.One()
 
-	ownerAcct := accountFromSigner(ownerSigner)
+	ownerAcct := accountFromSigner(t, ownerSigner)
 	owner := &objs.ValueStoreOwner{}
 	owner.New(ownerAcct, constants.CurveSecp256k1)
 
@@ -55,16 +56,17 @@ func makeVS(ownerSigner objs.Signer) *objs.TXOut {
 	utxInputs := &objs.TXOut{}
 	err := utxInputs.NewValueStore(vs)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return utxInputs
 }
 
-func makeVSTXIn(ownerSigner objs.Signer, txHash []byte) (*objs.TXOut, *objs.TXIn) {
-	vs := makeVS(ownerSigner)
+func makeVSTXIn(t *testing.T, ownerSigner objs.Signer, txHash []byte) (*objs.TXOut, *objs.TXIn) {
+	t.Helper()
+	vs := makeVS(t, ownerSigner)
 	vss, err := vs.ValueStore()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	if txHash == nil {
 		txHash = make([]byte, constants.HashLen)
@@ -74,26 +76,27 @@ func makeVSTXIn(ownerSigner objs.Signer, txHash []byte) (*objs.TXOut, *objs.TXIn
 
 	txIn, err := vss.MakeTxIn()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return vs, txIn
 }
 
-func makeTxInitial(ownerSigner objs.Signer) (objs.Vout, *objs.Tx) {
+func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) {
+	t.Helper()
 	consumedUTXOs := objs.Vout{}
 	txInputs := []*objs.TXIn{}
 	for i := 0; i < 2; i++ {
-		utxo, txin := makeVSTXIn(ownerSigner, nil)
+		utxo, txin := makeVSTXIn(t, ownerSigner, nil)
 		consumedUTXOs = append(consumedUTXOs, utxo)
 		txInputs = append(txInputs, txin)
 	}
 	generatedUTXOs := objs.Vout{}
 	for i := 0; i < 2; i++ {
-		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner))
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner))
 	}
 	err := generatedUTXOs.SetTxOutIdx()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	txfee := uint256.Zero()
 	tx := &objs.Tx{
@@ -103,37 +106,37 @@ func makeTxInitial(ownerSigner objs.Signer) (objs.Vout, *objs.Tx) {
 	}
 	err = tx.SetTxHash()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	for i := 0; i < 2; i++ {
 		vs, err := consumedUTXOs[i].ValueStore()
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		err = vs.Sign(tx.Vin[i], ownerSigner)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 	}
 	return consumedUTXOs, tx
 }
 
-func makeTxConsuming(ownerSigner objs.Signer, consumedUTXOs objs.Vout) *objs.Tx {
+func makeTxConsuming(t *testing.T, ownerSigner objs.Signer, consumedUTXOs objs.Vout) *objs.Tx {
 	txInputs := []*objs.TXIn{}
 	for i := 0; i < 2; i++ {
 		txin, err := consumedUTXOs[i].MakeTxIn()
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		txInputs = append(txInputs, txin)
 	}
 	generatedUTXOs := objs.Vout{}
 	for i := 0; i < 2; i++ {
-		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner))
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner))
 	}
 	err := generatedUTXOs.SetTxOutIdx()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	txfee := uint256.Zero()
 	tx := &objs.Tx{
@@ -143,42 +146,28 @@ func makeTxConsuming(ownerSigner objs.Signer, consumedUTXOs objs.Vout) *objs.Tx 
 	}
 	err = tx.SetTxHash()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	for i := 0; i < 2; i++ {
 		vs, err := consumedUTXOs[i].ValueStore()
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		err = vs.Sign(tx.Vin[i], ownerSigner)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 	}
 	return tx
 }
 
 func TestMined(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
 	signer := &crypto.BNSigner{}
-	err = signer.SetPrivk([]byte("secret"))
+	err := signer.SetPrivk([]byte("secret"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,11 +175,10 @@ func TestMined(t *testing.T) {
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	////////////////////////////////////////
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	tx2 := makeTxConsuming(ownerSigner, consumedUTXOs)
+	tx2 := makeTxConsuming(t, ownerSigner, consumedUTXOs)
 
 	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
@@ -274,31 +262,17 @@ func TestMined(t *testing.T) {
 }
 
 func TestMinedDelete(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,31 +311,17 @@ func TestMinedDelete(t *testing.T) {
 }
 
 func TestMinedGet(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,31 +380,17 @@ func TestMinedGet(t *testing.T) {
 }
 
 func TestMinedGetHeightForTx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -487,31 +433,17 @@ func TestMinedGetHeightForTx(t *testing.T) {
 }
 
 func TestMinedGetOneInternal(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -562,31 +494,17 @@ func TestMinedGetOneInternal(t *testing.T) {
 }
 
 func TestMinedAddOneInternal(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	////////////////////////////////////////
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 	hndlr := NewMinedTxHandler()
 
-	ownerSigner := testingOwner()
-	consumedUTXOs, tx := makeTxInitial(ownerSigner)
+	ownerSigner := testingOwner(t)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
 	msg := makeMockStorageGetter()
 	storage := makeStorage(msg)
 
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -638,6 +556,7 @@ func TestMinedAddOneInternal(t *testing.T) {
 }
 
 func TestMinedMakeMinedTxKey(t *testing.T) {
+	t.Parallel()
 	txHash := crypto.Hasher([]byte("txHash"))
 	trueKey := []byte{}
 	trueKey = append(trueKey, dbprefix.PrefixMinedTx()...)
