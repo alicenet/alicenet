@@ -1,15 +1,17 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
+	"testing"
+	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 	"github.com/MadBase/MadNet/blockchain/testutils"
-	"testing"
-	"time"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -45,8 +47,8 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	disputeGPKjTasks := make([]*DisputeGPKjTask, n)
-	completionTasks := make([]*CompletionTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
@@ -147,7 +149,7 @@ func TestCompletion_Group_2_Bad1(t *testing.T) {
 
 	// Create a task to share distribution and make sure it succeeds
 	state := state.NewDkgState(acct)
-	task := NewCompletionTask(state, 1, 100)
+	task := dkg.NewCompletionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
 	err := task.Initialize(ctx, log, eth)
@@ -171,7 +173,7 @@ func TestCompletion_Group_2_Bad2(t *testing.T) {
 	// Do bad Completion task
 	state := state.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
-	task := NewCompletionTask(state, 1, 100)
+	task := dkg.NewCompletionTask(state, 1, 100)
 
 	err := task.Initialize(ctx, log, eth)
 	if err == nil {
@@ -204,7 +206,7 @@ func TestCompletion_Group_2_Bad3(t *testing.T) {
 
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	completionTasks := make([]*CompletionTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart, completionEnd uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
@@ -291,8 +293,8 @@ func TestCompletion_Group_3_ShouldRetry_returnsTrue(t *testing.T) {
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	disputeGPKjTasks := make([]*DisputeGPKjTask, n)
-	completionTasks := make([]*CompletionTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]

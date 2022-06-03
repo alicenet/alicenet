@@ -9,6 +9,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func TestTransferFunds(t *testing.T) {
 	logger.SetLevel(logrus.TraceLevel)
 	n := 2
 	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
-	eth, err := ethereum.NewEthereumSimulator(
+	eth, err := ethereum.NewSimulator(
 		ecdsaPrivateKeys,
 		6,
 		10*time.Second,
@@ -32,7 +33,9 @@ func TestTransferFunds(t *testing.T) {
 
 	finalityDelay := uint64(6)
 	eth.SetFinalityDelay(finalityDelay)
-	eth.TransactionWatcher().SetNumOfConfirmationBlocks(finalityDelay)
+	knownSelectors := transaction.NewKnownSelectors()
+	transaction := transaction.NewWatcher(eth.GetClient(), knownSelectors, 5)
+	transaction.SetNumOfConfirmationBlocks(finalityDelay)
 
 	accounts := eth.GetKnownAccounts()
 	assert.Equal(t, n, len(accounts))
@@ -52,8 +55,6 @@ func TestTransferFunds(t *testing.T) {
 
 	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
 	assert.Nil(t, err)
-
-	transaction := eth.TransactionWatcher()
 
 	receipt, err := transaction.SubscribeAndWait(ctx, txn)
 	assert.Nil(t, err)

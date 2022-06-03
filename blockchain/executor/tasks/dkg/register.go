@@ -4,14 +4,14 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,7 +36,7 @@ func NewRegisterTask(dkgState *state.DkgState, start uint64, end uint64) *Regist
 // These keys are *not* used otherwise.
 // Also get the list of existing validators from the pool to assert accusation
 // in later phases
-func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -66,16 +66,16 @@ func (t *RegisterTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 }
 
 // DoWork is the first attempt at registering with ethdkg
-func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *RegisterTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *RegisterTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -127,7 +127,8 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	}).Info("registering fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().Subscribe(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	watcher.Subscribe(ctx, txn)
 
 	t.Success = true
 
@@ -138,7 +139,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *RegisterTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -37,7 +37,7 @@ func NewDisputeGPKjTask(dkgState *state.DkgState, start uint64, end uint64) *Dis
 
 // Initialize prepares for work to be done in the GPKjDispute phase.
 // Here, we determine if anyone submitted an invalid gpkj.
-func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -88,16 +88,16 @@ func (t *DisputeGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, 
 }
 
 // DoWork is the first attempt at submitting an invalid gpkj accusation
-func (t *DisputeGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting an invalid gpkj accusation
-func (t *DisputeGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -182,7 +182,8 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 		}).Info("bad gpkj dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().Subscribe(ctx, txn)
+		watcher := transaction.WatcherFromNetwork(eth)
+		watcher.Subscribe(ctx, txn)
 	}
 
 	t.Success = true
@@ -194,7 +195,7 @@ func (t *DisputeGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth 
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *DisputeGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()

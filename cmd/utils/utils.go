@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,9 +36,9 @@ var SendWeiCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Entry) (ethereumInterfaces.IEthereum, error) {
+func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
-	eth, err := ethereum.NewEthereumEndpoint(
+	eth, err := ethereum.NewEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.Passcodes,
@@ -65,7 +64,7 @@ func setupEthereum(logger *logrus.Entry) (ethereumInterfaces.IEthereum, error) {
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Entry, eth ethereumInterfaces.IEthereum) {
+func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
 
 	acct := eth.GetDefaultAccount()
 	err := eth.UnlockAccount(acct)
@@ -149,7 +148,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func sendwei(logger *logrus.Entry, eth ethereumInterfaces.IEthereum, cmd *cobra.Command, args []string) int {
+func sendwei(logger *logrus.Entry, eth ethereum.Network, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")

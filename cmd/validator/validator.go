@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 
 	"github.com/sirupsen/logrus"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
 	"github.com/MadBase/MadNet/blockchain/ethereum"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor"
 	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/cmd/utils"
@@ -53,10 +53,10 @@ var Command = cobra.Command{
 	Long:  "Runs a MadNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (ethereumInterfaces.IEthereum, *keystore.Key, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.Key, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
-	eth, err := ethereum.NewEthereumEndpoint(
+	eth, err := ethereum.NewEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.Passcodes,
@@ -72,7 +72,7 @@ func initEthereumConnection(logger *logrus.Logger) (ethereumInterfaces.IEthereum
 		panic(err)
 	}
 	// Load the ethereum state
-	if !eth.IsEthereumAccessible() {
+	if !eth.IsAccessible() {
 		logger.Fatal("Ethereum endpoint not accessible...")
 		panic(err)
 	}
@@ -108,16 +108,16 @@ func initEthereumConnection(logger *logrus.Logger) (ethereumInterfaces.IEthereum
 	}
 
 	eth.SetFinalityDelay(finalityDelay)
-	eth.TransactionWatcher().SetNumOfConfirmationBlocks(finalityDelay)
+	watcher := transaction.NewWatcher(eth.GetClient(), transaction.NewKnownSelectors(), finalityDelay)
 	// Starting the tx watcher
-	eth.TransactionWatcher().StartLoop()
+	watcher.StartLoop()
 
 	// todo: fix this
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
 			ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
-			err := eth.TransactionWatcher().Status(ctx)
+			err := watcher.Status(ctx)
 			if err != nil {
 				logger.Errorf("Queue status: %v", err)
 			}

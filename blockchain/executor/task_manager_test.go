@@ -70,8 +70,8 @@ func TestStartTask_handleExecutedTask_FinalityDelay1(t *testing.T) {
 	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
-	eth.IEthereumClient.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
+	eth.Client.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.Client.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(1)}, nil)
 
 	wg := sync.WaitGroup{}
 	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
@@ -92,11 +92,11 @@ func TestStartTask_handleExecutedTask_FinalityDelay2(t *testing.T) {
 	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
-	eth.IEthereumClient.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(2)}, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{}, errors.New("error getting receipt"))
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.Client.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(2)}, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{}, errors.New("error getting receipt"))
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
 	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
@@ -118,10 +118,10 @@ func TestStartTask_handleExecutedTask_RetrySameFee(t *testing.T) {
 	task.ShouldRetryFunc.SetDefaultReturn(true)
 
 	eth := mocks.NewMockEthereum()
-	eth.IEthereumClient.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: 0}, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.Client.TransactionByHashFunc.SetDefaultReturn(&types.Transaction{}, false, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: 0}, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.Client.TransactionReceiptFunc.PushReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
 	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
@@ -143,10 +143,10 @@ func TestStartTask_handleExecutedTask_RetryReplacingFee(t *testing.T) {
 	task.Task.TxOpts.TxHashes = append(task.Task.TxOpts.TxHashes, common.BigToHash(big.NewInt(123871239)))
 
 	eth := mocks.NewMockEthereum()
-	eth.IEthereumClient.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
-	eth.IEthereumClient.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
-	eth.IEthereumClient.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
+	eth.Client.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+	eth.Client.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+	eth.Client.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
+	eth.Client.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(minedInBlock))}, nil)
 
 	wg := sync.WaitGroup{}
 	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)
@@ -170,10 +170,10 @@ func TestStartTask_handleExecutedTask_RetryReplacingFeeExceedingThreshold(t *tes
 
 	eth := mocks.NewMockEthereum()
 	for i := 0; i < 20; i++ {
-		eth.IEthereumClient.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
+		eth.Client.TransactionByHashFunc.PushReturn(&types.Transaction{}, true, nil)
 	}
-	eth.IEthereumClient.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
-	eth.IEthereumClient.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
+	eth.Client.TransactionByHashFunc.PushReturn(&types.Transaction{}, false, nil)
+	eth.Client.TransactionReceiptFunc.SetDefaultReturn(&types.Receipt{Status: uint64(1), BlockNumber: big.NewInt(int64(10))}, nil)
 
 	wg := sync.WaitGroup{}
 	err := StartTask(mocks.NewMockLogger().WithField("Task", 0), &wg, eth, task, nil, nil)

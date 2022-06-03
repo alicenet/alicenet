@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 
-	ethereumInterface "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -178,8 +178,8 @@ func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
 	return &key.Address, key.PrivateKey, nil
 }
 
-func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) ethereumInterface.IEthereum {
-	eth, err := ethereum.NewEthereumSimulator(
+func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) ethereum.Network {
+	eth, err := ethereum.NewSimulator(
 		privateKeys,
 		6,
 		10*time.Second,
@@ -248,7 +248,8 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 			eth.Close()
 			t.Fatal("could not transfer ether")
 		}
-		rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+		watcher := transaction.NewWatcher(eth.GetClient(), transaction.NewKnownSelectors(), eth.GetFinalityDelay())
+		rcpt, err := watcher.SubscribeAndWait(ctx, txn)
 		assert.Nil(t, err)
 		assert.NotNil(t, rcpt)
 	}
@@ -256,7 +257,7 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	return eth
 }
 
-func StartHardHatNode(eth *ethereum.EthereumDetails) error {
+func StartHardHatNode(eth *ethereum.Details) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -336,7 +337,7 @@ func InitializeValidatorFiles(n int) error {
 	return nil
 }
 
-func StartDeployScripts(eth *ethereum.EthereumDetails, ctx context.Context) error {
+func StartDeployScripts(eth *ethereum.Details, ctx context.Context) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -428,7 +429,7 @@ func WaitForHardHatNode(ctx context.Context) error {
 	return err
 }
 
-func RegisterValidators(eth *ethereum.EthereumDetails, validatorAddresses []string) error {
+func RegisterValidators(eth *ethereum.Details, validatorAddresses []string) error {
 
 	rootPath := GetMadnetRootPath()
 	scriptPath := append(rootPath, "scripts")
@@ -461,7 +462,7 @@ func RegisterValidators(eth *ethereum.EthereumDetails, validatorAddresses []stri
 	return nil
 }
 
-func AdvanceTo(t *testing.T, eth ethereumInterface.IEthereum, target uint64) {
+func AdvanceTo(t *testing.T, eth ethereum.Network, target uint64) {
 	currentBlock, err := eth.GetCurrentHeight(context.Background())
 	if err != nil {
 		panic(err)

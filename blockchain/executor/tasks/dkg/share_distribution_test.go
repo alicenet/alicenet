@@ -1,16 +1,17 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
-	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -305,7 +306,7 @@ func TestShareDistribution_Group_2_Bad6(t *testing.T) {
 
 	// Create a task to share distribution and make sure it succeeds
 	state := state.NewDkgState(acct)
-	task := NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
+	task := dkg.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
 	err := task.Initialize(ctx, log, eth)
@@ -330,7 +331,7 @@ func TestShareDistribution_Group_3_Bad7(t *testing.T) {
 	// Do bad Share Dispute task
 	state := state.NewDkgState(acct)
 	log := logging.GetLogger("test").WithField("Validator", acct.Address.String())
-	task := NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
+	task := dkg.NewShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 
 	err := task.Initialize(ctx, log, eth)
 	if err == nil {

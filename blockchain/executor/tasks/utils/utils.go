@@ -3,14 +3,14 @@ package utils
 import (
 	"context"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/sirupsen/logrus"
 )
 
 // GeneralTaskShouldRetry is the general logic used to determine if a task should try again
 // -- Process is
 func GeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
-	eth ethereumInterfaces.IEthereum, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
+	eth ethereum.Network, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
 
 	result := internalGeneralTaskShouldRetry(ctx, logger, eth, expectedFirstBlock, expectedLastBlock)
 
@@ -23,7 +23,7 @@ func GeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
 }
 
 func internalGeneralTaskShouldRetry(ctx context.Context, logger *logrus.Entry,
-	eth ethereumInterfaces.IEthereum, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
+	eth ethereum.Network, expectedFirstBlock uint64, expectedLastBlock uint64) bool {
 
 	// Make sure we're in the right block range to continue
 	currentBlock, err := eth.GetCurrentHeight(ctx)

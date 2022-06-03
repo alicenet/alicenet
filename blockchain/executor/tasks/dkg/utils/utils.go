@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,7 +15,7 @@ import (
 )
 
 // RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
-func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth ethereumInterfaces.IEthereum, addr common.Address) ([4]*big.Int, error) {
+func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth ethereum.Network, addr common.Address) ([4]*big.Int, error) {
 	var err error
 	var gpkjBig [4]*big.Int
 
@@ -77,7 +77,7 @@ func FormatBigIntSlice(slice []*big.Int) string {
 }
 
 // GetValidatorAddressesFromPool retrieves validator addresses from ValidatorPool
-func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
+func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth ethereum.Network, logger *logrus.Entry) ([]common.Address, error) {
 	c := eth.Contracts()
 
 	addresses, err := c.ValidatorPool().GetValidatorsAddresses(callOpts)

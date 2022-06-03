@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtil "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,7 +38,7 @@ func NewDisputeShareDistributionTask(dkgState *state.DkgState, start uint64, end
 // Initialize begins the setup phase for DisputeShareDistributionTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -84,16 +84,16 @@ func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *l
 }
 
 // DoWork is the first attempt at disputing distributed shares
-func (t *DisputeShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -175,7 +175,8 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 		}).Info("bad share dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().Subscribe(ctx, txn)
+		watcher := transaction.WatcherFromNetwork(eth)
+		watcher.Subscribe(ctx, txn)
 	}
 
 	t.Success = true
@@ -186,7 +187,7 @@ func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logru
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()

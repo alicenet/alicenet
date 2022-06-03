@@ -4,14 +4,14 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -32,22 +32,22 @@ func NewDisputeMissingKeySharesTask(dkgState *state.DkgState, start uint64, end 
 }
 
 // Initialize begins the setup phase for DisputeMissingKeySharesTask.
-func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingKeySharesTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	logger.Info("Initializing DisputeMissingKeySharesTask...")
 	return nil
 }
 
 // DoWork is the first attempt at disputing distributed shares
-func (t *DisputeMissingKeySharesTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingKeySharesTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeMissingKeySharesTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingKeySharesTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -97,7 +97,8 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 		}).Info("missing key shares dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().Subscribe(ctx, txn)
+		watcher := transaction.WatcherFromNetwork(eth)
+		watcher.Subscribe(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing key shares")
 	}
@@ -110,7 +111,7 @@ func (t *DisputeMissingKeySharesTask) doTask(ctx context.Context, logger *logrus
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *DisputeMissingKeySharesTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -157,7 +158,7 @@ func (t *DisputeMissingKeySharesTask) GetExecutionData() interfaces.ITaskExecuti
 	return t.Task
 }
 
-func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
+func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) ([]common.Address, error) {
 
 	taskState, ok := t.State.(*state.DkgState)
 	if !ok {

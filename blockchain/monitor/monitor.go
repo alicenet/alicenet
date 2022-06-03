@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots"
-	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -51,7 +50,7 @@ type monitor struct {
 	sync.RWMutex
 	adminHandler   monInterfaces.IAdminHandler
 	depositHandler monInterfaces.IDepositHandler
-	eth            ethereumInterfaces.IEthereum
+	eth            ethereum.Network
 	eventMap       *objects.EventMap
 	db             *db.Database
 	cdb            *db.Database
@@ -74,7 +73,7 @@ func NewMonitor(cdb *db.Database,
 	db *db.Database,
 	adminHandler monInterfaces.IAdminHandler,
 	depositHandler monInterfaces.IDepositHandler,
-	eth ethereumInterfaces.IEthereum,
+	eth ethereum.Network,
 	tickInterval time.Duration,
 	timeout time.Duration,
 	batchSize uint64,
@@ -315,7 +314,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
-func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth ethereumInterfaces.IEthereum, monitorState *objects.MonitorState, logger *logrus.Entry,
+func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth ethereum.Network, monitorState *objects.MonitorState, logger *logrus.Entry,
 	eventMap *objects.EventMap, adminHandler monInterfaces.IAdminHandler, batchSize uint64, persistMonitorCB func()) error {
 
 	defer cf()
@@ -414,7 +413,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	return nil
 }
 
-func ProcessEvents(eth ethereumInterfaces.IEthereum, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
+func ProcessEvents(eth ethereum.Network, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
 	// Check all the logs for an event we want to process
@@ -442,7 +441,7 @@ func ProcessEvents(eth ethereumInterfaces.IEthereum, monitorState *objects.Monit
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth ethereumInterfaces.IEthereum, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
+func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -454,7 +453,7 @@ func PersistSnapshot(eth ethereumInterfaces.IEthereum, bh *objs.BlockHeader, tas
 
 // EndpointInSync Checks if our endpoint is good to use
 // -- This function is different. Because we need to be aware of errors, State is always updated
-func EndpointInSync(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) (bool, uint32, error) {
+func EndpointInSync(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) (bool, uint32, error) {
 
 	// Default to assuming everything is awful
 	inSync := false
@@ -502,7 +501,7 @@ type eventSorter struct {
 	wg      *sync.WaitGroup
 	pending chan *logWork
 	done    map[uint64]*logWork
-	eth     ethereumInterfaces.IEthereum
+	eth     ethereum.Network
 }
 
 func (es *eventSorter) Start(num uint64) {
@@ -563,7 +562,7 @@ func (es *eventSorter) wrkr() {
 	}
 }
 
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth ethereumInterfaces.IEthereum, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth ethereum.Network, processed uint64, lastBlock uint64) ([][]types.Log, error) {
 	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {

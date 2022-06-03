@@ -10,13 +10,12 @@ import (
 	"sync"
 	"time"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/transaction/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction/objects"
-	"github.com/MadBase/MadNet/utils"
-
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -193,17 +192,17 @@ type WatcherConfig struct {
 
 // Backend struct used to monitor Ethereum transactions and retrieve their receipts
 type WatcherBackend struct {
-	mainCtx              context.Context                    // main context for the background services
-	lastProcessedBlock   *Block                             // Last ethereum block that we checked for receipts
-	monitoredTxns        map[common.Hash]Info               // Map of transactions whose receipts we're looking for
-	receiptCache         map[common.Hash]Receipt            // Receipts retrieved from transactions
-	txConfirmationBlocks uint64                             // number of ethereum blocks that we should wait to consider a receipt valid
-	aggregates           map[objects.FuncSelector]Profile   // Struct to keep track of the gas metrics used by the system
-	client               ethereumInterfaces.IEthereumClient // An interface with the Geth functionality we need
-	knownSelectors       interfaces.ISelectorMap            // Map with signature -> name
-	logger               *logrus.Entry                      // Logger to log messages
-	requestChannel       <-chan MonitorRequest              // Channel used to send request to this backend service
-	configChannel        <-chan WatcherConfig               // Channel used to pass configs from the watcher to the backend service
+	mainCtx              context.Context                  // main context for the background services
+	lastProcessedBlock   *Block                           // Last ethereum block that we checked for receipts
+	monitoredTxns        map[common.Hash]Info             // Map of transactions whose receipts we're looking for
+	receiptCache         map[common.Hash]Receipt          // Receipts retrieved from transactions
+	txConfirmationBlocks uint64                           // number of ethereum blocks that we should wait to consider a receipt valid
+	aggregates           map[objects.FuncSelector]Profile // Struct to keep track of the gas metrics used by the system
+	client               ethereum.Client                  // An interface with the Geth functionality we need
+	knownSelectors       interfaces.ISelectorMap          // Map with signature -> name
+	logger               *logrus.Entry                    // Logger to log messages
+	requestChannel       <-chan MonitorRequest            // Channel used to send request to this backend service
+	configChannel        <-chan WatcherConfig             // Channel used to pass configs from the watcher to the backend service
 }
 
 func (b *WatcherBackend) Loop() {
@@ -406,16 +405,16 @@ func (b *WatcherBackend) collectReceipts() {
 // receipts.
 type WorkerPool struct {
 	wg                   *sync.WaitGroup
-	ctx                  context.Context                    // Main context passed by the parent, used to cancel worker and the pool
-	ethClient            ethereumInterfaces.IEthereumClient // An interface with the Geth functionality we need
-	logger               *logrus.Entry                      // Logger to log messages
-	txConfirmationBlocks uint64                             // Number of blocks that we should wait in order to consider a receipt valid
-	requestWorkChannel   <-chan MonitorWorkRequest          // Channel where will be send the work requests
-	responseWorkChannel  chan<- MonitorWorkResponse         // Channel where the work response will be send
+	ctx                  context.Context            // Main context passed by the parent, used to cancel worker and the pool
+	ethClient            ethereum.Client            // An interface with the Geth functionality we need
+	logger               *logrus.Entry              // Logger to log messages
+	txConfirmationBlocks uint64                     // Number of blocks that we should wait in order to consider a receipt valid
+	requestWorkChannel   <-chan MonitorWorkRequest  // Channel where will be send the work requests
+	responseWorkChannel  chan<- MonitorWorkResponse // Channel where the work response will be send
 }
 
 // Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, ethClient ethereumInterfaces.IEthereumClient, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+func NewWorkerPool(ctx context.Context, ethClient ethereum.Client, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, ethClient, logger, txConfirmationBlocks, requestWorkChannel, responseWorkChannel}
 }
 
@@ -537,7 +536,7 @@ type Watcher struct {
 var _ interfaces.IWatcher = &Watcher{}
 
 // Creates a new transaction watcher struct
-func NewWatcher(client ethereumInterfaces.IEthereumClient, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *Watcher {
+func NewWatcher(client ethereum.Client, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *Watcher {
 	requestChannel := make(chan MonitorRequest, 100)
 	configChannel := make(chan WatcherConfig, 10)
 	// main context that will cancel all workers and go routine
@@ -567,6 +566,13 @@ func NewWatcher(client ethereumInterfaces.IEthereumClient, selectMap interfaces.
 		logger:           logger.WithField("Component", "TransactionWatcher"),
 	}
 	return transactionWatcher
+}
+
+// WatcherFromNetwork creates a transaction Watcher from a given ethereum network.
+func WatcherFromNetwork(network ethereum.Network) *Watcher {
+	watcher := NewWatcher(network.GetClient(), NewKnownSelectors(), network.GetFinalityDelay())
+	watcher.StartLoop()
+	return watcher
 }
 
 // Start the transaction watcher service

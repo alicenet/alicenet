@@ -6,16 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	exObjects "github.com/MadBase/MadNet/blockchain/executor/objects"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	exObjects "github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/monitor/objects"
+
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/test/mocks"
 
@@ -79,19 +80,19 @@ func (mt *mockTask) DoDone(logger *logrus.Entry) {
 	mt.DoneCalled = true
 }
 
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
+func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, ethereum.Network) error {
 	return nil
 }
 
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
+func (mt *mockTask) DoWork(context.Context, *logrus.Entry, ethereum.Network) error {
 	return nil
 }
 
-func (mt *mockTask) Initialize(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error {
+func (mt *mockTask) Initialize(context.Context, *logrus.Entry, ethereum.Network) error {
 	return nil
 }
 
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) bool {
+func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, ethereum.Network) bool {
 	return false
 }
 
@@ -119,7 +120,7 @@ func TestMonitorPersist(t *testing.T) {
 	database := &db.Database{}
 	database.Init(rawDb)
 
-	eth := mocks.NewMockIEthereum()
+	eth := mocks.NewMockNetwork()
 	mon, err := NewMonitor(database, database, mocks.NewMockIAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
 	assert.Nil(t, err)
 

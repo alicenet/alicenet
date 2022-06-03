@@ -4,14 +4,14 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func NewKeyShareSubmissionTask(dkgState *state.DkgState, start uint64, end uint6
 // Initialize prepares for work to be done in KeyShareSubmission phase.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -70,18 +70,18 @@ func (t *KeyShareSubmissionTask) Initialize(ctx context.Context, logger *logrus.
 }
 
 // DoWork is the first attempt at the performing the KeyShareSubmission phase
-func (t *KeyShareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *KeyShareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	logger.Info("DoWork() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at the performing the KeyShareSubmission phase
-func (t *KeyShareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *KeyShareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	logger.Info("DoRetry() ...")
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -135,7 +135,8 @@ func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 	}).Info("key share submission fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().Subscribe(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	watcher.Subscribe(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -144,7 +145,7 @@ func (t *KeyShareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entr
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *KeyShareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 

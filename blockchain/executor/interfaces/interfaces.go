@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -11,10 +11,10 @@ import (
 // ITask the interface requirements of a task
 type ITask interface {
 	DoDone(*logrus.Entry)
-	DoRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error
-	DoWork(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error
-	Initialize(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) error
-	ShouldRetry(context.Context, *logrus.Entry, ethereumInterfaces.IEthereum) bool
+	DoRetry(context.Context, *logrus.Entry, ethereum.Network) error
+	DoWork(context.Context, *logrus.Entry, ethereum.Network) error
+	Initialize(context.Context, *logrus.Entry, ethereum.Network) error
+	ShouldRetry(context.Context, *logrus.Entry, ethereum.Network) bool
 	GetExecutionData() ITaskExecutionData
 }
 

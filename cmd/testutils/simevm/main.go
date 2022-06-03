@@ -23,7 +23,7 @@ func main() {
 
 	privateKeys = append(privateKeys, pk)
 
-	eth, err := ethereum.NewEthereumSimulator(
+	eth, err := ethereum.NewSimulator(
 		privateKeys,
 		6,
 		1*time.Second,

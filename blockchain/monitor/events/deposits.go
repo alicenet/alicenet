@@ -2,11 +2,11 @@ package events
 
 import (
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 
 	aobjs "github.com/MadBase/MadNet/application/objs"
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/errorz"
@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth ethereumInterfaces.IEthereum, logger *logrus.Entry, log types.Log,
+func ProcessDepositReceived(eth ethereum.Network, logger *logrus.Entry, log types.Log,
 	cdb *db.Database, depositHandler interfaces.IDepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")

@@ -1,12 +1,13 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
+	"testing"
+
 	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	"github.com/MadBase/MadNet/blockchain/testutils"
-	"testing"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"

@@ -3,27 +3,24 @@ package testutils
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/testutils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	gcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
-
+	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
-
-	"github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	gcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 const SETUP_GROUP int = 13
@@ -302,7 +299,7 @@ func GenerateGPKJ(dkgStates []*state.DkgState) {
 	}
 }
 
-func GetETHDKGRegistrationOpened(logs []*types.Log, eth ethereumInterfaces.IEthereum) (*bindings.ETHDKGRegistrationOpened, error) {
+func GetETHDKGRegistrationOpened(logs []*types.Log, eth ethereum.Network) (*bindings.ETHDKGRegistrationOpened, error) {
 	eventMap := events.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {

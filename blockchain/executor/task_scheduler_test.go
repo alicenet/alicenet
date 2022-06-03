@@ -2,15 +2,16 @@ package executor
 
 import (
 	"context"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgtasks "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
 	"github.com/MadBase/MadNet/test/mocks"
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
-	"time"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 
 func getTaskScheduler() *TasksScheduler {
 	db := mocks.NewTestDB()
-	eth := mocks.NewMockIEthereum()
+	eth := mocks.NewMockNetwork()
 	adminHandlers := mocks.NewMockIAdminHandler()
 	return NewTasksScheduler(db, eth, adminHandlers, make(chan interfaces.ITask, 100), make(chan string, 100))
 }
@@ -321,7 +322,7 @@ func TestTasksScheduler_Start_EmptySchedule(t *testing.T) {
 func TestTasksScheduler_EventLoop_PurgeToEmptyTheSchedulerMap(t *testing.T) {
 
 	db := mocks.NewTestDB()
-	eth := mocks.NewMockIEthereum()
+	eth := mocks.NewMockEthereum()
 	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil)
@@ -338,7 +339,7 @@ func TestTasksScheduler_EventLoop_PurgeToEmptyTheSchedulerMap(t *testing.T) {
 func TestTasksScheduler_Schedule_ScheduleTask(t *testing.T) {
 
 	db := mocks.NewTestDB()
-	eth := mocks.NewMockIEthereum()
+	eth := mocks.NewMockEthereum()
 	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil)
@@ -365,7 +366,7 @@ func TestTasksScheduler_Schedule_ScheduleTask(t *testing.T) {
 func TestTasksScheduler_EventLoop_Workflow(t *testing.T) {
 
 	db := mocks.NewTestDB()
-	eth := mocks.NewMockIEthereum()
+	eth := mocks.NewMockEthereum()
 	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	taskKillChan := make(chan string, 1)

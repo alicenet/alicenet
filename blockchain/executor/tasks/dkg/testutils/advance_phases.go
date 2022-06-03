@@ -6,30 +6,32 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/blockchain/monitor/events"
-	"github.com/MadBase/MadNet/blockchain/testutils"
-	"github.com/MadBase/MadNet/bridge/bindings"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/monitor/events"
+	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestSuite struct {
-	Eth              ethereumInterfaces.IEthereum
+	Eth              ethereum.Network
 	DKGStates        []*state.DkgState
 	ecdsaPrivateKeys []*ecdsa.PrivateKey
 
@@ -47,7 +49,7 @@ type TestSuite struct {
 	CompletionTasks              []*dkg.CompletionTask
 }
 
-func SetETHDKGPhaseLength(length uint16, eth ethereumInterfaces.IEthereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+func SetETHDKGPhaseLength(length uint16, eth ethereum.Network, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
 	// Shorten ethdkg phase for testing purposes
 	ethdkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {
@@ -67,7 +69,8 @@ func SetETHDKGPhaseLength(length uint16, eth ethereumInterfaces.IEthereum, callO
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
 	}
 
-	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	rcpt, err := watcher.SubscribeAndWait(ctx, txn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +81,7 @@ func SetETHDKGPhaseLength(length uint16, eth ethereumInterfaces.IEthereum, callO
 	return txn, rcpt, nil
 }
 
-func InitializeETHDKG(eth ethereumInterfaces.IEthereum, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
+func InitializeETHDKG(eth ethereum.Network, callOpts *bind.TransactOpts, ctx context.Context) (*types.Transaction, *types.Receipt, error) {
 	// Shorten ethdkg phase for testing purposes
 	validatorPoolABI, err := abi.JSON(strings.NewReader(bindings.ValidatorPoolMetaData.ABI))
 	if err != nil {
@@ -98,7 +101,8 @@ func InitializeETHDKG(eth ethereumInterfaces.IEthereum, callOpts *bind.TransactO
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(validatorPool, initializeETHDKG())")
 	}
 
-	rcpt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	rcpt, err := watcher.SubscribeAndWait(ctx, txn)
 	if err != nil {
 		return nil, nil, err
 	}

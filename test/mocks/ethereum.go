@@ -5,18 +5,15 @@ import (
 	"math/big"
 	"time"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
 type EthereumMock struct {
-	*MockIEthereum
-	IEthereumClient        *MockIEthereumClient
-	TransactionWatcherMock *MockIWatcher
-	ContractsMock          *MockIContracts
-
+	*MockNetwork
+	Client               *MockClient
+	ContractsMock        *MockContracts
 	ETHDKGMock           *MockIETHDKG
 	GovernanceMock       *MockIGovernance
 	ATokenMock           *MockIAToken
@@ -27,10 +24,10 @@ type EthereumMock struct {
 	ValidatorStakingMock *MockIValidatorStaking
 }
 
-var _ ethereumInterfaces.IEthereum = (*MockIEthereum)(nil)
+var _ ethereum.Network = (*MockNetwork)(nil)
 
 func NewMockEthereum() *EthereumMock {
-	eth := NewMockIEthereum()
+	eth := NewMockNetwork()
 	var bh uint64 = 0
 	eth.GetCurrentHeightFunc.SetDefaultHook(func(context.Context) (uint64, error) { bh++; return bh, nil })
 	eth.GetFinalityDelayFunc.SetDefaultReturn(6)
@@ -41,12 +38,9 @@ func NewMockEthereum() *EthereumMock {
 	eth.GetTxMaxGasFeeAllowedInGweiFunc.SetDefaultReturn(500)
 
 	geth := NewMockLinkedGethClient()
-	eth.GetEthereumClientFunc.SetDefaultReturn(geth)
+	eth.GetClientFunc.SetDefaultReturn(geth)
 
-	transaction := NewMockLinkedTransactionWatcher()
-	eth.TransactionWatcherFunc.SetDefaultReturn(transaction)
-
-	contracts := NewMockIContracts()
+	contracts := NewMockContracts()
 	eth.ContractsFunc.SetDefaultReturn(contracts)
 
 	ethdkg := NewMockIETHDKG()
@@ -74,10 +68,9 @@ func NewMockEthereum() *EthereumMock {
 	contracts.ValidatorStakingFunc.SetDefaultReturn(validatorstaking)
 
 	return &EthereumMock{
-		MockIEthereum:          eth,
-		IEthereumClient:        geth,
-		TransactionWatcherMock: transaction,
-		ContractsMock:          contracts,
+		MockNetwork:   eth,
+		Client:        geth,
+		ContractsMock: contracts,
 
 		ETHDKGMock:           ethdkg,
 		GovernanceMock:       governance,
@@ -102,8 +95,8 @@ func NewMockLinkedTransactionWatcher() *MockIWatcher {
 	return transaction
 }
 
-func NewMockLinkedGethClient() *MockIEthereumClient {
-	geth := NewMockIEthereumClient()
+func NewMockLinkedGethClient() *MockClient {
+	geth := NewMockClient()
 	geth.SuggestGasTipCapFunc.SetDefaultReturn(big.NewInt(15000), nil)
 	geth.SuggestGasPriceFunc.SetDefaultReturn(big.NewInt(1000), nil)
 	return geth

@@ -15,7 +15,7 @@ import (
 
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
-	eth                     *EthereumDetails
+	eth                     *Details
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
 	aToken                  bindings.IAToken

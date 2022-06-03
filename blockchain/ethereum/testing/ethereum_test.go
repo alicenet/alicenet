@@ -6,8 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/testutils"
 	"io/fs"
 	"math"
 	"math/big"
@@ -15,12 +13,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/testutils"
+
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T, n int) interfaces.IEthereum {
+func setupEthereum(t *testing.T, n int) ethereum.Network {
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
 	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
@@ -53,7 +54,7 @@ func TestEthereum_AccountsFound(t *testing.T) {
 func TestEthereum_HardhatNode(t *testing.T) {
 	privateKeys, _ := testutils.InitializePrivateKeysAndAccounts(4)
 
-	eth, err := NewEthereumSimulator(
+	eth, err := ethereum.NewSimulator(
 		privateKeys,
 		6,
 		10*time.Second,
@@ -137,7 +138,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 			args: args{"", "", "../assets/test/passcodes.txt", "", 0, 0, 0, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				if !errors.Is(err, ErrAccountNotFound) {
+				if !errors.Is(err, ethereum.ErrAccountNotFound) {
 					t.Errorf("Failing test with an unexpected error")
 				}
 				return true
@@ -188,7 +189,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewEthereumEndpoint(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)
+			got, err := ethereum.NewEndpoint(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)
 			if !tt.wantErr(t, err, fmt.Sprintf("NewEthereumEndpoint(%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v)", tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)) {
 				return
 			}

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/marshaller"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
@@ -57,7 +57,7 @@ type innerBlock struct {
 type TasksScheduler struct {
 	Schedule         map[string]TaskRequestInfo      `json:"schedule"`
 	LastHeightSeen   uint64                          `json:"last_height_seen"`
-	eth              ethereumInterfaces.IEthereum    `json:"-"`
+	eth              ethereum.Network                `json:"-"`
 	database         *db.Database                    `json:"-"`
 	adminHandler     monitorInterfaces.IAdminHandler `json:"-"`
 	marshaller       *marshaller.TypeRegistry        `json:"-"`
@@ -95,7 +95,7 @@ type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, eth ethereumInterfaces.IEthereum, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
+func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
 	tr := &marshaller.TypeRegistry{}
 	tr.RegisterInstanceType(&dkg.CompletionTask{})
 	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})

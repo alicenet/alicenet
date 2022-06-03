@@ -1,17 +1,19 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 	"github.com/MadBase/MadNet/blockchain/testutils"
-	"math/big"
-	"testing"
-	"time"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -146,7 +148,7 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Do Register task
-	tasksVec := make([]*RegisterTask, n)
+	tasksVec := make([]*dkg.RegisterTask, n)
 	dkgStates := make([]*state.DkgState, n)
 	for idx := 0; idx < n; idx++ {
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())

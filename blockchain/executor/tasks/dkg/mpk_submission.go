@@ -7,18 +7,17 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +39,7 @@ func NewMPKSubmissionTask(dkgState *state.DkgState, start uint64, end uint64) *M
 // Initialize prepares for work to be done in MPKSubmission phase.
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -67,7 +66,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 			taskState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
 
 		// setup leader election
-		block, err := eth.GetEthereumClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+		block, err := eth.GetClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
 		if err != nil {
 			return fmt.Errorf("MPKSubmissionTask Initialize(): error getting block by number: %v", err)
 		}
@@ -124,16 +123,16 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 }
 
 // DoWork is the first attempt at submitting the mpk
-func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting the mpk
-func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -187,7 +186,8 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 	}).Info("MPK submission fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().Subscribe(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	watcher.Subscribe(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -196,7 +196,7 @@ func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, et
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -232,7 +232,7 @@ func (t *MPKSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
 	return t.Task
 }
 
-func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) bool {
+func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) bool {
 
 	taskState, ok := t.State.(*state.DkgState)
 	if !ok {
@@ -275,7 +275,7 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereumInt
 	return true
 }
 
-func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
+func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth ethereum.Network, logger *logrus.Entry, taskState *state.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

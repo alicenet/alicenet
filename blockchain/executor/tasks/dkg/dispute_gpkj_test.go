@@ -1,15 +1,16 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+
 	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	"github.com/MadBase/MadNet/blockchain/monitor/events"
 	"github.com/MadBase/MadNet/blockchain/testutils"
-	"math/big"
-	"testing"
 
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"

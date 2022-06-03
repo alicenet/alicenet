@@ -4,14 +4,14 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -32,22 +32,22 @@ func NewDisputeMissingRegistrationTask(dkgState *state.DkgState, start uint64, e
 }
 
 // Initialize begins the setup phase for Dispute Registration.
-func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	logger.Info("DisputeMissingRegistrationTask Initializing...")
 	return nil
 }
 
 // DoWork is the first attempt at Disputing Missing Registrations with ethdkg
-func (t *DisputeMissingRegistrationTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingRegistrationTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at registering with ethdkg
-func (t *DisputeMissingRegistrationTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingRegistrationTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -97,7 +97,8 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 		}).Info("missing registration dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().Subscribe(ctx, txn)
+		watcher := transaction.WatcherFromNetwork(eth)
+		watcher.Subscribe(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing registrations")
 	}
@@ -111,7 +112,7 @@ func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *log
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
 // -- We have unregistered participants
-func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -157,7 +158,7 @@ func (t *DisputeMissingRegistrationTask) GetExecutionData() interfaces.ITaskExec
 	return t.Task
 }
 
-func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
+func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) ([]common.Address, error) {
 
 	taskState, ok := t.State.(*state.DkgState)
 	if !ok {

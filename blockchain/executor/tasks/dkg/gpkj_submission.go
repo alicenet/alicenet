@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
-
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -38,7 +38,7 @@ func NewGPKjSubmissionTask(dkgState *state.DkgState, start uint64, end uint64, a
 // Initialize prepares for work to be done in GPKjSubmission phase.
 // Here, we construct our gpkj and associated signature.
 // We will submit them in DoWork.
-func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -88,16 +88,16 @@ func (t *GPKjSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entr
 }
 
 // DoWork is the first attempt at submitting gpkj and signature.
-func (t *GPKjSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *GPKjSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts at submitting gpkj and signature.
-func (t *GPKjSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *GPKjSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -140,7 +140,8 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 	}).Info("GPKj submission fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().Subscribe(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	watcher.Subscribe(ctx, txn)
 	t.Success = true
 
 	return nil
@@ -149,7 +150,7 @@ func (t *GPKjSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, e
 // ShouldRetry checks if it makes sense to try again
 // Predicates:
 // -- we haven't passed the last block
-func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *GPKjSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 	t.State.Lock()
 	defer t.State.Unlock()
 	logger.Info("GPKSubmissionTask ShouldRetry()")

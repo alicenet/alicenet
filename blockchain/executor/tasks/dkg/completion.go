@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"math/big"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	dkgConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	taskUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -33,7 +34,7 @@ func NewCompletionTask(dkgState *state.DkgState, start uint64, end uint64) *Comp
 }
 
 // Initialize prepares for work to be done in the Completion phase
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -50,7 +51,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 	}
 
 	// setup leader election
-	block, err := eth.GetEthereumClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	block, err := eth.GetClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
 	if err != nil {
 		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
 	}
@@ -62,16 +63,16 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 }
 
 // DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -129,7 +130,8 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth e
 	logger.Info("CompletionTask sent completed call")
 
 	// Queue transaction
-	eth.TransactionWatcher().Subscribe(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	watcher.Subscribe(ctx, txn)
 
 	logger.Info("CompletionTask complete!")
 	t.Success = true
@@ -141,7 +143,7 @@ func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth e
 // Predicates:
 // -- we haven't passed the last block
 // -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -184,7 +186,7 @@ func (t *CompletionTask) GetExecutionData() executorInterfaces.ITaskExecutionDat
 	return t.Task
 }
 
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
+func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereum.Network, logger *logrus.Entry, taskState *state.DkgState) bool {
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
@@ -201,7 +203,7 @@ func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth ethereumInterf
 	return phase == uint8(state.Completion)
 }
 
-func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry, taskState *state.DkgState) bool {
+func (t *CompletionTask) AmILeading(ctx context.Context, eth ethereum.Network, logger *logrus.Entry, taskState *state.DkgState) bool {
 	// check if I'm a leader for this task
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	if err != nil {

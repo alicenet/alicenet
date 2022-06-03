@@ -9,10 +9,11 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -35,22 +36,22 @@ func NewDisputeMissingGPKjTask(dkgState *state.DkgState, start uint64, end uint6
 // Initialize begins the setup phase for DisputeMissingGPKjTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingGPKjTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	logger.Info("Initializing DisputeMissingGPKjTask...")
 	return nil
 }
 
 // DoWork is the first attempt at disputing distributed shares
-func (t *DisputeMissingGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingGPKjTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
 // DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeMissingGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingGPKjTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	t.State.Lock()
 	defer t.State.Unlock()
 
@@ -100,7 +101,8 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 		}).Info("missing gpkj dispute fees")
 
 		// Queue transaction
-		eth.TransactionWatcher().Subscribe(ctx, txn)
+		watcher := transaction.WatcherFromNetwork(eth)
+		watcher.Subscribe(ctx, txn)
 	} else {
 		logger.Info("No accusations for missing gpkj")
 	}
@@ -113,7 +115,7 @@ func (t *DisputeMissingGPKjTask) doTask(ctx context.Context, logger *logrus.Entr
 // if the DKG process is in the right phase and blocks
 // range and there still someone to accuse, the retry
 // is executed
-func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *DisputeMissingGPKjTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -160,7 +162,7 @@ func (t *DisputeMissingGPKjTask) GetExecutionData() interfaces.ITaskExecutionDat
 	return t.Task
 }
 
-func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth ethereumInterfaces.IEthereum, logger *logrus.Entry) ([]common.Address, error) {
+func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) ([]common.Address, error) {
 
 	taskState, ok := t.State.(*state.DkgState)
 	if !ok {

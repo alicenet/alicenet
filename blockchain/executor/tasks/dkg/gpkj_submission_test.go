@@ -1,16 +1,18 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
 	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
 	"github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/testutils"
-	"math/big"
-	"testing"
-	"time"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -74,7 +76,7 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	// Create a task to share distribution and make sure it succeeds
 	state := dkgState.NewDkgState(acct)
 	adminHandler := new(interfaces.MockAdminHandler)
-	task := NewGPKjSubmissionTask(state, 1, 100, adminHandler)
+	task := dkg.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
 	err := task.Initialize(ctx, log, eth)
@@ -101,7 +103,7 @@ func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	state := dkgState.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
 	adminHandler := new(interfaces.MockAdminHandler)
-	task := NewGPKjSubmissionTask(state, 1, 100, adminHandler)
+	task := dkg.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 
 	err := task.Initialize(ctx, log, eth)
 	if err == nil {

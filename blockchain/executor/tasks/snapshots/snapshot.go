@@ -12,7 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 
-	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
@@ -49,7 +49,7 @@ func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint6
 	return snapshotTask
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -73,15 +73,15 @@ func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth
 	return nil
 }
 
-func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 	return t.doTask(ctx, logger, eth)
 }
 
-func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) error {
+func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
 
 	t.State.Lock()
 	defer t.State.Unlock()
@@ -132,7 +132,7 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	return nil
 }
 
-func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereumInterfaces.IEthereum) bool {
+func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.RLock()
 	defer t.RUnlock()

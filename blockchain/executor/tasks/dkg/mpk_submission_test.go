@@ -1,15 +1,17 @@
 //go:build integration
 
-package dkg
+package dkg_test
 
 import (
 	"context"
-	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
-	"github.com/MadBase/MadNet/blockchain/testutils"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
+	dkgState "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/testutils"
+	"github.com/MadBase/MadNet/blockchain/testutils"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -124,7 +126,7 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 
 	// Create a task to share distribution and make sure it succeeds
 	state := dkgState.NewDkgState(acct)
-	task := NewMPKSubmissionTask(state, 1, 100)
+	task := dkg.NewMPKSubmissionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
 	err := task.Initialize(ctx, log, eth)
@@ -150,7 +152,7 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	// Do MPK Submission task
 	state := dkgState.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
-	task := NewMPKSubmissionTask(state, 1, 100)
+	task := dkg.NewMPKSubmissionTask(state, 1, 100)
 
 	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
