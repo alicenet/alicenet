@@ -25,7 +25,7 @@ type Task struct {
 	State          interfaces.ITaskState
 	Success        bool
 	Ctx            context.Context
-	CancelFunc     context.CancelFunc
+	CancelFunc     context.CancelFunc `json:"-"`
 	StartBlockHash common.Hash
 	TxOpts         *TxOpts
 }

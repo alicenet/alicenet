@@ -5,87 +5,48 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgtasks "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg"
-	"github.com/MadBase/MadNet/blockchain/testutils"
-	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/test/mocks"
+	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 	"time"
 )
 
 var (
 	lastHeightSeen uint64 = 12
-	taskGroupName         = "ethdkg_group"
+	taskGroupName         = "test_group"
 )
 
-func getTaskScheduler(t *testing.T, lastFinalizedBlockChan chan uint64, taskRequestChan chan interfaces.ITask, taskKillChan chan string) *TasksScheduler {
-
-	consDB := mocks.NewTestDB()
-	consAdminHandlers := &admin.Handlers{}
-	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(5)
-	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
-
-	if lastFinalizedBlockChan == nil {
-		lastFinalizedBlockChan = make(chan uint64, 100)
-	}
-	if taskRequestChan == nil {
-		taskRequestChan = make(chan interfaces.ITask, 100)
-	}
-	if taskKillChan == nil {
-		taskKillChan = make(chan string, 100)
-	}
-	return NewTasksScheduler(consDB, eth, consAdminHandlers, taskRequestChan, taskKillChan)
-}
-
-func TestTasksScheduler_Close(t *testing.T) {
-	s := getTaskScheduler(t, nil, nil, nil)
-	s.Close()
-
-	_, ok := <-s.taskResponseChan.trChan
-	if ok {
-		assert.Fail(t, "Expected taskResponseChan to be closed")
-	}
+func getTaskScheduler() *TasksScheduler {
+	db := mocks.NewTestDB()
+	eth := mocks.NewMockIEthereum()
+	adminHandlers := mocks.NewMockIAdminHandler()
+	return NewTasksScheduler(db, eth, adminHandlers, make(chan interfaces.ITask, 100), make(chan string, 100))
 }
 
 func TestTasksScheduler_Schedule_WrongExecutionData(t *testing.T) {
 
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	s := getTaskScheduler(t, nil, nil, nil)
-
-	taskInvalidParams := dkgtasks.CompletionTask{
-		Task: &objects.Task{
-			Start: 2,
-			End:   1,
-		},
-	}
-	err := s.schedule(ctx, &taskInvalidParams)
+	taskInvalidParams := mocks.NewMockITaskWithExecutionData("", 2, 1)
+	err := s.schedule(ctx, taskInvalidParams)
 	assert.Equal(t, ErrWrongParams, err)
 
-	taskExpired := dkgtasks.CompletionTask{
-		Task: &objects.Task{
-			End: 1,
-		},
-	}
+	taskExpired := mocks.NewMockITaskWithExecutionData("", 0, 1)
 	s.LastHeightSeen = lastHeightSeen
-	err = s.schedule(ctx, &taskExpired)
+	err = s.schedule(ctx, taskExpired)
 	assert.Equal(t, ErrTaskExpired, err)
 }
 
 func TestTasksScheduler_Schedule_Success(t *testing.T) {
 
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	s := getTaskScheduler(t, nil, nil, nil)
-
-	s.LastHeightSeen = lastHeightSeen
-	task := dkgtasks.CompletionTask{
-		Task: &objects.Task{
-			Start: 10,
-			End:   20,
-		},
-	}
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 
 	assert.Emptyf(t, s.Schedule, "Expected Schedule map to be empty")
-	err := s.schedule(ctx, &task)
+	err := s.schedule(ctx, task)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(s.Schedule))
 
@@ -98,16 +59,13 @@ func TestTasksScheduler_Schedule_Success(t *testing.T) {
 
 func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNotNil(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 	ctx, _ := context.WithCancel(context.Background())
-	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
-	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
 
-	taskResponse := TaskResponse{
-		Id:  "1",
-		Err: ErrTaskExpired,
-	}
+	taskResponse := TaskResponse{Id: "1", Err: ErrTaskExpired}
+	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, task}
+	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
 
 	err := s.processTaskResponse(ctx, taskResponse)
 	assert.Nil(t, err)
@@ -116,16 +74,13 @@ func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNotNil(t *testing.T
 
 func TestTasksScheduler_ProcessTaskResponse_RemoveNotScheduledTask(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
-	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 
-	taskResponse := TaskResponse{
-		Id:  "2",
-		Err: ErrTaskExpired,
-	}
+	taskResponse := TaskResponse{Id: "2", Err: ErrTaskExpired}
+	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, task}
+	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
 
 	err := s.processTaskResponse(ctx, taskResponse)
 	assert.Equal(t, err, ErrNotScheduled)
@@ -134,16 +89,13 @@ func TestTasksScheduler_ProcessTaskResponse_RemoveNotScheduledTask(t *testing.T)
 
 func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNil(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
-	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 
-	taskResponse := TaskResponse{
-		Id:  "1",
-		Err: nil,
-	}
+	taskResponse := TaskResponse{Id: "1", Err: nil}
+	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, task}
+	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
 
 	err := s.processTaskResponse(ctx, taskResponse)
 	assert.Nil(t, err)
@@ -152,16 +104,13 @@ func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNil(t *testing.T) {
 
 func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNilNotScheduledTask(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
-	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 
-	taskResponse := TaskResponse{
-		Id:  "2",
-		Err: nil,
-	}
+	taskResponse := TaskResponse{Id: "2", Err: nil}
+	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, task}
+	assert.NotEmptyf(t, s.Schedule, "Expected one task request scheduled")
 
 	err := s.processTaskResponse(ctx, taskResponse)
 	assert.Equal(t, err, ErrNotScheduled)
@@ -170,53 +119,58 @@ func TestTasksScheduler_ProcessTaskResponse_RemoveTaskWithErrNilNotScheduledTask
 
 func TestTasksScheduler_StartTask_Success(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
+
 	taskRequestList := []TaskRequestInfo{
-		{"First", 1, 2, false, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}},
-		{"First", 1, 2, false, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}},
+		{"First", 1, 2, false, task},
+		{"Second", 1, 2, false, task},
 	}
+
 	err := s.startTasks(ctx, taskRequestList)
 	assert.Nil(t, err)
-	for _, task := range taskRequestList {
-		task.IsRunning = true
-		assert.Truef(t, task.IsRunning, "Expecting task to be running")
+	for _, taskRequest := range taskRequestList {
+		taskRequest.IsRunning = true
+		assert.Truef(t, taskRequest.IsRunning, "Expecting task to be running")
 	}
 }
 
 func TestTasksScheduler_KillTaskByName(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
-	taskRequestList := []*TaskRequestInfo{
-		{"First", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20, Name: taskGroupName}}},
-		{"Second", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20, Name: taskGroupName}}},
-		{"Third", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20, Name: "other"}}},
+	task1 := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+	task2 := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+
+	taskRequestList := []TaskRequestInfo{
+		{"First", 1, 2, true, task1},
+		{"Second", 1, 2, true, task2},
 	}
 	for _, taskRequest := range taskRequestList {
-		err := s.schedule(ctx, taskRequest.Task)
-		assert.Nil(t, err)
+		s.Schedule[taskRequest.Id] = taskRequest
 	}
-	assert.Equalf(t, 3, len(s.Schedule), "Expected 3 tasks scheduled")
-	time.Sleep(time.Second)
+
 	err := s.killTaskByName(ctx, taskGroupName)
 	assert.Nil(t, err)
-	killedTaskList := s.findTasksByName(taskGroupName)
-	assert.Emptyf(t, killedTaskList, "Expected no tasks with this name to be running")
+	mockrequire.CalledN(t, task1.GetExecutionDataFunc, 3)
+	mockrequire.CalledN(t, task2.GetExecutionDataFunc, 3)
 }
 
 func TestTasksScheduler_KillTasks(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
+	task1 := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+	task2 := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+	task3 := mocks.NewMockITaskWithExecutionData("other", 10, 20)
+
 	taskRequestList := []TaskRequestInfo{
-		{"First", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Second", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "2", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Third", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "3", Start: 10, End: 20, Name: "other"}}},
+		{"First", 1, 2, true, task1},
+		{"Second", 1, 2, true, task2},
+		{"Third", 1, 2, true, task3},
 	}
+
 	err := s.killTasks(ctx, taskRequestList)
 	assert.Nil(t, err)
 	killedTaskList := s.findTasksByName(taskGroupName)
@@ -225,19 +179,21 @@ func TestTasksScheduler_KillTasks(t *testing.T) {
 
 func TestTasksScheduler_RemoveUnresponsiveTasks_WithScheduledAndNoScheduledTask(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
 	ctx, _ := context.WithCancel(context.Background())
+	task := mocks.NewMockITaskWithExecutionData("", 10, 10)
+
 	taskRequestList := []TaskRequestInfo{
-		{"First", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Second", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "2", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Third", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "3", Start: 10, End: 20, Name: "other"}}},
+		{"First", 1, 10, true, task},
+		{"Second", 1, 10, true, task},
+		{"Third", 1, 10, true, task},
 	}
-	// Not scheduling the first task on purpose
-	for i := 1; i < len(taskRequestList); i++ {
-		err := s.schedule(ctx, taskRequestList[i].Task)
-		assert.Nil(t, err)
+	s.LastHeightSeen = 100
+
+	for _, taskRequest := range taskRequestList {
+		s.Schedule[taskRequest.Id] = taskRequest
 	}
+
 	err := s.removeUnresponsiveTasks(ctx, taskRequestList)
 	assert.Nil(t, err)
 	assert.Emptyf(t, s.Schedule, "Expected no tasks")
@@ -245,15 +201,16 @@ func TestTasksScheduler_RemoveUnresponsiveTasks_WithScheduledAndNoScheduledTask(
 
 func TestTasksScheduler_Purge(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
-
+	s := getTaskScheduler()
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 	ctx, _ := context.WithCancel(context.Background())
+
 	taskRequestList := []TaskRequestInfo{
-		{"First", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Second", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "2", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Third", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "3", Start: 10, End: 20, Name: "other"}}},
+		{"First", 1, 2, true, task},
+		{"Second", 1, 2, true, task},
+		{"Third", 1, 2, true, task},
 	}
-	// Not scheduling the first task on purpose
+
 	for _, taskRequest := range taskRequestList {
 		err := s.schedule(ctx, taskRequest.Task)
 		assert.Nil(t, err)
@@ -264,40 +221,77 @@ func TestTasksScheduler_Purge(t *testing.T) {
 
 func TestTasksScheduler_FindTasks(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
+	s := getTaskScheduler()
+	task := mocks.NewMockITaskWithExecutionData("", 10, 20)
 
-	ctx, _ := context.WithCancel(context.Background())
 	taskRequestList := []TaskRequestInfo{
-		{"First", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Second", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "2", Start: 10, End: 20, Name: taskGroupName}}},
-		{"Third", 1, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Id: "3", Start: 10, End: 20, Name: "other"}}},
+		{"First", 1, 10, true, task},
+		{"Second", 1, 90, true, task},
+		{"Third", 0, 0, false, task},
+		{"Fourth", 10, 0, false, task},
+		{"Fifth", 1, 200, false, task},
 	}
-	// Not scheduling the first task on purpose
+	s.LastHeightSeen = 100
+
 	for _, taskRequest := range taskRequestList {
-		err := s.schedule(ctx, taskRequest.Task)
-		assert.Nil(t, err)
+		s.Schedule[taskRequest.Id] = taskRequest
 	}
-	s.purge()
-	assert.Emptyf(t, s.Schedule, "Expected no tasks")
+
+	toStart, expired, unresponsive := s.findTasks()
+	assert.Equalf(t, 3, len(toStart), "Expected 3 tasks to start")
+	assert.Equalf(t, 1, len(expired), "Expected 1 task expired")
+	assert.Equalf(t, 1, len(unresponsive), "Expected 1 task unresponsive")
 }
 
-//---
+func TestTasksScheduler_FindTasksByName(t *testing.T) {
+
+	s := getTaskScheduler()
+	taskWithGroupName := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+	taskWithoutGroupName := mocks.NewMockITaskWithExecutionData("other", 10, 20)
+
+	taskRequestList := []TaskRequestInfo{
+		{"First", 1, 2, true, taskWithGroupName},
+		{"Second", 1, 2, true, taskWithGroupName},
+		{"Third", 1, 2, true, taskWithoutGroupName},
+	}
+	for _, taskRequest := range taskRequestList {
+		s.Schedule[taskRequest.Id] = taskRequest
+	}
+
+	tasksByName := s.findTasksByName(taskGroupName)
+	assert.Equalf(t, 2, len(tasksByName), "Expected 2 tasks with this name")
+}
+
+func TestTasksScheduler_Remove(t *testing.T) {
+
+	s := getTaskScheduler()
+	task := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
+
+	s.Schedule["First"] = TaskRequestInfo{"First", 1, 2, true, task}
+	err := s.remove("First")
+	assert.Nil(t, err)
+	assert.Emptyf(t, s.Schedule, "Expected task to be deleted")
+
+	err = s.remove("Second")
+	assert.NotNil(t, err)
+	assert.Equal(t, err, ErrNotScheduled)
+}
 
 func TestTasksScheduler_PersistState_Success(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
+	s := getTaskScheduler()
 
 	s.LastHeightSeen = 0
-	err := s.PersistState()
+	err := s.persistState()
 	assert.Nil(t, err)
 
-	err = s.LoadState()
+	err = s.loadState()
 	assert.Nil(t, err)
 
 	lastHeightSeenBeforeAfter := s.LastHeightSeen
 	s.LastHeightSeen = lastHeightSeen
-	err = s.PersistState()
-	err = s.LoadState()
+	err = s.persistState()
+	err = s.loadState()
 	lastHeightSeenAfter := s.LastHeightSeen
 	assert.Nil(t, err)
 	assert.NotEqualf(t, lastHeightSeenBeforeAfter, lastHeightSeenAfter, "Expected TaskScheduler to be different")
@@ -305,17 +299,17 @@ func TestTasksScheduler_PersistState_Success(t *testing.T) {
 
 func TestTasksScheduler_LoadState_MissingKey(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
+	s := getTaskScheduler()
 
-	err := s.LoadState()
+	err := s.loadState()
 	assert.NotNil(t, err)
 }
 
 func TestTasksScheduler_Start_EmptySchedule(t *testing.T) {
 
-	s := getTaskScheduler(t, nil, nil, nil)
+	s := getTaskScheduler()
 
-	err := s.PersistState()
+	err := s.persistState()
 	assert.Nil(t, err)
 
 	assert.Emptyf(t, s.Schedule, "Scheduled map expected to be empty")
@@ -326,62 +320,95 @@ func TestTasksScheduler_Start_EmptySchedule(t *testing.T) {
 
 func TestTasksScheduler_EventLoop_PurgeToEmptyTheSchedulerMap(t *testing.T) {
 
+	db := mocks.NewTestDB()
+	eth := mocks.NewMockIEthereum()
+	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
-	s := getTaskScheduler(t, nil, taskRequestChan, nil)
+	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil)
+	task := mocks.NewMockITaskWithExecutionData(taskGroupName, 10, 20)
 
-	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
-	s.Schedule["2"] = TaskRequestInfo{"Second", 2, 2, true, &dkgtasks.CompletionTask{Task: &objects.Task{Start: 10, End: 20}}}
+	s.Schedule["1"] = TaskRequestInfo{"First", 1, 1, true, task}
+	s.Schedule["2"] = TaskRequestInfo{"Second", 2, 2, true, task}
 	assert.Equal(t, 2, len(s.Schedule))
 	s.purge()
 
 	assert.Equal(t, 0, len(s.Schedule))
 }
 
-func TestTasksScheduler_EventLoop_LastFinalizedBlock(t *testing.T) {
-
-	lastFinalizedBlockChan := make(chan uint64, 100)
-	s := getTaskScheduler(t, lastFinalizedBlockChan, nil, nil)
-
-	assert.Equal(t, uint64(0), s.LastHeightSeen)
-	lastFinalizedBlockChan <- lastHeightSeen
-	s.cancelChan <- true
-	s.eventLoop()
-
-	select {
-	case <-lastFinalizedBlockChan:
-		assert.Equal(t, uint64(0), s.LastHeightSeen)
-	case <-time.After(time.Second):
-		assert.Equal(t, lastHeightSeen, s.LastHeightSeen)
-	}
-}
-
 func TestTasksScheduler_Schedule_ScheduleTask(t *testing.T) {
 
+	db := mocks.NewTestDB()
+	eth := mocks.NewMockIEthereum()
+	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
-	s := getTaskScheduler(t, nil, taskRequestChan, nil)
+	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil)
 
 	s.LastHeightSeen = lastHeightSeen
-	task := dkgtasks.CompletionTask{
-		Task: &objects.Task{
-			Start: 10,
-			End:   20,
-		},
-	}
+	task := &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}
 
-	err := s.PersistState()
+	err := s.persistState()
 	assert.Nil(t, err)
 	s2 := s
 	assert.Equal(t, s2, s)
 
-	taskRequestChan <- &task
-	s.cancelChan <- true
-	err = s.LoadState()
-	assert.Nil(t, err)
+	taskRequestChan <- task
+	go func() {
+		time.Sleep(10 * time.Second)
+		s.cancelChan <- true
+		s.logger.Debugf("s.Schedule: %v", s.Schedule)
+		assert.NotEmpty(t, s.Schedule)
+	}()
 
 	s.eventLoop()
+}
 
-	select {
-	case <-time.After(time.Second):
-		assert.Equalf(t, s2, s, "Expected initial state to be the same")
+func TestTasksScheduler_EventLoop_Workflow(t *testing.T) {
+
+	db := mocks.NewTestDB()
+	eth := mocks.NewMockIEthereum()
+	adminHandlers := mocks.NewMockIAdminHandler()
+	taskRequestChan := make(chan interfaces.ITask, 100)
+	taskKillChan := make(chan string, 1)
+	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, taskKillChan)
+	s.LastHeightSeen = lastHeightSeen
+
+	// Create a valid task
+	task := &dkgtasks.CompletionTask{Task: &objects.Task{Id: "1", Start: 10, End: 20, Name: taskGroupName}}
+
+	// Send task to request channel
+	taskRequestList := []TaskRequestInfo{
+		{"First", 1, 10, true, task},
+		{"Second", 1, 90, true, task},
+		{"Third", 0, 0, false, task},
+		{"Fourth", 10, 0, false, task},
+		{"Fifth", 1, 200, false, task},
 	}
+	for _, taskRequest := range taskRequestList {
+		taskRequestChan <- taskRequest.Task
+	}
+
+	// Initial State
+	err := s.loadState()
+	assert.NotNil(t, err)
+
+	// Execute after processing time
+	eth.GetCurrentHeightFunc.PushReturn(15, nil)
+
+	// Close scheduler
+	go func() {
+		time.Sleep(7 * time.Second)
+		s.cancelChan <- true
+	}()
+
+	// Expect event loop to clean the tasks
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.eventLoop()
+	}()
+	wg.Wait()
+
+	mockrequire.CalledN(t, eth.GetCurrentHeightFunc, 1)
+	assert.Emptyf(t, s.Schedule, "Expected all the task to have been removed")
 }

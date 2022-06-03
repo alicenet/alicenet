@@ -25,10 +25,9 @@ import (
 )
 
 var (
-	ErrNothingScheduled = errors.New("nothing schedule for time")
-	ErrNotScheduled     = errors.New("scheduled task not found")
-	ErrWrongParams      = errors.New("wrong start/end height for the task")
-	ErrTaskExpired      = errors.New("the task is already expired")
+	ErrNotScheduled = errors.New("scheduled task not found")
+	ErrWrongParams  = errors.New("wrong start/end height for the task")
+	ErrTaskExpired  = errors.New("the task is already expired")
 )
 
 const (
@@ -131,7 +130,7 @@ func NewTasksScheduler(database *db.Database, eth ethereumInterfaces.IEthereum, 
 }
 
 func (s *TasksScheduler) Start() error {
-	err := s.LoadState()
+	err := s.loadState()
 	if err != nil {
 		s.logger.Warnf("could not find previous State: %v", err)
 		if err != badger.ErrKeyNotFound {
@@ -148,6 +147,10 @@ func (s *TasksScheduler) Start() error {
 
 	go s.eventLoop()
 	return nil
+}
+
+func (s *TasksScheduler) Close() {
+	s.cancelChan <- true
 }
 
 func (s *TasksScheduler) eventLoop() {
@@ -167,18 +170,18 @@ func (s *TasksScheduler) eventLoop() {
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
 			}
-			err = s.PersistState()
+			err = s.persistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state %d on task request", s.LastHeightSeen)
 			}
 		case taskResponse := <-s.taskResponseChan.trChan:
 			err := s.processTaskResponse(ctx, taskResponse)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
 			}
-			err = s.PersistState()
+			err = s.persistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state %d on task response", s.LastHeightSeen)
 			}
 		case taskToKill := <-s.taskKillChan:
 			err := s.killTaskByName(ctx, taskToKill)
@@ -210,16 +213,12 @@ func (s *TasksScheduler) eventLoop() {
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to removeUnresponsiveTasks %d", s.LastHeightSeen)
 			}
-			err = s.PersistState()
+			err = s.persistState()
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
 			}
 		}
 	}
-}
-
-func (s *TasksScheduler) Close() {
-	s.cancelChan <- true
 }
 
 func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.ITask) error {
@@ -305,7 +304,6 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 			s.logger.Infof("Task name: %s and id: %s is about to be killed", task.Task.GetExecutionData().GetName(), task.Id)
 			task.Task.GetExecutionData().Close()
 		}
-
 	}
 
 	return nil
@@ -389,7 +387,7 @@ func (s *TasksScheduler) remove(id string) error {
 	return nil
 }
 
-func (s *TasksScheduler) PersistState() error {
+func (s *TasksScheduler) persistState() error {
 	rawData, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -416,7 +414,7 @@ func (s *TasksScheduler) PersistState() error {
 	return nil
 }
 
-func (s *TasksScheduler) LoadState() error {
+func (s *TasksScheduler) loadState() error {
 
 	if err := s.database.View(func(txn *badger.Txn) error {
 		keyLabel := fmt.Sprintf("%x", getStateKey())
@@ -438,10 +436,6 @@ func (s *TasksScheduler) LoadState() error {
 
 	return nil
 
-}
-
-func getStateKey() []byte {
-	return []byte("schedulerStateKey")
 }
 
 func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
@@ -492,4 +486,8 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 	}
 
 	return nil
+}
+
+func getStateKey() []byte {
+	return []byte("schedulerStateKey")
 }
