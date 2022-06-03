@@ -462,36 +462,28 @@ func RegisterValidators(eth *ethereum.Details, validatorAddresses []string) erro
 	return nil
 }
 
-func AdvanceTo(t *testing.T, eth ethereum.Network, target uint64) {
-	currentBlock, err := eth.GetCurrentHeight(context.Background())
-	if err != nil {
-		panic(err)
-	}
+// send a command to the hardhat server via an RPC call
+func SendHardhatCommand(command string, params ...interface{}) error {
 
-	c := http.Client{}
-	msg := &ethereum.JsonRPCMessage{
+	commandJson := &ethereum.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
-		Method:  "hardhat_mine",
+		Method:  command,
 		Params:  make([]byte, 0),
 	}
 
-	if target < currentBlock {
-		return
-	}
-	blocksToMine := target - currentBlock
-	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
-
-	if msg.Params, err = json.Marshal([]string{blocksToMineString}); err != nil {
-		panic(err)
-	}
-
-	log.Printf("hardhat_mine %v blocks to target height %v", blocksToMine, target)
-
-	var buff bytes.Buffer
-	err = json.NewEncoder(&buff).Encode(msg)
+	paramsJson, err := json.Marshal(params)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+
+	commandJson.Params = paramsJson
+
+	c := http.Client{}
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(commandJson)
+	if err != nil {
+		return err
 	}
 
 	reader := bytes.NewReader(buff.Bytes())
@@ -503,11 +495,74 @@ func AdvanceTo(t *testing.T, eth ethereum.Network, target uint64) {
 	)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+// mine a certain number of hardhat blocks
+func MineBlocks(t *testing.T, eth ethereum.Network, blocksToMine uint64) {
+	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+	log.Printf("hardhat_mine %v blocks ", blocksToMine)
+	err := SendHardhatCommand("hardhat_mine", blocksToMineString)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// advance to a certain block number
+func AdvanceTo(t *testing.T, eth ethereum.Network, target uint64) {
+	currentBlock, err := eth.GetCurrentHeight(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	if target < currentBlock {
+		return
+	}
+	blocksToMine := target - currentBlock
+	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+
+	log.Printf("hardhat_mine %v blocks to target height %v", blocksToMine, target)
+
+	err = SendHardhatCommand("hardhat_mine", blocksToMineString)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// The the Base fee for the next hardhat block. Can be used to make tx stale.
+func SetNextBlockBaseFee(t *testing.T, eth ethereum.Network, target uint64) {
+	log.Printf("Setting hardhat_setNextBlockBaseFeePerGas to %v", target)
+
+	err := SendHardhatCommand("hardhat_setNextBlockBaseFeePerGas", "0x"+strconv.FormatUint(target, 16))
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Enable/disable hardhat autoMine
+func SetAutoMine(t *testing.T, eth ethereum.Network, autoMine bool) {
+	log.Printf("Setting Automine to %v", autoMine)
+
+	err := SendHardhatCommand("evm_setAutomine", autoMine)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Set the interval between hardhat blocks. In case interval is 0, we enter in
+// manual mode and blocks can only be mined explicitly by calling `MineBlocks`.
+// This function disables autoMine.
+func SetBlockInterval(t *testing.T, eth ethereum.Network, intervalInMilliSeconds uint64) {
+	SetAutoMine(t, eth, false)
+	log.Printf("Setting block interval to %v seconds", intervalInMilliSeconds)
+	err := SendHardhatCommand("evm_setIntervalMining", intervalInMilliSeconds)
+	if err != nil {
+		panic(err)
 	}
 }

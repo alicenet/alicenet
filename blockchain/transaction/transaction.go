@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"math/big"
 	"sync"
@@ -285,7 +284,7 @@ func (b *WatcherBackend) collectReceipts() {
 
 	// If there's no tx to be monitored just return
 	if lenMonitoredTxns == 0 {
-		b.logger.Tracef("TxMonitor: no transaction to watch")
+		b.logger.Tracef("no transaction to watch")
 		return
 	}
 
@@ -294,7 +293,7 @@ func (b *WatcherBackend) collectReceipts() {
 
 	blockHeader, err := b.client.HeaderByNumber(networkCtx, nil)
 	if err != nil {
-		b.logger.Debugf("TxMonitor: error getting latest block number from ethereum node: %v", err)
+		b.logger.Debugf("error getting latest block number from ethereum node: %v", err)
 		return
 	}
 	blockInfo := &Block{
@@ -303,9 +302,10 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 
 	if b.lastProcessedBlock.Equal(blockInfo) {
-		b.logger.Tracef("TxMonitor: block: %v with hash: %v already processed", blockInfo.height, blockInfo.hash.Hex())
+		b.logger.Tracef("already processed block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
 		return
 	}
+	b.logger.Tracef("processing block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
 
 	var expiredTxs []common.Hash
 	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
@@ -323,9 +323,11 @@ func (b *WatcherBackend) collectReceipts() {
 			b.logger.Debugf("context for tx %v is finished, marking it to be excluded!", txn.Hex())
 			expiredTxs = append(expiredTxs, txnInfo.txn.Hash())
 		default:
-			// if this is the first time seeing a tx
-			if txnInfo.startedMonitoringHeight == 0 {
+			// if this is the first time seeing a tx or we have a reorg and
+			// startedMonitoring is now greater than the current ethereum block height
+			if txnInfo.startedMonitoringHeight == 0 || txnInfo.startedMonitoringHeight > blockInfo.height {
 				txnInfo.startedMonitoringHeight = blockInfo.height
+				b.monitoredTxns[txn] = txnInfo
 			}
 			requestWorkChannel <- MonitorWorkRequest{txnInfo, blockInfo.height}
 		}
@@ -660,8 +662,4 @@ func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int, thresho
 	}
 
 	return resultFeeCap, resultTipCap
-}
-
-func isTestRun() bool {
-	return flag.Lookup("test.v") != nil
 }
