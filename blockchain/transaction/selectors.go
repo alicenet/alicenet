@@ -1,10 +1,10 @@
-package txwatcher
+package transaction
 
 import (
 	"sync"
 
-	txWatcherInterfaces "github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
-	"github.com/MadBase/MadNet/blockchain/txwatcher/objects"
+	transactionInterfaces "github.com/MadBase/MadNet/blockchain/transaction/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction/objects"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -20,7 +20,7 @@ func NewSelectorMap() *SelectorMapDetail {
 		selectors:  make(map[string]objects.FuncSelector, 20)}
 }
 
-func NewKnownSelectors() txWatcherInterfaces.ISelectorMap {
+func NewKnownSelectors() transactionInterfaces.ISelectorMap {
 	sm := &SelectorMapDetail{
 		signatures: make(map[objects.FuncSelector]string, 20),
 		selectors:  make(map[string]objects.FuncSelector, 20)}

@@ -2,12 +2,13 @@ package dkg
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"math/big"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
@@ -126,7 +127,7 @@ func (t *RegisterTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	}).Info("registering fees")
 
 	// Queue transaction
-	eth.TransactionWatcher().SubscribeTransaction(ctx, txn)
+	eth.TransactionWatcher().Subscribe(ctx, txn)
 
 	t.Success = true
 

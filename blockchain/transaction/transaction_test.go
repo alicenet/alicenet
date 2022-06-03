@@ -1,4 +1,4 @@
-package txwatcher
+package transaction_test
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 )
 
 func TestTransferFunds(t *testing.T) {
-	logger := logging.GetLogger("txwatcher")
+	logger := logging.GetLogger("transaction")
 	logger.SetLevel(logrus.TraceLevel)
 	n := 2
 	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
@@ -53,9 +53,9 @@ func TestTransferFunds(t *testing.T) {
 	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
 	assert.Nil(t, err)
 
-	txWatcher := eth.TransactionWatcher()
+	transaction := eth.TransactionWatcher()
 
-	receipt, err := txWatcher.SubscribeAndWait(ctx, txn)
+	receipt, err := transaction.SubscribeAndWait(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, receipt)
 	assert.Equal(t, txn.Hash(), receipt.TxHash)

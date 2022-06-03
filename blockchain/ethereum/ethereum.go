@@ -18,8 +18,8 @@ import (
 	"time"
 
 	ethereumInterfaces "github.com/MadBase/MadNet/blockchain/ethereum/interfaces"
-	"github.com/MadBase/MadNet/blockchain/txwatcher"
-	txWatcherInterfaces "github.com/MadBase/MadNet/blockchain/txwatcher/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction"
+	transactionInterfaces "github.com/MadBase/MadNet/blockchain/transaction/interfaces"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum"
@@ -67,8 +67,8 @@ type EthereumDetails struct {
 	chainID                   *big.Int
 	syncing                   func(ctx context.Context) (*ethereum.SyncProgress, error)
 	peerCount                 func(ctx context.Context) (uint64, error)
-	txWatcher                 txWatcherInterfaces.ITransactionWatcher
-	selectors                 txWatcherInterfaces.ISelectorMap
+	transaction               transactionInterfaces.IWatcher
+	selectors                 transactionInterfaces.ISelectorMap
 	txFeePercentageToIncrease int
 	txMaxGasFeeAllowedInGwei  uint64
 }
@@ -107,7 +107,7 @@ func NewEthereumSimulator(
 	eth.retryCount = retryCount
 	eth.retryDelay = retryDelay
 	eth.timeout = timeout
-	eth.selectors = txwatcher.NewKnownSelectors()
+	eth.selectors = transaction.NewKnownSelectors()
 	eth.txFeePercentageToIncrease = txFeePercentageToIncrease
 	eth.txMaxGasFeeAllowedInGwei = txMaxGasFeeAllowedInGwei
 	for idx, privateKey := range privateKeys {
@@ -144,8 +144,8 @@ func NewEthereumSimulator(
 		return nil, err
 	}
 	eth.client = client
-	eth.txWatcher = txwatcher.NewTransactionWatcher(client, eth.selectors, uint64(finalityDelay))
-	eth.txWatcher.StartLoop()
+	eth.transaction = transaction.NewWatcher(client, eth.selectors, uint64(finalityDelay))
+	eth.transaction.StartLoop()
 
 	eth.chainID = big.NewInt(1337)
 	eth.peerCount = func(context.Context) (uint64, error) {
@@ -274,7 +274,7 @@ func NewEthereumEndpoint(
 		timeout:                   timeout,
 		retryCount:                retryCount,
 		retryDelay:                retryDelay,
-		selectors:                 txwatcher.NewKnownSelectors(),
+		selectors:                 transaction.NewKnownSelectors(),
 		txFeePercentageToIncrease: txFeePercentageToIncrease,
 		txMaxGasFeeAllowedInGwei:  txMaxGasFeeAllowedInGwei}
 
@@ -307,8 +307,8 @@ func NewEthereumEndpoint(
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
-	// instantiate but don't initiate the new txWatcher with default finality Delay.
-	eth.txWatcher = txwatcher.NewTransactionWatcher(ethClient, eth.selectors, constants.DefaultFinalityDelay)
+	// instantiate but don't initiate the new transaction with default finality Delay.
+	eth.transaction = transaction.NewWatcher(ethClient, eth.selectors, constants.DefaultFinalityDelay)
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)
@@ -342,12 +342,12 @@ func (eth *EthereumDetails) GetFinalityDelay() uint64 {
 	return eth.finalityDelay
 }
 
-func (eth *EthereumDetails) KnownSelectors() txWatcherInterfaces.ISelectorMap {
+func (eth *EthereumDetails) KnownSelectors() transactionInterfaces.ISelectorMap {
 	return eth.selectors
 }
 
 func (eth *EthereumDetails) Close() error {
-	eth.txWatcher.Close()
+	eth.transaction.Close()
 	return eth.close()
 }
 
@@ -379,8 +379,8 @@ func (eth *EthereumDetails) GetPeerCount(ctx context.Context) (uint64, error) {
 	return eth.peerCount(ctx)
 }
 
-func (eth *EthereumDetails) TransactionWatcher() txWatcherInterfaces.ITransactionWatcher {
-	return eth.txWatcher
+func (eth *EthereumDetails) TransactionWatcher() transactionInterfaces.IWatcher {
+	return eth.transaction
 }
 
 func (eth *EthereumDetails) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
