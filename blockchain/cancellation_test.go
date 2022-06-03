@@ -1,13 +1,13 @@
 package blockchain_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 const SLEEP_DURATION = 500 * time.Millisecond
