@@ -144,7 +144,7 @@ case $1 in
         WD=$PWD
         BRIDGE=./bridge
         cd $BRIDGE &&
-        npm ci &&
+#        npm ci &&
         cd $WD &&
         ./scripts/base-scripts/init-githooks.sh
         CREATE_CONFIGS $2
