@@ -2,32 +2,26 @@ package ethereum
 
 import (
 	"bufio"
-	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"math/big"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,7 +30,6 @@ var (
 	ErrAccountNotFound           = errors.New("could not find specified account")
 	ErrKeysNotFound              = errors.New("account either not found or not unlocked")
 	ErrPassCodeNotFound          = errors.New("could not find specified passCode")
-	ErrInvalidTxPercentIncrease  = errors.New("txFeePercentageToIncrease should be greater than 10%")
 	ErrInvalidTxMaxGasFeeAllowed = errors.New("txMaxGasFeeAllowedInGwei should be greater than 100Gwei")
 )
 
@@ -46,11 +39,8 @@ var _ Network = &Details{}
 
 // Network contains state information about a connection to the Ethereum node
 type Network interface {
-
-	// Extensions for use with simulator
-	Close() error
-	Commit()
-
+	Close()
+	GetInternalClient() *ethclient.Client
 	IsAccessible() bool
 	ChainID() *big.Int
 	GetCallOpts(context.Context, accounts.Account) (*bind.CallOpts, error)
@@ -60,7 +50,6 @@ type Network interface {
 	GetAccount(common.Address) (accounts.Account, error)
 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
 	GetBalance(common.Address) (*big.Int, error)
-	GetClient() Client
 	GetCurrentHeight(context.Context) (uint64, error)
 	GetDefaultAccount() accounts.Account
 	GetEndpoint() string
@@ -72,46 +61,8 @@ type Network interface {
 	GetValidators(context.Context) ([]common.Address, error)
 	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
 	GetFinalityDelay() uint64
-	GetTxFeePercentageToIncrease() int
 	GetTxMaxGasFeeAllowedInGwei() uint64
 	Contracts() Contracts
-}
-
-type Client interface {
-
-	// geth.ChainReader
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error)
-
-	// geth.TransactionReader
-	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// geth.ChainStateReader
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
-	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
-
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-
-	// -- bind.ContractTransactor
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
-	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-
-	// -- bind.ContractFilterer
-	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 }
 
 // A value of this type can a JSON-RPC request, notification, successful response or
@@ -139,167 +90,22 @@ func (err *jsonError) Error() string {
 }
 
 type Details struct {
-	logger                    *logrus.Logger
-	endpoint                  string
-	keystore                  *keystore.KeyStore
-	finalityDelay             uint64
-	accounts                  map[common.Address]accounts.Account
-	accountIndex              map[common.Address]int
-	coinbase                  common.Address
-	defaultAccount            accounts.Account
-	keys                      map[common.Address]*keystore.Key
-	passCodes                 map[common.Address]string
-	timeout                   time.Duration
-	retryCount                int
-	retryDelay                time.Duration
-	contracts                 Contracts
-	client                    Client
-	close                     func() error
-	commit                    func()
-	chainID                   *big.Int
-	syncing                   func(ctx context.Context) (*ethereum.SyncProgress, error)
-	peerCount                 func(ctx context.Context) (uint64, error)
-	txFeePercentageToIncrease int
-	txMaxGasFeeAllowedInGwei  uint64
-}
-
-//NewSimulator returns a simulator for testing
-func NewSimulator(
-	privateKeys []*ecdsa.PrivateKey,
-	retryCount int,
-	retryDelay time.Duration,
-	timeout time.Duration,
-	finalityDelay int,
-	wei *big.Int,
-	txFeePercentageToIncrease int,
-	txMaxGasFeeAllowedInGwei uint64,
-) (*Details, error) {
-	logger := logging.GetLogger("ethereum")
-
-	if len(privateKeys) < 1 {
-		return nil, errors.New("at least 1 private key")
-	}
-
-	pathKeyStore, err := ioutil.TempDir("", "simulator-keystore-")
-	if err != nil {
-		return nil, err
-	}
-
-	eth := &Details{}
-	eth.accounts = make(map[common.Address]accounts.Account)
-	eth.accountIndex = make(map[common.Address]int)
-	eth.contracts = &ContractDetails{eth: eth}
-	eth.finalityDelay = uint64(finalityDelay)
-	eth.keystore = keystore.NewKeyStore(pathKeyStore, keystore.StandardScryptN, keystore.StandardScryptP)
-	eth.keys = make(map[common.Address]*keystore.Key)
-	eth.logger = logger
-	eth.passCodes = make(map[common.Address]string)
-	eth.retryCount = retryCount
-	eth.retryDelay = retryDelay
-	eth.timeout = timeout
-	eth.txFeePercentageToIncrease = txFeePercentageToIncrease
-	eth.txMaxGasFeeAllowedInGwei = txMaxGasFeeAllowedInGwei
-	for idx, privateKey := range privateKeys {
-		account, err := eth.keystore.ImportECDSA(privateKey, "abc123")
-		if err != nil {
-			return nil, err
-		}
-
-		eth.accounts[account.Address] = account
-		eth.accountIndex[account.Address] = idx
-		eth.passCodes[account.Address] = "abc123"
-
-		logger.Debugf("Account address:%v", account.Address.String())
-
-		keyID, err := uuid.NewRandom()
-		if err != nil {
-			return nil, err
-		}
-
-		eth.keys[account.Address] = &keystore.Key{Address: account.Address, PrivateKey: privateKey, Id: keyID}
-
-		if idx == 0 {
-			eth.defaultAccount = account
-		}
-	}
-
-	genAlloc := make(core.GenesisAlloc)
-	for address := range eth.accounts {
-		genAlloc[address] = core.GenesisAccount{Balance: wei}
-	}
-
-	client, err := ethclient.Dial("http://127.0.0.1:8545")
-	if err != nil {
-		return nil, err
-	}
-	eth.client = client
-
-	eth.chainID = big.NewInt(1337)
-	eth.peerCount = func(context.Context) (uint64, error) {
-		return 0, nil
-	}
-	eth.syncing = func(ctx context.Context) (*ethereum.SyncProgress, error) {
-		return nil, nil
-	}
-
-	eth.setClose(func() error {
-		os.RemoveAll(pathKeyStore)
-		client.Close()
-		return nil
-	})
-
-	eth.commit = func() {
-		c := http.Client{}
-		msg := &JsonRPCMessage{
-			Version: "2.0",
-			ID:      []byte("1"),
-			Method:  "evm_mine",
-			Params:  make([]byte, 0),
-		}
-
-		if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
-			panic(err)
-		}
-
-		var buff bytes.Buffer
-		err := json.NewEncoder(&buff).Encode(msg)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		retryCount := 5
-		var worked bool
-		for i := 0; i < retryCount; i++ {
-			reader := bytes.NewReader(buff.Bytes())
-			resp, err := c.Post(
-				"http://127.0.0.1:8545",
-				"application/json",
-				reader,
-			)
-
-			if err != nil {
-				log.Printf("error calling evm_mine rpc: %v", err)
-				<-time.After(5 * time.Second)
-				continue
-			}
-
-			_, err = io.ReadAll(resp.Body)
-			if err != nil {
-				log.Printf("error reading response from evm_mine rpc: %v", err)
-				<-time.After(5 * time.Second)
-				continue
-			}
-
-			worked = true
-			break
-		}
-
-		if !worked {
-			panic(fmt.Errorf("error committing evm_mine on rpc: %v", err))
-		}
-	}
-
-	return eth, nil
+	logger                   *logrus.Logger
+	endpoint                 string
+	keystore                 *keystore.KeyStore
+	finalityDelay            uint64
+	accounts                 map[common.Address]accounts.Account
+	accountIndex             map[common.Address]int
+	coinbase                 common.Address
+	defaultAccount           accounts.Account
+	keys                     map[common.Address]*keystore.Key
+	passCodes                map[common.Address]string
+	contracts                Contracts
+	client                   *ethclient.Client
+	chainID                  *big.Int
+	syncing                  func(ctx context.Context) (*ethereum.SyncProgress, error)
+	peerCount                func(ctx context.Context) (uint64, error)
+	txMaxGasFeeAllowedInGwei uint64
 }
 
 // NewEndpoint creates a new Ethereum abstraction
@@ -309,38 +115,26 @@ func NewEndpoint(
 	pathPassCodes string,
 	defaultAccount string,
 	finalityDelay uint64,
-	timeout time.Duration,
-	retryCount int,
-	retryDelay time.Duration,
-	txFeePercentageToIncrease int,
 	txMaxGasFeeAllowedInGwei uint64) (*Details, error) {
 
 	logger := logging.GetLogger("ethereum")
-
-	if txFeePercentageToIncrease < 10 {
-		return nil, ErrInvalidTxPercentIncrease
-	}
 
 	if txMaxGasFeeAllowedInGwei < 100 {
 		return nil, ErrInvalidTxMaxGasFeeAllowed
 	}
 
 	eth := &Details{
-		endpoint:                  endpoint,
-		logger:                    logger,
-		accounts:                  make(map[common.Address]accounts.Account),
-		keys:                      make(map[common.Address]*keystore.Key),
-		passCodes:                 make(map[common.Address]string),
-		finalityDelay:             finalityDelay,
-		timeout:                   timeout,
-		retryCount:                retryCount,
-		retryDelay:                retryDelay,
-		txFeePercentageToIncrease: txFeePercentageToIncrease,
-		txMaxGasFeeAllowedInGwei:  txMaxGasFeeAllowedInGwei}
+		endpoint:                 endpoint,
+		logger:                   logger,
+		accounts:                 make(map[common.Address]accounts.Account),
+		keys:                     make(map[common.Address]*keystore.Key),
+		passCodes:                make(map[common.Address]string),
+		finalityDelay:            finalityDelay,
+		txMaxGasFeeAllowedInGwei: txMaxGasFeeAllowedInGwei}
 
 	eth.contracts = NewContractDetails(eth)
 
-	// Load accounts + passcodes
+	// Load accounts + passCodes
 	eth.loadAccounts(pathKeystore)
 	err := eth.loadPassCodes(pathPassCodes)
 	if err != nil {
@@ -359,7 +153,7 @@ func NewEndpoint(
 	}
 
 	// Low level rpc client
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.MonitorTimeout)
 	defer cancel()
 	rpcClient, rpcErr := rpc.DialContext(ctx, endpoint)
 	if rpcErr != nil {
@@ -386,26 +180,8 @@ func NewEndpoint(
 	}
 
 	logger.Debug("Completed initialization")
-	eth.close = func() error { return nil }
-	eth.commit = func() {}
 
 	return eth, nil
-}
-
-func (eth *Details) setClose(fn func() error) {
-	if eth.close != nil {
-		var prevClose (func() error) = eth.close
-		eth.close = func() error {
-			err := prevClose()
-			if err != nil {
-				return err
-			}
-
-			return fn()
-		}
-	} else {
-		eth.close = fn
-	}
 }
 
 func (eth *Details) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
@@ -528,12 +304,9 @@ func (eth *Details) ChainID() *big.Int {
 func (eth *Details) GetFinalityDelay() uint64 {
 	return eth.finalityDelay
 }
-func (eth *Details) Close() error {
-	return eth.close()
-}
 
-func (eth *Details) Commit() {
-	eth.commit()
+func (eth *Details) Close() {
+	eth.client.Close()
 }
 
 func (eth *Details) Contracts() Contracts {
@@ -557,8 +330,8 @@ func (eth *Details) IsAccessible() bool {
 	return false
 }
 
-// GetClient returns an amalgamated geth client interface
-func (eth *Details) GetClient() Client {
+// GetClient returns the Ethereum RPC API client
+func (eth *Details) GetInternalClient() *ethclient.Client {
 	return eth.client
 }
 
@@ -572,6 +345,7 @@ func (eth *Details) GetAccount(addr common.Address) (accounts.Account, error) {
 	return acct, nil
 }
 
+// Get the private key for an account
 func (eth *Details) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
 	if key, ok := eth.keys[addr]; ok {
 		return key, nil
@@ -613,7 +387,7 @@ func (eth *Details) GetKnownAccounts() []accounts.Account {
 
 // Get timeout context
 func (eth *Details) GetTimeoutContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), eth.timeout)
+	return context.WithTimeout(context.Background(), constants.MonitorTimeout)
 }
 
 // GetSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error
@@ -634,6 +408,7 @@ func (eth *Details) GetSyncProgress() (bool, *ethereum.SyncProgress, error) {
 	return false, nil, err
 }
 
+// Get ethereum events from a block range
 func (eth *Details) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 
 	logger := eth.logger
@@ -661,14 +436,12 @@ func (eth *Details) GetEvents(ctx context.Context, firstBlock uint64, lastBlock 
 	return logs, nil
 }
 
-func (eth *Details) GetTxFeePercentageToIncrease() int {
-	return eth.txFeePercentageToIncrease
-}
-
+// Get the max gas fee allowed to perform transactions
 func (eth *Details) GetTxMaxGasFeeAllowedInGwei() uint64 {
 	return eth.txMaxGasFeeAllowedInGwei
 }
 
+// Get transaction options in order to do a transaction.
 func (eth *Details) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
 	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
@@ -843,6 +616,7 @@ func (eth *Details) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 
 }
 
+// Get the current validators
 func (eth *Details) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
 	callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
@@ -856,10 +630,4 @@ func (eth *Details) GetValidators(ctx context.Context) ([]common.Address, error)
 	}
 
 	return validatorAddresses, nil
-}
-
-func logAndEat(logger *logrus.Logger, err error) {
-	if err != nil {
-		logger.Error(err)
-	}
 }

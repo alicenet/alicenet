@@ -236,7 +236,7 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 // 	assert.Nil(t, err)
 
 // 	// logger.Infof("%v", testutils.GetPendingBlock(t, eth))
-// 	// block, err := eth.GetClient().BlockByNumber(ctx, big.NewInt(-1))
+// 	// block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(-1))
 // 	// assert.Nil(t, err)
 // 	// for _, txn := range block.Transactions() {
 // 	// 	logger.Print(txn.Hash().Hex())

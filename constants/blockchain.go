@@ -8,6 +8,8 @@ const (
 	MonitorRetryCount uint64 = 10
 	// How much time we are going to wait for retrying a certain logic in the monitoring service
 	MonitorRetryDelay time.Duration = 5 * time.Second
+	// Monitor timeout for retrying a certain logic in the monitoring service
+	MonitorTimeout time.Duration = 1 * time.Minute
 )
 
 // Transaction Watcher constants

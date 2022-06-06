@@ -101,3 +101,128 @@ func NewMockLinkedGethClient() *MockClient {
 	geth.SuggestGasPriceFunc.SetDefaultReturn(big.NewInt(1000), nil)
 	return geth
 }
+
+// //NewSimulator returns a simulator for testing
+// func NewSimulator(
+// 	privateKeys []*ecdsa.PrivateKey,
+// 	finalityDelay int,
+// 	wei *big.Int,
+// 	txMaxGasFeeAllowedInGwei uint64,
+// ) (*Details, error) {
+// 	logger := logging.GetLogger("ethereum")
+
+// 	if len(privateKeys) < 1 {
+// 		return nil, errors.New("at least 1 private key")
+// 	}
+
+// 	pathKeyStore, err := ioutil.TempDir("", "simulator-keystore-")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	eth := &Details{}
+// 	eth.accounts = make(map[common.Address]accounts.Account)
+// 	eth.accountIndex = make(map[common.Address]int)
+// 	eth.contracts = &ContractDetails{eth: eth}
+// 	eth.finalityDelay = uint64(finalityDelay)
+// 	eth.keystore = keystore.NewKeyStore(pathKeyStore, keystore.StandardScryptN, keystore.StandardScryptP)
+// 	eth.keys = make(map[common.Address]*keystore.Key)
+// 	eth.logger = logger
+// 	eth.passCodes = make(map[common.Address]string)
+// 	eth.txMaxGasFeeAllowedInGwei = txMaxGasFeeAllowedInGwei
+// 	for idx, privateKey := range privateKeys {
+// 		account, err := eth.keystore.ImportECDSA(privateKey, "abc123")
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		eth.accounts[account.Address] = account
+// 		eth.accountIndex[account.Address] = idx
+// 		eth.passCodes[account.Address] = "abc123"
+
+// 		logger.Debugf("Account address:%v", account.Address.String())
+
+// 		keyID, err := uuid.NewRandom()
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		eth.keys[account.Address] = &keystore.Key{Address: account.Address, PrivateKey: privateKey, Id: keyID}
+
+// 		if idx == 0 {
+// 			eth.defaultAccount = account
+// 		}
+// 	}
+
+// 	genAlloc := make(core.GenesisAlloc)
+// 	for address := range eth.accounts {
+// 		genAlloc[address] = core.GenesisAccount{Balance: wei}
+// 	}
+
+// 	client, err := ethclient.Dial("http://127.0.0.1:8545")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	eth.client = client
+
+// 	eth.chainID = big.NewInt(1337)
+// 	eth.peerCount = func(context.Context) (uint64, error) {
+// 		return 0, nil
+// 	}
+// 	eth.syncing = func(ctx context.Context) (*ethereum.SyncProgress, error) {
+// 		return nil, nil
+// 	}
+
+// 	// eth.commit = func() {
+// 	// 	c := http.Client{}
+// 	// 	msg := &JsonRPCMessage{
+// 	// 		Version: "2.0",
+// 	// 		ID:      []byte("1"),
+// 	// 		Method:  "evm_mine",
+// 	// 		Params:  make([]byte, 0),
+// 	// 	}
+
+// 	// 	if msg.Params, err = json.Marshal(make([]string, 0)); err != nil {
+// 	// 		panic(err)
+// 	// 	}
+
+// 	// 	var buff bytes.Buffer
+// 	// 	err := json.NewEncoder(&buff).Encode(msg)
+// 	// 	if err != nil {
+// 	// 		log.Fatal(err)
+// 	// 	}
+
+// 	// 	retryCount := 5
+// 	// 	var worked bool
+// 	// 	for i := 0; i < retryCount; i++ {
+// 	// 		reader := bytes.NewReader(buff.Bytes())
+// 	// 		resp, err := c.Post(
+// 	// 			"http://127.0.0.1:8545",
+// 	// 			"application/json",
+// 	// 			reader,
+// 	// 		)
+
+// 	// 		if err != nil {
+// 	// 			log.Printf("error calling evm_mine rpc: %v", err)
+// 	// 			<-time.After(5 * time.Second)
+// 	// 			continue
+// 	// 		}
+
+// 	// 		_, err = io.ReadAll(resp.Body)
+// 	// 		if err != nil {
+// 	// 			log.Printf("error reading response from evm_mine rpc: %v", err)
+// 	// 			<-time.After(5 * time.Second)
+// 	// 			continue
+// 	// 		}
+
+// 	// 		worked = true
+// 	// 		break
+// 	// 	}
+
+// 	// 	if !worked {
+// 	// 		panic(fmt.Errorf("error committing evm_mine on rpc: %v", err))
+// 	// 	}
+// 	// }
+
+// 	return eth, nil
+// }

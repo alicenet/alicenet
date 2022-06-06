@@ -115,9 +115,9 @@ type transferable interface {
 
 // Type that it's going to be used to reply a request
 type SubscribeResponse struct {
-	txnHash                common.Hash                               // Hash of the txs which this response belongs
-	err                    error                                     // errors that happened when processing the monitor request
-	receiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
+	TxnHash                common.Hash                               // Hash of the txs which this response belongs
+	Err                    error                                     // errors that happened when processing the monitor request
+	ReceiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
 }
 
 // A response channel is basically a non-blocking channel that can only be
@@ -198,7 +198,6 @@ type WatcherBackend struct {
 	txConfirmationBlocks uint64                           // number of ethereum blocks that we should wait to consider a receipt valid
 	aggregates           map[objects.FuncSelector]Profile // Struct to keep track of the gas metrics used by the system
 	client               ethereum.Network                 // An interface with the ethereum functionality we need
-	ethereumChainID      *big.Int                         // Ethereum Chain ID
 	knownSelectors       interfaces.ISelectorMap          // Map with signature -> name
 	logger               *logrus.Entry                    // Logger to log messages
 	requestChannel       <-chan subscribeRequest          // Channel used to send request to this backend service
@@ -238,11 +237,11 @@ func (b *WatcherBackend) Loop() {
 func (b *WatcherBackend) queue(req subscribeRequest) {
 
 	if req.txn == nil {
-		req.responseChannel.SendResponse(&SubscribeResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
+		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
 		return
 	}
 	if req.ctx == nil {
-		req.responseChannel.SendResponse(&SubscribeResponse{err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}})
+		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}})
 		return
 	}
 
@@ -255,7 +254,7 @@ func (b *WatcherBackend) queue(req subscribeRequest) {
 		receiptResponseChannel.SendResponse(&objects.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
 	} else {
 		if _, ok := b.monitoredTxns[txnHash]; ok {
-			req.responseChannel.SendResponse(&SubscribeResponse{err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
+			req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
 			return
 		}
 
@@ -276,7 +275,7 @@ func (b *WatcherBackend) queue(req subscribeRequest) {
 		}
 		logEntry.Debug("Transaction queued")
 	}
-	req.responseChannel.SendResponse(&SubscribeResponse{receiptResponseChannel: receiptResponseChannel})
+	req.responseChannel.SendResponse(&SubscribeResponse{ReceiptResponseChannel: receiptResponseChannel})
 }
 
 func (b *WatcherBackend) collectReceipts() {
@@ -292,7 +291,7 @@ func (b *WatcherBackend) collectReceipts() {
 	networkCtx, cf := context.WithTimeout(b.mainCtx, constants.TxNetworkTimeout)
 	defer cf()
 
-	blockHeader, err := b.client.HeaderByNumber(networkCtx, nil)
+	blockHeader, err := b.client.GetInternalClient().HeaderByNumber(networkCtx, nil)
 	if err != nil {
 		b.logger.Debugf("error getting latest block number from ethereum node: %v", err)
 		return
@@ -409,8 +408,7 @@ func (b *WatcherBackend) collectReceipts() {
 type WorkerPool struct {
 	wg                   *sync.WaitGroup
 	ctx                  context.Context            // Main context passed by the parent, used to cancel worker and the pool
-	client               ethereum.Client            // An interface with the Geth functionality we need
-	ethereumChainID      *big.Int                   // ethereum chain ID
+	client               ethereum.Network           // An interface with the Geth functionality we need
 	logger               *logrus.Entry              // Logger to log messages
 	txConfirmationBlocks uint64                     // Number of blocks that we should wait in order to consider a receipt valid
 	requestWorkChannel   <-chan MonitorWorkRequest  // Channel where will be send the work requests
@@ -418,8 +416,8 @@ type WorkerPool struct {
 }
 
 // Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, client ethereum.Client, ethereumChainID *big.Int, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
-	return &WorkerPool{new(sync.WaitGroup), ctx, client, ethereumChainID, logger, txConfirmationBlocks, requestWorkChannel, responseWorkChannel}
+func NewWorkerPool(ctx context.Context, client ethereum.Network, logger *logrus.Entry, txConfirmationBlocks uint64, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+	return &WorkerPool{new(sync.WaitGroup), ctx, client, logger, txConfirmationBlocks, requestWorkChannel, responseWorkChannel}
 }
 
 // Function to spawn the workers and wait for the job to be done.
@@ -488,7 +486,7 @@ func (w *WorkerPool) worker() {
 func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
 	blockTimeSpan := currentHeight - monitoredTx.startedMonitoringHeight
-	_, isPending, err := w.client.TransactionByHash(ctx, txnHash)
+	_, isPending, err := w.client.GetInternalClient().TransactionByHash(ctx, txnHash)
 	if err != nil {
 		// if we couldn't locate a tx after NotFoundMaxBlocks blocks and we are still
 		// failing in getting the tx data, probably means that it was dropped
@@ -504,7 +502,7 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 		}
 	} else {
 		// tx is not pending, so check for receipt
-		rcpt, err := w.client.TransactionReceipt(ctx, txnHash)
+		rcpt, err := w.client.GetInternalClient().TransactionReceipt(ctx, txnHash)
 		if err != nil {
 			// if we couldn't locate a tx receipt after NotFoundMaxBlocks blocks and we are still
 			// failing in getting the tx data, probably means that it was dropped
@@ -540,7 +538,7 @@ type Watcher struct {
 var _ interfaces.IWatcher = &Watcher{}
 
 // Creates a new transaction watcher struct
-func NewWatcher(client ethereum.Network, ethereumChainID *big.Int, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *Watcher {
+func NewWatcher(client ethereum.Network, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *Watcher {
 	requestChannel := make(chan subscribeRequest, 100)
 	configChannel := make(chan WatcherConfig, 10)
 	// main context that will cancel all workers and go routine
@@ -552,7 +550,6 @@ func NewWatcher(client ethereum.Network, ethereumChainID *big.Int, selectMap int
 		mainCtx:              mainCtx,
 		requestChannel:       requestChannel,
 		client:               client,
-		ethereumChainID:      ethereumChainID,
 		logger:               logger.WithField("Component", "TransactionWatcherBackend"),
 		monitoredTxns:        make(map[common.Hash]info),
 		receiptCache:         make(map[common.Hash]receipt),
@@ -575,7 +572,7 @@ func NewWatcher(client ethereum.Network, ethereumChainID *big.Int, selectMap int
 
 // WatcherFromNetwork creates a transaction Watcher from a given ethereum network.
 func WatcherFromNetwork(network ethereum.Network) *Watcher {
-	watcher := NewWatcher(network.GetClient(), NewKnownSelectors(), network.GetFinalityDelay())
+	watcher := NewWatcher(network, NewKnownSelectors(), network.GetFinalityDelay())
 	watcher.StartLoop()
 	return watcher
 }
@@ -591,14 +588,6 @@ func (f *Watcher) Close() {
 	close(f.requestChannel)
 	close(f.configChannel)
 	f.closeMainContext()
-}
-
-func (f *Watcher) SetNumOfConfirmationBlocks(numBlocks uint64) {
-	select {
-	case f.configChannel <- WatcherConfig{txConfirmationBlocks: numBlocks}:
-	default:
-		f.logger.Error("Failed to set transaction watcher config! Channel is full!")
-	}
 }
 
 // Subscribe a transaction to be watched by the transaction watcher service. If a
@@ -619,7 +608,7 @@ func (tw *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-cha
 
 	select {
 	case requestResponse := <-req.responseChannel.channel:
-		return requestResponse.receiptResponseChannel.channel, requestResponse.err
+		return requestResponse.ReceiptResponseChannel.channel, requestResponse.Err
 	case <-ctx.Done():
 		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled: %v", ctx.Err())}
 	}
@@ -649,7 +638,8 @@ func (f *Watcher) Status(ctx context.Context) error {
 	return nil
 }
 
-func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, percentage int, threshold uint64) (*big.Int, *big.Int) {
+func IncreaseFeeAndTipCap(gasFeeCap, gasTipCap *big.Int, threshold uint64) (*big.Int, *big.Int) {
+	percentage := 10
 	// calculate percentage% increase in GasFeeCap
 	var gasFeeCapPercent = (&big.Int{}).Mul(gasFeeCap, big.NewInt(int64(percentage)))
 	gasFeeCapPercent = (&big.Int{}).Div(gasFeeCapPercent, big.NewInt(100))

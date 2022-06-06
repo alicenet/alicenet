@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // Contracts contains bindings to smart contract system
@@ -280,4 +281,11 @@ func (c *ContractDetails) Governance() bindings.IGovernance {
 
 func (c *ContractDetails) GovernanceAddress() common.Address {
 	return c.governanceAddress
+}
+
+// utils function to log an error
+func logAndEat(logger *logrus.Logger, err error) {
+	if err != nil {
+		logger.Error(err)
+	}
 }

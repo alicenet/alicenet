@@ -124,23 +124,15 @@ func main() {
 			{"chain.monitorDB", "", "", &config.Configuration.Chain.MonitorDbPath},
 			{"chain.monitorDBInMemory", "", "", &config.Configuration.Chain.MonitorDbInMemory},
 			{"ethereum.endpoint", "", "", &config.Configuration.Ethereum.Endpoint},
-			{"ethereum.endpointPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
+			{"ethereum.endpointMinimumPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
 			{"ethereum.keystore", "", "", &config.Configuration.Ethereum.Keystore},
-			{"ethereum.timeout", "", "", &config.Configuration.Ethereum.Timeout},
-			{"ethereum.testEther", "", "", &config.Configuration.Ethereum.TestEther},
-			{"ethereum.deployAccount", "", "", &config.Configuration.Ethereum.DeployAccount},
 			{"ethereum.defaultAccount", "", "", &config.Configuration.Ethereum.DefaultAccount},
-			{"ethereum.finalityDelay", "", "Number blocks before we consider a block final", &config.Configuration.Ethereum.FinalityDelay},
-			{"ethereum.retryCount", "", "Number of times to retry an Ethereum operation", &config.Configuration.Ethereum.RetryCount},
-			{"ethereum.retryDelay", "", "Delay between retry attempts", &config.Configuration.Ethereum.RetryDelay},
-			{"ethereum.passcodes", "", "Passcodes for keystore", &config.Configuration.Ethereum.PassCodes},
+			{"ethereum.passCodes", "", "PassCodes for keystore", &config.Configuration.Ethereum.PassCodes},
 			{"ethereum.startingBlock", "", "The first block we care about", &config.Configuration.Ethereum.StartingBlock},
 			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
-			{"ethereum.txFeePercentageToIncrease", "", "", &config.Configuration.Ethereum.TxFeePercentageToIncrease},
 			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
 			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
 			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
-			{"monitor.timeout", "", "", &config.Configuration.Monitor.Timeout},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -173,18 +165,13 @@ func main() {
 		&validator.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
-
-		// &deploy.Command: {
-		// 	{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
-		// 	{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command: &rootCommand,
-		&bootnode.Command:  &rootCommand,
-		&validator.Command: &rootCommand,
-		// &deploy.Command:              &rootCommand,
+		&firewalld.Command:    &rootCommand,
+		&bootnode.Command:     &rootCommand,
+		&validator.Command:    &rootCommand,
 		&utils.Command:        &rootCommand,
 		&utils.EthdkgCommand:  &utils.Command,
 		&utils.SendWeiCommand: &utils.Command,

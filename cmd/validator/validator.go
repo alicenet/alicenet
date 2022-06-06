@@ -62,10 +62,6 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
 		constants.DefaultFinalityDelay,
-		config.Configuration.Ethereum.Timeout,
-		config.Configuration.Ethereum.RetryCount,
-		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.TxFeePercentageToIncrease,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
 
 	if err != nil {
@@ -210,7 +206,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
 	defer rawConsensusDb.Close()
 
-	// Initialize transaction pool db: contains transcations that have not been mined (and thus are to be gossiped)
+	// Initialize transaction pool db: contains transactions that have not been mined (and thus are to be gossiped)
 	rawTxPoolDb := initDatabase(nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
 	defer rawTxPoolDb.Close()
 
@@ -307,8 +303,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
-	monitorTimeout := config.Configuration.Monitor.Timeout
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), taskRequestChan, taskKillChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan, taskKillChan)
 	if err != nil {
 		panic(err)
 	}
