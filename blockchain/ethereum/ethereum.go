@@ -17,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/bridge/bindings"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -35,9 +33,11 @@ import (
 
 // Ethereum specific errors
 var (
-	ErrAccountNotFound  = errors.New("could not find specified account")
-	ErrKeysNotFound     = errors.New("account either not found or not unlocked")
-	ErrPasscodeNotFound = errors.New("could not find specified passcode")
+	ErrAccountNotFound           = errors.New("could not find specified account")
+	ErrKeysNotFound              = errors.New("account either not found or not unlocked")
+	ErrPassCodeNotFound          = errors.New("could not find specified passCode")
+	ErrInvalidTxPercentIncrease  = errors.New("txFeePercentageToIncrease should be greater than 10%")
+	ErrInvalidTxMaxGasFeeAllowed = errors.New("txMaxGasFeeAllowedInGwei should be greater than 100Gwei")
 )
 
 var ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND string = "Method eth_maxPriorityFeePerGas not found"
@@ -48,47 +48,32 @@ var _ Network = &Details{}
 type Network interface {
 
 	// Extensions for use with simulator
-	ChainID() *big.Int
 	Close() error
 	Commit()
 
 	IsAccessible() bool
-
+	ChainID() *big.Int
 	GetCallOpts(context.Context, accounts.Account) (*bind.CallOpts, error)
 	GetCallOptsLatestBlock(ctx context.Context, account accounts.Account) *bind.CallOpts
 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
-
-	UnlockAccount(accounts.Account) error
-	UnlockAccountWithPasscode(accounts.Account, string) error
-
 	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
-
 	GetAccount(common.Address) (accounts.Account, error)
 	GetAccountKeys(addr common.Address) (*keystore.Key, error)
 	GetBalance(common.Address) (*big.Int, error)
 	GetClient() Client
-	GetCoinbaseAddress() common.Address
 	GetCurrentHeight(context.Context) (uint64, error)
 	GetDefaultAccount() accounts.Account
 	GetEndpoint() string
-	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
 	GetFinalizedHeight(context.Context) (uint64, error)
 	GetKnownAccounts() []accounts.Account
 	GetPeerCount(context.Context) (uint64, error)
-	GetSnapshot() ([]byte, error)
 	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
 	GetTimeoutContext() (context.Context, context.CancelFunc)
 	GetValidators(context.Context) ([]common.Address, error)
-	SetFinalityDelay(uint64)
+	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
 	GetFinalityDelay() uint64
-	RetryCount() int
-	RetryDelay() time.Duration
-
-	Timeout() time.Duration
-
 	GetTxFeePercentageToIncrease() int
 	GetTxMaxGasFeeAllowedInGwei() uint64
-
 	Contracts() Contracts
 }
 
@@ -129,28 +114,28 @@ type Client interface {
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 }
 
-// Contracts contains bindings to smart contract system
-type Contracts interface {
-	LookupContracts(ctx context.Context, registryAddress common.Address) error
+// A value of this type can a JSON-RPC request, notification, successful response or
+// error response. Which one it is depends on the fields.
+type JsonRPCMessage struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   *jsonError      `json:"error,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+}
 
-	Ethdkg() bindings.IETHDKG
-	EthdkgAddress() common.Address
-	AToken() bindings.IAToken
-	ATokenAddress() common.Address
-	BToken() bindings.IBToken
-	BTokenAddress() common.Address
-	PublicStaking() bindings.IPublicStaking
-	PublicStakingAddress() common.Address
-	ValidatorStaking() bindings.IValidatorStaking
-	ValidatorStakingAddress() common.Address
-	ContractFactory() bindings.IAliceNetFactory
-	ContractFactoryAddress() common.Address
-	SnapshotsAddress() common.Address
-	Snapshots() bindings.ISnapshots
-	ValidatorPool() bindings.IValidatorPool
-	ValidatorPoolAddress() common.Address
-	Governance() bindings.IGovernance
-	GovernanceAddress() common.Address
+type jsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+func (err *jsonError) Error() string {
+	if err.Message == "" {
+		return fmt.Sprintf("json-rpc error %d", err.Code)
+	}
+	return err.Message
 }
 
 type Details struct {
@@ -163,7 +148,7 @@ type Details struct {
 	coinbase                  common.Address
 	defaultAccount            accounts.Account
 	keys                      map[common.Address]*keystore.Key
-	passcodes                 map[common.Address]string
+	passCodes                 map[common.Address]string
 	timeout                   time.Duration
 	retryCount                int
 	retryDelay                time.Duration
@@ -195,7 +180,7 @@ func NewSimulator(
 		return nil, errors.New("at least 1 private key")
 	}
 
-	pathKeystore, err := ioutil.TempDir("", "simulator-keystore-")
+	pathKeyStore, err := ioutil.TempDir("", "simulator-keystore-")
 	if err != nil {
 		return nil, err
 	}
@@ -205,10 +190,10 @@ func NewSimulator(
 	eth.accountIndex = make(map[common.Address]int)
 	eth.contracts = &ContractDetails{eth: eth}
 	eth.finalityDelay = uint64(finalityDelay)
-	eth.keystore = keystore.NewKeyStore(pathKeystore, keystore.StandardScryptN, keystore.StandardScryptP)
+	eth.keystore = keystore.NewKeyStore(pathKeyStore, keystore.StandardScryptN, keystore.StandardScryptP)
 	eth.keys = make(map[common.Address]*keystore.Key)
 	eth.logger = logger
-	eth.passcodes = make(map[common.Address]string)
+	eth.passCodes = make(map[common.Address]string)
 	eth.retryCount = retryCount
 	eth.retryDelay = retryDelay
 	eth.timeout = timeout
@@ -222,7 +207,7 @@ func NewSimulator(
 
 		eth.accounts[account.Address] = account
 		eth.accountIndex[account.Address] = idx
-		eth.passcodes[account.Address] = "abc123"
+		eth.passCodes[account.Address] = "abc123"
 
 		logger.Debugf("Account address:%v", account.Address.String())
 
@@ -257,8 +242,8 @@ func NewSimulator(
 		return nil, nil
 	}
 
-	eth.SetClose(func() error {
-		os.RemoveAll(pathKeystore)
+	eth.setClose(func() error {
+		os.RemoveAll(pathKeyStore)
 		client.Close()
 		return nil
 	})
@@ -317,47 +302,13 @@ func NewSimulator(
 	return eth, nil
 }
 
-func (eth *Details) SetContractFactory(ctx context.Context, contractFactoryAddress common.Address) error {
-	c := &ContractDetails{eth: eth}
-	err := c.LookupContracts(ctx, contractFactoryAddress)
-	if err != nil {
-		return err
-	}
-
-	eth.contracts = c
-	return nil
-}
-
-// A value of this type can a JSON-RPC request, notification, successful response or
-// error response. Which one it is depends on the fields.
-type JsonRPCMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  json.RawMessage `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-}
-
-type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-func (err *jsonError) Error() string {
-	if err.Message == "" {
-		return fmt.Sprintf("json-rpc error %d", err.Code)
-	}
-	return err.Message
-}
-
 // NewEndpoint creates a new Ethereum abstraction
 func NewEndpoint(
 	endpoint string,
 	pathKeystore string,
-	pathPasscodes string,
+	pathPassCodes string,
 	defaultAccount string,
+	finalityDelay uint64,
 	timeout time.Duration,
 	retryCount int,
 	retryDelay time.Duration,
@@ -366,53 +317,60 @@ func NewEndpoint(
 
 	logger := logging.GetLogger("ethereum")
 
+	if txFeePercentageToIncrease < 10 {
+		return nil, ErrInvalidTxPercentIncrease
+	}
+
+	if txMaxGasFeeAllowedInGwei < 100 {
+		return nil, ErrInvalidTxMaxGasFeeAllowed
+	}
+
 	eth := &Details{
 		endpoint:                  endpoint,
 		logger:                    logger,
 		accounts:                  make(map[common.Address]accounts.Account),
 		keys:                      make(map[common.Address]*keystore.Key),
-		passcodes:                 make(map[common.Address]string),
-		finalityDelay:             constants.DefaultFinalityDelay,
+		passCodes:                 make(map[common.Address]string),
+		finalityDelay:             finalityDelay,
 		timeout:                   timeout,
 		retryCount:                retryCount,
 		retryDelay:                retryDelay,
 		txFeePercentageToIncrease: txFeePercentageToIncrease,
 		txMaxGasFeeAllowedInGwei:  txMaxGasFeeAllowedInGwei}
 
-	eth.contracts = &ContractDetails{eth: eth}
+	eth.contracts = NewContractDetails(eth)
 
 	// Load accounts + passcodes
 	eth.loadAccounts(pathKeystore)
-	err := eth.loadPasscodes(pathPasscodes)
+	err := eth.loadPassCodes(pathPassCodes)
 	if err != nil {
-		logger.Errorf("Error in NewEthereumEndpoint at eth.LoadPasscodes: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Error in NewEthereumEndpoint at eth.LoadPassCodes: %v", err)
 	}
 
 	// Designate accounts
 	var acct accounts.Account
 	acct, err = eth.GetAccount(common.HexToAddress(defaultAccount))
 	if err != nil {
-		logger.Errorf("Can't find user to set as default %v: %v", defaultAccount, err)
-		return nil, err
+		return nil, fmt.Errorf("Can't find user to set as default %v: %v", defaultAccount, err)
 	}
-	eth.SetDefaultAccount(acct)
+	eth.setDefaultAccount(acct)
+	if err := eth.unlockAccount(acct); err != nil {
+		return nil, fmt.Errorf("Could not unlock account: %v", err)
+	}
 
 	// Low level rpc client
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	rpcClient, rpcErr := rpc.DialContext(ctx, endpoint)
 	if rpcErr != nil {
-		logger.Errorf("Error in NewEthereumEndpoint at rpc.DialContext: %v", rpcErr)
-		return nil, rpcErr
+		return nil, fmt.Errorf("Error in NewEndpoint at rpc.DialContext: %v", rpcErr)
 	}
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.client = ethClient
 	// instantiate but don't initiate the new transaction with default finality Delay.
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
-		logger.Errorf("Error in NewEthereumEndpoint at ethClient.ChainID: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Error in NewEndpoint at ethClient.ChainID: %v", err)
 	}
 
 	eth.peerCount = func(ctx context.Context) (uint64, error) {
@@ -434,18 +392,7 @@ func NewEndpoint(
 	return eth, nil
 }
 
-func (eth *Details) SetFinalityDelay(newFinalityDelay uint64) {
-	eth.finalityDelay = newFinalityDelay
-}
-
-func (eth *Details) GetFinalityDelay() uint64 {
-	return eth.finalityDelay
-}
-func (eth *Details) Close() error {
-	return eth.close()
-}
-
-func (eth *Details) SetClose(fn func() error) {
+func (eth *Details) setClose(fn func() error) {
 	if eth.close != nil {
 		var prevClose (func() error) = eth.close
 		eth.close = func() error {
@@ -459,18 +406,6 @@ func (eth *Details) SetClose(fn func() error) {
 	} else {
 		eth.close = fn
 	}
-}
-
-func (eth *Details) Commit() {
-	eth.commit()
-}
-
-func (eth *Details) Contracts() Contracts {
-	return eth.contracts
-}
-
-func (eth *Details) GetPeerCount(ctx context.Context) (uint64, error) {
-	return eth.peerCount(ctx)
 }
 
 func (eth *Details) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (uint64, error) {
@@ -488,24 +423,6 @@ func (eth *Details) getPeerCount(ctx context.Context, rpcClient *rpc.Client) (ui
 		return 0, err
 	}
 	return peerCount, nil
-}
-
-//IsAccessible checks against endpoint to confirm server responds
-func (eth *Details) IsAccessible() bool {
-	ctx, cancel := eth.GetTimeoutContext()
-	defer cancel()
-	block, err := eth.client.BlockByNumber(ctx, nil)
-	if err == nil && block != nil {
-		return true
-	}
-
-	eth.logger.Debug("IsEthereumAccessible()...false")
-	return false
-}
-
-//ChainID returns the ID used to build ethereum client
-func (eth *Details) ChainID() *big.Int {
-	return eth.chainID
 }
 
 //LoadAccounts Scans the directory specified and loads all the accounts found
@@ -533,15 +450,15 @@ func (eth *Details) loadAccounts(directoryPath string) {
 }
 
 // LoadPasscodes loads the specified passcode file
-func (eth *Details) loadPasscodes(filePath string) error {
+func (eth *Details) loadPassCodes(filePath string) error {
 	logger := eth.logger
 
-	logger.Infof("loadPasscodes(\"%v\")...", filePath)
+	logger.Infof("loadPassCodes(\"%v\")...", filePath)
 	passcodes := make(map[common.Address]string)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		logger.Errorf("Failed to open passcode file \"%v\": %s", filePath, err)
+		logger.Errorf("Failed to open passCode file \"%v\": %s", filePath, err)
 		return err
 	}
 	defer file.Close()
@@ -561,26 +478,22 @@ func (eth *Details) loadPasscodes(filePath string) error {
 		}
 	}
 
-	eth.passcodes = passcodes
+	eth.passCodes = passcodes
 
 	return nil
 }
 
-func (eth *Details) UnlockAccountWithPasscode(acct accounts.Account, passcode string) error {
-	return eth.keystore.Unlock(acct, passcode)
-}
-
-// UnlockAccount unlocks the previously loaded account using the previously loaded passcodes
-func (eth *Details) UnlockAccount(acct accounts.Account) error {
+// UnlockAccount unlocks the previously loaded account using the previously loaded passCodes
+func (eth *Details) unlockAccount(acct accounts.Account) error {
 
 	eth.logger.Infof("Unlocking account address:%v", acct.Address.String())
 
-	passcode, passcodeFound := eth.passcodes[acct.Address]
-	if !passcodeFound {
-		return ErrPasscodeNotFound
+	passCode, passCodeFound := eth.passCodes[acct.Address]
+	if !passCodeFound {
+		return ErrPassCodeNotFound
 	}
 
-	err := eth.keystore.Unlock(acct, passcode)
+	err := eth.keystore.Unlock(acct, passCode)
 	if err != nil {
 		return err
 	}
@@ -592,7 +505,7 @@ func (eth *Details) UnlockAccount(acct accounts.Account) error {
 	}
 
 	// Get the private key
-	key, err := keystore.DecryptKey(keyJSON, passcode)
+	key, err := keystore.DecryptKey(keyJSON, passCode)
 	if err != nil {
 		return err
 	}
@@ -600,6 +513,48 @@ func (eth *Details) UnlockAccount(acct accounts.Account) error {
 	eth.keys[acct.Address] = key
 
 	return nil
+}
+
+// setDefaultAccount designates the account to be used by default
+func (eth *Details) setDefaultAccount(acct accounts.Account) {
+	eth.defaultAccount = acct
+}
+
+//ChainID returns the ID used to build ethereum client
+func (eth *Details) ChainID() *big.Int {
+	return eth.chainID
+}
+
+func (eth *Details) GetFinalityDelay() uint64 {
+	return eth.finalityDelay
+}
+func (eth *Details) Close() error {
+	return eth.close()
+}
+
+func (eth *Details) Commit() {
+	eth.commit()
+}
+
+func (eth *Details) Contracts() Contracts {
+	return eth.contracts
+}
+
+func (eth *Details) GetPeerCount(ctx context.Context) (uint64, error) {
+	return eth.peerCount(ctx)
+}
+
+//IsAccessible checks against endpoint to confirm server responds
+func (eth *Details) IsAccessible() bool {
+	ctx, cancel := eth.GetTimeoutContext()
+	defer cancel()
+	block, err := eth.client.BlockByNumber(ctx, nil)
+	if err == nil && block != nil {
+		return true
+	}
+
+	eth.logger.Debug("IsEthereumAccessible()...false")
+	return false
 }
 
 // GetClient returns an amalgamated geth client interface
@@ -624,19 +579,9 @@ func (eth *Details) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
 	return nil, ErrKeysNotFound
 }
 
-// SetDefaultAccount designates the account to be used by default
-func (eth *Details) SetDefaultAccount(acct accounts.Account) {
-	eth.defaultAccount = acct
-}
-
 // GetDefaultAccount returns the default account
 func (eth *Details) GetDefaultAccount() accounts.Account {
 	return eth.defaultAccount
-}
-
-// GetCoinbaseAddress returns the account to use for contract deploys
-func (eth *Details) GetCoinbaseAddress() common.Address {
-	return eth.coinbase
 }
 
 // GetBalance returns the ETHER balance of account specified
@@ -650,10 +595,12 @@ func (eth *Details) GetBalance(addr common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
+// Get ip address where are connected to the ethereum node
 func (eth *Details) GetEndpoint() string {
 	return eth.endpoint
 }
 
+// Get all ethereum accounts that we have access in the keystore.
 func (eth *Details) GetKnownAccounts() []accounts.Account {
 	accounts := make([]accounts.Account, len(eth.accounts))
 
@@ -664,6 +611,7 @@ func (eth *Details) GetKnownAccounts() []accounts.Account {
 	return accounts
 }
 
+// Get timeout context
 func (eth *Details) GetTimeoutContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), eth.timeout)
 }
@@ -713,18 +661,6 @@ func (eth *Details) GetEvents(ctx context.Context, firstBlock uint64, lastBlock 
 	return logs, nil
 }
 
-func (eth *Details) RetryCount() int {
-	return eth.retryCount
-}
-
-func (eth *Details) RetryDelay() time.Duration {
-	return eth.retryDelay
-}
-
-func (eth *Details) Timeout() time.Duration {
-	return eth.timeout
-}
-
 func (eth *Details) GetTxFeePercentageToIncrease() int {
 	return eth.txFeePercentageToIncrease
 }
@@ -736,8 +672,7 @@ func (eth *Details) GetTxMaxGasFeeAllowedInGwei() uint64 {
 func (eth *Details) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
 	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
-		eth.logger.Errorf("could not create transactor for %v: %v", account.Address.Hex(), err)
-		return nil, err
+		return nil, fmt.Errorf("could not create transactor for %v: %v", account.Address.Hex(), err)
 	}
 	subCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -787,6 +722,8 @@ func (eth *Details) GetTransactionOpts(ctx context.Context, account accounts.Acc
 	return opts, nil
 }
 
+// Safe function to call the smart contract state at the finalized block (block
+// that we judge safe).
 func (eth *Details) GetCallOpts(ctx context.Context, account accounts.Account) (*bind.CallOpts, error) {
 
 	finalizedHeightU64, err := eth.GetFinalizedHeight(ctx)
@@ -906,10 +843,6 @@ func (eth *Details) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 
 }
 
-func (eth *Details) GetSnapshot() ([]byte, error) {
-	return nil, nil
-}
-
 func (eth *Details) GetValidators(ctx context.Context) ([]common.Address, error) {
 	c := eth.contracts
 	callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
@@ -923,20 +856,6 @@ func (eth *Details) GetValidators(ctx context.Context) ([]common.Address, error)
 	}
 
 	return validatorAddresses, nil
-}
-
-func (eth *Details) Clone(defaultAccount accounts.Account) *Details {
-	nEth := *eth
-
-	nEth.defaultAccount = defaultAccount
-
-	return &nEth
-}
-
-// StringToBytes32 is useful for convert a Go string into a bytes32 useful calling Solidity
-func StringToBytes32(str string) (b [32]byte) {
-	copy(b[:], []byte(str)[0:32])
-	return
 }
 
 func logAndEat(logger *logrus.Logger, err error) {

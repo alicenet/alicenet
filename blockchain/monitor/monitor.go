@@ -343,7 +343,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			WithField("Error", err).
 			Warn("EndpointInSync() Failed")
 
-		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
+		if monitorState.CommunicationFailures >= uint32(constants.MonitorRetryCount) {
 			monitorState.EndpointInSync = false
 		}
 		return nil

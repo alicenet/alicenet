@@ -11,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -33,8 +34,8 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereum.Network, t
 		}
 		defer wg.Done()
 
-		retryCount := eth.RetryCount()
-		retryDelay := eth.RetryDelay()
+		retryCount := int(constants.MonitorRetryCount)
+		retryDelay := constants.MonitorRetryDelay
 		logger.WithFields(logrus.Fields{
 			"RetryCount": retryCount,
 			"RetryDelay": retryDelay,

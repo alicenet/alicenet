@@ -35,8 +35,8 @@ type ethereumConfig struct {
 	FinalityDelay             int
 	Keystore                  string
 	MerkleProofContract       string
-	Passcodes                 string
-	RegistryAddress           string
+	PassCodes                 string
+	FactoryAddress            string
 	RetryCount                int
 	RetryDelay                time.Duration
 	StartingBlock             uint64

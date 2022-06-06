@@ -2,6 +2,15 @@ package constants
 
 import "time"
 
+// Monitor constants
+const (
+	// Number of attempts that we are going to retry a certain logic in the monitoring service
+	MonitorRetryCount uint64 = 10
+	// How much time we are going to wait for retrying a certain logic in the monitoring service
+	MonitorRetryDelay time.Duration = 5 * time.Second
+)
+
+// Transaction Watcher constants
 const (
 	// How many blocks we should wait for removing a tx in case we don't find it in the ethereum chain
 	TxNotFoundMaxBlocks uint64 = 40

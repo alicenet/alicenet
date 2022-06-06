@@ -191,3 +191,9 @@ func Min(a uint64, b uint64) uint64 {
 	}
 	return a
 }
+
+// StringToBytes32 is useful for convert a Go string into a bytes32 useful calling Solidity
+func StringToBytes32(str string) (b [32]byte) {
+	copy(b[:], []byte(str)[0:32])
+	return
+}

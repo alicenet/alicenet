@@ -8,7 +8,6 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.16
-	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.1.5
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0

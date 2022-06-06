@@ -41,7 +41,7 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 	eth, err := ethereum.NewEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
-		config.Configuration.Ethereum.Passcodes,
+		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
 		config.Configuration.Ethereum.Timeout,
 		config.Configuration.Ethereum.RetryCount,
