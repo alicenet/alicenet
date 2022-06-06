@@ -10,15 +10,14 @@ import (
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/testutils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
-	"github.com/MadBase/MadNet/blockchain/transaction/interfaces"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func Setup(finalityDelay uint64, numAccounts int, registryAddress common.Address) (ethereum.Network, interfaces.IWatcher, *logrus.Logger, error) {
-	logger := logging.GetLogger("transaction")
+func Setup(finalityDelay uint64, numAccounts int, registryAddress common.Address) (ethereum.Network, *logrus.Logger, error) {
+	logger := logging.GetLogger("test")
 	logger.SetLevel(logrus.TraceLevel)
 	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(numAccounts)
 	eth, err := ethereum.NewSimulator(
@@ -72,6 +71,8 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 
 	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
 	assert.Nil(t, err)
+
+	watcher := transaction.WatcherFromNetwork(eth)
 
 	receipt, err := watcher.SubscribeAndWait(ctx, txn)
 	assert.Nil(t, err)
@@ -152,6 +153,7 @@ func TestSubscribeAndWaitForInvalidTx(t *testing.T) {
 	txn, err := eth.Contracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
+	watcher := transaction.WatcherFromNetwork(eth)
 	receipt, err := watcher.SubscribeAndWait(ctx, txn)
 	assert.NotNil(t, err)
 	assert.Nil(t, receipt)
@@ -193,7 +195,9 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	txn, err := eth.Contracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
+	watcher := transaction.WatcherFromNetwork(eth)
 	receipt, err := watcher.SubscribeAndWait(ctx, txn)
+
 	assert.NotNil(t, err)
 	assert.Nil(t, receipt)
 	_, ok := err.(*transaction.ErrTransactionStale)

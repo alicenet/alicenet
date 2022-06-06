@@ -7,6 +7,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/logging"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"log"
@@ -245,6 +247,8 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 			t.Fatal("could not transfer ether")
 		}
 		watcher := transaction.NewWatcher(eth.GetClient(), transaction.NewKnownSelectors(), eth.GetFinalityDelay())
+		watcher.StartLoop()
+
 		rcpt, err := watcher.SubscribeAndWait(ctx, txn)
 		assert.Nil(t, err)
 		assert.NotNil(t, rcpt)
@@ -253,6 +257,35 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 	return eth
 }
 
+func Setup(finalityDelay uint64, numAccounts int, registryAddress common.Address) (ethereum.Network, *logrus.Logger, error) {
+	logger := logging.GetLogger("test")
+	logger.SetLevel(logrus.TraceLevel)
+	ecdsaPrivateKeys, _ := InitializePrivateKeysAndAccounts(numAccounts)
+	eth, err := ethereum.NewSimulator(
+		ecdsaPrivateKeys,
+		6,
+		10*time.Second,
+		30*time.Second,
+		0,
+		big.NewInt(math.MaxInt64),
+		50,
+		math.MaxInt64)
+	if err != nil {
+		return nil, logger, err
+	}
+
+	eth.SetFinalityDelay(finalityDelay)
+	knownSelectors := transaction.NewKnownSelectors()
+	transaction := transaction.NewWatcher(eth.GetClient(), knownSelectors, 5)
+	transaction.SetNumOfConfirmationBlocks(finalityDelay)
+
+	//todo: redeploy and get the registryAddress here
+	err = eth.Contracts().LookupContracts(context.Background(), registryAddress)
+	if err != nil {
+		return nil, logger, err
+	}
+	return eth, logger, nil
+}
 func StartHardHatNode(eth *ethereum.Details) error {
 
 	rootPath := GetMadnetRootPath()
@@ -391,35 +424,31 @@ func WaitForHardHatNode(ctx context.Context) error {
 	var buff bytes.Buffer
 	err = json.NewEncoder(&buff).Encode(msg)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
+	reader := bytes.NewReader(buff.Bytes())
+
 	for {
-		reader := bytes.NewReader(buff.Bytes())
-
-		resp, err := c.Post(
-			"http://127.0.0.1:8545",
-			"application/json",
-			reader,
-		)
-
-		if err != nil {
-			continue
-		}
-
-		_, err = io.ReadAll(resp.Body)
-		if err == nil {
-			break
-		}
-
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(50 * time.Millisecond):
+		case <-time.After(time.Second):
+			resp, err := c.Post(
+				"http://127.0.0.1:8545",
+				"application/json",
+				reader,
+			)
+			if err != nil {
+				continue
+			}
+			_, err = io.ReadAll(resp.Body)
+			if err == nil {
+				return nil
+			}
 		}
-	}
 
-	return err
+	}
 }
 
 func RegisterValidators(eth *ethereum.Details, validatorAddresses []string) error {
