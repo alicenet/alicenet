@@ -44,7 +44,7 @@ func isValidator(eth ethereum.Network, logger *logrus.Entry, acct accounts.Accou
 	return true, nil
 }
 
-func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask) error {
+func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask) error {
 	logger.Info("ProcessRegistrationOpened() ...")
 	event, err := eth.Contracts().Ethdkg().ParseRegistrationOpened(log)
 	if err != nil {
@@ -108,7 +108,7 @@ func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log t
 
 	taskRequestChan <- disputeMissingRegistrationTask
 
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		err := state.PersistEthDkgState(txn, logger, dkgState)
 		if err != nil {
 			return err
@@ -120,7 +120,7 @@ func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log t
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationOpened: %v", err)
 	}
 
@@ -147,7 +147,7 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 	return dkgState, registrationTask, disputeMissingRegistrationTask
 }
 
-func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database) error {
+func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 
 	logger.Info("ProcessAddressRegistered() ...")
 
@@ -156,7 +156,7 @@ func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log ty
 		return err
 	}
 
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -186,21 +186,21 @@ func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log ty
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessAddressRegistered: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessRegistrationComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessRegistrationComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 
 	logger.Info("ProcessRegistrationComplete() ...")
 	shareDistributionTask := &dkgtasks.ShareDistributionTask{}
 	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
 	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
-	err := cdb.Update(func(txn *badger.Txn) error {
+	err := monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -237,7 +237,7 @@ func ProcessRegistrationComplete(eth ethereum.Network, logger *logrus.Entry, log
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationComplete: %v", err)
 	}
 
@@ -287,7 +287,7 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask
 }
 
-func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database) error {
+func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 
 	logger.Info("ProcessShareDistribution() ...")
 
@@ -303,7 +303,7 @@ func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log ty
 		"Commitments":     event.Commitments,
 	}).Info("Received share distribution")
 
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -326,20 +326,20 @@ func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log ty
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistribution: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessShareDistributionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessShareDistributionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 	logger.Info("ProcessShareDistributionComplete() ...")
 	disputeShareDistributionTask := &dkgtasks.DisputeShareDistributionTask{}
 	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
-	err := cdb.Update(func(txn *badger.Txn) error {
+	err := monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -375,7 +375,7 @@ func ProcessShareDistributionComplete(eth ethereum.Network, logger *logrus.Entry
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistributionComplete: %v", err)
 	}
 
@@ -427,7 +427,7 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 	return disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
 
-func ProcessKeyShareSubmitted(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database) error {
+func ProcessKeyShareSubmitted(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 
 	logger.Info("ProcessKeyShareSubmitted() ...")
 
@@ -443,7 +443,7 @@ func ProcessKeyShareSubmitted(eth ethereum.Network, logger *logrus.Entry, log ty
 		"KeyShareG2":                 event.KeyShareG2,
 	}).Info("Received key shares")
 
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -462,14 +462,14 @@ func ProcessKeyShareSubmitted(eth ethereum.Network, logger *logrus.Entry, log ty
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmitted: %v", err)
 	}
 
 	return nil
 }
 
-func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 	event, err := eth.Contracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
 	if err != nil {
 		return err
@@ -480,7 +480,7 @@ func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entr
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -508,7 +508,7 @@ func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entr
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
@@ -537,7 +537,7 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.IAdminHandler, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.IAdminHandler, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 
 	event, err := eth.Contracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
@@ -553,7 +553,7 @@ func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, ad
 	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
 	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -580,7 +580,7 @@ func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, ad
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessMPKSet: %v", err)
 	}
 
@@ -630,7 +630,7 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask
 }
 
-func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, cdb *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
+func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- executorInterfaces.ITask, taskKillChan chan<- string) error {
 
 	event, err := eth.Contracts().Ethdkg().ParseGPKJSubmissionComplete(log)
 	if err != nil {
@@ -643,7 +643,7 @@ func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, l
 
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	completionTask := &dkgtasks.CompletionTask{}
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		dkgState, err := state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err
@@ -670,7 +670,7 @@ func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, l
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessGPKJSubmissionComplete: %v", err)
 	}
 

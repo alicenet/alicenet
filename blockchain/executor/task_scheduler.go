@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/MadBase/MadNet/constants/dbprefix"
 	"reflect"
 	"strings"
 	"sync"
@@ -394,9 +394,9 @@ func (s *TasksScheduler) persistState() error {
 	}
 
 	err = s.database.Update(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", getStateKey())
-		s.logger.WithField("Key", keyLabel).Infof("Saving state")
-		if err := utils.SetValue(txn, getStateKey(), rawData); err != nil {
+		key := dbprefix.PrefixTaskSchedulerState()
+		s.logger.WithField("Key", string(key)).Infof("Saving state")
+		if err := utils.SetValue(txn, key, rawData); err != nil {
 			s.logger.Error("Failed to set Value")
 			return err
 		}
@@ -417,9 +417,9 @@ func (s *TasksScheduler) persistState() error {
 func (s *TasksScheduler) loadState() error {
 
 	if err := s.database.View(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", getStateKey())
-		s.logger.WithField("Key", keyLabel).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, getStateKey())
+		key := dbprefix.PrefixTaskSchedulerState()
+		s.logger.WithField("Key", string(key)).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
 		}
@@ -486,8 +486,4 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 	}
 
 	return nil
-}
-
-func getStateKey() []byte {
-	return []byte("schedulerStateKey")
 }

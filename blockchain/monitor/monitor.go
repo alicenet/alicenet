@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/constants/dbprefix"
 	"strings"
 	"sync"
 	"time"
@@ -34,10 +35,6 @@ var (
 	// ErrUnknownResponse only used when response to a service is not of the expected type
 	ErrUnknownResponse = errors.New("response isn't in expected form")
 )
-
-func getStateKey() []byte {
-	return []byte("monitorStateKey")
-}
 
 // Monitor describes required functionality to monitor Ethereum
 type Monitor interface {
@@ -70,7 +67,7 @@ type monitor struct {
 
 // NewMonitor creates a new Monitor
 func NewMonitor(cdb *db.Database,
-	db *db.Database,
+	monDB *db.Database,
 	adminHandler monInterfaces.IAdminHandler,
 	depositHandler monInterfaces.IDepositHandler,
 	eth ethereum.Network,
@@ -86,7 +83,7 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, adminHandler, depositHandler, taskRequestChan, taskKillChan)
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan, taskKillChan)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +106,7 @@ func NewMonitor(cdb *db.Database,
 		eth:             eth,
 		eventMap:        eventMap,
 		cdb:             cdb,
-		db:              db,
+		db:              monDB,
 		logger:          logger,
 		tickInterval:    tickInterval,
 		timeout:         timeout,
@@ -130,9 +127,9 @@ func (mon *monitor) LoadState() error {
 	defer mon.Unlock()
 
 	if err := mon.db.View(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", getStateKey())
-		mon.logger.WithField("Key", keyLabel).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, getStateKey())
+		key := dbprefix.PrefixMonitorState()
+		mon.logger.WithField("Key", string(key)).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
 		}
@@ -162,9 +159,9 @@ func (mon *monitor) PersistState() error {
 	}
 
 	err = mon.db.Update(func(txn *badger.Txn) error {
-		keyLabel := fmt.Sprintf("%x", getStateKey())
-		mon.logger.WithField("Key", keyLabel).Infof("Saving state")
-		if err := utils.SetValue(txn, getStateKey(), rawData); err != nil {
+		key := dbprefix.PrefixMonitorState()
+		mon.logger.WithField("Key", string(key)).Infof("Saving state")
+		if err := utils.SetValue(txn, key, rawData); err != nil {
 			mon.logger.Error("Failed to set Value")
 			return err
 		}

@@ -14,13 +14,13 @@ import (
 
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract
 func ProcessValueUpdated(eth ethereum.Network, logger *logrus.Entry, log types.Log,
-	cdb *db.Database) error {
+	monDB *db.Database) error {
 
 	logger.Info("ProcessValueUpdated() ...")
 
 	dkgState := &state.DkgState{}
 	var err error
-	err = cdb.View(func(txn *badger.Txn) error {
+	err = monDB.View(func(txn *badger.Txn) error {
 		dkgState, err = state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err

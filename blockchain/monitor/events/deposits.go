@@ -16,13 +16,13 @@ import (
 )
 
 func ProcessDepositReceived(eth ethereum.Network, logger *logrus.Entry, log types.Log,
-	cdb *db.Database, depositHandler interfaces.IDepositHandler) error {
+	cdb *db.Database, monDB *db.Database, depositHandler interfaces.IDepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
 	dkgState := &state.DkgState{}
 	var err error
-	err = cdb.View(func(txn *badger.Txn) error {
+	err = monDB.View(func(txn *badger.Txn) error {
 		dkgState, err = state.LoadEthDkgState(txn, logger)
 		if err != nil {
 			return err

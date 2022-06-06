@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MadBase/MadNet/constants/dbprefix"
 
 	//"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"math/big"
@@ -231,19 +232,15 @@ func NewDkgState(account accounts.Account) *DkgState {
 	}
 }
 
-func GetEthDkgStateKey() []byte {
-	return []byte("ethDkgStateKey")
-}
-
 func PersistEthDkgState(txn *badger.Txn, logger *logrus.Entry, ethDkgState *DkgState) error {
 	rawData, err := json.Marshal(ethDkgState)
 	if err != nil {
 		return err
 	}
 
-	keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
-	logger.WithField("Key", keyLabel).Infof("Saving state")
-	if err = utils.SetValue(txn, GetEthDkgStateKey(), rawData); err != nil {
+	key := dbprefix.PrefixEthDKGState()
+	logger.WithField("Key", string(key)).Infof("Saving state")
+	if err = utils.SetValue(txn, key, rawData); err != nil {
 		logger.Error("Failed to set Value")
 		return err
 	}
@@ -254,9 +251,9 @@ func PersistEthDkgState(txn *badger.Txn, logger *logrus.Entry, ethDkgState *DkgS
 func LoadEthDkgState(txn *badger.Txn, logger *logrus.Entry) (*DkgState, error) {
 	ethDkgState := &DkgState{}
 
-	keyLabel := fmt.Sprintf("%x", GetEthDkgStateKey())
-	logger.WithField("Key", keyLabel).Infof("Looking up state")
-	rawData, err := utils.GetValue(txn, GetEthDkgStateKey())
+	key := dbprefix.PrefixEthDKGState()
+	logger.WithField("Key", string(key)).Infof("Looking up state")
+	rawData, err := utils.GetValue(txn, key)
 	if err != nil {
 		return nil, err
 	}
