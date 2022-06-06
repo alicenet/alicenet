@@ -17,7 +17,7 @@ import (
 )
 
 func Setup(finalityDelay uint64, numAccounts int, registryAddress common.Address) (ethereum.Network, *logrus.Logger, error) {
-	logger := logging.GetLogger("txwatcher")
+	logger := logging.GetLogger("test")
 	logger.SetLevel(logrus.TraceLevel)
 	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(numAccounts)
 	eth, err := ethereum.NewSimulator(
@@ -53,7 +53,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	assert.Nil(t, err)
 	defer eth.Close()
 
-	testSetup.SetBlockInterval(t, eth, 500)
+	testutils.SetBlockInterval(t, eth, 500)
 
 	accounts := eth.GetKnownAccounts()
 	assert.Equal(t, numAccounts, len(accounts))
@@ -74,7 +74,9 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	txn, err := eth.TransferEther(owner.Address, user.Address, amount)
 	assert.Nil(t, err)
 
-	receipt, err := transaction.SubscribeAndWait(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+
+	receipt, err := watcher.SubscribeAndWait(ctx, txn)
 	assert.Nil(t, err)
 	assert.NotNil(t, receipt)
 	assert.Equal(t, txn.Hash(), receipt.TxHash)
@@ -127,7 +129,7 @@ func TestSubscribeAndWaitForInvalidTx(t *testing.T) {
 	assert.Nil(t, err)
 	defer eth.Close()
 
-	testSetup.SetBlockInterval(t, eth, 200)
+	testutils.SetBlockInterval(t, eth, 200)
 
 	accounts := eth.GetKnownAccounts()
 	assert.Equal(t, numAccounts, len(accounts))
@@ -153,10 +155,11 @@ func TestSubscribeAndWaitForInvalidTx(t *testing.T) {
 	txn, err := eth.Contracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
-	receipt, err := eth.TransactionWatcher().SubscribeAndWait(ctx, txn)
+	watcher := transaction.WatcherFromNetwork(eth)
+	receipt, err := watcher.SubscribeAndWait(ctx, txn)
 	assert.NotNil(t, err)
 	assert.Nil(t, receipt)
-	_, ok := err.(*txwatcher.ErrNonRecoverable)
+	_, ok := err.(*transaction.ErrNonRecoverable)
 	assert.True(t, ok)
 }
 
@@ -167,9 +170,9 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	assert.Nil(t, err)
 	defer eth.Close()
 
-	testSetup.SetBlockInterval(t, eth, 500)
+	testutils.SetBlockInterval(t, eth, 500)
 	// setting base fee to 10k GWei
-	testSetup.SetNextBlockBaseFee(t, eth, 10_000_000_000_000)
+	testutils.SetNextBlockBaseFee(t, eth, 10_000_000_000_000)
 
 	accounts := eth.GetKnownAccounts()
 	assert.Equal(t, numAccounts, len(accounts))
@@ -194,11 +197,11 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	txn, err := eth.Contracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
-	txWatcher := eth.TransactionWatcher()
+	watcher := transaction.WatcherFromNetwork(eth)
+	receipt, err := watcher.SubscribeAndWait(ctx, txn)
 
-	receipt, err := txWatcher.SubscribeAndWait(ctx, txn)
 	assert.NotNil(t, err)
 	assert.Nil(t, receipt)
-	_, ok := err.(*txwatcher.ErrTransactionStale)
+	_, ok := err.(*transaction.ErrTransactionStale)
 	assert.True(t, ok)
 }

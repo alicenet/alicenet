@@ -251,6 +251,8 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 			t.Fatal("could not transfer ether")
 		}
 		watcher := transaction.NewWatcher(eth.GetClient(), transaction.NewKnownSelectors(), eth.GetFinalityDelay())
+		watcher.StartLoop()
+
 		rcpt, err := watcher.SubscribeAndWait(ctx, txn)
 		assert.Nil(t, err)
 		assert.NotNil(t, rcpt)
@@ -445,16 +447,14 @@ func WaitForHardHatNode(ctx context.Context) error {
 				reader,
 			)
 			if err != nil {
-				fmt.Printf("err continue: %v \n", err)
 				continue
 			}
-
 			_, err = io.ReadAll(resp.Body)
 			if err == nil {
-				fmt.Printf("err break: %v", err)
 				return nil
 			}
 		}
+
 	}
 }
 
