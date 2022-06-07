@@ -1,8 +1,6 @@
 package events
 
 import (
-	"context"
-
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -34,7 +32,7 @@ func ProcessSnapshotTaken(eth ethereum.Network, logger *logrus.Entry, log types.
 		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus}).Infof("Snapshot taken")
 
 	// Retrieve snapshot information from contract
-	ctx, cancel := context.WithTimeout(context.Background(), eth.Timeout())
+	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())

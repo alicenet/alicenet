@@ -66,7 +66,7 @@ func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry
 			taskState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
 
 		// setup leader election
-		block, err := eth.GetClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+		block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
 		if err != nil {
 			return fmt.Errorf("MPKSubmissionTask Initialize(): error getting block by number: %v", err)
 		}

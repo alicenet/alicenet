@@ -72,14 +72,13 @@ func NewMonitor(cdb *db.Database,
 	depositHandler monInterfaces.IDepositHandler,
 	eth ethereum.Network,
 	tickInterval time.Duration,
-	timeout time.Duration,
 	batchSize uint64,
 	taskRequestChan chan<- interfaces.ITask,
 	taskKillChan chan<- string) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
-		"Timeout":  timeout.String(),
+		"Timeout":  constants.MonitorTimeout.String(),
 	})
 
 	eventMap := objects.NewEventMap()
@@ -93,7 +92,7 @@ func NewMonitor(cdb *db.Database,
 
 	//TODO: What to do with this after adding the new TasksScheduler???
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
-		ctx, cf := context.WithTimeout(context.Background(), timeout)
+		ctx, cf := context.WithTimeout(context.Background(), constants.MonitorTimeout)
 		defer cf()
 
 		logger.Info("Entering snapshot callback")
@@ -109,7 +108,7 @@ func NewMonitor(cdb *db.Database,
 		db:              monDB,
 		logger:          logger,
 		tickInterval:    tickInterval,
-		timeout:         timeout,
+		timeout:         constants.MonitorTimeout,
 		cancelChan:      make(chan bool, 1),
 		statusChan:      make(chan string, 1),
 		State:           State,
@@ -340,7 +339,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 			WithField("Error", err).
 			Warn("EndpointInSync() Failed")
 
-		if monitorState.CommunicationFailures >= uint32(eth.RetryCount()) {
+		if monitorState.CommunicationFailures >= uint32(constants.MonitorRetryCount) {
 			monitorState.EndpointInSync = false
 		}
 		return nil

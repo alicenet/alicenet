@@ -6,15 +6,45 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
+
+// Contracts contains bindings to smart contract system
+type Contracts interface {
+	Initialize(ctx context.Context, contractFactoryAddress common.Address)
+
+	Ethdkg() bindings.IETHDKG
+	EthdkgAddress() common.Address
+	AToken() bindings.IAToken
+	ATokenAddress() common.Address
+	BToken() bindings.IBToken
+	BTokenAddress() common.Address
+	PublicStaking() bindings.IPublicStaking
+	PublicStakingAddress() common.Address
+	ValidatorStaking() bindings.IValidatorStaking
+	ValidatorStakingAddress() common.Address
+	ContractFactory() bindings.IAliceNetFactory
+	ContractFactoryAddress() common.Address
+	SnapshotsAddress() common.Address
+	Snapshots() bindings.ISnapshots
+	ValidatorPool() bindings.IValidatorPool
+	ValidatorPoolAddress() common.Address
+	Governance() bindings.IGovernance
+	GovernanceAddress() common.Address
+}
+
+var _ Contracts = &ContractDetails{}
 
 // ContractDetails contains bindings to smart contract system
 type ContractDetails struct {
+	initOnce                sync.Once
 	eth                     *Details
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
@@ -36,14 +66,32 @@ type ContractDetails struct {
 	governanceAddress       common.Address
 }
 
+func NewContractDetails(eth *Details) *ContractDetails {
+	return &ContractDetails{eth: eth}
+}
+
+/// Set the contractFactoryAddress and looks up for all the contracts that we
+/// need that were deployed via the factory. It's only executed once. Other call
+/// to this functions are no-op.
+func (c *ContractDetails) Initialize(ctx context.Context, contractFactoryAddress common.Address) {
+	c.initOnce.Do(func() {
+		err := c.lookupContracts(ctx, contractFactoryAddress)
+		if err != nil {
+			panic(err)
+		}
+	})
+}
+
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
-func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAddress common.Address) error {
+func (c *ContractDetails) lookupContracts(ctx context.Context, contractFactoryAddress common.Address) error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	for {
 		select {
 		case <-signals:
 			return errors.New("goodBye from lookup contracts")
+		case <-ctx.Done():
+			return errors.New("goodBye from lookup contracts, error: %v")
 		case <-time.After(1 * time.Second):
 		}
 
@@ -60,13 +108,14 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 
 		// todo: replace lookup with deterministic address compute
 
+		callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
+		if err != nil {
+			logger.Errorf("Failed to generate call options for lookup %v", err)
+		}
+
 		// Just a help for looking up other contracts
 		lookup := func(name string) (common.Address, error) {
-			salt := StringToBytes32(name)
-			callOpts, err := eth.GetCallOpts(ctx, eth.defaultAccount)
-			if err != nil {
-				logger.Errorf("Failed to generate call options for lookup of \"%v\": %v", name, err)
-			}
+			salt := utils.StringToBytes32(name)
 			addr, err := contractFactory.Lookup(callOpts, salt)
 			if err != nil {
 				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
@@ -232,4 +281,11 @@ func (c *ContractDetails) Governance() bindings.IGovernance {
 
 func (c *ContractDetails) GovernanceAddress() common.Address {
 	return c.governanceAddress
+}
+
+// utils function to log an error
+func logAndEat(logger *logrus.Logger, err error) {
+	if err != nil {
+		logger.Error(err)
+	}
 }

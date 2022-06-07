@@ -30,26 +30,24 @@ func Setup(finalityDelay uint64, numAccounts int, registryAddress common.Address
 		50,
 		math.MaxInt64)
 	if err != nil {
-		return nil, logger, err
+		return nil, nil, logger, err
 	}
 
 	eth.SetFinalityDelay(finalityDelay)
-	knownSelectors := transaction.NewKnownSelectors()
-	transaction := transaction.NewWatcher(eth.GetClient(), knownSelectors, 5)
-	transaction.SetNumOfConfirmationBlocks(finalityDelay)
+	watcher := transaction.WatcherFromNetwork(eth)
 
 	//todo: redeploy and get the registryAddress here
 	err = eth.Contracts().LookupContracts(context.Background(), registryAddress)
 	if err != nil {
-		return nil, logger, err
+		return nil, nil, logger, err
 	}
-	return eth, logger, nil
+	return eth, watcher, logger, nil
 }
 
 func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	finalityDelay := uint64(6)
 	numAccounts := 2
-	eth, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
+	eth, watcher, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
 	assert.Nil(t, err)
 	defer eth.Close()
 
@@ -125,7 +123,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 func TestSubscribeAndWaitForInvalidTx(t *testing.T) {
 	finalityDelay := uint64(6)
 	numAccounts := 2
-	eth, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
+	eth, watcher, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
 	assert.Nil(t, err)
 	defer eth.Close()
 
@@ -166,7 +164,7 @@ func TestSubscribeAndWaitForInvalidTx(t *testing.T) {
 func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	finalityDelay := uint64(6)
 	numAccounts := 2
-	eth, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
+	eth, watcher, _, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
 	assert.Nil(t, err)
 	defer eth.Close()
 
@@ -205,3 +203,52 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	_, ok := err.(*transaction.ErrTransactionStale)
 	assert.True(t, ok)
 }
+
+// func TestAutoSubscribeOfPendingTransaction(t *testing.T) {
+// 	finalityDelay := uint64(6)
+// 	numAccounts := 2
+// 	eth, _, logger, err := Setup(finalityDelay, numAccounts, common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"))
+// 	assert.Nil(t, err)
+// 	defer eth.Close()
+
+// 	testutils.SetBlockInterval(t, eth, 500)
+// 	// setting base fee to 10k GWei
+// 	testutils.SetNextBlockBaseFee(t, eth, 10_000_000_000_000)
+
+// 	accounts := eth.GetKnownAccounts()
+// 	assert.Equal(t, numAccounts, len(accounts))
+
+// 	for _, acct := range accounts {
+// 		err := eth.UnlockAccount(acct)
+// 		assert.Nil(t, err)
+// 	}
+
+// 	owner := accounts[0]
+// 	user := accounts[1]
+
+// 	ctx, cf := context.WithTimeout(context.Background(), 300*time.Second)
+// 	defer cf()
+
+// 	amount := big.NewInt(12_345)
+
+// 	txOpts, err := eth.GetTransactionOpts(ctx, owner)
+// 	txOpts.GasFeeCap = big.NewInt(1_000_000_000)
+// 	txOpts.Value = amount
+// 	assert.Nil(t, err)
+
+// 	_, err = eth.Contracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
+// 	assert.Nil(t, err)
+
+// 	// logger.Infof("%v", testutils.GetPendingBlock(t, eth))
+// 	// block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(-1))
+// 	// assert.Nil(t, err)
+// 	// for _, txn := range block.Transactions() {
+// 	// 	logger.Print(txn.Hash().Hex())
+// 	// }
+
+// 	// receipt, err := watcher.SubscribeAndWait(ctx, txn)
+// 	// assert.NotNil(t, err)
+// 	// assert.Nil(t, receipt)
+// 	// _, ok := err.(*transaction.ErrTransactionStale)
+// 	// assert.True(t, ok)
+// }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/config"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -41,24 +42,21 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 	eth, err := ethereum.NewEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
-		config.Configuration.Ethereum.Passcodes,
+		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
-		config.Configuration.Ethereum.Timeout,
-		config.Configuration.Ethereum.RetryCount,
-		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.TxFeePercentageToIncrease,
+		constants.DefaultFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
 
 	if err != nil {
 		return nil, err
 	}
 
-	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
+	factoryAddress := common.HexToAddress(config.Configuration.Ethereum.FactoryAddress)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err = eth.Contracts().LookupContracts(ctx, registryAddress)
+	eth.Contracts().Initialize(ctx, factoryAddress)
 
 	return eth, err
 }
@@ -67,11 +65,6 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
 
 	acct := eth.GetDefaultAccount()
-	err := eth.UnlockAccount(acct)
-	if err != nil {
-		logger.Warnf("Failed to unlock account %v: %v", acct.Address.Hex(), err)
-		return
-	}
 
 	keys, err := eth.GetAccountKeys(acct.Address)
 	if err != nil {
@@ -126,18 +119,11 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		LogStatus(logger, eth)
 	}
 
-	// Unlock the default account setup
-	acct := eth.GetDefaultAccount()
-	err = eth.UnlockAccount(acct)
-	if err != nil {
-		logger.Errorf("Can not unlock account %v: %v", acct.Address.Hex(), err)
-	}
-
 	// Route command
 	var exitCode int
 	switch cmd.Use {
 	case "sendwei":
-		exitCode = sendwei(logger, eth, cmd, args)
+		exitCode = sendWei(logger, eth, cmd, args)
 	case "utils":
 		exitCode = 0
 	default:
@@ -148,7 +134,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func sendwei(logger *logrus.Entry, eth ethereum.Network, cmd *cobra.Command, args []string) int {
+func sendWei(logger *logrus.Entry, eth ethereum.Network, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")

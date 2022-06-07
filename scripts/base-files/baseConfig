@@ -32,21 +32,15 @@ peerLimitMin = 3
 [monitor]
 batchSize = 1_000
 interval = "7s"
-timeout = "1h"
 
 [ethereum]
 defaultAccount = ""
 endpoint = "http://localhost:8545"
-endpointPeers = 0
 keystore = ""
-timeout = "1h"
-passcodes = ""
-testEther = "f000000000000000000"
-retryCount = 10
-retryDelay = "5s"
+passCodes = ""
+endpointMinimumPeers = 0
 startingBlock = 1
-registryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
-txFeePercentageToIncrease = 50
+factoryAddress = "0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc"
 txMaxGasFeeAllowedInGwei = 500
 
 [edge]

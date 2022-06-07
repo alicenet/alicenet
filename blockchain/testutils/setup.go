@@ -183,12 +183,8 @@ func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
 func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blockInterval time.Duration) ethereum.Network {
 	eth, err := ethereum.NewSimulator(
 		privateKeys,
-		6,
-		10*time.Second,
-		30*time.Second,
 		0,
 		big.NewInt(math.MaxInt64),
-		50,
 		math.MaxInt64)
 
 	assert.Nil(t, err, "Failed to build Ethereum endpoint...")
@@ -407,10 +403,7 @@ func StartDeployScripts(eth *ethereum.Details, ctx context.Context) error {
 
 	addr := common.Address{}
 	copy(addr[:], common.FromHex(factory))
-	err = eth.SetContractFactory(ctx, addr)
-	if err != nil {
-		return err
-	}
+	eth.Contracts().Initialize(ctx, addr)
 
 	return nil
 }

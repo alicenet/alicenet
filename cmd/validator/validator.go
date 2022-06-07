@@ -59,12 +59,9 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.
 	eth, err := ethereum.NewEndpoint(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
-		config.Configuration.Ethereum.Passcodes,
+		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
-		config.Configuration.Ethereum.Timeout,
-		config.Configuration.Ethereum.RetryCount,
-		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.TxFeePercentageToIncrease,
+		constants.DefaultFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
 
 	if err != nil {
@@ -78,39 +75,10 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.
 	}
 	logger.Infof("Looking up smart contracts on Ethereum...")
 	// Find all the contracts
-
-	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
-	if err := eth.Contracts().LookupContracts(context.Background(), registryAddress); err != nil {
-		logger.Fatalf("Can't find contract registry: %v", err)
-		panic(err)
-	}
+	eth.Contracts().Initialize(context.Background(), common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
 	utils.LogStatus(logger.WithField("Component", "validator"), eth)
 
-	// Get confirmation delay from the smart contracts
-	finalityDelay := constants.DefaultFinalityDelay
-	ctx, cf := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cf()
-	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	if err != nil {
-		logger.Errorf("Failed to get call opts to retrieve finality delay: %v", err)
-	} else {
-		phaseLength, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
-		if err != nil {
-			logger.Errorf("Failed to get finality delay from smart contracts: %v using default finality delay %v", err, finalityDelay)
-		} else {
-			newFinalityDelay := phaseLength / 4
-			if newFinalityDelay > 0 {
-				finalityDelay = uint64(newFinalityDelay)
-			} else {
-				logger.Errorf("Smart contract finality delay was not set, using default finality delay %v", finalityDelay)
-			}
-		}
-	}
-
-	eth.SetFinalityDelay(finalityDelay)
-	watcher := transaction.NewWatcher(eth.GetClient(), transaction.NewKnownSelectors(), finalityDelay)
-	// Starting the tx watcher
-	watcher.StartLoop()
+	watcher := transaction.WatcherFromNetwork(eth)
 
 	// todo: fix this
 	go func() {
@@ -127,10 +95,6 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.
 
 	// Load accounts
 	acct := eth.GetDefaultAccount()
-	if err := eth.UnlockAccount(acct); err != nil {
-		logger.Fatalf("Could not unlock account: %v", err)
-		panic(err)
-	}
 	keys, err := eth.GetAccountKeys(acct.Address)
 	if err != nil {
 		logger.Fatalf("Could not get GetAccountKeys: %v", err)
@@ -242,7 +206,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
 	defer rawConsensusDb.Close()
 
-	// Initialize transaction pool db: contains transcations that have not been mined (and thus are to be gossiped)
+	// Initialize transaction pool db: contains transactions that have not been mined (and thus are to be gossiped)
 	rawTxPoolDb := initDatabase(nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
 	defer rawTxPoolDb.Close()
 
@@ -339,8 +303,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
-	monitorTimeout := config.Configuration.Monitor.Timeout
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, monitorTimeout, uint64(batchSize), taskRequestChan, taskKillChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan, taskKillChan)
 	if err != nil {
 		panic(err)
 	}

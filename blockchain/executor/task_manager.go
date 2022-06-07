@@ -11,6 +11,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -33,8 +34,8 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereum.Network, t
 		}
 		defer wg.Done()
 
-		retryCount := eth.RetryCount()
-		retryDelay := eth.RetryDelay()
+		retryCount := int(constants.MonitorRetryCount)
+		retryDelay := constants.MonitorRetryDelay
 		logger.WithFields(logrus.Fields{
 			"RetryCount": retryCount,
 			"RetryDelay": retryDelay,
@@ -140,7 +141,6 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 	gasFeeCap, gasTipCap := transaction.IncreaseFeeAndTipCap(
 		execData.TxOpts.GasFeeCap,
 		execData.TxOpts.GasTipCap,
-		eth.GetTxFeePercentageToIncrease(),
 		eth.GetTxMaxGasFeeAllowedInGwei())
 	execData.TxOpts.GasFeeCap = gasFeeCap
 	execData.TxOpts.GasTipCap = gasTipCap
@@ -180,8 +180,8 @@ func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth ethereum.
 		return utils.LogReturnErrorf(logger, "failed to get current height %v", err)
 	}
 
-	retryCount := eth.RetryCount()
-	retryDelay := eth.RetryDelay()
+	retryCount := int(constants.MonitorRetryCount)
+	retryDelay := constants.MonitorRetryDelay
 	txCheckFrequency := 1 * time.Second
 	txTimeoutForReplacement := 10 * time.Second
 	txReplacement := getTxReplacementTime(txTimeoutForReplacement)
@@ -301,7 +301,7 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, 
 	var isTxPending bool
 	for _, txHash := range txHashes {
 		//check tx is pending
-		_, isTxPending, err = eth.GetClient().TransactionByHash(ctx, txHash)
+		_, isTxPending, err = eth.GetInternalClient().TransactionByHash(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get tx with hash %s wit error %v", txHash.Hex(), err)
 			return false, nil
@@ -312,7 +312,7 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, 
 		}
 
 		//if tx was mined we can check the receipt
-		receipt, err = eth.GetClient().TransactionReceipt(ctx, txHash)
+		receipt, err = eth.GetInternalClient().TransactionReceipt(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get receipt for tx %s with error %s ", txHash.Hex(), err.Error())
 			return false, nil

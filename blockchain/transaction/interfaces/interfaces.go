@@ -10,7 +10,6 @@ import (
 type IWatcher interface {
 	StartLoop()
 	Close()
-	SetNumOfConfirmationBlocks(numBlocks uint64)
 	Subscribe(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error)
 	Wait(ctx context.Context, receiptResponseChannel <-chan *objects.ReceiptResponse) (*types.Receipt, error)
 	SubscribeAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
