@@ -10,7 +10,6 @@ import (
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -137,11 +136,11 @@ func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth 
 		"Nonce":     execData.TxOpts.Nonce,
 	}).Info("retryTaskWithFeeReplacementFrom")
 
-	// increase gas and tip cap
-	gasFeeCap, gasTipCap := transaction.IncreaseFeeAndTipCap(
-		execData.TxOpts.GasFeeCap,
-		execData.TxOpts.GasTipCap,
-		eth.GetTxMaxGasFeeAllowedInGwei())
+	// todo: remove this
+	gasFeeCap, gasTipCap, err := eth.GetBlockBaseFeeAndSuggestedGasTip(ctx)
+	if err != nil {
+		return err
+	}
 	execData.TxOpts.GasFeeCap = gasFeeCap
 	execData.TxOpts.GasTipCap = gasTipCap
 
@@ -301,7 +300,7 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, 
 	var isTxPending bool
 	for _, txHash := range txHashes {
 		//check tx is pending
-		_, isTxPending, err = eth.GetInternalClient().TransactionByHash(ctx, txHash)
+		_, isTxPending, err = eth.GetTransactionByHash(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get tx with hash %s wit error %v", txHash.Hex(), err)
 			return false, nil
@@ -312,7 +311,7 @@ func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, 
 		}
 
 		//if tx was mined we can check the receipt
-		receipt, err = eth.GetInternalClient().TransactionReceipt(ctx, txHash)
+		receipt, err = eth.GetTransactionReceipt(ctx, txHash)
 		if err != nil {
 			logger.Errorf("failed to get receipt for tx %s with error %s ", txHash.Hex(), err.Error())
 			return false, nil

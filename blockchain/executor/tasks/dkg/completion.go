@@ -51,7 +51,7 @@ func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, e
 	}
 
 	// setup leader election
-	block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	block, err := eth.GetBlockByNumber(ctx, big.NewInt(int64(t.Start)))
 	if err != nil {
 		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
 	}

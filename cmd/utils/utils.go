@@ -45,7 +45,9 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
 		constants.DefaultFinalityDelay,
-		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
+		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
+		config.Configuration.Ethereum.EndpointMinimumPeers,
+	)
 
 	if err != nil {
 		return nil, err
@@ -149,7 +151,7 @@ func sendWei(logger *logrus.Entry, eth ethereum.Network, cmd *cobra.Command, arg
 
 	from := eth.GetDefaultAccount()
 	for idx := 1; idx < len(args); idx++ {
-		_, err := eth.TransferEther(from.Address, common.HexToAddress(args[idx]), wei)
+		_, err := ethereum.TransferEther(eth, logger, from.Address, common.HexToAddress(args[idx]), wei)
 		if err != nil {
 			logger.Errorf("Transfer failed: %v", err)
 			return 1

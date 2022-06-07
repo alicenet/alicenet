@@ -30,7 +30,7 @@ type chainConfig struct {
 type ethereumConfig struct {
 	DefaultAccount           string
 	Endpoint                 string
-	EndpointMinimumPeers     int
+	EndpointMinimumPeers     uint32
 	Keystore                 string
 	PassCodes                string
 	FactoryAddress           string

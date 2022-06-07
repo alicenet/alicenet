@@ -326,7 +326,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	addresses := []common.Address{c.EthdkgAddress(), c.SnapshotsAddress(), c.BTokenAddress()}
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
-	inSync, peerCount, err := EndpointInSync(ctx, eth, logger)
+	inSync, peerCount, err := eth.EndpointInSync(ctx)
 	ethInSyncBefore := monitorState.EthereumInSync
 	monitorState.EndpointInSync = inSync
 	bmax := utils.Max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
@@ -348,7 +348,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		return nil
 	}
 
-	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
+	if peerCount < config.Configuration.Ethereum.EndpointMinimumPeers {
 		return nil
 	}
 
@@ -448,40 +448,6 @@ func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan
 	taskRequestChan <- snapshotTask
 
 	return nil
-}
-
-// EndpointInSync Checks if our endpoint is good to use
-// -- This function is different. Because we need to be aware of errors, State is always updated
-func EndpointInSync(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) (bool, uint32, error) {
-
-	// Default to assuming everything is awful
-	inSync := false
-	peerCount := uint32(0)
-
-	// Check if the endpoint is itself still syncing
-	syncing, progress, err := eth.GetSyncProgress()
-	if err != nil {
-		logger.Warnf("Could not check if Ethereum endpoint it still syncing: %v", err)
-		return inSync, peerCount, err
-	}
-
-	if syncing && progress != nil {
-		logger.Debugf("Ethereum endpoint syncing... at block %v of %v.",
-			progress.CurrentBlock, progress.HighestBlock)
-	}
-
-	peerCount64, err := eth.GetPeerCount(ctx)
-	if err != nil {
-		return inSync, peerCount, err
-	}
-	peerCount = uint32(peerCount64)
-
-	// TODO Remove direct reference to config. Specific values should be passed in.
-	if !syncing && peerCount >= uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
-		inSync = true
-	}
-
-	return inSync, peerCount, err
 }
 
 // TODO: Remove from request hot path use memory cache
