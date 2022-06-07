@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"reflect"
 	"strings"
@@ -42,11 +43,6 @@ type TaskRequestInfo struct {
 	Task      executorInterfaces.ITask `json:"-"`
 }
 
-type TaskResponse struct {
-	Id  string
-	Err error
-}
-
 type innerBlock struct {
 	Id          string
 	Start       uint64
@@ -70,12 +66,8 @@ type TasksScheduler struct {
 
 type taskResponseChan struct {
 	writeOnce sync.Once
-	trChan    chan TaskResponse
+	trChan    chan objects.TaskResponse
 	isClosed  bool
-}
-
-type ITaskResponseChan interface {
-	Add(TaskResponse)
 }
 
 func (tr *taskResponseChan) close() {
@@ -85,11 +77,13 @@ func (tr *taskResponseChan) close() {
 	})
 }
 
-func (tr *taskResponseChan) Add(taskResponse TaskResponse) {
+func (tr *taskResponseChan) Add(taskResponse objects.TaskResponse) {
 	if !tr.isClosed {
 		tr.trChan <- taskResponse
 	}
 }
+
+var _ executorInterfaces.ITaskResponseChan = &taskResponseChan{}
 
 type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
@@ -119,7 +113,7 @@ func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler
 		marshaller:       tr,
 		cancelChan:       make(chan bool, 1),
 		taskRequestChan:  taskRequestChan,
-		taskResponseChan: &taskResponseChan{trChan: make(chan TaskResponse, 100)},
+		taskResponseChan: &taskResponseChan{trChan: make(chan objects.TaskResponse, 100)},
 		taskKillChan:     taskKillChan,
 	}
 
@@ -141,7 +135,7 @@ func (s *TasksScheduler) Start() error {
 	s.logger.Info(strings.Repeat("-", 80))
 	s.logger.Infof("Current Tasks: %d", len(s.Schedule))
 	for id, task := range s.Schedule {
-		s.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Task.GetExecutionData().GetName(), task.Start, task.End)
+		s.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Task.GetName(), task.Start, task.End)
 	}
 	s.logger.Info(strings.Repeat("-", 80))
 
@@ -226,8 +220,8 @@ func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.I
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		start := task.GetExecutionData().GetStart()
-		end := task.GetExecutionData().GetEnd()
+		start := task.GetStart()
+		end := task.GetEnd()
 
 		if start != 0 && end != 0 && start >= end {
 			return ErrWrongParams
@@ -243,7 +237,7 @@ func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.I
 	return nil
 }
 
-func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse TaskResponse) error {
+func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse objects.TaskResponse) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -269,10 +263,12 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 		s.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetExecutionData().GetName())
-			taskCtx, taskCancelFunc := context.WithCancel(ctx)
-			task.Task.GetExecutionData().SetContext(taskCtx, taskCancelFunc)
-			task.Task.GetExecutionData().SetId(task.Id)
+			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetName())
+
+			//TODO: move this to Initialize method before start the task
+			//taskCtx, taskCancelFunc := context.WithCancel(ctx)
+			//task.Task.GetExecutionData().SetContext(taskCtx, taskCancelFunc)
+			//task.Task.GetExecutionData().SetId(task.Id)
 
 			//TODO: run the task in a go routine
 			task.IsRunning = true
@@ -301,8 +297,8 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 	default:
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			s.logger.Infof("Task name: %s and id: %s is about to be killed", task.Task.GetExecutionData().GetName(), task.Id)
-			task.Task.GetExecutionData().Close()
+			s.logger.Infof("Task name: %s and id: %s is about to be killed", task.Task.GetName(), task.Id)
+			task.Task.Close()
 		}
 	}
 
@@ -318,7 +314,7 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []Ta
 
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			s.logger.Infof("Task name: %s is about to be removed", task.Task.GetExecutionData().GetName())
+			s.logger.Infof("Task name: %s is about to be removed", task.Task.GetName())
 
 			err := s.remove(task.Id)
 			if err != nil {
@@ -365,7 +361,7 @@ func (s *TasksScheduler) findTasksByName(taskName string) []TaskRequestInfo {
 	tasks := make([]TaskRequestInfo, 0)
 
 	for _, taskRequest := range s.Schedule {
-		if taskRequest.Task.GetExecutionData().GetName() == taskName {
+		if taskRequest.Task.GetName() == taskName {
 			tasks = append(tasks, taskRequest)
 		}
 	}

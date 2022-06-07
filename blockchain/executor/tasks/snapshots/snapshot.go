@@ -101,7 +101,7 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	}
 
 	// someone else already did the snapshot
-	if !t.ShouldRetry(ctx, logger, eth) {
+	if !t.IsItDone(ctx, logger, eth) {
 		logger.Debug("Snapshot already sent! Exiting!")
 		return nil
 	}
@@ -132,7 +132,7 @@ func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth eth
 	return nil
 }
 
-func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
+func (t *SnapshotTask) IsItDone(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
 
 	t.RLock()
 	defer t.RUnlock()
@@ -145,7 +145,7 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 
 	opts, err := eth.GetCallOpts(ctx, taskState.Account)
 	if err != nil {
-		logger.Errorf("SnapshotsTask.ShouldRetry() failed to get call options: %v", err)
+		logger.Errorf("SnapshotsTask.ShouldExecute() failed to get call options: %v", err)
 		return true
 	}
 
@@ -163,7 +163,7 @@ func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, et
 	return true
 }
 
-func (*SnapshotTask) DoDone(logger *logrus.Entry) {
+func (*SnapshotTask) Finish(logger *logrus.Entry) {
 }
 
 func (t *SnapshotTask) GetExecutionData() interfaces.ITaskExecutionData {

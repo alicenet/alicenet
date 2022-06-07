@@ -192,7 +192,7 @@ func TestMPKSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 
 	// any task is able to tell if MPK still needs submission.
 	// if for any reason no validator lead the submission,
-	// then all tasks will have ShouldRetry() returning true
+	// then all tasks will have ShouldExecute() returning true
 	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 

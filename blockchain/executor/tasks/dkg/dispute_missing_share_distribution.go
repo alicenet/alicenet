@@ -1,19 +1,15 @@
 package dkg
 
 import (
-	"context"
-	"math/big"
-
-	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares
@@ -25,148 +21,103 @@ type DisputeMissingShareDistributionTask struct {
 var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 
 // NewDisputeMissingShareDistributionTask creates a new task
-func NewDisputeMissingShareDistributionTask(dkgState *state.DkgState, start uint64, end uint64) *DisputeMissingShareDistributionTask {
+func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		Task: objects.NewTask(dkgState, constants.DisputeMissingShareDistributionTaskName, start, end),
+		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end),
 	}
 }
 
-// Initialize begins the setup phase for DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	logger.Info("DisputeMissingShareDistributionTask Initializing...")
+// Prepare prepares for work to be done in the DisputeMissingShareDistributionTask.
+func (t *DisputeMissingShareDistributionTask) Prepare() error {
+	t.GetLogger().Info("DisputeMissingShareDistributionTask Prepare...")
 	return nil
 }
 
-// DoWork is the first attempt at disputing distributed shares
-func (t *DisputeMissingShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, error) {
+	logger := t.GetLogger()
+	logger.Info("DisputeMissingShareDistributionTask Execute()")
 
-// DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeMissingShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *DisputeMissingShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState := &state.DkgState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := dkgState.LoadState(txn, t.GetLogger())
+		return err
+	})
+	if err != nil {
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask.Execute(): error loading dkgState: %v", err)
 	}
 
-	logger.Info("DisputeMissingShareDistributionTask doTask()")
-
-	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	ctx := t.GetCtx()
+	eth := t.GetEth()
+	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting accusableParticipants: %v", err)
+		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask Execute() error getting accusableParticipants: %v", err)
 	}
 
 	// accuse missing validators
+	txns := make([]*types.Transaction, 0)
 	if len(accusableParticipants) > 0 {
 		logger.Warnf("Accusing missing distributed shares: %v", accusableParticipants)
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
+		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
-			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error getting txnOpts: %v", err)
-		}
-
-		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-		// we increase the Gas to have priority for the next blocks
-		if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-			logger.Info("txnOpts Replaced")
-			txnOpts.Nonce = t.TxOpts.Nonce
-			txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-			txnOpts.GasTipCap = t.TxOpts.GasTipCap
+			return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask Execute() error getting txnOpts: %v", err)
 		}
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 		if err != nil {
-			return dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask doTask() error accusing missing key shares: %v", err)
+			return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask Execute() error accusing missing key shares: %v", err)
 		}
-		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-		t.TxOpts.GasFeeCap = txn.GasFeeCap()
-		t.TxOpts.GasTipCap = txn.GasTipCap()
-		t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
-
-		logger.WithFields(logrus.Fields{
-			"GasFeeCap": t.TxOpts.GasFeeCap,
-			"GasTipCap": t.TxOpts.GasTipCap,
-			"Nonce":     t.TxOpts.Nonce,
-		}).Info("missing share dispute fees")
-
-		// Queue transaction
-		watcher := transaction.WatcherFromNetwork(eth)
-		watcher.Subscribe(ctx, txn)
+		txns = append(txns, txn)
 	} else {
 		logger.Info("No accusations for missing distributed shares")
 	}
 
-	t.Success = true
-	return nil
+	return txns, nil
 }
 
 // ShouldRetry checks if it makes sense to try again
-// if the DKG process is in the right phase and blocks
-// range and there still someone to accuse, the retry
-// is executed
-func (t *DisputeMissingShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
+func (t *DisputeMissingShareDistributionTask) ShouldExecute() bool {
+	logger := t.GetLogger()
+	logger.Info("DisputeMissingShareDistributionTask ShouldExecute()")
 
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("DisputeMissingShareDistributionTask ShouldRetry()")
-
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	ctx := t.GetCtx()
+	eth := t.GetEth()
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
 	if !generalRetry {
 		return false
 	}
 
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		logger.Error("Invalid convertion of taskState object")
-		return false
-	}
-
-	if taskState.Phase != state.ShareDistribution {
-		return false
-	}
-
-	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	dkgState := &state.DkgState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := dkgState.LoadState(txn, t.GetLogger())
+		return err
+	})
 	if err != nil {
-		logger.Errorf("DisputeMissingShareDistributionTask ShouldRetry() error getting accusable participants: %v", err)
+		logger.Errorf("DisputeMissingShareDistributionTask.ShouldExecute(): error loading dkgState: %v", err)
 		return true
 	}
 
-	if len(accusableParticipants) > 0 {
+	if dkgState.Phase != state.ShareDistribution {
+		return false
+	}
+
+	accusableParticipants, err := t.getAccusableParticipants(dkgState)
+	if err != nil {
+		logger.Errorf("DisputeMissingShareDistributionTask ShouldExecute() error getting accusable participants: %v", err)
 		return true
 	}
 
-	return false
+	return len(accusableParticipants) > 0
 }
 
-// DoDone creates a log entry saying task is complete
-func (t *DisputeMissingShareDistributionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.WithField("Success", t.Success).Info("DisputeMissingShareDistributionTask done")
-}
-
-func (t *DisputeMissingShareDistributionTask) GetExecutionData() interfaces.ITaskExecutionData {
-	return t.Task
-}
-
-func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) ([]common.Address, error) {
-
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		return nil, objects.ErrCanNotContinue
-	}
+func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
+	logger := t.GetLogger()
+	ctx := t.GetCtx()
+	eth := t.GetEth()
 
 	var accusableParticipants []common.Address
-	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask failed getting call options: %v", err)
 	}
@@ -183,9 +134,9 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx conte
 
 	// find participants who did not submit their shares
 	var emptySharesHash [32]byte
-	for _, p := range taskState.Participants {
+	for _, p := range dkgState.Participants {
 		_, isValidator := validatorsMap[p.Address]
-		if isValidator && (p.Nonce != taskState.Nonce ||
+		if isValidator && (p.Nonce != dkgState.Nonce ||
 			p.Phase != state.ShareDistribution ||
 			p.DistributedSharesHash == emptySharesHash) {
 			// did not distribute shares

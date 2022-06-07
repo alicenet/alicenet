@@ -28,7 +28,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereum.Network, t
 
 	wg.Add(1)
 	go func() {
-		defer task.DoDone(logger.WithField("Method", "DoDone"))
+		defer task.Finish(logger.WithField("Method", "Finish"))
 		if onFinishCB != nil {
 			defer onFinishCB()
 		}
@@ -52,7 +52,7 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereum.Network, t
 			return
 		}
 
-		workLogger := logger.WithField("Method", "DoWork")
+		workLogger := logger.WithField("Method", "Execute")
 		err = executeTask(ctx, workLogger, eth, task, retryCount, retryDelay)
 		if err != nil {
 			workLogger.Error("Failed to execute task ", err)
@@ -96,7 +96,7 @@ func initializeTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Netw
 func executeTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	// Clearing TxOpts used for tx gas and nonce replacement
 	clearTxOpts(task)
-	err := task.DoWork(ctx, logger, eth)
+	err := task.Execute(ctx, logger, eth)
 	if err != nil {
 		retryLogger := logger.WithField("Method", "DoRetry")
 		err = retryTask(ctx, retryLogger, eth, task, retryCount, retryDelay)
@@ -108,7 +108,7 @@ func executeTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network
 func retryTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
-	for count < retryCount && task.ShouldRetry(ctx, logger, eth) {
+	for count < retryCount && task.ShouldExecute(ctx, logger, eth) {
 		err = sleepWithContext(ctx, retryDelay)
 		if err != nil {
 			return err

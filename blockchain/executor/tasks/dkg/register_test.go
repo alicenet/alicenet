@@ -105,7 +105,7 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 }
 
 // We attempt valid registration. Everything should succeed.
-// This test calls Initialize and DoWork.
+// This test calls Initialize and Execute.
 func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	n := 6
 	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
@@ -398,7 +398,7 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-// ShouldRetry() return false because the registration was successful
+// ShouldExecute() return false because the registration was successful
 func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
@@ -482,11 +482,11 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	assert.Nil(t, err)
 
 	eth.Commit()
-	retry := registrationTask.ShouldRetry(ctx, log, eth)
+	retry := registrationTask.ShouldExecute(ctx, log, eth)
 	assert.False(t, retry)
 }
 
-// ShouldRetry() return true because the registration was unsuccessful
+// ShouldExecute() return true because the registration was unsuccessful
 func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
@@ -572,6 +572,6 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	err = registrationTask.DoWork(ctx, log, eth)
 	assert.NotNil(t, err)
 
-	retry := registrationTask.ShouldRetry(ctx, log, eth)
+	retry := registrationTask.ShouldExecute(ctx, log, eth)
 	assert.True(t, retry)
 }

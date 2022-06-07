@@ -2,23 +2,20 @@ package dkg
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/ethereum"
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
-	"github.com/MadBase/MadNet/blockchain/transaction"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/sirupsen/logrus"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
@@ -30,226 +27,195 @@ type MPKSubmissionTask struct {
 var _ interfaces.ITask = &MPKSubmissionTask{}
 
 // NewMPKSubmissionTask creates a new task
-func NewMPKSubmissionTask(dkgState *state.DkgState, start uint64, end uint64) *MPKSubmissionTask {
+func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(dkgState, exConstants.MPKSubmissionTaskName, start, end),
+		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end),
 	}
 }
 
-// Initialize prepares for work to be done in MPKSubmission phase.
+// Prepare prepares for work to be done in the MPKSubmissionTask
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
+func (t *MPKSubmissionTask) Prepare() error {
+	logger := t.GetLogger()
+	logger.Info("MPKSubmissionTask Prepare()...")
 
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("MPKSubmissionTask Initialize()...")
-
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	if taskState.Phase != state.MPKSubmission {
-		return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
-	}
-
-	// compute MPK if not yet computed
-	if taskState.MasterPublicKey[0] == nil ||
-		taskState.MasterPublicKey[1] == nil ||
-		taskState.MasterPublicKey[2] == nil ||
-		taskState.MasterPublicKey[3] == nil ||
-		(taskState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
-			taskState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
-			taskState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
-			taskState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
-
-		// setup leader election
-		block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	dkgState := &state.DkgState{}
+	err := t.GetDB().Update(func(txn *badger.Txn) error {
+		err := dkgState.LoadState(txn, logger)
 		if err != nil {
-			return fmt.Errorf("MPKSubmissionTask Initialize(): error getting block by number: %v", err)
+			return err
 		}
 
-		logger.Infof("block hash: %v\n", block.Hash())
-		t.StartBlockHash.SetBytes(block.Hash().Bytes())
+		if dkgState.Phase != state.MPKSubmission {
+			return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
+		}
 
-		// prepare MPK
-		g1KeyShares := make([][2]*big.Int, taskState.NumberOfValidators)
-		g2KeyShares := make([][4]*big.Int, taskState.NumberOfValidators)
+		// compute MPK if not yet computed
+		if dkgState.MasterPublicKey[0] == nil ||
+			dkgState.MasterPublicKey[1] == nil ||
+			dkgState.MasterPublicKey[2] == nil ||
+			dkgState.MasterPublicKey[3] == nil ||
+			(dkgState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+				dkgState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
+				dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
+				dkgState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
 
-		var participantsList = taskState.GetSortedParticipants()
-		validMPK := true
-		for idx, participant := range participantsList {
-			// Bringing these in from state but could directly query contract
-			g1KeyShares[idx] = taskState.Participants[participant.Address].KeyShareG1s
-			g2KeyShares[idx] = taskState.Participants[participant.Address].KeyShareG2s
+			eth := t.GetEth()
+			ctx := t.GetCtx()
+			// setup leader election
+			block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
+			if err != nil {
+				return fmt.Errorf("MPKSubmissionTask Prepare(): error getting block by number: %v", err)
+			}
 
-			logger.Debugf("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
+			logger.Infof("block hash: %v\n", block.Hash())
+			t.SetStartBlockHash(block.Hash().Bytes())
 
-			for i := range g1KeyShares[idx] {
-				if g1KeyShares[idx][i] == nil {
-					logger.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
-					validMPK = false
+			// prepare MPK
+			g1KeyShares := make([][2]*big.Int, dkgState.NumberOfValidators)
+			g2KeyShares := make([][4]*big.Int, dkgState.NumberOfValidators)
+
+			var participantsList = dkgState.GetSortedParticipants()
+			validMPK := true
+			for idx, participant := range participantsList {
+				// Bringing these in from state but could directly query contract
+				g1KeyShares[idx] = dkgState.Participants[participant.Address].KeyShareG1s
+				g2KeyShares[idx] = dkgState.Participants[participant.Address].KeyShareG2s
+
+				logger.Debugf("INIT idx:%v pidx:%v address:%v g1:%v g2:%v", idx, participant.Index, participant.Address.Hex(), g1KeyShares[idx], g2KeyShares[idx])
+
+				for i := range g1KeyShares[idx] {
+					if g1KeyShares[idx][i] == nil {
+						logger.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+						validMPK = false
+					}
+				}
+
+				for i := range g2KeyShares[idx] {
+					if g2KeyShares[idx][i] == nil {
+						logger.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
+						validMPK = false
+					}
 				}
 			}
 
-			for i := range g2KeyShares[idx] {
-				if g2KeyShares[idx][i] == nil {
-					logger.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
-					validMPK = false
-				}
+			logger.Infof("# Participants: %v\n", len(dkgState.Participants))
+
+			mpk, err := state.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
+			if err != nil && validMPK {
+				return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
 			}
+
+			if !validMPK {
+				mpk = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+			}
+
+			// Master public key is all we generate here so save it
+			dkgState.MasterPublicKey = mpk
+
+			err = dkgState.PersistState(txn, logger)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.Infof("MPKSubmissionTask Prepare(): mpk already defined")
 		}
 
-		logger.Infof("# Participants: %v\n", len(taskState.Participants))
+		return nil
+	})
 
-		mpk, err := state.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
-		if err != nil && validMPK {
-			return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
-		}
-
-		if !validMPK {
-			mpk = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
-		}
-
-		// Master public key is all we generate here so save it
-		taskState.MasterPublicKey = mpk
-	} else {
-		logger.Infof("MPKSubmissionTask Initialize(): mpk already defined")
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "MPKSubmissionTask.Prepare(): error during the preparation: %v", err)
 	}
 
 	return nil
 }
 
-// DoWork is the first attempt at submitting the mpk
-func (t *MPKSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
+	logger := t.GetLogger()
+	logger.Info("MPKSubmissionTask Execute()...")
 
-// DoRetry is all subsequent attempts at submitting the mpk
-func (t *MPKSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *MPKSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState := &state.DkgState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := dkgState.LoadState(txn, logger)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("MPKSubmissionTask.Execute(): error loading dkgState: %v", err)
 	}
 
-	logger.Info("MPKSubmissionTask doTask()")
-
-	if !t.shouldSubmitMPK(ctx, eth, logger) {
-		t.Success = true
-		return nil
+	if !t.shouldSubmitMPK(dkgState) {
+		return nil, nil
 	}
 
 	// submit if I'm a leader for this task
-	if !t.AmILeading(ctx, eth, logger, taskState) {
-		return errors.New("not leading MPK submission yet")
+	eth := t.GetEth()
+	ctx := t.GetCtx()
+	if !t.AmILeading(dkgState) {
+		return nil, errors.New("not leading MPK submission yet")
 	}
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
-	}
-
-	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-	// we increase the Gas to have priority for the next blocks
-	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxOpts.Nonce
-		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+		return nil, utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Submit MPK
-	logger.Infof("submitting master public key:%v", taskState.MasterPublicKey)
-	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, taskState.MasterPublicKey)
+	logger.Infof("submitting master public key:%v", dkgState.MasterPublicKey)
+	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
-	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-	}).Info("MPK submission fees")
-
-	// Queue transaction
-	watcher := transaction.WatcherFromNetwork(eth)
-	watcher.Subscribe(ctx, txn)
-	t.Success = true
-
-	return nil
+	return []*types.Transaction{txn}, nil
 }
 
 // ShouldRetry checks if it makes sense to try again
-// Predicates:
-// -- we haven't passed the last block
-func (t *MPKSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
-	t.State.Lock()
-	defer t.State.Unlock()
+func (t *MPKSubmissionTask) ShouldExecute() bool {
+	logger := t.GetLogger()
+	logger.Info("MPKSubmissionTask ShouldExecute()")
 
-	logger.Info("MPKSubmissionTask ShouldRetry()")
+	dkgState := &state.DkgState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := dkgState.LoadState(txn, t.GetLogger())
+		return err
+	})
+	if err != nil {
+		logger.Errorf("could not get dkgState with error %v", err)
+		return true
+	}
 
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
+	eth := t.GetEth()
+	ctx := t.GetCtx()
+	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
 	if !generalRetry {
 		return false
 	}
 
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		logger.Error("Invalid convertion of taskState object")
+	if dkgState.Phase != state.MPKSubmission {
 		return false
 	}
 
-	if taskState.Phase != state.MPKSubmission {
+	return t.shouldSubmitMPK(dkgState)
+}
+
+func (t *MPKSubmissionTask) shouldSubmitMPK(dkgState *state.DkgState) bool {
+	if dkgState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0 {
 		return false
 	}
 
-	return t.shouldSubmitMPK(ctx, eth, logger)
-}
-
-// DoDone creates a log entry saying task is complete
-func (t *MPKSubmissionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.WithField("Success", t.Success).Infof("MPKSubmissionTask done")
-}
-
-func (t *MPKSubmissionTask) GetExecutionData() interfaces.ITaskExecutionData {
-	return t.Task
-}
-
-func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereum.Network, logger *logrus.Entry) bool {
-
-	taskState, ok := t.State.(*state.DkgState)
-	if !ok {
-		logger.Error("MPKSubmissionTask ShouldRetry() invalid convertion of taskState object")
-		return true
-	}
-
-	if taskState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
-		taskState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
-		taskState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
-		taskState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0 {
-		return false
-	}
-
-	callOpts, err := eth.GetCallOpts(ctx, taskState.Account)
+	logger := t.GetLogger()
+	eth := t.GetEth()
+	ctx := t.GetCtx()
+	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		logger.Error(fmt.Sprintf("MPKSubmissionTask ShouldRetry() failed getting call options: %v", err))
+		logger.Error(fmt.Sprintf("MPKSubmissionTask shouldSubmitMPK() failed getting call options: %v", err))
 		return true
 	}
 
@@ -260,7 +226,7 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereum.Ne
 
 	logger.WithField("Method", "shouldSubmitMPK").Debugf("mpkHash received")
 
-	mpkHashBin, err := bn256.MarshalBigIntSlice(taskState.MasterPublicKey[:])
+	mpkHashBin, err := bn256.MarshalBigIntSlice(dkgState.MasterPublicKey[:])
 	if err != nil {
 		return true
 	}
@@ -273,25 +239,4 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(ctx context.Context, eth ethereum.Ne
 
 	logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is equal to the received")
 	return true
-}
-
-func (t *MPKSubmissionTask) AmILeading(ctx context.Context, eth ethereum.Network, logger *logrus.Entry, taskState *state.DkgState) bool {
-	// check if I'm a leader for this task
-	currentHeight, err := eth.GetCurrentHeight(ctx)
-	if err != nil {
-		return false
-	}
-
-	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := utils.AmILeading(taskState.NumberOfValidators, taskState.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
-
-	logger.WithFields(logrus.Fields{
-		"currentHeight":                    currentHeight,
-		"t.Start":                          t.Start,
-		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
-		"blocksSinceDesperation":           blocksSinceDesperation,
-		"amILeading":                       amILeading,
-	}).Infof("dkg.AmILeading")
-
-	return amILeading
 }

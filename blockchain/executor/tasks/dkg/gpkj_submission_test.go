@@ -151,7 +151,7 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 	taskState, ok := task.State.(*dkgState.DkgState)
 	assert.True(t, ok)
 
-	// Mess up GPKj; this will cause DoWork to fail
+	// Mess up GPKj; this will cause Execute to fail
 	taskState.Participants[taskState.Account.Address].GPKj = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
 	err := task.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)

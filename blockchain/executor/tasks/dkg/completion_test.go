@@ -72,7 +72,7 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 			assert.Nil(t, err)
 			assert.True(t, completionTasks[idx].Success)
 		} else {
-			if completionTasks[idx].ShouldRetry(ctx, logger, eth) {
+			if completionTasks[idx].ShouldExecute(ctx, logger, eth) {
 				assert.NotNil(t, err)
 				assert.False(t, completionTasks[idx].Success)
 			} else {
@@ -266,7 +266,7 @@ func TestCompletion_Group_3_ShouldRetry_returnsFalse(t *testing.T) {
 
 	// any task is able to tell if ETHDKG still needs completion
 	// if for any reason no validator lead the process,
-	// then all tasks will have ShouldRetry() returning true
+	// then all tasks will have ShouldExecute() returning true
 	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 
@@ -311,6 +311,6 @@ func TestCompletion_Group_3_ShouldRetry_returnsTrue(t *testing.T) {
 	err = completionTasks[0].Initialize(ctx, logger, eth)
 	assert.Nil(t, err)
 
-	shouldRetry := completionTasks[0].ShouldRetry(ctx, logger, eth)
+	shouldRetry := completionTasks[0].ShouldExecute(ctx, logger, eth)
 	assert.True(t, shouldRetry)
 }

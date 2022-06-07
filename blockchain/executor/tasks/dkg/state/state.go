@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 
-	//"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"math/big"
-	"sync"
-
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	//"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"math/big"
 
 	"github.com/dgraph-io/badger/v2"
 
@@ -38,8 +36,6 @@ const (
 
 // DkgState is used to track the state of the ETHDKG
 type DkgState struct {
-	sync.RWMutex `json:"-"`
-
 	IsValidator        bool        `json:"isValidator"`
 	Phase              EthDKGPhase `json:"phase"`
 	PhaseLength        uint64      `json:"phaseLength"`
@@ -110,8 +106,6 @@ type DkgState struct {
 	// of elements. This may be used in GPKJGroupAccusation logic.
 	Inverse []*big.Int `json:"inverse"`
 }
-
-var _ interfaces.ITaskState = &DkgState{}
 
 // GetSortedParticipants returns the participant list sorted by Index field
 func (state *DkgState) GetSortedParticipants() ParticipantList {
@@ -232,8 +226,8 @@ func NewDkgState(account accounts.Account) *DkgState {
 	}
 }
 
-func PersistEthDkgState(txn *badger.Txn, logger *logrus.Entry, ethDkgState *DkgState) error {
-	rawData, err := json.Marshal(ethDkgState)
+func (state *DkgState) PersistState(txn *badger.Txn, logger *logrus.Entry) error {
+	rawData, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
@@ -248,22 +242,20 @@ func PersistEthDkgState(txn *badger.Txn, logger *logrus.Entry, ethDkgState *DkgS
 	return nil
 }
 
-func LoadEthDkgState(txn *badger.Txn, logger *logrus.Entry) (*DkgState, error) {
-	ethDkgState := &DkgState{}
-
+func (state *DkgState) LoadState(txn *badger.Txn, logger *logrus.Entry) error {
 	key := dbprefix.PrefixEthDKGState()
 	logger.WithField("Key", string(key)).Infof("Looking up state")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = json.Unmarshal(rawData, ethDkgState)
+	err = json.Unmarshal(rawData, state)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return ethDkgState, nil
+	return nil
 
 }
 

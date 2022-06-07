@@ -3,12 +3,16 @@ package objects
 import (
 	"context"
 	"errors"
+	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/constants"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 	"math/big"
 	"strings"
-	"sync"
-
-	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // ErrCanNotContinue standard error if we must drop out of ETHDKG
@@ -17,20 +21,19 @@ var (
 )
 
 type Task struct {
-	sync.RWMutex
-	Id             string
-	Name           string
-	Start          uint64
-	End            uint64
-	State          interfaces.ITaskState
-	Success        bool
-	Ctx            context.Context
-	CancelFunc     context.CancelFunc `json:"-"`
-	StartBlockHash common.Hash
-	TxOpts         *TxOpts
+	id               string
+	name             string
+	start            uint64
+	end              uint64
+	ctx              context.Context
+	cancelFunc       context.CancelFunc
+	database         *db.Database
+	logger           *logrus.Entry
+	eth              ethereum.Network
+	taskResponseChan interfaces.ITaskResponseChan
+	startBlockHash   common.Hash
+	txOpts           *TxOpts
 }
-
-var _ interfaces.ITaskExecutionData = &Task{}
 
 type TxOpts struct {
 	TxHashes     []common.Hash
@@ -49,64 +52,111 @@ func (to *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewTask(state interfaces.ITaskState, name string, start uint64, end uint64) *Task {
+func NewTask(name string, start uint64, end uint64) *Task {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &Task{
-		Name:       name,
-		State:      state,
-		Start:      start,
-		End:        end,
-		Success:    false,
-		Ctx:        ctx,
-		CancelFunc: cf,
-		TxOpts:     &TxOpts{TxHashes: make([]common.Hash, 0)},
+		name:       name,
+		start:      start,
+		end:        end,
+		ctx:        ctx,
+		cancelFunc: cf,
+		txOpts:     &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
 }
 
+// Initialize default implementation for the ITask interface
+func (t *Task) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan interfaces.ITaskResponseChan) {
+	t.id = id
+	t.ctx = ctx
+	t.cancelFunc = cancelFunc
+	t.database = database
+	t.logger = logger
+	t.eth = eth
+	t.taskResponseChan = taskResponseChan
+}
+
+// GetStart default implementation for the ITask interface
+func (t *Task) GetStart() uint64 {
+	return t.start
+}
+
+// GetEnd default implementation for the ITask interface
+func (t *Task) GetEnd() uint64 {
+	return t.end
+}
+
+// GetName default implementation for the ITask interface
+func (t *Task) GetName() string {
+	return t.name
+}
+
+// Close default implementation for the ITask interface
+func (t *Task) Close() {
+	if t.cancelFunc != nil {
+		t.cancelFunc()
+	}
+}
+
+// Finish default implementation for the ITask interface
+func (t *Task) Finish(err error) {
+	if err != nil {
+		t.logger.WithError(err).Errorf("Id: %s, name: %s task is done", t.id, t.name)
+	} else {
+		t.logger.Infof("Id: %s, name: %s task is done", t.id, t.name)
+	}
+
+	t.taskResponseChan.Add(TaskResponse{Id: t.id, Err: err})
+}
+
+func (t *Task) GetLogger() *logrus.Entry {
+	return t.logger
+}
+
+func (t *Task) GetDB() *db.Database {
+	return t.database
+}
+
+func (t *Task) GetEth() ethereum.Network {
+	return t.eth
+}
+
+func (t *Task) GetCtx() context.Context {
+	return t.ctx
+}
+
+func (t *Task) SetStartBlockHash(startBlockHash []byte) {
+	t.startBlockHash.SetBytes(startBlockHash)
+}
+
 func (t *Task) ClearTxData() {
-	t.Lock()
-	defer t.Unlock()
-	t.TxOpts = &TxOpts{
+	t.txOpts = &TxOpts{
 		TxHashes: make([]common.Hash, 0),
 	}
 }
 
-func (t *Task) GetStart() uint64 {
-	t.RLock()
-	defer t.RUnlock()
-	return t.Start
-}
-
-func (t *Task) GetEnd() uint64 {
-	t.RLock()
-	defer t.RUnlock()
-	return t.End
-}
-
-func (t *Task) GetName() string {
-	t.RLock()
-	defer t.RUnlock()
-	return t.Name
-}
-
-func (t *Task) SetId(id string) {
-	t.Lock()
-	defer t.Unlock()
-	t.Id = id
-}
-
-func (t *Task) SetContext(ctx context.Context, cancel context.CancelFunc) {
-	t.Lock()
-	defer t.Unlock()
-	t.Ctx = ctx
-	t.CancelFunc = cancel
-}
-
-func (t *Task) Close() {
-	t.Lock()
-	defer t.Unlock()
-	if t.CancelFunc != nil {
-		t.CancelFunc()
+func (t *Task) AmILeading(dkgState *state.DkgState) bool {
+	// check if I'm a leader for this task
+	currentHeight, err := t.eth.GetCurrentHeight(t.ctx)
+	if err != nil {
+		return false
 	}
+
+	blocksSinceDesperation := int(currentHeight) - int(t.start) - constants.ETHDKGDesperationDelay
+	amILeading := utils.AmILeading(dkgState.NumberOfValidators, dkgState.Index-1, blocksSinceDesperation, t.startBlockHash.Bytes(), t.logger)
+
+	t.logger.WithFields(logrus.Fields{
+		"currentHeight":                    currentHeight,
+		"t.Start":                          t.start,
+		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
+		"blocksSinceDesperation":           blocksSinceDesperation,
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
+}
+
+type TaskResponse struct {
+	Id  string
+	Err error
 }

@@ -85,7 +85,7 @@ func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log t
 		"Nonce":              event.Nonce,
 		"PhaseLength":        event.PhaseLength,
 		"ConfirmationLength": event.ConfirmationLength,
-		"RegistrationEnd":    registrationTask.GetExecutionData().GetEnd(),
+		"RegistrationEnd":    registrationTask.GetEnd(),
 	}).Info("ETHDKG RegistrationOpened")
 
 	if !dkgState.IsValidator {
