@@ -1,9 +1,9 @@
 package bindings
 
-type IAToken interface {
-	IATokenCaller
-	IATokenTransactor
-	IATokenFilterer
+type IAliceNetFactory interface {
+	IAliceNetFactoryCaller
+	IAliceNetFactoryTransactor
+	IAliceNetFactoryFilterer
 }
 
 type IATokenBurner interface {
@@ -12,22 +12,16 @@ type IATokenBurner interface {
 	IATokenBurnerFilterer
 }
 
+type IAToken interface {
+	IATokenCaller
+	IATokenTransactor
+	IATokenFilterer
+}
+
 type IATokenMinter interface {
 	IATokenMinterCaller
 	IATokenMinterTransactor
 	IATokenMinterFilterer
-}
-
-type IAliceNetFactory interface {
-	IAliceNetFactoryCaller
-	IAliceNetFactoryTransactor
-	IAliceNetFactoryFilterer
-}
-
-type IBToken interface {
-	IBTokenCaller
-	IBTokenTransactor
-	IBTokenFilterer
 }
 
 type IBTokenErrorCodes interface {
@@ -36,10 +30,10 @@ type IBTokenErrorCodes interface {
 	IBTokenErrorCodesFilterer
 }
 
-type IETHDKG interface {
-	IETHDKGCaller
-	IETHDKGTransactor
-	IETHDKGFilterer
+type IBToken interface {
+	IBTokenCaller
+	IBTokenTransactor
+	IBTokenFilterer
 }
 
 type IETHDKGErrorCodes interface {
@@ -48,10 +42,10 @@ type IETHDKGErrorCodes interface {
 	IETHDKGErrorCodesFilterer
 }
 
-type IGovernance interface {
-	IGovernanceCaller
-	IGovernanceTransactor
-	IGovernanceFilterer
+type IETHDKG interface {
+	IETHDKGCaller
+	IETHDKGTransactor
+	IETHDKGFilterer
 }
 
 type IGovernanceErrorCodes interface {
@@ -60,16 +54,16 @@ type IGovernanceErrorCodes interface {
 	IGovernanceErrorCodesFilterer
 }
 
+type IGovernance interface {
+	IGovernanceCaller
+	IGovernanceTransactor
+	IGovernanceFilterer
+}
+
 type IPublicStaking interface {
 	IPublicStakingCaller
 	IPublicStakingTransactor
 	IPublicStakingFilterer
-}
-
-type ISnapshots interface {
-	ISnapshotsCaller
-	ISnapshotsTransactor
-	ISnapshotsFilterer
 }
 
 type ISnapshotsErrorCodes interface {
@@ -78,16 +72,22 @@ type ISnapshotsErrorCodes interface {
 	ISnapshotsErrorCodesFilterer
 }
 
-type IValidatorPool interface {
-	IValidatorPoolCaller
-	IValidatorPoolTransactor
-	IValidatorPoolFilterer
+type ISnapshots interface {
+	ISnapshotsCaller
+	ISnapshotsTransactor
+	ISnapshotsFilterer
 }
 
 type IValidatorPoolErrorCodes interface {
 	IValidatorPoolErrorCodesCaller
 	IValidatorPoolErrorCodesTransactor
 	IValidatorPoolErrorCodesFilterer
+}
+
+type IValidatorPool interface {
+	IValidatorPoolCaller
+	IValidatorPoolTransactor
+	IValidatorPoolFilterer
 }
 
 type IValidatorStaking interface {
