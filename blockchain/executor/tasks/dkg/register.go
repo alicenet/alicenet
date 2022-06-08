@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 )
 
 // RegisterTask contains required state for safely performing a registration
@@ -25,7 +24,7 @@ var _ interfaces.ITask = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Task: objects.NewTask(constants.RegisterTaskName, start, end),
+		Task: objects.NewTask(constants.RegisterTaskName, start, end, false),
 	}
 }
 
@@ -41,7 +40,7 @@ func (t *RegisterTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -57,7 +56,7 @@ func (t *RegisterTask) Prepare() error {
 			dkgState.TransportPrivateKey = priv
 			dkgState.TransportPublicKey = pub
 
-			err = dkgState.PersistState(txn, logger)
+			err = dkgState.PersistState(txn)
 			if err != nil {
 				return err
 			}
@@ -90,7 +89,7 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err = t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -114,14 +113,14 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, error) {
 	return []*types.Transaction{txn}, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *RegisterTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("RegisterTask ShouldExecute")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -131,11 +130,6 @@ func (t *RegisterTask) ShouldExecute() bool {
 
 	eth := t.GetEth()
 	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	if dkgState.Phase != state.RegistrationOpen {
 		return false
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"strings"
 	"sync"
@@ -90,13 +91,9 @@ func NewMonitor(cdb *db.Database,
 	wg := new(sync.WaitGroup)
 	State := objects.NewMonitorState()
 
-	//TODO: What to do with this after adding the new TasksScheduler???
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
-		ctx, cf := context.WithTimeout(context.Background(), constants.MonitorTimeout)
-		defer cf()
-
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(eth, bh, taskRequestChan, ctx, cf)
+		return PersistSnapshot(eth, bh, taskRequestChan, monDB)
 	})
 
 	return &monitor{
@@ -437,11 +434,26 @@ func ProcessEvents(eth ethereum.Network, monitorState *objects.MonitorState, log
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, ctx context.Context, cancel context.CancelFunc) error {
+func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan chan<- interfaces.ITask, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
-	snapshotTask := snapshots.NewSnapshotTask(eth.GetDefaultAccount(), bh, 0, 0, ctx, cancel)
+
+	snapshotState := &state.SnapshotState{
+		Account:     eth.GetDefaultAccount(),
+		BlockHeader: bh,
+	}
+
+	err := monDB.Update(func(txn *badger.Txn) error {
+		err := snapshotState.PersistState(txn)
+		return err
+	})
+
+	if err != nil {
+		return err
+	}
+
+	snapshotTask := snapshots.NewSnapshotTask(0, 0)
 	taskRequestChan <- snapshotTask
 
 	return nil

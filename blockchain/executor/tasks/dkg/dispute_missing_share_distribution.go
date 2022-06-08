@@ -6,7 +6,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -23,7 +22,7 @@ var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end),
+		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end, false),
 	}
 }
 
@@ -76,17 +75,10 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, e
 	return txns, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingShareDistributionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingShareDistributionTask ShouldExecute()")
-
-	ctx := t.GetCtx()
-	eth := t.GetEth()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

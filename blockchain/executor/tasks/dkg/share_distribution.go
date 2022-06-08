@@ -7,7 +7,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -23,7 +22,7 @@ var _ interfaces.ITask = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end),
+		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end, false),
 	}
 }
 
@@ -137,11 +136,6 @@ func (t *ShareDistributionTask) ShouldExecute() bool {
 
 	eth := t.GetEth()
 	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	if dkgState.Phase != state.ShareDistribution {
 		return false
 	}

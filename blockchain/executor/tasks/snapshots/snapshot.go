@@ -1,21 +1,17 @@
 package snapshots
 
 import (
-	"context"
-	"math/big"
+	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
 	dangerousRand "math/rand"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
-
-	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/sirupsen/logrus"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum
@@ -26,124 +22,120 @@ type SnapshotTask struct {
 // asserting that SnapshotTask struct implements interface interfaces.Task
 var _ interfaces.ITask = &SnapshotTask{}
 
-type SnapshotState struct {
-	sync.RWMutex
-	Account     accounts.Account
-	RawBClaims  []byte
-	RawSigGroup []byte
-	BlockHeader *objs.BlockHeader
-}
-
-// asserting that SnapshotState struct implements interface interfaces.ITaskState
-var _ interfaces.ITaskState = &SnapshotState{}
-
-func NewSnapshotTask(account accounts.Account, bh *objs.BlockHeader, start uint64, end uint64, ctx context.Context, cancel context.CancelFunc) *SnapshotTask {
+func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
-		Task: objects.NewTask(&SnapshotState{
-			Account:     account,
-			BlockHeader: bh,
-		}, constants.SnapshotTaskName, start, end),
+		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false),
 	}
-	snapshotTask.SetContext(ctx, cancel)
 
 	return snapshotTask
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-
-	t.State.Lock()
-	defer t.State.Unlock()
-
+// Prepare prepares for work to be done in the SnapshotTask
+func (t *SnapshotTask) Prepare() error {
+	logger := t.GetLogger()
 	logger.Info("CompletionTask Initialize()...")
 
-	taskState, ok := t.State.(*SnapshotState)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
+	snapshotState := &state.SnapshotState{}
+	err := t.GetDB().Update(func(txn *badger.Txn) error {
+		err := snapshotState.LoadState(txn)
+		if err != nil {
+			return err
+		}
 
-	rawBClaims, err := taskState.BlockHeader.BClaims.MarshalBinary()
+		rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
+		if err != nil {
+			logger.Errorf("Unable to marshal block header for snapshot: %v", err)
+			return err
+		}
+
+		snapshotState.RawBClaims = rawBClaims
+		snapshotState.RawSigGroup = snapshotState.BlockHeader.SigGroup
+
+		err = snapshotState.PersistState(txn)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		logger.Errorf("Unable to marshal block header for snapshot: %v", err)
-		return err
+		return dkgUtils.LogReturnErrorf(logger, "SnapshotTask.Prepare(): error during the preparation: %v", err)
 	}
-
-	taskState.RawBClaims = rawBClaims
-	taskState.RawSigGroup = taskState.BlockHeader.SigGroup
 
 	return nil
 }
 
-func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *SnapshotTask) Execute() ([]*types.Transaction, error) {
+	logger := t.GetLogger()
+	logger.Info("SnapshotTask Execute()...")
 
-func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) error {
-
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	taskState, ok := t.State.(*SnapshotState)
-	if !ok {
-		return objects.ErrCanNotContinue
+	snapshotState := &state.SnapshotState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := snapshotState.LoadState(txn)
+		return err
+	})
+	if err != nil {
+		return nil, dkgUtils.LogReturnErrorf(logger, "could not get snapshotState with error %v", err)
 	}
 
+	eth := t.GetEth()
+	ctx := t.GetCtx()
 	dangerousRand.Seed(time.Now().UnixNano())
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return nil, ctx.Err()
 	// wait some random time
 	case <-time.After(time.Duration(n) * time.Second):
 	}
 
 	// someone else already did the snapshot
-	if !t.IsItDone(ctx, logger, eth) {
+	if !t.ShouldExecute() {
 		logger.Debug("Snapshot already sent! Exiting!")
-		return nil
+		return nil, nil
 	}
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, taskState.Account)
+	txnOpts, err := eth.GetTransactionOpts(ctx, snapshotState.Account)
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
 		logger.Debugf("Failed to generate transaction options: %v", err)
-		return err
+		return nil, err
 	}
-	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, taskState.RawSigGroup, taskState.RawBClaims)
+	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
 	if err != nil {
 		logger.Debugf("Failed to send snapshot: %v", err)
 		// TODO: ?we should ignore any revert on contract execution and wait the confirmation delay to try again
 		if strings.Contains(err.Error(), "reverted") {
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
 
-	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
-
 	logger.Info("Snapshot tx succeeded!")
-	return nil
+	return []*types.Transaction{txn}, nil
 }
 
-func (t *SnapshotTask) IsItDone(ctx context.Context, logger *logrus.Entry, eth ethereum.Network) bool {
+// ShouldExecute checks if it makes sense to execute the task
+func (t *SnapshotTask) ShouldExecute() bool {
+	logger := t.GetLogger()
+	logger.Info("SnapshotTask ShouldExecute()...")
 
-	t.RLock()
-	defer t.RUnlock()
-
-	taskState, ok := t.State.(*SnapshotState)
-	if !ok {
-		logger.Error("Invalid conversion of taskState object")
+	snapshotState := &state.SnapshotState{}
+	err := t.GetDB().View(func(txn *badger.Txn) error {
+		err := snapshotState.LoadState(txn)
+		return err
+	})
+	if err != nil {
+		logger.Errorf("could not get snapshotState with error %v", err)
 		return true
 	}
 
-	opts, err := eth.GetCallOpts(ctx, taskState.Account)
+	eth := t.GetEth()
+	ctx := t.GetCtx()
+	opts, err := eth.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
 		logger.Errorf("SnapshotsTask.ShouldExecute() failed to get call options: %v", err)
 		return true
@@ -156,16 +148,9 @@ func (t *SnapshotTask) IsItDone(ctx context.Context, logger *logrus.Entry, eth e
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if taskState.BlockHeader.BClaims.Height != 0 && taskState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
+	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
 		return false
 	}
 
 	return true
-}
-
-func (*SnapshotTask) Finish(logger *logrus.Entry) {
-}
-
-func (t *SnapshotTask) GetExecutionData() interfaces.ITaskExecutionData {
-	return t.Task
 }

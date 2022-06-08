@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	taskUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
@@ -25,7 +24,7 @@ var _ executorInterfaces.ITask = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end),
+		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end, false),
 	}
 }
 
@@ -64,10 +63,6 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, error) {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask Execute()")
 
-	if t.isTaskCompleted() {
-		return nil, nil
-	}
-
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn, t.GetLogger())
@@ -99,40 +94,24 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, error) {
 	return []*types.Transaction{txn}, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *CompletionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask ShouldExecute()")
 
-	generalRetry := taskUtils.GeneralTaskShouldRetry(t.GetCtx(), logger, t.GetEth(), t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
-	if t.isTaskCompleted() {
-		return false
-	}
-
-	logger.Info("CompletionTask ShouldExecute() will retry")
-
-	return true
-}
-
-func (t *CompletionTask) isTaskCompleted() bool {
-	logger := t.GetLogger()
 	eth := t.GetEth()
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(t.GetCtx(), eth.GetDefaultAccount())
 	if err != nil {
 		logger.Debugf("error getting call opts in completion task: %v", err)
-		return false
+		return true
 	}
 	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
 		logger.Debugf("error getting ethdkg phases in completion task: %v", err)
-		return false
+		return true
 	}
 
-	return phase == uint8(state.Completion)
+	return phase != uint8(state.Completion)
 }

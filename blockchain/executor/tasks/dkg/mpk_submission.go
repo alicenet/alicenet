@@ -13,7 +13,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 )
@@ -29,7 +28,7 @@ var _ interfaces.ITask = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end),
+		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end, false),
 	}
 }
 
@@ -146,10 +145,6 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
 		return nil, fmt.Errorf("MPKSubmissionTask.Execute(): error loading dkgState: %v", err)
 	}
 
-	if !t.shouldSubmitMPK(dkgState) {
-		return nil, nil
-	}
-
 	// submit if I'm a leader for this task
 	eth := t.GetEth()
 	ctx := t.GetCtx()
@@ -173,7 +168,7 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
 	return []*types.Transaction{txn}, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *MPKSubmissionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask ShouldExecute()")
@@ -186,13 +181,6 @@ func (t *MPKSubmissionTask) ShouldExecute() bool {
 	if err != nil {
 		logger.Errorf("could not get dkgState with error %v", err)
 		return true
-	}
-
-	eth := t.GetEth()
-	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
 	}
 
 	if dkgState.Phase != state.MPKSubmission {

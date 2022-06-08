@@ -8,13 +8,11 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtil "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 // DisputeShareDistributionTask stores the data required to dispute shares
@@ -28,7 +26,7 @@ var _ interfaces.ITask = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end),
+		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end, false),
 	}
 }
 
@@ -164,18 +162,13 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, error) {
 	return txns, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeShareDistributionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("DisputeShareDistributionTask ShouldExecute()")
 
 	ctx := t.GetCtx()
 	eth := t.GetEth()
-	generalRetry := exUtil.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn, t.GetLogger())
@@ -200,11 +193,6 @@ func (t *DisputeShareDistributionTask) ShouldExecute() bool {
 		logger.Error(fmt.Sprintf("DisputeShareDistribution.ShouldExecute() could not get BadParticipants: %v", err))
 		return true
 	}
-
-	logger.WithFields(logrus.Fields{
-		"state.BadShares":     len(dkgState.BadShares),
-		"eth.badParticipants": badParticipants,
-	}).Debug("DisputeShareDistributionTask ShouldExecute()")
 
 	// if there is someone that wasn't accused we need to retry
 	return len(dkgState.BadShares) != int(badParticipants.Int64())

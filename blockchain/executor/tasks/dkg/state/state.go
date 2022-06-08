@@ -226,25 +226,22 @@ func NewDkgState(account accounts.Account) *DkgState {
 	}
 }
 
-func (state *DkgState) PersistState(txn *badger.Txn, logger *logrus.Entry) error {
+func (state *DkgState) PersistState(txn *badger.Txn) error {
 	rawData, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
 
 	key := dbprefix.PrefixEthDKGState()
-	logger.WithField("Key", string(key)).Infof("Saving state")
 	if err = utils.SetValue(txn, key, rawData); err != nil {
-		logger.Error("Failed to set Value")
 		return err
 	}
 
 	return nil
 }
 
-func (state *DkgState) LoadState(txn *badger.Txn, logger *logrus.Entry) error {
+func (state *DkgState) LoadState(txn *badger.Txn) error {
 	key := dbprefix.PrefixEthDKGState()
-	logger.WithField("Key", string(key)).Infof("Looking up state")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {
 		return err

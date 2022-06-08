@@ -18,15 +18,20 @@ type ITask interface {
 	ShouldExecute() bool
 	Finish(err error)
 	Close()
+	GetId() string
 	GetStart() uint64
 	GetEnd() uint64
 	GetName() string
+	GetAllowMultiExecution() bool
+	GetCtx() context.Context
+	GetEth() ethereum.Network
+	GetLogger() *logrus.Entry
 }
 
 // ITaskState the interface requirements of a task state
 type ITaskState interface {
-	PersistState(txn *badger.Txn, logger *logrus.Entry) error
-	LoadState(txn *badger.Txn, logger *logrus.Entry) error
+	PersistState(txn *badger.Txn) error
+	LoadState(txn *badger.Txn) error
 }
 
 // ITaskResponseChan the interface requirements of a task response chan

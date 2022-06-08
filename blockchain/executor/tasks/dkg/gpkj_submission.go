@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,7 @@ var _ interfaces.ITask = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end),
+		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false),
 		adminHandler: adminHandler,
 	}
 }
@@ -128,7 +127,7 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, error) {
 	return []*types.Transaction{txn}, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *GPKjSubmissionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("GPKjSubmissionTask ShouldExecute()")
@@ -145,11 +144,6 @@ func (t *GPKjSubmissionTask) ShouldExecute() bool {
 
 	eth := t.GetEth()
 	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	if dkgState.Phase != state.GPKJSubmission {
 		return false
 	}

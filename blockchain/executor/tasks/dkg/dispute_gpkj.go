@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +28,7 @@ var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end),
+		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end, false),
 	}
 }
 
@@ -172,7 +171,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, error) {
 	return txns, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeGPKjTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("DisputeGPKjTask ShouldExecute()")
@@ -189,11 +188,6 @@ func (t *DisputeGPKjTask) ShouldExecute() bool {
 
 	eth := t.GetEth()
 	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	if dkgState.Phase != state.DisputeGPKJSubmission {
 		return false
 	}

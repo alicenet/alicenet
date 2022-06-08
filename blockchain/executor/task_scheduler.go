@@ -197,6 +197,10 @@ func (s *TasksScheduler) eventLoop() {
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to startTasks %d", s.LastHeightSeen)
 			}
+			err = s.persistState()
+			if err != nil {
+				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
+			}
 
 			err = s.killTasks(ctx, expired)
 			if err != nil {
@@ -211,6 +215,7 @@ func (s *TasksScheduler) eventLoop() {
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
 			}
+			processingTime = time.After(3 * time.Second)
 		}
 	}
 }
@@ -265,13 +270,10 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			task := tasks[i]
 			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetName())
 
-			//TODO: move this to Initialize method before start the task
-			//taskCtx, taskCancelFunc := context.WithCancel(ctx)
-			//task.Task.GetExecutionData().SetContext(taskCtx, taskCancelFunc)
-			//task.Task.GetExecutionData().SetId(task.Id)
+			go ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan)
 
-			//TODO: run the task in a go routine
 			task.IsRunning = true
+			s.Schedule[task.Id] = task
 		}
 
 	}
@@ -350,7 +352,11 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []Ta
 		if ((taskRequest.Start == 0 && taskRequest.End == 0) ||
 			(taskRequest.Start != 0 && taskRequest.Start <= s.LastHeightSeen && taskRequest.End == 0) ||
 			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && !taskRequest.IsRunning {
-			toStart = append(toStart, taskRequest)
+
+			if taskRequest.Task.GetAllowMultiExecution() ||
+				(!taskRequest.Task.GetAllowMultiExecution() && len(s.findRunningTasksByName(taskRequest.Task.GetName())) == 0) {
+				toStart = append(toStart, taskRequest)
+			}
 			continue
 		}
 	}
@@ -362,6 +368,17 @@ func (s *TasksScheduler) findTasksByName(taskName string) []TaskRequestInfo {
 
 	for _, taskRequest := range s.Schedule {
 		if taskRequest.Task.GetName() == taskName {
+			tasks = append(tasks, taskRequest)
+		}
+	}
+	return tasks
+}
+
+func (s *TasksScheduler) findRunningTasksByName(taskName string) []TaskRequestInfo {
+	tasks := make([]TaskRequestInfo, 0)
+
+	for _, taskRequest := range s.Schedule {
+		if taskRequest.Task.GetName() == taskName && taskRequest.IsRunning {
 			tasks = append(tasks, taskRequest)
 		}
 	}

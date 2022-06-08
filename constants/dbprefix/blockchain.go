@@ -11,3 +11,7 @@ func PrefixMonitorState() []byte {
 func PrefixEthDKGState() []byte {
 	return []byte("ethDkgStateKey")
 }
+
+func PrefixSnapshotState() []byte {
+	return []byte("snapshotStateKey")
+}

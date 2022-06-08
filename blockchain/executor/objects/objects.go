@@ -21,18 +21,19 @@ var (
 )
 
 type Task struct {
-	id               string
-	name             string
-	start            uint64
-	end              uint64
-	ctx              context.Context
-	cancelFunc       context.CancelFunc
-	database         *db.Database
-	logger           *logrus.Entry
-	eth              ethereum.Network
-	taskResponseChan interfaces.ITaskResponseChan
-	startBlockHash   common.Hash
-	txOpts           *TxOpts
+	id                  string
+	name                string
+	start               uint64
+	end                 uint64
+	allowMultiExecution bool
+	ctx                 context.Context
+	cancelFunc          context.CancelFunc
+	database            *db.Database
+	logger              *logrus.Entry
+	eth                 ethereum.Network
+	taskResponseChan    interfaces.ITaskResponseChan
+	startBlockHash      common.Hash
+	txOpts              *TxOpts
 }
 
 type TxOpts struct {
@@ -52,16 +53,17 @@ func (to *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewTask(name string, start uint64, end uint64) *Task {
+func NewTask(name string, start uint64, end uint64, allowMultiExecution bool) *Task {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &Task{
-		name:       name,
-		start:      start,
-		end:        end,
-		ctx:        ctx,
-		cancelFunc: cf,
-		txOpts:     &TxOpts{TxHashes: make([]common.Hash, 0)},
+		name:                name,
+		start:               start,
+		end:                 end,
+		allowMultiExecution: allowMultiExecution,
+		ctx:                 ctx,
+		cancelFunc:          cf,
+		txOpts:              &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
 }
 
@@ -74,6 +76,11 @@ func (t *Task) Initialize(ctx context.Context, cancelFunc context.CancelFunc, da
 	t.logger = logger
 	t.eth = eth
 	t.taskResponseChan = taskResponseChan
+}
+
+// GetId default implementation for the ITask interface
+func (t *Task) GetId() string {
+	return t.id
 }
 
 // GetStart default implementation for the ITask interface
@@ -89,6 +96,26 @@ func (t *Task) GetEnd() uint64 {
 // GetName default implementation for the ITask interface
 func (t *Task) GetName() string {
 	return t.name
+}
+
+// GetAllowMultiExecution default implementation for the ITask interface
+func (t *Task) GetAllowMultiExecution() bool {
+	return t.allowMultiExecution
+}
+
+// GetCtx default implementation for the ITask interface
+func (t *Task) GetCtx() context.Context {
+	return t.ctx
+}
+
+// GetEth default implementation for the ITask interface
+func (t *Task) GetEth() ethereum.Network {
+	return t.eth
+}
+
+// GetLogger default implementation for the ITask interface
+func (t *Task) GetLogger() *logrus.Entry {
+	return t.logger
 }
 
 // Close default implementation for the ITask interface
@@ -109,20 +136,8 @@ func (t *Task) Finish(err error) {
 	t.taskResponseChan.Add(TaskResponse{Id: t.id, Err: err})
 }
 
-func (t *Task) GetLogger() *logrus.Entry {
-	return t.logger
-}
-
 func (t *Task) GetDB() *db.Database {
 	return t.database
-}
-
-func (t *Task) GetEth() ethereum.Network {
-	return t.eth
-}
-
-func (t *Task) GetCtx() context.Context {
-	return t.ctx
 }
 
 func (t *Task) SetStartBlockHash(startBlockHash []byte) {

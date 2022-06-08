@@ -10,7 +10,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 )
 
 // KeyShareSubmissionTask is the task for submitting Keyshare information
@@ -24,7 +23,7 @@ var _ interfaces.ITask = &KeyShareSubmissionTask{}
 // NewKeyShareSubmissionTask creates a new task
 func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end),
+		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end, false),
 	}
 }
 
@@ -120,7 +119,7 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, error) {
 	return []*types.Transaction{txn}, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *KeyShareSubmissionTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("KeyShareSubmissionTask ShouldExecute()")
@@ -137,11 +136,6 @@ func (t *KeyShareSubmissionTask) ShouldExecute() bool {
 
 	eth := t.GetEth()
 	ctx := t.GetCtx()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
-	}
-
 	me := dkgState.Account
 	callOpts, err := eth.GetCallOpts(ctx, me)
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	exUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,7 +24,7 @@ var _ interfaces.ITask = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		Task: objects.NewTask(constants.DisputeMissingKeySharesTaskName, start, end),
+		Task: objects.NewTask(constants.DisputeMissingKeySharesTaskName, start, end, false),
 	}
 }
 
@@ -78,7 +77,7 @@ func (t *DisputeMissingKeySharesTask) Execute() ([]*types.Transaction, error) {
 	return txns, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingKeySharesTask) ShouldExecute() bool {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingKeySharesTask ShouldExecute()")
@@ -91,13 +90,6 @@ func (t *DisputeMissingKeySharesTask) ShouldExecute() bool {
 	if err != nil {
 		logger.Errorf("DisputeMissingKeySharesTask.ShouldExecute(): error loading dkgState: %v", err)
 		return true
-	}
-
-	ctx := t.GetCtx()
-	eth := t.GetEth()
-	generalRetry := exUtils.GeneralTaskShouldRetry(ctx, logger, eth, t.GetStart(), t.GetEnd())
-	if !generalRetry {
-		return false
 	}
 
 	if dkgState.Phase != state.KeyShareSubmission {

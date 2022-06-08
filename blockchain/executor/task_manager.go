@@ -2,156 +2,108 @@ package executor
 
 import (
 	"context"
-	"errors"
-	"sync"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/ethereum"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	"github.com/MadBase/MadNet/blockchain/executor/objects"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
-var (
-	ErrUnknownTaskName = errors.New("unknown task name")
-	ErrUnknownTaskType = errors.New("unknown task type")
-)
+func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan) {
+	taskCtx, taskCancelFunc := context.WithCancel(ctx)
+	taskLogger := logger.WithField("TaskName", task.GetName())
 
-const NonceToLowError = "nonce too low"
+	task.Initialize(taskCtx, taskCancelFunc, database, taskLogger, eth, task.GetId(), taskResponseChan)
+	defer task.Close()
 
-func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth ethereum.Network, task executorInterfaces.ITask, persistStateCB func(), onFinishCB func()) error {
+	retryCount := int(constants.MonitorRetryCount)
+	retryDelay := constants.MonitorRetryDelay
 
-	wg.Add(1)
-	go func() {
-		defer task.Finish(logger.WithField("Method", "Finish"))
-		if onFinishCB != nil {
-			defer onFinishCB()
-		}
-		defer wg.Done()
-
-		retryCount := int(constants.MonitorRetryCount)
-		retryDelay := constants.MonitorRetryDelay
-		logger.WithFields(logrus.Fields{
-			"RetryCount": retryCount,
-			"RetryDelay": retryDelay,
-		}).Info("StartTask()...")
-
-		// Setup
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		initializationLogger := logger.WithField("Method", "Initialize")
-		err := initializeTask(ctx, logger, eth, task, retryCount, retryDelay)
-		if err != nil {
-			initializationLogger.Errorf("Failed to initialize task: %v", err)
-			return
-		}
-
-		workLogger := logger.WithField("Method", "Execute")
-		err = executeTask(ctx, workLogger, eth, task, retryCount, retryDelay)
-		if err != nil {
-			workLogger.Error("Failed to execute task ", err)
-			return
-		}
-
-		dkgLogger := logger.WithField("Method", "handleExecutedTask")
-		err = handleExecutedTask(ctx, dkgLogger, eth, task)
-		if err != nil {
-			dkgLogger.Error("Failed to execute handleExecutedTask ", err)
-		}
-	}()
-
-	return nil
-}
-
-// initializeTask initialize the Task and retry if needed
-func initializeTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
-	var count int
-	var err error
-
-	err = task.Initialize(ctx, logger, eth)
-	for err != nil && count < retryCount {
-		if errors.Is(err, objects.ErrCanNotContinue) {
-			return err
-		}
-
-		err = sleepWithContext(ctx, retryDelay)
-		if err != nil {
-			return err
-		}
-
-		err = task.Initialize(ctx, logger, eth)
-		count++
-	}
-
-	return err
-}
-
-// executeTask execute the Task and retry if needed
-func executeTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
-	// Clearing TxOpts used for tx gas and nonce replacement
-	clearTxOpts(task)
-	err := task.Execute(ctx, logger, eth)
+	err := prepareTask(task, retryCount, retryDelay)
 	if err != nil {
-		retryLogger := logger.WithField("Method", "DoRetry")
-		err = retryTask(ctx, retryLogger, eth, task, retryCount, retryDelay)
+		task.Finish(err)
 	}
 
-	return err
+	txns, err := executeTask(task, retryCount, retryDelay)
+	if err != nil {
+		task.Finish(err)
+	}
+
+	if len(txns) > 0 {
+		//TODO: add interaction with txWatcher
+	}
 }
 
-func retryTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, retryCount int, retryDelay time.Duration) error {
+// prepareTask executes task preparation
+func prepareTask(task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
 	var count int
 	var err error
-	for count < retryCount && task.ShouldExecute(ctx, logger, eth) {
-		err = sleepWithContext(ctx, retryDelay)
-		if err != nil {
-			return err
-		}
+	ctx := task.GetCtx()
 
-		err = task.DoRetry(ctx, logger, eth)
-		if err == nil {
-			break
-		} else if errors.Is(err, objects.ErrCanNotContinue) {
-			return err
-		} else if err.Error() == NonceToLowError {
-			// if we receive "nonce too low" it means that the tx was already mined
-			// as a success or a fail. If is a fail we should restart with a new nonce
-			clearTxOpts(task)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		err = task.Prepare()
+		for err != nil && count < retryCount {
+			err = sleepWithContext(ctx, retryDelay)
+			if err != nil {
+				return err
+			}
+
+			err = task.Prepare()
+			count++
 		}
-		count++
 	}
 
 	return err
 }
 
-func retryTaskWithFeeReplacement(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask, execData *objects.Task, retryCount int, retryDelay time.Duration) error {
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": execData.TxOpts.GasFeeCap,
-		"GasTipCap": execData.TxOpts.GasTipCap,
-		"Nonce":     execData.TxOpts.Nonce,
-	}).Info("retryTaskWithFeeReplacementFrom")
+// executeTask executes task business logic
+func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration) ([]*types.Transaction, error) {
+	var count int
+	var err error
+	txns := make([]*types.Transaction, 0)
+	ctx := task.GetCtx()
 
-	// increase gas and tip cap
-	gasFeeCap, gasTipCap := transaction.IncreaseFeeAndTipCap(
-		execData.TxOpts.GasFeeCap,
-		execData.TxOpts.GasTipCap,
-		eth.GetTxMaxGasFeeAllowedInGwei())
-	execData.TxOpts.GasFeeCap = gasFeeCap
-	execData.TxOpts.GasTipCap = gasTipCap
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		if shouldExecute(task) {
+			txns, err = task.Execute()
+			for err != nil && count < retryCount && shouldExecute(task) {
+				err = sleepWithContext(ctx, retryDelay)
+				if err != nil {
+					return nil, err
+				}
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": execData.TxOpts.GasFeeCap,
-		"GasTipCap": execData.TxOpts.GasTipCap,
-		"Nonce":     execData.TxOpts.Nonce,
-	}).Info("retryTaskWithFeeReplacementTo")
+				txns, err = task.Execute()
+				count++
+			}
+		}
+	}
 
-	return retryTask(ctx, logger, eth, task, retryCount, retryDelay)
+	return txns, err
+}
+
+func shouldExecute(task interfaces.ITask) bool {
+	// Make sure we're in the right block range to continue
+	currentBlock, err := task.GetEth().GetCurrentHeight(task.GetCtx())
+	if err != nil {
+		// This probably means an endpoint issue, so we have to try again
+		task.GetLogger().Warnf("could not check current height of chain: %v", err)
+		return true
+	}
+
+	end := task.GetEnd()
+	if end > 0 && end < currentBlock {
+		return false
+	}
+
+	return task.ShouldExecute()
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {
@@ -160,186 +112,5 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 		return ctx.Err()
 	case <-time.After(delay):
 		return nil
-	}
-}
-
-// handleExecutedTask responsibilities:
-// if the Tx was mined wait for FinalityDelay to confirm the Tx
-// if the Tx wasn't mined during the txTimeoutForReplacement we increase the Fee
-// to make sure the Tx will have priority for the next mined blocks
-func handleExecutedTask(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, task executorInterfaces.ITask) error {
-	// TxOpts or TxHash are empty means that no tx was queued, this could happen
-	// if there's nobody to accuse during the dispute
-	execData, ok := task.GetExecutionData().(*objects.Task)
-	if !ok || execData.TxOpts == nil || execData.TxOpts.TxHashes == nil || len(execData.TxOpts.TxHashes) == 0 {
-		return nil
-	}
-
-	currentBlock, err := eth.GetCurrentHeight(ctx)
-	if err != nil {
-		return utils.LogReturnErrorf(logger, "failed to get current height %v", err)
-	}
-
-	retryCount := int(constants.MonitorRetryCount)
-	retryDelay := constants.MonitorRetryDelay
-	txCheckFrequency := 1 * time.Second
-	txTimeoutForReplacement := 10 * time.Second
-	txReplacement := getTxReplacementTime(txTimeoutForReplacement)
-	taskEnd := execData.End
-
-	logger.WithFields(logrus.Fields{
-		"currentBlock":            currentBlock,
-		"retryCount":              retryCount,
-		"retryDelay":              retryDelay,
-		"txCheckFrequency":        txCheckFrequency,
-		"txTimeoutForReplacement": txTimeoutForReplacement,
-		"txReplacement":           txReplacement,
-		"taskEnd":                 taskEnd,
-	}).Info("handleExecutedTask()...")
-
-	var isTxConfirmed bool
-	for currentBlock < taskEnd && len(execData.TxOpts.TxHashes) != 0 && !isTxConfirmed {
-		err = sleepWithContext(ctx, txCheckFrequency)
-		if err != nil {
-			return err
-		}
-
-		isTxMined, receipt := isTxMined(ctx, logger, eth, execData.TxOpts.TxHashes)
-		if isTxMined {
-			// the transaction was successful and mined
-			execData.TxOpts.MinedInBlock = receipt.BlockNumber.Uint64()
-			logger.Infof("the tx %s was mined on height %d", execData.TxOpts.GetHexTxsHashes(), execData.TxOpts.MinedInBlock)
-
-			isTxConfirmed, err = waitForFinalityDelay(ctx, logger, eth, execData.TxOpts.TxHashes, eth.GetFinalityDelay(), execData.TxOpts.MinedInBlock, txCheckFrequency)
-			if err != nil {
-				return utils.LogReturnErrorf(logger, "failed to retry task with error %v", err)
-			}
-			if isTxConfirmed {
-				logger.Infof("the tx %s is confirmed %t on height %d", execData.TxOpts.GetHexTxsHashes(), isTxMined, currentBlock)
-				break
-			}
-
-			// if Tx wasn't confirmed after being mined we execute task again
-			err = executeTask(ctx, logger, eth, task, retryCount, retryDelay)
-			if err != nil {
-				return utils.LogReturnErrorf(logger, "failed to retry task with error %v", err)
-			}
-			// set new Tx replacement time
-			txReplacement = getTxReplacementTime(txTimeoutForReplacement)
-		} else {
-			//if tx wasn't mined, check if we should replace
-			logger.Infof("the tx %s was not mined", execData.TxOpts.GetHexTxsHashes())
-
-			if time.Now().After(txReplacement) {
-				logger.Infof("tx timed out: replacing tx %s with higher fee", execData.TxOpts.GetHexTxsHashes())
-
-				err = retryTaskWithFeeReplacement(ctx, logger, eth, task, execData, retryCount, retryDelay)
-				if err != nil {
-					return utils.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
-				}
-				// set new Tx replacement time
-				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
-			} else if receipt != nil && receipt.Status != uint64(1) {
-				logger.Infof("tx timed out: recreating tx %s", execData.TxOpts.GetHexTxsHashes())
-
-				// if the receipt indicates tx failed, then retry creating new tx
-				clearTxOpts(task)
-				err = retryTask(ctx, logger, eth, task, retryCount, retryDelay)
-				if err != nil {
-					return utils.LogReturnErrorf(logger, "failed to replace tx with hash %s and error %v", execData.TxOpts.GetHexTxsHashes(), err)
-				}
-				// set new Tx replacement time
-				txReplacement = getTxReplacementTime(txTimeoutForReplacement)
-			}
-		}
-
-		//update the currentBlock
-		currentBlock, err = eth.GetCurrentHeight(ctx)
-		if err != nil {
-			return utils.LogReturnErrorf(logger, "failed to get current height %v", err)
-		}
-	}
-
-	logger.Infof("the tx %s was confirmed %t", execData.TxOpts.GetHexTxsHashes(), isTxConfirmed)
-
-	return nil
-}
-
-func waitForFinalityDelay(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, txHashes []common.Hash, finalityDelay, txMinedInBlock uint64, txCheckFrequency time.Duration) (bool, error) {
-	var err error
-	currentBlock := txMinedInBlock
-	confirmationBlock := txMinedInBlock + finalityDelay
-
-	logger.WithFields(logrus.Fields{
-		"currentBlock":      currentBlock,
-		"confirmationBlock": confirmationBlock,
-		"txCheckFrequency":  txCheckFrequency,
-	}).Info("waitForFinalityDelay()...")
-
-	// waiting for confirmation block
-	for currentBlock < confirmationBlock {
-		err = sleepWithContext(ctx, txCheckFrequency)
-		if err != nil {
-			return false, err
-		}
-
-		//update the currentBlock
-		currentBlock, err = eth.GetCurrentHeight(ctx)
-		if err != nil {
-			return false, utils.LogReturnErrorf(logger, "failed to get current height %v", err)
-		}
-	}
-
-	isTxMined, _ := isTxMined(ctx, logger, eth, txHashes)
-
-	return isTxMined, nil
-}
-
-func isTxMined(ctx context.Context, logger *logrus.Entry, eth ethereum.Network, txHashes []common.Hash) (bool, *types.Receipt) {
-	var receipt *types.Receipt
-	var err error
-	var isTxPending bool
-	for _, txHash := range txHashes {
-		//check tx is pending
-		_, isTxPending, err = eth.GetInternalClient().TransactionByHash(ctx, txHash)
-		if err != nil {
-			logger.Errorf("failed to get tx with hash %s wit error %v", txHash.Hex(), err)
-			return false, nil
-		}
-
-		if isTxPending {
-			return false, nil
-		}
-
-		//if tx was mined we can check the receipt
-		receipt, err = eth.GetInternalClient().TransactionReceipt(ctx, txHash)
-		if err != nil {
-			logger.Errorf("failed to get receipt for tx %s with error %s ", txHash.Hex(), err.Error())
-			return false, nil
-		}
-
-		if receipt == nil {
-			logger.Errorf("missing receipt for tx %s", txHash.Hex())
-			return false, nil
-		}
-
-		// Check receipt to confirm we were successful
-		if receipt.Status != uint64(1) {
-			logger.Errorf("receipt status indicates failure: %v for tx %s", receipt.Status, txHash.Hex())
-			return false, receipt
-		}
-	}
-
-	return true, receipt
-}
-
-func getTxReplacementTime(timeoutForReplacement time.Duration) time.Time {
-	return time.Now().Add(timeoutForReplacement)
-}
-
-func clearTxOpts(task executorInterfaces.ITask) {
-	execData, ok := task.GetExecutionData().(*objects.Task)
-	if ok && execData != nil {
-		execData.ClearTxData()
 	}
 }
