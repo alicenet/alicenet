@@ -5,12 +5,4 @@ runs:
   steps:
     - uses: ./.github/actions/node-cache
     - uses: ./.github/actions/golang-cache
-    - run: go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.8
-      shell: bash
-    - run: go install github.com/vburenin/ifacemaker@v1.1.0
-      shell: bash
-    - uses: ./.github/actions/smart-contract-cache
-      with:
-        execution-folder: "./bridge"
-    - uses: ./.github/actions/alicenet-cache
     - uses: ./.github/actions/geth-eth-cache

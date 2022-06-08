@@ -25,9 +25,7 @@ bin
 .openzeppelin/.session
 
 deployments/*
-bindings/*
 bindings-artifacts/*
-bindings/generate.go
 !deployments/dev/deploymentArgsTemplate.json
 !deployments/dev/deployList.json
 **/generated/*

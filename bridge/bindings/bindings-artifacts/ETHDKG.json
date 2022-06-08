@@ -1,0 +1,1012 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2]",
+        "name": "publicKey",
+        "type": "uint256[2]"
+      }
+    ],
+    "name": "AddressRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "GPKJSubmissionComplete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "KeyShareSubmissionComplete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2]",
+        "name": "keyShareG1",
+        "type": "uint256[2]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2]",
+        "name": "keyShareG1CorrectnessProof",
+        "type": "uint256[2]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[4]",
+        "name": "keyShareG2",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "KeyShareSubmitted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[4]",
+        "name": "mpk",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "MPKSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "RegistrationComplete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "startBlock",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "numberValidators",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "phaseLength",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "confirmationLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "RegistrationOpened",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "ShareDistributionComplete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "encryptedShares",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2][]",
+        "name": "commitments",
+        "type": "uint256[2][]"
+      }
+    ],
+    "name": "SharesDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "epoch",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "share0",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "share1",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "share2",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "share3",
+        "type": "uint256"
+      }
+    ],
+    "name": "ValidatorMemberAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "validatorCount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "epoch",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "ethHeight",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "aliceNetHeight",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "groupKey0",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "groupKey1",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "groupKey2",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "groupKey3",
+        "type": "uint256"
+      }
+    ],
+    "name": "ValidatorSetCompleted",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "dishonestAddresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "accuseParticipantDidNotDistributeShares",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "dishonestAddresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "accuseParticipantDidNotSubmitGPKJ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "dishonestAddresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "accuseParticipantDidNotSubmitKeyShares",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "dishonestAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "encryptedShares",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[2][]",
+        "name": "commitments",
+        "type": "uint256[2][]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "sharedKey",
+        "type": "uint256[2]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "sharedKeyCorrectnessProof",
+        "type": "uint256[2]"
+      }
+    ],
+    "name": "accuseParticipantDistributedBadShares",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "dishonestAddresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "accuseParticipantNotRegistered",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "validators",
+        "type": "address[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "encryptedSharesHash",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint256[2][][]",
+        "name": "commitments",
+        "type": "uint256[2][][]"
+      },
+      {
+        "internalType": "address",
+        "name": "dishonestAddress",
+        "type": "address"
+      }
+    ],
+    "name": "accuseParticipantSubmittedBadGPKJ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "complete",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "encryptedShares",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[2][]",
+        "name": "commitments",
+        "type": "uint256[2][]"
+      }
+    ],
+    "name": "distributeShares",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getBadParticipants",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getConfirmationLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getETHDKGPhase",
+    "outputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMasterPublicKey",
+    "outputs": [
+      {
+        "internalType": "uint256[4]",
+        "name": "",
+        "type": "uint256[4]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMasterPublicKeyHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_factory",
+        "type": "address"
+      }
+    ],
+    "name": "getMetamorphicContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMinValidators",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getNonce",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getNumParticipants",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "getParticipantInternalState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256[2]",
+            "name": "publicKey",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "index",
+            "type": "uint64"
+          },
+          {
+            "internalType": "enum Phase",
+            "name": "phase",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "distributedSharesHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "commitmentsFirstCoefficient",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "keyShares",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint256[4]",
+            "name": "gpkj",
+            "type": "uint256[4]"
+          }
+        ],
+        "internalType": "struct Participant",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "participantAddresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "getParticipantsInternalState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256[2]",
+            "name": "publicKey",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "index",
+            "type": "uint64"
+          },
+          {
+            "internalType": "enum Phase",
+            "name": "phase",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "distributedSharesHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "commitmentsFirstCoefficient",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "keyShares",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint256[4]",
+            "name": "gpkj",
+            "type": "uint256[4]"
+          }
+        ],
+        "internalType": "struct Participant[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPhaseLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPhaseStartBlock",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "phaseLength_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "confirmationLength_",
+        "type": "uint256"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initializeETHDKG",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isETHDKGCompleted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isETHDKGHalted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isETHDKGRunning",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isMasterPublicKeySet",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "validatorsAccounts_",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "validatorIndexes_",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[4][]",
+        "name": "validatorShares_",
+        "type": "uint256[4][]"
+      },
+      {
+        "internalType": "uint8",
+        "name": "validatorCount_",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "epoch_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "sideChainHeight_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ethHeight_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[4]",
+        "name": "masterPublicKey_",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "migrateValidators",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[2]",
+        "name": "publicKey",
+        "type": "uint256[2]"
+      }
+    ],
+    "name": "register",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "confirmationLength_",
+        "type": "uint16"
+      }
+    ],
+    "name": "setConfirmationLength",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "aliceNetHeight",
+        "type": "uint256"
+      }
+    ],
+    "name": "setCustomAliceNetHeight",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "phaseLength_",
+        "type": "uint16"
+      }
+    ],
+    "name": "setPhaseLength",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[4]",
+        "name": "gpkj",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "submitGPKJ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[2]",
+        "name": "keyShareG1",
+        "type": "uint256[2]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "keyShareG1CorrectnessProof",
+        "type": "uint256[2]"
+      },
+      {
+        "internalType": "uint256[4]",
+        "name": "keyShareG2",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "submitKeyShare",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[4]",
+        "name": "masterPublicKey_",
+        "type": "uint256[4]"
+      }
+    ],
+    "name": "submitMasterPublicKey",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "tryGetParticipantIndex",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
