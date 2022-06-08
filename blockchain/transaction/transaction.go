@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -75,13 +75,48 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type info struct {
-	ctx                     context.Context                           // ctx used for calling the monitoring a certain tx
-	txn                     *types.Transaction                        // Transaction object
-	selector                objects.FuncSelector                      // 4 bytes that identify the function being called by the tx
-	functionSignature       string                                    // function signature as we see on the smart contracts
-	startedMonitoringHeight uint64                                    // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ResponseChannel[objects.ReceiptResponse] // channel where the response will be sent
+	ctx                     context.Context                                // ctx used for calling the monitoring a certain tx
+	txn                     *types.Transaction                             // Transaction object
+	selector                objects.FuncSelector                           // 4 bytes that identify the function being called by the tx
+	functionSignature       string                                         // function signature as we see on the smart contracts
+	startedMonitoringHeight uint64                                         // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
+	receiptResponseChannel  *ResponseChannel[objects.ReceiptResponse]      // channel where the response will be sent
+	txRetryChannel          chan *ResponseChannel[objects.ReceiptResponse] // todo: buffered channel?
+	retryAmount             uint64                                         // counter to indicate how many times a transaction was retried. Most of the time should never be greater than 1.
+	//todo:fromAddr here?
 }
+
+// type subscriber struct {
+// 	chs            []*ResponseChannel[objects.ReceiptResponse]
+// 	txRetryChannel chan *ResponseChannel[objects.ReceiptResponse]
+// }
+
+// func (s *subscriber) Test() {
+// 	for {
+// 		select {
+// 		case newChannel, ok := <-s.txRetryChannel:
+// 			if !ok {
+// 				return //?
+// 			}
+// 			s.chs = append(s.chs, newChannel)
+// 		default:
+// 		}
+
+// 		// todo: handle case 1 channel
+// 		// todo: mainCtx
+// 		for _, ch := range s.chs {
+// 			select {
+// 			case resp := <-ch.channel:
+// 				if resp.Err != nil && resp.Receipt != nil {
+// 					return // got a receipt
+// 				}
+// 			default:
+// 			}
+// 		}
+
+// 	}
+
+// }
 
 // Internal struct to keep track of the receipts
 type receipt struct {
@@ -173,15 +208,22 @@ type Profile struct {
 // Internal struct used to send work requests to the workers that will retrieve
 // the receipts
 type MonitorWorkRequest struct {
-	txn    info   // TransactionInfo object that contains the state that will be used to retrieve the receipt from the blockchain
+	txn    info   // Info object that contains the state that will be used to retrieve the receipt from the blockchain
 	height uint64 // Current height of the blockchain head
 }
 
 // Internal struct used by the workers to communicate the result from the receipt retrieval work
 type MonitorWorkResponse struct {
-	txnHash common.Hash    // hash of transaction
-	err     error          // any error found during the receipt retrieve (can be NonRecoverable, Recoverable or TransactionState errors)
-	receipt *types.Receipt // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
+	txnHash    common.Hash         // hash of transaction
+	retriedTxn *retriedTransaction // transaction info object from the analyzed transaction
+	err        error               // any error found during the receipt retrieve (can be NonRecoverable, Recoverable or TransactionState errors)
+	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
+}
+
+// Internal struct to keep track of retried transaction by the workers
+type retriedTransaction struct {
+	txn *types.Transaction // new transaction after the retry attempt
+	err error              // error that happened during the transaction retry
 }
 
 // Backend struct used to monitor Ethereum transactions and retrieve their receipts
@@ -220,7 +262,7 @@ func (b *WatcherBackend) Loop() {
 	}
 }
 
-func (b *WatcherBackend) queue(req subscribeRequest) {
+func (wb *WatcherBackend) queue(req subscribeRequest) {
 
 	if req.txn == nil {
 		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
@@ -230,29 +272,62 @@ func (b *WatcherBackend) queue(req subscribeRequest) {
 		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}})
 		return
 	}
-
 	txnHash := req.txn.Hash()
-	receiptResponseChannel := NewResponseChannel[objects.ReceiptResponse](b.logger)
+
+	defaultAccount := wb.client.GetDefaultAccount()
+	fromAddr, err := wb.client.ExtractTransactionSender(req.txn)
+	if err != nil {
+		// faulty transaction
+		req.responseChannel.SendResponse(
+			&SubscribeResponse{
+				Err: &ErrInvalidMonitorRequest{fmt.Sprintf("cannot extract fromAddr from transaction: %v", txnHash)},
+			},
+		)
+	}
+	// only accepting txs that are coming from the default account. This requirement
+	// may be lifted in the future. Right now, we impose this for the retry logic.
+	if !bytes.Equal(fromAddr[:], defaultAccount.Address[:]) {
+		req.responseChannel.SendResponse(
+			&SubscribeResponse{
+				Err: &ErrInvalidMonitorRequest{
+					fmt.Sprintf(
+						"cannot accept transaction: %v from %v, can only accept tx from %v",
+						txnHash,
+						fromAddr,
+						defaultAccount.Address.Hex(),
+					),
+				},
+			})
+	}
+
+	receiptResponseChannel := NewResponseChannel[objects.ReceiptResponse](wb.logger)
 
 	// if we already have the records of the receipt for this tx we try to send the
 	// receipt back
-	if receipt, ok := b.receiptCache[txnHash]; ok {
+	if receipt, ok := wb.receiptCache[txnHash]; ok {
 		receiptResponseChannel.SendResponse(&objects.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
 	} else {
-		if _, ok := b.monitoredTxns[txnHash]; ok {
-			req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"}})
+		// not accepting multiple go routines signing for the same tx. This requirement
+		// may be lifted in the future. For now, if you need to watch for a tx that was
+		// already queued, keep polling until the receipt in the cache.
+		if _, ok := wb.monitoredTxns[txnHash]; ok {
+			req.responseChannel.SendResponse(
+				&SubscribeResponse{
+					Err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"},
+				},
+			)
 			return
 		}
 
 		selector := ExtractSelector(req.txn.Data())
 		//todo: replace this with a generated mapping from the bindings
-		sig := b.knownSelectors.Signature(selector)
+		sig := wb.knownSelectors.Signature(selector)
 
-		logEntry := b.logger.WithField("Transaction", txnHash).
+		logEntry := wb.logger.WithField("Transaction", txnHash).
 			WithField("Function", sig).
 			WithField("Selector", fmt.Sprintf("%x", selector))
 
-		b.monitoredTxns[txnHash] = info{
+		wb.monitoredTxns[txnHash] = info{
 			ctx:                    req.ctx,
 			txn:                    req.txn,
 			selector:               selector,
@@ -293,9 +368,9 @@ func (b *WatcherBackend) collectReceipts() {
 	}
 	b.logger.Tracef("processing block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
 
-	txnOpts, err := b.client.GetTransactionOpts(networkCtx, b.client.GetDefaultAccount())
+	baseFee, tipCap, err := b.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
 	if err != nil {
-		b.logger.Debugf("error getting txnOpts from ethereum node: %v", err)
+		b.logger.Debugf("error getting baseFee and suggested gas tip from ethereum node: %v", err)
 		return
 	}
 
@@ -328,11 +403,12 @@ func (b *WatcherBackend) collectReceipts() {
 	// close the request channel, so the workers know when to finish
 	close(requestWorkChannel)
 
-	workerPool := NewWorkerPool(b.mainCtx, b.client, txnOpts, b.logger, requestWorkChannel, responseWorkChannel)
+	workerPool := NewWorkerPool(b.mainCtx, b.client, baseFee, tipCap, b.logger, requestWorkChannel, responseWorkChannel)
 
 	// spawn the workers and wait for all to complete
 	go workerPool.ExecuteWork(numWorkers)
 
+WorkLoop:
 	for workResponse := range responseWorkChannel {
 		select {
 		case <-b.mainCtx.Done():
@@ -348,6 +424,25 @@ func (b *WatcherBackend) collectReceipts() {
 					logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", workResponse.err)
 				}
 			} else {
+				if workResponse.retriedTxn != nil {
+					txInfo, ok := b.monitoredTxns[workResponse.txnHash]
+					if !ok {
+						continue WorkLoop
+					}
+					// restart the monitoringHeight, so we don't retry in the next block
+					txInfo.startedMonitoringHeight = 0
+					if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
+						b.monitoredTxns[workResponse.retriedTxn.txn.Hash()] = info{
+							ctx:               context.Background(),
+							txn:               workResponse.retriedTxn.txn,
+							selector:          txInfo.selector,
+							functionSignature: txInfo.functionSignature,
+							//todo: channel?
+						}
+						txInfo.retryAmount++
+					}
+					b.monitoredTxns[workResponse.txnHash] = txInfo
+				}
 				if workResponse.receipt != nil {
 					logEntry.WithFields(
 						logrus.Fields{
@@ -401,15 +496,16 @@ type WorkerPool struct {
 	wg                  *sync.WaitGroup
 	ctx                 context.Context            // Main context passed by the parent, used to cancel worker and the pool
 	client              ethereum.Network           // An interface with the Geth functionality we need
-	txnOpts             *bind.TransactOpts         // Transaction options in case we need to retry a stale transaction
+	baseFee             *big.Int                   // Base fee of the current block in case we need to retry a stale transaction
+	tipCap              *big.Int                   // Miner tip cap of the current block in case we need to retry a stale transaction
 	logger              *logrus.Entry              // Logger to log messages
 	requestWorkChannel  <-chan MonitorWorkRequest  // Channel where will be send the work requests
 	responseWorkChannel chan<- MonitorWorkResponse // Channel where the work response will be send
 }
 
 // Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, client ethereum.Network, txnOpts *bind.TransactOpts, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
-	return &WorkerPool{new(sync.WaitGroup), ctx, client, txnOpts, logger, requestWorkChannel, responseWorkChannel}
+func NewWorkerPool(ctx context.Context, client ethereum.Network, baseFee *big.Int, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+	return &WorkerPool{new(sync.WaitGroup), ctx, client, baseFee, tipCap, logger, requestWorkChannel, responseWorkChannel}
 }
 
 // Function to spawn the workers and wait for the job to be done.
@@ -456,12 +552,19 @@ func (w *WorkerPool) worker() {
 				default:
 					rcpt, err := w.getReceipt(ctx, monitoredTx, currentHeight, txnHash)
 					if err != nil {
-						// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
-						if _, ok := err.(*ErrRecoverable); ok && i < constants.TxWorkerMaxWorkRetries {
-							continue Loop
+						switch err.(type) {
+						case *ErrRecoverable:
+							// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
+							if i < constants.TxWorkerMaxWorkRetries {
+								continue Loop
+							}
+						case *ErrTransactionStale:
+							newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.txn, w.baseFee, w.tipCap)
+							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}
+						default:
+							// send nonRecoverable errors back to main or recoverable errors after constants.TxWorkerMaxWorkRetries
+							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 						}
-						// send nonRecoverable errors back to main or recoverable errors after constants.TxWorkerMaxWorkRetries
-						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 					} else {
 						// send receipt (even if it nil) back to main thread
 						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}
@@ -489,8 +592,16 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 		return nil, &ErrRecoverable{fmt.Sprintf("error getting tx: %v: %v", txnHex, err)}
 	}
 	if isPending {
-		if blockTimeSpan >= w.client.GetTxMaxStaleBlocks() {
-			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks, please retry!", txnHex, w.client.GetTxMaxStaleBlocks())}
+		// We multiply MaxStaleBlocks by the number of times that we tried to retry a tx
+		// to add a increasing delay between successful retry attempts. BlockTimeSpan is
+		// restarted at every retry attempt. Most of the time after a successful retry,
+		// the tx being replaced will fall in the branch above (err tx not found). But
+		// in case of an edge case, where tx replacing and tx replaced are both valid
+		// (e.g sending tx to different nodes) we will continue to retry both, until we
+		// have a valid tx for this nonce.
+		maxPendingBlocks := w.client.GetTxMaxStaleBlocks() * (monitoredTx.retryAmount + 1)
+		if blockTimeSpan >= maxPendingBlocks {
+			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks!", txnHex, w.client.GetTxMaxStaleBlocks())}
 		}
 	} else {
 		// tx is not pending, so check for receipt

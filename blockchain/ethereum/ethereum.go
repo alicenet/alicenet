@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,11 +27,18 @@ import (
 
 // Ethereum specific errors
 var (
-	ErrAccountNotFound           = errors.New("could not find specified account")
-	ErrKeysNotFound              = errors.New("account either not found or not unlocked")
-	ErrPassCodeNotFound          = errors.New("could not find specified passCode")
-	ErrInvalidTxMaxGasFeeAllowed = fmt.Errorf("txMaxGasFeeAllowedInGwei should be greater than %v Gwei", constants.EthereumMinGasFeeAllowedInGwei)
+	ErrAccountNotFound  = errors.New("could not find specified account")
+	ErrKeysNotFound     = errors.New("account either not found or not unlocked")
+	ErrPassCodeNotFound = errors.New("could not find specified passCode")
 )
+
+type ErrTxTooExpensive struct {
+	message string
+}
+
+func (e *ErrTxTooExpensive) Error() string {
+	return e.message
+}
 
 var ETH_MAX_PRIORITY_FEE_PER_GAS_NOT_FOUND string = "Method eth_maxPriorityFeePerGas not found"
 
@@ -130,7 +136,7 @@ func NewEndpoint(
 	logger := logging.GetLogger("ethereum")
 
 	if txMaxGasFeeAllowedInGwei < constants.EthereumMinGasFeeAllowedInGwei {
-		return nil, ErrInvalidTxMaxGasFeeAllowed
+		return nil, fmt.Errorf("txMaxGasFeeAllowedInGwei should be greater than %v Gwei", constants.EthereumMinGasFeeAllowedInGwei)
 	}
 
 	txMaxGasFeeAllowedInWei := new(big.Int).Mul(new(big.Int).SetUint64(txMaxGasFeeAllowedInGwei), new(big.Int).SetUint64(1_000_000_000))
@@ -609,15 +615,11 @@ func (eth *Details) ExtractTransactionSender(tx *types.Transaction) (common.Addr
 	return fromAddr, nil
 }
 
-// Retry a transaction done by the ethereum default account
+// Retry a transaction done by any of the known ethereum accounts.
 func (eth *Details) RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error) {
 	fromAddr, err := eth.ExtractTransactionSender(tx)
 	if err != nil {
 		return nil, err
-	}
-
-	if !bytes.Equal(fromAddr[:], eth.defaultAccount.Address[:]) {
-		return nil, fmt.Errorf("cannot retry transaction: %v from %v, expected signed tx from default account %v", tx.Hash().Hex(), fromAddr, eth.defaultAccount)
 	}
 
 	var newTipCap *big.Int
@@ -653,23 +655,22 @@ func (eth *Details) RetryTransaction(ctx context.Context, tx *types.Transaction,
 
 	err = eth.client.SendTransaction(ctx, signedTx)
 	if err != nil {
-		return nil, fmt.Errorf("sending error: %v", err)
+		return nil, fmt.Errorf("sending tx error: %v", err)
 	}
 
 	return signedTx, err
 }
 
+// Sign an ethereum transaction
 func (eth *Details) SignTransaction(tx types.TxData, signerAddress common.Address) (*types.Transaction, error) {
 	signer := types.NewLondonSigner(eth.chainID)
 	userKey, err := eth.GetAccountKeys(signerAddress)
 	if err != nil {
-		eth.logger.Errorf("getting account keys error:%v", err)
-		return nil, err
+		return nil, fmt.Errorf("getting account keys error:%v", err)
 	}
 	signedTx, err := types.SignNewTx(userKey.PrivateKey, signer, tx)
 	if err != nil {
-		eth.logger.Errorf("signing error:%v", err)
-		return nil, err
+		return nil, fmt.Errorf("signing error:%v", err)
 	}
 	return signedTx, nil
 }
@@ -770,7 +771,7 @@ func ComputeGasFeeCap(eth Network, baseFee *big.Int, tipCap *big.Int) (*big.Int,
 	baseFeeMultiplied := new(big.Int).Mul(big.NewInt(constants.EthereumBaseFeeMultiplier), baseFee)
 	feeCap := new(big.Int).Add(baseFeeMultiplied, tipCap)
 	if feeCap.Cmp(eth.GetTxMaxGasFeeAllowed()) > 0 {
-		return nil, fmt.Errorf("max tx fee computed: %v is greater than limit: %v", feeCap.String(), eth.GetTxMaxGasFeeAllowed().String())
+		return nil, &ErrTxTooExpensive{fmt.Sprintf("max tx fee computed: %v is greater than limit: %v", feeCap.String(), eth.GetTxMaxGasFeeAllowed().String())}
 	}
 	return feeCap, nil
 }
