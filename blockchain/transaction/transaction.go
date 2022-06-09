@@ -15,6 +15,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
+	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -41,11 +42,11 @@ func (e *ErrTransactionStale) Error() string {
 	return e.message
 }
 
-type ErrNonRecoverable struct {
+type ErrTxNotFound struct {
 	message string
 }
 
-func (e *ErrNonRecoverable) Error() string {
+func (e *ErrTxNotFound) Error() string {
 	return e.message
 }
 
@@ -75,48 +76,16 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type info struct {
-	ctx                     context.Context                                // ctx used for calling the monitoring a certain tx
-	txn                     *types.Transaction                             // Transaction object
-	selector                objects.FuncSelector                           // 4 bytes that identify the function being called by the tx
-	functionSignature       string                                         // function signature as we see on the smart contracts
-	startedMonitoringHeight uint64                                         // ethereum height where we first added the tx to be watched. Mainly used to see if a tx was dropped
-	receiptResponseChannel  *ResponseChannel[objects.ReceiptResponse]      // channel where the response will be sent
-	txRetryChannel          chan *ResponseChannel[objects.ReceiptResponse] // todo: buffered channel?
-	retryAmount             uint64                                         // counter to indicate how many times a transaction was retried. Most of the time should never be greater than 1.
-	//todo:fromAddr here?
+	txn                    *types.Transaction                        // Transaction object
+	fromAddress            common.Address                            // address of the transaction signer
+	selector               objects.FuncSelector                      // 4 bytes that identify the function being called by the tx
+	functionSignature      string                                    // function signature as we see on the smart contracts
+	retryGroup             uint64                                    // internal group Id to keep track of all tx that were created during the retry of tx
+	receiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // channel where the response will be sent
+	monitoringHeight       uint64                                    // ethereum height where we first added the tx to be watched or did a tx retry.
+	retryAmount            uint64                                    // counter to indicate how many times we tried to retry a transaction
+	notFoundBlocks         uint64                                    // counter to indicate approximate number of blocks that we could not find a tx
 }
-
-// type subscriber struct {
-// 	chs            []*ResponseChannel[objects.ReceiptResponse]
-// 	txRetryChannel chan *ResponseChannel[objects.ReceiptResponse]
-// }
-
-// func (s *subscriber) Test() {
-// 	for {
-// 		select {
-// 		case newChannel, ok := <-s.txRetryChannel:
-// 			if !ok {
-// 				return //?
-// 			}
-// 			s.chs = append(s.chs, newChannel)
-// 		default:
-// 		}
-
-// 		// todo: handle case 1 channel
-// 		// todo: mainCtx
-// 		for _, ch := range s.chs {
-// 			select {
-// 			case resp := <-ch.channel:
-// 				if resp.Err != nil && resp.Receipt != nil {
-// 					return // got a receipt
-// 				}
-// 			default:
-// 			}
-// 		}
-
-// 	}
-
-// }
 
 // Internal struct to keep track of the receipts
 type receipt struct {
@@ -138,7 +107,6 @@ func (a *block) Equal(b *block) bool {
 
 // Type to do request against the tx receipt monitoring system. Ctx and response channel should be set
 type subscribeRequest struct {
-	ctx             context.Context                     // tx ctx used for tx monitoring cancellation
 	txn             *types.Transaction                  // the transaction that should watched
 	responseChannel *ResponseChannel[SubscribeResponse] // channel where we going to send the request response
 }
@@ -195,6 +163,11 @@ func (rc *ResponseChannel[T]) CloseChannel() {
 	})
 }
 
+// Check if a channel is closed
+func (rc *ResponseChannel[T]) IsChannelClosed() bool {
+	return rc.isClosed
+}
+
 // Profile to keep track of gas metrics in the overall system
 type Profile struct {
 	AverageGas   uint64
@@ -233,6 +206,8 @@ type WatcherBackend struct {
 	monitoredTxns      map[common.Hash]info             // Map of transactions whose receipts we're looking for
 	receiptCache       map[common.Hash]receipt          // Receipts retrieved from transactions
 	aggregates         map[objects.FuncSelector]Profile // Struct to keep track of the gas metrics used by the system
+	retryGroups        map[uint64]uint64                // Map of groups of transactions that were retried
+	retryGroupId       uint64                           // monotonically increasing number to keep track of the retry groups
 	client             ethereum.Network                 // An interface with the ethereum functionality we need
 	knownSelectors     interfaces.ISelectorMap          // Map with signature -> name
 	logger             *logrus.Entry                    // Logger to log messages
@@ -268,12 +243,7 @@ func (wb *WatcherBackend) queue(req subscribeRequest) {
 		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
 		return
 	}
-	if req.ctx == nil {
-		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing ctx"}})
-		return
-	}
 	txnHash := req.txn.Hash()
-
 	defaultAccount := wb.client.GetDefaultAccount()
 	fromAddr, err := wb.client.ExtractTransactionSender(req.txn)
 	if err != nil {
@@ -285,7 +255,8 @@ func (wb *WatcherBackend) queue(req subscribeRequest) {
 		)
 	}
 	// only accepting txs that are coming from the default account. This requirement
-	// may be lifted in the future. Right now, we impose this for the retry logic.
+	// may be lifted in the future. Right now, we impose this for the sake of
+	// simplifying retry logic.
 	if !bytes.Equal(fromAddr[:], defaultAccount.Address[:]) {
 		req.responseChannel.SendResponse(
 			&SubscribeResponse{
@@ -328,33 +299,38 @@ func (wb *WatcherBackend) queue(req subscribeRequest) {
 			WithField("Selector", fmt.Sprintf("%x", selector))
 
 		wb.monitoredTxns[txnHash] = info{
-			ctx:                    req.ctx,
 			txn:                    req.txn,
 			selector:               selector,
 			functionSignature:      sig,
 			receiptResponseChannel: receiptResponseChannel,
+			fromAddress:            fromAddr,
+			retryGroup:             wb.retryGroupId,
 		}
+		// initialize the retry group
+		wb.retryGroups[wb.retryGroupId] = 1
+		// increasing the monotonically ID
+		wb.retryGroupId++
 		logEntry.Debug("Transaction queued")
 	}
 	req.responseChannel.SendResponse(&SubscribeResponse{ReceiptResponseChannel: receiptResponseChannel})
 }
 
-func (b *WatcherBackend) collectReceipts() {
+func (wb *WatcherBackend) collectReceipts() {
 
-	lenMonitoredTxns := len(b.monitoredTxns)
+	lenMonitoredTxns := len(wb.monitoredTxns)
 
 	// If there's no tx to be monitored just return
 	if lenMonitoredTxns == 0 {
-		b.logger.Tracef("no transaction to watch")
+		wb.logger.Tracef("no transaction to watch")
 		return
 	}
 
-	networkCtx, cf := context.WithTimeout(b.mainCtx, constants.TxNetworkTimeout)
+	networkCtx, cf := context.WithTimeout(wb.mainCtx, constants.TxNetworkTimeout)
 	defer cf()
 
-	blockHeader, err := b.client.GetHeaderByNumber(networkCtx, nil)
+	blockHeader, err := wb.client.GetHeaderByNumber(networkCtx, nil)
 	if err != nil {
-		b.logger.Debugf("error getting latest block number from ethereum node: %v", err)
+		wb.logger.Debugf("error getting latest block number from ethereum node: %v", err)
 		return
 	}
 	blockInfo := &block{
@@ -362,131 +338,149 @@ func (b *WatcherBackend) collectReceipts() {
 		blockHeader.Hash(),
 	}
 
-	if b.lastProcessedBlock.Equal(blockInfo) {
-		b.logger.Tracef("already processed block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
+	if wb.lastProcessedBlock.Equal(blockInfo) {
+		wb.logger.Tracef("already processed block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
 		return
 	}
-	b.logger.Tracef("processing block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
+	wb.logger.Tracef("processing block: %v with hash: %v", blockInfo.height, blockInfo.hash.Hex())
 
-	baseFee, tipCap, err := b.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
+	baseFee, tipCap, err := wb.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
 	if err != nil {
-		b.logger.Debugf("error getting baseFee and suggested gas tip from ethereum node: %v", err)
+		wb.logger.Debugf("error getting baseFee and suggested gas tip from ethereum node: %v", err)
 		return
 	}
 
-	var expiredTxs []common.Hash
 	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
 
 	numWorkers := utils.Min(utils.Max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
 	responseWorkChannel := make(chan MonitorWorkResponse, lenMonitoredTxns+3)
 
-	for txn, txnInfo := range b.monitoredTxns {
-		select {
-		case <-txnInfo.ctx.Done():
-			// the go-routine who wanted this information has stopped caring. This most
-			// likely indicates a failure, and cancellation of polling prevents a memory
-			// leak
-			b.logger.Debugf("context for tx %v is finished, marking it to be excluded!", txn.Hex())
-			expiredTxs = append(expiredTxs, txnInfo.txn.Hash())
-		default:
-			// if this is the first time seeing a tx or we have a reorg and
-			// startedMonitoring is now greater than the current ethereum block height
-			if txnInfo.startedMonitoringHeight == 0 || txnInfo.startedMonitoringHeight > blockInfo.height {
-				txnInfo.startedMonitoringHeight = blockInfo.height
-				b.monitoredTxns[txn] = txnInfo
-			}
-			requestWorkChannel <- MonitorWorkRequest{txnInfo, blockInfo.height}
+	for txn, txnInfo := range wb.monitoredTxns {
+		// if this is the first time seeing a tx or we have a reorg and
+		// startedMonitoring is now greater than the current ethereum block height
+		if txnInfo.monitoringHeight == 0 || txnInfo.monitoringHeight > blockInfo.height {
+			txnInfo.monitoringHeight = blockInfo.height
+			wb.monitoredTxns[txn] = txnInfo
 		}
+		requestWorkChannel <- MonitorWorkRequest{txnInfo, blockInfo.height}
 	}
 
 	// close the request channel, so the workers know when to finish
 	close(requestWorkChannel)
 
-	workerPool := NewWorkerPool(b.mainCtx, b.client, baseFee, tipCap, b.logger, requestWorkChannel, responseWorkChannel)
+	workerPool := NewWorkerPool(wb.mainCtx, wb.client, baseFee, tipCap, wb.logger, requestWorkChannel, responseWorkChannel)
 
 	// spawn the workers and wait for all to complete
 	go workerPool.ExecuteWork(numWorkers)
 
-WorkLoop:
 	for workResponse := range responseWorkChannel {
 		select {
-		case <-b.mainCtx.Done():
+		case <-wb.mainCtx.Done():
 			// main thread was killed
 			return
 		default:
-			logEntry := b.logger.WithFields(logrus.Fields{"txn": workResponse.txnHash})
-			if workResponse.err != nil {
-				if _, ok := workResponse.err.(*ErrRecoverable); !ok {
+		}
+		logEntry := wb.logger.WithFields(logrus.Fields{"txn": workResponse.txnHash.Hex()})
+		txInfo, ok := wb.monitoredTxns[workResponse.txnHash]
+		if !ok {
+			// invalid tx, should not happen, but well if it happens we continue
+			logEntry.Trace("got a invalid tx with hash from workers")
+			continue
+		}
+		if workResponse.err != nil {
+			err := workResponse.err
+			switch err.(type) {
+			case *ErrRecoverable:
+				logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", workResponse.err)
+			case *ErrTxNotFound:
+				// since we only analyze a tx once per new block, the notFoundBlocks counter
+				// should have approx the amount of blocks that we failed on finding the tx
+				txInfo.notFoundBlocks++
+				if txInfo.notFoundBlocks >= wb.client.GetTxNotFoundMaxBlocks() {
 					logEntry.Debugf("Couldn't get tx receipt, err: %v", workResponse.err)
 					finishedTxs[workResponse.txnHash] = workResponse
+				}
+				logEntry.Tracef("Retrying, couldn't get info, num attempts: %v, err: %v", txInfo.notFoundBlocks, workResponse.err)
+			}
+		} else {
+			if workResponse.retriedTxn != nil {
+				// restart the monitoringHeight, so we don't retry the tx in the next block
+				txInfo.monitoringHeight = 0
+				if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
+					newTxnHash := workResponse.retriedTxn.txn.Hash()
+					wb.monitoredTxns[newTxnHash] = info{
+						txn:                    workResponse.retriedTxn.txn,
+						fromAddress:            txInfo.fromAddress,
+						selector:               txInfo.selector,
+						functionSignature:      txInfo.functionSignature,
+						retryGroup:             txInfo.retryGroup,
+						receiptResponseChannel: txInfo.receiptResponseChannel,
+					}
+					// increase the number of tx in the retry group
+					wb.retryGroups[wb.retryGroupId]++
+					txInfo.retryAmount++
+					logEntry.Tracef("successfully replaced a tx with %v", newTxnHash)
 				} else {
-					logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", workResponse.err)
-				}
-			} else {
-				if workResponse.retriedTxn != nil {
-					txInfo, ok := b.monitoredTxns[workResponse.txnHash]
-					if !ok {
-						continue WorkLoop
-					}
-					// restart the monitoringHeight, so we don't retry in the next block
-					txInfo.startedMonitoringHeight = 0
-					if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
-						b.monitoredTxns[workResponse.retriedTxn.txn.Hash()] = info{
-							ctx:               context.Background(),
-							txn:               workResponse.retriedTxn.txn,
-							selector:          txInfo.selector,
-							functionSignature: txInfo.functionSignature,
-							//todo: channel?
-						}
-						txInfo.retryAmount++
-					}
-					b.monitoredTxns[workResponse.txnHash] = txInfo
-				}
-				if workResponse.receipt != nil {
-					logEntry.WithFields(
-						logrus.Fields{
-							"mined":          workResponse.receipt.BlockNumber,
-							"current height": blockInfo.height,
-						},
-					).Debug("Successfully got receipt")
-					b.receiptCache[workResponse.txnHash] = receipt{receipt: workResponse.receipt, retrievedAtHeight: blockInfo.height}
-					finishedTxs[workResponse.txnHash] = workResponse
+					logEntry.Debugf("could not replace tx error %v", workResponse.retriedTxn.err)
 				}
 			}
+			if workResponse.receipt != nil {
+				logEntry.WithFields(
+					logrus.Fields{
+						"mined":          workResponse.receipt.BlockNumber,
+						"current height": blockInfo.height,
+					},
+				).Debug("Successfully got receipt")
+				wb.receiptCache[workResponse.txnHash] = receipt{receipt: workResponse.receipt, retrievedAtHeight: blockInfo.height}
+				finishedTxs[workResponse.txnHash] = workResponse
+			}
 		}
+		wb.monitoredTxns[workResponse.txnHash] = txInfo
 	}
 
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
-		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
-			txnInfo.receiptResponseChannel.SendResponse(&objects.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
-			delete(b.monitoredTxns, txnHash)
-		}
-	}
-
-	// Cleaning expired transactions
-	for _, txnHash := range expiredTxs {
-		if txnInfo, ok := b.monitoredTxns[txnHash]; ok {
-			txnInfo.receiptResponseChannel.CloseChannel()
-			delete(b.monitoredTxns, txnHash)
+		if txnInfo, ok := wb.monitoredTxns[txnHash]; ok {
+			// if this is the unique tx in the retry group or we have the receipt, we are good to send the response
+			if wb.retryGroups[txnInfo.retryGroup] == 1 || workResponse.receipt != nil {
+				if workResponse.err != nil {
+					wb.logger.Tracef("sending response for tx: %v, err %v", txnHash.Hex(), workResponse.err)
+				}
+				if workResponse.receipt != nil {
+					wb.logger.Tracef(
+						"sending response for tx: %v, with receipt status %v mined at block %v",
+						txnHash.Hex(),
+						workResponse.receipt.Status,
+						workResponse.receipt.BlockHash,
+					)
+				}
+				if !txnInfo.receiptResponseChannel.isClosed {
+					wb.logger.Tracef("sending response to channel for tx %v", txnHash.Hex())
+					txnInfo.receiptResponseChannel.SendResponse(&objects.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
+				}
+			}
+			if wb.retryGroups[txnInfo.retryGroup] >= 1 {
+				wb.retryGroups[txnInfo.retryGroup]--
+				wb.logger.Tracef("removing tx entry: %v from retry group with has now %v members", txnHash.Hex(), wb.retryGroups[txnInfo.retryGroup])
+			}
+			delete(wb.monitoredTxns, txnHash)
 		}
 	}
 
 	var expiredReceipts []common.Hash
 	// Marking expired receipts
-	for receiptTxnHash, receiptInfo := range b.receiptCache {
+	for receiptTxnHash, receiptInfo := range wb.receiptCache {
 		if blockInfo.height >= receiptInfo.retrievedAtHeight+constants.TxReceiptCacheMaxBlocks {
 			expiredReceipts = append(expiredReceipts, receiptTxnHash)
 		}
 	}
-
-	// being paranoic and excluding the expired receipts in another loop
 	for _, receiptTxHash := range expiredReceipts {
-		delete(b.receiptCache, receiptTxHash)
+		wb.logger.Tracef("cleaning %v from receipt cache", receiptTxHash.Hex())
+		delete(wb.receiptCache, receiptTxHash)
 	}
 
-	b.lastProcessedBlock = blockInfo
+	wb.lastProcessedBlock = blockInfo
 }
 
 // Structs that keep track of the state needed by the worker pool service. The
@@ -539,13 +533,6 @@ func (w *WorkerPool) worker() {
 		Loop:
 			for i := uint64(1); i <= constants.TxWorkerMaxWorkRetries; i++ {
 				select {
-				case <-monitoredTx.ctx.Done():
-					// the go-routine who wanted this information has stopped caring. This most
-					// likely indicates a failure, and cancellation of polling prevents a memory
-					// leak
-					w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: &ErrNonRecoverable{fmt.Sprintf("context for tx %v is finished!", txnHash.Hex())}}
-					//should continue getting other tx work
-					break
 				case <-ctx.Done():
 					// worker context timed out or parent was cancelled, should return
 					return
@@ -558,11 +545,13 @@ func (w *WorkerPool) worker() {
 							if i < constants.TxWorkerMaxWorkRetries {
 								continue Loop
 							}
+							// send recoverable errors after constants.TxWorkerMaxWorkRetries
+							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 						case *ErrTransactionStale:
 							newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.txn, w.baseFee, w.tipCap)
 							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}
 						default:
-							// send nonRecoverable errors back to main or recoverable errors after constants.TxWorkerMaxWorkRetries
+							// send txNotFound or other errors back to main
 							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 						}
 					} else {
@@ -580,25 +569,25 @@ func (w *WorkerPool) worker() {
 // Internal function used by the workers to check/retrieve the receipts for a given transaction
 func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
-	blockTimeSpan := currentHeight - monitoredTx.startedMonitoringHeight
+	blockTimeSpan := currentHeight - monitoredTx.monitoringHeight
 	_, isPending, err := w.client.GetTransactionByHash(ctx, txnHash)
 	if err != nil {
 		// if we couldn't locate a tx after NotFoundMaxBlocks blocks and we are still
 		// failing in getting the tx data, probably means that it was dropped
-		if blockTimeSpan >= w.client.GetTxNotFoundMaxBlocks() {
-			return nil, &ErrNonRecoverable{fmt.Sprintf("could not find tx %v and %v blocks have passed!", txnHex, w.client.GetTxNotFoundMaxBlocks())}
+		if errors.Is(err, goEthereum.NotFound) {
+			return nil, &ErrTxNotFound{fmt.Sprintf("could not find tx %v in the height %v!", txnHex, currentHeight)}
 		}
 		// probably a network error, should retry
 		return nil, &ErrRecoverable{fmt.Sprintf("error getting tx: %v: %v", txnHex, err)}
 	}
 	if isPending {
 		// We multiply MaxStaleBlocks by the number of times that we tried to retry a tx
-		// to add a increasing delay between successful retry attempts. BlockTimeSpan is
-		// restarted at every retry attempt. Most of the time after a successful retry,
-		// the tx being replaced will fall in the branch above (err tx not found). But
-		// in case of an edge case, where tx replacing and tx replaced are both valid
-		// (e.g sending tx to different nodes) we will continue to retry both, until we
-		// have a valid tx for this nonce.
+		// to add a increasing delay between successful retry attempts.
+		// startedMonitoringHeight is restarted at every retry attempt. Most of the time
+		// after a successful retry, the tx being replaced will fall in the branch above
+		// (err tx not found). But in case of an edge case, where tx replacing and tx
+		// replaced are both valid (e.g sending tx to different nodes) we will continue
+		// to retry both, until we have a valid tx for this nonce.
 		maxPendingBlocks := w.client.GetTxMaxStaleBlocks() * (monitoredTx.retryAmount + 1)
 		if blockTimeSpan >= maxPendingBlocks {
 			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks!", txnHex, w.client.GetTxMaxStaleBlocks())}
@@ -607,16 +596,12 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 		// tx is not pending, so check for receipt
 		rcpt, err := w.client.GetTransactionReceipt(ctx, txnHash)
 		if err != nil {
-			// if we couldn't locate a tx receipt after NotFoundMaxBlocks blocks and we are still
-			// failing in getting the tx data, probably means that it was dropped
-			if blockTimeSpan >= w.client.GetTxNotFoundMaxBlocks() {
-				return nil, &ErrNonRecoverable{fmt.Sprintf("could not find receipt for tx %v and %v blocks have passed!", txnHex, w.client.GetTxNotFoundMaxBlocks())}
+			// if can locate a tx (branch logic above), but we cannot locate a tx receipt
+			// after NotFoundMaxBlocks blocks, there's definitely something wrong
+			if errors.Is(err, goEthereum.NotFound) {
+				return nil, &ErrTxNotFound{fmt.Sprintf("could not find receipt for tx %v in the height %v!", txnHex, currentHeight)}
 			}
-			// 1. probably a network error, should retry
-			// 2. in case receipt not found after tx not Pending check, we had an edge case,
-			// probably tx was mined (isPending == false), then we had a chain re-org, now
-			// the tx is back to the memPool or was dropped, we should retry, and the logic
-			// above should see if the tx was dropped or not in the next iteration
+			// probably a network error, should retry
 			return nil, &ErrRecoverable{fmt.Sprintf("error getting receipt: %v: %v", txnHex, err)}
 		}
 
@@ -687,15 +672,17 @@ func (f *Watcher) Close() {
 	f.closeMainContext()
 }
 
-// Subscribe a transaction to be watched by the transaction watcher service. If a
-// transaction was accepted to be watched, a response channel is returned. The
-// response channel is where the receipt going to be sent by the tx watcher
-// backend.
+// Subscribe a transaction to be watched by the transaction watcher service. If
+// a transaction was accepted by the watcher service, a response channel is
+// returned. The response channel is where the receipt going to be sent. The
+// final tx hash in the receipt can be different from the initial txn sent. This
+// can happen if the txn got stale and the watcher did a transaction replace
+// with higher fees.
 func (tw *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error) {
 	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
 	respChannel := NewResponseChannel[SubscribeResponse](tw.logger)
 	defer respChannel.CloseChannel()
-	req := subscribeRequest{ctx: ctx, txn: txn, responseChannel: respChannel}
+	req := subscribeRequest{txn: txn, responseChannel: respChannel}
 
 	select {
 	case tw.requestChannel <- req:
@@ -711,7 +698,8 @@ func (tw *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-cha
 	}
 }
 
-// function that wait for a transaction receipt. This is blocking function that will wait for a response in the input IResponse channel
+// function that wait for a transaction receipt. This is blocking function that
+// will wait for a response in the input receiptResponseChannel
 func (f *Watcher) Wait(ctx context.Context, receiptResponseChannel <-chan *objects.ReceiptResponse) (*types.Receipt, error) {
 	select {
 	case receiptResponse := <-receiptResponseChannel:
