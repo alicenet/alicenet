@@ -39,7 +39,7 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, e
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute() bool {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

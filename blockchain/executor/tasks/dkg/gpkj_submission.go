@@ -40,7 +40,7 @@ func (t *GPKjSubmissionTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -77,7 +77,7 @@ func (t *GPKjSubmissionTask) Prepare() error {
 				return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
 			}
 
-			err = dkgState.PersistState(txn, logger)
+			err = dkgState.PersistState(txn)
 			if err != nil {
 				return err
 			}
@@ -101,7 +101,7 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -134,7 +134,7 @@ func (t *GPKjSubmissionTask) ShouldExecute() bool {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

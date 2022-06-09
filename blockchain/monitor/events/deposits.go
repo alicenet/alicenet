@@ -44,7 +44,7 @@ func ProcessDepositReceived(eth ethereum.Network, logger *logrus.Entry, log type
 		return err
 	}
 
-	bigChainID := eth.ChainID()
+	bigChainID := eth.GetChainID()
 	//TODO check to make sure chainID fits into a uint32
 	chainID := uint32(bigChainID.Uint64())
 

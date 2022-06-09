@@ -34,6 +34,8 @@ func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Databas
 	if len(txns) > 0 {
 		//TODO: add interaction with txWatcher
 	}
+
+	task.Finish(nil)
 }
 
 // prepareTask executes task preparation

@@ -41,7 +41,7 @@ func (t *MPKSubmissionTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (t *MPKSubmissionTask) Prepare() error {
 			eth := t.GetEth()
 			ctx := t.GetCtx()
 			// setup leader election
-			block, err := eth.GetInternalClient().BlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
+			block, err := eth.GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
 			if err != nil {
 				return fmt.Errorf("MPKSubmissionTask Prepare(): error getting block by number: %v", err)
 			}
@@ -113,7 +113,7 @@ func (t *MPKSubmissionTask) Prepare() error {
 			// Master public key is all we generate here so save it
 			dkgState.MasterPublicKey = mpk
 
-			err = dkgState.PersistState(txn, logger)
+			err = dkgState.PersistState(txn)
 			if err != nil {
 				return err
 			}
@@ -138,7 +138,7 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -175,7 +175,7 @@ func (t *MPKSubmissionTask) ShouldExecute() bool {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

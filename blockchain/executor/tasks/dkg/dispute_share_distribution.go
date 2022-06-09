@@ -39,7 +39,7 @@ func (t *DisputeShareDistributionTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (t *DisputeShareDistributionTask) Prepare() error {
 			}
 		}
 
-		err = dkgState.PersistState(txn, logger)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -171,7 +171,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute() bool {
 	eth := t.GetEth()
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

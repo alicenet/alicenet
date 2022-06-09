@@ -36,7 +36,7 @@ func (t *KeyShareSubmissionTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (t *KeyShareSubmissionTask) Prepare() error {
 			dkgState.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
 			dkgState.Participants[me].KeyShareG2s = g2KeyShare
 
-			err = dkgState.PersistState(txn, logger)
+			err = dkgState.PersistState(txn)
 			if err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute() bool {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

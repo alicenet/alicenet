@@ -35,7 +35,7 @@ func (t *CompletionTask) Prepare() error {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, logger)
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {
@@ -47,7 +47,7 @@ func (t *CompletionTask) Prepare() error {
 	}
 
 	// setup leader election
-	block, err := t.GetEth().GetInternalClient().BlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
+	block, err := t.GetEth().GetBlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
 	if err != nil {
 		return fmt.Errorf("CompletionTask.Prepare(): error getting block by number: %v", err)
 	}
@@ -65,7 +65,7 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, error) {
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn, t.GetLogger())
+		err := dkgState.LoadState(txn)
 		return err
 	})
 	if err != nil {

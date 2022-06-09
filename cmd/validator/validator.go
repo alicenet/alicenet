@@ -62,7 +62,8 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *keystore.
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
 		constants.DefaultFinalityDelay,
-		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei)
+		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
+		config.Configuration.Ethereum.EndpointMinimumPeers)
 
 	if err != nil {
 		logger.Fatalf("NewEthereumEndpoint(...) failed: %v", err)
