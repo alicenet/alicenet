@@ -78,15 +78,16 @@ func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, mo
 	//}).Infof("Purging schedule")
 	//state.Schedule.Purge()
 
+	dkgState := &state.DkgState{}
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
 
 		dkgState.OnCompletion()
 
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -129,8 +130,9 @@ func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, mon
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 
+	dkgState := &state.DkgState{}
 	err = cdb.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -151,7 +153,7 @@ func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, mon
 
 		// state update
 		dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -249,7 +251,7 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 	dkgState := &state.DkgState{}
 	var err error
 	err = cdb.View(func(txn *badger.Txn) error {
-		dkgState, err = state.LoadEthDkgState(txn, logger)
+		err = dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -258,7 +260,7 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 	})
 
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on checkValidatorSet: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on checkValidatorSet: %v", err)
 	}
 
 	// See how many validator members we've seen and how many we expect

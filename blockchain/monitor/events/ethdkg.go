@@ -109,7 +109,7 @@ func ProcessRegistrationOpened(eth ethereum.Network, logger *logrus.Entry, log t
 	taskRequestChan <- disputeMissingRegistrationTask
 
 	err = monDB.Update(func(txn *badger.Txn) error {
-		err := state.PersistEthDkgState(txn, logger, dkgState)
+		err := dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -141,8 +141,8 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 	dkgState.NumberOfValidators = len(validatorAddresses)
 
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
-	registrationTask := dkgtasks.NewRegisterTask(dkgState, dkgState.PhaseStart, registrationEnds)
-	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(dkgState, registrationEnds, registrationEnds+dkgState.PhaseLength)
+	registrationTask := dkgtasks.NewRegisterTask(dkgState.PhaseStart, registrationEnds)
+	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(registrationEnds, registrationEnds+dkgState.PhaseLength)
 
 	return dkgState, registrationTask, disputeMissingRegistrationTask
 }
@@ -156,8 +156,9 @@ func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log ty
 		return err
 	}
 
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -174,7 +175,7 @@ func ProcessAddressRegistered(eth ethereum.Network, logger *logrus.Entry, log ty
 
 		dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
 
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -200,8 +201,9 @@ func ProcessRegistrationComplete(eth ethereum.Network, logger *logrus.Entry, log
 	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
 	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
+	dkgState := &state.DkgState{}
 	err := monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -221,7 +223,7 @@ func ProcessRegistrationComplete(eth ethereum.Network, logger *logrus.Entry, log
 
 		shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
 
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -277,12 +279,12 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 
 	shareDistStartBlock := dkgState.PhaseStart
 	shareDistEndBlock := shareDistStartBlock + dkgState.PhaseLength
-	shareDistributionTask := dkgtasks.NewShareDistributionTask(dkgState, shareDistStartBlock, shareDistEndBlock)
+	shareDistributionTask := dkgtasks.NewShareDistributionTask(shareDistStartBlock, shareDistEndBlock)
 
 	var dispShareStartBlock = shareDistEndBlock
 	var dispShareEndBlock = dispShareStartBlock + dkgState.PhaseLength
-	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dkgState, dispShareStartBlock, dispShareEndBlock)
-	disputeBadSharesTask := dkgtasks.NewDisputeShareDistributionTask(dkgState, dispShareStartBlock, dispShareEndBlock)
+	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
+	disputeBadSharesTask := dkgtasks.NewDisputeShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
 
 	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask
 }
@@ -303,8 +305,9 @@ func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log ty
 		"Commitments":     event.Commitments,
 	}).Info("Received share distribution")
 
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -314,7 +317,7 @@ func ProcessShareDistribution(eth ethereum.Network, logger *logrus.Entry, log ty
 			return err
 		}
 
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -339,8 +342,9 @@ func ProcessShareDistributionComplete(eth ethereum.Network, logger *logrus.Entry
 	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
+	dkgState := &state.DkgState{}
 	err := monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -359,7 +363,7 @@ func ProcessShareDistributionComplete(eth ethereum.Network, logger *logrus.Entry
 		}).Info("Received share distribution complete")
 
 		disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -412,17 +416,17 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 	dkgState.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 
 	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	disputeShareDistributionTask := dkgtasks.NewDisputeShareDistributionTask(dkgState, dkgState.PhaseStart, phaseEnd)
+	disputeShareDistributionTask := dkgtasks.NewDisputeShareDistributionTask(dkgState.PhaseStart, phaseEnd)
 
 	// schedule SubmitKeySharesPhase
 	submitKeySharesPhaseStart := phaseEnd
 	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + dkgState.PhaseLength
-	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(dkgState, submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
+	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
 
 	// schedule DisputeMissingKeySharesPhase
 	missingKeySharesDisputeStart := submitKeySharesPhaseEnd
 	missingKeySharesDisputeEnd := missingKeySharesDisputeStart + dkgState.PhaseLength
-	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(dkgState, missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
+	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
 
 	return disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
@@ -443,14 +447,15 @@ func ProcessKeyShareSubmitted(eth ethereum.Network, logger *logrus.Entry, log ty
 		"KeyShareG2":                 event.KeyShareG2,
 	}).Info("Received key shares")
 
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
 
 		dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -480,8 +485,9 @@ func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entr
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -492,7 +498,7 @@ func ProcessKeyShareSubmissionComplete(eth ethereum.Network, logger *logrus.Entr
 
 		// schedule MPK submission
 		mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -532,7 +538,7 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 	dkgState.OnKeyShareSubmissionComplete(mpkSubmissionStartBlock)
 
 	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	mpkSubmissionTask := dkgtasks.NewMPKSubmissionTask(dkgState, dkgState.PhaseStart, phaseEnd)
+	mpkSubmissionTask := dkgtasks.NewMPKSubmissionTask(dkgState.PhaseStart, phaseEnd)
 
 	return mpkSubmissionTask
 }
@@ -553,8 +559,9 @@ func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, ad
 	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
 	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -564,7 +571,7 @@ func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, ad
 		}
 
 		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -620,12 +627,12 @@ func ProcessMPKSet(eth ethereum.Network, logger *logrus.Entry, log types.Log, ad
 func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.IAdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, *dkgtasks.DisputeGPKjTask) {
 	dkgState.OnMPKSet(gpkjSubmissionStartBlock)
 	gpkjSubmissionEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(dkgState, dkgState.PhaseStart, gpkjSubmissionEnd, adminHandler)
+	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(dkgState.PhaseStart, gpkjSubmissionEnd, adminHandler)
 
 	disputeMissingGPKjStart := gpkjSubmissionEnd
 	disputeMissingGPKjEnd := disputeMissingGPKjStart + dkgState.PhaseLength
-	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(dkgState, disputeMissingGPKjStart, disputeMissingGPKjEnd)
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState, disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(disputeMissingGPKjStart, disputeMissingGPKjEnd)
 
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask
 }
@@ -643,8 +650,9 @@ func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, l
 
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	completionTask := &dkgtasks.CompletionTask{}
+	dkgState := &state.DkgState{}
 	err = monDB.Update(func(txn *badger.Txn) error {
-		dkgState, err := state.LoadEthDkgState(txn, logger)
+		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
@@ -654,7 +662,7 @@ func ProcessGPKJSubmissionComplete(eth ethereum.Network, logger *logrus.Entry, l
 		}
 
 		disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = state.PersistEthDkgState(txn, logger, dkgState)
+		err = dkgState.PersistState(txn)
 		if err != nil {
 			return err
 		}
@@ -704,11 +712,11 @@ func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjSt
 	dkgState.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
 
 	disputeGPKjPhaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState, dkgState.PhaseStart, disputeGPKjPhaseEnd)
+	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState.PhaseStart, disputeGPKjPhaseEnd)
 
 	completionStart := disputeGPKjPhaseEnd
 	completionEnd := completionStart + dkgState.PhaseLength
-	completionTask := dkgtasks.NewCompletionTask(dkgState, completionStart, completionEnd)
+	completionTask := dkgtasks.NewCompletionTask(completionStart, completionEnd)
 
 	return disputeGPKjTask, completionTask
 }
