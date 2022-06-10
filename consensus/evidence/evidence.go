@@ -1,63 +1,41 @@
 package evidence
 
 import (
-	"context"
-
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
+const defaultMax = 2000
+
 // Pool cleans up stale records
-// Will also drive accusations in future
 type Pool struct {
 	database *db.Database
-	sstore   *lstate.Store
-
-	ctx       context.Context
-	cancelCtx func()
-	logger    *logrus.Logger
-	maxnum    int
+	store    *lstate.Store
+	max      int
 }
 
-// Init will start the in and out gossip busses
-func (ep *Pool) Init(database *db.Database) {
-	ep.logger = logging.GetLogger(constants.LoggerConsensus)
-	ep.database = database
-	ep.sstore = &lstate.Store{}
-	ep.sstore.Init(database)
-
-	ep.maxnum = 2000
-	background := context.Background()
-	ctx, cf := context.WithCancel(background)
-	ep.cancelCtx = cf
-	ep.ctx = ctx
+// NewPool backed by database.
+func NewPool(database *db.Database) *Pool {
+	return &Pool{
+		database: database,
+		store:    lstate.New(database),
+		max:      defaultMax,
+	}
 }
 
-// Done will trInger when both of the gossip busses have stopped
-func (ep *Pool) Done() <-chan struct{} {
-	return ep.ctx.Done()
-}
-
-// Cleanup is the run function for the pool cleanup logic
-func (ep *Pool) Cleanup() error {
-	return ep.database.Update(func(txn *badger.Txn) error {
-		_, _, _, height, _, err := ep.sstore.GetDropData(txn)
+// Cleanup the evidence pool.
+func (p *Pool) Cleanup() error {
+	return p.database.Update(func(txn *badger.Txn) error {
+		_, _, _, height, _, err := p.store.GetDropData(txn)
 		if err != nil {
 			return err
 		}
 		if height > constants.EpochLength*5 {
 			dropHeight := height - constants.EpochLength*4
-			return ep.database.DeleteBeforeHistoricRoundState(txn, dropHeight, ep.maxnum)
+			return p.database.DeleteBeforeHistoricRoundState(txn, dropHeight, p.max)
 		}
 		return nil
 	})
-}
-
-// Exit will kill the service
-func (ep *Pool) Exit() {
-	ep.cancelCtx()
 }

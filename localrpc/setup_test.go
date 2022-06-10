@@ -113,8 +113,8 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 	}()
-	defer func (){ 
-		err := lrpc.Close() 
+	defer func() {
+		err := lrpc.Close()
 		if err != nil {
 			panic(err)
 		}
@@ -201,9 +201,6 @@ func validatorNode() {
 	consGossipHandlers = &gossip.Handlers{}
 	consGossipClient = &gossip.Client{}
 
-	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
-	consTxPool := &evidence.Pool{}
-
 	// link between ETH net and our internal logic, relays important ETH events (e.g. snapshot) into our system
 	consAdminHandlers := &admin.Handlers{}
 
@@ -237,7 +234,9 @@ func validatorNode() {
 	// }
 
 	consDB.Init(rawConsensusDb)
-	consTxPool.Init(consDB)
+
+	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
+	consTxPool := evidence.NewPool(consDB)
 
 	appDepositHandler.Init()
 	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
@@ -355,7 +354,7 @@ func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (t
 	transactionData := &pb.TransactionData{
 		Tx: &pb.Tx{
 			Vin: []*pb.TXIn{
-				&pb.TXIn{
+				{
 					TXInLinker: &pb.TXInLinker{
 						TXInPreImage: &pb.TXInPreImage{
 							ChainID:        txin.TXInLinker.TXInPreImage.ChainID,
@@ -368,7 +367,7 @@ func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (t
 				},
 			},
 			Vout: []*pb.TXOut{
-				&pb.TXOut{
+				{
 					Utxo: &pb.TXOut_ValueStore{
 						ValueStore: &pb.ValueStore{
 							VSPreImage: &pb.VSPreImage{

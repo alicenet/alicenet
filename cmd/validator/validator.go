@@ -240,9 +240,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consGossipHandlers := &gossip.Handlers{}
 	consGossipClient := &gossip.Client{}
 
-	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
-	consTxPool := &evidence.Pool{}
-
 	// link between ETH net and our internal logic, relays important ETH events (e.g. snapshot) into our system
 	consAdminHandlers := &admin.Handlers{}
 
@@ -276,7 +273,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	consDB.Init(rawConsensusDb)
-	consTxPool.Init(consDB)
+
+	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
+	consTxPool := evidence.NewPool(consDB)
 
 	appDepositHandler.Init()
 	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
@@ -346,7 +345,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go peerManager.Start()
 	defer peerManager.Close()
 
-	go consGossipClient.Start()//nolint:errcheck
+	go consGossipClient.Start() //nolint:errcheck
 	defer consGossipClient.Close()
 
 	go consDlManager.Start()
