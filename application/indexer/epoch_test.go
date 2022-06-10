@@ -2,12 +2,11 @@ package indexer
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
@@ -24,26 +23,13 @@ func makeEpochConstrainedList() *EpochConstrainedList {
 }
 
 func TestEpochConstrainedListAppend(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	ecl := makeEpochConstrainedList()
 	txHash := trie.Hasher([]byte("txHash"))
 	epoch := uint32(1)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := ecl.Append(txn, epoch, txHash)
 		if err != nil {
 			t.Fatal(err)
@@ -56,26 +42,13 @@ func TestEpochConstrainedListAppend(t *testing.T) {
 }
 
 func TestEpochConstrainedListDrop(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	ecl := makeEpochConstrainedList()
 	txHash := trie.Hasher([]byte("txHash"))
 	epoch := uint32(1)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := ecl.Drop(txn, txHash)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -96,26 +69,13 @@ func TestEpochConstrainedListDrop(t *testing.T) {
 }
 
 func TestEpochConstrainedListGetEpoch(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	ecl := makeEpochConstrainedList()
 	txHash := trie.Hasher([]byte("txHash"))
 	epoch := uint32(1)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, err := ecl.GetEpoch(txn, txHash)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -139,21 +99,7 @@ func TestEpochConstrainedListGetEpoch(t *testing.T) {
 }
 
 func TestEpochConstrainedListMakeListKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	ecl := makeEpochConstrainedList()
 	txHash := trie.Hasher([]byte("txHash"))
@@ -170,21 +116,7 @@ func TestEpochConstrainedListMakeListKey(t *testing.T) {
 }
 
 func TestEpochConstrainedListMakeListRefKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	ecl := makeEpochConstrainedList()
 	txHash := trie.Hasher([]byte("txHash"))

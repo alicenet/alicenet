@@ -6,9 +6,4 @@ runs:
     - uses: actions/setup-go@v3
       with:
         go-version-file: ./go.mod
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        cache: true

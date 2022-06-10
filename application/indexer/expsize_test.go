@@ -2,12 +2,11 @@ package indexer
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
+	"github.com/MadBase/MadNet/internal/testing/environment"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
@@ -24,28 +23,15 @@ func makeExpSizeIndex() *ExpSizeIndex {
 }
 
 func TestExpSizeIndexAdd(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeExpSizeIndex()
 	epoch := uint32(1)
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	size := uint32(25519)
-	err = db.Update(func(txn *badger.Txn) error {
-		err = index.Add(txn, epoch, utxoID, size)
+	err := db.Update(func(txn *badger.Txn) error {
+		err := index.Add(txn, epoch, utxoID, size)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,28 +43,15 @@ func TestExpSizeIndexAdd(t *testing.T) {
 }
 
 func TestExpSizeIndexDrop(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeExpSizeIndex()
 	epoch := uint32(1)
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	size := uint32(25519)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Drop(txn, utxoID)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -105,21 +78,7 @@ func TestExpSizeIndexDrop(t *testing.T) {
 }
 
 func TestExpSizeIndexMakeKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeExpSizeIndex()
 	epoch := uint32(1)
@@ -138,21 +97,7 @@ func TestExpSizeIndexMakeKey(t *testing.T) {
 }
 
 func TestExpSizeIndexMakeRefKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeExpSizeIndex()
 	utxoID := crypto.Hasher([]byte("utxoID"))

@@ -2,6 +2,7 @@ local-geth/*
 
 # output files
 /madnet
+/madrace
 /mngen
 **/__debug_bin
 **/*.log
@@ -24,12 +25,4 @@ local-geth/*
 
 # generated files
 scripts/generated
-localstate.swagger.json
-**/swagger-bindata/bindata.go
-**/*.pb.go
-test/mocks/*.mockgen.go
-**/*.capnp.go
-**/*.pb.gw.go
-**/*_mngen.go
-**/*_mngen_test.go
 node_modules/

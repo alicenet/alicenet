@@ -603,9 +603,11 @@ func (p2p *P2PClient) Status(ctx context.Context, in *pb.StatusRequest, opts ...
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -618,9 +620,11 @@ func (p2p *P2PClient) GetBlockHeaders(ctx context.Context, in *pb.GetBlockHeader
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -633,9 +637,11 @@ func (p2p *P2PClient) GetMinedTxs(ctx context.Context, in *pb.GetMinedTxsRequest
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -648,9 +654,11 @@ func (p2p *P2PClient) GetPendingTxs(ctx context.Context, in *pb.GetPendingTxsReq
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -663,9 +671,11 @@ func (p2p *P2PClient) GetSnapShotNode(ctx context.Context, in *pb.GetSnapShotNod
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -678,9 +688,11 @@ func (p2p *P2PClient) GetSnapShotStateData(ctx context.Context, in *pb.GetSnapSh
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -693,9 +705,11 @@ func (p2p *P2PClient) GetSnapShotHdrNode(ctx context.Context, in *pb.GetSnapShot
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -708,9 +722,11 @@ func (p2p *P2PClient) GetPeers(ctx context.Context, in *pb.GetPeersRequest, opts
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, middleware.ErrWouldBlock
+		} else {
+			p2p.reqChan <- req
 		}
 	}
-	p2p.reqChan <- req
+
 	r := <-rchan
 	return r.resp, r.err
 }
@@ -722,9 +738,11 @@ func (p2p *P2PClient) GossipTransaction(ctx context.Context, in *pb.GossipTransa
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipTxChan <- req
 		}
 	}
-	p2p.gossipTxChan <- req
+
 	return &pb.GossipTransactionAck{}, nil
 }
 
@@ -735,9 +753,11 @@ func (p2p *P2PClient) GossipProposal(ctx context.Context, in *pb.GossipProposalM
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipProposalAck{}, nil
 }
 
@@ -748,9 +768,11 @@ func (p2p *P2PClient) GossipPreVote(ctx context.Context, in *pb.GossipPreVoteMes
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipPreVoteAck{}, nil
 }
 
@@ -761,9 +783,11 @@ func (p2p *P2PClient) GossipPreVoteNil(ctx context.Context, in *pb.GossipPreVote
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipPreVoteNilAck{}, nil
 }
 
@@ -774,9 +798,11 @@ func (p2p *P2PClient) GossipPreCommit(ctx context.Context, in *pb.GossipPreCommi
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipPreCommitAck{}, nil
 }
 
@@ -787,9 +813,11 @@ func (p2p *P2PClient) GossipPreCommitNil(ctx context.Context, in *pb.GossipPreCo
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipPreCommitNilAck{}, nil
 }
 
@@ -800,9 +828,11 @@ func (p2p *P2PClient) GossipNextRound(ctx context.Context, in *pb.GossipNextRoun
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipNextRoundAck{}, nil
 }
 
@@ -813,9 +843,11 @@ func (p2p *P2PClient) GossipNextHeight(ctx context.Context, in *pb.GossipNextHei
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipNextHeightAck{}, nil
 }
 
@@ -826,9 +858,11 @@ func (p2p *P2PClient) GossipBlockHeader(ctx context.Context, in *pb.GossipBlockH
 	default:
 		if !middleware.CanBlock(opts...) {
 			return nil, ErrWouldBlock
+		} else {
+			p2p.gossipChan <- req
 		}
 	}
-	p2p.gossipChan <- req
+
 	return &pb.GossipBlockHeaderAck{}, nil
 }
 

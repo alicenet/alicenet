@@ -1,0 +1,16 @@
+run:
+  timeout: 5m
+  build-tags:
+    - integration
+    - flakes
+linters:
+  # Disabling linters until we get them fixed up.
+  disable:
+    - errcheck
+    - deadcode
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - varcheck

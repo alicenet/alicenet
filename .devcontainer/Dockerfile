@@ -12,7 +12,7 @@ RUN su vscode -c "go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
     go install github.com/MadBase/go-capnproto2/v2/capnpc-go@latest && \
     go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest && \
     go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest && \
-    go install github.com/derision-test/go-mockgen/cmd/go-mockgen@v1.1.4 && \
+    go install github.com/derision-test/go-mockgen/cmd/go-mockgen@v1.3.1 && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install github.com/ethereum/go-ethereum/cmd/abigen@v1.10.16 && \
     go install github.com/vburenin/ifacemaker@v1.1.0 && \
