@@ -3,7 +3,6 @@ package interfaces
 import (
 	"context"
 	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -34,7 +33,12 @@ type ITaskState interface {
 	LoadState(txn *badger.Txn) error
 }
 
+type TaskResponse struct {
+	Id  string
+	Err error
+}
+
 // ITaskResponseChan the interface requirements of a task response chan
 type ITaskResponseChan interface {
-	Add(objects.TaskResponse)
+	Add(TaskResponse)
 }

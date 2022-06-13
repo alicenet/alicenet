@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"reflect"
@@ -40,7 +39,7 @@ type TaskRequestInfo struct {
 	Id        string                   `json:"id"`
 	Start     uint64                   `json:"start"`
 	End       uint64                   `json:"end"`
-	IsRunning bool                     `json:"-"`
+	isRunning bool                     `json:"-"`
 	Task      executorInterfaces.ITask `json:"-"`
 }
 
@@ -68,7 +67,7 @@ type TasksScheduler struct {
 
 type taskResponseChan struct {
 	writeOnce sync.Once
-	trChan    chan objects.TaskResponse
+	trChan    chan executorInterfaces.TaskResponse
 	isClosed  bool
 }
 
@@ -79,7 +78,7 @@ func (tr *taskResponseChan) close() {
 	})
 }
 
-func (tr *taskResponseChan) Add(taskResponse objects.TaskResponse) {
+func (tr *taskResponseChan) Add(taskResponse executorInterfaces.TaskResponse) {
 	if !tr.isClosed {
 		tr.trChan <- taskResponse
 	}
@@ -115,7 +114,7 @@ func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler
 		marshaller:       tr,
 		cancelChan:       make(chan bool, 1),
 		taskRequestChan:  taskRequestChan,
-		taskResponseChan: &taskResponseChan{trChan: make(chan objects.TaskResponse, 100)},
+		taskResponseChan: &taskResponseChan{trChan: make(chan executorInterfaces.TaskResponse, 100)},
 		taskKillChan:     taskKillChan,
 		txWatcher:        txWatcher,
 	}
@@ -245,7 +244,7 @@ func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.I
 	return nil
 }
 
-func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse objects.TaskResponse) error {
+func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse executorInterfaces.TaskResponse) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -275,7 +274,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 
 			go ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan, s.txWatcher)
 
-			task.IsRunning = true
+			task.isRunning = true
 			s.Schedule[task.Id] = task
 		}
 
@@ -354,7 +353,7 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []Ta
 
 		if ((taskRequest.Start == 0 && taskRequest.End == 0) ||
 			(taskRequest.Start != 0 && taskRequest.Start <= s.LastHeightSeen && taskRequest.End == 0) ||
-			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && !taskRequest.IsRunning {
+			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && !taskRequest.isRunning {
 
 			if taskRequest.Task.GetAllowMultiExecution() ||
 				(!taskRequest.Task.GetAllowMultiExecution() && len(s.findRunningTasksByName(taskRequest.Task.GetName())) == 0) {
@@ -381,7 +380,7 @@ func (s *TasksScheduler) findRunningTasksByName(taskName string) []TaskRequestIn
 	tasks := make([]TaskRequestInfo, 0)
 
 	for _, taskRequest := range s.Schedule {
-		if taskRequest.Task.GetName() == taskName && taskRequest.IsRunning {
+		if taskRequest.Task.GetName() == taskName && taskRequest.isRunning {
 			tasks = append(tasks, taskRequest)
 		}
 	}

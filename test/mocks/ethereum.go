@@ -2,9 +2,6 @@ package mocks
 
 import (
 	"context"
-	"math/big"
-	"time"
-
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -12,7 +9,6 @@ import (
 
 type EthereumMock struct {
 	*MockNetwork
-	Client               *MockClient
 	ContractsMock        *MockContracts
 	ETHDKGMock           *MockIETHDKG
 	GovernanceMock       *MockIGovernance
@@ -32,13 +28,6 @@ func NewMockEthereum() *EthereumMock {
 	eth.GetCurrentHeightFunc.SetDefaultHook(func(context.Context) (uint64, error) { bh++; return bh, nil })
 	eth.GetFinalityDelayFunc.SetDefaultReturn(6)
 	eth.GetTransactionOptsFunc.SetDefaultReturn(&bind.TransactOpts{}, nil)
-	eth.RetryCountFunc.SetDefaultReturn(3)
-	eth.RetryDelayFunc.SetDefaultReturn(time.Millisecond)
-	eth.GetTxFeePercentageToIncreaseFunc.SetDefaultReturn(50)
-	eth.GetTxMaxGasFeeAllowedInGweiFunc.SetDefaultReturn(500)
-
-	geth := NewMockLinkedGethClient()
-	eth.GetClientFunc.SetDefaultReturn(geth)
 
 	contracts := NewMockContracts()
 	eth.ContractsFunc.SetDefaultReturn(contracts)
@@ -69,7 +58,6 @@ func NewMockEthereum() *EthereumMock {
 
 	return &EthereumMock{
 		MockNetwork:   eth,
-		Client:        geth,
 		ContractsMock: contracts,
 
 		ETHDKGMock:           ethdkg,
@@ -93,13 +81,6 @@ func NewMockLinkedTransactionWatcher() *MockIWatcher {
 	transaction := NewMockIWatcher()
 	transaction.WaitFunc.SetDefaultReturn(&types.Receipt{Status: 1}, nil)
 	return transaction
-}
-
-func NewMockLinkedGethClient() *MockClient {
-	geth := NewMockClient()
-	geth.SuggestGasTipCapFunc.SetDefaultReturn(big.NewInt(15000), nil)
-	geth.SuggestGasPriceFunc.SetDefaultReturn(big.NewInt(1000), nil)
-	return geth
 }
 
 // //NewSimulator returns a simulator for testing
