@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan) {
+func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan, txWatcher *transaction.Watcher) {
 	taskCtx, taskCancelFunc := context.WithCancel(ctx)
 	taskLogger := logger.WithField("TaskName", task.GetName())
 
@@ -26,16 +27,8 @@ func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Databas
 		task.Finish(err)
 	}
 
-	txns, err := executeTask(task, retryCount, retryDelay)
-	if err != nil {
-		task.Finish(err)
-	}
-
-	if len(txns) > 0 {
-		//TODO: add interaction with txWatcher
-	}
-
-	task.Finish(nil)
+	err = executeTask(task, retryCount, retryDelay, txWatcher)
+	task.Finish(err)
 }
 
 // prepareTask executes task preparation
@@ -44,19 +37,22 @@ func prepareTask(task interfaces.ITask, retryCount int, retryDelay time.Duration
 	var err error
 	ctx := task.GetCtx()
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		err = task.Prepare()
-		for err != nil && count < retryCount {
-			err = sleepWithContext(ctx, retryDelay)
-			if err != nil {
-				return err
-			}
-
+Loop:
+	for count < retryCount {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 			err = task.Prepare()
-			count++
+			if err != nil {
+				err = sleepWithContext(ctx, retryDelay)
+				if err != nil {
+					return err
+				}
+				count++
+				break
+			}
+			break Loop
 		}
 	}
 
@@ -64,31 +60,61 @@ func prepareTask(task interfaces.ITask, retryCount int, retryDelay time.Duration
 }
 
 // executeTask executes task business logic
-func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration) ([]*types.Transaction, error) {
+func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration, txWatcher *transaction.Watcher) error {
 	var count int
+	var success bool
 	var err error
-	txns := make([]*types.Transaction, 0)
+	var txns []*types.Transaction
 	ctx := task.GetCtx()
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		if shouldExecute(task) {
+	for !success && shouldExecute(task) && count < retryCount {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 			txns, err = task.Execute()
-			for err != nil && count < retryCount && shouldExecute(task) {
+			if err != nil {
 				err = sleepWithContext(ctx, retryDelay)
 				if err != nil {
-					return nil, err
+					return err
 				}
-
-				txns, err = task.Execute()
 				count++
+				break
+			}
+
+			success, err = watchForTransactions(task.GetCtx(), txns, txWatcher)
+			if err != nil {
+				task.GetLogger().Errorf("failed to get receipts with error: %s", err.Error())
 			}
 		}
 	}
 
-	return txns, err
+	return err
+}
+
+func watchForTransactions(ctx context.Context, txns []*types.Transaction, txWatcher *transaction.Watcher) (bool, error) {
+	if txns == nil || len(txns) == 0 {
+		return true, nil
+	}
+
+	for _, txn := range txns {
+		respChan, err := txWatcher.Subscribe(ctx, txn)
+		if err != nil {
+			return false, err
+		}
+
+		for resp := range respChan {
+			if resp.Err != nil {
+				return false, resp.Err
+			}
+
+			if resp.Receipt == nil || resp.Receipt.Status != types.ReceiptStatusSuccessful {
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
 }
 
 func shouldExecute(task interfaces.ITask) bool {

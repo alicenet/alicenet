@@ -294,12 +294,15 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
+	// Setup Transactions Watcher
+	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+
 	// Setup tasks scheduler
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	taskKillChan := make(chan string, 100)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
-	tasksScheduler := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan)
+	tasksScheduler := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
@@ -332,6 +335,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	go statusLogger.Run()
 	defer statusLogger.Close()
+
+	txWatcher.StartLoop()
+	defer txWatcher.Close()
 
 	err = tasksScheduler.Start()
 	if err != nil {

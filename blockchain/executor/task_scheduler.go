@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"reflect"
 	"strings"
@@ -62,6 +63,7 @@ type TasksScheduler struct {
 	taskResponseChan *taskResponseChan               `json:"-"`
 	taskKillChan     <-chan string                   `json:"-"`
 	logger           *logrus.Entry                   `json:"-"`
+	txWatcher        *transaction.Watcher            `json:"-"`
 }
 
 type taskResponseChan struct {
@@ -89,7 +91,7 @@ type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string) *TasksScheduler {
+func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string, txWatcher *transaction.Watcher) *TasksScheduler {
 	tr := &marshaller.TypeRegistry{}
 	tr.RegisterInstanceType(&dkg.CompletionTask{})
 	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
@@ -115,6 +117,7 @@ func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler
 		taskRequestChan:  taskRequestChan,
 		taskResponseChan: &taskResponseChan{trChan: make(chan objects.TaskResponse, 100)},
 		taskKillChan:     taskKillChan,
+		txWatcher:        txWatcher,
 	}
 
 	logger := logging.GetLogger("tasks_scheduler").WithField("Schedule", s.Schedule)
@@ -270,7 +273,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			task := tasks[i]
 			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetName())
 
-			go ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan)
+			go ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan, s.txWatcher)
 
 			task.IsRunning = true
 			s.Schedule[task.Id] = task
