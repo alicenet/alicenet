@@ -13,20 +13,20 @@ import (
 const SLEEP_DURATION = 500 * time.Millisecond
 
 func TestCancellation_SleepWithContextComplete(t *testing.T) {
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	completed := false
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		err := blockchain.SleepWithContext(ctx, SLEEP_DURATION)
 		if err == nil {
 			completed = true
 		}
-		wg.Done()
 	}()
-
 	wg.Wait()
 
 	assert.True(t, completed)
@@ -56,7 +56,8 @@ func TestCancellation_SleepWithContextInterrupted(t *testing.T) {
 }
 
 func TestCancellation_SlowReturn(t *testing.T) {
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	type args struct {
 		ctx   context.Context
