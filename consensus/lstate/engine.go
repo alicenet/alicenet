@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
@@ -47,8 +46,7 @@ type Engine struct {
 
 	storage dynamics.StorageGetter
 
-	dm           *dman.DMan
-	notSafeTimer time.Time
+	dm *dman.DMan
 }
 
 // Init will initialize the Consensus Engine and all sub modules

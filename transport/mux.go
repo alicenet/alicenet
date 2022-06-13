@@ -28,7 +28,6 @@ func init() {
 // construction.
 type P2PMux struct {
 	sync.Mutex
-	config *yamux.Config
 }
 
 func (pmx *P2PMux) defaultConfig() *yamux.Config {

@@ -21,10 +21,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const maxRetryCount = 12
-const backOffAmount = 1
-const backOffJitter = float64(.1)
-
 type appClient interface {
 	GetTxsForGossip(txnState *badger.Txn, currentHeight uint32) ([]interfaces.Transaction, error)
 	UnmarshalTx([]byte) (interfaces.Transaction, error)

@@ -2,49 +2,10 @@ package dynamics
 
 import (
 	"bytes"
-	"github.com/dgraph-io/badger/v2"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 )
-
-type mockRawDB struct {
-	rawDB map[string]string
-}
-
-func (m *mockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
-	strValue, ok := m.rawDB[string(key)]
-	if !ok {
-		return nil, ErrKeyNotPresent
-	}
-	value := []byte(strValue)
-	return value, nil
-}
-
-func (m *mockRawDB) SetValue(txn *badger.Txn, key []byte, value []byte) error {
-	strKey := string(key)
-	strValue := string(value)
-	m.rawDB[strKey] = strValue
-	return nil
-}
-
-func (m *mockRawDB) DeleteValue(key []byte) error {
-	strKey := string(key)
-	_, ok := m.rawDB[strKey]
-	if !ok {
-		return ErrKeyNotPresent
-	}
-	delete(m.rawDB, strKey)
-	return nil
-}
-
-func (m *mockRawDB) View(fn func(txn *badger.Txn) error) error {
-	return fn(nil)
-}
-
-func (m *mockRawDB) Update(fn func(txn *badger.Txn) error) error {
-	return fn(nil)
-}
 
 func TestMock(t *testing.T) {
 	key := []byte("Key")
