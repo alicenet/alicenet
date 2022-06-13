@@ -2,6 +2,9 @@ package lstate
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	appObjs "github.com/MadBase/MadNet/application/objs"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus/admin"
@@ -20,8 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 func TestEngine_Status_Ok(t *testing.T) {
@@ -1235,7 +1236,7 @@ func initAdminBus(t *testing.T, logger *logrus.Logger, db *db.Database) *admin.H
 	s := initStorage(t, logger)
 
 	handler := &admin.Handlers{}
-	handler.Init(1, db, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, make([]byte, constants.HashLen), s, nil)
+	handler.Init(1, db, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, make([]byte, constants.HashLen), s)
 
 	return handler
 }

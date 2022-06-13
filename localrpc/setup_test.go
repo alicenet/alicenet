@@ -30,7 +30,6 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	mncrypto "github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
 	"github.com/MadBase/MadNet/proto"
@@ -61,7 +60,6 @@ var tx1Signature, tx2Signature, tx3Signature []byte
 var ctx context.Context
 var app *application.Application
 var consGossipHandlers *gossip.Handlers
-var ipcServer *ipc.Server
 var peerManager *peering.PeerManager
 var consGossipClient *gossip.Client
 var consDlManager *dman.DMan
@@ -226,8 +224,6 @@ func validatorNode() {
 
 	peerManager = initPeerManager(consGossipHandlers, consReqHandler)
 
-	ipcServer = ipc.NewServer(config.Configuration.Firewalld.SocketFile)
-
 	// Initialize the consensus engine signer
 	// if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
 	// 	panic(err)
@@ -257,7 +253,7 @@ func validatorNode() {
 	consLSHandler.Init(consDB, consDlManager)
 	consGossipHandlers.Init(chainID, consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
-	consAdminHandlers.Init(chainID, consDB, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
+	consAdminHandlers.Init(chainID, consDB, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
 	// Setup monitor

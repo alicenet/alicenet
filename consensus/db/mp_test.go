@@ -6,6 +6,7 @@ import (
 )
 
 func TestMerkleProof(t *testing.T) {
+	t.Parallel()
 	mp0 := &MerkleProof{
 		Included:   true,
 		KeyHeight:  256,

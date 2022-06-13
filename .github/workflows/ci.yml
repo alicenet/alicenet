@@ -132,12 +132,7 @@ jobs:
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -v -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-      - name: Run unit tests (race detection)
-        timeout-minutes: 20
-        run: |
-          set -euo pipefail
-          go test -race -json -v -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
       - uses: codecov/codecov-action@v1
         with:
           files: ./coverage.out
@@ -196,4 +191,4 @@ jobs:
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
-          go test -tags=integration -json -v -timeout=15m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"path"
 	"sync"
 	"testing"
 
@@ -80,8 +80,8 @@ func newTestServer(address string) (getMsg func() []mock.Msg, write func([]byte)
 }
 
 func TestSocket(t *testing.T) {
-	socketFile := testutils.SocketFileName()
-	defer os.Remove(socketFile)
+	dir := t.TempDir()
+	socketFile := path.Join(dir, "socket")
 	getMsgs, write, end := newTestServer(socketFile)
 	im := mock.NewImplementation()
 

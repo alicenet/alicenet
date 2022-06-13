@@ -84,12 +84,14 @@ func TestActive(t *testing.T) {
 	close(P2PClientOneChannel)
 	time.Sleep(3 * time.Second)
 
+	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
 		t.Fatal("not zero")
 	}
 	if len(activePeerStoreObj.pid) != 0 {
 		t.Fatal("not zero")
 	}
+	activePeerStoreObj.RUnlock()
 
 	// reset the close channel
 	clientTwo.closeChan = make(chan struct{})
@@ -106,12 +108,14 @@ func TestActive(t *testing.T) {
 	activePeerStoreObj.del(randomNodeAddr)
 	time.Sleep(3 * time.Second)
 
+	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
 		t.Fatal("not zero")
 	}
 	if len(activePeerStoreObj.pid) != 0 {
 		t.Fatal("not zero")
 	}
+	activePeerStoreObj.RUnlock()
 
 	// reset the close channel
 	clientTwo.closeChan = make(chan struct{})
@@ -149,8 +153,8 @@ func Test_activePeerStore_add(t *testing.T) {
 		c interfaces.P2PClient
 	}
 	var tests = []struct {
-		name   string
-		args   args
+		name string
+		args args
 	}{
 		{
 			name: "Adding client to active peer store",
@@ -203,13 +207,13 @@ func Test_activePeerStore_contains(t *testing.T) {
 		want        bool
 	}{
 		{
-			name: "Test active peer store contains identity",
+			name:        "Test active peer store contains identity",
 			args:        struct{ c interfaces.NodeAddr }{c: randomNodeAddr},
 			prePopulate: true,
 			want:        true,
 		},
 		{
-			name: "Test active peer store contains identity with empty active peer store",
+			name:        "Test active peer store contains identity with empty active peer store",
 			args:        struct{ c interfaces.NodeAddr }{c: randomNodeAddr},
 			prePopulate: false,
 			want:        false,
@@ -249,12 +253,12 @@ func Test_activePeerStore_del(t *testing.T) {
 		prePopulate bool
 	}{
 		{
-			name: "Test delete peer from store",
+			name:        "Test delete peer from store",
 			args:        struct{ c interfaces.NodeAddr }{c: randomNodeAddr},
 			prePopulate: true,
 		},
 		{
-			name: "Test delete peer from store with empty store",
+			name:        "Test delete peer from store with empty store",
 			args:        struct{ c interfaces.NodeAddr }{c: randomNodeAddr},
 			prePopulate: true,
 		},
@@ -290,10 +294,10 @@ func Test_activePeerStore_getPeers(t *testing.T) {
 		addresses []string
 	}
 	tests := []struct {
-		name   string
-		args   args
-		want   int
-		want1  bool
+		name  string
+		args  args
+		want  int
+		want1 bool
 	}{
 		{
 			name: "Testing get Peers with 2 peers",
@@ -305,7 +309,7 @@ func Test_activePeerStore_getPeers(t *testing.T) {
 			want1: true,
 		},
 		{
-			name: "Testing get Peers with no peers",
+			name:  "Testing get Peers with no peers",
 			args:  struct{ addresses []string }{addresses: []string{}},
 			want:  0,
 			want1: false,
@@ -412,13 +416,13 @@ func Test_activePeerStore_randomClient(t *testing.T) {
 		addresses []string
 	}
 	tests := []struct {
-		name   string
-		args   args
-		want   interfaces.P2PClient
-		want1  bool
+		name  string
+		args  args
+		want  interfaces.P2PClient
+		want1 bool
 	}{
 		{
-			name: "Testing random client with no nodes",
+			name:  "Testing random client with no nodes",
 			want:  nil,
 			want1: false,
 		},

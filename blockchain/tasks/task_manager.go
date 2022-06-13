@@ -27,11 +27,11 @@ func StartTask(logger *logrus.Entry, wg *sync.WaitGroup, eth interfaces.Ethereum
 
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer task.DoDone(logger.WithField("Method", "DoDone"))
 		if onFinishCB != nil {
 			defer (*onFinishCB)()
 		}
-		defer wg.Done()
 
 		retryCount := eth.RetryCount()
 		retryDelay := eth.RetryDelay()
