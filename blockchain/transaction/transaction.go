@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/transaction/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction/objects"
+	"github.com/MadBase/MadNet/bridge/mapping/signatures"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
@@ -58,14 +59,6 @@ func (e *ErrInvalidMonitorRequest) Error() string {
 	return e.message
 }
 
-type ErrTransactionAlreadyQueued struct {
-	message string
-}
-
-func (e *ErrTransactionAlreadyQueued) Error() string {
-	return e.message
-}
-
 type ErrInvalidTransactionRequest struct {
 	message string
 }
@@ -76,15 +69,106 @@ func (e *ErrInvalidTransactionRequest) Error() string {
 
 // Internal struct to keep track of transactions that are being monitoring
 type info struct {
-	txn                    *types.Transaction                        // Transaction object
-	fromAddress            common.Address                            // address of the transaction signer
-	selector               objects.FuncSelector                      // 4 bytes that identify the function being called by the tx
-	functionSignature      string                                    // function signature as we see on the smart contracts
-	retryGroup             uint64                                    // internal group Id to keep track of all tx that were created during the retry of tx
-	receiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // channel where the response will be sent
-	monitoringHeight       uint64                                    // ethereum height where we first added the tx to be watched or did a tx retry.
-	retryAmount            uint64                                    // counter to indicate how many times we tried to retry a transaction
-	notFoundBlocks         uint64                                    // counter to indicate approximate number of blocks that we could not find a tx
+	// Transaction object
+	txn *types.Transaction
+	// address of the transaction signer
+	fromAddress common.Address
+	// 4 bytes that identify the function being called by the tx
+	selector objects.FuncSelector
+	// function signature as we see on the smart contracts
+	functionSignature string
+	// internal group Id to keep track of all tx that were created during the retry of a tx
+	retryGroup common.Hash
+	// whether we should disable the auto retry of a transaction
+	disableAutoRetry bool
+	// ethereum height where we first added the tx to be watched or did a tx retry.
+	monitoringHeight uint64
+	// counter to indicate how many times we tried to retry a transaction
+	retryAmount uint64
+	// counter to indicate approximate number of blocks that we could not find a tx
+	notFoundBlocks uint64
+	// logger to log transaction info
+	logger *logrus.Entry
+}
+
+type ReceiptResponse struct {
+	writeOnce sync.Once
+	mu        sync.RWMutex
+	isReady   bool
+	err       error          // response error that happened during processing
+	receipt   *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+}
+
+func newReceiptResponse() *ReceiptResponse {
+	return &ReceiptResponse{}
+}
+
+func (r *ReceiptResponse) IsReady() bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.isReady
+}
+
+func (r *ReceiptResponse) GetReceipt() (*types.Receipt, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.isReady {
+		return r.receipt, r.err
+	}
+	return nil, nil
+}
+
+func (r *ReceiptResponse) writeReceipt(receipt *types.Receipt, err error) {
+	if receipt == nil && err != nil {
+		return
+	}
+	r.writeOnce.Do(func() {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		r.receipt = receipt
+		r.err = err
+		r.isReady = true
+	})
+}
+
+type group struct {
+	internalGroup   []common.Hash    //
+	receiptResponse *ReceiptResponse // struct used to send/share the receipt
+}
+
+func newGroup() group {
+	return group{receiptResponse: newReceiptResponse()}
+}
+
+func (g *group) add(txHash common.Hash) {
+	g.internalGroup = append(g.internalGroup, txHash)
+}
+
+func (g *group) remove(txHash common.Hash) error {
+	index := -1
+	lastIndex := len(g.internalGroup) - 1
+	if lastIndex == -1 {
+		return fmt.Errorf("invalid removal, empty group", txHash.Hex())
+	}
+	for i, internalInfo := range g.internalGroup {
+		if bytes.Equal(internalInfo.Bytes(), txHash.Bytes()) {
+			index = i
+		}
+	}
+	if index == -1 {
+		return fmt.Errorf("txInfo %v not found", txHash.Hex())
+	}
+	if index != lastIndex {
+		// copy the last element in the index that we want to delete
+		g.internalGroup[index] = g.internalGroup[lastIndex]
+	}
+	// drop the last index
+	g.internalGroup = g.internalGroup[:lastIndex]
+	return nil
+}
+
+func (g *group) sendReceipt(logger, receipt *types.Receipt, err error) {
+
 }
 
 // Internal struct to keep track of the receipts
@@ -107,20 +191,21 @@ func (a *block) Equal(b *block) bool {
 
 // Type to do request against the tx receipt monitoring system. Ctx and response channel should be set
 type subscribeRequest struct {
-	txn             *types.Transaction                  // the transaction that should watched
-	responseChannel *ResponseChannel[SubscribeResponse] // channel where we going to send the request response
+	txn              *types.Transaction                  // the transaction that should watched
+	disableAutoRetry bool                                // whether we should disable the auto retry of a transaction
+	responseChannel  *ResponseChannel[SubscribeResponse] // channel where we going to send the request response
 }
 
 // Constrain interface used by the Response channel generics
 type transferable interface {
-	SubscribeResponse | objects.ReceiptResponse
+	SubscribeResponse
 }
 
 // Type that it's going to be used to reply a request
 type SubscribeResponse struct {
-	TxnHash                common.Hash                               // Hash of the txs which this response belongs
-	Err                    error                                     // errors that happened when processing the monitor request
-	ReceiptResponseChannel *ResponseChannel[objects.ReceiptResponse] // non blocking channel where the result from the tx/receipt monitoring will be send
+	TxnHash  common.Hash      // Hash of the txs which this response belongs
+	Err      error            // errors that happened when processing the monitor request
+	Response *ReceiptResponse // channel where the result from the tx/receipt monitoring will be send
 }
 
 // A response channel is basically a non-blocking channel that can only be
@@ -201,21 +286,28 @@ type retriedTransaction struct {
 
 // Backend struct used to monitor Ethereum transactions and retrieve their receipts
 type WatcherBackend struct {
-	mainCtx            context.Context                  // main context for the background services
-	lastProcessedBlock *block                           // Last ethereum block that we checked for receipts
-	monitoredTxns      map[common.Hash]info             // Map of transactions whose receipts we're looking for
-	receiptCache       map[common.Hash]receipt          // Receipts retrieved from transactions
-	aggregates         map[objects.FuncSelector]Profile // Struct to keep track of the gas metrics used by the system
-	retryGroups        map[uint64]uint64                // Map of groups of transactions that were retried
-	retryGroupId       uint64                           // monotonically increasing number to keep track of the retry groups
-	client             ethereum.Network                 // An interface with the ethereum functionality we need
-	knownSelectors     interfaces.ISelectorMap          // Map with signature -> name
-	logger             *logrus.Entry                    // Logger to log messages
-	requestChannel     <-chan subscribeRequest          // Channel used to send request to this backend service
+	// main context for the background services
+	mainCtx context.Context
+	// Last ethereum block that we checked for receipts
+	lastProcessedBlock *block
+	// Map of transactions whose receipts we're looking for
+	monitoredTxns map[common.Hash]info
+	// Receipts retrieved from transactions
+	receiptCache map[common.Hash]receipt
+	// Struct to keep track of the gas metrics used by the system
+	aggregates map[objects.FuncSelector]Profile
+	// Map of groups of transactions that were retried
+	retryGroups map[common.Hash]group
+	// An interface with the ethereum functionality we need
+	client ethereum.Network
+	// Logger to log messages
+	logger *logrus.Entry
+	// Channel used to send request to this backend service
+	requestChannel <-chan subscribeRequest
 }
 
 func (b *WatcherBackend) Loop() {
-
+	// 30 * time.Second
 	poolingTime := time.After(constants.TxPollingTime)
 	for {
 		select {
@@ -228,91 +320,70 @@ func (b *WatcherBackend) Loop() {
 				b.logger.Debug("Invalid request for txn without a response channel, ignoring")
 				continue
 			}
-			b.queue(req)
+			resp, err := b.queue(req)
+			req.responseChannel.SendResponse(&SubscribeResponse{Err: err, Response: resp})
 
 		case <-poolingTime:
 			b.collectReceipts()
 			poolingTime = time.After(constants.TxPollingTime)
+			// todo status
 		}
 	}
 }
 
-func (wb *WatcherBackend) queue(req subscribeRequest) {
+func (wb *WatcherBackend) queue(req subscribeRequest) (*ReceiptResponse, error) {
 
 	if req.txn == nil {
-		req.responseChannel.SendResponse(&SubscribeResponse{Err: &ErrInvalidMonitorRequest{"invalid request, missing txn object"}})
-		return
+		return nil, &ErrInvalidMonitorRequest{"invalid request, missing txn object"}
 	}
 	txnHash := req.txn.Hash()
-	defaultAccount := wb.client.GetDefaultAccount()
 	fromAddr, err := wb.client.ExtractTransactionSender(req.txn)
 	if err != nil {
 		// faulty transaction
-		req.responseChannel.SendResponse(
-			&SubscribeResponse{
-				Err: &ErrInvalidMonitorRequest{fmt.Sprintf("cannot extract fromAddr from transaction: %v", txnHash)},
-			},
-		)
-	}
-	// only accepting txs that are coming from the default account. This requirement
-	// may be lifted in the future. Right now, we impose this for the sake of
-	// simplifying retry logic.
-	if !bytes.Equal(fromAddr[:], defaultAccount.Address[:]) {
-		req.responseChannel.SendResponse(
-			&SubscribeResponse{
-				Err: &ErrInvalidMonitorRequest{
-					fmt.Sprintf(
-						"cannot accept transaction: %v from %v, can only accept tx from %v",
-						txnHash,
-						fromAddr,
-						defaultAccount.Address.Hex(),
-					),
-				},
-			})
+		return nil, &ErrInvalidMonitorRequest{fmt.Sprintf("cannot extract fromAddr from transaction: %v", txnHash)}
 	}
 
-	receiptResponseChannel := NewResponseChannel[objects.ReceiptResponse](wb.logger)
-
-	// if we already have the records of the receipt for this tx we try to send the
+	var receiptResponse *ReceiptResponse
+	// if we already have the records of the receipt for this tx, we try to send the
 	// receipt back
 	if receipt, ok := wb.receiptCache[txnHash]; ok {
-		receiptResponseChannel.SendResponse(&objects.ReceiptResponse{Receipt: receipt.receipt, TxnHash: txnHash})
+		receiptResponse = newReceiptResponse()
+		receiptResponse.writeReceipt(receipt.receipt, nil)
 	} else {
-		// not accepting multiple go routines signing for the same tx. This requirement
-		// may be lifted in the future. For now, if you need to watch for a tx that was
-		// already queued, keep polling until the receipt in the cache.
-		if _, ok := wb.monitoredTxns[txnHash]; ok {
-			req.responseChannel.SendResponse(
-				&SubscribeResponse{
-					Err: &ErrTransactionAlreadyQueued{"invalid request, tx already queued, try to get receipt later!"},
-				},
-			)
-			return
+		var txInfo info
+		if _, ok = wb.monitoredTxns[txnHash]; ok {
+			txInfo = wb.monitoredTxns[txnHash]
+		} else {
+			selector, err := ExtractSelector(req.txn.Data())
+			if err != nil {
+				return nil, &ErrInvalidTransactionRequest{
+					fmt.Sprintf("invalid request, transaction data is not present %v, err %v!", txnHash.Hex(), err),
+				}
+			}
+			sig := signatures.FunctionMapping[selector]
+
+			logEntry := wb.logger.WithField("Transaction", txnHash).
+				WithField("Function", sig).
+				WithField("Selector", fmt.Sprintf("%x", selector))
+
+			txInfo = info{
+				txn:               req.txn,
+				fromAddress:       fromAddr,
+				selector:          selector,
+				functionSignature: sig,
+				retryGroup:        txnHash,
+				disableAutoRetry:  req.disableAutoRetry,
+				logger:            logEntry,
+			}
+			wb.monitoredTxns[txnHash] = txInfo
+			txGroup := newGroup()
+			txGroup.add(txnHash)
+			wb.retryGroups[txnHash] = txGroup
+			logEntry.Debug("Transaction queued")
 		}
-
-		selector := ExtractSelector(req.txn.Data())
-		//todo: replace this with a generated mapping from the bindings
-		sig := wb.knownSelectors.Signature(selector)
-
-		logEntry := wb.logger.WithField("Transaction", txnHash).
-			WithField("Function", sig).
-			WithField("Selector", fmt.Sprintf("%x", selector))
-
-		wb.monitoredTxns[txnHash] = info{
-			txn:                    req.txn,
-			selector:               selector,
-			functionSignature:      sig,
-			receiptResponseChannel: receiptResponseChannel,
-			fromAddress:            fromAddr,
-			retryGroup:             wb.retryGroupId,
-		}
-		// initialize the retry group
-		wb.retryGroups[wb.retryGroupId] = 1
-		// increasing the monotonically ID
-		wb.retryGroupId++
-		logEntry.Debug("Transaction queued")
+		receiptResponse = wb.retryGroups[txInfo.retryGroup].receiptResponse
 	}
-	req.responseChannel.SendResponse(&SubscribeResponse{ReceiptResponseChannel: receiptResponseChannel})
+	return receiptResponse, nil
 }
 
 func (wb *WatcherBackend) collectReceipts() {
@@ -402,6 +473,11 @@ func (wb *WatcherBackend) collectReceipts() {
 					finishedTxs[workResponse.txnHash] = workResponse
 				}
 				logEntry.Tracef("Retrying, couldn't get info, num attempts: %v, err: %v", txInfo.notFoundBlocks, workResponse.err)
+			case *ErrTransactionStale:
+				// If we get this error it means that we should not retry or we cannot retry
+				// automatically, should forward the error to the subscribers
+				logEntry.Debugf("Stale transaction, err: %v", workResponse.err)
+				finishedTxs[workResponse.txnHash] = workResponse
 			}
 		} else {
 			if workResponse.retriedTxn != nil {
@@ -530,8 +606,9 @@ func (w *WorkerPool) worker() {
 			monitoredTx := work.txn
 			currentHeight := work.height
 			txnHash := monitoredTx.txn.Hash()
-		Loop:
+		RetryLoop:
 			for i := uint64(1); i <= constants.TxWorkerMaxWorkRetries; i++ {
+			RetrySelect:
 				select {
 				case <-ctx.Done():
 					// worker context timed out or parent was cancelled, should return
@@ -543,23 +620,27 @@ func (w *WorkerPool) worker() {
 						case *ErrRecoverable:
 							// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
 							if i < constants.TxWorkerMaxWorkRetries {
-								continue Loop
+								continue RetryLoop
 							}
-							// send recoverable errors after constants.TxWorkerMaxWorkRetries
-							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 						case *ErrTransactionStale:
-							newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.txn, w.baseFee, w.tipCap)
-							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}
-						default:
-							// send txNotFound or other errors back to main
-							w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
+							if !monitoredTx.disableAutoRetry {
+								defaultAccount := w.client.GetDefaultAccount()
+								if bytes.Equal(monitoredTx.fromAddress[:], defaultAccount.Address[:]) {
+									newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.txn, w.baseFee, w.tipCap)
+									w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}
+									break RetrySelect
+								}
+							}
 						}
+						// send recoverable errors after constants.TxWorkerMaxWorkRetries,txNotFound or
+						// other errors back to main
+						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
 					} else {
 						// send receipt (even if it nil) back to main thread
 						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}
 					}
 					//should continue getting other tx work
-					break Loop
+					break RetryLoop
 				}
 			}
 		}
@@ -625,7 +706,7 @@ type Watcher struct {
 var _ interfaces.IWatcher = &Watcher{}
 
 // Creates a new transaction watcher struct
-func NewWatcher(client ethereum.Network, selectMap interfaces.ISelectorMap, txConfirmationBlocks uint64) *Watcher {
+func NewWatcher(client ethereum.Network, txConfirmationBlocks uint64) *Watcher {
 	requestChannel := make(chan subscribeRequest, 100)
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
@@ -640,7 +721,7 @@ func NewWatcher(client ethereum.Network, selectMap interfaces.ISelectorMap, txCo
 		monitoredTxns:      make(map[common.Hash]info),
 		receiptCache:       make(map[common.Hash]receipt),
 		aggregates:         make(map[objects.FuncSelector]Profile),
-		knownSelectors:     selectMap,
+		retryGroups:        make(map[common.Hash]group),
 		lastProcessedBlock: &block{0, common.HexToHash("")},
 	}
 
@@ -655,7 +736,7 @@ func NewWatcher(client ethereum.Network, selectMap interfaces.ISelectorMap, txCo
 
 // WatcherFromNetwork creates a transaction Watcher from a given ethereum network.
 func WatcherFromNetwork(network ethereum.Network) *Watcher {
-	watcher := NewWatcher(network, NewKnownSelectors(), network.GetFinalityDelay())
+	watcher := NewWatcher(network, network.GetFinalityDelay())
 	watcher.StartLoop()
 	return watcher
 }
@@ -678,14 +759,14 @@ func (f *Watcher) Close() {
 // final tx hash in the receipt can be different from the initial txn sent. This
 // can happen if the txn got stale and the watcher did a transaction replace
 // with higher fees.
-func (tw *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error) {
-	tw.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
-	respChannel := NewResponseChannel[SubscribeResponse](tw.logger)
+func (w *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error) {
+	w.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
+	respChannel := NewResponseChannel[SubscribeResponse](w.logger)
 	defer respChannel.CloseChannel()
 	req := subscribeRequest{txn: txn, responseChannel: respChannel}
 
 	select {
-	case tw.requestChannel <- req:
+	case w.requestChannel <- req:
 	case <-ctx.Done():
 		return nil, &ErrInvalidTransactionRequest{fmt.Sprintf("context cancelled reqChannel: %v", ctx.Err())}
 	}
@@ -718,7 +799,13 @@ func (f *Watcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction) 
 	return f.Wait(ctx, receiptResponseChannel)
 }
 
-func (f *Watcher) Status(ctx context.Context) error {
-	f.logger.Error("Status function not implemented yet")
-	return nil
+func ExtractSelector(data []byte) (objects.FuncSelector, error) {
+	var selector [4]byte
+	if len(data) < 4 {
+		return selector, fmt.Errorf("couldn't extract selector for data: %v", data)
+	}
+	for idx := 0; idx < 4; idx++ {
+		selector[idx] = data[idx]
+	}
+	return selector, nil
 }
