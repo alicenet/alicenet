@@ -1,12 +1,21 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "localstate.proto",
+    "title": "proto/aobjs.proto",
     "version": "version not set"
   },
   "tags": [
     {
+      "name": "BootNode"
+    },
+    {
       "name": "LocalState"
+    },
+    {
+      "name": "P2P"
+    },
+    {
+      "name": "P2PDiscovery"
     }
   ],
   "consumes": [
@@ -676,6 +685,17 @@
         }
       }
     },
+    "protoBootNodeResponse": {
+      "type": "object",
+      "properties": {
+        "Peers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "protoChainIDRequest": {
       "type": "object"
     },
@@ -777,6 +797,18 @@
         }
       }
     },
+    "protoGetBlockHeadersResponse": {
+      "type": "object",
+      "properties": {
+        "BlockHeaders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
     "protoGetDataRequest": {
       "type": "object",
       "properties": {
@@ -797,6 +829,68 @@
       "properties": {
         "Rawdata": {
           "type": "string"
+        }
+      }
+    },
+    "protoGetMinedTxsResponse": {
+      "type": "object",
+      "properties": {
+        "Txs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
+    "protoGetPeersResponse": {
+      "type": "object",
+      "properties": {
+        "Peers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "protoGetPendingTxsResponse": {
+      "type": "object",
+      "properties": {
+        "Txs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
+    "protoGetSnapShotHdrNodeResponse": {
+      "type": "object",
+      "properties": {
+        "Node": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "protoGetSnapShotNodeResponse": {
+      "type": "object",
+      "properties": {
+        "Node": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "protoGetSnapShotStateDataResponse": {
+      "type": "object",
+      "properties": {
+        "Data": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -840,6 +934,33 @@
           "format": "int64"
         }
       }
+    },
+    "protoGossipBlockHeaderAck": {
+      "type": "object"
+    },
+    "protoGossipNextHeightAck": {
+      "type": "object"
+    },
+    "protoGossipNextRoundAck": {
+      "type": "object"
+    },
+    "protoGossipPreCommitAck": {
+      "type": "object"
+    },
+    "protoGossipPreCommitNilAck": {
+      "type": "object"
+    },
+    "protoGossipPreVoteAck": {
+      "type": "object"
+    },
+    "protoGossipPreVoteNilAck": {
+      "type": "object"
+    },
+    "protoGossipProposalAck": {
+      "type": "object"
+    },
+    "protoGossipTransactionAck": {
+      "type": "object"
     },
     "protoIterateNameSpaceRequest": {
       "type": "object",
@@ -925,6 +1046,19 @@
         "RoundState": {
           "type": "string",
           "format": "byte"
+        }
+      }
+    },
+    "protoStatusResponse": {
+      "type": "object",
+      "properties": {
+        "SyncToBlockHeight": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "MaxBlockHeightSeen": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

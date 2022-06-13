@@ -2,104 +2,93 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "/;proto";
-
 // Protobuf message implementation for struct Tx
 message Tx {
-	repeated TXIn Vin = 1;
-	repeated TXOut Vout = 2;
-	string Fee = 3;
+  repeated TXIn Vin = 1;
+  repeated TXOut Vout = 2;
+  string Fee = 3;
 }
 
 // Protobuf message implementation for struct TXOut
 message TXOut {
   oneof utxo {
-  AtomicSwap AtomicSwap = 1;
-  ValueStore ValueStore = 2;
-  DataStore DataStore = 3;
+    AtomicSwap AtomicSwap = 1;
+    ValueStore ValueStore = 2;
+    DataStore DataStore = 3;
   }
 }
 
-
 // Protobuf message implementation for struct TXIn
 message TXIn {
-	TXInLinker TXInLinker = 1;
-	string Signature = 2;
+  TXInLinker TXInLinker = 1;
+  string Signature = 2;
 }
-
 
 // Protobuf message implementation for struct TXInLinker
 message TXInLinker {
-	TXInPreImage TXInPreImage = 1;
-	string TxHash = 2;
+  TXInPreImage TXInPreImage = 1;
+  string TxHash = 2;
 }
-
 
 // Protobuf message implementation for struct TXInPreImage
 message TXInPreImage {
-	uint32 ChainID = 1;
-	uint32 ConsumedTxIdx = 2;
-	string ConsumedTxHash = 3;
+  uint32 ChainID = 1;
+  uint32 ConsumedTxIdx = 2;
+  string ConsumedTxHash = 3;
 }
-
 
 // Protobuf message implementation for struct AtomicSwap
 message AtomicSwap {
-	ASPreImage ASPreImage = 1;
-	string TxHash = 2;
+  ASPreImage ASPreImage = 1;
+  string TxHash = 2;
 }
-
 
 // Protobuf message implementation for struct ASPreImage
 message ASPreImage {
-	uint32 ChainID = 1;
-	string Value = 2;
-	uint32 TXOutIdx = 3;
-	uint32 IssuedAt = 4;
-	uint32 Exp = 5;
-	string Owner = 6;
-	string Fee = 7;
+  uint32 ChainID = 1;
+  string Value = 2;
+  uint32 TXOutIdx = 3;
+  uint32 IssuedAt = 4;
+  uint32 Exp = 5;
+  string Owner = 6;
+  string Fee = 7;
 }
 
 // Protobuf message implementation for struct ValueStore
 message ValueStore {
-	VSPreImage VSPreImage = 1;
-	string TxHash = 2;
+  VSPreImage VSPreImage = 1;
+  string TxHash = 2;
 }
-
 
 // Protobuf message implementation for struct VSPreImage
 message VSPreImage {
-	uint32 ChainID = 1;
-	string Value = 2;
-	uint32 TXOutIdx = 3;
-  	string Owner = 4;
-	string Fee = 5;
+  uint32 ChainID = 1;
+  string Value = 2;
+  uint32 TXOutIdx = 3;
+  string Owner = 4;
+  string Fee = 5;
 }
-
 
 // Protobuf message implementation for struct DataStore
 message DataStore {
-	DSLinker DSLinker = 1;
-	string Signature = 2;
+  DSLinker DSLinker = 1;
+  string Signature = 2;
 }
-
 
 // Protobuf message implementation for struct DSLinker
 message DSLinker {
-	DSPreImage DSPreImage = 1;
-	string TxHash = 2;
+  DSPreImage DSPreImage = 1;
+  string TxHash = 2;
 }
-
 
 // Protobuf message implementation for struct DSPreImage
 message DSPreImage {
-	uint32 ChainID = 1;
-	string Index = 2;
-	uint32 IssuedAt = 3;
-	string Deposit = 4;
-	string RawData = 5;
-	uint32 TXOutIdx = 6;
-	string Owner = 7;
-	string Fee = 8;
+  uint32 ChainID = 1;
+  string Index = 2;
+  uint32 IssuedAt = 3;
+  string Deposit = 4;
+  string RawData = 5;
+  uint32 TXOutIdx = 6;
+  string Owner = 7;
+  string Fee = 8;
 }

@@ -4,3 +4,17 @@
 # don't normalize shell scripts, since carriage returns cause script errors
 *.sh text eol=lf
 *.bash text eol=lf
+
+# Simplify how generated files work with git/github
+*.capnp.go      -diff -merge
+*.capnp.go      linguist-generated=true
+*.pb.go         -diff -merge
+*.pb.go         linguist-generated=true
+*.swagger.json  -diff -merge
+*.swagger.json  linguist-generated=true
+*_mngen.go      -diff -merge
+*_mngen.go      linguist-generated=true
+*_mngen_test.go -diff -merge
+*_mngen_test.go linguist-generated=true
+*.mockgen.go    -diff -merge
+*.mockgen.go    linguist-generated=true

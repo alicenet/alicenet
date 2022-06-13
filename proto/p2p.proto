@@ -2,36 +2,33 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "/;proto";
-
 // The P2P service definition.
 service P2P {
-  rpc Status (StatusRequest) returns (StatusResponse) {}
+  rpc Status(StatusRequest) returns (StatusResponse) {}
 
-  rpc GetBlockHeaders (GetBlockHeadersRequest) returns (GetBlockHeadersResponse) {}
-  rpc GetMinedTxs (GetMinedTxsRequest) returns (GetMinedTxsResponse) {}
-  rpc GetPendingTxs (GetPendingTxsRequest) returns (GetPendingTxsResponse) {}
-  rpc GetSnapShotNode (GetSnapShotNodeRequest) returns (GetSnapShotNodeResponse) {}
-  rpc GetSnapShotStateData (GetSnapShotStateDataRequest) returns (GetSnapShotStateDataResponse) {}
-  rpc GetSnapShotHdrNode (GetSnapShotHdrNodeRequest) returns (GetSnapShotHdrNodeResponse) {}
+  rpc GetBlockHeaders(GetBlockHeadersRequest) returns (GetBlockHeadersResponse) {}
+  rpc GetMinedTxs(GetMinedTxsRequest) returns (GetMinedTxsResponse) {}
+  rpc GetPendingTxs(GetPendingTxsRequest) returns (GetPendingTxsResponse) {}
+  rpc GetSnapShotNode(GetSnapShotNodeRequest) returns (GetSnapShotNodeResponse) {}
+  rpc GetSnapShotStateData(GetSnapShotStateDataRequest) returns (GetSnapShotStateDataResponse) {}
+  rpc GetSnapShotHdrNode(GetSnapShotHdrNodeRequest) returns (GetSnapShotHdrNodeResponse) {}
 
-  rpc GossipTransaction (GossipTransactionMessage) returns (GossipTransactionAck) {}
+  rpc GossipTransaction(GossipTransactionMessage) returns (GossipTransactionAck) {}
 
-  rpc GossipProposal (GossipProposalMessage) returns (GossipProposalAck) {}
-  rpc GossipPreVote (GossipPreVoteMessage) returns (GossipPreVoteAck) {}
-  rpc GossipPreVoteNil (GossipPreVoteNilMessage) returns (GossipPreVoteNilAck) {}
-  rpc GossipPreCommit (GossipPreCommitMessage) returns (GossipPreCommitAck) {}
-  rpc GossipPreCommitNil (GossipPreCommitNilMessage) returns (GossipPreCommitNilAck) {}
-  rpc GossipNextRound (GossipNextRoundMessage) returns (GossipNextRoundAck) {}
-  rpc GossipNextHeight (GossipNextHeightMessage) returns (GossipNextHeightAck) {}
-  rpc GossipBlockHeader (GossipBlockHeaderMessage) returns (GossipBlockHeaderAck) {}
+  rpc GossipProposal(GossipProposalMessage) returns (GossipProposalAck) {}
+  rpc GossipPreVote(GossipPreVoteMessage) returns (GossipPreVoteAck) {}
+  rpc GossipPreVoteNil(GossipPreVoteNilMessage) returns (GossipPreVoteNilAck) {}
+  rpc GossipPreCommit(GossipPreCommitMessage) returns (GossipPreCommitAck) {}
+  rpc GossipPreCommitNil(GossipPreCommitNilMessage) returns (GossipPreCommitNilAck) {}
+  rpc GossipNextRound(GossipNextRoundMessage) returns (GossipNextRoundAck) {}
+  rpc GossipNextHeight(GossipNextHeightMessage) returns (GossipNextHeightAck) {}
+  rpc GossipBlockHeader(GossipBlockHeaderMessage) returns (GossipBlockHeaderAck) {}
 
-  rpc GetPeers (GetPeersRequest) returns (GetPeersResponse) {}
+  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse) {}
 }
 
-
 service P2PDiscovery {
-  rpc GetPeers (GetPeersRequest) returns (GetPeersResponse) {}
+  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse) {}
 }
 
 message GetPeersRequest {
@@ -42,13 +39,11 @@ message GetPeersResponse {
   repeated string Peers = 1;
 }
 
-
 message StatusRequest {}
 message StatusResponse {
   uint32 SyncToBlockHeight = 1;
   uint32 MaxBlockHeightSeen = 2;
 }
-
 
 message GetBlockHeadersRequest {
   repeated uint32 BlockNumbers = 1;
@@ -57,7 +52,6 @@ message GetBlockHeadersResponse {
   repeated bytes BlockHeaders = 1;
 }
 
-
 message GetPendingTxsRequest {
   repeated bytes TxHashes = 1;
 }
@@ -65,14 +59,12 @@ message GetPendingTxsResponse {
   repeated bytes Txs = 1;
 }
 
-
 message GetMinedTxsRequest {
   repeated bytes TxHashes = 1;
 }
 message GetMinedTxsResponse {
   repeated bytes Txs = 1;
 }
-
 
 message GetSnapShotNodeRequest {
   uint32 Height = 1;
@@ -96,56 +88,47 @@ message GetSnapShotHdrNodeResponse {
   bytes Node = 1;
 }
 
-
-message GossipProposalMessage{
+message GossipProposalMessage {
   bytes Proposal = 1;
 }
 message GossipProposalAck {}
 
-
-message GossipPreVoteMessage{
+message GossipPreVoteMessage {
   bytes PreVote = 1;
 }
 message GossipPreVoteAck {}
 
-
-message GossipPreVoteNilMessage{
+message GossipPreVoteNilMessage {
   bytes PreVoteNil = 1;
 }
 message GossipPreVoteNilAck {}
 
-
-message GossipPreCommitMessage{
+message GossipPreCommitMessage {
   bytes PreCommit = 1;
 }
 message GossipPreCommitAck {}
 
-
-message GossipPreCommitNilMessage{
+message GossipPreCommitNilMessage {
   bytes PreCommitNil = 1;
 }
 message GossipPreCommitNilAck {}
 
-
-message GossipNextRoundMessage{
+message GossipNextRoundMessage {
   bytes NextRound = 1;
 }
 message GossipNextRoundAck {}
 
-
-message GossipNextHeightMessage{
+message GossipNextHeightMessage {
   bytes NextHeight = 1;
 }
 message GossipNextHeightAck {}
 
-
-message GossipBlockHeaderMessage{
+message GossipBlockHeaderMessage {
   bytes BlockHeader = 1;
 }
 message GossipBlockHeaderAck {}
 
-
-message GossipTransactionMessage{
+message GossipTransactionMessage {
   bytes Transaction = 1;
 }
 message GossipTransactionAck {}

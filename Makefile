@@ -15,6 +15,16 @@ build: init
 race:
 	go build -o $(RACE_DETECTOR) -race ./cmd/main.go;
 
+.PHONY: lint
+lint:
+	golangci-lint run
+	buf lint
+	buf breaking --against '.git#branch=candidate'
+
+.PHONY: format
+format:
+	buf format -w
+
 .PHONY: generate
 generate: generate-bridge generate-go
 

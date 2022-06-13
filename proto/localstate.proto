@@ -3,126 +3,121 @@ syntax = "proto3";
 package proto;
 
 import "google/api/annotations.proto";
-import "localstatetypes.proto";
-option go_package = "/;proto";
-
+import "proto/localstatetypes.proto";
 
 service LocalState {
-    // Get only the raw data from a datastore UTXO that has been mined into chain
-    rpc GetData(GetDataRequest) returns (GetDataResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-data"
-          body: "*"
-        };
-    }
-    // Get a list of UTXOs that sum to at least a minimum of some value where each
-    // UTXO has a common owner
-    rpc GetValueForOwner(GetValueRequest) returns (GetValueResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-value-for-owner"
-          body: "*"
-        };
-    }
-    // Iterate all datastores in a namespace defined by an owner
-    rpc IterateNameSpace(IterateNameSpaceRequest) returns (IterateNameSpaceResponse) {
-      option (google.api.http) = {
-          post: "/v1/iterate-name-space"
-          body: "*"
-        };
-    }
-    // Get a mined transaction by hash
-    rpc GetMinedTransaction(MinedTransactionRequest) returns (MinedTransactionResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-mined-transaction"
-          body: "*"
-        };
-    }
-    // Get blockheader by hash or blocknumber
-    rpc GetBlockHeader(BlockHeaderRequest) returns (BlockHeaderResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-block-header"
-          body: "*"
-        };
-    }
-    // Get a raw UTXO by TxHash and index or by UTXOID
-    rpc GetUTXO(UTXORequest) returns (UTXOResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-utxo"
-          body: "*"
-        };
-    }
-    // Get transaction status by hash
-    rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-transaction-status"
-          body: "*"
-        };
-    }
-    // Get a pending transaction by hash
-    rpc GetPendingTransaction(PendingTransactionRequest) returns (PendingTransactionResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-pending-transaction"
-          body: "*"
-        };
-    }
-    // Get the round state object for a specified round for a specified validator
-    // This allows tracing the consensus flow.
-    rpc GetRoundStateForValidator(RoundStateForValidatorRequest) returns (RoundStateForValidatorResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-round-state-for-validator"
-          body: "*"
-        };
-    }
-    // Get the set of validators for a specified block height
-    rpc GetValidatorSet(ValidatorSetRequest) returns (ValidatorSetResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-validator-set"
-          body: "*"
-        };
-    }
-    // Get the current block number
-    rpc GetBlockNumber(BlockNumberRequest) returns (BlockNumberResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-block-number"
-          body: "*"
-        };
-    }
-    // Get the current ChainID of the node
-    rpc GetChainID(ChainIDRequest) returns (ChainIDResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-chain-id"
-          body: "*"
-        };
-    }
-    // Send a transaction to the node
-    rpc SendTransaction(TransactionData) returns (TransactionDetails) {
-      option (google.api.http) = {
-          post: "/v1/send-transaction"
-          body: "*"
-        };
-    }
-    // Get the current block number
-    rpc GetEpochNumber(EpochNumberRequest) returns (EpochNumberResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-epoch-number"
-          body: "*"
-        };
-    }
-    // Get the current block number
-    rpc GetTxBlockNumber(TxBlockNumberRequest) returns (TxBlockNumberResponse) {
-      option (google.api.http) = {
-          post: "/v1/get-tx-block-number"
-          body: "*"
-        };
-    }
+  // Get only the raw data from a datastore UTXO that has been mined into chain
+  rpc GetData(GetDataRequest) returns (GetDataResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-data"
+      body: "*"
+    };
+  }
+  // Get a list of UTXOs that sum to at least a minimum of some value where each
+  // UTXO has a common owner
+  rpc GetValueForOwner(GetValueRequest) returns (GetValueResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-value-for-owner"
+      body: "*"
+    };
+  }
+  // Iterate all datastores in a namespace defined by an owner
+  rpc IterateNameSpace(IterateNameSpaceRequest) returns (IterateNameSpaceResponse) {
+    option (google.api.http) = {
+      post: "/v1/iterate-name-space"
+      body: "*"
+    };
+  }
+  // Get a mined transaction by hash
+  rpc GetMinedTransaction(MinedTransactionRequest) returns (MinedTransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-mined-transaction"
+      body: "*"
+    };
+  }
+  // Get blockheader by hash or blocknumber
+  rpc GetBlockHeader(BlockHeaderRequest) returns (BlockHeaderResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-block-header"
+      body: "*"
+    };
+  }
+  // Get a raw UTXO by TxHash and index or by UTXOID
+  rpc GetUTXO(UTXORequest) returns (UTXOResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-utxo"
+      body: "*"
+    };
+  }
+  // Get transaction status by hash
+  rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-transaction-status"
+      body: "*"
+    };
+  }
+  // Get a pending transaction by hash
+  rpc GetPendingTransaction(PendingTransactionRequest) returns (PendingTransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-pending-transaction"
+      body: "*"
+    };
+  }
+  // Get the round state object for a specified round for a specified validator
+  // This allows tracing the consensus flow.
+  rpc GetRoundStateForValidator(RoundStateForValidatorRequest) returns (RoundStateForValidatorResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-round-state-for-validator"
+      body: "*"
+    };
+  }
+  // Get the set of validators for a specified block height
+  rpc GetValidatorSet(ValidatorSetRequest) returns (ValidatorSetResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-validator-set"
+      body: "*"
+    };
+  }
+  // Get the current block number
+  rpc GetBlockNumber(BlockNumberRequest) returns (BlockNumberResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-block-number"
+      body: "*"
+    };
+  }
+  // Get the current ChainID of the node
+  rpc GetChainID(ChainIDRequest) returns (ChainIDResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-chain-id"
+      body: "*"
+    };
+  }
+  // Send a transaction to the node
+  rpc SendTransaction(TransactionData) returns (TransactionDetails) {
+    option (google.api.http) = {
+      post: "/v1/send-transaction"
+      body: "*"
+    };
+  }
+  // Get the current block number
+  rpc GetEpochNumber(EpochNumberRequest) returns (EpochNumberResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-epoch-number"
+      body: "*"
+    };
+  }
+  // Get the current block number
+  rpc GetTxBlockNumber(TxBlockNumberRequest) returns (TxBlockNumberResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-tx-block-number"
+      body: "*"
+    };
+  }
 
-    rpc GetFees(FeeRequest) returns (FeeResponse) {
-      option (google.api.http) = {
-        post: "/v1/get-fees"
-        body: "*"
-      };
-    }
-
+  rpc GetFees(FeeRequest) returns (FeeResponse) {
+    option (google.api.http) = {
+      post: "/v1/get-fees"
+      body: "*"
+    };
+  }
 }
-
-
