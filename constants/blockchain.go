@@ -42,4 +42,7 @@ const (
 	EthereumTxMaxStaleBlocks uint64 = 10
 	// Minimum value that we accept for a txMaxGasFeeAllowedInGwei config parameter
 	EthereumMinGasFeeAllowedInGwei uint64 = 300
+	// Default finality delay value. Mostly used as fallback in case we cannot
+	// retrieve the current finality delay used via smart contracts.
+	EthereumFinalityDelay uint64 = 12
 )

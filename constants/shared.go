@@ -24,10 +24,6 @@ const (
 	// phases. The lower this factor is, the quicker more validators are elected as
 	// leaders.
 	ETHDKGDesperationFactor int = 8
-
-	// Default finality delay value. Mostly used as fallback in case we cannot
-	// retrieve the current finality delay used via smart contracts.
-	DefaultFinalityDelay uint64 = 12
 )
 
 // CurveSpec specifies the particular elliptic curve we are dealing with

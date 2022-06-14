@@ -1,12 +1,14 @@
 package dkg
 
 import (
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -24,18 +26,18 @@ var _ interfaces.ITask = &DisputeMissingGPKjTask{}
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		Task: objects.NewTask(constants.DisputeMissingGPKjTaskName, start, end, false),
+		Task: objects.NewTask(constants.DisputeMissingGPKjTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the DisputeMissingGPKjTask.
-func (t *DisputeMissingGPKjTask) Prepare() error {
+func (t *DisputeMissingGPKjTask) Prepare() *executorInterfaces.TaskErr {
 	t.GetLogger().Info("DisputeMissingGPKjTask Prepare()...")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, error) {
+func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingGPKjTask Execute()")
 
@@ -78,7 +80,7 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingGPKjTask) ShouldExecute() bool {
+func (t *DisputeMissingGPKjTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingGPKjTask ShouldExecute()")
 

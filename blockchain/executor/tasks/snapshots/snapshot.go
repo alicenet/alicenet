@@ -1,13 +1,14 @@
 package snapshots
 
 import (
+	dangerousRand "math/rand"
+	"strings"
+	"time"
+
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	dangerousRand "math/rand"
-	"strings"
-	"time"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -24,14 +25,14 @@ var _ interfaces.ITask = &SnapshotTask{}
 
 func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
-		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false),
+		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false, true),
 	}
 
 	return snapshotTask
 }
 
 // Prepare prepares for work to be done in the SnapshotTask
-func (t *SnapshotTask) Prepare() error {
+func (t *SnapshotTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask Initialize()...")
 
@@ -67,7 +68,7 @@ func (t *SnapshotTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *SnapshotTask) Execute() ([]*types.Transaction, error) {
+func (t *SnapshotTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("SnapshotTask Execute()...")
 
@@ -119,7 +120,7 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *SnapshotTask) ShouldExecute() bool {
+func (t *SnapshotTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("SnapshotTask ShouldExecute()...")
 

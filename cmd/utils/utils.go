@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +43,7 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
-		constants.DefaultFinalityDelay,
+		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers,
 	)
@@ -67,12 +66,6 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
 
 	acct := eth.GetDefaultAccount()
-
-	keys, err := eth.GetAccountKeys(acct.Address)
-	if err != nil {
-		logger.Warnf("Failed to retrieve account %v keys: %v", acct.Address.Hex(), err)
-		return
-	}
 
 	weiBalance, err := eth.GetBalance(acct.Address)
 	if err != nil {
@@ -100,7 +93,6 @@ func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
 	logger.Infof("  ValidatorsPool contract: %v", c.ValidatorPoolAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
-	logger.Infof("              Public key: 0x%x", crypto.FromECDSAPub(&keys.PrivateKey.PublicKey))
 	logger.Infof("             Wei balance: %v", weiBalance)
 	logger.Infof("            Is Validator: %v", isValidator)
 	logger.Info(strings.Repeat("-", 80))

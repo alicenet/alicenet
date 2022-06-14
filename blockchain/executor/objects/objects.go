@@ -2,7 +2,8 @@ package objects
 
 import (
 	"context"
-	"errors"
+	"strings"
+
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
@@ -11,37 +12,27 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
-	"math/big"
-	"strings"
-)
-
-// ErrCanNotContinue standard error if we must drop out of ETHDKG
-var (
-	ErrCanNotContinue = errors.New("can not continue distributed key generation")
 )
 
 type Task struct {
-	id                  string
-	name                string
-	start               uint64
-	end                 uint64
-	allowMultiExecution bool
-	ctx                 context.Context
-	cancelFunc          context.CancelFunc
-	database            *db.Database
-	logger              *logrus.Entry
-	eth                 ethereum.Network
-	taskResponseChan    interfaces.ITaskResponseChan
-	startBlockHash      common.Hash
-	txOpts              *TxOpts
+	id                        string
+	name                      string
+	start                     uint64
+	end                       uint64
+	allowMultiExecution       bool
+	allowTxFeeAutoReplacement bool
+	ctx                       context.Context
+	cancelFunc                context.CancelFunc
+	database                  *db.Database
+	logger                    *logrus.Entry
+	eth                       ethereum.Network
+	taskResponseChan          interfaces.ITaskResponseChan
+	startBlockHash            common.Hash
+	txOpts                    *TxOpts
 }
 
 type TxOpts struct {
-	TxHashes     []common.Hash
-	Nonce        *big.Int
-	GasFeeCap    *big.Int
-	GasTipCap    *big.Int
-	MinedInBlock uint64
+	TxHashes []common.Hash
 }
 
 func (to *TxOpts) GetHexTxsHashes() string {
@@ -53,17 +44,18 @@ func (to *TxOpts) GetHexTxsHashes() string {
 	return hashes.String()
 }
 
-func NewTask(name string, start uint64, end uint64, allowMultiExecution bool) *Task {
+func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, allowTxFeeAutoReplacement bool) *Task {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &Task{
-		name:                name,
-		start:               start,
-		end:                 end,
-		allowMultiExecution: allowMultiExecution,
-		ctx:                 ctx,
-		cancelFunc:          cf,
-		txOpts:              &TxOpts{TxHashes: make([]common.Hash, 0)},
+		name:                      name,
+		start:                     start,
+		end:                       end,
+		allowMultiExecution:       allowMultiExecution,
+		allowTxFeeAutoReplacement: allowTxFeeAutoReplacement,
+		ctx:                       ctx,
+		cancelFunc:                cf,
+		txOpts:                    &TxOpts{TxHashes: make([]common.Hash, 0)},
 	}
 }
 
@@ -101,6 +93,10 @@ func (t *Task) GetName() string {
 // GetAllowMultiExecution default implementation for the ITask interface
 func (t *Task) GetAllowMultiExecution() bool {
 	return t.allowMultiExecution
+}
+
+func (t *Task) GetAllowTxFeeAutoReplacement() bool {
+	return t.allowTxFeeAutoReplacement
 }
 
 // GetCtx default implementation for the ITask interface

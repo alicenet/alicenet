@@ -2,9 +2,10 @@ package dkg
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	dkgConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -24,12 +25,12 @@ var _ executorInterfaces.ITask = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end, false),
+		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the CompletionTask
-func (t *CompletionTask) Prepare() error {
+func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask Prepare()...")
 
@@ -39,17 +40,17 @@ func (t *CompletionTask) Prepare() error {
 		return err
 	})
 	if err != nil {
-		return fmt.Errorf("CompletionTask.Prepare(): error loading dkgState: %v", err)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error loading dkgState: %v", err), false)
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission {
-		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
+		return executorInterfaces.NewTaskErr("it's not in DisputeGPKJSubmission phase", false)
 	}
 
 	// setup leader election
 	block, err := t.GetEth().GetBlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
 	if err != nil {
-		return fmt.Errorf("CompletionTask.Prepare(): error getting block by number: %v", err)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
 
 	logger.Infof("block hash: %v\n", block.Hash())
@@ -59,7 +60,7 @@ func (t *CompletionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *CompletionTask) Execute() ([]*types.Transaction, error) {
+func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask Execute()")
 
@@ -95,7 +96,7 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *CompletionTask) ShouldExecute() bool {
+func (t *CompletionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask ShouldExecute()")
 

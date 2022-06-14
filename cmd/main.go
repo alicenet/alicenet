@@ -131,6 +131,7 @@ func main() {
 			{"ethereum.startingBlock", "", "The first block we care about", &config.Configuration.Ethereum.StartingBlock},
 			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
 			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
+			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
 			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
 			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},

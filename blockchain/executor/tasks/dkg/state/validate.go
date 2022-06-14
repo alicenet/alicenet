@@ -69,7 +69,7 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 	// get ethdkg nonce
 	nonce, err := ethdkg.GetNonce(callOpts)
 	if err != nil {
-		return Undefined, nil
+		return Undefined, err
 	}
 
 	if participantState.Nonce != nonce.Uint64() {

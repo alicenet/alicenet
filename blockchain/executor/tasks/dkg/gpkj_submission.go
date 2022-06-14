@@ -2,12 +2,14 @@ package dkg
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -28,13 +30,13 @@ var _ interfaces.ITask = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false),
+		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false, true),
 		adminHandler: adminHandler,
 	}
 }
 
 // Prepare prepares for work to be done in the GPKjSubmissionTask
-func (t *GPKjSubmissionTask) Prepare() error {
+func (t *GPKjSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("GPKSubmissionTask Prepare()...")
 
@@ -96,7 +98,7 @@ func (t *GPKjSubmissionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, error) {
+func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 
 	dkgState := &state.DkgState{}
@@ -128,7 +130,7 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *GPKjSubmissionTask) ShouldExecute() bool {
+func (t *GPKjSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("GPKjSubmissionTask ShouldExecute()")
 

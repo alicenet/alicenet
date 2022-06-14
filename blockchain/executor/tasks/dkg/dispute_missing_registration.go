@@ -1,12 +1,14 @@
 package dkg
 
 import (
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -24,18 +26,18 @@ var _ interfaces.ITask = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		Task: objects.NewTask(constants.DisputeMissingRegistrationTaskName, start, end, false),
+		Task: objects.NewTask(constants.DisputeMissingRegistrationTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the DisputeMissingRegistrationTask
-func (t *DisputeMissingRegistrationTask) Prepare() error {
+func (t *DisputeMissingRegistrationTask) Prepare() *executorInterfaces.TaskErr {
 	t.GetLogger().Info("DisputeMissingRegistrationTask Prepare()...")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, error) {
+func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingRegistrationTask Execute()")
 
@@ -78,7 +80,7 @@ func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, error)
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingRegistrationTask) ShouldExecute() bool {
+func (t *DisputeMissingRegistrationTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingRegistrationTask ShouldExecute()")
 

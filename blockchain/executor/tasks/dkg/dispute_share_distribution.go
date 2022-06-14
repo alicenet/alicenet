@@ -3,8 +3,10 @@ package dkg
 import (
 	"crypto/rand"
 	"fmt"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -26,14 +28,14 @@ var _ interfaces.ITask = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end, false),
+		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the DisputeShareDistributionTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeShareDistributionTask) Prepare() error {
+func (t *DisputeShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("DisputeShareDistributionTask Prepare()...")
 
@@ -91,7 +93,7 @@ func (t *DisputeShareDistributionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, error) {
+func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeShareDistributionTask doTask()")
 
@@ -163,7 +165,7 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeShareDistributionTask) ShouldExecute() bool {
+func (t *DisputeShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeShareDistributionTask ShouldExecute()")
 

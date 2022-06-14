@@ -2,8 +2,10 @@ package dkg
 
 import (
 	"fmt"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -22,14 +24,14 @@ var _ interfaces.ITask = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end, false),
+		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the ShareDistributionTask.
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
-func (t *ShareDistributionTask) Prepare() error {
+func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Infof("ShareDistributionTask Prepare()")
 
@@ -85,7 +87,7 @@ func (t *ShareDistributionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *ShareDistributionTask) Execute() ([]*types.Transaction, error) {
+func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("ShareDistributionTask doTask()")
 
@@ -120,7 +122,7 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldExecute() bool {
+func (t *ShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("ShareDistributionTask ShouldExecute()")
 

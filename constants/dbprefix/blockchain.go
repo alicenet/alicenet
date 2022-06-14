@@ -1,5 +1,6 @@
 package dbprefix
 
+// 2 letters keys
 func PrefixTaskSchedulerState() []byte {
 	return []byte("schedulerStateKey")
 }

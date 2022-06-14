@@ -59,7 +59,7 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *mncrypto.
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
-		constants.DefaultFinalityDelay,
+		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers)
 
@@ -269,8 +269,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
-	// Setup Transactions Watcher
-	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+	// Layer 1 transaction watcher
+	txWatcher := transaction.WatcherFromNetwork(eth, consDB, config.Configuration.Ethereum.TxMetricsDisplay)
+	defer txWatcher.Close()
 
 	// Setup tasks scheduler
 	taskRequestChan := make(chan interfaces.ITask, 100)
@@ -278,10 +279,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
 	tasksScheduler := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
-
-	// Layer 1 transaction watcher
-	watcher := transaction.WatcherFromNetwork(eth)
-	defer watcher.Close()
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
@@ -293,7 +290,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	var tDB, mDB *badger.DB = nil, nil
 	if config.Configuration.Chain.TransactionDbInMemory {
-		// prevent value log GC on in memory by setting to nil - this will cause syncronizer to bypass GC on these databases
+		// prevent value log GC on in memory by setting to nil - this will cause synchronizer to bypass GC on these databases
 		tDB = rawTxPoolDb
 	}
 	if config.Configuration.Chain.MonitorDbInMemory {

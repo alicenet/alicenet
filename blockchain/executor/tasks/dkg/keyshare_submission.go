@@ -1,12 +1,14 @@
 package dkg
 
 import (
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -23,14 +25,14 @@ var _ interfaces.ITask = &KeyShareSubmissionTask{}
 // NewKeyShareSubmissionTask creates a new task
 func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end, false),
+		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the KeyShareSubmissionTask.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyShareSubmissionTask) Prepare() error {
+func (t *KeyShareSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("KeyShareSubmissionTask Prepare()...")
 
@@ -78,7 +80,7 @@ func (t *KeyShareSubmissionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, error) {
+func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("KeyShareSubmissionTask doTask()")
 
@@ -120,7 +122,7 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *KeyShareSubmissionTask) ShouldExecute() bool {
+func (t *KeyShareSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("KeyShareSubmissionTask ShouldExecute()")
 

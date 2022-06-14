@@ -36,6 +36,7 @@ type ethereumConfig struct {
 	FactoryAddress           string
 	StartingBlock            uint64
 	TxMaxGasFeeAllowedInGwei uint64
+	TxMetricsDisplay         bool
 }
 
 type monitorConfig struct {

@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -28,14 +30,14 @@ var _ interfaces.ITask = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end, false),
+		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the MPKSubmissionTask
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Prepare() error {
+func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask Prepare()...")
 
@@ -132,7 +134,7 @@ func (t *MPKSubmissionTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
+func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask Execute()...")
 
@@ -169,7 +171,7 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *MPKSubmissionTask) ShouldExecute() bool {
+func (t *MPKSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask ShouldExecute()")
 

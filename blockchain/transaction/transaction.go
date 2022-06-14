@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/bridge/mapping/signatures"
+	"github.com/MadBase/MadNet/bridge/bindings"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/constants/dbprefix"
@@ -119,7 +119,7 @@ func (g *group) remove(txHash common.Hash) error {
 	index := -1
 	lastIndex := len(g.internalGroup) - 1
 	if lastIndex == -1 {
-		return fmt.Errorf("invalid removal, empty group", txHash.Hex())
+		return fmt.Errorf("invalid removal, empty group %v", txHash.Hex())
 	}
 	for i, internalInfo := range g.internalGroup {
 		if bytes.Equal(internalInfo.Bytes(), txHash.Bytes()) {
@@ -177,51 +177,51 @@ var _ IReceiptResponse = &ReceiptResponse{}
 
 // Struct to send and share a receipt retrieved by the watcher
 type ReceiptResponse struct {
-	mu      sync.RWMutex
-	isReady bool           // flag to indicate if a receipt is ready
-	err     error          // response error that happened during processing
-	receipt *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
+	doneChan chan struct{}
+	err      error          // response error that happened during processing
+	receipt  *types.Receipt // tx receipt after txConfirmationBlocks of a tx that was not queued in txGroup
 }
 
 func newReceiptResponse() *ReceiptResponse {
-	return &ReceiptResponse{}
+	return &ReceiptResponse{doneChan: make(chan struct{}, 1)}
 }
 
 // Function to check if a receipt is ready
 func (r *ReceiptResponse) IsReady() bool {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.isReady
+	select {
+	case <-r.doneChan:
+		return true
+	default:
+		return false
+	}
 }
 
+// todo: revisit this
 // blocking function to get the receipt from a transaction. This function will
 // block until the receipt is available and sent by the transaction watcher
 // service.
-func (r *ReceiptResponse) GetReceipt(ctx context.Context) (*types.Receipt, error) {
+func (r *ReceiptResponse) GetReceiptBlock(ctx context.Context) (*types.Receipt, error) {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("error waiting for receipt: %v", ctx.Err())
-		case <-time.After(100 * time.Millisecond):
-			r.mu.RLock()
-			if r.isReady {
-				return r.receipt, r.err
-			}
-			r.mu.RUnlock()
+		case <-r.doneChan:
+			return r.receipt, r.err
 		}
 	}
 }
 
 // function to write the receipt or error from a transaction being watched.
 func (r *ReceiptResponse) writeReceipt(receipt *types.Receipt, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	if receipt == nil && err == nil {
 		return
 	}
-	r.receipt = receipt
-	r.err = err
-	r.isReady = true
+	if !r.IsReady() {
+		r.receipt = receipt
+		r.err = err
+		close(r.doneChan)
+	}
+
 }
 
 // Internal struct to keep track of the receipts
@@ -289,6 +289,7 @@ func (rc *SubscribeResponseChannel) sendResponse(response *SubscribeResponse) {
 		rc.channel <- response
 		close(rc.channel)
 	})
+	// todo: panic if the channel is called more than once
 }
 
 // Profile to keep track of gas metrics in the overall system
@@ -334,11 +335,11 @@ type WatcherBackend struct {
 	logger             *logrus.Entry            `json:"-"`             // Logger to log messages
 	requestChannel     <-chan SubscribeRequest  `json:"-"`             // Channel used to send request to this backend service
 	database           *db.Database             `json:"-"`             // database where we are going to persist and load state
-	statusDisplay      bool                     `json:"-"`             // flag to display the metrics in the logs. The metrics are still collect even if this flag is false.
+	metricsDisplay     bool                     `json:"-"`             // flag to display the metrics in the logs. The metrics are still collect even if this flag is false.
 }
 
 // Creates a new watcher backend
-func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeRequest, client ethereum.Network, logger *logrus.Logger, database *db.Database, statusDisplay bool) *WatcherBackend {
+func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeRequest, client ethereum.Network, logger *logrus.Logger, database *db.Database, metricsDisplay bool) *WatcherBackend {
 	return &WatcherBackend{
 		mainCtx:            mainCtx,
 		requestChannel:     requestChannel,
@@ -350,7 +351,7 @@ func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeR
 		aggregates:         make(map[FuncSelector]Profile),
 		retryGroups:        make(map[common.Hash]group),
 		lastProcessedBlock: &block{0, common.HexToHash("")},
-		statusDisplay:      statusDisplay,
+		metricsDisplay:     metricsDisplay,
 	}
 }
 
@@ -423,7 +424,7 @@ func (wb *WatcherBackend) Loop() {
 			}
 		case <-statusTime:
 			for selector, profile := range wb.aggregates {
-				sig := signatures.FunctionMapping[selector]
+				sig := bindings.FunctionMapping[selector]
 				wb.logger.WithField("Selector", fmt.Sprintf("%x", selector)).
 					WithField("Function", sig).
 					WithField("Profile", fmt.Sprintf("%+v", profile)).
@@ -464,7 +465,7 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*ReceiptResponse, error) 
 					fmt.Sprintf("invalid request, transaction data is not present %v, err %v!", txnHash.Hex(), err),
 				}
 			}
-			sig := signatures.FunctionMapping[selector]
+			sig := bindings.FunctionMapping[selector]
 
 			logEntry := wb.logger.WithField("Transaction", txnHash).
 				WithField("Function", sig).

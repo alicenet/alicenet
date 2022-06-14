@@ -2,10 +2,11 @@ package executor
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/blockchain/transaction"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/transaction"
 
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
@@ -349,7 +350,7 @@ func TestTasksScheduler_Schedule_ScheduleTask(t *testing.T) {
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil, txWatcher)
 
 	s.LastHeightSeen = lastHeightSeen
-	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false)}
+	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, true)}
 
 	err := s.persistState()
 	assert.Nil(t, err)
@@ -379,7 +380,7 @@ func TestTasksScheduler_EventLoop_Workflow(t *testing.T) {
 	s.LastHeightSeen = lastHeightSeen
 
 	// Create a valid task
-	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false)}
+	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, true)}
 
 	// Send task to request channel
 	taskRequestList := []TaskRequestInfo{

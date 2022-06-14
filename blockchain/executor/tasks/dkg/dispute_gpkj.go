@@ -2,9 +2,10 @@ package dkg
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -28,13 +29,13 @@ var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end, false),
+		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the DisputeGPKjTask.
 // Here, we determine if anyone submitted an invalid gpkj.
-func (t *DisputeGPKjTask) Prepare() error {
+func (t *DisputeGPKjTask) Prepare() *executorInterfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("DisputeGPKjTask Prepare()...")
 
@@ -96,7 +97,7 @@ func (t *DisputeGPKjTask) Prepare() error {
 }
 
 // Execute executes the task business logic
-func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, error) {
+func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeGPKjTask Execute()")
 
@@ -172,7 +173,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, error) {
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeGPKjTask) ShouldExecute() bool {
+func (t *DisputeGPKjTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeGPKjTask ShouldExecute()")
 

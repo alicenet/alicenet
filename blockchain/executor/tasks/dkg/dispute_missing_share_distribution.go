@@ -3,6 +3,7 @@ package dkg
 import (
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
@@ -22,18 +23,18 @@ var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end, false),
+		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end, false, true),
 	}
 }
 
 // Prepare prepares for work to be done in the DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Prepare() error {
+func (t *DisputeMissingShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 	t.GetLogger().Info("DisputeMissingShareDistributionTask Prepare...")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, error) {
+func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingShareDistributionTask Execute()")
 
@@ -76,7 +77,7 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, e
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingShareDistributionTask) ShouldExecute() bool {
+func (t *DisputeMissingShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("DisputeMissingShareDistributionTask ShouldExecute()")
 

@@ -369,7 +369,7 @@ type ITaskExecuteFunc struct {
 
 // Execute delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Execute() ([]*types.Transaction, error) {
+func (m *MockITask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
 	r0, r1 := m.ExecuteFunc.nextHook()()
 	m.ExecuteFunc.appendCall(ITaskExecuteFuncCall{r0, r1})
 	return r0, r1
@@ -1470,7 +1470,7 @@ type ITaskPrepareFunc struct {
 
 // Prepare delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Prepare() error {
+func (m *MockITask) Prepare() *executorInterfaces.TaskErr {
 	r0 := m.PrepareFunc.nextHook()()
 	m.PrepareFunc.appendCall(ITaskPrepareFuncCall{r0})
 	return r0
@@ -1568,7 +1568,7 @@ type ITaskShouldExecuteFunc struct {
 
 // ShouldExecute delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockITask) ShouldExecute() bool {
+func (m *MockITask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 	r0 := m.ShouldExecuteFunc.nextHook()()
 	m.ShouldExecuteFunc.appendCall(ITaskShouldExecuteFuncCall{r0})
 	return r0
