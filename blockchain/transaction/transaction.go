@@ -119,12 +119,12 @@ func (r *ReceiptResponse) GetReceipt() (*types.Receipt, error) {
 }
 
 func (r *ReceiptResponse) writeReceipt(receipt *types.Receipt, err error) {
-	if receipt == nil && err != nil {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if receipt == nil && err == nil {
 		return
 	}
 	r.writeOnce.Do(func() {
-		r.mu.Lock()
-		defer r.mu.Unlock()
 		r.receipt = receipt
 		r.err = err
 		r.isReady = true
@@ -167,8 +167,28 @@ func (g *group) remove(txHash common.Hash) error {
 	return nil
 }
 
-func (g *group) sendReceipt(logger, receipt *types.Receipt, err error) {
+func (g *group) isEmpty() bool {
+	return len(g.internalGroup) == 0
+}
 
+func (g *group) sendReceipt(logger *logrus.Entry, receipt *types.Receipt, err error) {
+	if len(g.internalGroup) == 0 {
+		return
+	}
+	// if this is the unique tx in the retry group or we have the receipt, we are good to send the response
+	if len(g.internalGroup) == 1 || receipt != nil {
+		if err != nil {
+			logger.Tracef("sending group err %v", err)
+		}
+		if receipt != nil {
+			logger.Tracef(
+				"sending response group with receipt status %v mined at block %v",
+				receipt.Status,
+				receipt.BlockHash,
+			)
+		}
+		g.receiptResponse.writeReceipt(receipt, err)
+	}
 }
 
 // Internal struct to keep track of the receipts
@@ -189,68 +209,38 @@ func (a *block) Equal(b *block) bool {
 	return bytes.Equal(a.hash[:], b.hash[:]) && a.height == b.height
 }
 
-// Type to do request against the tx receipt monitoring system. Ctx and response channel should be set
-type subscribeRequest struct {
-	txn              *types.Transaction                  // the transaction that should watched
-	disableAutoRetry bool                                // whether we should disable the auto retry of a transaction
-	responseChannel  *ResponseChannel[SubscribeResponse] // channel where we going to send the request response
-}
-
-// Constrain interface used by the Response channel generics
-type transferable interface {
-	SubscribeResponse
+// Type to do request against the tx receipt monitoring system. Response channel should be set
+type SubscribeRequest struct {
+	txn              *types.Transaction // the transaction that should watched
+	disableAutoRetry bool               // whether we should disable the auto retry of a transaction
+	responseChannel  *ResponseChannel   // channel where we going to send the request response
 }
 
 // Type that it's going to be used to reply a request
 type SubscribeResponse struct {
-	TxnHash  common.Hash      // Hash of the txs which this response belongs
 	Err      error            // errors that happened when processing the monitor request
 	Response *ReceiptResponse // channel where the result from the tx/receipt monitoring will be send
 }
 
 // A response channel is basically a non-blocking channel that can only be
-// written and closed once. The internal channel is closed after the first
-// message is sent. Additional tries to send a message result in no-op. The
-// writes to the internal channel are non-blocking calls. If for some reason the
-// internal channel is full, the message is dropped and log is recorded. Only
-// first attempt to close the Response channel will result in the closing.
-// Additional calls are no-op.
-type ResponseChannel[T transferable] struct {
+// written and closed once.
+type ResponseChannel struct {
 	writeOnce sync.Once
-	channel   chan *T       // internal channel
-	isClosed  bool          // flag to check if a channel is closed or not
-	logger    *logrus.Entry // logger using for logging error when trying to write a response more than once
+	channel   chan *SubscribeResponse // internal channel
 }
 
 // Create a new response channel.
-func NewResponseChannel[T transferable](logger *logrus.Entry) *ResponseChannel[T] {
-	return &ResponseChannel[T]{channel: make(chan *T, 1), logger: logger}
+func NewResponseChannel() *ResponseChannel {
+	return &ResponseChannel{channel: make(chan *SubscribeResponse, 1)}
 }
 
 // send a unique response and close the internal channel. Additional calls to
 // this function will be no-op
-func (rc *ResponseChannel[T]) SendResponse(response *T) {
-	if !rc.isClosed {
-		select {
-		case rc.channel <- response:
-		default:
-			rc.logger.Debugf("Failed to write request to channel")
-		}
-		rc.CloseChannel()
-	}
-}
-
-// Close the internal channel. Additional calls will be no-op
-func (rc *ResponseChannel[T]) CloseChannel() {
+func (rc *ResponseChannel) sendResponse(response *SubscribeResponse) {
 	rc.writeOnce.Do(func() {
-		rc.isClosed = true
+		rc.channel <- response
 		close(rc.channel)
 	})
-}
-
-// Check if a channel is closed
-func (rc *ResponseChannel[T]) IsChannelClosed() bool {
-	return rc.isClosed
 }
 
 // Profile to keep track of gas metrics in the overall system
@@ -303,7 +293,7 @@ type WatcherBackend struct {
 	// Logger to log messages
 	logger *logrus.Entry
 	// Channel used to send request to this backend service
-	requestChannel <-chan subscribeRequest
+	requestChannel <-chan SubscribeRequest
 }
 
 func (b *WatcherBackend) Loop() {
@@ -321,7 +311,7 @@ func (b *WatcherBackend) Loop() {
 				continue
 			}
 			resp, err := b.queue(req)
-			req.responseChannel.SendResponse(&SubscribeResponse{Err: err, Response: resp})
+			req.responseChannel.sendResponse(&SubscribeResponse{Err: err, Response: resp})
 
 		case <-poolingTime:
 			b.collectReceipts()
@@ -331,7 +321,7 @@ func (b *WatcherBackend) Loop() {
 	}
 }
 
-func (wb *WatcherBackend) queue(req subscribeRequest) (*ReceiptResponse, error) {
+func (wb *WatcherBackend) queue(req SubscribeRequest) (*ReceiptResponse, error) {
 
 	if req.txn == nil {
 		return nil, &ErrInvalidMonitorRequest{"invalid request, missing txn object"}
@@ -350,9 +340,11 @@ func (wb *WatcherBackend) queue(req subscribeRequest) (*ReceiptResponse, error) 
 		receiptResponse = newReceiptResponse()
 		receiptResponse.writeReceipt(receipt.receipt, nil)
 	} else {
-		var txInfo info
+		var txGroupHash common.Hash
 		if _, ok = wb.monitoredTxns[txnHash]; ok {
-			txInfo = wb.monitoredTxns[txnHash]
+			txGroupHash = wb.monitoredTxns[txnHash].retryGroup
+		} else if _, ok = wb.retryGroups[txnHash]; ok {
+			txGroupHash = txnHash
 		} else {
 			selector, err := ExtractSelector(req.txn.Data())
 			if err != nil {
@@ -366,7 +358,7 @@ func (wb *WatcherBackend) queue(req subscribeRequest) (*ReceiptResponse, error) 
 				WithField("Function", sig).
 				WithField("Selector", fmt.Sprintf("%x", selector))
 
-			txInfo = info{
+			wb.monitoredTxns[txnHash] = info{
 				txn:               req.txn,
 				fromAddress:       fromAddr,
 				selector:          selector,
@@ -375,13 +367,13 @@ func (wb *WatcherBackend) queue(req subscribeRequest) (*ReceiptResponse, error) 
 				disableAutoRetry:  req.disableAutoRetry,
 				logger:            logEntry,
 			}
-			wb.monitoredTxns[txnHash] = txInfo
 			txGroup := newGroup()
 			txGroup.add(txnHash)
 			wb.retryGroups[txnHash] = txGroup
 			logEntry.Debug("Transaction queued")
+			txGroupHash = txnHash
 		}
-		receiptResponse = wb.retryGroups[txInfo.retryGroup].receiptResponse
+		receiptResponse = wb.retryGroups[txGroupHash].receiptResponse
 	}
 	return receiptResponse, nil
 }
@@ -452,8 +444,8 @@ func (wb *WatcherBackend) collectReceipts() {
 			return
 		default:
 		}
-		logEntry := wb.logger.WithFields(logrus.Fields{"txn": workResponse.txnHash.Hex()})
 		txInfo, ok := wb.monitoredTxns[workResponse.txnHash]
+		logEntry := txInfo.logger
 		if !ok {
 			// invalid tx, should not happen, but well if it happens we continue
 			logEntry.Trace("got a invalid tx with hash from workers")
@@ -486,17 +478,20 @@ func (wb *WatcherBackend) collectReceipts() {
 				if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
 					newTxnHash := workResponse.retriedTxn.txn.Hash()
 					wb.monitoredTxns[newTxnHash] = info{
-						txn:                    workResponse.retriedTxn.txn,
-						fromAddress:            txInfo.fromAddress,
-						selector:               txInfo.selector,
-						functionSignature:      txInfo.functionSignature,
-						retryGroup:             txInfo.retryGroup,
-						receiptResponseChannel: txInfo.receiptResponseChannel,
+						txn:               workResponse.retriedTxn.txn,
+						fromAddress:       txInfo.fromAddress,
+						selector:          txInfo.selector,
+						functionSignature: txInfo.functionSignature,
+						retryGroup:        txInfo.retryGroup,
+						disableAutoRetry:  txInfo.disableAutoRetry,
+						logger:            txInfo.logger,
 					}
-					// increase the number of tx in the retry group
-					wb.retryGroups[wb.retryGroupId]++
-					txInfo.retryAmount++
+					// update retry group
+					txGroup := wb.retryGroups[txInfo.retryGroup]
+					txGroup.add(newTxnHash)
+					wb.retryGroups[txInfo.retryGroup] = txGroup
 					logEntry.Tracef("successfully replaced a tx with %v", newTxnHash)
+					txInfo.retryAmount++
 				} else {
 					logEntry.Debugf("could not replace tx error %v", workResponse.retriedTxn.err)
 				}
@@ -518,27 +513,18 @@ func (wb *WatcherBackend) collectReceipts() {
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := wb.monitoredTxns[txnHash]; ok {
-			// if this is the unique tx in the retry group or we have the receipt, we are good to send the response
-			if wb.retryGroups[txnInfo.retryGroup] == 1 || workResponse.receipt != nil {
-				if workResponse.err != nil {
-					wb.logger.Tracef("sending response for tx: %v, err %v", txnHash.Hex(), workResponse.err)
+			if txGroup, ok := wb.retryGroups[txnInfo.retryGroup]; ok {
+				logger := txnInfo.logger.WithFields(logrus.Fields{
+					"group": txnInfo.retryGroup,
+				})
+				txGroup.sendReceipt(logger, workResponse.receipt, workResponse.err)
+				err = txGroup.remove(txnHash)
+				if err != nil {
+					continue
 				}
-				if workResponse.receipt != nil {
-					wb.logger.Tracef(
-						"sending response for tx: %v, with receipt status %v mined at block %v",
-						txnHash.Hex(),
-						workResponse.receipt.Status,
-						workResponse.receipt.BlockHash,
-					)
+				if txGroup.isEmpty() {
+					delete(wb.retryGroups, txnInfo.retryGroup)
 				}
-				if !txnInfo.receiptResponseChannel.isClosed {
-					wb.logger.Tracef("sending response to channel for tx %v", txnHash.Hex())
-					txnInfo.receiptResponseChannel.SendResponse(&objects.ReceiptResponse{TxnHash: workResponse.txnHash, Receipt: workResponse.receipt, Err: workResponse.err})
-				}
-			}
-			if wb.retryGroups[txnInfo.retryGroup] >= 1 {
-				wb.retryGroups[txnInfo.retryGroup]--
-				wb.logger.Tracef("removing tx entry: %v from retry group with has now %v members", txnHash.Hex(), wb.retryGroups[txnInfo.retryGroup])
 			}
 			delete(wb.monitoredTxns, txnHash)
 		}
@@ -700,14 +686,14 @@ type Watcher struct {
 	backend          *WatcherBackend         // backend service responsible for check, retrieving and caching the receipts
 	logger           *logrus.Entry           // logger used to log the message for the transaction watcher
 	closeMainContext context.CancelFunc      // function used to cancel the main context in the backend service
-	requestChannel   chan<- subscribeRequest // channel used to send request to the backend service to retrieve transactions
+	requestChannel   chan<- SubscribeRequest // channel used to send request to the backend service to retrieve transactions
 }
 
 var _ interfaces.IWatcher = &Watcher{}
 
 // Creates a new transaction watcher struct
 func NewWatcher(client ethereum.Network, txConfirmationBlocks uint64) *Watcher {
-	requestChannel := make(chan subscribeRequest, 100)
+	requestChannel := make(chan SubscribeRequest, 100)
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
 
@@ -761,9 +747,9 @@ func (f *Watcher) Close() {
 // with higher fees.
 func (w *Watcher) Subscribe(ctx context.Context, txn *types.Transaction) (<-chan *objects.ReceiptResponse, error) {
 	w.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
-	respChannel := NewResponseChannel[SubscribeResponse](w.logger)
+	respChannel := NewResponseChannel()
 	defer respChannel.CloseChannel()
-	req := subscribeRequest{txn: txn, responseChannel: respChannel}
+	req := SubscribeRequest{txn: txn, responseChannel: respChannel}
 
 	select {
 	case w.requestChannel <- req:
