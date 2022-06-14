@@ -8,6 +8,10 @@ func PrefixMonitorState() []byte {
 	return []byte("monitorStateKey")
 }
 
+func PrefixTransactionWatcherState() []byte {
+	return []byte("transactionWatcherKey")
+}
+
 func PrefixEthDKGState() []byte {
 	return []byte("ethDkgStateKey")
 }

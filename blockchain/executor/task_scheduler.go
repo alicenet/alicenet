@@ -454,6 +454,12 @@ func (s *TasksScheduler) loadState() error {
 		return err
 	}
 
+	// synchronizing db state to disk
+	if err := s.database.Sync(); err != nil {
+		s.logger.Error("Failed to set sync")
+		return err
+	}
+
 	return nil
 
 }
