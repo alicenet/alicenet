@@ -133,7 +133,7 @@ func (t *Task) Finish(err error) {
 		t.logger.Infof("Id: %s, name: %s task is done", t.id, t.name)
 	}
 
-	t.taskResponseChan.Add(TaskResponse{Id: t.id, Err: err})
+	t.taskResponseChan.Add(interfaces.TaskResponse{Id: t.id, Err: err})
 }
 
 func (t *Task) GetDB() *db.Database {
@@ -169,9 +169,4 @@ func (t *Task) AmILeading(dkgState *state.DkgState) bool {
 	}).Infof("dkg.AmILeading")
 
 	return amILeading
-}
-
-type TaskResponse struct {
-	Id  string
-	Err error
 }

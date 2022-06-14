@@ -21,7 +21,7 @@ func ProcessValueUpdated(eth ethereum.Network, logger *logrus.Entry, log types.L
 	dkgState := &state.DkgState{}
 	var err error
 	err = monDB.View(func(txn *badger.Txn) error {
-		dkgState, err = state.LoadEthDkgState(txn, logger)
+		err = dkgState.LoadState(txn)
 		if err != nil {
 			return err
 		}
