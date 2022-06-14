@@ -18,6 +18,8 @@ const (
 	TxReceiptCacheMaxBlocks uint64 = 100
 	// time which we should poll the layer1 node to check for new blocks
 	TxPollingTime time.Duration = 7 * time.Second
+	// time which we should poll the layer1 node to check for new blocks
+	TxStatusTime time.Duration = 60 * time.Second
 	// max timeout for all rpc call requests during an iteration
 	TxNetworkTimeout time.Duration = 2 * time.Second
 	// Timeout for the monitor Tx workers

@@ -4,12 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/MadBase/MadNet/blockchain/transaction"
-	"github.com/MadBase/MadNet/constants/dbprefix"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/constants/dbprefix"
+
+	"github.com/MadBase/MadNet/blockchain/transaction"
+	"github.com/MadBase/MadNet/constants/dbprefix"
+
+	"github.com/MadBase/MadNet/constants/dbprefix"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -21,7 +27,7 @@ import (
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -238,7 +244,7 @@ func (s *TasksScheduler) schedule(ctx context.Context, task executorInterfaces.I
 			return ErrTaskExpired
 		}
 
-		id := uuid.NewRandom()
+		id := uuid.New()
 		s.Schedule[id.String()] = TaskRequestInfo{Id: id.String(), Start: start, End: end, Task: task}
 	}
 	return nil
@@ -252,7 +258,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse e
 		if taskResponse.Err != nil {
 			s.logger.Debugf("Task id: %s executed with error: %v", taskResponse.Id, taskResponse.Err)
 		} else {
-			s.logger.Infof("Task id: %s executed with succesfully", taskResponse.Id)
+			s.logger.Infof("Task id: %s executed with successfully", taskResponse.Id)
 		}
 		err := s.remove(taskResponse.Id)
 		if err != nil {
@@ -446,6 +452,12 @@ func (s *TasksScheduler) loadState() error {
 
 		return nil
 	}); err != nil {
+		return err
+	}
+
+	// synchronizing db state to disk
+	if err := s.database.Sync(); err != nil {
+		s.logger.Error("Failed to set sync")
 		return err
 	}
 

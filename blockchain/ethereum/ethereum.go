@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -20,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	eCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
@@ -62,7 +64,6 @@ type Network interface {
 	GetCallOptsLatestBlock(ctx context.Context, account accounts.Account) *bind.CallOpts
 	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
 	GetAccount(common.Address) (accounts.Account, error)
-	GetAccountKeys(addr common.Address) (*keystore.Key, error)
 	GetBalance(common.Address) (*big.Int, error)
 	GetCurrentHeight(context.Context) (uint64, error)
 	GetFinalizedHeight(context.Context) (uint64, error)
@@ -287,7 +288,7 @@ func (eth *Details) setDefaultAccount(acct accounts.Account) {
 	eth.defaultAccount = acct
 }
 
-// Bump the tip cap for retries
+// bump the tip cap for retries
 func (eth *Details) bumpTipCap(gasTipCap *big.Int) *big.Int {
 	// calculate percentage% increase in GasTipCap
 	gasTipCapPercent := new(big.Int).Mul(gasTipCap, big.NewInt(int64(constants.EthereumTipCapPercentageBump)))
@@ -296,7 +297,7 @@ func (eth *Details) bumpTipCap(gasTipCap *big.Int) *big.Int {
 	return resultTipCap
 }
 
-// GetSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error
+// getSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error
 func (eth *Details) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
 
 	ctx, ctxCancel := eth.GetTimeoutContext()
@@ -311,6 +312,14 @@ func (eth *Details) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
 	}
 
 	return true, progress, nil
+}
+
+// Get the private key for an account
+func (eth *Details) getAccountKeys(addr common.Address) (*keystore.Key, error) {
+	if key, ok := eth.keys[addr]; ok {
+		return key, nil
+	}
+	return nil, ErrKeysNotFound
 }
 
 //ChainID returns the ID used to build ethereum client
@@ -413,14 +422,6 @@ func (eth *Details) GetAccount(addr common.Address) (accounts.Account, error) {
 	}
 
 	return acct, nil
-}
-
-// Get the private key for an account
-func (eth *Details) GetAccountKeys(addr common.Address) (*keystore.Key, error) {
-	if key, ok := eth.keys[addr]; ok {
-		return key, nil
-	}
-	return nil, ErrKeysNotFound
 }
 
 // GetDefaultAccount returns the default account
@@ -664,7 +665,7 @@ func (eth *Details) RetryTransaction(ctx context.Context, tx *types.Transaction,
 // Sign an ethereum transaction
 func (eth *Details) SignTransaction(tx types.TxData, signerAddress common.Address) (*types.Transaction, error) {
 	signer := types.NewLondonSigner(eth.chainID)
-	userKey, err := eth.GetAccountKeys(signerAddress)
+	userKey, err := eth.getAccountKeys(signerAddress)
 	if err != nil {
 		return nil, fmt.Errorf("getting account keys error:%v", err)
 	}
@@ -692,6 +693,20 @@ func (eth *Details) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 	}
 	return height - eth.finalityDelay, nil
 
+}
+
+// create a new signer for ETH accounts
+func (eth *Details) CreateSecp256k1Signer() (*crypto.Secp256k1Signer, error) {
+	secp256k1Signer := &crypto.Secp256k1Signer{}
+	key, err := eth.getAccountKeys(eth.defaultAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+	err = secp256k1Signer.SetPrivk(eCrypto.FromECDSA(key.PrivateKey))
+	if err != nil {
+		return nil, err
+	}
+	return secp256k1Signer, nil
 }
 
 ////////////////////////////////////////////////////////////////
