@@ -12,11 +12,6 @@ import (
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 
-	"github.com/MadBase/MadNet/blockchain/transaction"
-	"github.com/MadBase/MadNet/constants/dbprefix"
-
-	"github.com/MadBase/MadNet/constants/dbprefix"
-
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/marshaller"

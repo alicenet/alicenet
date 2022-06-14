@@ -2,6 +2,8 @@ package executor
 
 import (
 	"context"
+	"time"
+
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction"
@@ -9,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan, txWatcher *transaction.Watcher) {
@@ -67,7 +68,7 @@ func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration
 	var txns []*types.Transaction
 	ctx := task.GetCtx()
 
-	for !success && shouldExecute(task) && count < retryCount {
+	for !success && shouldExecute(task) { //todo:
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -82,7 +83,7 @@ func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration
 				break
 			}
 
-			success, err = watchForTransactions(task.GetCtx(), txns, txWatcher)
+			success, err = watchForTransactions(task.GetCtx(), txns, txWatcher, task.GetAllowTxFeeAutoReplacement())
 			if err != nil {
 				task.GetLogger().Errorf("failed to get receipts with error: %s", err.Error())
 			}
@@ -92,25 +93,15 @@ func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration
 	return err
 }
 
-func watchForTransactions(ctx context.Context, txns []*types.Transaction, txWatcher *transaction.Watcher) (bool, error) {
+func watchForTransactions(ctx context.Context, txns []*types.Transaction, txWatcher *transaction.Watcher, allowTxFeeAutoReplacement bool) (bool, error) {
 	if txns == nil || len(txns) == 0 {
 		return true, nil
 	}
 
 	for _, txn := range txns {
-		respChan, err := txWatcher.Subscribe(ctx, txn)
+		respChan, err := txWatcher.Subscribe(ctx, txn, allowTxFeeAutoReplacement)
 		if err != nil {
 			return false, err
-		}
-
-		for resp := range respChan {
-			if resp.Err != nil {
-				return false, resp.Err
-			}
-
-			if resp.Receipt == nil || resp.Receipt.Status != types.ReceiptStatusSuccessful {
-				return false, nil
-			}
 		}
 	}
 
@@ -130,8 +121,22 @@ func shouldExecute(task interfaces.ITask) bool {
 	if end > 0 && end < currentBlock {
 		return false
 	}
+	retryCount := int(constants.MonitorRetryCount)
+	for i := 1; i <= retryCount; i++ {
+		if err := task.ShouldExecute(); err != nil {
+			if err.IsRecoverable() {
+				task.GetLogger().Tracef("got a recoverable error during task should execute: %v", err)
+				if err := sleepWithContext(task.GetCtx(), constants.MonitorRetryDelay); err != nil {
+					return false
+				}
+				continue
+			}
+			task.GetLogger().Debugf("got a non recoverable error during task should execute: %v", err)
+			return false
+		}
+	}
 
-	return task.ShouldExecute()
+	return true
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {
