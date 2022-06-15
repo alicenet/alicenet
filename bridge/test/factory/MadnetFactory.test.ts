@@ -206,7 +206,7 @@ describe("AliceNet Contract Factory", () => {
 
   it("deploycreate mock logic contract expect success", async () => {
     const factory = await deployFactory();
-    // use the ethers Mock contract abstraction to generate the deploy transaction data
+    // use the ethers Mock contract abstraction to generate the deploy transaction state
     const mockCon: ContractFactory = await ethers.getContractFactory(MOCK);
     // get the init code with constructor args appended
     const deployTx = mockCon.getDeployTransaction(2, "s");
@@ -234,7 +234,7 @@ describe("AliceNet Contract Factory", () => {
 
   it("should not allow deploycreate mock logic contract with unauthorized account", async () => {
     let factory = await deployFactory();
-    // use the ethers Mock contract abstraction to generate the deploy transaction data
+    // use the ethers Mock contract abstraction to generate the deploy transaction state
     const mockCon = await ethers.getContractFactory(MOCK);
     // get the init code with constructor args appended
     const deployTx = mockCon.getDeployTransaction(2, "s");
@@ -394,7 +394,7 @@ describe("AliceNet Contract Factory", () => {
       CONTRACT_ADDR
     );
     expect(mockInitAddr).to.not.be.equals(undefined);
-    // call data to initialize mockInitializable
+    // call state to initialize mockInitializable
     const mockInitable = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const initCallData = await mockInitable.interface.encodeFunctionData(
       "initialize",
@@ -410,7 +410,7 @@ describe("AliceNet Contract Factory", () => {
     // deploy an instance of mock logic for factory
     const mockFactoryBase = await ethers.getContractFactory("MockFactory");
     const mockFactoryInstance = await mockFactoryBase.deploy();
-    // generate the call data for the factory instance
+    // generate the call state for the factory instance
     const mfEncode = await ethers.getContractFactory("MockFactory");
     let setOwner = mfEncode.interface.encodeFunctionData("setOwner", [
       accounts[2],

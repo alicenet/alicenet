@@ -20,7 +20,7 @@ type cacheDB struct {
 	nodesToRevert [][]byte
 	// prefixFunc appends a prefix to all database key
 	// writes and reads to prevent collisions with other
-	// data stored in the db
+	// state stored in the db
 	prefixFunc func() []byte
 }
 

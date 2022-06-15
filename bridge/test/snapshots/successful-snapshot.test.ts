@@ -43,7 +43,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     ).to.be.revertedWith("1401");
   });
 
-  it("Reverts when snapshot data contains invalid height", async function () {
+  it("Reverts when snapshot state contains invalid height", async function () {
     await expect(
       snapshots
         .connect(
@@ -55,7 +55,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     ).to.be.revertedWith("406");
   });
 
-  it("Reverts when snapshot data contains invalid chain id", async function () {
+  it("Reverts when snapshot state contains invalid chain id", async function () {
     await expect(
       snapshots
         .connect(
@@ -70,8 +70,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     ).to.be.revertedWith("407");
   });
 
-  // todo wrong public key failure happens first with this data
-  it("Reverts when snapshot data contains incorrect signature", async function () {
+  // todo wrong public key failure happens first with this state
+  it("Reverts when snapshot state contains incorrect signature", async function () {
     await expect(
       snapshots
         .connect(
@@ -86,7 +86,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
     ).to.be.revertedWith("405");
   });
 
-  it("Reverts when snapshot data contains incorrect public key", async function () {
+  it("Reverts when snapshot state contains incorrect public key", async function () {
     await expect(
       snapshots
         .connect(

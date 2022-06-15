@@ -7,7 +7,7 @@ import {
 
 import "./BaseParserLibrary.sol";
 
-/// @title Library to parse the MerkleProof structure from a blob of binary data
+/// @title Library to parse the MerkleProof structure from a blob of binary state
 library MerkleProofParserLibrary {
     struct MerkleProof {
         bool included;
@@ -26,7 +26,7 @@ library MerkleProofParserLibrary {
     @notice This function is for deserializing the MerkleProof struct from a
             binary blob.
     */
-    /// @param src Binary data containing a MerkleProof serialized struct
+    /// @param src Binary state containing a MerkleProof serialized struct
     /// @return mProof a MerkleProof struct
     /// @dev Execution cost: ~4000-51000 gas for a 10-256 height proof respectively
     function extractMerkleProof(bytes memory src)

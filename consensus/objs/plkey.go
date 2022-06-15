@@ -19,7 +19,7 @@ func (b *PendingLeafKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrInvalid{}.New("PendingLeafKey.UnmarshalBinary; plk not initialized")
 	}
 	if len(data) != constants.HashLen+2 {
-		return errorz.ErrInvalid{}.New("PendingLeafKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("PendingLeafKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	b.Key = utils.CopySlice(data[2:])

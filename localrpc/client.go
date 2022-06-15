@@ -309,7 +309,7 @@ func (lrpc *Client) GetPendingTransaction(ctx context.Context, txHash []byte) (*
 	return tx, nil
 }
 
-// GetData returns only the data stored in a datastore
+// GetData returns only the state stored in a datastore
 func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, account []byte, index []byte) ([]byte, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err

@@ -59,7 +59,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
   });
 
-  it("Does not allow snapshot with data from previous snapshot", async function () {
+  it("Does not allow snapshot with state from previous snapshot", async function () {
     const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
@@ -119,7 +119,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     await expect(blockClaims.headerRoot).to.be.equal(expectedHeaderRoot);
   });
 
-  it("getBlockClaimsFromSnapshot returns correct data", async function () {
+  it("getBlockClaimsFromSnapshot returns correct state", async function () {
     const expectedChainId = BigNumber.from(1);
     const expectedHeight = BigNumber.from(1024);
     const expectedTxCount = BigNumber.from(0);
@@ -149,7 +149,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     await expect(blockClaims.headerRoot).to.be.equal(expectedHeaderRoot);
   });
 
-  it("getBlockClaimsFromLatestSnapshot returns correct data", async function () {
+  it("getBlockClaimsFromLatestSnapshot returns correct state", async function () {
     const expectedChainId = BigNumber.from(1);
     const expectedHeight = BigNumber.from(1024);
     const expectedTxCount = BigNumber.from(0);
@@ -179,7 +179,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     await expect(blockClaims.headerRoot).to.be.equal(expectedHeaderRoot);
   });
 
-  it("getAliceNetHeightFromSnapshot returns correct data", async function () {
+  it("getAliceNetHeightFromSnapshot returns correct state", async function () {
     const expectedHeight = BigNumber.from(1024);
 
     const height = await snapshots
@@ -189,7 +189,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     await expect(height).to.be.equal(expectedHeight);
   });
 
-  it("getAliceNetHeightFromLatestSnapshot returns correct data", async function () {
+  it("getAliceNetHeightFromLatestSnapshot returns correct state", async function () {
     const expectedHeight = BigNumber.from(1024);
 
     const height = await snapshots

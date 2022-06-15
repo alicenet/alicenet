@@ -619,7 +619,7 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 		}
 		tx.Vout = append(tx.Vout, newUTXO)
 		//valueOut += diff
-		_,err = valueOut.Add(valueOut, diff)
+		_, err = valueOut.Add(valueOut, diff)
 		if err != nil {
 			panic(err)
 		}
@@ -773,7 +773,7 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 	consumedUtxos = append(consumedUtxos, ds)
 	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
 
-	_,err = consumedValue.Add(consumedValue, v)
+	_, err = consumedValue.Add(consumedValue, v)
 	if err != nil {
 		panic(err)
 	}
@@ -784,7 +784,7 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 			return nil, err
 		}
 		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		_,err = valueOut.Add(valueOut, deposit)
+		_, err = valueOut.Add(valueOut, deposit)
 		if err != nil {
 			panic(err)
 		}
@@ -1142,8 +1142,8 @@ func main() {
 	sPtr := flag.Bool("s", false, "Spam mode.")
 	nPtr := flag.Int("n", 100, "Number workers.")
 	bPtr := flag.Int("b", 100, "Base privk offset for workers. This should not overlap such that another test group is in same range.")
-	mPtr := flag.String("m", "", "Data to write to data store.")
-	iPtr := flag.String("i", "", "Index of data to write to data store.")
+	mPtr := flag.String("m", "", "Data to write to state store.")
+	iPtr := flag.String("i", "", "Index of data to write to state store.")
 	flag.Parse()
 	datastoreMode := *dPtr
 	spamMode := *sPtr

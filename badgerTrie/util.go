@@ -49,7 +49,6 @@ func GetFreshDataUnsorted(size, length int) [][]byte {
 		}
 		data = append(data, Hasher(key)[:length])
 	}
-	//sort.Sort(DataArray(data))
 	return data
 }
 

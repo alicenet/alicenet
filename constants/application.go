@@ -8,11 +8,11 @@ const (
 
 const (
 	// DSPIMinDeposit is the minimum amount of deposit. This is calculated
-	// assuming that no data is stored (datasize == 0) as well as storing
-	// the data for 1 epoch.
+	// assuming that no state is stored (datasize == 0) as well as storing
+	// the state for 1 epoch.
 	DSPIMinDeposit uint32 = BaseDatasizeConst
 
-	// BaseDatasizeConst is the bytes added to the size of data (in bytes)
+	// BaseDatasizeConst is the bytes added to the size of state (in bytes)
 	// for the minimum cost.
 	BaseDatasizeConst = 376
 	// We discuss the rational now.

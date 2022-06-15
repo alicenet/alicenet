@@ -127,8 +127,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				utils.DebugTrace(ce.logger, nil, "Waiting snapshot completion")
 				updateLocalState = false
 			} else {
-				// if it's safe to proceed, we update ownState with the latest
-				// data
+				// if it's safe to proceed, we update ownState with the latest state
 				ownState, err := ce.database.GetOwnState(txn)
 				if err != nil {
 					return err

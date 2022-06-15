@@ -574,7 +574,7 @@ func TestGetProposal_With1InvalidTx(t *testing.T) {
 	hndlr := NewPendingTxHandler(db)
 	hndlr.UTXOHandler = mt
 	hndlr.DepositHandler = mt
-	defer func (){
+	defer func() {
 		err := hndlr.Drop()
 		if err != nil {
 			t.Fatal(err)

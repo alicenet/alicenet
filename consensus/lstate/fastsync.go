@@ -506,7 +506,7 @@ func (ssm *SnapShotManager) startFastSync(txn *badger.Txn, snapShotBlockHeader *
 	ssm.stateNodeCache.dropBefore(snapShotBlockHeader.BClaims.Height)
 	ssm.stateLeafCache.dropBefore(snapShotBlockHeader.BClaims.Height)
 
-	// cleanup the db of any previous data
+	// cleanup the db of any previous state
 	if err := ssm.cleanupDatabase(txn); err != nil {
 		utils.DebugTrace(ssm.logger, err)
 		return err
@@ -555,8 +555,8 @@ func (ssm *SnapShotManager) cleanupDatabase(txn *badger.Txn) error {
 
 func (ssm *SnapShotManager) Update(txn *badger.Txn, snapShotBlockHeader *objs.BlockHeader) (bool, error) {
 	// a difference in height implies the target has changed for the canonical
-	// state, thus re-init the object and drop all stale data
-	// return after the drop so the next iteration sees the dropped data is in the
+	// state, thus re-init the object and drop all stale state
+	// return after the drop so the next iteration sees the dropped state is in the
 	// db transaction
 	if ssm.snapShotHeight.Get() != snapShotBlockHeader.BClaims.Height {
 		err := ssm.startFastSync(txn, snapShotBlockHeader)
@@ -1077,10 +1077,10 @@ func (ssm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32)
 }
 
 func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
-	// get keys from state cache use those to store the state data into the db
+	// get keys from state cache use those to store the state into the db
 	leafKeys := ssm.stateLeafCache.getLeafKeys(snapShotHeight, maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
-	// store data before deleting from database.
+	// store state before deleting from database.
 	for i := 0; i < len(leafKeys); i++ {
 		resp, err := ssm.stateLeafCache.pop(snapShotHeight, utils.CopySlice(leafKeys[i].key[:]))
 		if err != nil {
@@ -1092,7 +1092,7 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 		if err != nil {
 			utils.DebugTrace(ssm.logger, err)
 		}
-		// store key-value state data
+		// store key-value state
 		err = ssm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
 		if err != nil {
 			// should not return if err invalid
@@ -1143,10 +1143,10 @@ func (ssm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32
 }
 
 func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
-	// get keys from state cache use those to store the state data into the db
+	// get keys from state cache use those to store the state into the db
 	leafKeys := ssm.hdrLeafCache.getLeafKeys(maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
-	// store data before deleting from database.
+	// store state before deleting from database.
 	for i := 0; i < len(leafKeys); i++ {
 		resp, err := ssm.hdrLeafCache.pop(leafKeys[i].key[:])
 		if err != nil {

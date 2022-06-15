@@ -18,7 +18,7 @@ var (
 	ErrInvalidPoint = errors.New("hashToG1/HashToG2: hash point not on curve")
 
 	// ErrInvalid occurs when something generic is invalid.
-	ErrInvalid = errors.New("invalid data")
+	ErrInvalid = errors.New("invalid state")
 
 	// ErrInvalidSharedSecret means that the secret shared by this participant
 	// is invalid; this implies this participant performed a malicious action.
@@ -48,7 +48,7 @@ var (
 	// ErrInsufficientData occurs when attempting to Unmarshal bytes to form
 	// G1, G2, or GT element, which requires 32, 2*32, or 12*32 bytes,
 	// respectively.
-	ErrInsufficientData = errors.New("cloudflare: Insufficient data to construct point")
+	ErrInsufficientData = errors.New("cloudflare: Insufficient state to construct point")
 
 	// ErrMalformedPoint occurs when submitted byte slice does not correspond
 	// to valid curve point in G1, G2, or GT.

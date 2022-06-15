@@ -114,6 +114,7 @@ func (f *funder) setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	}
 	return f.setupSecpSigner(privk)
 }
+
 //nolint:unused
 func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	signer := &crypto.BNSigner{}

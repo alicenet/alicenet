@@ -43,7 +43,7 @@ func Unmarshal(data []byte) (mdefs.AtomicSwap, error) {
 		return mdefs.AtomicSwap{}, err
 	}
 	return obj, nil
-		*/
+	*/
 }
 
 // Validate will validate the AtomicSwap object
@@ -60,5 +60,5 @@ func Validate(v mdefs.AtomicSwap) error {
 		return errorz.ErrInvalid{}.New("atomicswap capn obj is not valid: invalid TxHash; incorrect byte length")
 	}
 	return nil
-		*/
+	*/
 }

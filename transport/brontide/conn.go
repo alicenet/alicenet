@@ -50,7 +50,7 @@ func (c *Conn) Close() error {
 	c.closeOnce.Do(func() {
 		close(c.closeChan)
 		go c.conn.Close() //nolint:errcheck
-		go c.closeFn() //nolint:errcheck
+		go c.closeFn()    //nolint:errcheck
 	})
 	return nil
 }
@@ -204,7 +204,7 @@ func (c *Conn) ReadNextBody(buf []byte) ([]byte, error) {
 	return c.noise.ReadBody(c.conn, buf)
 }
 
-// Read reads data from the connection.  Read can be made to time out and
+// Read reads state from the connection.  Read can be made to time out and
 // return an Error with Timeout() == true after a fixed time limit; see
 // SetDeadline and SetReadDeadline.
 //
@@ -229,7 +229,7 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 	return c.readBuf.Read(b)
 }
 
-// Write writes data to the connection.  Write can be made to time out and
+// Write writes state to the connection.  Write can be made to time out and
 // return an Error with Timeout() == true after a fixed time limit; see
 // SetDeadline and SetWriteDeadline.
 //
@@ -330,7 +330,7 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 }
 
 // SetWriteDeadline sets the deadline for future Write calls.  Even if write
-// times out, it may return n > 0, indicating that some of the data was
+// times out, it may return n > 0, indicating that some of the state was
 // successfully written.  A zero value for t means Write will not time out.
 //
 // Part of the net.Conn interface.

@@ -57,7 +57,7 @@ func TestTransportsuccess(t *testing.T) {
 	complete3 := make(chan struct{})
 
 	go dialer(t, transport2, nodeAddr1, complete1) //nolint:govet,staticcheck
-	go acceptWithResp(t, transport1, complete2)//nolint:govet,staticcheck
+	go acceptWithResp(t, transport1, complete2)    //nolint:govet,staticcheck
 	go accept(t, transport2, complete3)
 
 	<-complete1

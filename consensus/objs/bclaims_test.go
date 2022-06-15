@@ -233,7 +233,7 @@ func TestBClaimsMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Take valid marshaled data and raise an error for invalid ChainID
+	// Take valid marshaled state and raise an error for invalid ChainID
 	dataBad1 := utils.CopySlice(data)
 	dataBad1[8] = 0
 	bc3 := &BClaims{}
@@ -242,7 +242,7 @@ func TestBClaimsMarshal(t *testing.T) {
 		t.Fatal("Should have raised error (7)")
 	}
 
-	// Take valid marshaled data and raise an error for invalid Height
+	// Take valid marshaled state and raise an error for invalid Height
 	dataBad2 := utils.CopySlice(data)
 	dataBad2[12] = 0
 	bc4 := &BClaims{}

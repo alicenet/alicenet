@@ -31,7 +31,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    // all validators will send their gpkj. Validator 4 will send bad data
+    // all validators will send their gpkj. Validator 4 will send bad state
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,
@@ -175,7 +175,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    // all validators will send their gpkj. Validator 4 will send bad data
+    // all validators will send their gpkj. Validator 4 will send bad state
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,
@@ -238,7 +238,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    // all validators except validator 8 will send their gpkj. Validator 9 will send bad data
+    // all validators except validator 8 will send their gpkj. Validator 9 will send bad state
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,
@@ -508,7 +508,7 @@ describe("ETHDKG: Dispute GPKj", () => {
     ).to.be.revertedWith("123");
   });
 
-  it("should not allow accusation with incorrect data length, or all zeros", async function () {
+  it("should not allow accusation with incorrect state length, or all zeros", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -682,7 +682,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    // all validators will send their gpkj. Validator 4 will send bad data
+    // all validators will send their gpkj. Validator 4 will send bad state
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,
@@ -730,7 +730,7 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    // all validators will send their gpkj. Validator 4 will send bad data
+    // all validators will send their gpkj. Validator 4 will send bad state
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,

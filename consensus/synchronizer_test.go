@@ -238,5 +238,4 @@ func TestSynchronizer_SafeOk(t *testing.T) {
 func stopSync(sync *Synchronizer) {
 	<-time.After(timeToStop)
 	sync.Stop()
-
 }

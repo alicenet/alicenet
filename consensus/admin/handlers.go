@@ -91,7 +91,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	defer mutex.Unlock()
 	return ah.database.Update(func(txn *badger.Txn) error {
 		// Checking if we can exit earlier (mainly when reconstructing the chain
-		// from ethereum data)
+		// from ethereum state)
 		{
 			height := uint32(1)
 			if v.NotBefore >= 1 {
