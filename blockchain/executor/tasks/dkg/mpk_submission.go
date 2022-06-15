@@ -9,12 +9,14 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 )
@@ -30,7 +32,7 @@ var _ interfaces.ITask = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end, false, true),
+		Task: objects.NewTask(exConstants.MPKSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -62,7 +64,7 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 				dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
 				dkgState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
 
-			eth := t.GetEth()
+			eth := t.GetClient()
 			ctx := t.GetCtx()
 			// setup leader election
 			block, err := eth.GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
@@ -148,7 +150,7 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces
 	}
 
 	// submit if I'm a leader for this task
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if !t.AmILeading(dkgState) {
 		return nil, errors.New("not leading MPK submission yet")
@@ -201,7 +203,7 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(dkgState *state.DkgState) bool {
 	}
 
 	logger := t.GetLogger()
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {

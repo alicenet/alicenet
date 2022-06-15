@@ -7,10 +7,12 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	dkgConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
@@ -24,7 +26,7 @@ var _ executorInterfaces.ITask = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end, false, true),
+		Task: objects.NewTask(dkgConstants.CompletionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -47,7 +49,7 @@ func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
 	}
 
 	// setup leader election
-	block, err := t.GetEth().GetBlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
+	block, err := t.GetClient().GetBlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
 	if err != nil {
 		return executorInterfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
@@ -78,7 +80,7 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.Ta
 	}
 
 	// Setup
-	eth := t.GetEth()
+	eth := t.GetClient()
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(t.GetCtx(), dkgState.Account)
 	if err != nil {
@@ -99,7 +101,7 @@ func (t *CompletionTask) ShouldExecute() *executorInterfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "CompletionTask.ShouldExecute()")
 	logger.Trace("should execute task")
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(t.GetCtx(), eth.GetDefaultAccount())

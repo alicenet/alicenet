@@ -25,7 +25,7 @@ var _ interfaces.ITask = &SnapshotTask{}
 
 func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
-		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false, nil),
 	}
 
 	return snapshotTask
@@ -81,7 +81,7 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *executorInterfaces.Task
 		return nil, dkgUtils.LogReturnErrorf(logger, "could not get snapshotState with error %v", err)
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	dangerousRand.Seed(time.Now().UnixNano())
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
@@ -134,7 +134,7 @@ func (t *SnapshotTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 		return true
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	opts, err := eth.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {

@@ -110,7 +110,7 @@ func watchForTransactions(ctx context.Context, txns []*types.Transaction, txWatc
 
 func shouldExecute(task interfaces.ITask) bool {
 	// Make sure we're in the right block range to continue
-	currentBlock, err := task.GetEth().GetCurrentHeight(task.GetCtx())
+	currentBlock, err := task.GetClient().GetCurrentHeight(task.GetCtx())
 	if err != nil {
 		// This probably means an endpoint issue, so we have to try again
 		task.GetLogger().Warnf("could not check current height of chain: %v", err)

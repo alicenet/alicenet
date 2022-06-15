@@ -864,7 +864,7 @@ type ITaskGetEthFunc struct {
 
 // GetEth delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetEth() ethereum.Network {
+func (m *MockITask) GetClient() ethereum.Network {
 	r0 := m.GetEthFunc.nextHook()()
 	m.GetEthFunc.appendCall(ITaskGetEthFuncCall{r0})
 	return r0

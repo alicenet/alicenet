@@ -10,6 +10,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/dgraph-io/badger/v2"
@@ -28,7 +29,7 @@ var _ interfaces.ITask = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(start uint64, end uint64) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.DisputeShareDistributionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -107,7 +108,7 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *executo
 	}
 
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeShareDistribution.Execute() failed getting call options: %v", err)
@@ -170,7 +171,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute() (bool, *executorInterface
 	logger.Info("DisputeShareDistributionTask ShouldExecute()")
 
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)

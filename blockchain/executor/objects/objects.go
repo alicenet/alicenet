@@ -2,60 +2,47 @@ package objects
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 type Task struct {
-	id                        string
-	name                      string
-	start                     uint64
-	end                       uint64
-	allowMultiExecution       bool
-	allowTxFeeAutoReplacement bool
-	ctx                       context.Context
-	cancelFunc                context.CancelFunc
-	database                  *db.Database
-	logger                    *logrus.Entry
-	eth                       ethereum.Network
-	taskResponseChan          interfaces.ITaskResponseChan
-	startBlockHash            common.Hash
-	txOpts                    *TxOpts
+	id                  string
+	name                string
+	start               uint64
+	end                 uint64
+	allowMultiExecution bool
+	ctx                 context.Context
+	cancelFunc          context.CancelFunc
+	database            *db.Database
+	logger              *logrus.Entry
+	client              ethereum.Network
+	taskResponseChan    interfaces.ITaskResponseChan
+	startBlockHash      common.Hash
+	subscribedTxns      []*types.Transaction
+	subscribeOptions    *transaction.SubscribeOptions
 }
 
-type TxOpts struct {
-	TxHashes []common.Hash
-}
-
-func (to *TxOpts) GetHexTxsHashes() string {
-	var hashes strings.Builder
-	for _, txHash := range to.TxHashes {
-		hashes.WriteString(txHash.Hex())
-		hashes.WriteString(" ")
-	}
-	return hashes.String()
-}
-
-func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, allowTxFeeAutoReplacement bool) *Task {
+func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *Task {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &Task{
-		name:                      name,
-		start:                     start,
-		end:                       end,
-		allowMultiExecution:       allowMultiExecution,
-		allowTxFeeAutoReplacement: allowTxFeeAutoReplacement,
-		ctx:                       ctx,
-		cancelFunc:                cf,
-		txOpts:                    &TxOpts{TxHashes: make([]common.Hash, 0)},
+		name:                name,
+		start:               start,
+		end:                 end,
+		allowMultiExecution: allowMultiExecution,
+		subscribeOptions:    subscribeOptions,
+		ctx:                 ctx,
+		cancelFunc:          cf,
 	}
 }
 
@@ -66,7 +53,7 @@ func (t *Task) Initialize(ctx context.Context, cancelFunc context.CancelFunc, da
 	t.cancelFunc = cancelFunc
 	t.database = database
 	t.logger = logger
-	t.eth = eth
+	t.client = eth
 	t.taskResponseChan = taskResponseChan
 }
 
@@ -95,8 +82,12 @@ func (t *Task) GetAllowMultiExecution() bool {
 	return t.allowMultiExecution
 }
 
-func (t *Task) GetAllowTxFeeAutoReplacement() bool {
-	return t.allowTxFeeAutoReplacement
+func (t *Task) GetSubscribedTxs() []*types.Transaction {
+	return t.subscribedTxns
+}
+
+func (t *Task) GetSubscribeOptions() *transaction.SubscribeOptions {
+	return t.subscribeOptions
 }
 
 // GetCtx default implementation for the ITask interface
@@ -105,8 +96,8 @@ func (t *Task) GetCtx() context.Context {
 }
 
 // GetEth default implementation for the ITask interface
-func (t *Task) GetEth() ethereum.Network {
-	return t.eth
+func (t *Task) GetClient() ethereum.Network {
+	return t.client
 }
 
 // GetLogger default implementation for the ITask interface
@@ -140,15 +131,9 @@ func (t *Task) SetStartBlockHash(startBlockHash []byte) {
 	t.startBlockHash.SetBytes(startBlockHash)
 }
 
-func (t *Task) ClearTxData() {
-	t.txOpts = &TxOpts{
-		TxHashes: make([]common.Hash, 0),
-	}
-}
-
 func (t *Task) AmILeading(dkgState *state.DkgState) bool {
 	// check if I'm a leader for this task
-	currentHeight, err := t.eth.GetCurrentHeight(t.ctx)
+	currentHeight, err := t.client.GetCurrentHeight(t.ctx)
 	if err != nil {
 		return false
 	}

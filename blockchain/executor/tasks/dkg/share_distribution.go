@@ -9,6 +9,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -24,7 +25,7 @@ var _ interfaces.ITask = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.ShareDistributionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -100,7 +101,7 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *executorInterf
 		return nil, fmt.Errorf("RegisterTask.Execute(): error loading dkgState: %v", err)
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	c := eth.Contracts()
 	me := dkgState.Account.Address
@@ -136,7 +137,7 @@ func (t *ShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskE
 		return true
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.ShareDistribution {
 		return false

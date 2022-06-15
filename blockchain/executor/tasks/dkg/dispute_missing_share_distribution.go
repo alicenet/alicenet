@@ -7,6 +7,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -23,7 +24,7 @@ var _ interfaces.ITask = &DisputeMissingShareDistributionTask{}
 // NewDisputeMissingShareDistributionTask creates a new task
 func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMissingShareDistributionTask {
 	return &DisputeMissingShareDistributionTask{
-		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.DisputeMissingShareDistributionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -48,7 +49,7 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 	}
 
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
 		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingShareDistributionTask Execute() error getting accusableParticipants: %v", err)
@@ -107,7 +108,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute() (bool, *executorIn
 func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
 	logger := t.GetLogger()
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)

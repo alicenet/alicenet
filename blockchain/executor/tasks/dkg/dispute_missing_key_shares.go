@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -26,7 +27,7 @@ var _ interfaces.ITask = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		Task: objects.NewTask(constants.DisputeMissingKeySharesTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.DisputeMissingKeySharesTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -51,7 +52,7 @@ func (t *DisputeMissingKeySharesTask) Execute() ([]*types.Transaction, *executor
 	}
 
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
 		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingKeySharesTask Execute() error getting accusableParticipants: %v", err)
@@ -110,7 +111,7 @@ func (t *DisputeMissingKeySharesTask) ShouldExecute() (bool, *executorInterfaces
 func (t *DisputeMissingKeySharesTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
 	logger := t.GetLogger()
 	ctx := t.GetCtx()
-	eth := t.GetEth()
+	eth := t.GetClient()
 
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)

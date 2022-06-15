@@ -30,8 +30,8 @@ type SubscribeOptions struct {
 	MaxStaleBlocks  uint64 // how many blocks we should consider a transaction stale and mark it for retry
 }
 
-func NewSubscribeOptions(disableAutoRetry bool, maxStaleBlocks uint64) *SubscribeOptions {
-	return &SubscribeOptions{EnableAutoRetry: disableAutoRetry, MaxStaleBlocks: maxStaleBlocks}
+func NewSubscribeOptions(enableAutoRetry bool, maxStaleBlocks uint64) *SubscribeOptions {
+	return &SubscribeOptions{EnableAutoRetry: enableAutoRetry, MaxStaleBlocks: maxStaleBlocks}
 }
 
 // Struct that has the data necessary by the Transaction Watcher service. The

@@ -20,4 +20,6 @@ const (
 	ErrorLoadingDkgState  = "error loading dkgState: %v"
 	FailedGettingTxnOpts  = "failed getting txn opts: %v"
 	FailedGettingCallOpts = "failed getting call opts: %v"
+
+	ETHDKGMaxStaleBlocks uint64 = 6
 )

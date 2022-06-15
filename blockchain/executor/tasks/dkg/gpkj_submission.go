@@ -14,6 +14,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -30,7 +31,7 @@ var _ interfaces.ITask = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false, true),
+		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 		adminHandler: adminHandler,
 	}
 }
@@ -110,7 +111,7 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *executorInterface
 		return nil, dkgUtils.LogReturnErrorf(logger, "GPKjSubmissionTask.Execute(): error loading dkgState: %v", err)
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	logger.Infof("GPKSubmissionTask Execute(): %v", dkgState.Account.Address)
 
@@ -144,7 +145,7 @@ func (t *GPKjSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr)
 		return true
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.GPKJSubmission {
 		return false

@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +30,7 @@ var _ executorInterfaces.ITask = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.DisputeGPKjTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -136,7 +137,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
@@ -187,7 +188,7 @@ func (t *DisputeGPKjTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
 		return true
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.DisputeGPKJSubmission {
 		return false

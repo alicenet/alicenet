@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 )
 
 // KeyShareSubmissionTask is the task for submitting Keyshare information
@@ -25,7 +26,7 @@ var _ interfaces.ITask = &KeyShareSubmissionTask{}
 // NewKeyShareSubmissionTask creates a new task
 func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.KeyShareSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -97,7 +98,7 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *executorInter
 	me := dkgState.Account
 
 	// Setup
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
@@ -136,7 +137,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute() (bool, *executorInterfaces.Task
 		return true
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	me := dkgState.Account
 	callOpts, err := eth.GetCallOpts(ctx, me)

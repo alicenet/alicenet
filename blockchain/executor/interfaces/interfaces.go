@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -40,9 +41,10 @@ type ITask interface {
 	GetEnd() uint64
 	GetName() string
 	GetAllowMultiExecution() bool
-	GetAllowTxFeeAutoReplacement() bool
+	GetSubscribedTxs() []*types.Transaction
+	GetSubscribeOptions() *transaction.SubscribeOptions
 	GetCtx() context.Context
-	GetEth() ethereum.Network
+	GetClient() ethereum.Network
 	GetLogger() *logrus.Entry
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/transaction"
 )
 
 // RegisterTask contains required state for safely performing a registration
@@ -26,7 +27,7 @@ var _ interfaces.ITask = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		Task: objects.NewTask(constants.RegisterTaskName, start, end, false, true),
+		Task: objects.NewTask(constants.RegisterTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
 	}
 }
 
@@ -84,7 +85,7 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, *executorInterfaces.Task
 	logger := t.GetLogger().WithField("method", "RegisterTask.Execute()")
 	logger.Trace("initiate execution")
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	block, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -131,7 +132,7 @@ func (t *RegisterTask) ShouldExecute() *executorInterfaces.TaskErr {
 		return executorInterfaces.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
 	}
 
-	eth := t.GetEth()
+	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.RegistrationOpen {
 		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from RegistrationOpen", dkgState.Phase), false)
