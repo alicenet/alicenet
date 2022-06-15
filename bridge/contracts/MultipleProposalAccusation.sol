@@ -8,7 +8,9 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 
+/// @custom:salt MultipleProposalAccusation
 /// @custom:salt-type Accusation
+/// @custom:deploy-type deployUpgradeable
 contract MultipleProposalAccusation is
     ImmutableFactory,
     ImmutableSnapshots,
@@ -35,7 +37,7 @@ contract MultipleProposalAccusation is
         bytes calldata _pClaims0,
         bytes calldata _signature1,
         bytes calldata _pClaims1
-    ) internal view returns (address) {
+    ) public view returns (address) {
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
         address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(_signature0, _pClaims0);
         address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(_signature1, _pClaims1);

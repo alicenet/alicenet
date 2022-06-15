@@ -12,8 +12,10 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 
+/// @custom:salt InvalidTxConsumptionAccusation
 /// @custom:salt-type Accusation
-contract InvalidTransactionConsumptionAccusation is
+/// @custom:deploy-type deployUpgradeable
+contract InvalidTxConsumptionAccusation is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
