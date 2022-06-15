@@ -1,6 +1,8 @@
 package dkg
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
@@ -8,7 +10,6 @@ import (
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -33,18 +34,21 @@ func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
 func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
-	logger := t.GetLogger()
-	logger.Infof("ShareDistributionTask Prepare()")
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Tracef("preparing task")
 
 	dkgState := &state.DkgState{}
+	var isRecoverable bool
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
+			isRecoverable = false
 			return err
 		}
 
 		if dkgState.Phase != state.ShareDistribution {
-			return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
+			isRecoverable = false
+			return errors.New("not in ShareDistribution phase")
 		}
 
 		if dkgState.SecretValue == nil {
@@ -57,8 +61,8 @@ func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 			encryptedShares, privateCoefficients, commitments, err := state.GenerateShares(
 				dkgState.TransportPrivateKey, participants)
 			if err != nil {
-				logger.Errorf("Failed to generate shares: %v %#v", err, participants)
-				return err
+				isRecoverable = true
+				return fmt.Errorf("Failed to generate shares: %v %#v", err, participants)
 			}
 
 			// Store calculated values
@@ -71,6 +75,7 @@ func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 
 			err = dkgState.PersistState(txn)
 			if err != nil {
+				isRecoverable = false
 				return err
 			}
 		} else {
@@ -81,7 +86,7 @@ func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 	})
 
 	if err != nil {
-		return dkgUtils.LogReturnErrorf(logger, "ShareDistributionTask.Prepare(): error during the preparation: %v", err)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("error during the preparation: %v", err), isRecoverable)
 	}
 
 	return nil
@@ -89,8 +94,8 @@ func (t *ShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("ShareDistributionTask doTask()")
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Trace("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -98,34 +103,37 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *executorInterf
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("RegisterTask.Execute(): error loading dkgState: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("error loading dkgState: %v", err), false)
 	}
 
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
-	c := eth.Contracts()
-	me := dkgState.Account.Address
-	logger.Debugf("me:%v", me.Hex())
+	contracts := client.Contracts()
+	accountAddr := dkgState.Account.Address
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("getting txn opts failed: %v", err), true)
 	}
 
 	// Distribute shares
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, dkgState.Participants[me].EncryptedShares, dkgState.Participants[me].Commitments)
+	txn, err := contracts.Ethdkg().DistributeShares(
+		txnOpts,
+		dkgState.Participants[accountAddr].EncryptedShares,
+		dkgState.Participants[accountAddr].Commitments,
+	)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "distributing shares failed: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("distributing shares failed: %v", err), true)
 	}
 
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("ShareDistributionTask ShouldExecute()")
+func (t *ShareDistributionTask) ShouldExecute() *executorInterfaces.TaskErr {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Trace("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -133,36 +141,31 @@ func (t *ShareDistributionTask) ShouldExecute() (bool, *executorInterfaces.TaskE
 		return err
 	})
 	if err != nil {
-		logger.Errorf("could not get dkgState with error %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
 	}
 
 	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.ShareDistribution {
-		return false
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
 	}
 
 	// If it's generally good to retry, let's try to be more specific
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		logger.Errorf("ShareDistributionTask.ShoudRetry() failed getting call options: %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
 	}
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, dkgState.Account.Address)
 	if err != nil {
-		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
 
 	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
-	if participantState.DistributedSharesHash == emptySharesHash {
-		logger.Warn("Did not distribute shares after all. needs retry")
-		return true
+	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
+		return executorInterfaces.NewTaskErr("Did distribute shares after all. needs no retry", false)
 	}
 
-	logger.Info("Did distribute shares after all. needs no retry")
-
-	return false
+	logger.Debugf("Did not distribute shares after all. needs retry")
+	return nil
 }

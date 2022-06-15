@@ -157,7 +157,7 @@ type ReceiptResponse struct {
 }
 
 func newReceiptResponse() *ReceiptResponse {
-	return &ReceiptResponse{doneChan: make(chan struct{}, 1)}
+	return &ReceiptResponse{doneChan: make(chan struct{})}
 }
 
 // Function to check if a receipt is ready

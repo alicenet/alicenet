@@ -44,35 +44,31 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	logger.Info("MPKSubmissionTask Prepare()...")
 
 	dkgState := &state.DkgState{}
+	var isRecoverable bool
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
+			isRecoverable = false
 			return err
 		}
 
 		if dkgState.Phase != state.MPKSubmission {
-			return fmt.Errorf("%w because it's not in MPKSubmission phase", objects.ErrCanNotContinue)
+			isRecoverable = false
+			return errors.New("it's not in MPKSubmission phase")
 		}
 
 		// compute MPK if not yet computed
-		if dkgState.MasterPublicKey[0] == nil ||
-			dkgState.MasterPublicKey[1] == nil ||
-			dkgState.MasterPublicKey[2] == nil ||
-			dkgState.MasterPublicKey[3] == nil ||
-			(dkgState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
-				dkgState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
-				dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
-				dkgState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0) {
-
-			eth := t.GetClient()
+		if isMasterPublicKeyEmpty(dkgState.MasterPublicKey) {
+			client := t.GetClient()
 			ctx := t.GetCtx()
 			// setup leader election
-			block, err := eth.GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
+			block, err := client.GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
 			if err != nil {
-				return fmt.Errorf("MPKSubmissionTask Prepare(): error getting block by number: %v", err)
+				isRecoverable = true
+				return fmt.Errorf("error getting block by number: %v", err)
 			}
 
-			logger.Infof("block hash: %v\n", block.Hash())
+			logger.Debugf("block hash: %v\n", block.Hash())
 			t.SetStartBlockHash(block.Hash().Bytes())
 
 			// prepare MPK
@@ -80,7 +76,6 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 			g2KeyShares := make([][4]*big.Int, dkgState.NumberOfValidators)
 
 			var participantsList = dkgState.GetSortedParticipants()
-			validMPK := true
 			for idx, participant := range participantsList {
 				// Bringing these in from state but could directly query contract
 				g1KeyShares[idx] = dkgState.Participants[participant.Address].KeyShareG1s
@@ -90,28 +85,25 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 
 				for i := range g1KeyShares[idx] {
 					if g1KeyShares[idx][i] == nil {
-						logger.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
-						validMPK = false
+						isRecoverable = false
+						return fmt.Errorf("Missing g1Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
 					}
 				}
 
 				for i := range g2KeyShares[idx] {
 					if g2KeyShares[idx][i] == nil {
-						logger.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
-						validMPK = false
+						isRecoverable = false
+						return fmt.Errorf("Missing g2Keyshare[%v][%v] for %v.", idx, i, participant.Address.Hex())
 					}
 				}
 			}
 
-			logger.Infof("# Participants: %v\n", len(dkgState.Participants))
+			logger.Debugf("# Participants: %v\n", len(dkgState.Participants))
 
 			mpk, err := state.GenerateMasterPublicKey(g1KeyShares, g2KeyShares)
-			if err != nil && validMPK {
-				return utils.LogReturnErrorf(logger, "Failed to generate master public key:%v", err)
-			}
-
-			if !validMPK {
-				mpk = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+			if err != nil {
+				isRecoverable = false
+				return fmt.Errorf("Failed to generate master public key:%v", err)
 			}
 
 			// Master public key is all we generate here so save it
@@ -119,17 +111,18 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 
 			err = dkgState.PersistState(txn)
 			if err != nil {
+				isRecoverable = false
 				return err
 			}
 		} else {
-			logger.Infof("MPKSubmissionTask Prepare(): mpk already defined")
+			logger.Debugf("mpk already defined")
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "MPKSubmissionTask.Prepare(): error during the preparation: %v", err)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
 	}
 
 	return nil
@@ -195,10 +188,7 @@ func (t *MPKSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) 
 }
 
 func (t *MPKSubmissionTask) shouldSubmitMPK(dkgState *state.DkgState) bool {
-	if dkgState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
-		dkgState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
-		dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
-		dkgState.MasterPublicKey[3].Cmp(big.NewInt(0)) == 0 {
+	if isMasterPublicKeyEmpty(dkgState.MasterPublicKey) {
 		return false
 	}
 
@@ -231,4 +221,19 @@ func (t *MPKSubmissionTask) shouldSubmitMPK(dkgState *state.DkgState) bool {
 
 	logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is equal to the received")
 	return true
+}
+
+func isMasterPublicKeyEmpty(masterPublicKey [4]*big.Int) bool {
+	isNil :=
+		(masterPublicKey[0] == nil ||
+			masterPublicKey[1] == nil ||
+			masterPublicKey[2] == nil ||
+			masterPublicKey[3] == nil)
+
+	isAllZero := (masterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+		masterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
+		masterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
+		masterPublicKey[3].Cmp(big.NewInt(0)) == 0)
+
+	return isNil || isAllZero
 }
