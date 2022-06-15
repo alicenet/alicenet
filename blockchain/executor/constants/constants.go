@@ -1,6 +1,7 @@
 package constants
 
 const (
+	//Task names
 	RegisterTaskName                        = "RegisterTask"
 	DisputeMissingRegistrationTaskName      = "DisputeMissingRegistrationTask"
 	ShareDistributionTaskName               = "ShareDistributionTask"
@@ -14,4 +15,9 @@ const (
 	DisputeGPKjTaskName                     = "DisputeGPKjTask"
 	CompletionTaskName                      = "CompletionTask"
 	SnapshotTaskName                        = "SnapshotTask"
+
+	//Common errors
+	ErrorLoadingDkgState  = "error loading dkgState: %v"
+	FailedGettingTxnOpts  = "failed getting txn opts: %v"
+	FailedGettingCallOpts = "failed getting call opts: %v"
 )

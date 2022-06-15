@@ -11,7 +11,6 @@ import (
 	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
@@ -61,8 +60,8 @@ func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("CompletionTask Execute()")
+	logger := t.GetLogger().WithField("method", "CompletionTask.Execute()")
+	logger.Trace("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -70,12 +69,12 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.Ta
 		return err
 	})
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "CompletionTask.Execute(): error loading dkgState: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(dkgConstants.ErrorLoadingDkgState, err), false)
 	}
 
 	// submit if I'm a leader for this task
 	if !t.AmILeading(dkgState) {
-		return nil, utils.LogReturnErrorf(logger, "not leading Completion yet")
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("not leading Completion yet"), true)
 	}
 
 	// Setup
@@ -83,36 +82,38 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.Ta
 	c := eth.Contracts()
 	txnOpts, err := eth.GetTransactionOpts(t.GetCtx(), dkgState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingTxnOpts, err), true)
 	}
 
 	// Register
 	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "completion failed: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("completion failed: %v", err), true)
 	}
 
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *CompletionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("CompletionTask ShouldExecute()")
+func (t *CompletionTask) ShouldExecute() *executorInterfaces.TaskErr {
+	logger := t.GetLogger().WithField("method", "CompletionTask.ShouldExecute()")
+	logger.Trace("should execute task")
 
 	eth := t.GetEth()
 	c := eth.Contracts()
 
 	callOpts, err := eth.GetCallOpts(t.GetCtx(), eth.GetDefaultAccount())
 	if err != nil {
-		logger.Debugf("error getting call opts in completion task: %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingCallOpts, err), true)
 	}
 	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		logger.Debugf("error getting ethdkg phases in completion task: %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("error getting ethdkg phases in completion task: %v", err), true)
 	}
 
-	return phase != uint8(state.Completion)
+	if phase == uint8(state.Completion) {
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("completion already ocurred: %v", phase), false)
+	}
+
+	return nil
 }
