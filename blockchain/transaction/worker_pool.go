@@ -84,44 +84,49 @@ func (w *WorkerPool) worker() {
 			monitoredTx := work.txn
 			currentHeight := work.height
 			txnHash := monitoredTx.Txn.Hash()
-		RetryLoop:
 			for i := uint64(1); i <= constants.TxWorkerMaxWorkRetries; i++ {
-			RetrySelect:
 				select {
 				case <-ctx.Done():
 					// worker context timed out or parent was cancelled, should return
 					return
 				default:
 					rcpt, err := w.getReceipt(ctx, monitoredTx, currentHeight, txnHash)
-					if err != nil {
-						switch err.(type) {
-						case *ErrRecoverable:
-							// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
-							if i < constants.TxWorkerMaxWorkRetries {
-								continue RetryLoop
-							}
-						case *ErrTransactionStale:
-							if !monitoredTx.DisableAutoRetry {
-								defaultAccount := w.client.GetDefaultAccount()
-								if bytes.Equal(monitoredTx.FromAddress[:], defaultAccount.Address[:]) {
-									newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.Txn, w.baseFee, w.tipCap)
-									w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}
-									break RetrySelect
-								}
-							}
-						}
-						// send recoverable errors after constants.TxWorkerMaxWorkRetries,txNotFound or
-						// other errors back to main
-						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, err: err}
-					} else {
-						// send receipt (even if it nil) back to main thread
-						w.responseWorkChannel <- MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}
+					finalResp, retry := w.handleResponse(ctx, monitoredTx, txnHash, rcpt, err, i)
+					if retry {
+						continue
 					}
-					//should continue getting other tx work
-					break RetryLoop
+					w.responseWorkChannel <- finalResp
 				}
 			}
 		}
+	}
+}
+
+func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHash common.Hash, rcpt *types.Receipt, err error, iteration uint64) (MonitorWorkResponse, bool) {
+	if err != nil {
+		switch err.(type) {
+		case *ErrRecoverable:
+			// retry on recoverable error `constants.TxWorkerMaxWorkRetries` times
+			if iteration < constants.TxWorkerMaxWorkRetries {
+				return MonitorWorkResponse{}, true
+			}
+		case *ErrTransactionStale:
+			// try to replace a transaction if the conditions are met
+			if monitoredTx.EnableAutoRetry {
+				defaultAccount := w.client.GetDefaultAccount()
+				if bytes.Equal(monitoredTx.FromAddress[:], defaultAccount.Address[:]) {
+					newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.Txn, w.baseFee, w.tipCap)
+					return MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}, false
+				}
+			}
+		default:
+		}
+		// send recoverable errors after constants.TxWorkerMaxWorkRetries, txNotFound or
+		// other errors back to main
+		return MonitorWorkResponse{txnHash: txnHash, err: err}, false
+	} else {
+		// send receipt (even if it nil) back to main thread
+		return MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}, false
 	}
 }
 
@@ -147,9 +152,9 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 		// (err tx not found). But in case of an edge case, where tx replacing and tx
 		// replaced are both valid (e.g sending tx to different nodes) we will continue
 		// to retry both, until we have a valid tx for this nonce.
-		maxPendingBlocks := w.client.GetTxMaxStaleBlocks() * (monitoredTx.RetryAmount + 1)
+		maxPendingBlocks := monitoredTx.MaxStaleBlocks * (monitoredTx.RetryAmount + 1)
 		if blockTimeSpan >= maxPendingBlocks {
-			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks!", txnHex, w.client.GetTxMaxStaleBlocks())}
+			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks!", txnHex, maxPendingBlocks)}
 		}
 	} else {
 		// tx is not pending, so check for receipt

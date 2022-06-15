@@ -29,12 +29,47 @@ type info struct {
 	Selector          FuncSelector       `json:"selector"`          // 4 bytes that identify the function being called by the tx
 	FunctionSignature string             `json:"functionSignature"` // function signature as we see on the smart contracts
 	RetryGroup        common.Hash        `json:"retryGroup"`        // internal group Id to keep track of all tx that were created during the retry of a tx
-	DisableAutoRetry  bool               `json:"disableAutoRetry"`  // whether we should disable the auto retry of a transaction
+	EnableAutoRetry   bool               `json:"disableAutoRetry"`  // whether we should disable the auto retry of a transaction
+	MaxStaleBlocks    uint64             `json:"maxStaleBlocks"`    // maximum number of blocks before we consider a transaction stale
+	MonitoringHeight  uint64             `json:"monitoringHeight"`  // ethereum height where we first added the tx to be watched or did a tx retry.
+	RetryAmount       uint64             `json:"retryAmount"`       // counter to indicate how many times we tried to retry a transaction
+	NotFoundBlocks    uint64             `json:"notFoundBlocks"`    // counter to indicate approximate number of blocks that we could not find a tx
+	logger            *logrus.Entry      `json:"-"`                 // logger to log transaction info
+}
 
-	MonitoringHeight uint64        `json:"monitoringHeight"` // ethereum height where we first added the tx to be watched or did a tx retry.
-	RetryAmount      uint64        `json:"retryAmount"`      // counter to indicate how many times we tried to retry a transaction
-	NotFoundBlocks   uint64        `json:"notFoundBlocks"`   // counter to indicate approximate number of blocks that we could not find a tx
-	logger           *logrus.Entry `json:"-"`                // logger to log transaction info
+func newInfo(
+	logEntry *logrus.Entry,
+	txn *types.Transaction,
+	fromAddr common.Address,
+	selector FuncSelector,
+	sig string,
+	retryGroup common.Hash,
+	enableAutoRetry bool,
+	maxStaleBlocks uint64,
+) info {
+	return info{
+		Txn:               txn,
+		FromAddress:       fromAddr,
+		Selector:          selector,
+		FunctionSignature: sig,
+		RetryGroup:        retryGroup,
+		EnableAutoRetry:   enableAutoRetry,
+		MaxStaleBlocks:    maxStaleBlocks,
+		logger:            logEntry,
+	}
+}
+
+func newReplacedInfo(newTxn *types.Transaction, originalTxInfo info) info {
+	return newInfo(
+		originalTxInfo.logger,
+		newTxn,
+		originalTxInfo.FromAddress,
+		originalTxInfo.Selector,
+		originalTxInfo.FunctionSignature,
+		originalTxInfo.RetryGroup,
+		originalTxInfo.EnableAutoRetry,
+		originalTxInfo.MaxStaleBlocks,
+	)
 }
 
 // Internal struct to keep track of transactions retries groups
@@ -139,13 +174,11 @@ func (r *ReceiptResponse) IsReady() bool {
 // block until the receipt is available and sent by the transaction watcher
 // service.
 func (r *ReceiptResponse) GetReceiptBlocking(ctx context.Context) (*types.Receipt, error) {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("error waiting for receipt: %v", ctx.Err())
-		case <-r.doneChan:
-			return r.receipt, r.err
-		}
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("error waiting for receipt: %v", ctx.Err())
+	case <-r.doneChan:
+		return r.receipt, r.err
 	}
 }
 
@@ -159,7 +192,6 @@ func (r *ReceiptResponse) writeReceipt(receipt *types.Receipt, err error) {
 		r.err = err
 		close(r.doneChan)
 	}
-
 }
 
 // Internal struct to keep track of the receipts
@@ -183,13 +215,13 @@ func (a *block) Equal(b *block) bool {
 // Type to do subscription request against the tx watcher system. SubscribeResponseChannel should be set
 type SubscribeRequest struct {
 	txn              *types.Transaction        // the transaction that should watched
-	disableAutoRetry bool                      // whether we should disable the auto retry of a transaction
+	subscribeOptions *SubscribeOptions         // whether we should disable the auto retry of a transaction
 	responseChannel  *SubscribeResponseChannel // channel where we going to send the request response
 }
 
 // creates a new subscribe request
-func NewSubscribeRequest(txn *types.Transaction, disableAutoRetry bool) SubscribeRequest {
-	return SubscribeRequest{txn: txn, responseChannel: NewResponseChannel(), disableAutoRetry: disableAutoRetry}
+func NewSubscribeRequest(txn *types.Transaction, options *SubscribeOptions) SubscribeRequest {
+	return SubscribeRequest{txn: txn, responseChannel: NewResponseChannel(), subscribeOptions: options}
 }
 
 // blocking function to listen for the response of a subscribe request
@@ -271,6 +303,7 @@ func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeR
 	}
 }
 
+// Load the watcher backend state from the database.
 func (wb *WatcherBackend) LoadState() error {
 	if err := wb.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTransactionWatcherState()
@@ -290,6 +323,7 @@ func (wb *WatcherBackend) LoadState() error {
 	return nil
 }
 
+// Persist the watcher backend state into the database.
 func (wb *WatcherBackend) PersistState() error {
 	rawData, err := json.Marshal(wb)
 	if err != nil {
@@ -314,6 +348,7 @@ func (wb *WatcherBackend) PersistState() error {
 	return nil
 }
 
+// Main loop where do all the backend actions
 func (wb *WatcherBackend) Loop() {
 	poolingTime := time.After(constants.TxPollingTime)
 	statusTime := time.After(constants.TxStatusTime)
@@ -354,6 +389,7 @@ func (wb *WatcherBackend) Loop() {
 	}
 }
 
+// extract the transactions from the request and queue them
 func (wb *WatcherBackend) queue(req SubscribeRequest) (*ReceiptResponse, error) {
 	if req.txn == nil {
 		return nil, &ErrInvalidMonitorRequest{"invalid request, missing txn object"}
@@ -389,16 +425,16 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*ReceiptResponse, error) 
 			logEntry := wb.logger.WithField("Transaction", txnHash).
 				WithField("Function", sig).
 				WithField("Selector", fmt.Sprintf("%x", selector))
-
-			wb.MonitoredTxns[txnHash] = info{
-				Txn:               req.txn,
-				FromAddress:       fromAddr,
-				Selector:          selector,
-				FunctionSignature: sig,
-				RetryGroup:        txnHash,
-				DisableAutoRetry:  req.disableAutoRetry,
-				logger:            logEntry,
+			var enableAutoRetry bool
+			var maxStaleBlocks uint64
+			if req.subscribeOptions != nil {
+				enableAutoRetry = req.subscribeOptions.EnableAutoRetry
+				maxStaleBlocks = req.subscribeOptions.MaxStaleBlocks
+			} else {
+				enableAutoRetry = true
+				maxStaleBlocks = wb.client.GetTxMaxStaleBlocks()
 			}
+			wb.MonitoredTxns[txnHash] = newInfo(logEntry, req.txn, fromAddr, selector, sig, txnHash, enableAutoRetry, maxStaleBlocks)
 			txGroup := newGroup()
 			txGroup.add(txnHash)
 			wb.RetryGroups[txnHash] = txGroup
@@ -410,6 +446,8 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*ReceiptResponse, error) 
 	return receiptResponse, nil
 }
 
+// collect the receipt for all transactions that we have queued. This function
+// only gets the receipts once per block.
 func (wb *WatcherBackend) collectReceipts() {
 
 	lenMonitoredTxns := len(wb.MonitoredTxns)
@@ -445,8 +483,6 @@ func (wb *WatcherBackend) collectReceipts() {
 		return
 	}
 
-	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
-
 	numWorkers := utils.Min(utils.Max(uint64(lenMonitoredTxns)/4, 128), 1)
 	requestWorkChannel := make(chan MonitorWorkRequest, lenMonitoredTxns+3)
 	responseWorkChannel := make(chan MonitorWorkResponse, lenMonitoredTxns+3)
@@ -469,6 +505,9 @@ func (wb *WatcherBackend) collectReceipts() {
 	// spawn the workers and wait for all to complete
 	go workerPool.ExecuteWork(numWorkers)
 
+	finishedTxs := make(map[common.Hash]MonitorWorkResponse)
+
+	// processing the worker's response
 	for workResponse := range responseWorkChannel {
 		select {
 		case <-wb.mainCtx.Done():
@@ -483,65 +522,91 @@ func (wb *WatcherBackend) collectReceipts() {
 			logEntry.Trace("got a invalid tx with hash from workers")
 			continue
 		}
-		if workResponse.err != nil {
-			err := workResponse.err
-			switch err.(type) {
-			case *ErrRecoverable:
-				logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", workResponse.err)
-			case *ErrTxNotFound:
-				// since we only analyze a tx once per new block, the notFoundBlocks counter
-				// should have approx the amount of blocks that we failed on finding the tx
-				txInfo.NotFoundBlocks++
-				if txInfo.NotFoundBlocks >= wb.client.GetTxNotFoundMaxBlocks() {
-					logEntry.Debugf("Couldn't get tx receipt, err: %v", workResponse.err)
-					finishedTxs[workResponse.txnHash] = workResponse
-				}
-				logEntry.Tracef("Retrying, couldn't get info, num attempts: %v, err: %v", txInfo.NotFoundBlocks, workResponse.err)
-			case *ErrTransactionStale:
-				// If we get this error it means that we should not retry or we cannot retry
-				// automatically, should forward the error to the subscribers
-				logEntry.Debugf("Stale transaction, err: %v", workResponse.err)
-				finishedTxs[workResponse.txnHash] = workResponse
-			}
-		} else {
-			if workResponse.retriedTxn != nil {
-				// restart the monitoringHeight, so we don't retry the tx in the next block
-				txInfo.MonitoringHeight = 0
-				if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
-					newTxnHash := workResponse.retriedTxn.txn.Hash()
-					wb.MonitoredTxns[newTxnHash] = info{
-						Txn:               workResponse.retriedTxn.txn,
-						FromAddress:       txInfo.FromAddress,
-						Selector:          txInfo.Selector,
-						FunctionSignature: txInfo.FunctionSignature,
-						RetryGroup:        txInfo.RetryGroup,
-						DisableAutoRetry:  txInfo.DisableAutoRetry,
-						logger:            txInfo.logger,
-					}
-					// update retry group
-					txGroup := wb.RetryGroups[txInfo.RetryGroup]
-					txGroup.add(newTxnHash)
-					wb.RetryGroups[txInfo.RetryGroup] = txGroup
-					logEntry.Tracef("successfully replaced a tx with %v", newTxnHash)
-					txInfo.RetryAmount++
-				} else {
-					logEntry.Debugf("could not replace tx error %v", workResponse.retriedTxn.err)
-				}
-			}
-			if workResponse.receipt != nil {
-				logEntry.WithFields(
-					logrus.Fields{
-						"mined":          workResponse.receipt.BlockNumber,
-						"current height": blockInfo.Height,
-					},
-				).Debug("Successfully got receipt")
-				wb.ReceiptCache[txInfo.RetryGroup] = receipt{Receipt: workResponse.receipt, RetrievedAtHeight: blockInfo.Height}
-				finishedTxs[workResponse.txnHash] = workResponse
-			}
+		newTxInfo, isFinished := wb.handleWorkerResponse(logEntry, workResponse, txInfo, blockInfo.Height)
+		if isFinished {
+			finishedTxs[workResponse.txnHash] = workResponse
 		}
-		wb.MonitoredTxns[workResponse.txnHash] = txInfo
+		wb.MonitoredTxns[workResponse.txnHash] = newTxInfo
 	}
 
+	wb.dispatchFinishedTxs(finishedTxs)
+	wb.cleanReceiptCache(blockInfo.Height)
+	wb.lastProcessedBlock = blockInfo
+}
+
+// handle the response sent by the workers. Response errors and receipts are handled, and retry tx are added to monitoredTx mapping.
+func (wb *WatcherBackend) handleWorkerResponse(logEntry *logrus.Entry, workResponse MonitorWorkResponse, txInfo info, height uint64) (info, bool) {
+	isFinished := false
+	if workResponse.err != nil {
+		err := workResponse.err
+		switch err.(type) {
+		case *ErrRecoverable:
+			logEntry.Tracef("Retrying! Got a recoverable error when trying to get receipt, err: %v", err)
+		case *ErrTxNotFound:
+			// since we only analyze a tx once per new block, the notFoundBlocks counter
+			// should have approx the amount of blocks that we failed on finding the tx
+			txInfo.NotFoundBlocks++
+			if txInfo.NotFoundBlocks >= wb.client.GetTxNotFoundMaxBlocks() {
+				logEntry.Debugf("Couldn't get tx receipt, err: %v", err)
+				isFinished = true
+			}
+			logEntry.Tracef("Retrying, couldn't get info, num attempts: %v, err: %v", txInfo.NotFoundBlocks, err)
+		case *ErrTransactionStale:
+			// If we get this error it means that we should not retry or we cannot retry
+			// automatically, should forward the error to the subscribers
+			logEntry.Debugf("Stale transaction, autoRetryEnabled: %v err: %v", txInfo.EnableAutoRetry, err)
+			isFinished = true
+		}
+	} else {
+		if workResponse.retriedTxn != nil {
+			// restart the monitoringHeight, so we don't retry the tx in the next block
+			txInfo.MonitoringHeight = 0
+			if workResponse.retriedTxn.err == nil && workResponse.retriedTxn.txn != nil {
+				newTxnHash := workResponse.retriedTxn.txn.Hash()
+				wb.MonitoredTxns[newTxnHash] = newReplacedInfo(workResponse.retriedTxn.txn, txInfo)
+				// update retry group
+				txGroup := wb.RetryGroups[txInfo.RetryGroup]
+				txGroup.add(newTxnHash)
+				wb.RetryGroups[txInfo.RetryGroup] = txGroup
+				logEntry.Tracef("successfully replaced a tx with %v", newTxnHash)
+				txInfo.RetryAmount++
+			} else {
+				logEntry.Debugf("could not replace tx error %v", workResponse.retriedTxn.err)
+			}
+		}
+		if workResponse.receipt != nil {
+			logEntry.WithFields(
+				logrus.Fields{
+					"mined":          workResponse.receipt.BlockNumber,
+					"current height": height,
+				},
+			).Debug("Successfully got receipt")
+			wb.ReceiptCache[txInfo.RetryGroup] = receipt{Receipt: workResponse.receipt, RetrievedAtHeight: height}
+			isFinished = true
+		}
+	}
+	return txInfo, isFinished
+}
+
+// Function to remove expired receipts and to restart the height of state recovered receipts
+func (wb *WatcherBackend) cleanReceiptCache(height uint64) {
+	var expiredReceipts []common.Hash
+	for receiptTxnHash, receiptInfo := range wb.ReceiptCache {
+		if receiptInfo.RetrievedAtHeight == 0 || receiptInfo.RetrievedAtHeight > height {
+			receiptInfo.RetrievedAtHeight = height
+		}
+		if height >= receiptInfo.RetrievedAtHeight+constants.TxReceiptCacheMaxBlocks {
+			expiredReceipts = append(expiredReceipts, receiptTxnHash)
+		}
+	}
+	for _, receiptTxHash := range expiredReceipts {
+		wb.logger.Tracef("cleaning %v from receipt cache", receiptTxHash.Hex())
+		delete(wb.ReceiptCache, receiptTxHash)
+	}
+}
+
+// Write the receipt of response to a given transaction that has been processed
+func (wb *WatcherBackend) dispatchFinishedTxs(finishedTxs map[common.Hash]MonitorWorkResponse) {
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := wb.MonitoredTxns[txnHash]; ok {
@@ -549,32 +614,11 @@ func (wb *WatcherBackend) collectReceipts() {
 				logger := txnInfo.logger.WithFields(logrus.Fields{
 					"group": txnInfo.RetryGroup,
 				})
-
 				if workResponse.receipt != nil {
-					rcpt := workResponse.receipt
-					var profile Profile
-					if _, present := wb.Aggregates[txnInfo.Selector]; present {
-						profile = wb.Aggregates[txnInfo.Selector]
-					} else {
-						profile = Profile{}
-					}
-					// Update transaction profile
-					profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
-					if profile.MaximumGas < rcpt.GasUsed {
-						profile.MaximumGas = rcpt.GasUsed
-					}
-					if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
-						profile.MinimumGas = rcpt.GasUsed
-					}
-					profile.TotalCount++
-					profile.TotalGas += rcpt.GasUsed
-					if rcpt.Status == uint64(1) {
-						profile.TotalSuccess++
-					}
-					wb.Aggregates[txnInfo.Selector] = profile
+					wb.Aggregates[txnInfo.Selector] = wb.computeGasProfile(workResponse.receipt, txnInfo)
 				}
 				txGroup.sendReceipt(logger, workResponse.receipt, workResponse.err)
-				err = txGroup.remove(txnHash)
+				err := txGroup.remove(txnHash)
 				if err != nil {
 					logger.Debugf("Failed to remove txn from group: %v", err)
 				} else {
@@ -591,25 +635,34 @@ func (wb *WatcherBackend) collectReceipts() {
 			wb.logger.Debugf("Failed to find txn to remove: %v", txnHash.Hex())
 		}
 	}
-
-	var expiredReceipts []common.Hash
-	// Marking expired receipts and restarting the height of state recovered receipts
-	for receiptTxnHash, receiptInfo := range wb.ReceiptCache {
-		if receiptInfo.RetrievedAtHeight == 0 || receiptInfo.RetrievedAtHeight > blockInfo.Height {
-			receiptInfo.RetrievedAtHeight = blockInfo.Height
-		}
-		if blockInfo.Height >= receiptInfo.RetrievedAtHeight+constants.TxReceiptCacheMaxBlocks {
-			expiredReceipts = append(expiredReceipts, receiptTxnHash)
-		}
-	}
-	for _, receiptTxHash := range expiredReceipts {
-		wb.logger.Tracef("cleaning %v from receipt cache", receiptTxHash.Hex())
-		delete(wb.ReceiptCache, receiptTxHash)
-	}
-
-	wb.lastProcessedBlock = blockInfo
 }
 
+// Compute the gas profile for every transaction that returned a receipt
+func (wb *WatcherBackend) computeGasProfile(rcpt *types.Receipt, txnInfo info) Profile {
+	var profile Profile
+	if _, present := wb.Aggregates[txnInfo.Selector]; present {
+		profile = wb.Aggregates[txnInfo.Selector]
+	} else {
+		profile = Profile{}
+	}
+	// Update transaction profile
+	profile.AverageGas = (profile.AverageGas*profile.TotalCount + rcpt.GasUsed) / (profile.TotalCount + 1)
+	if profile.MaximumGas < rcpt.GasUsed {
+		profile.MaximumGas = rcpt.GasUsed
+	}
+	if profile.MinimumGas == 0 || profile.MinimumGas > rcpt.GasUsed {
+		profile.MinimumGas = rcpt.GasUsed
+	}
+	profile.TotalCount++
+	profile.TotalGas += rcpt.GasUsed
+	if rcpt.Status == uint64(1) {
+		profile.TotalSuccess++
+	}
+	return profile
+}
+
+// Extract the selector for a layer1 smart contract call (the first 4 bytes in
+// the call data)
 func ExtractSelector(data []byte) (FuncSelector, error) {
 	var selector [4]byte
 	if len(data) < 4 {

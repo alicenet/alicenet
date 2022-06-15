@@ -20,9 +20,18 @@ type IReceiptResponse interface {
 type IWatcher interface {
 	Start() error
 	Close()
-	Subscribe(ctx context.Context, txn *types.Transaction, disableAutoRetry bool) (IReceiptResponse, error)
+	Subscribe(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (IReceiptResponse, error)
 	Wait(ctx context.Context, receiptResponse IReceiptResponse) (*types.Receipt, error)
-	SubscribeAndWait(ctx context.Context, txn *types.Transaction, disableAutoRetry bool) (*types.Receipt, error)
+	SubscribeAndWait(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (*types.Receipt, error)
+}
+
+type SubscribeOptions struct {
+	EnableAutoRetry bool   // if we should disable auto retry of a transaction in case it becomes stale
+	MaxStaleBlocks  uint64 // how many blocks we should consider a transaction stale and mark it for retry
+}
+
+func NewSubscribeOptions(disableAutoRetry bool, maxStaleBlocks uint64) *SubscribeOptions {
+	return &SubscribeOptions{EnableAutoRetry: disableAutoRetry, MaxStaleBlocks: maxStaleBlocks}
 }
 
 // Struct that has the data necessary by the Transaction Watcher service. The
@@ -89,9 +98,9 @@ func (f *Watcher) Close() {
 // available. The final tx hash in the receipt can be different from the initial
 // txn sent. This can happen if the txn got stale and the watcher did a
 // transaction replace with higher fees.
-func (w *Watcher) Subscribe(ctx context.Context, txn *types.Transaction, disableAutoRetry bool) (IReceiptResponse, error) {
+func (w *Watcher) Subscribe(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (IReceiptResponse, error) {
 	w.logger.WithField("Txn", txn.Hash().Hex()).Debug("Subscribing for a transaction")
-	req := NewSubscribeRequest(txn, disableAutoRetry)
+	req := NewSubscribeRequest(txn, options)
 	select {
 	case w.requestChannel <- req:
 	case <-ctx.Done():
@@ -107,8 +116,8 @@ func (w *Watcher) Wait(ctx context.Context, receiptResponse IReceiptResponse) (*
 }
 
 // Queue a transaction and wait for its receipt
-func (w *Watcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction, disableAutoRetry bool) (*types.Receipt, error) {
-	receiptResponse, err := w.Subscribe(ctx, txn, disableAutoRetry)
+func (w *Watcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (*types.Receipt, error) {
+	receiptResponse, err := w.Subscribe(ctx, txn, options)
 	if err != nil {
 		return nil, err
 	}
