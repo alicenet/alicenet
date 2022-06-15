@@ -1,6 +1,8 @@
 package dkg
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/dgraph-io/badger/v2"
@@ -33,14 +35,15 @@ func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissing
 
 // Prepare prepares for work to be done in the DisputeMissingRegistrationTask
 func (t *DisputeMissingRegistrationTask) Prepare() *executorInterfaces.TaskErr {
-	t.GetLogger().Info("DisputeMissingRegistrationTask Prepare()...")
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Tracef("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("DisputeMissingRegistrationTask Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Trace("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -48,14 +51,14 @@ func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *execu
 		return err
 	})
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask.Execute(): error loading dkgState: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	ctx := t.GetCtx()
 	eth := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask Execute() error getting accusable participants: %v", err)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	// accuse missing validators
@@ -65,25 +68,25 @@ func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *execu
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
-			return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask Execute() error getting txnOpts: %v", err)
+			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 		}
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
 		if err != nil {
-			return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask Execute() error accusing missing registration: %v", err)
+			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("error accusing missing registration: %v", err), true)
 		}
 		txns = append(txns, txn)
 	} else {
-		logger.Info("No accusations for missing registrations")
+		logger.Trace("No accusations for missing registrations")
 	}
 
 	return txns, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingRegistrationTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("DisputeMissingRegistrationTask ShouldExecute()")
+func (t *DisputeMissingRegistrationTask) ShouldExecute() *executorInterfaces.TaskErr {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Trace("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -91,21 +94,23 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute() (bool, *executorInterfa
 		return err
 	})
 	if err != nil {
-		logger.Errorf("DisputeMissingRegistrationTask.ShouldExecute(): error loading dkgState: %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.RegistrationOpen {
-		return false
+		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from RegistrationOpen", dkgState.Phase), false)
 	}
 
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		logger.Errorf("DisputeMissingRegistrationTask ShouldExecute() error getting accusable participants: %v", err)
-		return true
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
-	return len(accusableParticipants) > 0
+	if len(accusableParticipants) == 0 {
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
+	}
+
+	return nil
 }
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
@@ -116,12 +121,12 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(dkgState *stat
 	var accusableParticipants []common.Address
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask failed getting call options: %v", err)
+		return nil, errors.New(fmt.Sprintf(constants.FailedGettingCallOpts, err))
 	}
 
 	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
 	}
 
 	validatorsMap := make(map[common.Address]bool)

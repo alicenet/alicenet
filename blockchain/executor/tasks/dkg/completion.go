@@ -32,8 +32,8 @@ func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 
 // Prepare prepares for work to be done in the CompletionTask
 func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
-	logger := t.GetLogger()
-	logger.Info("CompletionTask Prepare()...")
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Tracef("preparing task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -41,7 +41,7 @@ func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error loading dkgState: %v", err), false)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(dkgConstants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission {
@@ -62,7 +62,7 @@ func (t *CompletionTask) Prepare() *executorInterfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger().WithField("method", "CompletionTask.Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Trace("initiate execution")
 
 	dkgState := &state.DkgState{}
@@ -98,7 +98,7 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *executorInterfaces.Ta
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *CompletionTask) ShouldExecute() *executorInterfaces.TaskErr {
-	logger := t.GetLogger().WithField("method", "CompletionTask.ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Trace("should execute task")
 
 	eth := t.GetClient()

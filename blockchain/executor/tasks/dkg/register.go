@@ -74,7 +74,7 @@ func (t *RegisterTask) Prepare() *executorInterfaces.TaskErr {
 	})
 
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("error during the preparation: %v", err), isRecoverable)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func (t *RegisterTask) Prepare() *executorInterfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *RegisterTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger().WithField("method", "RegisterTask.Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Trace("initiate execution")
 
 	eth := t.GetClient()
@@ -98,13 +98,13 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, *executorInterfaces.Task
 		return err
 	})
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("error loading dkgState: %v", err), false)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("getting txn opts failed: %v", err), true)
+		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
 	// Register
@@ -120,7 +120,7 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, *executorInterfaces.Task
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *RegisterTask) ShouldExecute() *executorInterfaces.TaskErr {
-	logger := t.GetLogger().WithField("method", "RegisterTask.ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Trace("should execute task")
 
 	dkgState := &state.DkgState{}
@@ -129,7 +129,7 @@ func (t *RegisterTask) ShouldExecute() *executorInterfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	eth := t.GetClient()
@@ -140,7 +140,7 @@ func (t *RegisterTask) ShouldExecute() *executorInterfaces.TaskErr {
 
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
+		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	status, err := state.CheckRegistration(eth.Contracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)
