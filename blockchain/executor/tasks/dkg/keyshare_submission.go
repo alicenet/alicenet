@@ -34,7 +34,7 @@ func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask
 // and stored for submission.
 func (t *KeyShareSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debugf("preparing task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
@@ -85,7 +85,7 @@ func (t *KeyShareSubmissionTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -108,11 +108,13 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.Ta
 	}
 
 	// Submit KeyShares
-	logger.Debugf("submitting key shares: Addr: %v G1s: %v CorrectnessProofs: %v KeyShareG2s: %v",
+	logger.Infof(
+		"submitting key shares with account: %v g1s: %v correctnessProofs: %v keyShareG2s: %v",
 		defaultAddr.Address,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1s,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
-		dkgState.Participants[defaultAddr.Address].KeyShareG2s)
+		dkgState.Participants[defaultAddr.Address].KeyShareG2s,
+	)
 	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1s,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
@@ -127,7 +129,7 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.Ta
 // ShouldExecute checks if it makes sense to execute the task
 func (t *KeyShareSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

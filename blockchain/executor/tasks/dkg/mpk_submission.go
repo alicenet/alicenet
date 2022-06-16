@@ -39,7 +39,7 @@ func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 // to submit in DoWork.
 func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger()
-	logger.Info("MPKSubmissionTask Prepare()...")
+	logger.Debug("MPKSubmissionTask Prepare()...")
 
 	dkgState := &state.DkgState{}
 	var isRecoverable bool
@@ -129,7 +129,7 @@ func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger()
-	logger.Info("MPKSubmissionTask Execute()...")
+	logger.Debug("MPKSubmissionTask Execute()...")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

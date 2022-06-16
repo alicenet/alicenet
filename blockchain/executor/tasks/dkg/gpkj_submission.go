@@ -11,11 +11,9 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/sirupsen/logrus"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
@@ -24,7 +22,7 @@ type GPKjSubmissionTask struct {
 	adminHandler monInterfaces.IAdminHandler
 }
 
-// asserting that GPKjSubmissionTask struct implements interface exInterfacesinterfaces.Task
+// asserting that GPKjSubmissionTask struct implements interface Task
 var _ interfaces.ITask = &GPKjSubmissionTask{}
 
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
@@ -37,13 +35,15 @@ func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.
 
 // Prepare prepares for work to be done in the GPKjSubmissionTask
 func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
-	logger := t.GetLogger()
-	logger.Info("GPKSubmissionTask Prepare()...")
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Tracef("preparing task")
 
 	dkgState := &state.DkgState{}
+	var isRecoverable bool
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
+			isRecoverable = false
 			return err
 		}
 
@@ -54,7 +54,11 @@ func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 			var participantsList = dkgState.GetSortedParticipants()
 			encryptedShares := make([][]*big.Int, 0, dkgState.NumberOfValidators)
 			for _, participant := range participantsList {
-				logger.Debugf("Collecting encrypted shares... Participant %v %v", participant.Index, participant.Address.Hex())
+				logger.Tracef(
+					"Collecting encrypted shares... Participant %v %v",
+					participant.Index,
+					participant.Address.Hex(),
+				)
 				encryptedShares = append(encryptedShares, participant.EncryptedShares)
 			}
 
@@ -63,35 +67,39 @@ func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 				dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
 				encryptedShares, dkgState.Index, participantsList)
 			if err != nil {
-				logger.WithFields(logrus.Fields{
-					"t.State.Index": dkgState.Index,
-				}).Errorf("Could not generate group keys: %v", err)
-				return utils.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
+				isRecoverable = false
+				return fmt.Errorf(
+					"Could not generate group keys: %v for index: %v",
+					err,
+					dkgState.Index,
+				)
 			}
 
 			dkgState.GroupPrivateKey = groupPrivateKey
 			dkgState.Participants[dkgState.Account.Address].GPKj = groupPublicKey
 
 			// Pass private key on to consensus
-			logger.Infof("Adding private bn256eth key... using %p", t.adminHandler)
+			logger.Debugf("Adding private bn256eth key... using %p", t.adminHandler)
 			err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
 			if err != nil {
-				return fmt.Errorf("%w because error adding private key: %v", objects.ErrCanNotContinue, err)
+				isRecoverable = true
+				return fmt.Errorf("error adding private key: %v", err)
 			}
 
 			err = dkgState.PersistState(txn)
 			if err != nil {
+				isRecoverable = false
 				return err
 			}
 		} else {
-			logger.Infof("GPKSubmissionTask Initialize(): group private-public key already defined")
+			logger.Debugf("group private-public key already defined")
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "GPKjSubmissionTask.Prepare(): error during the preparation: %v", err)
+		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), isRecoverable)
 	}
 
 	return nil
@@ -99,7 +107,8 @@ func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
-	logger := t.GetLogger()
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -107,30 +116,28 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskEr
 		return err
 	})
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "GPKjSubmissionTask.Execute(): error loading dkgState: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
 	}
 
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
-	logger.Infof("GPKSubmissionTask Execute(): %v", dkgState.Account.Address)
 
-	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingTxnOpts, err), true)
 	}
 
-	// Do it
-	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, dkgState.Participants[dkgState.Account.Address].GPKj)
+	logger.Infof("submitting gpkj: %v", dkgState.Participants[dkgState.Account.Address].GPKj)
+	txn, err := client.Contracts().Ethdkg().SubmitGPKJ(txnOpts, dkgState.Participants[dkgState.Account.Address].GPKj)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf("submitting gpkj failed: %v", err), true)
 	}
 
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *GPKjSubmissionTask) ShouldExecute() (bool, *interfaces.TaskErr) {
+func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("GPKjSubmissionTask ShouldExecute()")
 
@@ -140,28 +147,28 @@ func (t *GPKjSubmissionTask) ShouldExecute() (bool, *interfaces.TaskErr) {
 		return err
 	})
 	if err != nil {
-		logger.Errorf("could not get dkgState with error %v", err)
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
 	}
 
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.GPKJSubmission {
-		return false
+		return interfaces.NewTaskErr(
+			fmt.Sprintf("incorrect phase %v expected state.GPKJSubmission", dkgState.Phase), false,
+		)
 	}
 
 	//Check if my GPKj is submitted, if not should retry
-	me := dkgState.Account
-	callOpts, err := eth.GetCallOpts(ctx, me)
+	defaultAddr := dkgState.Account
+	callOpts, err := client.GetCallOpts(ctx, defaultAddr)
 	if err != nil {
-		logger.Debug("GPKjSubmissionTask ShouldExecute() failed getting call opts")
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingCallOpts, err), true)
 	}
-	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, me.Address)
-	if err == nil && participantState.Gpkj[0].Cmp(dkgState.Participants[me.Address].GPKj[0]) == 0 &&
-		participantState.Gpkj[1].Cmp(dkgState.Participants[me.Address].GPKj[1]) == 0 &&
-		participantState.Gpkj[2].Cmp(dkgState.Participants[me.Address].GPKj[2]) == 0 &&
-		participantState.Gpkj[3].Cmp(dkgState.Participants[me.Address].GPKj[3]) == 0 {
+	participantState, err := client.Contracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
+	if err == nil && participantState.Gpkj[0].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[0]) == 0 &&
+		participantState.Gpkj[1].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[1]) == 0 &&
+		participantState.Gpkj[2].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[2]) == 0 &&
+		participantState.Gpkj[3].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[3]) == 0 {
 		return false
 	}
 

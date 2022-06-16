@@ -78,7 +78,7 @@ func (t *ShareDistributionTask) Prepare() *interfaces.TaskErr {
 				return err
 			}
 		} else {
-			logger.Infof("ShareDistributionTask Prepare(): encrypted shares already defined")
+			logger.Debugf("ShareDistributionTask Prepare(): encrypted shares already defined")
 		}
 
 		return nil
@@ -94,7 +94,7 @@ func (t *ShareDistributionTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -116,6 +116,7 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.Tas
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("getting txn opts failed: %v", err), true)
 	}
 
+	logger.Info("distributing shares")
 	// Distribute shares
 	txn, err := contracts.Ethdkg().DistributeShares(
 		txnOpts,
@@ -132,7 +133,7 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.Tas
 // ShouldRetry checks if it makes sense to try again
 func (t *ShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -159,7 +160,7 @@ func (t *ShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
 
-	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
+	logger.Debugf("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
 	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
 		return interfaces.NewTaskErr("did distribute shares after all. needs no retry", false)

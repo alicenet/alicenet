@@ -52,7 +52,7 @@ func (t *RegisterTask) Prepare() *interfaces.TaskErr {
 		if dkgState.TransportPrivateKey == nil ||
 			dkgState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
-			logger.Infof("generating private-public transport keys")
+			logger.Debugf("generating private-public transport keys")
 			// If this function fails, probably we got a bad random value. We can retry
 			// later to get a new value.
 			priv, pub, err := state.GenerateKeys()
@@ -69,7 +69,7 @@ func (t *RegisterTask) Prepare() *interfaces.TaskErr {
 				return err
 			}
 		} else {
-			logger.Infof("private-public transport keys already defined")
+			logger.Debugf("private-public transport keys already defined")
 		}
 		return nil
 	})
@@ -145,7 +145,7 @@ func (t *RegisterTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	status, err := state.CheckRegistration(client.Contracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)
-	logger.Infof("registration status: %v", status)
+	logger.Debugf("registration status: %v", status)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)
 	}
