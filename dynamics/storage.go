@@ -100,6 +100,8 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 // Start allows normal operations to begin. This MUST be called after Init
 // and can only be called once.
 func (s *Storage) Start() {
+	s.Lock()
+	defer s.Unlock()
 	s.startOnce.Do(func() {
 		close(s.startChan)
 	})

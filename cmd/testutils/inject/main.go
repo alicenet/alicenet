@@ -1143,7 +1143,7 @@ func main() {
 	nPtr := flag.Int("n", 100, "Number workers.")
 	bPtr := flag.Int("b", 100, "Base privk offset for workers. This should not overlap such that another test group is in same range.")
 	mPtr := flag.String("m", "", "Data to write to state store.")
-	iPtr := flag.String("i", "", "Index of state to write to state store.")
+	iPtr := flag.String("i", "", "Index of data to write to state store.")
 	flag.Parse()
 	datastoreMode := *dPtr
 	spamMode := *sPtr

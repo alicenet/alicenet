@@ -84,12 +84,14 @@ func TestActive(t *testing.T) {
 	close(P2PClientOneChannel)
 	time.Sleep(3 * time.Second)
 
+	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
 		t.Fatal("not zero")
 	}
 	if len(activePeerStoreObj.pid) != 0 {
 		t.Fatal("not zero")
 	}
+	activePeerStoreObj.RUnlock()
 
 	// reset the close channel
 	clientTwo.closeChan = make(chan struct{})
@@ -106,12 +108,14 @@ func TestActive(t *testing.T) {
 	activePeerStoreObj.del(randomNodeAddr)
 	time.Sleep(3 * time.Second)
 
+	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
 		t.Fatal("not zero")
 	}
 	if len(activePeerStoreObj.pid) != 0 {
 		t.Fatal("not zero")
 	}
+	activePeerStoreObj.RUnlock()
 
 	// reset the close channel
 	clientTwo.closeChan = make(chan struct{})

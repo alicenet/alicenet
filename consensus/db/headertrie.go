@@ -26,7 +26,6 @@ import (
 //  ...
 
 type headerTrie struct {
-	db     *Database
 	logger *logrus.Logger
 }
 

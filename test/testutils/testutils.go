@@ -1,15 +1,8 @@
 package testutils
 
 import (
-	"fmt"
-	"math/rand"
 	"time"
 )
-
-func SocketFileName() string {
-	rand.Seed(time.Now().Unix())
-	return "/tmp/madnet-test-" + fmt.Sprint(rand.Int())
-}
 
 func WaitUntil(f func() bool) {
 	end := time.Now().Add(5 * time.Second)

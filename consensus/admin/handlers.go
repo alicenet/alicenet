@@ -14,7 +14,6 @@ import (
 	"github.com/MadBase/MadNet/dynamics"
 	"github.com/MadBase/MadNet/errorz"
 	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -45,11 +44,10 @@ type Handlers struct {
 	appHandler  interfaces.Application
 	storage     dynamics.StorageGetter
 	ReceiveLock chan interfaces.Lockable
-	ipcServer   *ipc.Server
 }
 
 // Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler interfaces.Application, ethPubk []byte, storage dynamics.StorageGetter, ipcs *ipc.Server) {
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler interfaces.Application, ethPubk []byte, storage dynamics.StorageGetter) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -63,7 +61,6 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.ethAcct = crypto.GetAccount(ethPubk)
 	ah.ReceiveLock = make(chan interfaces.Lockable)
 	ah.storage = storage
-	ah.ipcServer = ipcs
 }
 
 // Close shuts down all workers

@@ -1,42 +1,34 @@
 # AliceNet
 
 ## Requirements
-#### Always required
+
 * [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
-#### Required for working on the Golang client (until it is Dockerized)
-* [Go 1.17](https://go.dev/dl/)
-* [Geth 1.10.8](https://geth.ethereum.org/docs/install-and-build/installing-geth)
-#### Required for working on Solidity contracts
+* [Go 1.18](https://go.dev/dl/)
+* [Geth 1.10.16](https://geth.ethereum.org/docs/install-and-build/installing-geth)
 * [Node 16](https://nodejs.org/en/download/)
 
+To setup local development after those dependencies are installed, run:
+
+```shell
+make setup
+```
+
+To simplify local (or remote via [CodeSpaces](https://github.com/features/codespaces)) development, a
+[devcontainer](https://code.visualstudio.com/docs/remote/containers) is provided. The remainder of the readme should work without additional configuration from within the devcontainer.
+
 ## Build AliceNet
-First, this repository needs to be cloned, and be the current working dir.
 
-<br />
+The following command will build the madnet binary:
 
-Then, to generate all files necessary for the project to build:
-```
-make generate
-```
-This user running this command needs to have the `docker` command set up. The generated files will belong to that user. 
-The generate command above may need to be rerun after making certain changes. Check the [File generation](#file-generation)
- section for more info on this.
-
-<br />
-
-Then, to compile an executable:
-```
+```shell
 make build
 ```
 
 ## File generation
+
 The `make generate` command runs two subcommands:
 * `make generate-bridge`
 * `make generate-go`
-
-Both commands run in a Docker container, so that nothing needs to be installed on your machine directly.
-
-<br />
 
 ### Command: make generate-bridge
 This command:
@@ -46,7 +38,7 @@ This command:
 
 Rerun this every time you made changes to the solidity contracts and want these to be used by the madnet binary
 
-Under the hood, this commend runs the `bridge` module's `compile` script to compile the contracts, and then the `bridge` module's `generate` script to generate the bindings and ABI definitions. These can also be run on the system directly, as long as the dependencies defined in `docker/generate-bridge` are installed.
+Under the hood, this commend runs the `bridge` module's `compile` script to compile the contracts, and then the `bridge` module's `generate` script to generate the bindings and ABI definitions.
 
 <br />
 
@@ -144,22 +136,7 @@ To list other commands from the script simply run
 
 # TROUBLESHOOTING
 
-1. `go mod tidy`
-   It is actually in place a fix for the following error
-
-``` bash
-./scripts/main.sh init 5
-go mod tidy; \
-	go build -o madnet ./cmd/main.go;
-go: finding module for package github.com/MadBase/MadNet/localrpc/swagger-bindata
-github.com/MadBase/MadNet/localrpc imports
-	github.com/MadBase/MadNet/localrpc/swagger-bindata: no matching versions for query "latest"
-localrpc/local.go:12:2: no required module provides package github.com/MadBase/MadNet/localrpc/swagger-bindata; to add it:
-	go get github.com/MadBase/MadNet/localrpc/swagger-bindata
-make: *** [build] Error 1
-```
-
-2. `./scripts/main.sh deploy`
+1. `./scripts/main.sh deploy`
 
 ```
 + npx hardhat --network dev --show-stack-traces updateDeploymentArgsWithFactory

@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
-    
+
   solidity-unit-tests:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -58,7 +58,7 @@ jobs:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-    
+
   solidity-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
       - run: npm run lint-solidity
-    
+
   typescript-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -84,60 +84,32 @@ jobs:
       - uses: ./.github/actions/node-cache
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
-  
-  golang-build:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    needs: solidity-build
-    strategy:
-      matrix:
-        os: [ ubuntu-20.04 ]
-    steps:
-      - name: "Sanitize branch name"
-        run: |
-          echo "BRANCH_NAME=$(echo ${{ github.head_ref || github.ref_name }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
-          echo "OPERATING_SYSTEM=$(echo ${{ matrix.os }} | sed -E 's/[^[:alnum:]]+/_/g')" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: make build
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.0.0
-        with:
-          name: alicenet-${{ env.BRANCH_NAME }}-${{ env.OPERATING_SYSTEM }}
-          path: ./madnet
-    
+
   golang-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    needs: golang-build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-  
+      - uses: golangci/golangci-lint-action@v3
+
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
-    needs: golang-build
     strategy:
       matrix:
         os: [ ubuntu-20.04 ]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
+      - run: go build ./...
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run unit tests
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -v -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-      - name: Run unit tests (race detection)
-        timeout-minutes: 20
-        run: |
-          set -euo pipefail
-          go test -race -json -v -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
       - uses: codecov/codecov-action@v1
         with:
           files: ./coverage.out
@@ -145,7 +117,7 @@ jobs:
 
   golang-blockchain-tests:
     runs-on: ${{ matrix.os }}
-    needs: golang-build
+    needs: golang-unit-tests
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -186,16 +158,13 @@ jobs:
           github.com/MadBase/MadNet/blockchain/transaction
         ]
     steps:
-      # Checkout and tool to format the test output
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-
-      # Run matrix blockchain unit tests
       - name: Run tests ${{ matrix.test-cmd }}
         timeout-minutes: 20
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
-          go test -tags=integration -json -v -timeout=20m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt

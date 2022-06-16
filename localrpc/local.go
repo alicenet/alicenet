@@ -130,5 +130,5 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 }
 
 func serveSwagger(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "swagger/swagger.json", http.StatusMovedPermanently)
+	http.Redirect(w, r, "swagger/madnet.swagger.json", http.StatusMovedPermanently)
 }

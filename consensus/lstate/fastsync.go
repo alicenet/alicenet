@@ -1077,7 +1077,7 @@ func (ssm *SnapShotManager) dlStateNodes(txn *badger.Txn, snapShotHeight uint32)
 }
 
 func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint32) error {
-	// get keys from state cache use those to store the state state into the db
+	// get keys from state cache use those to store the state into the db
 	leafKeys := ssm.stateLeafCache.getLeafKeys(snapShotHeight, maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
 	// store state before deleting from database.
@@ -1092,7 +1092,7 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 		if err != nil {
 			utils.DebugTrace(ssm.logger, err)
 		}
-		// store key-value state state
+		// store key-value state
 		err = ssm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
 		if err != nil {
 			// should not return if err invalid
@@ -1143,7 +1143,7 @@ func (ssm *SnapShotManager) dlStateLeaves(txn *badger.Txn, snapShotHeight uint32
 }
 
 func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32) error {
-	// get keys from state cache use those to store the state state into the db
+	// get keys from state cache use those to store the state into the db
 	leafKeys := ssm.hdrLeafCache.getLeafKeys(maxNumber)
 	// loop through LeafNode keys and retrieve from stateCache;
 	// store state before deleting from database.

@@ -30,7 +30,6 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	mncrypto "github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
 	"github.com/MadBase/MadNet/proto"
@@ -61,7 +60,6 @@ var tx1Signature, tx2Signature, tx3Signature []byte
 var ctx context.Context
 var app *application.Application
 var consGossipHandlers *gossip.Handlers
-var ipcServer *ipc.Server
 var peerManager *peering.PeerManager
 var consGossipClient *gossip.Client
 var consDlManager *dman.DMan
@@ -201,9 +199,6 @@ func validatorNode() {
 	consGossipHandlers = &gossip.Handlers{}
 	consGossipClient = &gossip.Client{}
 
-	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
-	consTxPool := &evidence.Pool{}
-
 	// link between ETH net and our internal logic, relays important ETH events (e.g. snapshot) into our system
 	consAdminHandlers := &admin.Handlers{}
 
@@ -229,15 +224,15 @@ func validatorNode() {
 
 	peerManager = initPeerManager(consGossipHandlers, consReqHandler)
 
-	ipcServer = ipc.NewServer(config.Configuration.Firewalld.SocketFile)
-
 	// Initialize the consensus engine signer
 	// if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
 	// 	panic(err)
 	// }
 
 	consDB.Init(rawConsensusDb)
-	consTxPool.Init(consDB)
+
+	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
+	consTxPool := evidence.NewPool(consDB)
 
 	appDepositHandler.Init()
 	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
@@ -258,7 +253,7 @@ func validatorNode() {
 	consLSHandler.Init(consDB, consDlManager)
 	consGossipHandlers.Init(chainID, consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
-	consAdminHandlers.Init(chainID, consDB, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage, ipcServer)
+	consAdminHandlers.Init(chainID, consDB, crypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
 	// Setup monitor
@@ -355,7 +350,7 @@ func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (t
 	transactionData := &pb.TransactionData{
 		Tx: &pb.Tx{
 			Vin: []*pb.TXIn{
-				&pb.TXIn{
+				{
 					TXInLinker: &pb.TXInLinker{
 						TXInPreImage: &pb.TXInPreImage{
 							ChainID:        txin.TXInLinker.TXInPreImage.ChainID,
@@ -368,7 +363,7 @@ func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (t
 				},
 			},
 			Vout: []*pb.TXOut{
-				&pb.TXOut{
+				{
 					Utxo: &pb.TXOut_ValueStore{
 						ValueStore: &pb.ValueStore{
 							VSPreImage: &pb.VSPreImage{

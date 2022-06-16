@@ -15,6 +15,17 @@ build: init
 race:
 	go build -o $(RACE_DETECTOR) -race ./cmd/main.go;
 
+.PHONY: lint
+lint:
+	golangci-lint run
+	buf lint
+	buf breaking --against '.git#branch=candidate'
+
+.PHONY: format
+format:
+	buf format -w
+	go mod tidy
+
 .PHONY: generate
 generate: generate-bridge generate-go
 
@@ -23,7 +34,7 @@ generate-bridge: init
 	find . -iname \*.capnp.go \
 	       -o -iname bridge/bindings \
 		   -exec rm -rf {} \;
-	cd bridge && npm install && npm run build
+	cd bridge && npm run build
 
 .PHONY: generate-go
 generate-go: init
@@ -40,3 +51,9 @@ generate-go: init
 clean:
 	go clean
 	rm -f $(BINARY_NAME) $(RACE_DETECTOR)
+
+.PHONY: setup
+setup:
+	go mod download
+	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
+	cd bridge && npm install

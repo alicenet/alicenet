@@ -2,105 +2,89 @@ syntax = "proto3";
 
 package proto;
 
-
-import "aobjs.proto";
-import "cobjs.proto";
-option go_package = "/;proto";
-
+import "proto/aobjs.proto";
+import "proto/cobjs.proto";
 
 message GetDataRequest {
-    uint32 CurveSpec = 1;
-    string Account = 2; // must be 20 bytes or 40 hex chars
-    string Index = 3; // must be 32 bytes or 64 hex chars
+  uint32 CurveSpec = 1;
+  string Account = 2; // must be 20 bytes or 40 hex chars
+  string Index = 3; // must be 32 bytes or 64 hex chars
 }
 message GetDataResponse {
-    string Rawdata = 1;
+  string Rawdata = 1;
 }
-
 
 message GetValueRequest {
-    uint32 CurveSpec = 1;
-    string Account = 2; // 20 bytes
-    string Minvalue = 3;
-    bytes PaginationToken = 4;
+  uint32 CurveSpec = 1;
+  string Account = 2; // 20 bytes
+  string Minvalue = 3;
+  bytes PaginationToken = 4;
 }
 message GetValueResponse {
-    repeated string UTXOIDs = 1; // []string of hashes
-    string TotalValue = 2;
-    bytes PaginationToken = 3;
-    uint32 BlockHeight = 4;
+  repeated string UTXOIDs = 1; // []string of hashes
+  string TotalValue = 2;
+  bytes PaginationToken = 3;
+  uint32 BlockHeight = 4;
 }
-
 
 message MinedTransactionRequest {
-    string TxHash = 1; // 32 bytes
+  string TxHash = 1; // 32 bytes
 }
 message MinedTransactionResponse {
-    Tx Tx = 1;
+  Tx Tx = 1;
 }
 
 message TransactionStatusRequest {
-    string TxHash = 1; // 32 bytes
-    bool ReturnTx = 2;
+  string TxHash = 1; // 32 bytes
+  bool ReturnTx = 2;
 }
 message TransactionStatusResponse {
-    bool IsMined = 1;
-    Tx Tx = 2;
+  bool IsMined = 1;
+  Tx Tx = 2;
 }
-
 
 message BlockHeaderRequest {
-    uint32 Height = 1; // must not be zero
+  uint32 Height = 1; // must not be zero
 }
 message BlockHeaderResponse {
-    BlockHeader BlockHeader = 1;
+  BlockHeader BlockHeader = 1;
 }
-
 
 message UTXORequest {
-    repeated string UTXOIDs = 1; // []string of hashes
+  repeated string UTXOIDs = 1; // []string of hashes
 }
 message UTXOResponse {
-    repeated TXOut UTXOs = 1;
+  repeated TXOut UTXOs = 1;
 }
-
 
 message PendingTransactionRequest {
-    string TxHash = 1; // 32 bytes
+  string TxHash = 1; // 32 bytes
 }
 message PendingTransactionResponse {
-    Tx  Tx = 1;
+  Tx Tx = 1;
 }
 
-
-message BlockNumberRequest {
-}
+message BlockNumberRequest {}
 message BlockNumberResponse {
-    uint32 BlockHeight = 1; // must not be zero
+  uint32 BlockHeight = 1; // must not be zero
 }
 
-
-message ChainIDRequest {
-}
+message ChainIDRequest {}
 message ChainIDResponse {
-    uint32 ChainID = 1; // must not be zero
+  uint32 ChainID = 1; // must not be zero
 }
-
 
 message TransactionData {
   Tx Tx = 1;
 }
 message TransactionDetails {
-  string TxHash = 1; //32 bytes
+  string TxHash = 1; // 32 bytes
 }
 
-
-message EpochNumberRequest {
-}
+message EpochNumberRequest {}
 message EpochNumberResponse {
   uint32 Epoch = 1; // must not be zero
 }
-
 
 message IterateNameSpaceRequest {
   uint32 CurveSpec = 1;
@@ -117,34 +101,32 @@ message IterateNameSpaceResponse {
 }
 
 message TxBlockNumberRequest {
-  string TxHash = 1; //32 bytes
+  string TxHash = 1; // 32 bytes
 }
 message TxBlockNumberResponse {
   uint32 BlockHeight = 1; // must not be zero
 }
 
 message ValidatorSetRequest {
-    uint32 Height = 1; // ignore for now
+  uint32 Height = 1; // ignore for now
 }
 message ValidatorSetResponse {
-    string ValidatorSet = 1; // ignore for now
+  string ValidatorSet = 1; // ignore for now
 }
-
 
 message RoundStateForValidatorRequest {
-    string VAddr = 1; // ignore for now
-    uint32 Height = 2; // ignore for now
-    uint32 Round = 3; // ignore for now
+  string VAddr = 1; // ignore for now
+  uint32 Height = 2; // ignore for now
+  uint32 Round = 3; // ignore for now
 }
 message RoundStateForValidatorResponse {
-    bytes RoundState = 1; // ignore for now
+  bytes RoundState = 1; // ignore for now
 }
-message FeeRequest {
-}
+message FeeRequest {}
 
 message FeeResponse {
-string MinTxFee = 1;
-string ValueStoreFee = 2;
-string DataStoreFee = 3;
-string AtomicSwapFee = 4;
+  string MinTxFee = 1;
+  string ValueStoreFee = 2;
+  string DataStoreFee = 3;
+  string AtomicSwapFee = 4;
 }

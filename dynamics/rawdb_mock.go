@@ -7,8 +7,7 @@ type MockRawDB struct {
 }
 
 func (m *MockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
-	strKey := string(key)
-	strValue, ok := m.rawDB[strKey]
+	strValue, ok := m.rawDB[string(key)]
 	if !ok {
 		return nil, ErrKeyNotPresent
 	}

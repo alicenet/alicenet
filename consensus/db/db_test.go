@@ -2,8 +2,6 @@ package db
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/MadBase/MadNet/consensus/objs"
@@ -12,7 +10,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-type testparams struct {
+type testParams struct {
 	TxRoot     []byte
 	StateRoot  []byte
 	PrevBlock  []byte
@@ -23,8 +21,8 @@ type testparams struct {
 	Round      uint32
 }
 
-func mkTP() *testparams {
-	return &testparams{
+func makeTestParams() *testParams {
+	return &testParams{
 		TxRoot:     make([]byte, constants.HashLen),
 		StateRoot:  make([]byte, constants.HashLen),
 		PrevBlock:  make([]byte, constants.HashLen),
@@ -35,52 +33,27 @@ func mkTP() *testparams {
 	}
 }
 
-type testDB struct {
-	db        *badger.DB
-	closeChan chan struct{}
-	readyChan chan struct{}
-}
-
-func (tdb *testDB) init() {
-	// Open the DB.
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			panic(err)
-		}
-	}()
+func createDatabase(t *testing.T) (*Database, *testParams) {
+	t.Helper()
+	dir := t.TempDir()
 	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
+	bdb, err := badger.Open(opts)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	defer db.Close()
-	tdb.db = db
-	tdb.readyChan <- struct{}{}
-	<-tdb.closeChan
-}
-
-func (tdb *testDB) Close() {
-	tdb.closeChan = make(chan struct{})
-	close(tdb.closeChan)
-}
-
-func newDB(t *testing.T) (*testDB, *Database, *testparams) {
-	tbd := &testDB{
-		readyChan: make(chan struct{}),
-	}
-	go tbd.init()
-	<-tbd.readyChan
+	t.Cleanup(func() {
+		if err := bdb.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	db := &Database{}
-	db.Init(tbd.db)
-	params := mkTP()
-	return tbd, db, params
+	db.Init(bdb)
+	params := makeTestParams()
+	return db, params
 }
 
 func TestRoundState(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -103,9 +76,8 @@ func TestRoundState(t *testing.T) {
 	secpKey, _ := secpSigner.Pubkey()
 	vAddr := crypto.GetAccount(secpKey)
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB.db
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
@@ -152,6 +124,7 @@ func TestRoundState(t *testing.T) {
 }
 
 func TestBlockHeader(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -164,9 +137,8 @@ func TestBlockHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB.db
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
 		if err != nil {
@@ -297,6 +269,7 @@ func TestBlockHeader(t *testing.T) {
 }
 
 func TestEncryptedStore(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -309,9 +282,8 @@ func TestEncryptedStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, _ := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, _ := createDatabase(t)
+	badgerD := db.rawDB
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		name := []byte("foo")
 		ec := &objs.EncryptedStore{
@@ -336,6 +308,7 @@ func TestEncryptedStore(t *testing.T) {
 }
 
 func TestValidatorSet(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -349,11 +322,8 @@ func TestValidatorSet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	_ = p
-	_ = db
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, _ := createDatabase(t)
+	badgerD := db.rawDB
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		vkey0 := crypto.Hasher([]byte("s0"))[12:]
 		gShare0 := crypto.Hasher([]byte("g0"))
@@ -425,6 +395,7 @@ func TestValidatorSet(t *testing.T) {
 }
 
 func TestSnapShotMany(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -437,9 +408,8 @@ func TestSnapShotMany(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB
 	var bhash []byte
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
@@ -496,6 +466,7 @@ func TestSnapShotMany(t *testing.T) {
 }
 
 func TestSnapShotOne(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -508,9 +479,8 @@ func TestSnapShotOne(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB
 	var bhash []byte
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
@@ -563,6 +533,7 @@ func TestSnapShotOne(t *testing.T) {
 }
 
 func TestGetLastCommittedBHFSMany(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -575,9 +546,8 @@ func TestGetLastCommittedBHFSMany(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB
 	var bhash []byte
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
@@ -632,6 +602,7 @@ func TestGetLastCommittedBHFSMany(t *testing.T) {
 }
 
 func TestGetLastCommittedBHFSOne(t *testing.T) {
+	t.Parallel()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -644,9 +615,8 @@ func TestGetLastCommittedBHFSOne(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tbd, db, p := newDB(t)
-	defer tbd.Close()
-	badgerD := tbd.db
+	db, p := createDatabase(t)
+	badgerD := db.rawDB
 	var bhash []byte
 	err = badgerD.Update(func(txn *badger.Txn) error {
 		sig, err := groupSigner.Sign(p.PrevBlock)
@@ -746,11 +716,9 @@ func getValidatorSet(t *testing.T, height uint32, seed string) (*objs.ValidatorS
 }
 
 func TestValidatorSet2(t *testing.T) {
-	tbd, db, p := newDB(t)
-	_ = p
-	_ = db
-	defer tbd.Close()
-	badgerD := tbd.db
+	t.Parallel()
+	db, _ := createDatabase(t)
+	badgerD := db.rawDB
 	err := badgerD.Update(func(txn *badger.Txn) error {
 		vSet1, err := getValidatorSet(t, 1, "v1")
 		if err != nil {

@@ -14,6 +14,13 @@ func (ss *Store) Init(database *db.Database) {
 	ss.database = database
 }
 
+// New Store wrapping a Database.
+func New(database *db.Database) *Store {
+	return &Store{
+		database: database,
+	}
+}
+
 func (ss *Store) LoadLocalState(txn *badger.Txn) (*RoundStates, error) {
 	ownState, err := ss.database.GetOwnState(txn)
 	if err != nil {

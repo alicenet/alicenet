@@ -101,4 +101,4 @@ async function main() {
   await generateMappingFile();
   await generateIfaces();
 }
-main();
+main().finally(() => {});
