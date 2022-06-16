@@ -624,6 +624,7 @@ func (eth *Details) RetryTransaction(ctx context.Context, tx *types.Transaction,
 	}
 
 	var newTipCap *big.Int
+
 	if tx.GasTipCap() == nil || gasTipCap.Cmp(tx.GasTipCap()) >= 0 {
 		newTipCap = gasTipCap
 	} else {
@@ -633,6 +634,16 @@ func (eth *Details) RetryTransaction(ctx context.Context, tx *types.Transaction,
 	// Increasing tip cap to replace old tx and make the tx more likely to be chosen
 	// by a layer1 miner
 	increasedTipCap := eth.bumpTipCap(newTipCap)
+
+	// In case we reach the new tip cap, we start to use the the suggested tip
+	// again. If we reached this point, our previous transaction may be already get
+	// pruned from the node and our tx will likely fail. So, we try to restart the
+	// gas tip and see if a transaction will be accepted in an attempt to pay less.
+	maxTipCap := new(big.Int).Mul(gasTipCap, big.NewInt(constants.EthereumMaxGasTipMultiplier))
+	if increasedTipCap.Cmp(maxTipCap) > 0 {
+		increasedTipCap = gasTipCap
+	}
+
 	gasFeeCap, err := ComputeGasFeeCap(eth, baseFee, increasedTipCap)
 	if err != nil {
 		return nil, err

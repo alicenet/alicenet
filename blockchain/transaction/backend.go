@@ -516,12 +516,12 @@ func (wb *WatcherBackend) collectReceipts() {
 		default:
 		}
 		txInfo, ok := wb.MonitoredTxns[workResponse.txnHash]
-		logEntry := txInfo.logger
 		if !ok {
 			// invalid tx, should not happen, but well if it happens we continue
-			logEntry.Trace("got a invalid tx with hash from workers")
+			wb.logger.Trace("got a invalid tx with hash from workers")
 			continue
 		}
+		logEntry := txInfo.logger
 		newTxInfo, isFinished := wb.handleWorkerResponse(logEntry, workResponse, txInfo, blockInfo.Height)
 		if isFinished {
 			finishedTxs[workResponse.txnHash] = workResponse

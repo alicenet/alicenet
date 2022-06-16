@@ -95,7 +95,10 @@ func (w *WorkerPool) worker() {
 					if retry {
 						continue
 					}
-					w.responseWorkChannel <- finalResp
+					select {
+					case w.responseWorkChannel <- finalResp:
+					default:
+					}
 				}
 			}
 		}

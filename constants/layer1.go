@@ -45,4 +45,7 @@ const (
 	// Default finality delay value. Mostly used as fallback in case we cannot
 	// retrieve the current finality delay used via smart contracts.
 	EthereumFinalityDelay uint64 = 12
+	// the maximum number of of times that we allow the bumped gas tip to be greater
+	// than the suggested gas tip for a block
+	EthereumMaxGasTipMultiplier int64 = 10
 )
