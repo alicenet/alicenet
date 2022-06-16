@@ -270,8 +270,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan interfaces.ITask, 100)
-	taskKillChan := make(chan string, 100)
+	taskRequestChan := make(chan interfaces.ITask, constants.TaskSchedulerBufferSize)
+	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
 	tasksScheduler := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)

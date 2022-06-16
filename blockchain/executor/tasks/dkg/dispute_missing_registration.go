@@ -35,14 +35,14 @@ func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissing
 // Prepare prepares for work to be done in the DisputeMissingRegistrationTask
 func (t *DisputeMissingRegistrationTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -76,7 +76,7 @@ func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *inter
 		}
 		txns = append(txns, txn)
 	} else {
-		logger.Trace("No accusations for missing registrations")
+		logger.Debug("No accusations for missing registrations")
 	}
 
 	return txns, nil
@@ -85,7 +85,7 @@ func (t *DisputeMissingRegistrationTask) Execute() ([]*types.Transaction, *inter
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingRegistrationTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

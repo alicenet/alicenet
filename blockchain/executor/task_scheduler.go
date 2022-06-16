@@ -157,8 +157,7 @@ func (s *TasksScheduler) eventLoop() {
 	for {
 		select {
 		case <-s.cancelChan:
-			s.logger.Warnf("Received cancel request for event loop.")
-			s.purge()
+			s.logger.Warn("Received cancel request for event loop.")
 			cf()
 			s.taskResponseChan.close()
 			return
@@ -330,10 +329,6 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []Ta
 	}
 
 	return nil
-}
-
-func (s *TasksScheduler) purge() {
-	s.Schedule = make(map[string]TaskRequestInfo)
 }
 
 func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []TaskRequestInfo) {

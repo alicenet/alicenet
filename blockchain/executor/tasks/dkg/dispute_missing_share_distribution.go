@@ -33,14 +33,14 @@ func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMi
 // Prepare prepares for work to be done in the DisputeMissingShareDistributionTask.
 func (t *DisputeMissingShareDistributionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debugf("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -61,20 +61,20 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 	// accuse missing validators
 	txns := make([]*types.Transaction, 0)
 	if len(accusableParticipants) > 0 {
-		logger.Warnf("Accusing missing distributed shares: %v", accusableParticipants)
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
 			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 		}
 
+		logger.Warnf("accusing participants: %v of not distributing shares", accusableParticipants)
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 		if err != nil {
 			return nil, interfaces.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
 		}
 		txns = append(txns, txn)
 	} else {
-		logger.Trace("No accusations for missing distributed shares")
+		logger.Debug("No accusations for missing distributed shares")
 	}
 
 	return txns, nil
@@ -83,7 +83,7 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

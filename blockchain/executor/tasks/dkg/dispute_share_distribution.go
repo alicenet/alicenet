@@ -36,7 +36,7 @@ func NewDisputeShareDistributionTask(start uint64, end uint64) *DisputeShareDist
 // If any are invalid, disputes will be issued.
 func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
 	var isRecoverable bool
@@ -62,7 +62,7 @@ func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
 				continue
 			}
 
-			logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, dkgState.Index)
+			logger.Debugf("participant idx: %v:%v:%v\n", idx, participant.Index, dkgState.Index)
 			valid, present, err := state.VerifyDistributedShares(dkgState, participant)
 			if err != nil {
 				// A major error occurred; we cannot continue
@@ -99,7 +99,7 @@ func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -157,6 +157,7 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfa
 			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating sharedKeyProof: %v", err), true)
 		}
 
+		logger.Warnf("accusing participant: %v of distributing bad shares", dishonestAddress)
 		// Accuse participant
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
@@ -171,7 +172,7 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfa
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	ctx := t.GetCtx()
 	eth := t.GetClient()

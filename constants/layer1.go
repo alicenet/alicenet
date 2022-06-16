@@ -2,6 +2,11 @@ package constants
 
 import "time"
 
+const (
+	// The size of the buffered channels used by the task scheduler
+	TaskSchedulerBufferSize uint64 = 1024
+)
+
 // Monitor constants
 const (
 	// Number of attempts that we are going to retry a certain logic in the monitoring service

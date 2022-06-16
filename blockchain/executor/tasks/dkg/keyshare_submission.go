@@ -34,7 +34,7 @@ func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask
 // and stored for submission.
 func (t *KeyShareSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Debugf("preparing task")
+	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {

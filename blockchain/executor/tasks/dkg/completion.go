@@ -33,7 +33,7 @@ func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 // Prepare prepares for work to be done in the CompletionTask
 func (t *CompletionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -54,7 +54,6 @@ func (t *CompletionTask) Prepare() *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
 
-	logger.Infof("block hash: %v\n", block.Hash())
 	t.SetStartBlockHash(block.Hash().Bytes())
 
 	return nil
@@ -63,7 +62,7 @@ func (t *CompletionTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -87,7 +86,8 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingTxnOpts, err), true)
 	}
 
-	// Register
+	// Complete ETHDKG
+	logger.Info("Trying to complete ETHDKG")
 	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("completion failed: %v", err), true)
@@ -99,7 +99,7 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 // ShouldExecute checks if it makes sense to execute the task
 func (t *CompletionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	eth := t.GetClient()
 	c := eth.Contracts()

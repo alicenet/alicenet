@@ -166,7 +166,7 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr
 // ShouldExecute checks if it makes sense to execute the task
 func (t *MPKSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

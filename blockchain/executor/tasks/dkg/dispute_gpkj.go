@@ -37,7 +37,7 @@ func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 // Here, we determine if anyone submitted an invalid gpkj.
 func (t *DisputeGPKjTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
 	var isRecoverable bool
@@ -105,7 +105,7 @@ func (t *DisputeGPKjTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -117,8 +117,8 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) 
 	}
 
 	// Perform group accusation
-	logger.Infof("   Honest indices: %v", dkgState.HonestValidators.ExtractIndices())
-	logger.Infof("Dishonest indices: %v", dkgState.DishonestValidators.ExtractIndices())
+	logger.Debugf("   Honest indices: %v", dkgState.HonestValidators.ExtractIndices())
+	logger.Debugf("Dishonest indices: %v", dkgState.DishonestValidators.ExtractIndices())
 
 	var groupEncryptedSharesHash [][32]byte
 	var groupCommitments [][][2]*big.Int
@@ -168,6 +168,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) 
 			continue
 		}
 
+		logger.Warnf("accusing participant: %v of distributing bad dpkj", dishonestParticipant.Address.Hex())
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
 		if err != nil {
 			return nil, interfaces.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
@@ -181,7 +182,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeGPKjTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

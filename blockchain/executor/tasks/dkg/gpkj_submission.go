@@ -36,7 +36,7 @@ func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.
 // Prepare prepares for work to be done in the GPKjSubmissionTask
 func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
 	var isRecoverable bool

@@ -35,14 +35,14 @@ func NewDisputeMissingKeySharesTask(start uint64, end uint64) *DisputeMissingKey
 // Prepare prepares for work to be done in the DisputeMissingKeySharesTask.
 func (t *DisputeMissingKeySharesTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeMissingKeySharesTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -76,7 +76,7 @@ func (t *DisputeMissingKeySharesTask) Execute() ([]*types.Transaction, *interfac
 		}
 		txns = append(txns, txn)
 	} else {
-		logger.Trace("No accusations for missing key shares")
+		logger.Debug("No accusations for missing key shares")
 	}
 
 	return txns, nil
@@ -85,7 +85,7 @@ func (t *DisputeMissingKeySharesTask) Execute() ([]*types.Transaction, *interfac
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingKeySharesTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

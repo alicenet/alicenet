@@ -38,7 +38,7 @@ func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 // in later phases
 func (t *RegisterTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debugf("preparing task")
 
 	dkgState := &state.DkgState{}
 	var isRecoverable bool
@@ -84,7 +84,7 @@ func (t *RegisterTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *RegisterTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	eth := t.GetClient()
 	ctx := t.GetCtx()
@@ -122,7 +122,7 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 // ShouldExecute checks if it makes sense to execute the task
 func (t *RegisterTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

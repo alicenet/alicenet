@@ -26,14 +26,13 @@ func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
 		Task: objects.NewTask(constants.SnapshotTaskName, start, end, false, nil),
 	}
-
 	return snapshotTask
 }
 
 // Prepare prepares for work to be done in the SnapshotTask
 func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debugf("preparing task")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
@@ -70,7 +69,7 @@ func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 // Execute executes the task business logic
 func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -81,8 +80,10 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
+
+	// todo: remove this after leader election
 	dangerousRand.Seed(time.Now().UnixNano())
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
 	select {
@@ -91,26 +92,27 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	// wait some random time
 	case <-time.After(time.Duration(n) * time.Second):
 	}
+	/////////////////////////////////////////////
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, snapshotState.Account)
+	txnOpts, err := client.GetTransactionOpts(ctx, snapshotState.Account)
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
-	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
+	logger.Info("trying to commit snapshot")
+	txn, err := client.Contracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
 	}
 
-	logger.Trace("Snapshot tx succeeded!")
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *SnapshotTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -121,14 +123,14 @@ func (t *SnapshotTask) ShouldExecute() *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
-	opts, err := eth.GetCallOpts(ctx, snapshotState.Account)
+	opts, err := client.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
-	height, err := eth.Contracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
+	height, err := client.Contracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
 	}

@@ -35,14 +35,14 @@ func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask
 // Prepare prepares for work to be done in the DisputeMissingGPKjTask.
 func (t *DisputeMissingGPKjTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Trace("initiate execution")
+	logger.Debug("initiate execution")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -63,7 +63,7 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *interfaces.Ta
 	// accuse missing validators
 	txns := make([]*types.Transaction, 0)
 	if len(accusableParticipants) > 0 {
-		logger.Tracef("accusing missing gpkj: %v", accusableParticipants)
+		logger.Warnf("accusing missing gpkj: %v", accusableParticipants)
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
@@ -76,7 +76,7 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *interfaces.Ta
 		}
 		txns = append(txns, txn)
 	} else {
-		logger.Trace("no accusations for missing gpkj")
+		logger.Debug("no accusations for missing gpkj")
 	}
 
 	return txns, nil
@@ -85,7 +85,7 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *interfaces.Ta
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeMissingGPKjTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
-	logger.Trace("should execute task")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {

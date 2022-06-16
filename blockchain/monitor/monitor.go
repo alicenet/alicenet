@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
-	"github.com/MadBase/MadNet/constants/dbprefix"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
+	"github.com/MadBase/MadNet/constants/dbprefix"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -444,6 +445,7 @@ func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan
 		BlockHeader: bh,
 	}
 
+	//todo: ask Hunter?
 	err := monDB.Update(func(txn *badger.Txn) error {
 		err := snapshotState.PersistState(txn)
 		return err
@@ -454,6 +456,7 @@ func PersistSnapshot(eth ethereum.Network, bh *objs.BlockHeader, taskRequestChan
 	}
 
 	snapshotTask := snapshots.NewSnapshotTask(0, 0)
+	//todo: ask Hunter
 	taskRequestChan <- snapshotTask
 
 	return nil
