@@ -28,7 +28,7 @@ var _ interfaces.ITask = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.IAdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		Task:         objects.NewTask(exConstants.GPKjSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, exConstants.ETHDKGMaxStaleBlocks)),
 		adminHandler: adminHandler,
 	}
 }
@@ -138,8 +138,8 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskEr
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
-	logger := t.GetLogger()
-	logger.Info("GPKjSubmissionTask ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Debug("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -153,9 +153,7 @@ func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	client := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.GPKJSubmission {
-		return interfaces.NewTaskErr(
-			fmt.Sprintf("incorrect phase %v expected state.GPKJSubmission", dkgState.Phase), false,
-		)
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from GPKJSubmission", dkgState.Phase), false)
 	}
 
 	//Check if my GPKj is submitted, if not should retry
@@ -165,14 +163,17 @@ func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingCallOpts, err), true)
 	}
 	participantState, err := client.Contracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
-	if err == nil && participantState.Gpkj[0].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[0]) == 0 &&
+	if err != nil {
+		return interfaces.NewTaskErr(fmt.Sprintf("failed getting participants state: %v", err), true)
+	}
+	if participantState.Gpkj[0].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[0]) == 0 &&
 		participantState.Gpkj[1].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[1]) == 0 &&
 		participantState.Gpkj[2].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[2]) == 0 &&
 		participantState.Gpkj[3].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[3]) == 0 {
-		return false
+		return interfaces.NewTaskErr(fmt.Sprint("GPKj already set"), false)
 	}
 
-	return true
+	return nil
 }
 
 // SetAdminHandler sets the task adminHandler
