@@ -1,7 +1,0 @@
-{
-  "prettier.configPath": "./bridge/.prettierrc",
-  "prettier.ignorePath": "./bridge/.prettierignore",
-  "prettier.prettierPath": "./bridge/node_modules/prettier",
-  "prettier.printWidth": 100,
-  "eslint.nodePath": "./bridge/node_modules"
-}

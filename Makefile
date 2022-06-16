@@ -51,7 +51,7 @@ generate-go: init
 clean:
 	go clean
 	rm -f $(BINARY_NAME) $(RACE_DETECTOR)
-
+  
 .PHONY: setup
 setup:
 	go mod download
