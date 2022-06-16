@@ -1,11 +1,10 @@
 package snapshots
 
 import (
+	"fmt"
 	dangerousRand "math/rand"
-	"strings"
 	"time"
 
-	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/snapshots/state"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -33,8 +32,8 @@ func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 
 // Prepare prepares for work to be done in the SnapshotTask
 func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
-	logger := t.GetLogger()
-	logger.Info("CompletionTask Initialize()...")
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Tracef("preparing task")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
@@ -45,7 +44,7 @@ func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 
 		rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
 		if err != nil {
-			logger.Errorf("Unable to marshal block header for snapshot: %v", err)
+			logger.Errorf("unable to marshal block header for snapshot: %v", err)
 			return err
 		}
 
@@ -61,7 +60,8 @@ func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 	})
 
 	if err != nil {
-		return dkgUtils.LogReturnErrorf(logger, "SnapshotTask.Prepare(): error during the preparation: %v", err)
+		// all errors are not recoverable
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 	}
 
 	return nil
@@ -69,8 +69,8 @@ func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 
 // Execute executes the task business logic
 func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("SnapshotTask Execute()...")
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Trace("initiate execution")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -78,7 +78,7 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return err
 	})
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "could not get snapshotState with error %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	eth := t.GetClient()
@@ -87,42 +87,30 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, interfaces.NewTaskErr(fmt.Sprintf("task killed by ctx: %v", ctx.Err()), false)
 	// wait some random time
 	case <-time.After(time.Duration(n) * time.Second):
-	}
-
-	// someone else already did the snapshot
-	if !t.ShouldExecute() {
-		logger.Debug("Snapshot already sent! Exiting!")
-		return nil, nil
 	}
 
 	txnOpts, err := eth.GetTransactionOpts(ctx, snapshotState.Account)
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
-		logger.Debugf("Failed to generate transaction options: %v", err)
-		return nil, err
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 	txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
 	if err != nil {
-		logger.Debugf("Failed to send snapshot: %v", err)
-		// TODO: ?we should ignore any revert on contract execution and wait the confirmation delay to try again
-		if strings.Contains(err.Error(), "reverted") {
-			return nil, nil
-		}
-		return nil, err
+		return nil, interfaces.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
 	}
 
-	logger.Info("Snapshot tx succeeded!")
+	logger.Trace("Snapshot tx succeeded!")
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *SnapshotTask) ShouldExecute() (bool, *interfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("SnapshotTask ShouldExecute()...")
+func (t *SnapshotTask) ShouldExecute() *interfaces.TaskErr {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Trace("should execute task")
 
 	snapshotState := &state.SnapshotState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -130,28 +118,25 @@ func (t *SnapshotTask) ShouldExecute() (bool, *interfaces.TaskErr) {
 		return err
 	})
 	if err != nil {
-		logger.Errorf("could not get snapshotState with error %v", err)
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	eth := t.GetClient()
 	ctx := t.GetCtx()
 	opts, err := eth.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
-		logger.Errorf("SnapshotsTask.ShouldExecute() failed to get call options: %v", err)
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	height, err := eth.Contracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
 	if err != nil {
-		logger.Errorf("Failed to determine height: %v", err)
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
 	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
-		return false
+		return interfaces.NewTaskErr(fmt.Sprint("block height we want to snapshot is older than (or same as) what's already been snapshotted"), false)
 	}
 
-	return true
+	return nil
 }
