@@ -33,16 +33,12 @@ type Task struct {
 }
 
 func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *Task {
-	ctx, cf := context.WithCancel(context.Background())
-
 	return &Task{
 		name:                name,
 		start:               start,
 		end:                 end,
 		allowMultiExecution: allowMultiExecution,
 		subscribeOptions:    subscribeOptions,
-		ctx:                 ctx,
-		cancelFunc:          cf,
 	}
 }
 
