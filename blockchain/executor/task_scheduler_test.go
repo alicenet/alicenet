@@ -25,7 +25,7 @@ func getTaskScheduler() *TasksScheduler {
 	db := mocks.NewTestDB()
 	eth := mocks.NewMockNetwork()
 	adminHandlers := mocks.NewMockIAdminHandler()
-	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+	txWatcher := transaction.NewWatcher(eth, 12, db, false)
 	return NewTasksScheduler(db, eth, adminHandlers, make(chan interfaces.ITask, 100), make(chan string, 100), txWatcher)
 }
 
@@ -327,7 +327,7 @@ func TestTasksScheduler_EventLoop_PurgeToEmptyTheSchedulerMap(t *testing.T) {
 	db := mocks.NewTestDB()
 	eth := mocks.NewMockNetwork()
 	adminHandlers := mocks.NewMockIAdminHandler()
-	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+	txWatcher := transaction.NewWatcher(eth, 12, db, false)
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil, txWatcher)
 	task := mocks.NewMockITask()
@@ -346,11 +346,11 @@ func TestTasksScheduler_Schedule_ScheduleTask(t *testing.T) {
 	eth := mocks.NewMockNetwork()
 	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
-	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+	txWatcher := transaction.NewWatcher(eth, 12, db, false)
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, nil, txWatcher)
 
 	s.LastHeightSeen = lastHeightSeen
-	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, true)}
+	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, nil)}
 
 	err := s.persistState()
 	assert.Nil(t, err)
@@ -375,12 +375,12 @@ func TestTasksScheduler_EventLoop_Workflow(t *testing.T) {
 	adminHandlers := mocks.NewMockIAdminHandler()
 	taskRequestChan := make(chan interfaces.ITask, 100)
 	taskKillChan := make(chan string, 1)
-	txWatcher := transaction.NewWatcher(eth, transaction.NewKnownSelectors(), 12)
+	txWatcher := transaction.NewWatcher(eth, 12, db, false)
 	s := NewTasksScheduler(db, eth, adminHandlers, taskRequestChan, taskKillChan, txWatcher)
 	s.LastHeightSeen = lastHeightSeen
 
 	// Create a valid task
-	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, true)}
+	task := &dkgtasks.CompletionTask{Task: objects.NewTask(taskGroupName, 10, 20, false, nil)}
 
 	// Send task to request channel
 	taskRequestList := []TaskRequestInfo{

@@ -308,9 +308,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	txWatcher.StartLoop()
-	defer txWatcher.Close()
-
 	err = tasksScheduler.Start()
 	if err != nil {
 		panic(err)

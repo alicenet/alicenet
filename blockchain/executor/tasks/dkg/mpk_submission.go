@@ -12,10 +12,8 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -39,7 +37,7 @@ func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 // Prepare prepares for work to be done in the MPKSubmissionTask
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
+func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask Prepare()...")
 
@@ -122,14 +120,14 @@ func (t *MPKSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	})
 
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
 	}
 
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("MPKSubmissionTask Execute()...")
 
@@ -139,36 +137,36 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("MPKSubmissionTask.Execute(): error loading dkgState: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	// submit if I'm a leader for this task
 	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if !t.AmILeading(dkgState) {
-		return nil, errors.New("not leading MPK submission yet")
+		return nil, interfaces.NewTaskErr("not leading MPK submission yet", true)
 	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", dkgState.MasterPublicKey)
 	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
 	if err != nil {
-		return nil, utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf("submitting master public key failed: %v", err), true)
 	}
 
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *MPKSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
-	logger := t.GetLogger()
-	logger.Info("MPKSubmissionTask ShouldExecute()")
+func (t *MPKSubmissionTask) ShouldExecute() *interfaces.TaskErr {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Trace("should execute task")
 
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
@@ -176,51 +174,46 @@ func (t *MPKSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) 
 		return err
 	})
 	if err != nil {
-		logger.Errorf("could not get dkgState with error %v", err)
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.MPKSubmission {
-		return false
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from MPKSubmission", dkgState.Phase), false)
 	}
 
-	return t.shouldSubmitMPK(dkgState)
-}
-
-func (t *MPKSubmissionTask) shouldSubmitMPK(dkgState *state.DkgState) bool {
+	// if the mpk is empty in the state that we loaded from db, it means that
+	// something really bad happened (ew.g initiate was not successful, data
+	// corruption)
 	if isMasterPublicKeyEmpty(dkgState.MasterPublicKey) {
-		return false
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from MPKSubmission", dkgState.Phase), false)
 	}
 
-	logger := t.GetLogger()
-	eth := t.GetClient()
+	client := t.GetClient()
 	ctx := t.GetCtx()
-	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
+	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		logger.Error(fmt.Sprintf("MPKSubmissionTask shouldSubmitMPK() failed getting call options: %v", err))
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
-	mpkHash, err := eth.Contracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
+	mpkHash, err := client.Contracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
 	if err != nil {
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf("failed to retrieve mpk from smart contracts: %v", err), true)
 	}
 
-	logger.WithField("Method", "shouldSubmitMPK").Debugf("mpkHash received")
-
+	// If we fail here, it means that we had a data corruption or we stored wrong
+	// data for dkgstate the master public key
 	mpkHashBin, err := bn256.MarshalBigIntSlice(dkgState.MasterPublicKey[:])
 	if err != nil {
-		return true
+		return interfaces.NewTaskErr(fmt.Sprintf("failed to serialize internal mpk: %v", err), false)
 	}
+
 	mpkHashSlice := crypto.Hasher(mpkHashBin)
-
 	if bytes.Equal(mpkHash[:], mpkHashSlice) {
-		logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is different from the received")
-		return false
+		return interfaces.NewTaskErr("state mpkHash is equal to the received", false)
 	}
 
-	logger.WithField("Method", "shouldSubmitMPK").Debugf("state mpkHash is equal to the received")
-	return true
+	logger.Tracef("state mpkHash is not equal to the received, should execute")
+	return nil
 }
 
 func isMasterPublicKeyEmpty(masterPublicKey [4]*big.Int) bool {

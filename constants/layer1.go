@@ -26,6 +26,10 @@ const (
 	TxWorkerTimeout time.Duration = 4 * time.Second
 	// how many times the worker tries to recover from a recoverable error when getting the receipt
 	TxWorkerMaxWorkRetries uint64 = 3
+	// this constant set how many times we will be multiplying the maxStaleBlock
+	// amount before trying to replace a transaction that was already replaced more
+	// than once
+	TxBackOffDelayStaleTxMultiplier = 4
 )
 
 // ethereum client const
@@ -39,7 +43,7 @@ const (
 	// How many blocks we should wait for removing a tx in case we don't find it in the layer1 chain
 	EthereumTxNotFoundMaxBlocks uint64 = 50
 	// Number of blocks to wait for a tx in the memory pool w/o returning to the caller asking for retry
-	EthereumTxMaxStaleBlocks uint64 = 10
+	EthereumTxMaxStaleBlocks uint64 = 6
 	// Minimum value that we accept for a txMaxGasFeeAllowedInGwei config parameter
 	EthereumMinGasFeeAllowedInGwei uint64 = 300
 	// Default finality delay value. Mostly used as fallback in case we cannot

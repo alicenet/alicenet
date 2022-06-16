@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
+	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/blockchain/transaction"
@@ -24,7 +24,7 @@ type DisputeGPKjTask struct {
 }
 
 // asserting that DisputeGPKjTask struct implements interface interfaces.Task
-var _ executorInterfaces.ITask = &DisputeGPKjTask{}
+var _ interfaces.ITask = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
@@ -35,7 +35,7 @@ func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 
 // Prepare prepares for work to be done in the DisputeGPKjTask.
 // Here, we determine if anyone submitted an invalid gpkj.
-func (t *DisputeGPKjTask) Prepare() *executorInterfaces.TaskErr {
+func (t *DisputeGPKjTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Tracef("preparing task")
 
@@ -96,14 +96,14 @@ func (t *DisputeGPKjTask) Prepare() *executorInterfaces.TaskErr {
 	})
 
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
 	}
 
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Trace("initiate execution")
 
@@ -113,7 +113,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 		return err
 	})
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	// Perform group accusation
@@ -130,7 +130,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 		es := participant.EncryptedShares
 		encryptedSharesBin, err := bn256.MarshalBigIntSlice(es)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
 		}
 		hashSlice := crypto.Hasher(encryptedSharesBin)
 		var hashSlice32 [32]byte
@@ -146,13 +146,13 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 	ctx := t.GetCtx()
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
 	txns := make([]*types.Transaction, 0)
@@ -161,7 +161,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 
 		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, dishonestParticipant.Address)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), true)
 		}
 
 		if !isValidator {
@@ -170,7 +170,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
 		}
 		txns = append(txns, txn)
 	}
@@ -179,7 +179,7 @@ func (t *DisputeGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.T
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeGPKjTask) ShouldExecute() *executorInterfaces.TaskErr {
+func (t *DisputeGPKjTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Trace("should execute task")
 
@@ -189,22 +189,22 @@ func (t *DisputeGPKjTask) ShouldExecute() *executorInterfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	eth := t.GetClient()
 	ctx := t.GetCtx()
 	if dkgState.Phase != state.DisputeGPKJSubmission {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from DisputeGPKJSubmission", dkgState.Phase), false)
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from DisputeGPKJSubmission", dkgState.Phase), false)
 	}
 
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
+		return interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -213,7 +213,7 @@ func (t *DisputeGPKjTask) ShouldExecute() *executorInterfaces.TaskErr {
 	}).Debug("DisputeGPKjTask ShouldExecute()")
 
 	if len(dkgState.DishonestValidators) == int(badParticipants.Int64()) {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("all bad participants already accused"), false)
+		return interfaces.NewTaskErr(fmt.Sprintf("all bad participants already accused"), false)
 	}
 
 	return nil

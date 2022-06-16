@@ -32,7 +32,7 @@ func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 }
 
 // Prepare prepares for work to be done in the SnapshotTask
-func (t *SnapshotTask) Prepare() *executorInterfaces.TaskErr {
+func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("CompletionTask Initialize()...")
 
@@ -68,7 +68,7 @@ func (t *SnapshotTask) Prepare() *executorInterfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *SnapshotTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("SnapshotTask Execute()...")
 
@@ -120,7 +120,7 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *executorInterfaces.Task
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *SnapshotTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
+func (t *SnapshotTask) ShouldExecute() (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("SnapshotTask ShouldExecute()...")
 

@@ -155,7 +155,7 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 		// (err tx not found). But in case of an edge case, where tx replacing and tx
 		// replaced are both valid (e.g sending tx to different nodes) we will continue
 		// to retry both, until we have a valid tx for this nonce.
-		maxPendingBlocks := monitoredTx.MaxStaleBlocks * (monitoredTx.RetryAmount + 1)
+		maxPendingBlocks := monitoredTx.MaxStaleBlocks * constants.TxBackOffDelayStaleTxMultiplier * (monitoredTx.RetryAmount + 1)
 		if blockTimeSpan >= maxPendingBlocks {
 			return nil, &ErrTransactionStale{fmt.Sprintf("error tx: %v is stale on the memory pool for more than %v blocks!", txnHex, maxPendingBlocks)}
 		}

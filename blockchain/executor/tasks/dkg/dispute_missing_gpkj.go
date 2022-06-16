@@ -10,10 +10,9 @@ import (
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -34,14 +33,14 @@ func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask
 }
 
 // Prepare prepares for work to be done in the DisputeMissingGPKjTask.
-func (t *DisputeMissingGPKjTask) Prepare() *executorInterfaces.TaskErr {
+func (t *DisputeMissingGPKjTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Tracef("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Trace("initiate execution")
 
@@ -51,14 +50,14 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *executorInter
 		return err
 	})
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	ctx := t.GetCtx()
 	eth := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	// accuse missing validators
@@ -68,12 +67,12 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *executorInter
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 		}
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotSubmitGPKJ(txnOpts, accusableParticipants)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("error accusing missing gpkj: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("error accusing missing gpkj: %v", err), true)
 		}
 		txns = append(txns, txn)
 	} else {
@@ -84,7 +83,7 @@ func (t *DisputeMissingGPKjTask) Execute() ([]*types.Transaction, *executorInter
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingGPKjTask) ShouldExecute() *executorInterfaces.TaskErr {
+func (t *DisputeMissingGPKjTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Trace("should execute task")
 
@@ -94,20 +93,20 @@ func (t *DisputeMissingGPKjTask) ShouldExecute() *executorInterfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.GPKJSubmission {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from GPKJSubmission", dkgState.Phase), false)
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from GPKJSubmission", dkgState.Phase), false)
 	}
 
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
 	}
 
 	return nil
@@ -124,7 +123,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(dkgState *state.DkgSta
 		return nil, errors.New(fmt.Sprintf(constants.FailedGettingCallOpts, err))
 	}
 
-	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
 	}

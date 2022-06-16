@@ -55,7 +55,7 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 
 	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
+		logger.Debugf("could not check if we're registered: %v", err)
 		return Undefined, err
 	}
 	// Grab both parts of registered public key
@@ -80,7 +80,7 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 	if !(receivedPublicKey[0].Cmp(publicKey[0]) == 0 &&
 		receivedPublicKey[1].Cmp(publicKey[1]) == 0) {
 
-		logger.Warnf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
+		logger.Debugf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
 
 		return BadRegistration, nil
 	}
@@ -100,7 +100,7 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 
 	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {
-		logger.Warnf("could not check if we're registered: %v", err)
+		logger.Debugf("could not check if we're registered: %v", err)
 		return NoKeyShared, err
 	}
 	// Grab both parts of registered public key
@@ -115,7 +115,7 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 	if receivedKeyShare[0].Cmp(keyshare[0]) != 0 &&
 		receivedKeyShare[1].Cmp(keyshare[1]) != 0 {
 
-		logger.Warnf("address (%v) is already registered with %x", addr.Hex(), receivedKeyShare)
+		logger.Debugf("address (%v) is already registered with %x", addr.Hex(), receivedKeyShare)
 
 		return BadKeyShared, nil
 	}

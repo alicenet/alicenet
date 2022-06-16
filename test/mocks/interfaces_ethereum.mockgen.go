@@ -6,2899 +6,14 @@ import (
 	"context"
 	"math/big"
 	"sync"
-	"time"
 
 	ethereum "github.com/MadBase/MadNet/blockchain/ethereum"
 	bindings "github.com/MadBase/MadNet/bridge/bindings"
-	goethereum "github.com/ethereum/go-ethereum"
 	accounts "github.com/ethereum/go-ethereum/accounts"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
-	keystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 )
-
-// MockClient is a mock implementation of the Client interface (from the
-// package github.com/MadBase/MadNet/blockchain/ethereum) used for unit
-// testing.
-type MockClient struct {
-	// BalanceAtFunc is an instance of a mock function object controlling
-	// the behavior of the method BalanceAt.
-	BalanceAtFunc *ClientBalanceAtFunc
-	// BlockByHashFunc is an instance of a mock function object controlling
-	// the behavior of the method BlockByHash.
-	BlockByHashFunc *ClientBlockByHashFunc
-	// BlockByNumberFunc is an instance of a mock function object
-	// controlling the behavior of the method BlockByNumber.
-	BlockByNumberFunc *ClientBlockByNumberFunc
-	// BlockNumberFunc is an instance of a mock function object controlling
-	// the behavior of the method BlockNumber.
-	BlockNumberFunc *ClientBlockNumberFunc
-	// CallContractFunc is an instance of a mock function object controlling
-	// the behavior of the method CallContract.
-	CallContractFunc *ClientCallContractFunc
-	// CodeAtFunc is an instance of a mock function object controlling the
-	// behavior of the method CodeAt.
-	CodeAtFunc *ClientCodeAtFunc
-	// EstimateGasFunc is an instance of a mock function object controlling
-	// the behavior of the method EstimateGas.
-	EstimateGasFunc *ClientEstimateGasFunc
-	// FilterLogsFunc is an instance of a mock function object controlling
-	// the behavior of the method FilterLogs.
-	FilterLogsFunc *ClientFilterLogsFunc
-	// HeaderByHashFunc is an instance of a mock function object controlling
-	// the behavior of the method HeaderByHash.
-	HeaderByHashFunc *ClientHeaderByHashFunc
-	// HeaderByNumberFunc is an instance of a mock function object
-	// controlling the behavior of the method HeaderByNumber.
-	HeaderByNumberFunc *ClientHeaderByNumberFunc
-	// NonceAtFunc is an instance of a mock function object controlling the
-	// behavior of the method NonceAt.
-	NonceAtFunc *ClientNonceAtFunc
-	// PendingCodeAtFunc is an instance of a mock function object
-	// controlling the behavior of the method PendingCodeAt.
-	PendingCodeAtFunc *ClientPendingCodeAtFunc
-	// PendingNonceAtFunc is an instance of a mock function object
-	// controlling the behavior of the method PendingNonceAt.
-	PendingNonceAtFunc *ClientPendingNonceAtFunc
-	// SendTransactionFunc is an instance of a mock function object
-	// controlling the behavior of the method SendTransaction.
-	SendTransactionFunc *ClientSendTransactionFunc
-	// StorageAtFunc is an instance of a mock function object controlling
-	// the behavior of the method StorageAt.
-	StorageAtFunc *ClientStorageAtFunc
-	// SubscribeFilterLogsFunc is an instance of a mock function object
-	// controlling the behavior of the method SubscribeFilterLogs.
-	SubscribeFilterLogsFunc *ClientSubscribeFilterLogsFunc
-	// SubscribeNewHeadFunc is an instance of a mock function object
-	// controlling the behavior of the method SubscribeNewHead.
-	SubscribeNewHeadFunc *ClientSubscribeNewHeadFunc
-	// SuggestGasPriceFunc is an instance of a mock function object
-	// controlling the behavior of the method SuggestGasPrice.
-	SuggestGasPriceFunc *ClientSuggestGasPriceFunc
-	// SuggestGasTipCapFunc is an instance of a mock function object
-	// controlling the behavior of the method SuggestGasTipCap.
-	SuggestGasTipCapFunc *ClientSuggestGasTipCapFunc
-	// TransactionByHashFunc is an instance of a mock function object
-	// controlling the behavior of the method TransactionByHash.
-	TransactionByHashFunc *ClientTransactionByHashFunc
-	// TransactionCountFunc is an instance of a mock function object
-	// controlling the behavior of the method TransactionCount.
-	TransactionCountFunc *ClientTransactionCountFunc
-	// TransactionInBlockFunc is an instance of a mock function object
-	// controlling the behavior of the method TransactionInBlock.
-	TransactionInBlockFunc *ClientTransactionInBlockFunc
-	// TransactionReceiptFunc is an instance of a mock function object
-	// controlling the behavior of the method TransactionReceipt.
-	TransactionReceiptFunc *ClientTransactionReceiptFunc
-}
-
-// NewMockClient creates a new mock of the Client interface. All methods
-// return zero values for all results, unless overwritten.
-func NewMockClient() *MockClient {
-	return &MockClient{
-		BalanceAtFunc: &ClientBalanceAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) (*big.Int, error) {
-				return nil, nil
-			},
-		},
-		BlockByHashFunc: &ClientBlockByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Block, error) {
-				return nil, nil
-			},
-		},
-		BlockByNumberFunc: &ClientBlockByNumberFunc{
-			defaultHook: func(context.Context, *big.Int) (*types.Block, error) {
-				return nil, nil
-			},
-		},
-		BlockNumberFunc: &ClientBlockNumberFunc{
-			defaultHook: func(context.Context) (uint64, error) {
-				return 0, nil
-			},
-		},
-		CallContractFunc: &ClientCallContractFunc{
-			defaultHook: func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error) {
-				return nil, nil
-			},
-		},
-		CodeAtFunc: &ClientCodeAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) ([]byte, error) {
-				return nil, nil
-			},
-		},
-		EstimateGasFunc: &ClientEstimateGasFunc{
-			defaultHook: func(context.Context, goethereum.CallMsg) (uint64, error) {
-				return 0, nil
-			},
-		},
-		FilterLogsFunc: &ClientFilterLogsFunc{
-			defaultHook: func(context.Context, goethereum.FilterQuery) ([]types.Log, error) {
-				return nil, nil
-			},
-		},
-		HeaderByHashFunc: &ClientHeaderByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Header, error) {
-				return nil, nil
-			},
-		},
-		HeaderByNumberFunc: &ClientHeaderByNumberFunc{
-			defaultHook: func(context.Context, *big.Int) (*types.Header, error) {
-				return nil, nil
-			},
-		},
-		NonceAtFunc: &ClientNonceAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) (uint64, error) {
-				return 0, nil
-			},
-		},
-		PendingCodeAtFunc: &ClientPendingCodeAtFunc{
-			defaultHook: func(context.Context, common.Address) ([]byte, error) {
-				return nil, nil
-			},
-		},
-		PendingNonceAtFunc: &ClientPendingNonceAtFunc{
-			defaultHook: func(context.Context, common.Address) (uint64, error) {
-				return 0, nil
-			},
-		},
-		SendTransactionFunc: &ClientSendTransactionFunc{
-			defaultHook: func(context.Context, *types.Transaction) error {
-				return nil
-			},
-		},
-		StorageAtFunc: &ClientStorageAtFunc{
-			defaultHook: func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error) {
-				return nil, nil
-			},
-		},
-		SubscribeFilterLogsFunc: &ClientSubscribeFilterLogsFunc{
-			defaultHook: func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error) {
-				return nil, nil
-			},
-		},
-		SubscribeNewHeadFunc: &ClientSubscribeNewHeadFunc{
-			defaultHook: func(context.Context, chan<- *types.Header) (goethereum.Subscription, error) {
-				return nil, nil
-			},
-		},
-		SuggestGasPriceFunc: &ClientSuggestGasPriceFunc{
-			defaultHook: func(context.Context) (*big.Int, error) {
-				return nil, nil
-			},
-		},
-		SuggestGasTipCapFunc: &ClientSuggestGasTipCapFunc{
-			defaultHook: func(context.Context) (*big.Int, error) {
-				return nil, nil
-			},
-		},
-		TransactionByHashFunc: &ClientTransactionByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Transaction, bool, error) {
-				return nil, false, nil
-			},
-		},
-		TransactionCountFunc: &ClientTransactionCountFunc{
-			defaultHook: func(context.Context, common.Hash) (uint, error) {
-				return 0, nil
-			},
-		},
-		TransactionInBlockFunc: &ClientTransactionInBlockFunc{
-			defaultHook: func(context.Context, common.Hash, uint) (*types.Transaction, error) {
-				return nil, nil
-			},
-		},
-		TransactionReceiptFunc: &ClientTransactionReceiptFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Receipt, error) {
-				return nil, nil
-			},
-		},
-	}
-}
-
-// NewStrictMockClient creates a new mock of the Client interface. All
-// methods panic on invocation, unless overwritten.
-func NewStrictMockClient() *MockClient {
-	return &MockClient{
-		BalanceAtFunc: &ClientBalanceAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockClient.BalanceAt")
-			},
-		},
-		BlockByHashFunc: &ClientBlockByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Block, error) {
-				panic("unexpected invocation of MockClient.BlockByHash")
-			},
-		},
-		BlockByNumberFunc: &ClientBlockByNumberFunc{
-			defaultHook: func(context.Context, *big.Int) (*types.Block, error) {
-				panic("unexpected invocation of MockClient.BlockByNumber")
-			},
-		},
-		BlockNumberFunc: &ClientBlockNumberFunc{
-			defaultHook: func(context.Context) (uint64, error) {
-				panic("unexpected invocation of MockClient.BlockNumber")
-			},
-		},
-		CallContractFunc: &ClientCallContractFunc{
-			defaultHook: func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error) {
-				panic("unexpected invocation of MockClient.CallContract")
-			},
-		},
-		CodeAtFunc: &ClientCodeAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) ([]byte, error) {
-				panic("unexpected invocation of MockClient.CodeAt")
-			},
-		},
-		EstimateGasFunc: &ClientEstimateGasFunc{
-			defaultHook: func(context.Context, goethereum.CallMsg) (uint64, error) {
-				panic("unexpected invocation of MockClient.EstimateGas")
-			},
-		},
-		FilterLogsFunc: &ClientFilterLogsFunc{
-			defaultHook: func(context.Context, goethereum.FilterQuery) ([]types.Log, error) {
-				panic("unexpected invocation of MockClient.FilterLogs")
-			},
-		},
-		HeaderByHashFunc: &ClientHeaderByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Header, error) {
-				panic("unexpected invocation of MockClient.HeaderByHash")
-			},
-		},
-		HeaderByNumberFunc: &ClientHeaderByNumberFunc{
-			defaultHook: func(context.Context, *big.Int) (*types.Header, error) {
-				panic("unexpected invocation of MockClient.HeaderByNumber")
-			},
-		},
-		NonceAtFunc: &ClientNonceAtFunc{
-			defaultHook: func(context.Context, common.Address, *big.Int) (uint64, error) {
-				panic("unexpected invocation of MockClient.NonceAt")
-			},
-		},
-		PendingCodeAtFunc: &ClientPendingCodeAtFunc{
-			defaultHook: func(context.Context, common.Address) ([]byte, error) {
-				panic("unexpected invocation of MockClient.PendingCodeAt")
-			},
-		},
-		PendingNonceAtFunc: &ClientPendingNonceAtFunc{
-			defaultHook: func(context.Context, common.Address) (uint64, error) {
-				panic("unexpected invocation of MockClient.PendingNonceAt")
-			},
-		},
-		SendTransactionFunc: &ClientSendTransactionFunc{
-			defaultHook: func(context.Context, *types.Transaction) error {
-				panic("unexpected invocation of MockClient.SendTransaction")
-			},
-		},
-		StorageAtFunc: &ClientStorageAtFunc{
-			defaultHook: func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error) {
-				panic("unexpected invocation of MockClient.StorageAt")
-			},
-		},
-		SubscribeFilterLogsFunc: &ClientSubscribeFilterLogsFunc{
-			defaultHook: func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error) {
-				panic("unexpected invocation of MockClient.SubscribeFilterLogs")
-			},
-		},
-		SubscribeNewHeadFunc: &ClientSubscribeNewHeadFunc{
-			defaultHook: func(context.Context, chan<- *types.Header) (goethereum.Subscription, error) {
-				panic("unexpected invocation of MockClient.SubscribeNewHead")
-			},
-		},
-		SuggestGasPriceFunc: &ClientSuggestGasPriceFunc{
-			defaultHook: func(context.Context) (*big.Int, error) {
-				panic("unexpected invocation of MockClient.SuggestGasPrice")
-			},
-		},
-		SuggestGasTipCapFunc: &ClientSuggestGasTipCapFunc{
-			defaultHook: func(context.Context) (*big.Int, error) {
-				panic("unexpected invocation of MockClient.SuggestGasTipCap")
-			},
-		},
-		TransactionByHashFunc: &ClientTransactionByHashFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Transaction, bool, error) {
-				panic("unexpected invocation of MockClient.TransactionByHash")
-			},
-		},
-		TransactionCountFunc: &ClientTransactionCountFunc{
-			defaultHook: func(context.Context, common.Hash) (uint, error) {
-				panic("unexpected invocation of MockClient.TransactionCount")
-			},
-		},
-		TransactionInBlockFunc: &ClientTransactionInBlockFunc{
-			defaultHook: func(context.Context, common.Hash, uint) (*types.Transaction, error) {
-				panic("unexpected invocation of MockClient.TransactionInBlock")
-			},
-		},
-		TransactionReceiptFunc: &ClientTransactionReceiptFunc{
-			defaultHook: func(context.Context, common.Hash) (*types.Receipt, error) {
-				panic("unexpected invocation of MockClient.TransactionReceipt")
-			},
-		},
-	}
-}
-
-// NewMockClientFrom creates a new mock of the MockClient interface. All
-// methods delegate to the given implementation, unless overwritten.
-func NewMockClientFrom(i ethereum.Client) *MockClient {
-	return &MockClient{
-		BalanceAtFunc: &ClientBalanceAtFunc{
-			defaultHook: i.BalanceAt,
-		},
-		BlockByHashFunc: &ClientBlockByHashFunc{
-			defaultHook: i.BlockByHash,
-		},
-		BlockByNumberFunc: &ClientBlockByNumberFunc{
-			defaultHook: i.BlockByNumber,
-		},
-		BlockNumberFunc: &ClientBlockNumberFunc{
-			defaultHook: i.BlockNumber,
-		},
-		CallContractFunc: &ClientCallContractFunc{
-			defaultHook: i.CallContract,
-		},
-		CodeAtFunc: &ClientCodeAtFunc{
-			defaultHook: i.CodeAt,
-		},
-		EstimateGasFunc: &ClientEstimateGasFunc{
-			defaultHook: i.EstimateGas,
-		},
-		FilterLogsFunc: &ClientFilterLogsFunc{
-			defaultHook: i.FilterLogs,
-		},
-		HeaderByHashFunc: &ClientHeaderByHashFunc{
-			defaultHook: i.HeaderByHash,
-		},
-		HeaderByNumberFunc: &ClientHeaderByNumberFunc{
-			defaultHook: i.HeaderByNumber,
-		},
-		NonceAtFunc: &ClientNonceAtFunc{
-			defaultHook: i.NonceAt,
-		},
-		PendingCodeAtFunc: &ClientPendingCodeAtFunc{
-			defaultHook: i.PendingCodeAt,
-		},
-		PendingNonceAtFunc: &ClientPendingNonceAtFunc{
-			defaultHook: i.PendingNonceAt,
-		},
-		SendTransactionFunc: &ClientSendTransactionFunc{
-			defaultHook: i.SendTransaction,
-		},
-		StorageAtFunc: &ClientStorageAtFunc{
-			defaultHook: i.StorageAt,
-		},
-		SubscribeFilterLogsFunc: &ClientSubscribeFilterLogsFunc{
-			defaultHook: i.SubscribeFilterLogs,
-		},
-		SubscribeNewHeadFunc: &ClientSubscribeNewHeadFunc{
-			defaultHook: i.SubscribeNewHead,
-		},
-		SuggestGasPriceFunc: &ClientSuggestGasPriceFunc{
-			defaultHook: i.SuggestGasPrice,
-		},
-		SuggestGasTipCapFunc: &ClientSuggestGasTipCapFunc{
-			defaultHook: i.SuggestGasTipCap,
-		},
-		TransactionByHashFunc: &ClientTransactionByHashFunc{
-			defaultHook: i.TransactionByHash,
-		},
-		TransactionCountFunc: &ClientTransactionCountFunc{
-			defaultHook: i.TransactionCount,
-		},
-		TransactionInBlockFunc: &ClientTransactionInBlockFunc{
-			defaultHook: i.TransactionInBlock,
-		},
-		TransactionReceiptFunc: &ClientTransactionReceiptFunc{
-			defaultHook: i.TransactionReceipt,
-		},
-	}
-}
-
-// ClientBalanceAtFunc describes the behavior when the BalanceAt method of
-// the parent MockClient instance is invoked.
-type ClientBalanceAtFunc struct {
-	defaultHook func(context.Context, common.Address, *big.Int) (*big.Int, error)
-	hooks       []func(context.Context, common.Address, *big.Int) (*big.Int, error)
-	history     []ClientBalanceAtFuncCall
-	mutex       sync.Mutex
-}
-
-// BalanceAt delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockClient) BalanceAt(v0 context.Context, v1 common.Address, v2 *big.Int) (*big.Int, error) {
-	r0, r1 := m.BalanceAtFunc.nextHook()(v0, v1, v2)
-	m.BalanceAtFunc.appendCall(ClientBalanceAtFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the BalanceAt method of
-// the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientBalanceAtFunc) SetDefaultHook(hook func(context.Context, common.Address, *big.Int) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// BalanceAt method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientBalanceAtFunc) PushHook(hook func(context.Context, common.Address, *big.Int) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientBalanceAtFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientBalanceAtFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(context.Context, common.Address, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientBalanceAtFunc) nextHook() func(context.Context, common.Address, *big.Int) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientBalanceAtFunc) appendCall(r0 ClientBalanceAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientBalanceAtFuncCall objects describing
-// the invocations of this function.
-func (f *ClientBalanceAtFunc) History() []ClientBalanceAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientBalanceAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientBalanceAtFuncCall is an object that describes an invocation of
-// method BalanceAt on an instance of MockClient.
-type ClientBalanceAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientBalanceAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientBalanceAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientBlockByHashFunc describes the behavior when the BlockByHash method
-// of the parent MockClient instance is invoked.
-type ClientBlockByHashFunc struct {
-	defaultHook func(context.Context, common.Hash) (*types.Block, error)
-	hooks       []func(context.Context, common.Hash) (*types.Block, error)
-	history     []ClientBlockByHashFuncCall
-	mutex       sync.Mutex
-}
-
-// BlockByHash delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) BlockByHash(v0 context.Context, v1 common.Hash) (*types.Block, error) {
-	r0, r1 := m.BlockByHashFunc.nextHook()(v0, v1)
-	m.BlockByHashFunc.appendCall(ClientBlockByHashFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the BlockByHash method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientBlockByHashFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Block, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// BlockByHash method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientBlockByHashFunc) PushHook(hook func(context.Context, common.Hash) (*types.Block, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientBlockByHashFunc) SetDefaultReturn(r0 *types.Block, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Block, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientBlockByHashFunc) PushReturn(r0 *types.Block, r1 error) {
-	f.PushHook(func(context.Context, common.Hash) (*types.Block, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientBlockByHashFunc) nextHook() func(context.Context, common.Hash) (*types.Block, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientBlockByHashFunc) appendCall(r0 ClientBlockByHashFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientBlockByHashFuncCall objects
-// describing the invocations of this function.
-func (f *ClientBlockByHashFunc) History() []ClientBlockByHashFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientBlockByHashFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientBlockByHashFuncCall is an object that describes an invocation of
-// method BlockByHash on an instance of MockClient.
-type ClientBlockByHashFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Block
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientBlockByHashFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientBlockByHashFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientBlockByNumberFunc describes the behavior when the BlockByNumber
-// method of the parent MockClient instance is invoked.
-type ClientBlockByNumberFunc struct {
-	defaultHook func(context.Context, *big.Int) (*types.Block, error)
-	hooks       []func(context.Context, *big.Int) (*types.Block, error)
-	history     []ClientBlockByNumberFuncCall
-	mutex       sync.Mutex
-}
-
-// BlockByNumber delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) BlockByNumber(v0 context.Context, v1 *big.Int) (*types.Block, error) {
-	r0, r1 := m.BlockByNumberFunc.nextHook()(v0, v1)
-	m.BlockByNumberFunc.appendCall(ClientBlockByNumberFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the BlockByNumber method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientBlockByNumberFunc) SetDefaultHook(hook func(context.Context, *big.Int) (*types.Block, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// BlockByNumber method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientBlockByNumberFunc) PushHook(hook func(context.Context, *big.Int) (*types.Block, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientBlockByNumberFunc) SetDefaultReturn(r0 *types.Block, r1 error) {
-	f.SetDefaultHook(func(context.Context, *big.Int) (*types.Block, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientBlockByNumberFunc) PushReturn(r0 *types.Block, r1 error) {
-	f.PushHook(func(context.Context, *big.Int) (*types.Block, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientBlockByNumberFunc) nextHook() func(context.Context, *big.Int) (*types.Block, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientBlockByNumberFunc) appendCall(r0 ClientBlockByNumberFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientBlockByNumberFuncCall objects
-// describing the invocations of this function.
-func (f *ClientBlockByNumberFunc) History() []ClientBlockByNumberFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientBlockByNumberFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientBlockByNumberFuncCall is an object that describes an invocation of
-// method BlockByNumber on an instance of MockClient.
-type ClientBlockByNumberFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Block
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientBlockByNumberFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientBlockByNumberFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientBlockNumberFunc describes the behavior when the BlockNumber method
-// of the parent MockClient instance is invoked.
-type ClientBlockNumberFunc struct {
-	defaultHook func(context.Context) (uint64, error)
-	hooks       []func(context.Context) (uint64, error)
-	history     []ClientBlockNumberFuncCall
-	mutex       sync.Mutex
-}
-
-// BlockNumber delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) BlockNumber(v0 context.Context) (uint64, error) {
-	r0, r1 := m.BlockNumberFunc.nextHook()(v0)
-	m.BlockNumberFunc.appendCall(ClientBlockNumberFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the BlockNumber method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientBlockNumberFunc) SetDefaultHook(hook func(context.Context) (uint64, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// BlockNumber method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientBlockNumberFunc) PushHook(hook func(context.Context) (uint64, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientBlockNumberFunc) SetDefaultReturn(r0 uint64, r1 error) {
-	f.SetDefaultHook(func(context.Context) (uint64, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientBlockNumberFunc) PushReturn(r0 uint64, r1 error) {
-	f.PushHook(func(context.Context) (uint64, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientBlockNumberFunc) nextHook() func(context.Context) (uint64, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientBlockNumberFunc) appendCall(r0 ClientBlockNumberFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientBlockNumberFuncCall objects
-// describing the invocations of this function.
-func (f *ClientBlockNumberFunc) History() []ClientBlockNumberFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientBlockNumberFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientBlockNumberFuncCall is an object that describes an invocation of
-// method BlockNumber on an instance of MockClient.
-type ClientBlockNumberFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint64
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientBlockNumberFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientBlockNumberFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientCallContractFunc describes the behavior when the CallContract
-// method of the parent MockClient instance is invoked.
-type ClientCallContractFunc struct {
-	defaultHook func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error)
-	hooks       []func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error)
-	history     []ClientCallContractFuncCall
-	mutex       sync.Mutex
-}
-
-// CallContract delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) CallContract(v0 context.Context, v1 goethereum.CallMsg, v2 *big.Int) ([]byte, error) {
-	r0, r1 := m.CallContractFunc.nextHook()(v0, v1, v2)
-	m.CallContractFunc.appendCall(ClientCallContractFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the CallContract method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientCallContractFunc) SetDefaultHook(hook func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// CallContract method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientCallContractFunc) PushHook(hook func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientCallContractFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientCallContractFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientCallContractFunc) nextHook() func(context.Context, goethereum.CallMsg, *big.Int) ([]byte, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientCallContractFunc) appendCall(r0 ClientCallContractFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientCallContractFuncCall objects
-// describing the invocations of this function.
-func (f *ClientCallContractFunc) History() []ClientCallContractFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientCallContractFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientCallContractFuncCall is an object that describes an invocation of
-// method CallContract on an instance of MockClient.
-type ClientCallContractFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 goethereum.CallMsg
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []byte
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientCallContractFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientCallContractFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientCodeAtFunc describes the behavior when the CodeAt method of the
-// parent MockClient instance is invoked.
-type ClientCodeAtFunc struct {
-	defaultHook func(context.Context, common.Address, *big.Int) ([]byte, error)
-	hooks       []func(context.Context, common.Address, *big.Int) ([]byte, error)
-	history     []ClientCodeAtFuncCall
-	mutex       sync.Mutex
-}
-
-// CodeAt delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockClient) CodeAt(v0 context.Context, v1 common.Address, v2 *big.Int) ([]byte, error) {
-	r0, r1 := m.CodeAtFunc.nextHook()(v0, v1, v2)
-	m.CodeAtFunc.appendCall(ClientCodeAtFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the CodeAt method of the
-// parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientCodeAtFunc) SetDefaultHook(hook func(context.Context, common.Address, *big.Int) ([]byte, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// CodeAt method of the parent MockClient instance invokes the hook at the
-// front of the queue and discards it. After the queue is empty, the default
-// hook function is invoked for any future action.
-func (f *ClientCodeAtFunc) PushHook(hook func(context.Context, common.Address, *big.Int) ([]byte, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientCodeAtFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientCodeAtFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func(context.Context, common.Address, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientCodeAtFunc) nextHook() func(context.Context, common.Address, *big.Int) ([]byte, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientCodeAtFunc) appendCall(r0 ClientCodeAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientCodeAtFuncCall objects describing the
-// invocations of this function.
-func (f *ClientCodeAtFunc) History() []ClientCodeAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientCodeAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientCodeAtFuncCall is an object that describes an invocation of method
-// CodeAt on an instance of MockClient.
-type ClientCodeAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []byte
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientCodeAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientCodeAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientEstimateGasFunc describes the behavior when the EstimateGas method
-// of the parent MockClient instance is invoked.
-type ClientEstimateGasFunc struct {
-	defaultHook func(context.Context, goethereum.CallMsg) (uint64, error)
-	hooks       []func(context.Context, goethereum.CallMsg) (uint64, error)
-	history     []ClientEstimateGasFuncCall
-	mutex       sync.Mutex
-}
-
-// EstimateGas delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) EstimateGas(v0 context.Context, v1 goethereum.CallMsg) (uint64, error) {
-	r0, r1 := m.EstimateGasFunc.nextHook()(v0, v1)
-	m.EstimateGasFunc.appendCall(ClientEstimateGasFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the EstimateGas method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientEstimateGasFunc) SetDefaultHook(hook func(context.Context, goethereum.CallMsg) (uint64, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// EstimateGas method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientEstimateGasFunc) PushHook(hook func(context.Context, goethereum.CallMsg) (uint64, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientEstimateGasFunc) SetDefaultReturn(r0 uint64, r1 error) {
-	f.SetDefaultHook(func(context.Context, goethereum.CallMsg) (uint64, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientEstimateGasFunc) PushReturn(r0 uint64, r1 error) {
-	f.PushHook(func(context.Context, goethereum.CallMsg) (uint64, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientEstimateGasFunc) nextHook() func(context.Context, goethereum.CallMsg) (uint64, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientEstimateGasFunc) appendCall(r0 ClientEstimateGasFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientEstimateGasFuncCall objects
-// describing the invocations of this function.
-func (f *ClientEstimateGasFunc) History() []ClientEstimateGasFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientEstimateGasFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientEstimateGasFuncCall is an object that describes an invocation of
-// method EstimateGas on an instance of MockClient.
-type ClientEstimateGasFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 goethereum.CallMsg
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint64
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientEstimateGasFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientEstimateGasFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientFilterLogsFunc describes the behavior when the FilterLogs method of
-// the parent MockClient instance is invoked.
-type ClientFilterLogsFunc struct {
-	defaultHook func(context.Context, goethereum.FilterQuery) ([]types.Log, error)
-	hooks       []func(context.Context, goethereum.FilterQuery) ([]types.Log, error)
-	history     []ClientFilterLogsFuncCall
-	mutex       sync.Mutex
-}
-
-// FilterLogs delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) FilterLogs(v0 context.Context, v1 goethereum.FilterQuery) ([]types.Log, error) {
-	r0, r1 := m.FilterLogsFunc.nextHook()(v0, v1)
-	m.FilterLogsFunc.appendCall(ClientFilterLogsFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the FilterLogs method of
-// the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientFilterLogsFunc) SetDefaultHook(hook func(context.Context, goethereum.FilterQuery) ([]types.Log, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// FilterLogs method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientFilterLogsFunc) PushHook(hook func(context.Context, goethereum.FilterQuery) ([]types.Log, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientFilterLogsFunc) SetDefaultReturn(r0 []types.Log, r1 error) {
-	f.SetDefaultHook(func(context.Context, goethereum.FilterQuery) ([]types.Log, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientFilterLogsFunc) PushReturn(r0 []types.Log, r1 error) {
-	f.PushHook(func(context.Context, goethereum.FilterQuery) ([]types.Log, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientFilterLogsFunc) nextHook() func(context.Context, goethereum.FilterQuery) ([]types.Log, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientFilterLogsFunc) appendCall(r0 ClientFilterLogsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientFilterLogsFuncCall objects describing
-// the invocations of this function.
-func (f *ClientFilterLogsFunc) History() []ClientFilterLogsFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientFilterLogsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientFilterLogsFuncCall is an object that describes an invocation of
-// method FilterLogs on an instance of MockClient.
-type ClientFilterLogsFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 goethereum.FilterQuery
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []types.Log
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientFilterLogsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientFilterLogsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientHeaderByHashFunc describes the behavior when the HeaderByHash
-// method of the parent MockClient instance is invoked.
-type ClientHeaderByHashFunc struct {
-	defaultHook func(context.Context, common.Hash) (*types.Header, error)
-	hooks       []func(context.Context, common.Hash) (*types.Header, error)
-	history     []ClientHeaderByHashFuncCall
-	mutex       sync.Mutex
-}
-
-// HeaderByHash delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) HeaderByHash(v0 context.Context, v1 common.Hash) (*types.Header, error) {
-	r0, r1 := m.HeaderByHashFunc.nextHook()(v0, v1)
-	m.HeaderByHashFunc.appendCall(ClientHeaderByHashFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the HeaderByHash method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientHeaderByHashFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Header, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// HeaderByHash method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientHeaderByHashFunc) PushHook(hook func(context.Context, common.Hash) (*types.Header, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientHeaderByHashFunc) SetDefaultReturn(r0 *types.Header, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Header, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientHeaderByHashFunc) PushReturn(r0 *types.Header, r1 error) {
-	f.PushHook(func(context.Context, common.Hash) (*types.Header, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientHeaderByHashFunc) nextHook() func(context.Context, common.Hash) (*types.Header, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientHeaderByHashFunc) appendCall(r0 ClientHeaderByHashFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientHeaderByHashFuncCall objects
-// describing the invocations of this function.
-func (f *ClientHeaderByHashFunc) History() []ClientHeaderByHashFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientHeaderByHashFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientHeaderByHashFuncCall is an object that describes an invocation of
-// method HeaderByHash on an instance of MockClient.
-type ClientHeaderByHashFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Header
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientHeaderByHashFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientHeaderByHashFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientHeaderByNumberFunc describes the behavior when the HeaderByNumber
-// method of the parent MockClient instance is invoked.
-type ClientHeaderByNumberFunc struct {
-	defaultHook func(context.Context, *big.Int) (*types.Header, error)
-	hooks       []func(context.Context, *big.Int) (*types.Header, error)
-	history     []ClientHeaderByNumberFuncCall
-	mutex       sync.Mutex
-}
-
-// HeaderByNumber delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) HeaderByNumber(v0 context.Context, v1 *big.Int) (*types.Header, error) {
-	r0, r1 := m.HeaderByNumberFunc.nextHook()(v0, v1)
-	m.HeaderByNumberFunc.appendCall(ClientHeaderByNumberFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the HeaderByNumber
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientHeaderByNumberFunc) SetDefaultHook(hook func(context.Context, *big.Int) (*types.Header, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// HeaderByNumber method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientHeaderByNumberFunc) PushHook(hook func(context.Context, *big.Int) (*types.Header, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientHeaderByNumberFunc) SetDefaultReturn(r0 *types.Header, r1 error) {
-	f.SetDefaultHook(func(context.Context, *big.Int) (*types.Header, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientHeaderByNumberFunc) PushReturn(r0 *types.Header, r1 error) {
-	f.PushHook(func(context.Context, *big.Int) (*types.Header, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientHeaderByNumberFunc) nextHook() func(context.Context, *big.Int) (*types.Header, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientHeaderByNumberFunc) appendCall(r0 ClientHeaderByNumberFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientHeaderByNumberFuncCall objects
-// describing the invocations of this function.
-func (f *ClientHeaderByNumberFunc) History() []ClientHeaderByNumberFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientHeaderByNumberFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientHeaderByNumberFuncCall is an object that describes an invocation of
-// method HeaderByNumber on an instance of MockClient.
-type ClientHeaderByNumberFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Header
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientHeaderByNumberFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientHeaderByNumberFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientNonceAtFunc describes the behavior when the NonceAt method of the
-// parent MockClient instance is invoked.
-type ClientNonceAtFunc struct {
-	defaultHook func(context.Context, common.Address, *big.Int) (uint64, error)
-	hooks       []func(context.Context, common.Address, *big.Int) (uint64, error)
-	history     []ClientNonceAtFuncCall
-	mutex       sync.Mutex
-}
-
-// NonceAt delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockClient) NonceAt(v0 context.Context, v1 common.Address, v2 *big.Int) (uint64, error) {
-	r0, r1 := m.NonceAtFunc.nextHook()(v0, v1, v2)
-	m.NonceAtFunc.appendCall(ClientNonceAtFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the NonceAt method of
-// the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientNonceAtFunc) SetDefaultHook(hook func(context.Context, common.Address, *big.Int) (uint64, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// NonceAt method of the parent MockClient instance invokes the hook at the
-// front of the queue and discards it. After the queue is empty, the default
-// hook function is invoked for any future action.
-func (f *ClientNonceAtFunc) PushHook(hook func(context.Context, common.Address, *big.Int) (uint64, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientNonceAtFunc) SetDefaultReturn(r0 uint64, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address, *big.Int) (uint64, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientNonceAtFunc) PushReturn(r0 uint64, r1 error) {
-	f.PushHook(func(context.Context, common.Address, *big.Int) (uint64, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientNonceAtFunc) nextHook() func(context.Context, common.Address, *big.Int) (uint64, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientNonceAtFunc) appendCall(r0 ClientNonceAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientNonceAtFuncCall objects describing
-// the invocations of this function.
-func (f *ClientNonceAtFunc) History() []ClientNonceAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientNonceAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientNonceAtFuncCall is an object that describes an invocation of method
-// NonceAt on an instance of MockClient.
-type ClientNonceAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint64
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientNonceAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientNonceAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientPendingCodeAtFunc describes the behavior when the PendingCodeAt
-// method of the parent MockClient instance is invoked.
-type ClientPendingCodeAtFunc struct {
-	defaultHook func(context.Context, common.Address) ([]byte, error)
-	hooks       []func(context.Context, common.Address) ([]byte, error)
-	history     []ClientPendingCodeAtFuncCall
-	mutex       sync.Mutex
-}
-
-// PendingCodeAt delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockClient) PendingCodeAt(v0 context.Context, v1 common.Address) ([]byte, error) {
-	r0, r1 := m.PendingCodeAtFunc.nextHook()(v0, v1)
-	m.PendingCodeAtFunc.appendCall(ClientPendingCodeAtFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the PendingCodeAt method
-// of the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientPendingCodeAtFunc) SetDefaultHook(hook func(context.Context, common.Address) ([]byte, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// PendingCodeAt method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientPendingCodeAtFunc) PushHook(hook func(context.Context, common.Address) ([]byte, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientPendingCodeAtFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientPendingCodeAtFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func(context.Context, common.Address) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientPendingCodeAtFunc) nextHook() func(context.Context, common.Address) ([]byte, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientPendingCodeAtFunc) appendCall(r0 ClientPendingCodeAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientPendingCodeAtFuncCall objects
-// describing the invocations of this function.
-func (f *ClientPendingCodeAtFunc) History() []ClientPendingCodeAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientPendingCodeAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientPendingCodeAtFuncCall is an object that describes an invocation of
-// method PendingCodeAt on an instance of MockClient.
-type ClientPendingCodeAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []byte
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientPendingCodeAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientPendingCodeAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientPendingNonceAtFunc describes the behavior when the PendingNonceAt
-// method of the parent MockClient instance is invoked.
-type ClientPendingNonceAtFunc struct {
-	defaultHook func(context.Context, common.Address) (uint64, error)
-	hooks       []func(context.Context, common.Address) (uint64, error)
-	history     []ClientPendingNonceAtFuncCall
-	mutex       sync.Mutex
-}
-
-// PendingNonceAt delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) PendingNonceAt(v0 context.Context, v1 common.Address) (uint64, error) {
-	r0, r1 := m.PendingNonceAtFunc.nextHook()(v0, v1)
-	m.PendingNonceAtFunc.appendCall(ClientPendingNonceAtFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the PendingNonceAt
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientPendingNonceAtFunc) SetDefaultHook(hook func(context.Context, common.Address) (uint64, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// PendingNonceAt method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientPendingNonceAtFunc) PushHook(hook func(context.Context, common.Address) (uint64, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientPendingNonceAtFunc) SetDefaultReturn(r0 uint64, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address) (uint64, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientPendingNonceAtFunc) PushReturn(r0 uint64, r1 error) {
-	f.PushHook(func(context.Context, common.Address) (uint64, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientPendingNonceAtFunc) nextHook() func(context.Context, common.Address) (uint64, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientPendingNonceAtFunc) appendCall(r0 ClientPendingNonceAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientPendingNonceAtFuncCall objects
-// describing the invocations of this function.
-func (f *ClientPendingNonceAtFunc) History() []ClientPendingNonceAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientPendingNonceAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientPendingNonceAtFuncCall is an object that describes an invocation of
-// method PendingNonceAt on an instance of MockClient.
-type ClientPendingNonceAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint64
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientPendingNonceAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientPendingNonceAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientSendTransactionFunc describes the behavior when the SendTransaction
-// method of the parent MockClient instance is invoked.
-type ClientSendTransactionFunc struct {
-	defaultHook func(context.Context, *types.Transaction) error
-	hooks       []func(context.Context, *types.Transaction) error
-	history     []ClientSendTransactionFuncCall
-	mutex       sync.Mutex
-}
-
-// SendTransaction delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) SendTransaction(v0 context.Context, v1 *types.Transaction) error {
-	r0 := m.SendTransactionFunc.nextHook()(v0, v1)
-	m.SendTransactionFunc.appendCall(ClientSendTransactionFuncCall{v0, v1, r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the SendTransaction
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientSendTransactionFunc) SetDefaultHook(hook func(context.Context, *types.Transaction) error) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SendTransaction method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientSendTransactionFunc) PushHook(hook func(context.Context, *types.Transaction) error) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientSendTransactionFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, *types.Transaction) error {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientSendTransactionFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, *types.Transaction) error {
-		return r0
-	})
-}
-
-func (f *ClientSendTransactionFunc) nextHook() func(context.Context, *types.Transaction) error {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientSendTransactionFunc) appendCall(r0 ClientSendTransactionFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientSendTransactionFuncCall objects
-// describing the invocations of this function.
-func (f *ClientSendTransactionFunc) History() []ClientSendTransactionFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientSendTransactionFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientSendTransactionFuncCall is an object that describes an invocation
-// of method SendTransaction on an instance of MockClient.
-type ClientSendTransactionFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *types.Transaction
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientSendTransactionFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientSendTransactionFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// ClientStorageAtFunc describes the behavior when the StorageAt method of
-// the parent MockClient instance is invoked.
-type ClientStorageAtFunc struct {
-	defaultHook func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error)
-	hooks       []func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error)
-	history     []ClientStorageAtFuncCall
-	mutex       sync.Mutex
-}
-
-// StorageAt delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockClient) StorageAt(v0 context.Context, v1 common.Address, v2 common.Hash, v3 *big.Int) ([]byte, error) {
-	r0, r1 := m.StorageAtFunc.nextHook()(v0, v1, v2, v3)
-	m.StorageAtFunc.appendCall(ClientStorageAtFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the StorageAt method of
-// the parent MockClient instance is invoked and the hook queue is empty.
-func (f *ClientStorageAtFunc) SetDefaultHook(hook func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// StorageAt method of the parent MockClient instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientStorageAtFunc) PushHook(hook func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientStorageAtFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientStorageAtFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientStorageAtFunc) nextHook() func(context.Context, common.Address, common.Hash, *big.Int) ([]byte, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientStorageAtFunc) appendCall(r0 ClientStorageAtFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientStorageAtFuncCall objects describing
-// the invocations of this function.
-func (f *ClientStorageAtFunc) History() []ClientStorageAtFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientStorageAtFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientStorageAtFuncCall is an object that describes an invocation of
-// method StorageAt on an instance of MockClient.
-type ClientStorageAtFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Hash
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []byte
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientStorageAtFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientStorageAtFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientSubscribeFilterLogsFunc describes the behavior when the
-// SubscribeFilterLogs method of the parent MockClient instance is invoked.
-type ClientSubscribeFilterLogsFunc struct {
-	defaultHook func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error)
-	hooks       []func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error)
-	history     []ClientSubscribeFilterLogsFuncCall
-	mutex       sync.Mutex
-}
-
-// SubscribeFilterLogs delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) SubscribeFilterLogs(v0 context.Context, v1 goethereum.FilterQuery, v2 chan<- types.Log) (goethereum.Subscription, error) {
-	r0, r1 := m.SubscribeFilterLogsFunc.nextHook()(v0, v1, v2)
-	m.SubscribeFilterLogsFunc.appendCall(ClientSubscribeFilterLogsFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SubscribeFilterLogs
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientSubscribeFilterLogsFunc) SetDefaultHook(hook func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SubscribeFilterLogs method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientSubscribeFilterLogsFunc) PushHook(hook func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientSubscribeFilterLogsFunc) SetDefaultReturn(r0 goethereum.Subscription, r1 error) {
-	f.SetDefaultHook(func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientSubscribeFilterLogsFunc) PushReturn(r0 goethereum.Subscription, r1 error) {
-	f.PushHook(func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientSubscribeFilterLogsFunc) nextHook() func(context.Context, goethereum.FilterQuery, chan<- types.Log) (goethereum.Subscription, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientSubscribeFilterLogsFunc) appendCall(r0 ClientSubscribeFilterLogsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientSubscribeFilterLogsFuncCall objects
-// describing the invocations of this function.
-func (f *ClientSubscribeFilterLogsFunc) History() []ClientSubscribeFilterLogsFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientSubscribeFilterLogsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientSubscribeFilterLogsFuncCall is an object that describes an
-// invocation of method SubscribeFilterLogs on an instance of MockClient.
-type ClientSubscribeFilterLogsFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 goethereum.FilterQuery
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 chan<- types.Log
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 goethereum.Subscription
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientSubscribeFilterLogsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientSubscribeFilterLogsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientSubscribeNewHeadFunc describes the behavior when the
-// SubscribeNewHead method of the parent MockClient instance is invoked.
-type ClientSubscribeNewHeadFunc struct {
-	defaultHook func(context.Context, chan<- *types.Header) (goethereum.Subscription, error)
-	hooks       []func(context.Context, chan<- *types.Header) (goethereum.Subscription, error)
-	history     []ClientSubscribeNewHeadFuncCall
-	mutex       sync.Mutex
-}
-
-// SubscribeNewHead delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) SubscribeNewHead(v0 context.Context, v1 chan<- *types.Header) (goethereum.Subscription, error) {
-	r0, r1 := m.SubscribeNewHeadFunc.nextHook()(v0, v1)
-	m.SubscribeNewHeadFunc.appendCall(ClientSubscribeNewHeadFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SubscribeNewHead
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientSubscribeNewHeadFunc) SetDefaultHook(hook func(context.Context, chan<- *types.Header) (goethereum.Subscription, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SubscribeNewHead method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientSubscribeNewHeadFunc) PushHook(hook func(context.Context, chan<- *types.Header) (goethereum.Subscription, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientSubscribeNewHeadFunc) SetDefaultReturn(r0 goethereum.Subscription, r1 error) {
-	f.SetDefaultHook(func(context.Context, chan<- *types.Header) (goethereum.Subscription, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientSubscribeNewHeadFunc) PushReturn(r0 goethereum.Subscription, r1 error) {
-	f.PushHook(func(context.Context, chan<- *types.Header) (goethereum.Subscription, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientSubscribeNewHeadFunc) nextHook() func(context.Context, chan<- *types.Header) (goethereum.Subscription, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientSubscribeNewHeadFunc) appendCall(r0 ClientSubscribeNewHeadFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientSubscribeNewHeadFuncCall objects
-// describing the invocations of this function.
-func (f *ClientSubscribeNewHeadFunc) History() []ClientSubscribeNewHeadFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientSubscribeNewHeadFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientSubscribeNewHeadFuncCall is an object that describes an invocation
-// of method SubscribeNewHead on an instance of MockClient.
-type ClientSubscribeNewHeadFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 chan<- *types.Header
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 goethereum.Subscription
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientSubscribeNewHeadFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientSubscribeNewHeadFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientSuggestGasPriceFunc describes the behavior when the SuggestGasPrice
-// method of the parent MockClient instance is invoked.
-type ClientSuggestGasPriceFunc struct {
-	defaultHook func(context.Context) (*big.Int, error)
-	hooks       []func(context.Context) (*big.Int, error)
-	history     []ClientSuggestGasPriceFuncCall
-	mutex       sync.Mutex
-}
-
-// SuggestGasPrice delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) SuggestGasPrice(v0 context.Context) (*big.Int, error) {
-	r0, r1 := m.SuggestGasPriceFunc.nextHook()(v0)
-	m.SuggestGasPriceFunc.appendCall(ClientSuggestGasPriceFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SuggestGasPrice
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientSuggestGasPriceFunc) SetDefaultHook(hook func(context.Context) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SuggestGasPrice method of the parent MockClient instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ClientSuggestGasPriceFunc) PushHook(hook func(context.Context) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientSuggestGasPriceFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(context.Context) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientSuggestGasPriceFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(context.Context) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientSuggestGasPriceFunc) nextHook() func(context.Context) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientSuggestGasPriceFunc) appendCall(r0 ClientSuggestGasPriceFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientSuggestGasPriceFuncCall objects
-// describing the invocations of this function.
-func (f *ClientSuggestGasPriceFunc) History() []ClientSuggestGasPriceFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientSuggestGasPriceFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientSuggestGasPriceFuncCall is an object that describes an invocation
-// of method SuggestGasPrice on an instance of MockClient.
-type ClientSuggestGasPriceFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientSuggestGasPriceFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientSuggestGasPriceFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientSuggestGasTipCapFunc describes the behavior when the
-// SuggestGasTipCap method of the parent MockClient instance is invoked.
-type ClientSuggestGasTipCapFunc struct {
-	defaultHook func(context.Context) (*big.Int, error)
-	hooks       []func(context.Context) (*big.Int, error)
-	history     []ClientSuggestGasTipCapFuncCall
-	mutex       sync.Mutex
-}
-
-// SuggestGasTipCap delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) SuggestGasTipCap(v0 context.Context) (*big.Int, error) {
-	r0, r1 := m.SuggestGasTipCapFunc.nextHook()(v0)
-	m.SuggestGasTipCapFunc.appendCall(ClientSuggestGasTipCapFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SuggestGasTipCap
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientSuggestGasTipCapFunc) SetDefaultHook(hook func(context.Context) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SuggestGasTipCap method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientSuggestGasTipCapFunc) PushHook(hook func(context.Context) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientSuggestGasTipCapFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(context.Context) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientSuggestGasTipCapFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(context.Context) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientSuggestGasTipCapFunc) nextHook() func(context.Context) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientSuggestGasTipCapFunc) appendCall(r0 ClientSuggestGasTipCapFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientSuggestGasTipCapFuncCall objects
-// describing the invocations of this function.
-func (f *ClientSuggestGasTipCapFunc) History() []ClientSuggestGasTipCapFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientSuggestGasTipCapFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientSuggestGasTipCapFuncCall is an object that describes an invocation
-// of method SuggestGasTipCap on an instance of MockClient.
-type ClientSuggestGasTipCapFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientSuggestGasTipCapFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientSuggestGasTipCapFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientTransactionByHashFunc describes the behavior when the
-// TransactionByHash method of the parent MockClient instance is invoked.
-type ClientTransactionByHashFunc struct {
-	defaultHook func(context.Context, common.Hash) (*types.Transaction, bool, error)
-	hooks       []func(context.Context, common.Hash) (*types.Transaction, bool, error)
-	history     []ClientTransactionByHashFuncCall
-	mutex       sync.Mutex
-}
-
-// TransactionByHash delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) TransactionByHash(v0 context.Context, v1 common.Hash) (*types.Transaction, bool, error) {
-	r0, r1, r2 := m.TransactionByHashFunc.nextHook()(v0, v1)
-	m.TransactionByHashFunc.appendCall(ClientTransactionByHashFuncCall{v0, v1, r0, r1, r2})
-	return r0, r1, r2
-}
-
-// SetDefaultHook sets function that is called when the TransactionByHash
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientTransactionByHashFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Transaction, bool, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// TransactionByHash method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientTransactionByHashFunc) PushHook(hook func(context.Context, common.Hash) (*types.Transaction, bool, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientTransactionByHashFunc) SetDefaultReturn(r0 *types.Transaction, r1 bool, r2 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Transaction, bool, error) {
-		return r0, r1, r2
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientTransactionByHashFunc) PushReturn(r0 *types.Transaction, r1 bool, r2 error) {
-	f.PushHook(func(context.Context, common.Hash) (*types.Transaction, bool, error) {
-		return r0, r1, r2
-	})
-}
-
-func (f *ClientTransactionByHashFunc) nextHook() func(context.Context, common.Hash) (*types.Transaction, bool, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientTransactionByHashFunc) appendCall(r0 ClientTransactionByHashFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientTransactionByHashFuncCall objects
-// describing the invocations of this function.
-func (f *ClientTransactionByHashFunc) History() []ClientTransactionByHashFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientTransactionByHashFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientTransactionByHashFuncCall is an object that describes an invocation
-// of method TransactionByHash on an instance of MockClient.
-type ClientTransactionByHashFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 bool
-	// Result2 is the value of the 3rd result returned from this method
-	// invocation.
-	Result2 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientTransactionByHashFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientTransactionByHashFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1, c.Result2}
-}
-
-// ClientTransactionCountFunc describes the behavior when the
-// TransactionCount method of the parent MockClient instance is invoked.
-type ClientTransactionCountFunc struct {
-	defaultHook func(context.Context, common.Hash) (uint, error)
-	hooks       []func(context.Context, common.Hash) (uint, error)
-	history     []ClientTransactionCountFuncCall
-	mutex       sync.Mutex
-}
-
-// TransactionCount delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) TransactionCount(v0 context.Context, v1 common.Hash) (uint, error) {
-	r0, r1 := m.TransactionCountFunc.nextHook()(v0, v1)
-	m.TransactionCountFunc.appendCall(ClientTransactionCountFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the TransactionCount
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientTransactionCountFunc) SetDefaultHook(hook func(context.Context, common.Hash) (uint, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// TransactionCount method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientTransactionCountFunc) PushHook(hook func(context.Context, common.Hash) (uint, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientTransactionCountFunc) SetDefaultReturn(r0 uint, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash) (uint, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientTransactionCountFunc) PushReturn(r0 uint, r1 error) {
-	f.PushHook(func(context.Context, common.Hash) (uint, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientTransactionCountFunc) nextHook() func(context.Context, common.Hash) (uint, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientTransactionCountFunc) appendCall(r0 ClientTransactionCountFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientTransactionCountFuncCall objects
-// describing the invocations of this function.
-func (f *ClientTransactionCountFunc) History() []ClientTransactionCountFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientTransactionCountFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientTransactionCountFuncCall is an object that describes an invocation
-// of method TransactionCount on an instance of MockClient.
-type ClientTransactionCountFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientTransactionCountFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientTransactionCountFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientTransactionInBlockFunc describes the behavior when the
-// TransactionInBlock method of the parent MockClient instance is invoked.
-type ClientTransactionInBlockFunc struct {
-	defaultHook func(context.Context, common.Hash, uint) (*types.Transaction, error)
-	hooks       []func(context.Context, common.Hash, uint) (*types.Transaction, error)
-	history     []ClientTransactionInBlockFuncCall
-	mutex       sync.Mutex
-}
-
-// TransactionInBlock delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) TransactionInBlock(v0 context.Context, v1 common.Hash, v2 uint) (*types.Transaction, error) {
-	r0, r1 := m.TransactionInBlockFunc.nextHook()(v0, v1, v2)
-	m.TransactionInBlockFunc.appendCall(ClientTransactionInBlockFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the TransactionInBlock
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientTransactionInBlockFunc) SetDefaultHook(hook func(context.Context, common.Hash, uint) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// TransactionInBlock method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientTransactionInBlockFunc) PushHook(hook func(context.Context, common.Hash, uint) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientTransactionInBlockFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash, uint) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientTransactionInBlockFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(context.Context, common.Hash, uint) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientTransactionInBlockFunc) nextHook() func(context.Context, common.Hash, uint) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientTransactionInBlockFunc) appendCall(r0 ClientTransactionInBlockFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientTransactionInBlockFuncCall objects
-// describing the invocations of this function.
-func (f *ClientTransactionInBlockFunc) History() []ClientTransactionInBlockFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientTransactionInBlockFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientTransactionInBlockFuncCall is an object that describes an
-// invocation of method TransactionInBlock on an instance of MockClient.
-type ClientTransactionInBlockFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 uint
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientTransactionInBlockFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientTransactionInBlockFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ClientTransactionReceiptFunc describes the behavior when the
-// TransactionReceipt method of the parent MockClient instance is invoked.
-type ClientTransactionReceiptFunc struct {
-	defaultHook func(context.Context, common.Hash) (*types.Receipt, error)
-	hooks       []func(context.Context, common.Hash) (*types.Receipt, error)
-	history     []ClientTransactionReceiptFuncCall
-	mutex       sync.Mutex
-}
-
-// TransactionReceipt delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockClient) TransactionReceipt(v0 context.Context, v1 common.Hash) (*types.Receipt, error) {
-	r0, r1 := m.TransactionReceiptFunc.nextHook()(v0, v1)
-	m.TransactionReceiptFunc.appendCall(ClientTransactionReceiptFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the TransactionReceipt
-// method of the parent MockClient instance is invoked and the hook queue is
-// empty.
-func (f *ClientTransactionReceiptFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Receipt, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// TransactionReceipt method of the parent MockClient instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ClientTransactionReceiptFunc) PushHook(hook func(context.Context, common.Hash) (*types.Receipt, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ClientTransactionReceiptFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
-	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Receipt, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ClientTransactionReceiptFunc) PushReturn(r0 *types.Receipt, r1 error) {
-	f.PushHook(func(context.Context, common.Hash) (*types.Receipt, error) {
-		return r0, r1
-	})
-}
-
-func (f *ClientTransactionReceiptFunc) nextHook() func(context.Context, common.Hash) (*types.Receipt, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ClientTransactionReceiptFunc) appendCall(r0 ClientTransactionReceiptFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ClientTransactionReceiptFuncCall objects
-// describing the invocations of this function.
-func (f *ClientTransactionReceiptFunc) History() []ClientTransactionReceiptFuncCall {
-	f.mutex.Lock()
-	history := make([]ClientTransactionReceiptFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ClientTransactionReceiptFuncCall is an object that describes an
-// invocation of method TransactionReceipt on an instance of MockClient.
-type ClientTransactionReceiptFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Hash
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Receipt
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ClientTransactionReceiptFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ClientTransactionReceiptFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
 
 // MockContracts is a mock implementation of the Contracts interface (from
 // the package github.com/MadBase/MadNet/blockchain/ethereum) used for unit
@@ -2934,9 +49,9 @@ type MockContracts struct {
 	// GovernanceAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method GovernanceAddress.
 	GovernanceAddressFunc *ContractsGovernanceAddressFunc
-	// LookupContractsFunc is an instance of a mock function object
-	// controlling the behavior of the method LookupContracts.
-	LookupContractsFunc *ContractsLookupContractsFunc
+	// InitializeFunc is an instance of a mock function object controlling
+	// the behavior of the method Initialize.
+	InitializeFunc *ContractsInitializeFunc
 	// PublicStakingFunc is an instance of a mock function object
 	// controlling the behavior of the method PublicStaking.
 	PublicStakingFunc *ContractsPublicStakingFunc
@@ -3017,9 +132,9 @@ func NewMockContracts() *MockContracts {
 				return common.Address{}
 			},
 		},
-		LookupContractsFunc: &ContractsLookupContractsFunc{
-			defaultHook: func(context.Context, common.Address) error {
-				return nil
+		InitializeFunc: &ContractsInitializeFunc{
+			defaultHook: func(context.Context, common.Address) {
+				return
 			},
 		},
 		PublicStakingFunc: &ContractsPublicStakingFunc{
@@ -3119,9 +234,9 @@ func NewStrictMockContracts() *MockContracts {
 				panic("unexpected invocation of MockContracts.GovernanceAddress")
 			},
 		},
-		LookupContractsFunc: &ContractsLookupContractsFunc{
-			defaultHook: func(context.Context, common.Address) error {
-				panic("unexpected invocation of MockContracts.LookupContracts")
+		InitializeFunc: &ContractsInitializeFunc{
+			defaultHook: func(context.Context, common.Address) {
+				panic("unexpected invocation of MockContracts.Initialize")
 			},
 		},
 		PublicStakingFunc: &ContractsPublicStakingFunc{
@@ -3201,8 +316,8 @@ func NewMockContractsFrom(i ethereum.Contracts) *MockContracts {
 		GovernanceAddressFunc: &ContractsGovernanceAddressFunc{
 			defaultHook: i.GovernanceAddress,
 		},
-		LookupContractsFunc: &ContractsLookupContractsFunc{
-			defaultHook: i.LookupContracts,
+		InitializeFunc: &ContractsInitializeFunc{
+			defaultHook: i.Initialize,
 		},
 		PublicStakingFunc: &ContractsPublicStakingFunc{
 			defaultHook: i.PublicStaking,
@@ -4220,35 +1335,34 @@ func (c ContractsGovernanceAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ContractsLookupContractsFunc describes the behavior when the
-// LookupContracts method of the parent MockContracts instance is invoked.
-type ContractsLookupContractsFunc struct {
-	defaultHook func(context.Context, common.Address) error
-	hooks       []func(context.Context, common.Address) error
-	history     []ContractsLookupContractsFuncCall
+// ContractsInitializeFunc describes the behavior when the Initialize method
+// of the parent MockContracts instance is invoked.
+type ContractsInitializeFunc struct {
+	defaultHook func(context.Context, common.Address)
+	hooks       []func(context.Context, common.Address)
+	history     []ContractsInitializeFuncCall
 	mutex       sync.Mutex
 }
 
-// LookupContracts delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockContracts) LookupContracts(v0 context.Context, v1 common.Address) error {
-	r0 := m.LookupContractsFunc.nextHook()(v0, v1)
-	m.LookupContractsFunc.appendCall(ContractsLookupContractsFuncCall{v0, v1, r0})
-	return r0
+// Initialize delegates to the next hook function in the queue and stores
+// the parameter and result values of this invocation.
+func (m *MockContracts) Initialize(v0 context.Context, v1 common.Address) {
+	m.InitializeFunc.nextHook()(v0, v1)
+	m.InitializeFunc.appendCall(ContractsInitializeFuncCall{v0, v1})
+	return
 }
 
-// SetDefaultHook sets function that is called when the LookupContracts
-// method of the parent MockContracts instance is invoked and the hook queue
-// is empty.
-func (f *ContractsLookupContractsFunc) SetDefaultHook(hook func(context.Context, common.Address) error) {
+// SetDefaultHook sets function that is called when the Initialize method of
+// the parent MockContracts instance is invoked and the hook queue is empty.
+func (f *ContractsInitializeFunc) SetDefaultHook(hook func(context.Context, common.Address)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// LookupContracts method of the parent MockContracts instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *ContractsLookupContractsFunc) PushHook(hook func(context.Context, common.Address) error) {
+// Initialize method of the parent MockContracts instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *ContractsInitializeFunc) PushHook(hook func(context.Context, common.Address)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4256,20 +1370,20 @@ func (f *ContractsLookupContractsFunc) PushHook(hook func(context.Context, commo
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ContractsLookupContractsFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, common.Address) error {
-		return r0
+func (f *ContractsInitializeFunc) SetDefaultReturn() {
+	f.SetDefaultHook(func(context.Context, common.Address) {
+		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ContractsLookupContractsFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, common.Address) error {
-		return r0
+func (f *ContractsInitializeFunc) PushReturn() {
+	f.PushHook(func(context.Context, common.Address) {
+		return
 	})
 }
 
-func (f *ContractsLookupContractsFunc) nextHook() func(context.Context, common.Address) error {
+func (f *ContractsInitializeFunc) nextHook() func(context.Context, common.Address) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4282,47 +1396,44 @@ func (f *ContractsLookupContractsFunc) nextHook() func(context.Context, common.A
 	return hook
 }
 
-func (f *ContractsLookupContractsFunc) appendCall(r0 ContractsLookupContractsFuncCall) {
+func (f *ContractsInitializeFunc) appendCall(r0 ContractsInitializeFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ContractsLookupContractsFuncCall objects
+// History returns a sequence of ContractsInitializeFuncCall objects
 // describing the invocations of this function.
-func (f *ContractsLookupContractsFunc) History() []ContractsLookupContractsFuncCall {
+func (f *ContractsInitializeFunc) History() []ContractsInitializeFuncCall {
 	f.mutex.Lock()
-	history := make([]ContractsLookupContractsFuncCall, len(f.history))
+	history := make([]ContractsInitializeFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ContractsLookupContractsFuncCall is an object that describes an
-// invocation of method LookupContracts on an instance of MockContracts.
-type ContractsLookupContractsFuncCall struct {
+// ContractsInitializeFuncCall is an object that describes an invocation of
+// method Initialize on an instance of MockContracts.
+type ContractsInitializeFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
 	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 error
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ContractsLookupContractsFuncCall) Args() []interface{} {
+func (c ContractsInitializeFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ContractsLookupContractsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
+func (c ContractsInitializeFuncCall) Results() []interface{} {
+	return []interface{}{}
 }
 
 // ContractsPublicStakingFunc describes the behavior when the PublicStaking
@@ -5127,39 +2238,40 @@ func (c ContractsValidatorStakingAddressFuncCall) Results() []interface{} {
 // package github.com/MadBase/MadNet/blockchain/ethereum) used for unit
 // testing.
 type MockNetwork struct {
-	// ChainIDFunc is an instance of a mock function object controlling the
-	// behavior of the method ChainID.
-	ChainIDFunc *NetworkChainIDFunc
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.
 	CloseFunc *NetworkCloseFunc
-	// CommitFunc is an instance of a mock function object controlling the
-	// behavior of the method Commit.
-	CommitFunc *NetworkCommitFunc
 	// ContractsFunc is an instance of a mock function object controlling
 	// the behavior of the method Contracts.
 	ContractsFunc *NetworkContractsFunc
+	// EndpointInSyncFunc is an instance of a mock function object
+	// controlling the behavior of the method EndpointInSync.
+	EndpointInSyncFunc *NetworkEndpointInSyncFunc
+	// ExtractTransactionSenderFunc is an instance of a mock function object
+	// controlling the behavior of the method ExtractTransactionSender.
+	ExtractTransactionSenderFunc *NetworkExtractTransactionSenderFunc
 	// GetAccountFunc is an instance of a mock function object controlling
 	// the behavior of the method GetAccount.
 	GetAccountFunc *NetworkGetAccountFunc
-	// GetAccountKeysFunc is an instance of a mock function object
-	// controlling the behavior of the method GetAccountKeys.
-	GetAccountKeysFunc *NetworkGetAccountKeysFunc
 	// GetBalanceFunc is an instance of a mock function object controlling
 	// the behavior of the method GetBalance.
 	GetBalanceFunc *NetworkGetBalanceFunc
+	// GetBlockBaseFeeAndSuggestedGasTipFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// GetBlockBaseFeeAndSuggestedGasTip.
+	GetBlockBaseFeeAndSuggestedGasTipFunc *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc
+	// GetBlockByNumberFunc is an instance of a mock function object
+	// controlling the behavior of the method GetBlockByNumber.
+	GetBlockByNumberFunc *NetworkGetBlockByNumberFunc
 	// GetCallOptsFunc is an instance of a mock function object controlling
 	// the behavior of the method GetCallOpts.
 	GetCallOptsFunc *NetworkGetCallOptsFunc
 	// GetCallOptsLatestBlockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetCallOptsLatestBlock.
 	GetCallOptsLatestBlockFunc *NetworkGetCallOptsLatestBlockFunc
-	// GetClientFunc is an instance of a mock function object controlling
-	// the behavior of the method GetClient.
-	GetClientFunc *NetworkGetClientFunc
-	// GetCoinbaseAddressFunc is an instance of a mock function object
-	// controlling the behavior of the method GetCoinbaseAddress.
-	GetCoinbaseAddressFunc *NetworkGetCoinbaseAddressFunc
+	// GetChainIDFunc is an instance of a mock function object controlling
+	// the behavior of the method GetChainID.
+	GetChainIDFunc *NetworkGetChainIDFunc
 	// GetCurrentHeightFunc is an instance of a mock function object
 	// controlling the behavior of the method GetCurrentHeight.
 	GetCurrentHeightFunc *NetworkGetCurrentHeightFunc
@@ -5178,77 +2290,58 @@ type MockNetwork struct {
 	// GetFinalizedHeightFunc is an instance of a mock function object
 	// controlling the behavior of the method GetFinalizedHeight.
 	GetFinalizedHeightFunc *NetworkGetFinalizedHeightFunc
+	// GetHeaderByNumberFunc is an instance of a mock function object
+	// controlling the behavior of the method GetHeaderByNumber.
+	GetHeaderByNumberFunc *NetworkGetHeaderByNumberFunc
 	// GetKnownAccountsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetKnownAccounts.
 	GetKnownAccountsFunc *NetworkGetKnownAccountsFunc
 	// GetPeerCountFunc is an instance of a mock function object controlling
 	// the behavior of the method GetPeerCount.
 	GetPeerCountFunc *NetworkGetPeerCountFunc
-	// GetSnapshotFunc is an instance of a mock function object controlling
-	// the behavior of the method GetSnapshot.
-	GetSnapshotFunc *NetworkGetSnapshotFunc
-	// GetSyncProgressFunc is an instance of a mock function object
-	// controlling the behavior of the method GetSyncProgress.
-	GetSyncProgressFunc *NetworkGetSyncProgressFunc
+	// GetPendingNonceFunc is an instance of a mock function object
+	// controlling the behavior of the method GetPendingNonce.
+	GetPendingNonceFunc *NetworkGetPendingNonceFunc
 	// GetTimeoutContextFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTimeoutContext.
 	GetTimeoutContextFunc *NetworkGetTimeoutContextFunc
+	// GetTransactionByHashFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTransactionByHash.
+	GetTransactionByHashFunc *NetworkGetTransactionByHashFunc
 	// GetTransactionOptsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTransactionOpts.
 	GetTransactionOptsFunc *NetworkGetTransactionOptsFunc
-	// GetTxFeePercentageToIncreaseFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetTxFeePercentageToIncrease.
-	GetTxFeePercentageToIncreaseFunc *NetworkGetTxFeePercentageToIncreaseFunc
-	// GetTxMaxGasFeeAllowedInGweiFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetTxMaxGasFeeAllowedInGwei.
-	GetTxMaxGasFeeAllowedInGweiFunc *NetworkGetTxMaxGasFeeAllowedInGweiFunc
-	// GetValidatorsFunc is an instance of a mock function object
-	// controlling the behavior of the method GetValidators.
-	GetValidatorsFunc *NetworkGetValidatorsFunc
+	// GetTransactionReceiptFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTransactionReceipt.
+	GetTransactionReceiptFunc *NetworkGetTransactionReceiptFunc
+	// GetTxMaxGasFeeAllowedFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTxMaxGasFeeAllowed.
+	GetTxMaxGasFeeAllowedFunc *NetworkGetTxMaxGasFeeAllowedFunc
+	// GetTxMaxStaleBlocksFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTxMaxStaleBlocks.
+	GetTxMaxStaleBlocksFunc *NetworkGetTxMaxStaleBlocksFunc
+	// GetTxNotFoundMaxBlocksFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTxNotFoundMaxBlocks.
+	GetTxNotFoundMaxBlocksFunc *NetworkGetTxNotFoundMaxBlocksFunc
 	// IsAccessibleFunc is an instance of a mock function object controlling
 	// the behavior of the method IsAccessible.
 	IsAccessibleFunc *NetworkIsAccessibleFunc
-	// RetryCountFunc is an instance of a mock function object controlling
-	// the behavior of the method RetryCount.
-	RetryCountFunc *NetworkRetryCountFunc
-	// RetryDelayFunc is an instance of a mock function object controlling
-	// the behavior of the method RetryDelay.
-	RetryDelayFunc *NetworkRetryDelayFunc
-	// SetFinalityDelayFunc is an instance of a mock function object
-	// controlling the behavior of the method SetFinalityDelay.
-	SetFinalityDelayFunc *NetworkSetFinalityDelayFunc
-	// TimeoutFunc is an instance of a mock function object controlling the
-	// behavior of the method Timeout.
-	TimeoutFunc *NetworkTimeoutFunc
-	// TransferEtherFunc is an instance of a mock function object
-	// controlling the behavior of the method TransferEther.
-	TransferEtherFunc *NetworkTransferEtherFunc
-	// UnlockAccountFunc is an instance of a mock function object
-	// controlling the behavior of the method UnlockAccount.
-	UnlockAccountFunc *NetworkUnlockAccountFunc
-	// UnlockAccountWithPasscodeFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// UnlockAccountWithPasscode.
-	UnlockAccountWithPasscodeFunc *NetworkUnlockAccountWithPasscodeFunc
+	// RetryTransactionFunc is an instance of a mock function object
+	// controlling the behavior of the method RetryTransaction.
+	RetryTransactionFunc *NetworkRetryTransactionFunc
+	// SendTransactionFunc is an instance of a mock function object
+	// controlling the behavior of the method SendTransaction.
+	SendTransactionFunc *NetworkSendTransactionFunc
+	// SignTransactionFunc is an instance of a mock function object
+	// controlling the behavior of the method SignTransaction.
+	SignTransactionFunc *NetworkSignTransactionFunc
 }
 
 // NewMockNetwork creates a new mock of the Network interface. All methods
 // return zero values for all results, unless overwritten.
 func NewMockNetwork() *MockNetwork {
 	return &MockNetwork{
-		ChainIDFunc: &NetworkChainIDFunc{
-			defaultHook: func() *big.Int {
-				return nil
-			},
-		},
 		CloseFunc: &NetworkCloseFunc{
-			defaultHook: func() error {
-				return nil
-			},
-		},
-		CommitFunc: &NetworkCommitFunc{
 			defaultHook: func() {
 				return
 			},
@@ -5258,18 +2351,33 @@ func NewMockNetwork() *MockNetwork {
 				return nil
 			},
 		},
+		EndpointInSyncFunc: &NetworkEndpointInSyncFunc{
+			defaultHook: func(context.Context) (bool, uint32, error) {
+				return false, 0, nil
+			},
+		},
+		ExtractTransactionSenderFunc: &NetworkExtractTransactionSenderFunc{
+			defaultHook: func(*types.Transaction) (common.Address, error) {
+				return common.Address{}, nil
+			},
+		},
 		GetAccountFunc: &NetworkGetAccountFunc{
 			defaultHook: func(common.Address) (accounts.Account, error) {
 				return accounts.Account{}, nil
 			},
 		},
-		GetAccountKeysFunc: &NetworkGetAccountKeysFunc{
-			defaultHook: func(common.Address) (*keystore.Key, error) {
+		GetBalanceFunc: &NetworkGetBalanceFunc{
+			defaultHook: func(common.Address) (*big.Int, error) {
 				return nil, nil
 			},
 		},
-		GetBalanceFunc: &NetworkGetBalanceFunc{
-			defaultHook: func(common.Address) (*big.Int, error) {
+		GetBlockBaseFeeAndSuggestedGasTipFunc: &NetworkGetBlockBaseFeeAndSuggestedGasTipFunc{
+			defaultHook: func(context.Context) (*big.Int, *big.Int, error) {
+				return nil, nil, nil
+			},
+		},
+		GetBlockByNumberFunc: &NetworkGetBlockByNumberFunc{
+			defaultHook: func(context.Context, *big.Int) (*types.Block, error) {
 				return nil, nil
 			},
 		},
@@ -5283,14 +2391,9 @@ func NewMockNetwork() *MockNetwork {
 				return nil
 			},
 		},
-		GetClientFunc: &NetworkGetClientFunc{
-			defaultHook: func() ethereum.Client {
+		GetChainIDFunc: &NetworkGetChainIDFunc{
+			defaultHook: func() *big.Int {
 				return nil
-			},
-		},
-		GetCoinbaseAddressFunc: &NetworkGetCoinbaseAddressFunc{
-			defaultHook: func() common.Address {
-				return common.Address{}
 			},
 		},
 		GetCurrentHeightFunc: &NetworkGetCurrentHeightFunc{
@@ -5323,6 +2426,11 @@ func NewMockNetwork() *MockNetwork {
 				return 0, nil
 			},
 		},
+		GetHeaderByNumberFunc: &NetworkGetHeaderByNumberFunc{
+			defaultHook: func(context.Context, *big.Int) (*types.Header, error) {
+				return nil, nil
+			},
+		},
 		GetKnownAccountsFunc: &NetworkGetKnownAccountsFunc{
 			defaultHook: func() []accounts.Account {
 				return nil
@@ -5333,14 +2441,9 @@ func NewMockNetwork() *MockNetwork {
 				return 0, nil
 			},
 		},
-		GetSnapshotFunc: &NetworkGetSnapshotFunc{
-			defaultHook: func() ([]byte, error) {
-				return nil, nil
-			},
-		},
-		GetSyncProgressFunc: &NetworkGetSyncProgressFunc{
-			defaultHook: func() (bool, *goethereum.SyncProgress, error) {
-				return false, nil, nil
+		GetPendingNonceFunc: &NetworkGetPendingNonceFunc{
+			defaultHook: func(context.Context, common.Address) (uint64, error) {
+				return 0, nil
 			},
 		},
 		GetTimeoutContextFunc: &NetworkGetTimeoutContextFunc{
@@ -5348,24 +2451,34 @@ func NewMockNetwork() *MockNetwork {
 				return nil, nil
 			},
 		},
+		GetTransactionByHashFunc: &NetworkGetTransactionByHashFunc{
+			defaultHook: func(context.Context, common.Hash) (*types.Transaction, bool, error) {
+				return nil, false, nil
+			},
+		},
 		GetTransactionOptsFunc: &NetworkGetTransactionOptsFunc{
 			defaultHook: func(context.Context, accounts.Account) (*bind.TransactOpts, error) {
 				return nil, nil
 			},
 		},
-		GetTxFeePercentageToIncreaseFunc: &NetworkGetTxFeePercentageToIncreaseFunc{
-			defaultHook: func() int {
-				return 0
+		GetTransactionReceiptFunc: &NetworkGetTransactionReceiptFunc{
+			defaultHook: func(context.Context, common.Hash) (*types.Receipt, error) {
+				return nil, nil
 			},
 		},
-		GetTxMaxGasFeeAllowedInGweiFunc: &NetworkGetTxMaxGasFeeAllowedInGweiFunc{
+		GetTxMaxGasFeeAllowedFunc: &NetworkGetTxMaxGasFeeAllowedFunc{
+			defaultHook: func() *big.Int {
+				return nil
+			},
+		},
+		GetTxMaxStaleBlocksFunc: &NetworkGetTxMaxStaleBlocksFunc{
 			defaultHook: func() uint64 {
 				return 0
 			},
 		},
-		GetValidatorsFunc: &NetworkGetValidatorsFunc{
-			defaultHook: func(context.Context) ([]common.Address, error) {
-				return nil, nil
+		GetTxNotFoundMaxBlocksFunc: &NetworkGetTxNotFoundMaxBlocksFunc{
+			defaultHook: func() uint64 {
+				return 0
 			},
 		},
 		IsAccessibleFunc: &NetworkIsAccessibleFunc{
@@ -5373,39 +2486,19 @@ func NewMockNetwork() *MockNetwork {
 				return false
 			},
 		},
-		RetryCountFunc: &NetworkRetryCountFunc{
-			defaultHook: func() int {
-				return 0
-			},
-		},
-		RetryDelayFunc: &NetworkRetryDelayFunc{
-			defaultHook: func() time.Duration {
-				return 0
-			},
-		},
-		SetFinalityDelayFunc: &NetworkSetFinalityDelayFunc{
-			defaultHook: func(uint64) {
-				return
-			},
-		},
-		TimeoutFunc: &NetworkTimeoutFunc{
-			defaultHook: func() time.Duration {
-				return 0
-			},
-		},
-		TransferEtherFunc: &NetworkTransferEtherFunc{
-			defaultHook: func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+		RetryTransactionFunc: &NetworkRetryTransactionFunc{
+			defaultHook: func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error) {
 				return nil, nil
 			},
 		},
-		UnlockAccountFunc: &NetworkUnlockAccountFunc{
-			defaultHook: func(accounts.Account) error {
+		SendTransactionFunc: &NetworkSendTransactionFunc{
+			defaultHook: func(context.Context, *types.Transaction) error {
 				return nil
 			},
 		},
-		UnlockAccountWithPasscodeFunc: &NetworkUnlockAccountWithPasscodeFunc{
-			defaultHook: func(accounts.Account, string) error {
-				return nil
+		SignTransactionFunc: &NetworkSignTransactionFunc{
+			defaultHook: func(types.TxData, common.Address) (*types.Transaction, error) {
+				return nil, nil
 			},
 		},
 	}
@@ -5415,19 +2508,9 @@ func NewMockNetwork() *MockNetwork {
 // methods panic on invocation, unless overwritten.
 func NewStrictMockNetwork() *MockNetwork {
 	return &MockNetwork{
-		ChainIDFunc: &NetworkChainIDFunc{
-			defaultHook: func() *big.Int {
-				panic("unexpected invocation of MockNetwork.ChainID")
-			},
-		},
 		CloseFunc: &NetworkCloseFunc{
-			defaultHook: func() error {
-				panic("unexpected invocation of MockNetwork.Close")
-			},
-		},
-		CommitFunc: &NetworkCommitFunc{
 			defaultHook: func() {
-				panic("unexpected invocation of MockNetwork.Commit")
+				panic("unexpected invocation of MockNetwork.Close")
 			},
 		},
 		ContractsFunc: &NetworkContractsFunc{
@@ -5435,19 +2518,34 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.Contracts")
 			},
 		},
+		EndpointInSyncFunc: &NetworkEndpointInSyncFunc{
+			defaultHook: func(context.Context) (bool, uint32, error) {
+				panic("unexpected invocation of MockNetwork.EndpointInSync")
+			},
+		},
+		ExtractTransactionSenderFunc: &NetworkExtractTransactionSenderFunc{
+			defaultHook: func(*types.Transaction) (common.Address, error) {
+				panic("unexpected invocation of MockNetwork.ExtractTransactionSender")
+			},
+		},
 		GetAccountFunc: &NetworkGetAccountFunc{
 			defaultHook: func(common.Address) (accounts.Account, error) {
 				panic("unexpected invocation of MockNetwork.GetAccount")
 			},
 		},
-		GetAccountKeysFunc: &NetworkGetAccountKeysFunc{
-			defaultHook: func(common.Address) (*keystore.Key, error) {
-				panic("unexpected invocation of MockNetwork.GetAccountKeys")
-			},
-		},
 		GetBalanceFunc: &NetworkGetBalanceFunc{
 			defaultHook: func(common.Address) (*big.Int, error) {
 				panic("unexpected invocation of MockNetwork.GetBalance")
+			},
+		},
+		GetBlockBaseFeeAndSuggestedGasTipFunc: &NetworkGetBlockBaseFeeAndSuggestedGasTipFunc{
+			defaultHook: func(context.Context) (*big.Int, *big.Int, error) {
+				panic("unexpected invocation of MockNetwork.GetBlockBaseFeeAndSuggestedGasTip")
+			},
+		},
+		GetBlockByNumberFunc: &NetworkGetBlockByNumberFunc{
+			defaultHook: func(context.Context, *big.Int) (*types.Block, error) {
+				panic("unexpected invocation of MockNetwork.GetBlockByNumber")
 			},
 		},
 		GetCallOptsFunc: &NetworkGetCallOptsFunc{
@@ -5460,14 +2558,9 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.GetCallOptsLatestBlock")
 			},
 		},
-		GetClientFunc: &NetworkGetClientFunc{
-			defaultHook: func() ethereum.Client {
-				panic("unexpected invocation of MockNetwork.GetClient")
-			},
-		},
-		GetCoinbaseAddressFunc: &NetworkGetCoinbaseAddressFunc{
-			defaultHook: func() common.Address {
-				panic("unexpected invocation of MockNetwork.GetCoinbaseAddress")
+		GetChainIDFunc: &NetworkGetChainIDFunc{
+			defaultHook: func() *big.Int {
+				panic("unexpected invocation of MockNetwork.GetChainID")
 			},
 		},
 		GetCurrentHeightFunc: &NetworkGetCurrentHeightFunc{
@@ -5500,6 +2593,11 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.GetFinalizedHeight")
 			},
 		},
+		GetHeaderByNumberFunc: &NetworkGetHeaderByNumberFunc{
+			defaultHook: func(context.Context, *big.Int) (*types.Header, error) {
+				panic("unexpected invocation of MockNetwork.GetHeaderByNumber")
+			},
+		},
 		GetKnownAccountsFunc: &NetworkGetKnownAccountsFunc{
 			defaultHook: func() []accounts.Account {
 				panic("unexpected invocation of MockNetwork.GetKnownAccounts")
@@ -5510,14 +2608,9 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.GetPeerCount")
 			},
 		},
-		GetSnapshotFunc: &NetworkGetSnapshotFunc{
-			defaultHook: func() ([]byte, error) {
-				panic("unexpected invocation of MockNetwork.GetSnapshot")
-			},
-		},
-		GetSyncProgressFunc: &NetworkGetSyncProgressFunc{
-			defaultHook: func() (bool, *goethereum.SyncProgress, error) {
-				panic("unexpected invocation of MockNetwork.GetSyncProgress")
+		GetPendingNonceFunc: &NetworkGetPendingNonceFunc{
+			defaultHook: func(context.Context, common.Address) (uint64, error) {
+				panic("unexpected invocation of MockNetwork.GetPendingNonce")
 			},
 		},
 		GetTimeoutContextFunc: &NetworkGetTimeoutContextFunc{
@@ -5525,24 +2618,34 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.GetTimeoutContext")
 			},
 		},
+		GetTransactionByHashFunc: &NetworkGetTransactionByHashFunc{
+			defaultHook: func(context.Context, common.Hash) (*types.Transaction, bool, error) {
+				panic("unexpected invocation of MockNetwork.GetTransactionByHash")
+			},
+		},
 		GetTransactionOptsFunc: &NetworkGetTransactionOptsFunc{
 			defaultHook: func(context.Context, accounts.Account) (*bind.TransactOpts, error) {
 				panic("unexpected invocation of MockNetwork.GetTransactionOpts")
 			},
 		},
-		GetTxFeePercentageToIncreaseFunc: &NetworkGetTxFeePercentageToIncreaseFunc{
-			defaultHook: func() int {
-				panic("unexpected invocation of MockNetwork.GetTxFeePercentageToIncrease")
+		GetTransactionReceiptFunc: &NetworkGetTransactionReceiptFunc{
+			defaultHook: func(context.Context, common.Hash) (*types.Receipt, error) {
+				panic("unexpected invocation of MockNetwork.GetTransactionReceipt")
 			},
 		},
-		GetTxMaxGasFeeAllowedInGweiFunc: &NetworkGetTxMaxGasFeeAllowedInGweiFunc{
+		GetTxMaxGasFeeAllowedFunc: &NetworkGetTxMaxGasFeeAllowedFunc{
+			defaultHook: func() *big.Int {
+				panic("unexpected invocation of MockNetwork.GetTxMaxGasFeeAllowed")
+			},
+		},
+		GetTxMaxStaleBlocksFunc: &NetworkGetTxMaxStaleBlocksFunc{
 			defaultHook: func() uint64 {
-				panic("unexpected invocation of MockNetwork.GetTxMaxGasFeeAllowedInGwei")
+				panic("unexpected invocation of MockNetwork.GetTxMaxStaleBlocks")
 			},
 		},
-		GetValidatorsFunc: &NetworkGetValidatorsFunc{
-			defaultHook: func(context.Context) ([]common.Address, error) {
-				panic("unexpected invocation of MockNetwork.GetValidators")
+		GetTxNotFoundMaxBlocksFunc: &NetworkGetTxNotFoundMaxBlocksFunc{
+			defaultHook: func() uint64 {
+				panic("unexpected invocation of MockNetwork.GetTxNotFoundMaxBlocks")
 			},
 		},
 		IsAccessibleFunc: &NetworkIsAccessibleFunc{
@@ -5550,39 +2653,19 @@ func NewStrictMockNetwork() *MockNetwork {
 				panic("unexpected invocation of MockNetwork.IsAccessible")
 			},
 		},
-		RetryCountFunc: &NetworkRetryCountFunc{
-			defaultHook: func() int {
-				panic("unexpected invocation of MockNetwork.RetryCount")
+		RetryTransactionFunc: &NetworkRetryTransactionFunc{
+			defaultHook: func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error) {
+				panic("unexpected invocation of MockNetwork.RetryTransaction")
 			},
 		},
-		RetryDelayFunc: &NetworkRetryDelayFunc{
-			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockNetwork.RetryDelay")
+		SendTransactionFunc: &NetworkSendTransactionFunc{
+			defaultHook: func(context.Context, *types.Transaction) error {
+				panic("unexpected invocation of MockNetwork.SendTransaction")
 			},
 		},
-		SetFinalityDelayFunc: &NetworkSetFinalityDelayFunc{
-			defaultHook: func(uint64) {
-				panic("unexpected invocation of MockNetwork.SetFinalityDelay")
-			},
-		},
-		TimeoutFunc: &NetworkTimeoutFunc{
-			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockNetwork.Timeout")
-			},
-		},
-		TransferEtherFunc: &NetworkTransferEtherFunc{
-			defaultHook: func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
-				panic("unexpected invocation of MockNetwork.TransferEther")
-			},
-		},
-		UnlockAccountFunc: &NetworkUnlockAccountFunc{
-			defaultHook: func(accounts.Account) error {
-				panic("unexpected invocation of MockNetwork.UnlockAccount")
-			},
-		},
-		UnlockAccountWithPasscodeFunc: &NetworkUnlockAccountWithPasscodeFunc{
-			defaultHook: func(accounts.Account, string) error {
-				panic("unexpected invocation of MockNetwork.UnlockAccountWithPasscode")
+		SignTransactionFunc: &NetworkSignTransactionFunc{
+			defaultHook: func(types.TxData, common.Address) (*types.Transaction, error) {
+				panic("unexpected invocation of MockNetwork.SignTransaction")
 			},
 		},
 	}
@@ -5592,26 +2675,29 @@ func NewStrictMockNetwork() *MockNetwork {
 // methods delegate to the given implementation, unless overwritten.
 func NewMockNetworkFrom(i ethereum.Network) *MockNetwork {
 	return &MockNetwork{
-		ChainIDFunc: &NetworkChainIDFunc{
-			defaultHook: i.ChainID,
-		},
 		CloseFunc: &NetworkCloseFunc{
 			defaultHook: i.Close,
-		},
-		CommitFunc: &NetworkCommitFunc{
-			defaultHook: i.Commit,
 		},
 		ContractsFunc: &NetworkContractsFunc{
 			defaultHook: i.Contracts,
 		},
+		EndpointInSyncFunc: &NetworkEndpointInSyncFunc{
+			defaultHook: i.EndpointInSync,
+		},
+		ExtractTransactionSenderFunc: &NetworkExtractTransactionSenderFunc{
+			defaultHook: i.ExtractTransactionSender,
+		},
 		GetAccountFunc: &NetworkGetAccountFunc{
 			defaultHook: i.GetAccount,
 		},
-		GetAccountKeysFunc: &NetworkGetAccountKeysFunc{
-			defaultHook: i.GetAccountKeys,
-		},
 		GetBalanceFunc: &NetworkGetBalanceFunc{
 			defaultHook: i.GetBalance,
+		},
+		GetBlockBaseFeeAndSuggestedGasTipFunc: &NetworkGetBlockBaseFeeAndSuggestedGasTipFunc{
+			defaultHook: i.GetBlockBaseFeeAndSuggestedGasTip,
+		},
+		GetBlockByNumberFunc: &NetworkGetBlockByNumberFunc{
+			defaultHook: i.GetBlockByNumber,
 		},
 		GetCallOptsFunc: &NetworkGetCallOptsFunc{
 			defaultHook: i.GetCallOpts,
@@ -5619,11 +2705,8 @@ func NewMockNetworkFrom(i ethereum.Network) *MockNetwork {
 		GetCallOptsLatestBlockFunc: &NetworkGetCallOptsLatestBlockFunc{
 			defaultHook: i.GetCallOptsLatestBlock,
 		},
-		GetClientFunc: &NetworkGetClientFunc{
-			defaultHook: i.GetClient,
-		},
-		GetCoinbaseAddressFunc: &NetworkGetCoinbaseAddressFunc{
-			defaultHook: i.GetCoinbaseAddress,
+		GetChainIDFunc: &NetworkGetChainIDFunc{
+			defaultHook: i.GetChainID,
 		},
 		GetCurrentHeightFunc: &NetworkGetCurrentHeightFunc{
 			defaultHook: i.GetCurrentHeight,
@@ -5643,178 +2726,74 @@ func NewMockNetworkFrom(i ethereum.Network) *MockNetwork {
 		GetFinalizedHeightFunc: &NetworkGetFinalizedHeightFunc{
 			defaultHook: i.GetFinalizedHeight,
 		},
+		GetHeaderByNumberFunc: &NetworkGetHeaderByNumberFunc{
+			defaultHook: i.GetHeaderByNumber,
+		},
 		GetKnownAccountsFunc: &NetworkGetKnownAccountsFunc{
 			defaultHook: i.GetKnownAccounts,
 		},
 		GetPeerCountFunc: &NetworkGetPeerCountFunc{
 			defaultHook: i.GetPeerCount,
 		},
-		GetSnapshotFunc: &NetworkGetSnapshotFunc{
-			defaultHook: i.GetSnapshot,
-		},
-		GetSyncProgressFunc: &NetworkGetSyncProgressFunc{
-			defaultHook: i.GetSyncProgress,
+		GetPendingNonceFunc: &NetworkGetPendingNonceFunc{
+			defaultHook: i.GetPendingNonce,
 		},
 		GetTimeoutContextFunc: &NetworkGetTimeoutContextFunc{
 			defaultHook: i.GetTimeoutContext,
 		},
+		GetTransactionByHashFunc: &NetworkGetTransactionByHashFunc{
+			defaultHook: i.GetTransactionByHash,
+		},
 		GetTransactionOptsFunc: &NetworkGetTransactionOptsFunc{
 			defaultHook: i.GetTransactionOpts,
 		},
-		GetTxFeePercentageToIncreaseFunc: &NetworkGetTxFeePercentageToIncreaseFunc{
-			defaultHook: i.GetTxFeePercentageToIncrease,
+		GetTransactionReceiptFunc: &NetworkGetTransactionReceiptFunc{
+			defaultHook: i.GetTransactionReceipt,
 		},
-		GetTxMaxGasFeeAllowedInGweiFunc: &NetworkGetTxMaxGasFeeAllowedInGweiFunc{
-			defaultHook: i.GetTxMaxGasFeeAllowedInGwei,
+		GetTxMaxGasFeeAllowedFunc: &NetworkGetTxMaxGasFeeAllowedFunc{
+			defaultHook: i.GetTxMaxGasFeeAllowed,
 		},
-		GetValidatorsFunc: &NetworkGetValidatorsFunc{
-			defaultHook: i.GetValidators,
+		GetTxMaxStaleBlocksFunc: &NetworkGetTxMaxStaleBlocksFunc{
+			defaultHook: i.GetTxMaxStaleBlocks,
+		},
+		GetTxNotFoundMaxBlocksFunc: &NetworkGetTxNotFoundMaxBlocksFunc{
+			defaultHook: i.GetTxNotFoundMaxBlocks,
 		},
 		IsAccessibleFunc: &NetworkIsAccessibleFunc{
 			defaultHook: i.IsAccessible,
 		},
-		RetryCountFunc: &NetworkRetryCountFunc{
-			defaultHook: i.RetryCount,
+		RetryTransactionFunc: &NetworkRetryTransactionFunc{
+			defaultHook: i.RetryTransaction,
 		},
-		RetryDelayFunc: &NetworkRetryDelayFunc{
-			defaultHook: i.RetryDelay,
+		SendTransactionFunc: &NetworkSendTransactionFunc{
+			defaultHook: i.SendTransaction,
 		},
-		SetFinalityDelayFunc: &NetworkSetFinalityDelayFunc{
-			defaultHook: i.SetFinalityDelay,
-		},
-		TimeoutFunc: &NetworkTimeoutFunc{
-			defaultHook: i.Timeout,
-		},
-		TransferEtherFunc: &NetworkTransferEtherFunc{
-			defaultHook: i.TransferEther,
-		},
-		UnlockAccountFunc: &NetworkUnlockAccountFunc{
-			defaultHook: i.UnlockAccount,
-		},
-		UnlockAccountWithPasscodeFunc: &NetworkUnlockAccountWithPasscodeFunc{
-			defaultHook: i.UnlockAccountWithPasscode,
+		SignTransactionFunc: &NetworkSignTransactionFunc{
+			defaultHook: i.SignTransaction,
 		},
 	}
-}
-
-// NetworkChainIDFunc describes the behavior when the ChainID method of the
-// parent MockNetwork instance is invoked.
-type NetworkChainIDFunc struct {
-	defaultHook func() *big.Int
-	hooks       []func() *big.Int
-	history     []NetworkChainIDFuncCall
-	mutex       sync.Mutex
-}
-
-// ChainID delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockNetwork) ChainID() *big.Int {
-	r0 := m.ChainIDFunc.nextHook()()
-	m.ChainIDFunc.appendCall(NetworkChainIDFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the ChainID method of
-// the parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkChainIDFunc) SetDefaultHook(hook func() *big.Int) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// ChainID method of the parent MockNetwork instance invokes the hook at the
-// front of the queue and discards it. After the queue is empty, the default
-// hook function is invoked for any future action.
-func (f *NetworkChainIDFunc) PushHook(hook func() *big.Int) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkChainIDFunc) SetDefaultReturn(r0 *big.Int) {
-	f.SetDefaultHook(func() *big.Int {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkChainIDFunc) PushReturn(r0 *big.Int) {
-	f.PushHook(func() *big.Int {
-		return r0
-	})
-}
-
-func (f *NetworkChainIDFunc) nextHook() func() *big.Int {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkChainIDFunc) appendCall(r0 NetworkChainIDFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkChainIDFuncCall objects describing
-// the invocations of this function.
-func (f *NetworkChainIDFunc) History() []NetworkChainIDFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkChainIDFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkChainIDFuncCall is an object that describes an invocation of
-// method ChainID on an instance of MockNetwork.
-type NetworkChainIDFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkChainIDFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkChainIDFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
 }
 
 // NetworkCloseFunc describes the behavior when the Close method of the
 // parent MockNetwork instance is invoked.
 type NetworkCloseFunc struct {
-	defaultHook func() error
-	hooks       []func() error
+	defaultHook func()
+	hooks       []func()
 	history     []NetworkCloseFuncCall
 	mutex       sync.Mutex
 }
 
 // Close delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockNetwork) Close() error {
-	r0 := m.CloseFunc.nextHook()()
-	m.CloseFunc.appendCall(NetworkCloseFuncCall{r0})
-	return r0
+func (m *MockNetwork) Close() {
+	m.CloseFunc.nextHook()()
+	m.CloseFunc.appendCall(NetworkCloseFuncCall{})
+	return
 }
 
 // SetDefaultHook sets function that is called when the Close method of the
 // parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkCloseFunc) SetDefaultHook(hook func() error) {
+func (f *NetworkCloseFunc) SetDefaultHook(hook func()) {
 	f.defaultHook = hook
 }
 
@@ -5822,7 +2801,7 @@ func (f *NetworkCloseFunc) SetDefaultHook(hook func() error) {
 // Close method of the parent MockNetwork instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *NetworkCloseFunc) PushHook(hook func() error) {
+func (f *NetworkCloseFunc) PushHook(hook func()) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5830,20 +2809,20 @@ func (f *NetworkCloseFunc) PushHook(hook func() error) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkCloseFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func() error {
-		return r0
+func (f *NetworkCloseFunc) SetDefaultReturn() {
+	f.SetDefaultHook(func() {
+		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkCloseFunc) PushReturn(r0 error) {
-	f.PushHook(func() error {
-		return r0
+func (f *NetworkCloseFunc) PushReturn() {
+	f.PushHook(func() {
+		return
 	})
 }
 
-func (f *NetworkCloseFunc) nextHook() func() error {
+func (f *NetworkCloseFunc) nextHook() func() {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5875,11 +2854,7 @@ func (f *NetworkCloseFunc) History() []NetworkCloseFuncCall {
 
 // NetworkCloseFuncCall is an object that describes an invocation of method
 // Close on an instance of MockNetwork.
-type NetworkCloseFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 error
-}
+type NetworkCloseFuncCall struct{}
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
@@ -5890,100 +2865,6 @@ func (c NetworkCloseFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c NetworkCloseFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkCommitFunc describes the behavior when the Commit method of the
-// parent MockNetwork instance is invoked.
-type NetworkCommitFunc struct {
-	defaultHook func()
-	hooks       []func()
-	history     []NetworkCommitFuncCall
-	mutex       sync.Mutex
-}
-
-// Commit delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockNetwork) Commit() {
-	m.CommitFunc.nextHook()()
-	m.CommitFunc.appendCall(NetworkCommitFuncCall{})
-	return
-}
-
-// SetDefaultHook sets function that is called when the Commit method of the
-// parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkCommitFunc) SetDefaultHook(hook func()) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// Commit method of the parent MockNetwork instance invokes the hook at the
-// front of the queue and discards it. After the queue is empty, the default
-// hook function is invoked for any future action.
-func (f *NetworkCommitFunc) PushHook(hook func()) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkCommitFunc) SetDefaultReturn() {
-	f.SetDefaultHook(func() {
-		return
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkCommitFunc) PushReturn() {
-	f.PushHook(func() {
-		return
-	})
-}
-
-func (f *NetworkCommitFunc) nextHook() func() {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkCommitFunc) appendCall(r0 NetworkCommitFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkCommitFuncCall objects describing
-// the invocations of this function.
-func (f *NetworkCommitFunc) History() []NetworkCommitFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkCommitFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkCommitFuncCall is an object that describes an invocation of method
-// Commit on an instance of MockNetwork.
-type NetworkCommitFuncCall struct{}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkCommitFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkCommitFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
@@ -6083,6 +2964,222 @@ func (c NetworkContractsFuncCall) Args() []interface{} {
 // invocation.
 func (c NetworkContractsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
+}
+
+// NetworkEndpointInSyncFunc describes the behavior when the EndpointInSync
+// method of the parent MockNetwork instance is invoked.
+type NetworkEndpointInSyncFunc struct {
+	defaultHook func(context.Context) (bool, uint32, error)
+	hooks       []func(context.Context) (bool, uint32, error)
+	history     []NetworkEndpointInSyncFuncCall
+	mutex       sync.Mutex
+}
+
+// EndpointInSync delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) EndpointInSync(v0 context.Context) (bool, uint32, error) {
+	r0, r1, r2 := m.EndpointInSyncFunc.nextHook()(v0)
+	m.EndpointInSyncFunc.appendCall(NetworkEndpointInSyncFuncCall{v0, r0, r1, r2})
+	return r0, r1, r2
+}
+
+// SetDefaultHook sets function that is called when the EndpointInSync
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkEndpointInSyncFunc) SetDefaultHook(hook func(context.Context) (bool, uint32, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// EndpointInSync method of the parent MockNetwork instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *NetworkEndpointInSyncFunc) PushHook(hook func(context.Context) (bool, uint32, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkEndpointInSyncFunc) SetDefaultReturn(r0 bool, r1 uint32, r2 error) {
+	f.SetDefaultHook(func(context.Context) (bool, uint32, error) {
+		return r0, r1, r2
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkEndpointInSyncFunc) PushReturn(r0 bool, r1 uint32, r2 error) {
+	f.PushHook(func(context.Context) (bool, uint32, error) {
+		return r0, r1, r2
+	})
+}
+
+func (f *NetworkEndpointInSyncFunc) nextHook() func(context.Context) (bool, uint32, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkEndpointInSyncFunc) appendCall(r0 NetworkEndpointInSyncFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkEndpointInSyncFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkEndpointInSyncFunc) History() []NetworkEndpointInSyncFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkEndpointInSyncFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkEndpointInSyncFuncCall is an object that describes an invocation
+// of method EndpointInSync on an instance of MockNetwork.
+type NetworkEndpointInSyncFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bool
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 uint32
+	// Result2 is the value of the 3rd result returned from this method
+	// invocation.
+	Result2 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkEndpointInSyncFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkEndpointInSyncFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1, c.Result2}
+}
+
+// NetworkExtractTransactionSenderFunc describes the behavior when the
+// ExtractTransactionSender method of the parent MockNetwork instance is
+// invoked.
+type NetworkExtractTransactionSenderFunc struct {
+	defaultHook func(*types.Transaction) (common.Address, error)
+	hooks       []func(*types.Transaction) (common.Address, error)
+	history     []NetworkExtractTransactionSenderFuncCall
+	mutex       sync.Mutex
+}
+
+// ExtractTransactionSender delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockNetwork) ExtractTransactionSender(v0 *types.Transaction) (common.Address, error) {
+	r0, r1 := m.ExtractTransactionSenderFunc.nextHook()(v0)
+	m.ExtractTransactionSenderFunc.appendCall(NetworkExtractTransactionSenderFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ExtractTransactionSender method of the parent MockNetwork instance is
+// invoked and the hook queue is empty.
+func (f *NetworkExtractTransactionSenderFunc) SetDefaultHook(hook func(*types.Transaction) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ExtractTransactionSender method of the parent MockNetwork instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *NetworkExtractTransactionSenderFunc) PushHook(hook func(*types.Transaction) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkExtractTransactionSenderFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*types.Transaction) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkExtractTransactionSenderFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*types.Transaction) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *NetworkExtractTransactionSenderFunc) nextHook() func(*types.Transaction) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkExtractTransactionSenderFunc) appendCall(r0 NetworkExtractTransactionSenderFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkExtractTransactionSenderFuncCall
+// objects describing the invocations of this function.
+func (f *NetworkExtractTransactionSenderFunc) History() []NetworkExtractTransactionSenderFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkExtractTransactionSenderFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkExtractTransactionSenderFuncCall is an object that describes an
+// invocation of method ExtractTransactionSender on an instance of
+// MockNetwork.
+type NetworkExtractTransactionSenderFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *types.Transaction
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkExtractTransactionSenderFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkExtractTransactionSenderFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // NetworkGetAccountFunc describes the behavior when the GetAccount method
@@ -6189,111 +3286,6 @@ func (c NetworkGetAccountFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// NetworkGetAccountKeysFunc describes the behavior when the GetAccountKeys
-// method of the parent MockNetwork instance is invoked.
-type NetworkGetAccountKeysFunc struct {
-	defaultHook func(common.Address) (*keystore.Key, error)
-	hooks       []func(common.Address) (*keystore.Key, error)
-	history     []NetworkGetAccountKeysFuncCall
-	mutex       sync.Mutex
-}
-
-// GetAccountKeys delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockNetwork) GetAccountKeys(v0 common.Address) (*keystore.Key, error) {
-	r0, r1 := m.GetAccountKeysFunc.nextHook()(v0)
-	m.GetAccountKeysFunc.appendCall(NetworkGetAccountKeysFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the GetAccountKeys
-// method of the parent MockNetwork instance is invoked and the hook queue
-// is empty.
-func (f *NetworkGetAccountKeysFunc) SetDefaultHook(hook func(common.Address) (*keystore.Key, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetAccountKeys method of the parent MockNetwork instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkGetAccountKeysFunc) PushHook(hook func(common.Address) (*keystore.Key, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkGetAccountKeysFunc) SetDefaultReturn(r0 *keystore.Key, r1 error) {
-	f.SetDefaultHook(func(common.Address) (*keystore.Key, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetAccountKeysFunc) PushReturn(r0 *keystore.Key, r1 error) {
-	f.PushHook(func(common.Address) (*keystore.Key, error) {
-		return r0, r1
-	})
-}
-
-func (f *NetworkGetAccountKeysFunc) nextHook() func(common.Address) (*keystore.Key, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkGetAccountKeysFunc) appendCall(r0 NetworkGetAccountKeysFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkGetAccountKeysFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkGetAccountKeysFunc) History() []NetworkGetAccountKeysFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkGetAccountKeysFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkGetAccountKeysFuncCall is an object that describes an invocation
-// of method GetAccountKeys on an instance of MockNetwork.
-type NetworkGetAccountKeysFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *keystore.Key
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkGetAccountKeysFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkGetAccountKeysFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // NetworkGetBalanceFunc describes the behavior when the GetBalance method
 // of the parent MockNetwork instance is invoked.
 type NetworkGetBalanceFunc struct {
@@ -6395,6 +3387,226 @@ func (c NetworkGetBalanceFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c NetworkGetBalanceFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// NetworkGetBlockBaseFeeAndSuggestedGasTipFunc describes the behavior when
+// the GetBlockBaseFeeAndSuggestedGasTip method of the parent MockNetwork
+// instance is invoked.
+type NetworkGetBlockBaseFeeAndSuggestedGasTipFunc struct {
+	defaultHook func(context.Context) (*big.Int, *big.Int, error)
+	hooks       []func(context.Context) (*big.Int, *big.Int, error)
+	history     []NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall
+	mutex       sync.Mutex
+}
+
+// GetBlockBaseFeeAndSuggestedGasTip delegates to the next hook function in
+// the queue and stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetBlockBaseFeeAndSuggestedGasTip(v0 context.Context) (*big.Int, *big.Int, error) {
+	r0, r1, r2 := m.GetBlockBaseFeeAndSuggestedGasTipFunc.nextHook()(v0)
+	m.GetBlockBaseFeeAndSuggestedGasTipFunc.appendCall(NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall{v0, r0, r1, r2})
+	return r0, r1, r2
+}
+
+// SetDefaultHook sets function that is called when the
+// GetBlockBaseFeeAndSuggestedGasTip method of the parent MockNetwork
+// instance is invoked and the hook queue is empty.
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) SetDefaultHook(hook func(context.Context) (*big.Int, *big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetBlockBaseFeeAndSuggestedGasTip method of the parent MockNetwork
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) PushHook(hook func(context.Context) (*big.Int, *big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) SetDefaultReturn(r0 *big.Int, r1 *big.Int, r2 error) {
+	f.SetDefaultHook(func(context.Context) (*big.Int, *big.Int, error) {
+		return r0, r1, r2
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) PushReturn(r0 *big.Int, r1 *big.Int, r2 error) {
+	f.PushHook(func(context.Context) (*big.Int, *big.Int, error) {
+		return r0, r1, r2
+	})
+}
+
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) nextHook() func(context.Context) (*big.Int, *big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) appendCall(r0 NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall objects describing the
+// invocations of this function.
+func (f *NetworkGetBlockBaseFeeAndSuggestedGasTipFunc) History() []NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall is an object that
+// describes an invocation of method GetBlockBaseFeeAndSuggestedGasTip on an
+// instance of MockNetwork.
+type NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 *big.Int
+	// Result2 is the value of the 3rd result returned from this method
+	// invocation.
+	Result2 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetBlockBaseFeeAndSuggestedGasTipFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1, c.Result2}
+}
+
+// NetworkGetBlockByNumberFunc describes the behavior when the
+// GetBlockByNumber method of the parent MockNetwork instance is invoked.
+type NetworkGetBlockByNumberFunc struct {
+	defaultHook func(context.Context, *big.Int) (*types.Block, error)
+	hooks       []func(context.Context, *big.Int) (*types.Block, error)
+	history     []NetworkGetBlockByNumberFuncCall
+	mutex       sync.Mutex
+}
+
+// GetBlockByNumber delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetBlockByNumber(v0 context.Context, v1 *big.Int) (*types.Block, error) {
+	r0, r1 := m.GetBlockByNumberFunc.nextHook()(v0, v1)
+	m.GetBlockByNumberFunc.appendCall(NetworkGetBlockByNumberFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetBlockByNumber
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkGetBlockByNumberFunc) SetDefaultHook(hook func(context.Context, *big.Int) (*types.Block, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetBlockByNumber method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkGetBlockByNumberFunc) PushHook(hook func(context.Context, *big.Int) (*types.Block, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetBlockByNumberFunc) SetDefaultReturn(r0 *types.Block, r1 error) {
+	f.SetDefaultHook(func(context.Context, *big.Int) (*types.Block, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetBlockByNumberFunc) PushReturn(r0 *types.Block, r1 error) {
+	f.PushHook(func(context.Context, *big.Int) (*types.Block, error) {
+		return r0, r1
+	})
+}
+
+func (f *NetworkGetBlockByNumberFunc) nextHook() func(context.Context, *big.Int) (*types.Block, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetBlockByNumberFunc) appendCall(r0 NetworkGetBlockByNumberFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetBlockByNumberFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkGetBlockByNumberFunc) History() []NetworkGetBlockByNumberFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetBlockByNumberFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetBlockByNumberFuncCall is an object that describes an invocation
+// of method GetBlockByNumber on an instance of MockNetwork.
+type NetworkGetBlockByNumberFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Block
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetBlockByNumberFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetBlockByNumberFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -6613,34 +3825,34 @@ func (c NetworkGetCallOptsLatestBlockFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// NetworkGetClientFunc describes the behavior when the GetClient method of
-// the parent MockNetwork instance is invoked.
-type NetworkGetClientFunc struct {
-	defaultHook func() ethereum.Client
-	hooks       []func() ethereum.Client
-	history     []NetworkGetClientFuncCall
+// NetworkGetChainIDFunc describes the behavior when the GetChainID method
+// of the parent MockNetwork instance is invoked.
+type NetworkGetChainIDFunc struct {
+	defaultHook func() *big.Int
+	hooks       []func() *big.Int
+	history     []NetworkGetChainIDFuncCall
 	mutex       sync.Mutex
 }
 
-// GetClient delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockNetwork) GetClient() ethereum.Client {
-	r0 := m.GetClientFunc.nextHook()()
-	m.GetClientFunc.appendCall(NetworkGetClientFuncCall{r0})
+// GetChainID delegates to the next hook function in the queue and stores
+// the parameter and result values of this invocation.
+func (m *MockNetwork) GetChainID() *big.Int {
+	r0 := m.GetChainIDFunc.nextHook()()
+	m.GetChainIDFunc.appendCall(NetworkGetChainIDFuncCall{r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetClient method of
+// SetDefaultHook sets function that is called when the GetChainID method of
 // the parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkGetClientFunc) SetDefaultHook(hook func() ethereum.Client) {
+func (f *NetworkGetChainIDFunc) SetDefaultHook(hook func() *big.Int) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetClient method of the parent MockNetwork instance invokes the hook at
+// GetChainID method of the parent MockNetwork instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *NetworkGetClientFunc) PushHook(hook func() ethereum.Client) {
+func (f *NetworkGetChainIDFunc) PushHook(hook func() *big.Int) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6648,20 +3860,20 @@ func (f *NetworkGetClientFunc) PushHook(hook func() ethereum.Client) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkGetClientFunc) SetDefaultReturn(r0 ethereum.Client) {
-	f.SetDefaultHook(func() ethereum.Client {
+func (f *NetworkGetChainIDFunc) SetDefaultReturn(r0 *big.Int) {
+	f.SetDefaultHook(func() *big.Int {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetClientFunc) PushReturn(r0 ethereum.Client) {
-	f.PushHook(func() ethereum.Client {
+func (f *NetworkGetChainIDFunc) PushReturn(r0 *big.Int) {
+	f.PushHook(func() *big.Int {
 		return r0
 	})
 }
 
-func (f *NetworkGetClientFunc) nextHook() func() ethereum.Client {
+func (f *NetworkGetChainIDFunc) nextHook() func() *big.Int {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6674,139 +3886,40 @@ func (f *NetworkGetClientFunc) nextHook() func() ethereum.Client {
 	return hook
 }
 
-func (f *NetworkGetClientFunc) appendCall(r0 NetworkGetClientFuncCall) {
+func (f *NetworkGetChainIDFunc) appendCall(r0 NetworkGetChainIDFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of NetworkGetClientFuncCall objects describing
-// the invocations of this function.
-func (f *NetworkGetClientFunc) History() []NetworkGetClientFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkGetClientFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkGetClientFuncCall is an object that describes an invocation of
-// method GetClient on an instance of MockNetwork.
-type NetworkGetClientFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 ethereum.Client
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkGetClientFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkGetClientFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkGetCoinbaseAddressFunc describes the behavior when the
-// GetCoinbaseAddress method of the parent MockNetwork instance is invoked.
-type NetworkGetCoinbaseAddressFunc struct {
-	defaultHook func() common.Address
-	hooks       []func() common.Address
-	history     []NetworkGetCoinbaseAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetCoinbaseAddress delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockNetwork) GetCoinbaseAddress() common.Address {
-	r0 := m.GetCoinbaseAddressFunc.nextHook()()
-	m.GetCoinbaseAddressFunc.appendCall(NetworkGetCoinbaseAddressFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the GetCoinbaseAddress
-// method of the parent MockNetwork instance is invoked and the hook queue
-// is empty.
-func (f *NetworkGetCoinbaseAddressFunc) SetDefaultHook(hook func() common.Address) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetCoinbaseAddress method of the parent MockNetwork instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *NetworkGetCoinbaseAddressFunc) PushHook(hook func() common.Address) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkGetCoinbaseAddressFunc) SetDefaultReturn(r0 common.Address) {
-	f.SetDefaultHook(func() common.Address {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetCoinbaseAddressFunc) PushReturn(r0 common.Address) {
-	f.PushHook(func() common.Address {
-		return r0
-	})
-}
-
-func (f *NetworkGetCoinbaseAddressFunc) nextHook() func() common.Address {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkGetCoinbaseAddressFunc) appendCall(r0 NetworkGetCoinbaseAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkGetCoinbaseAddressFuncCall objects
+// History returns a sequence of NetworkGetChainIDFuncCall objects
 // describing the invocations of this function.
-func (f *NetworkGetCoinbaseAddressFunc) History() []NetworkGetCoinbaseAddressFuncCall {
+func (f *NetworkGetChainIDFunc) History() []NetworkGetChainIDFuncCall {
 	f.mutex.Lock()
-	history := make([]NetworkGetCoinbaseAddressFuncCall, len(f.history))
+	history := make([]NetworkGetChainIDFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// NetworkGetCoinbaseAddressFuncCall is an object that describes an
-// invocation of method GetCoinbaseAddress on an instance of MockNetwork.
-type NetworkGetCoinbaseAddressFuncCall struct {
+// NetworkGetChainIDFuncCall is an object that describes an invocation of
+// method GetChainID on an instance of MockNetwork.
+type NetworkGetChainIDFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 common.Address
+	Result0 *big.Int
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c NetworkGetCoinbaseAddressFuncCall) Args() []interface{} {
+func (c NetworkGetChainIDFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c NetworkGetCoinbaseAddressFuncCall) Results() []interface{} {
+func (c NetworkGetChainIDFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
@@ -7430,6 +4543,114 @@ func (c NetworkGetFinalizedHeightFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// NetworkGetHeaderByNumberFunc describes the behavior when the
+// GetHeaderByNumber method of the parent MockNetwork instance is invoked.
+type NetworkGetHeaderByNumberFunc struct {
+	defaultHook func(context.Context, *big.Int) (*types.Header, error)
+	hooks       []func(context.Context, *big.Int) (*types.Header, error)
+	history     []NetworkGetHeaderByNumberFuncCall
+	mutex       sync.Mutex
+}
+
+// GetHeaderByNumber delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetHeaderByNumber(v0 context.Context, v1 *big.Int) (*types.Header, error) {
+	r0, r1 := m.GetHeaderByNumberFunc.nextHook()(v0, v1)
+	m.GetHeaderByNumberFunc.appendCall(NetworkGetHeaderByNumberFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetHeaderByNumber
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkGetHeaderByNumberFunc) SetDefaultHook(hook func(context.Context, *big.Int) (*types.Header, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetHeaderByNumber method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkGetHeaderByNumberFunc) PushHook(hook func(context.Context, *big.Int) (*types.Header, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetHeaderByNumberFunc) SetDefaultReturn(r0 *types.Header, r1 error) {
+	f.SetDefaultHook(func(context.Context, *big.Int) (*types.Header, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetHeaderByNumberFunc) PushReturn(r0 *types.Header, r1 error) {
+	f.PushHook(func(context.Context, *big.Int) (*types.Header, error) {
+		return r0, r1
+	})
+}
+
+func (f *NetworkGetHeaderByNumberFunc) nextHook() func(context.Context, *big.Int) (*types.Header, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetHeaderByNumberFunc) appendCall(r0 NetworkGetHeaderByNumberFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetHeaderByNumberFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkGetHeaderByNumberFunc) History() []NetworkGetHeaderByNumberFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetHeaderByNumberFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetHeaderByNumberFuncCall is an object that describes an
+// invocation of method GetHeaderByNumber on an instance of MockNetwork.
+type NetworkGetHeaderByNumberFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Header
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetHeaderByNumberFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetHeaderByNumberFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // NetworkGetKnownAccountsFunc describes the behavior when the
 // GetKnownAccounts method of the parent MockNetwork instance is invoked.
 type NetworkGetKnownAccountsFunc struct {
@@ -7634,35 +4855,35 @@ func (c NetworkGetPeerCountFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// NetworkGetSnapshotFunc describes the behavior when the GetSnapshot method
-// of the parent MockNetwork instance is invoked.
-type NetworkGetSnapshotFunc struct {
-	defaultHook func() ([]byte, error)
-	hooks       []func() ([]byte, error)
-	history     []NetworkGetSnapshotFuncCall
+// NetworkGetPendingNonceFunc describes the behavior when the
+// GetPendingNonce method of the parent MockNetwork instance is invoked.
+type NetworkGetPendingNonceFunc struct {
+	defaultHook func(context.Context, common.Address) (uint64, error)
+	hooks       []func(context.Context, common.Address) (uint64, error)
+	history     []NetworkGetPendingNonceFuncCall
 	mutex       sync.Mutex
 }
 
-// GetSnapshot delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) GetSnapshot() ([]byte, error) {
-	r0, r1 := m.GetSnapshotFunc.nextHook()()
-	m.GetSnapshotFunc.appendCall(NetworkGetSnapshotFuncCall{r0, r1})
+// GetPendingNonce delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetPendingNonce(v0 context.Context, v1 common.Address) (uint64, error) {
+	r0, r1 := m.GetPendingNonceFunc.nextHook()(v0, v1)
+	m.GetPendingNonceFunc.appendCall(NetworkGetPendingNonceFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the GetSnapshot method
-// of the parent MockNetwork instance is invoked and the hook queue is
-// empty.
-func (f *NetworkGetSnapshotFunc) SetDefaultHook(hook func() ([]byte, error)) {
+// SetDefaultHook sets function that is called when the GetPendingNonce
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkGetPendingNonceFunc) SetDefaultHook(hook func(context.Context, common.Address) (uint64, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSnapshot method of the parent MockNetwork instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkGetSnapshotFunc) PushHook(hook func() ([]byte, error)) {
+// GetPendingNonce method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkGetPendingNonceFunc) PushHook(hook func(context.Context, common.Address) (uint64, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -7670,20 +4891,20 @@ func (f *NetworkGetSnapshotFunc) PushHook(hook func() ([]byte, error)) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkGetSnapshotFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func() ([]byte, error) {
+func (f *NetworkGetPendingNonceFunc) SetDefaultReturn(r0 uint64, r1 error) {
+	f.SetDefaultHook(func(context.Context, common.Address) (uint64, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetSnapshotFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func() ([]byte, error) {
+func (f *NetworkGetPendingNonceFunc) PushReturn(r0 uint64, r1 error) {
+	f.PushHook(func(context.Context, common.Address) (uint64, error) {
 		return r0, r1
 	})
 }
 
-func (f *NetworkGetSnapshotFunc) nextHook() func() ([]byte, error) {
+func (f *NetworkGetPendingNonceFunc) nextHook() func(context.Context, common.Address) (uint64, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -7696,29 +4917,35 @@ func (f *NetworkGetSnapshotFunc) nextHook() func() ([]byte, error) {
 	return hook
 }
 
-func (f *NetworkGetSnapshotFunc) appendCall(r0 NetworkGetSnapshotFuncCall) {
+func (f *NetworkGetPendingNonceFunc) appendCall(r0 NetworkGetPendingNonceFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of NetworkGetSnapshotFuncCall objects
+// History returns a sequence of NetworkGetPendingNonceFuncCall objects
 // describing the invocations of this function.
-func (f *NetworkGetSnapshotFunc) History() []NetworkGetSnapshotFuncCall {
+func (f *NetworkGetPendingNonceFunc) History() []NetworkGetPendingNonceFuncCall {
 	f.mutex.Lock()
-	history := make([]NetworkGetSnapshotFuncCall, len(f.history))
+	history := make([]NetworkGetPendingNonceFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// NetworkGetSnapshotFuncCall is an object that describes an invocation of
-// method GetSnapshot on an instance of MockNetwork.
-type NetworkGetSnapshotFuncCall struct {
+// NetworkGetPendingNonceFuncCall is an object that describes an invocation
+// of method GetPendingNonce on an instance of MockNetwork.
+type NetworkGetPendingNonceFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 []byte
+	Result0 uint64
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -7726,119 +4953,14 @@ type NetworkGetSnapshotFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c NetworkGetSnapshotFuncCall) Args() []interface{} {
-	return []interface{}{}
+func (c NetworkGetPendingNonceFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c NetworkGetSnapshotFuncCall) Results() []interface{} {
+func (c NetworkGetPendingNonceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
-}
-
-// NetworkGetSyncProgressFunc describes the behavior when the
-// GetSyncProgress method of the parent MockNetwork instance is invoked.
-type NetworkGetSyncProgressFunc struct {
-	defaultHook func() (bool, *goethereum.SyncProgress, error)
-	hooks       []func() (bool, *goethereum.SyncProgress, error)
-	history     []NetworkGetSyncProgressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetSyncProgress delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockNetwork) GetSyncProgress() (bool, *goethereum.SyncProgress, error) {
-	r0, r1, r2 := m.GetSyncProgressFunc.nextHook()()
-	m.GetSyncProgressFunc.appendCall(NetworkGetSyncProgressFuncCall{r0, r1, r2})
-	return r0, r1, r2
-}
-
-// SetDefaultHook sets function that is called when the GetSyncProgress
-// method of the parent MockNetwork instance is invoked and the hook queue
-// is empty.
-func (f *NetworkGetSyncProgressFunc) SetDefaultHook(hook func() (bool, *goethereum.SyncProgress, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSyncProgress method of the parent MockNetwork instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *NetworkGetSyncProgressFunc) PushHook(hook func() (bool, *goethereum.SyncProgress, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkGetSyncProgressFunc) SetDefaultReturn(r0 bool, r1 *goethereum.SyncProgress, r2 error) {
-	f.SetDefaultHook(func() (bool, *goethereum.SyncProgress, error) {
-		return r0, r1, r2
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetSyncProgressFunc) PushReturn(r0 bool, r1 *goethereum.SyncProgress, r2 error) {
-	f.PushHook(func() (bool, *goethereum.SyncProgress, error) {
-		return r0, r1, r2
-	})
-}
-
-func (f *NetworkGetSyncProgressFunc) nextHook() func() (bool, *goethereum.SyncProgress, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkGetSyncProgressFunc) appendCall(r0 NetworkGetSyncProgressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkGetSyncProgressFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkGetSyncProgressFunc) History() []NetworkGetSyncProgressFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkGetSyncProgressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkGetSyncProgressFuncCall is an object that describes an invocation
-// of method GetSyncProgress on an instance of MockNetwork.
-type NetworkGetSyncProgressFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 bool
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 *goethereum.SyncProgress
-	// Result2 is the value of the 3rd result returned from this method
-	// invocation.
-	Result2 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkGetSyncProgressFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkGetSyncProgressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1, c.Result2}
 }
 
 // NetworkGetTimeoutContextFunc describes the behavior when the
@@ -7941,6 +5063,118 @@ func (c NetworkGetTimeoutContextFuncCall) Args() []interface{} {
 // invocation.
 func (c NetworkGetTimeoutContextFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
+}
+
+// NetworkGetTransactionByHashFunc describes the behavior when the
+// GetTransactionByHash method of the parent MockNetwork instance is
+// invoked.
+type NetworkGetTransactionByHashFunc struct {
+	defaultHook func(context.Context, common.Hash) (*types.Transaction, bool, error)
+	hooks       []func(context.Context, common.Hash) (*types.Transaction, bool, error)
+	history     []NetworkGetTransactionByHashFuncCall
+	mutex       sync.Mutex
+}
+
+// GetTransactionByHash delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetTransactionByHash(v0 context.Context, v1 common.Hash) (*types.Transaction, bool, error) {
+	r0, r1, r2 := m.GetTransactionByHashFunc.nextHook()(v0, v1)
+	m.GetTransactionByHashFunc.appendCall(NetworkGetTransactionByHashFuncCall{v0, v1, r0, r1, r2})
+	return r0, r1, r2
+}
+
+// SetDefaultHook sets function that is called when the GetTransactionByHash
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkGetTransactionByHashFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Transaction, bool, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetTransactionByHash method of the parent MockNetwork instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *NetworkGetTransactionByHashFunc) PushHook(hook func(context.Context, common.Hash) (*types.Transaction, bool, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetTransactionByHashFunc) SetDefaultReturn(r0 *types.Transaction, r1 bool, r2 error) {
+	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Transaction, bool, error) {
+		return r0, r1, r2
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetTransactionByHashFunc) PushReturn(r0 *types.Transaction, r1 bool, r2 error) {
+	f.PushHook(func(context.Context, common.Hash) (*types.Transaction, bool, error) {
+		return r0, r1, r2
+	})
+}
+
+func (f *NetworkGetTransactionByHashFunc) nextHook() func(context.Context, common.Hash) (*types.Transaction, bool, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetTransactionByHashFunc) appendCall(r0 NetworkGetTransactionByHashFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetTransactionByHashFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkGetTransactionByHashFunc) History() []NetworkGetTransactionByHashFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetTransactionByHashFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetTransactionByHashFuncCall is an object that describes an
+// invocation of method GetTransactionByHash on an instance of MockNetwork.
+type NetworkGetTransactionByHashFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Hash
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 bool
+	// Result2 is the value of the 3rd result returned from this method
+	// invocation.
+	Result2 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetTransactionByHashFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetTransactionByHashFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1, c.Result2}
 }
 
 // NetworkGetTransactionOptsFunc describes the behavior when the
@@ -8051,239 +5285,36 @@ func (c NetworkGetTransactionOptsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// NetworkGetTxFeePercentageToIncreaseFunc describes the behavior when the
-// GetTxFeePercentageToIncrease method of the parent MockNetwork instance is
+// NetworkGetTransactionReceiptFunc describes the behavior when the
+// GetTransactionReceipt method of the parent MockNetwork instance is
 // invoked.
-type NetworkGetTxFeePercentageToIncreaseFunc struct {
-	defaultHook func() int
-	hooks       []func() int
-	history     []NetworkGetTxFeePercentageToIncreaseFuncCall
+type NetworkGetTransactionReceiptFunc struct {
+	defaultHook func(context.Context, common.Hash) (*types.Receipt, error)
+	hooks       []func(context.Context, common.Hash) (*types.Receipt, error)
+	history     []NetworkGetTransactionReceiptFuncCall
 	mutex       sync.Mutex
 }
 
-// GetTxFeePercentageToIncrease delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockNetwork) GetTxFeePercentageToIncrease() int {
-	r0 := m.GetTxFeePercentageToIncreaseFunc.nextHook()()
-	m.GetTxFeePercentageToIncreaseFunc.appendCall(NetworkGetTxFeePercentageToIncreaseFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetTxFeePercentageToIncrease method of the parent MockNetwork instance is
-// invoked and the hook queue is empty.
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) SetDefaultHook(hook func() int) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetTxFeePercentageToIncrease method of the parent MockNetwork instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) PushHook(hook func() int) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) SetDefaultReturn(r0 int) {
-	f.SetDefaultHook(func() int {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) PushReturn(r0 int) {
-	f.PushHook(func() int {
-		return r0
-	})
-}
-
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) nextHook() func() int {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) appendCall(r0 NetworkGetTxFeePercentageToIncreaseFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkGetTxFeePercentageToIncreaseFuncCall
-// objects describing the invocations of this function.
-func (f *NetworkGetTxFeePercentageToIncreaseFunc) History() []NetworkGetTxFeePercentageToIncreaseFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkGetTxFeePercentageToIncreaseFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkGetTxFeePercentageToIncreaseFuncCall is an object that describes
-// an invocation of method GetTxFeePercentageToIncrease on an instance of
-// MockNetwork.
-type NetworkGetTxFeePercentageToIncreaseFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 int
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkGetTxFeePercentageToIncreaseFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkGetTxFeePercentageToIncreaseFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkGetTxMaxGasFeeAllowedInGweiFunc describes the behavior when the
-// GetTxMaxGasFeeAllowedInGwei method of the parent MockNetwork instance is
-// invoked.
-type NetworkGetTxMaxGasFeeAllowedInGweiFunc struct {
-	defaultHook func() uint64
-	hooks       []func() uint64
-	history     []NetworkGetTxMaxGasFeeAllowedInGweiFuncCall
-	mutex       sync.Mutex
-}
-
-// GetTxMaxGasFeeAllowedInGwei delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockNetwork) GetTxMaxGasFeeAllowedInGwei() uint64 {
-	r0 := m.GetTxMaxGasFeeAllowedInGweiFunc.nextHook()()
-	m.GetTxMaxGasFeeAllowedInGweiFunc.appendCall(NetworkGetTxMaxGasFeeAllowedInGweiFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetTxMaxGasFeeAllowedInGwei method of the parent MockNetwork instance is
-// invoked and the hook queue is empty.
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) SetDefaultHook(hook func() uint64) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetTxMaxGasFeeAllowedInGwei method of the parent MockNetwork instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) PushHook(hook func() uint64) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) SetDefaultReturn(r0 uint64) {
-	f.SetDefaultHook(func() uint64 {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) PushReturn(r0 uint64) {
-	f.PushHook(func() uint64 {
-		return r0
-	})
-}
-
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) nextHook() func() uint64 {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) appendCall(r0 NetworkGetTxMaxGasFeeAllowedInGweiFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkGetTxMaxGasFeeAllowedInGweiFuncCall
-// objects describing the invocations of this function.
-func (f *NetworkGetTxMaxGasFeeAllowedInGweiFunc) History() []NetworkGetTxMaxGasFeeAllowedInGweiFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkGetTxMaxGasFeeAllowedInGweiFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkGetTxMaxGasFeeAllowedInGweiFuncCall is an object that describes an
-// invocation of method GetTxMaxGasFeeAllowedInGwei on an instance of
-// MockNetwork.
-type NetworkGetTxMaxGasFeeAllowedInGweiFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint64
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkGetTxMaxGasFeeAllowedInGweiFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkGetTxMaxGasFeeAllowedInGweiFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkGetValidatorsFunc describes the behavior when the GetValidators
-// method of the parent MockNetwork instance is invoked.
-type NetworkGetValidatorsFunc struct {
-	defaultHook func(context.Context) ([]common.Address, error)
-	hooks       []func(context.Context) ([]common.Address, error)
-	history     []NetworkGetValidatorsFuncCall
-	mutex       sync.Mutex
-}
-
-// GetValidators delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) GetValidators(v0 context.Context) ([]common.Address, error) {
-	r0, r1 := m.GetValidatorsFunc.nextHook()(v0)
-	m.GetValidatorsFunc.appendCall(NetworkGetValidatorsFuncCall{v0, r0, r1})
+// GetTransactionReceipt delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetTransactionReceipt(v0 context.Context, v1 common.Hash) (*types.Receipt, error) {
+	r0, r1 := m.GetTransactionReceiptFunc.nextHook()(v0, v1)
+	m.GetTransactionReceiptFunc.appendCall(NetworkGetTransactionReceiptFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the GetValidators method
-// of the parent MockNetwork instance is invoked and the hook queue is
-// empty.
-func (f *NetworkGetValidatorsFunc) SetDefaultHook(hook func(context.Context) ([]common.Address, error)) {
+// SetDefaultHook sets function that is called when the
+// GetTransactionReceipt method of the parent MockNetwork instance is
+// invoked and the hook queue is empty.
+func (f *NetworkGetTransactionReceiptFunc) SetDefaultHook(hook func(context.Context, common.Hash) (*types.Receipt, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetValidators method of the parent MockNetwork instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkGetValidatorsFunc) PushHook(hook func(context.Context) ([]common.Address, error)) {
+// GetTransactionReceipt method of the parent MockNetwork instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *NetworkGetTransactionReceiptFunc) PushHook(hook func(context.Context, common.Hash) (*types.Receipt, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8291,20 +5322,20 @@ func (f *NetworkGetValidatorsFunc) PushHook(hook func(context.Context) ([]common
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkGetValidatorsFunc) SetDefaultReturn(r0 []common.Address, r1 error) {
-	f.SetDefaultHook(func(context.Context) ([]common.Address, error) {
+func (f *NetworkGetTransactionReceiptFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
+	f.SetDefaultHook(func(context.Context, common.Hash) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkGetValidatorsFunc) PushReturn(r0 []common.Address, r1 error) {
-	f.PushHook(func(context.Context) ([]common.Address, error) {
+func (f *NetworkGetTransactionReceiptFunc) PushReturn(r0 *types.Receipt, r1 error) {
+	f.PushHook(func(context.Context, common.Hash) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
-func (f *NetworkGetValidatorsFunc) nextHook() func(context.Context) ([]common.Address, error) {
+func (f *NetworkGetTransactionReceiptFunc) nextHook() func(context.Context, common.Hash) (*types.Receipt, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -8317,32 +5348,35 @@ func (f *NetworkGetValidatorsFunc) nextHook() func(context.Context) ([]common.Ad
 	return hook
 }
 
-func (f *NetworkGetValidatorsFunc) appendCall(r0 NetworkGetValidatorsFuncCall) {
+func (f *NetworkGetTransactionReceiptFunc) appendCall(r0 NetworkGetTransactionReceiptFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of NetworkGetValidatorsFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkGetValidatorsFunc) History() []NetworkGetValidatorsFuncCall {
+// History returns a sequence of NetworkGetTransactionReceiptFuncCall
+// objects describing the invocations of this function.
+func (f *NetworkGetTransactionReceiptFunc) History() []NetworkGetTransactionReceiptFuncCall {
 	f.mutex.Lock()
-	history := make([]NetworkGetValidatorsFuncCall, len(f.history))
+	history := make([]NetworkGetTransactionReceiptFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// NetworkGetValidatorsFuncCall is an object that describes an invocation of
-// method GetValidators on an instance of MockNetwork.
-type NetworkGetValidatorsFuncCall struct {
+// NetworkGetTransactionReceiptFuncCall is an object that describes an
+// invocation of method GetTransactionReceipt on an instance of MockNetwork.
+type NetworkGetTransactionReceiptFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Hash
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 []common.Address
+	Result0 *types.Receipt
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -8350,14 +5384,314 @@ type NetworkGetValidatorsFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c NetworkGetValidatorsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
+func (c NetworkGetTransactionReceiptFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c NetworkGetValidatorsFuncCall) Results() []interface{} {
+func (c NetworkGetTransactionReceiptFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
+}
+
+// NetworkGetTxMaxGasFeeAllowedFunc describes the behavior when the
+// GetTxMaxGasFeeAllowed method of the parent MockNetwork instance is
+// invoked.
+type NetworkGetTxMaxGasFeeAllowedFunc struct {
+	defaultHook func() *big.Int
+	hooks       []func() *big.Int
+	history     []NetworkGetTxMaxGasFeeAllowedFuncCall
+	mutex       sync.Mutex
+}
+
+// GetTxMaxGasFeeAllowed delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetTxMaxGasFeeAllowed() *big.Int {
+	r0 := m.GetTxMaxGasFeeAllowedFunc.nextHook()()
+	m.GetTxMaxGasFeeAllowedFunc.appendCall(NetworkGetTxMaxGasFeeAllowedFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the
+// GetTxMaxGasFeeAllowed method of the parent MockNetwork instance is
+// invoked and the hook queue is empty.
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) SetDefaultHook(hook func() *big.Int) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetTxMaxGasFeeAllowed method of the parent MockNetwork instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) PushHook(hook func() *big.Int) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) SetDefaultReturn(r0 *big.Int) {
+	f.SetDefaultHook(func() *big.Int {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) PushReturn(r0 *big.Int) {
+	f.PushHook(func() *big.Int {
+		return r0
+	})
+}
+
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) nextHook() func() *big.Int {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) appendCall(r0 NetworkGetTxMaxGasFeeAllowedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetTxMaxGasFeeAllowedFuncCall
+// objects describing the invocations of this function.
+func (f *NetworkGetTxMaxGasFeeAllowedFunc) History() []NetworkGetTxMaxGasFeeAllowedFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetTxMaxGasFeeAllowedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetTxMaxGasFeeAllowedFuncCall is an object that describes an
+// invocation of method GetTxMaxGasFeeAllowed on an instance of MockNetwork.
+type NetworkGetTxMaxGasFeeAllowedFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetTxMaxGasFeeAllowedFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetTxMaxGasFeeAllowedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// NetworkGetTxMaxStaleBlocksFunc describes the behavior when the
+// GetTxMaxStaleBlocks method of the parent MockNetwork instance is invoked.
+type NetworkGetTxMaxStaleBlocksFunc struct {
+	defaultHook func() uint64
+	hooks       []func() uint64
+	history     []NetworkGetTxMaxStaleBlocksFuncCall
+	mutex       sync.Mutex
+}
+
+// GetTxMaxStaleBlocks delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetTxMaxStaleBlocks() uint64 {
+	r0 := m.GetTxMaxStaleBlocksFunc.nextHook()()
+	m.GetTxMaxStaleBlocksFunc.appendCall(NetworkGetTxMaxStaleBlocksFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetTxMaxStaleBlocks
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkGetTxMaxStaleBlocksFunc) SetDefaultHook(hook func() uint64) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetTxMaxStaleBlocks method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkGetTxMaxStaleBlocksFunc) PushHook(hook func() uint64) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetTxMaxStaleBlocksFunc) SetDefaultReturn(r0 uint64) {
+	f.SetDefaultHook(func() uint64 {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetTxMaxStaleBlocksFunc) PushReturn(r0 uint64) {
+	f.PushHook(func() uint64 {
+		return r0
+	})
+}
+
+func (f *NetworkGetTxMaxStaleBlocksFunc) nextHook() func() uint64 {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetTxMaxStaleBlocksFunc) appendCall(r0 NetworkGetTxMaxStaleBlocksFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetTxMaxStaleBlocksFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkGetTxMaxStaleBlocksFunc) History() []NetworkGetTxMaxStaleBlocksFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetTxMaxStaleBlocksFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetTxMaxStaleBlocksFuncCall is an object that describes an
+// invocation of method GetTxMaxStaleBlocks on an instance of MockNetwork.
+type NetworkGetTxMaxStaleBlocksFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 uint64
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetTxMaxStaleBlocksFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetTxMaxStaleBlocksFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// NetworkGetTxNotFoundMaxBlocksFunc describes the behavior when the
+// GetTxNotFoundMaxBlocks method of the parent MockNetwork instance is
+// invoked.
+type NetworkGetTxNotFoundMaxBlocksFunc struct {
+	defaultHook func() uint64
+	hooks       []func() uint64
+	history     []NetworkGetTxNotFoundMaxBlocksFuncCall
+	mutex       sync.Mutex
+}
+
+// GetTxNotFoundMaxBlocks delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockNetwork) GetTxNotFoundMaxBlocks() uint64 {
+	r0 := m.GetTxNotFoundMaxBlocksFunc.nextHook()()
+	m.GetTxNotFoundMaxBlocksFunc.appendCall(NetworkGetTxNotFoundMaxBlocksFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the
+// GetTxNotFoundMaxBlocks method of the parent MockNetwork instance is
+// invoked and the hook queue is empty.
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) SetDefaultHook(hook func() uint64) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetTxNotFoundMaxBlocks method of the parent MockNetwork instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) PushHook(hook func() uint64) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) SetDefaultReturn(r0 uint64) {
+	f.SetDefaultHook(func() uint64 {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) PushReturn(r0 uint64) {
+	f.PushHook(func() uint64 {
+		return r0
+	})
+}
+
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) nextHook() func() uint64 {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) appendCall(r0 NetworkGetTxNotFoundMaxBlocksFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkGetTxNotFoundMaxBlocksFuncCall
+// objects describing the invocations of this function.
+func (f *NetworkGetTxNotFoundMaxBlocksFunc) History() []NetworkGetTxNotFoundMaxBlocksFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkGetTxNotFoundMaxBlocksFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkGetTxNotFoundMaxBlocksFuncCall is an object that describes an
+// invocation of method GetTxNotFoundMaxBlocks on an instance of
+// MockNetwork.
+type NetworkGetTxNotFoundMaxBlocksFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 uint64
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkGetTxNotFoundMaxBlocksFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkGetTxNotFoundMaxBlocksFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
 }
 
 // NetworkIsAccessibleFunc describes the behavior when the IsAccessible
@@ -8459,428 +5793,35 @@ func (c NetworkIsAccessibleFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// NetworkRetryCountFunc describes the behavior when the RetryCount method
-// of the parent MockNetwork instance is invoked.
-type NetworkRetryCountFunc struct {
-	defaultHook func() int
-	hooks       []func() int
-	history     []NetworkRetryCountFuncCall
+// NetworkRetryTransactionFunc describes the behavior when the
+// RetryTransaction method of the parent MockNetwork instance is invoked.
+type NetworkRetryTransactionFunc struct {
+	defaultHook func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error)
+	hooks       []func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error)
+	history     []NetworkRetryTransactionFuncCall
 	mutex       sync.Mutex
 }
 
-// RetryCount delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) RetryCount() int {
-	r0 := m.RetryCountFunc.nextHook()()
-	m.RetryCountFunc.appendCall(NetworkRetryCountFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the RetryCount method of
-// the parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkRetryCountFunc) SetDefaultHook(hook func() int) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// RetryCount method of the parent MockNetwork instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkRetryCountFunc) PushHook(hook func() int) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkRetryCountFunc) SetDefaultReturn(r0 int) {
-	f.SetDefaultHook(func() int {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkRetryCountFunc) PushReturn(r0 int) {
-	f.PushHook(func() int {
-		return r0
-	})
-}
-
-func (f *NetworkRetryCountFunc) nextHook() func() int {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkRetryCountFunc) appendCall(r0 NetworkRetryCountFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkRetryCountFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkRetryCountFunc) History() []NetworkRetryCountFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkRetryCountFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkRetryCountFuncCall is an object that describes an invocation of
-// method RetryCount on an instance of MockNetwork.
-type NetworkRetryCountFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 int
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkRetryCountFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkRetryCountFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkRetryDelayFunc describes the behavior when the RetryDelay method
-// of the parent MockNetwork instance is invoked.
-type NetworkRetryDelayFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []NetworkRetryDelayFuncCall
-	mutex       sync.Mutex
-}
-
-// RetryDelay delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) RetryDelay() time.Duration {
-	r0 := m.RetryDelayFunc.nextHook()()
-	m.RetryDelayFunc.appendCall(NetworkRetryDelayFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the RetryDelay method of
-// the parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkRetryDelayFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// RetryDelay method of the parent MockNetwork instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkRetryDelayFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkRetryDelayFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkRetryDelayFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *NetworkRetryDelayFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkRetryDelayFunc) appendCall(r0 NetworkRetryDelayFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkRetryDelayFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkRetryDelayFunc) History() []NetworkRetryDelayFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkRetryDelayFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkRetryDelayFuncCall is an object that describes an invocation of
-// method RetryDelay on an instance of MockNetwork.
-type NetworkRetryDelayFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkRetryDelayFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkRetryDelayFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkSetFinalityDelayFunc describes the behavior when the
-// SetFinalityDelay method of the parent MockNetwork instance is invoked.
-type NetworkSetFinalityDelayFunc struct {
-	defaultHook func(uint64)
-	hooks       []func(uint64)
-	history     []NetworkSetFinalityDelayFuncCall
-	mutex       sync.Mutex
-}
-
-// SetFinalityDelay delegates to the next hook function in the queue and
+// RetryTransaction delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockNetwork) SetFinalityDelay(v0 uint64) {
-	m.SetFinalityDelayFunc.nextHook()(v0)
-	m.SetFinalityDelayFunc.appendCall(NetworkSetFinalityDelayFuncCall{v0})
-	return
-}
-
-// SetDefaultHook sets function that is called when the SetFinalityDelay
-// method of the parent MockNetwork instance is invoked and the hook queue
-// is empty.
-func (f *NetworkSetFinalityDelayFunc) SetDefaultHook(hook func(uint64)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SetFinalityDelay method of the parent MockNetwork instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *NetworkSetFinalityDelayFunc) PushHook(hook func(uint64)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkSetFinalityDelayFunc) SetDefaultReturn() {
-	f.SetDefaultHook(func(uint64) {
-		return
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkSetFinalityDelayFunc) PushReturn() {
-	f.PushHook(func(uint64) {
-		return
-	})
-}
-
-func (f *NetworkSetFinalityDelayFunc) nextHook() func(uint64) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkSetFinalityDelayFunc) appendCall(r0 NetworkSetFinalityDelayFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkSetFinalityDelayFuncCall objects
-// describing the invocations of this function.
-func (f *NetworkSetFinalityDelayFunc) History() []NetworkSetFinalityDelayFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkSetFinalityDelayFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkSetFinalityDelayFuncCall is an object that describes an invocation
-// of method SetFinalityDelay on an instance of MockNetwork.
-type NetworkSetFinalityDelayFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 uint64
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkSetFinalityDelayFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkSetFinalityDelayFuncCall) Results() []interface{} {
-	return []interface{}{}
-}
-
-// NetworkTimeoutFunc describes the behavior when the Timeout method of the
-// parent MockNetwork instance is invoked.
-type NetworkTimeoutFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []NetworkTimeoutFuncCall
-	mutex       sync.Mutex
-}
-
-// Timeout delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockNetwork) Timeout() time.Duration {
-	r0 := m.TimeoutFunc.nextHook()()
-	m.TimeoutFunc.appendCall(NetworkTimeoutFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the Timeout method of
-// the parent MockNetwork instance is invoked and the hook queue is empty.
-func (f *NetworkTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// Timeout method of the parent MockNetwork instance invokes the hook at the
-// front of the queue and discards it. After the queue is empty, the default
-// hook function is invoked for any future action.
-func (f *NetworkTimeoutFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkTimeoutFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *NetworkTimeoutFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkTimeoutFunc) appendCall(r0 NetworkTimeoutFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkTimeoutFuncCall objects describing
-// the invocations of this function.
-func (f *NetworkTimeoutFunc) History() []NetworkTimeoutFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkTimeoutFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkTimeoutFuncCall is an object that describes an invocation of
-// method Timeout on an instance of MockNetwork.
-type NetworkTimeoutFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkTimeoutFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkTimeoutFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkTransferEtherFunc describes the behavior when the TransferEther
-// method of the parent MockNetwork instance is invoked.
-type NetworkTransferEtherFunc struct {
-	defaultHook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)
-	hooks       []func(common.Address, common.Address, *big.Int) (*types.Transaction, error)
-	history     []NetworkTransferEtherFuncCall
-	mutex       sync.Mutex
-}
-
-// TransferEther delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) TransferEther(v0 common.Address, v1 common.Address, v2 *big.Int) (*types.Transaction, error) {
-	r0, r1 := m.TransferEtherFunc.nextHook()(v0, v1, v2)
-	m.TransferEtherFunc.appendCall(NetworkTransferEtherFuncCall{v0, v1, v2, r0, r1})
+func (m *MockNetwork) RetryTransaction(v0 context.Context, v1 *types.Transaction, v2 *big.Int, v3 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.RetryTransactionFunc.nextHook()(v0, v1, v2, v3)
+	m.RetryTransactionFunc.appendCall(NetworkRetryTransactionFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the TransferEther method
-// of the parent MockNetwork instance is invoked and the hook queue is
-// empty.
-func (f *NetworkTransferEtherFunc) SetDefaultHook(hook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)) {
+// SetDefaultHook sets function that is called when the RetryTransaction
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkRetryTransactionFunc) SetDefaultHook(hook func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// TransferEther method of the parent MockNetwork instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkTransferEtherFunc) PushHook(hook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)) {
+// RetryTransaction method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkRetryTransactionFunc) PushHook(hook func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8888,20 +5829,20 @@ func (f *NetworkTransferEtherFunc) PushHook(hook func(common.Address, common.Add
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkTransferEtherFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+func (f *NetworkRetryTransactionFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkTransferEtherFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+func (f *NetworkRetryTransactionFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *NetworkTransferEtherFunc) nextHook() func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+func (f *NetworkRetryTransactionFunc) nextHook() func(context.Context, *types.Transaction, *big.Int, *big.Int) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -8914,35 +5855,38 @@ func (f *NetworkTransferEtherFunc) nextHook() func(common.Address, common.Addres
 	return hook
 }
 
-func (f *NetworkTransferEtherFunc) appendCall(r0 NetworkTransferEtherFuncCall) {
+func (f *NetworkRetryTransactionFunc) appendCall(r0 NetworkRetryTransactionFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of NetworkTransferEtherFuncCall objects
+// History returns a sequence of NetworkRetryTransactionFuncCall objects
 // describing the invocations of this function.
-func (f *NetworkTransferEtherFunc) History() []NetworkTransferEtherFuncCall {
+func (f *NetworkRetryTransactionFunc) History() []NetworkRetryTransactionFuncCall {
 	f.mutex.Lock()
-	history := make([]NetworkTransferEtherFuncCall, len(f.history))
+	history := make([]NetworkRetryTransactionFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// NetworkTransferEtherFuncCall is an object that describes an invocation of
-// method TransferEther on an instance of MockNetwork.
-type NetworkTransferEtherFuncCall struct {
+// NetworkRetryTransactionFuncCall is an object that describes an invocation
+// of method RetryTransaction on an instance of MockNetwork.
+type NetworkRetryTransactionFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 common.Address
+	Arg0 context.Context
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 common.Address
+	Arg1 *types.Transaction
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 *big.Int
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -8953,45 +5897,45 @@ type NetworkTransferEtherFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c NetworkTransferEtherFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+func (c NetworkRetryTransactionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c NetworkTransferEtherFuncCall) Results() []interface{} {
+func (c NetworkRetryTransactionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// NetworkUnlockAccountFunc describes the behavior when the UnlockAccount
-// method of the parent MockNetwork instance is invoked.
-type NetworkUnlockAccountFunc struct {
-	defaultHook func(accounts.Account) error
-	hooks       []func(accounts.Account) error
-	history     []NetworkUnlockAccountFuncCall
+// NetworkSendTransactionFunc describes the behavior when the
+// SendTransaction method of the parent MockNetwork instance is invoked.
+type NetworkSendTransactionFunc struct {
+	defaultHook func(context.Context, *types.Transaction) error
+	hooks       []func(context.Context, *types.Transaction) error
+	history     []NetworkSendTransactionFuncCall
 	mutex       sync.Mutex
 }
 
-// UnlockAccount delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockNetwork) UnlockAccount(v0 accounts.Account) error {
-	r0 := m.UnlockAccountFunc.nextHook()(v0)
-	m.UnlockAccountFunc.appendCall(NetworkUnlockAccountFuncCall{v0, r0})
+// SendTransaction delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) SendTransaction(v0 context.Context, v1 *types.Transaction) error {
+	r0 := m.SendTransactionFunc.nextHook()(v0, v1)
+	m.SendTransactionFunc.appendCall(NetworkSendTransactionFuncCall{v0, v1, r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the UnlockAccount method
-// of the parent MockNetwork instance is invoked and the hook queue is
-// empty.
-func (f *NetworkUnlockAccountFunc) SetDefaultHook(hook func(accounts.Account) error) {
+// SetDefaultHook sets function that is called when the SendTransaction
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkSendTransactionFunc) SetDefaultHook(hook func(context.Context, *types.Transaction) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// UnlockAccount method of the parent MockNetwork instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *NetworkUnlockAccountFunc) PushHook(hook func(accounts.Account) error) {
+// SendTransaction method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkSendTransactionFunc) PushHook(hook func(context.Context, *types.Transaction) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8999,20 +5943,20 @@ func (f *NetworkUnlockAccountFunc) PushHook(hook func(accounts.Account) error) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *NetworkUnlockAccountFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(accounts.Account) error {
+func (f *NetworkSendTransactionFunc) SetDefaultReturn(r0 error) {
+	f.SetDefaultHook(func(context.Context, *types.Transaction) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkUnlockAccountFunc) PushReturn(r0 error) {
-	f.PushHook(func(accounts.Account) error {
+func (f *NetworkSendTransactionFunc) PushReturn(r0 error) {
+	f.PushHook(func(context.Context, *types.Transaction) error {
 		return r0
 	})
 }
 
-func (f *NetworkUnlockAccountFunc) nextHook() func(accounts.Account) error {
+func (f *NetworkSendTransactionFunc) nextHook() func(context.Context, *types.Transaction) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -9025,137 +5969,32 @@ func (f *NetworkUnlockAccountFunc) nextHook() func(accounts.Account) error {
 	return hook
 }
 
-func (f *NetworkUnlockAccountFunc) appendCall(r0 NetworkUnlockAccountFuncCall) {
+func (f *NetworkSendTransactionFunc) appendCall(r0 NetworkSendTransactionFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of NetworkUnlockAccountFuncCall objects
+// History returns a sequence of NetworkSendTransactionFuncCall objects
 // describing the invocations of this function.
-func (f *NetworkUnlockAccountFunc) History() []NetworkUnlockAccountFuncCall {
+func (f *NetworkSendTransactionFunc) History() []NetworkSendTransactionFuncCall {
 	f.mutex.Lock()
-	history := make([]NetworkUnlockAccountFuncCall, len(f.history))
+	history := make([]NetworkSendTransactionFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// NetworkUnlockAccountFuncCall is an object that describes an invocation of
-// method UnlockAccount on an instance of MockNetwork.
-type NetworkUnlockAccountFuncCall struct {
+// NetworkSendTransactionFuncCall is an object that describes an invocation
+// of method SendTransaction on an instance of MockNetwork.
+type NetworkSendTransactionFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 accounts.Account
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c NetworkUnlockAccountFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c NetworkUnlockAccountFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// NetworkUnlockAccountWithPasscodeFunc describes the behavior when the
-// UnlockAccountWithPasscode method of the parent MockNetwork instance is
-// invoked.
-type NetworkUnlockAccountWithPasscodeFunc struct {
-	defaultHook func(accounts.Account, string) error
-	hooks       []func(accounts.Account, string) error
-	history     []NetworkUnlockAccountWithPasscodeFuncCall
-	mutex       sync.Mutex
-}
-
-// UnlockAccountWithPasscode delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockNetwork) UnlockAccountWithPasscode(v0 accounts.Account, v1 string) error {
-	r0 := m.UnlockAccountWithPasscodeFunc.nextHook()(v0, v1)
-	m.UnlockAccountWithPasscodeFunc.appendCall(NetworkUnlockAccountWithPasscodeFuncCall{v0, v1, r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// UnlockAccountWithPasscode method of the parent MockNetwork instance is
-// invoked and the hook queue is empty.
-func (f *NetworkUnlockAccountWithPasscodeFunc) SetDefaultHook(hook func(accounts.Account, string) error) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// UnlockAccountWithPasscode method of the parent MockNetwork instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *NetworkUnlockAccountWithPasscodeFunc) PushHook(hook func(accounts.Account, string) error) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *NetworkUnlockAccountWithPasscodeFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(accounts.Account, string) error {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *NetworkUnlockAccountWithPasscodeFunc) PushReturn(r0 error) {
-	f.PushHook(func(accounts.Account, string) error {
-		return r0
-	})
-}
-
-func (f *NetworkUnlockAccountWithPasscodeFunc) nextHook() func(accounts.Account, string) error {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *NetworkUnlockAccountWithPasscodeFunc) appendCall(r0 NetworkUnlockAccountWithPasscodeFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of NetworkUnlockAccountWithPasscodeFuncCall
-// objects describing the invocations of this function.
-func (f *NetworkUnlockAccountWithPasscodeFunc) History() []NetworkUnlockAccountWithPasscodeFuncCall {
-	f.mutex.Lock()
-	history := make([]NetworkUnlockAccountWithPasscodeFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// NetworkUnlockAccountWithPasscodeFuncCall is an object that describes an
-// invocation of method UnlockAccountWithPasscode on an instance of
-// MockNetwork.
-type NetworkUnlockAccountWithPasscodeFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 accounts.Account
+	Arg0 context.Context
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 string
+	Arg1 *types.Transaction
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error
@@ -9163,12 +6002,120 @@ type NetworkUnlockAccountWithPasscodeFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c NetworkUnlockAccountWithPasscodeFuncCall) Args() []interface{} {
+func (c NetworkSendTransactionFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c NetworkUnlockAccountWithPasscodeFuncCall) Results() []interface{} {
+func (c NetworkSendTransactionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
+}
+
+// NetworkSignTransactionFunc describes the behavior when the
+// SignTransaction method of the parent MockNetwork instance is invoked.
+type NetworkSignTransactionFunc struct {
+	defaultHook func(types.TxData, common.Address) (*types.Transaction, error)
+	hooks       []func(types.TxData, common.Address) (*types.Transaction, error)
+	history     []NetworkSignTransactionFuncCall
+	mutex       sync.Mutex
+}
+
+// SignTransaction delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockNetwork) SignTransaction(v0 types.TxData, v1 common.Address) (*types.Transaction, error) {
+	r0, r1 := m.SignTransactionFunc.nextHook()(v0, v1)
+	m.SignTransactionFunc.appendCall(NetworkSignTransactionFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the SignTransaction
+// method of the parent MockNetwork instance is invoked and the hook queue
+// is empty.
+func (f *NetworkSignTransactionFunc) SetDefaultHook(hook func(types.TxData, common.Address) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// SignTransaction method of the parent MockNetwork instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *NetworkSignTransactionFunc) PushHook(hook func(types.TxData, common.Address) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *NetworkSignTransactionFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(types.TxData, common.Address) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *NetworkSignTransactionFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(types.TxData, common.Address) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *NetworkSignTransactionFunc) nextHook() func(types.TxData, common.Address) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *NetworkSignTransactionFunc) appendCall(r0 NetworkSignTransactionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of NetworkSignTransactionFuncCall objects
+// describing the invocations of this function.
+func (f *NetworkSignTransactionFunc) History() []NetworkSignTransactionFuncCall {
+	f.mutex.Lock()
+	history := make([]NetworkSignTransactionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// NetworkSignTransactionFuncCall is an object that describes an invocation
+// of method SignTransaction on an instance of MockNetwork.
+type NetworkSignTransactionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.TxData
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c NetworkSignTransactionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c NetworkSignTransactionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }

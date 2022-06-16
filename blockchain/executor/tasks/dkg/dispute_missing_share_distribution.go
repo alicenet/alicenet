@@ -3,12 +3,12 @@ package dkg
 import (
 	"errors"
 	"fmt"
+
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,14 +31,14 @@ func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMi
 }
 
 // Prepare prepares for work to be done in the DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Prepare() *executorInterfaces.TaskErr {
+func (t *DisputeMissingShareDistributionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Tracef("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Trace("initiate execution")
 
@@ -48,14 +48,14 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 		return err
 	})
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	ctx := t.GetCtx()
 	eth := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	// accuse missing validators
@@ -65,12 +65,12 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 
 		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 		}
 
 		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 		if err != nil {
-			return nil, executorInterfaces.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
 		}
 		txns = append(txns, txn)
 	} else {
@@ -81,7 +81,7 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingShareDistributionTask) ShouldExecute() *executorInterfaces.TaskErr {
+func (t *DisputeMissingShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Trace("should execute task")
 
@@ -91,20 +91,20 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute() *executorInterface
 		return err
 	})
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.ShareDistribution {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
+		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
 	}
 
 	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		return executorInterfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
 	}
 
 	return nil
@@ -121,7 +121,7 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(dkgState 
 		return nil, errors.New(fmt.Sprintf(constants.FailedGettingCallOpts, err))
 	}
 
-	validators, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
 	}

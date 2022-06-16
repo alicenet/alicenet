@@ -9,10 +9,9 @@ import (
 
 	exConstants "github.com/MadBase/MadNet/blockchain/executor/constants"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	executorInterfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
-	dkgUtils "github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/constants"
@@ -37,7 +36,7 @@ func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.
 }
 
 // Prepare prepares for work to be done in the GPKjSubmissionTask
-func (t *GPKjSubmissionTask) Prepare() *executorInterfaces.TaskErr {
+func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Info("GPKSubmissionTask Prepare()...")
 
@@ -67,7 +66,7 @@ func (t *GPKjSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 				logger.WithFields(logrus.Fields{
 					"t.State.Index": dkgState.Index,
 				}).Errorf("Could not generate group keys: %v", err)
-				return dkgUtils.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
+				return utils.LogReturnErrorf(logger, "Could not generate group keys: %v", err)
 			}
 
 			dkgState.GroupPrivateKey = groupPrivateKey
@@ -92,14 +91,14 @@ func (t *GPKjSubmissionTask) Prepare() *executorInterfaces.TaskErr {
 	})
 
 	if err != nil {
-		return dkgUtils.LogReturnErrorf(logger, "GPKjSubmissionTask.Prepare(): error during the preparation: %v", err)
+		return utils.LogReturnErrorf(logger, "GPKjSubmissionTask.Prepare(): error during the preparation: %v", err)
 	}
 
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *executorInterfaces.TaskErr) {
+func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 
 	dkgState := &state.DkgState{}
@@ -108,7 +107,7 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *executorInterface
 		return err
 	})
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "GPKjSubmissionTask.Execute(): error loading dkgState: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "GPKjSubmissionTask.Execute(): error loading dkgState: %v", err)
 	}
 
 	eth := t.GetClient()
@@ -118,20 +117,20 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *executorInterface
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
 	}
 
 	// Do it
 	txn, err := eth.Contracts().Ethdkg().SubmitGPKJ(txnOpts, dkgState.Participants[dkgState.Account.Address].GPKj)
 	if err != nil {
-		return nil, dkgUtils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
+		return nil, utils.LogReturnErrorf(logger, "submitting master public key failed: %v", err)
 	}
 
 	return []*types.Transaction{txn}, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *GPKjSubmissionTask) ShouldExecute() (bool, *executorInterfaces.TaskErr) {
+func (t *GPKjSubmissionTask) ShouldExecute() (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Info("GPKjSubmissionTask ShouldExecute()")
 
