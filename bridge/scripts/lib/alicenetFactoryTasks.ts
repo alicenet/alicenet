@@ -1178,68 +1178,6 @@ task(
       taskArgs.inputFolder,
       taskArgs.outputFolder
     );
-    /* 
-    let txResponse = await factory.multiCall(multiCallArgsArray);
-    let receipt = await txResponse.wait();
-    cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
-    getMultipleEventVar(receipt, DEPLOYED_STATIC, CONTRACT_ADDR).map((o) => {
-      staticAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_TEMPLATE, CONTRACT_ADDR).map((o) => {
-      templateAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR).map((o) => {
-      upgradeableAddresses.push(o);
-    });
-    multiCallArgsArray = await getMulticallArgs(
-      contracts,
-      hre,
-      factoryBase,
-      factory,
-      txCount,
-      "ethdkg",
-      [0, 1],
-      taskArgs.inputFolder,
-      taskArgs.outputFolder
-    );
-    txResponse = await factory.multiCall(multiCallArgsArray);
-    receipt = await txResponse.wait();
-    cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
-    getMultipleEventVar(receipt, DEPLOYED_STATIC, CONTRACT_ADDR).map((o) => {
-      staticAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_TEMPLATE, CONTRACT_ADDR).map((o) => {
-      templateAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR).map((o) => {
-      upgradeableAddresses.push(o);
-    });
-    multiCallArgsArray = await getMulticallArgs(
-      contracts,
-      hre,
-      factoryBase,
-      factory,
-      txCount,
-      "ethdkg",
-      [2],
-      taskArgs.inputFolder,
-      taskArgs.outputFolder
-    );
-    txResponse = await factory.multiCall(multiCallArgsArray);
-    receipt = await txResponse.wait();
-    cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
-    getMultipleEventVar(receipt, DEPLOYED_STATIC, CONTRACT_ADDR).map((o) => {
-      staticAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_TEMPLATE, CONTRACT_ADDR).map((o) => {
-      templateAddresses.push(o);
-    });
-    getMultipleEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR).map((o) => {
-      upgradeableAddresses.push(o);
-    });
-    console.log("staticAddresses", staticAddresses);
-    console.log("upgradeableAddresses", upgradeableAddresses);
- */
     console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
   });
 
