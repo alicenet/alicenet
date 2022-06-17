@@ -20,7 +20,7 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, cdb *db.Database,
+func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
 	adminHandler monInterfaces.IAdminHandler) error {
 
 	c := eth.Contracts()
@@ -67,7 +67,7 @@ func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, mo
 	}
 	updatedState.ValidatorSets[epoch] = vs
 
-	err = checkValidatorSet(updatedState, epoch, logger, cdb, adminHandler)
+	err = checkValidatorSet(updatedState, epoch, logger, monDB, adminHandler)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, mo
 	//state.Schedule.Purge()
 
 	dkgState := &state.DkgState{}
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
@@ -99,7 +99,7 @@ func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, mo
 		return err
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return err
 	}
 
@@ -107,7 +107,7 @@ func ProcessValidatorSetCompleted(eth ethereum.Network, logger *logrus.Entry, mo
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, cdb *db.Database) error {
+func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
 
 	monitorState.Lock()
 	defer monitorState.Unlock()
@@ -131,7 +131,7 @@ func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, mon
 	}
 
 	dkgState := &state.DkgState{}
-	err = cdb.Update(func(txn *badger.Txn) error {
+	err = monDB.Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
 			return err
@@ -165,7 +165,7 @@ func ProcessValidatorMemberAdded(eth ethereum.Network, logger *logrus.Entry, mon
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessValidatorMemberAdded: %v", err)
 	}
 
-	if err = cdb.Sync(); err != nil {
+	if err = monDB.Sync(); err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessValidatorMemberAdded: %v", err)
 	}
 
@@ -232,7 +232,7 @@ func ProcessValidatorMinorSlashed(eth ethereum.Network, logger *logrus.Entry, lo
 	return nil
 }
 
-func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, cdb *db.Database, adminHandler monInterfaces.IAdminHandler) error {
+func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, monDB *db.Database, adminHandler monInterfaces.IAdminHandler) error {
 
 	logger = logger.WithField("Epoch", epoch)
 
@@ -250,7 +250,7 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 
 	dkgState := &state.DkgState{}
 	var err error
-	err = cdb.View(func(txn *badger.Txn) error {
+	err = monDB.View(func(txn *badger.Txn) error {
 		err = dkgState.LoadState(txn)
 		if err != nil {
 			return err
