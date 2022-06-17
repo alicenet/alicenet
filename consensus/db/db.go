@@ -4,14 +4,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/alicenet/alicenet/constants/dbprefix"
-
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -1885,6 +1885,79 @@ func (db *Database) GetPendingHdrLeafKeysIter(txn *badger.Txn) *PendingHdrLeafIt
 	return &PendingHdrLeafIter{it: it, prefixLen: len(prefix)}
 }
 
+// accusations
+
+func (db *Database) makeAccusationKey(uuid uuid.UUID) ([]byte, error) {
+	uuidBinary, err := uuid.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	key := &objs.AccusationKey{
+		Prefix: dbprefix.PrefixHistoricRoundState(),
+		UUID:   uuidBinary,
+	}
+	return key.MarshalBinary()
+}
+
+func (db *Database) SetAccusation(txn *badger.Txn, v *interfaces.Accusation) error {
+	// todo: refactor this
+	key, err := db.makeAccusationKey()
+	if err != nil {
+		return err
+	}
+	err = db.rawDB.SetRoundState(txn, key, v)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	return nil
+}
+
+func (db *Database) GetAccusation(txn *badger.Txn, vaddr []byte, height uint32, round uint32) (*objs.RoundState, error) {
+	// todo: refactor this
+	key, err := db.makeAccusationKey()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.rawDB.GetRoundState(txn, key)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func (db *Database) DeleteAccusation(txn *badger.Txn, height uint32, maxnum int) error {
+	// todo: refactor this
+	prefix, err := db.makeAccusationKey()
+	if err != nil {
+		return err
+	}
+	opts := badger.DefaultIteratorOptions
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	keys := [][]byte{}
+	count := 0
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		k := item.KeyCopy(nil)
+		keys = append(keys, k)
+		count++
+		if count >= maxnum {
+			break
+		}
+	}
+	for i := 0; i < len(keys); i++ {
+		k := keys[i]
+		err := utils.DeleteValue(txn, utils.CopySlice(k))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// PendingHdrLeafIter
 type PendingHdrLeafIter struct {
 	it        *badger.Iterator
 	prefixLen int

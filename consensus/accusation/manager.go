@@ -23,6 +23,18 @@ type rsCacheStruct struct {
 	rsHash []byte
 }
 
+func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
+	rsHash, err := rs.Hash()
+	if err != nil {
+		return false, err
+	}
+
+	return r.height != rs.RCert.RClaims.Height ||
+			r.round != rs.RCert.RClaims.Round ||
+			!bytes.Equal(r.rsHash, rsHash),
+		nil
+}
+
 // Manager polls validators' roundStates and checks for possible accusation conditions
 type Manager struct {
 	sync.Mutex
@@ -32,11 +44,9 @@ type Manager struct {
 	logger             *logrus.Logger
 	rsCache            map[string]*rsCacheStruct
 
-	// number of roundState processing workers
-	numWorkers int
-	// queue where new roundStates are pushed to be checked for malicious behavior
+	// queue where new roundStates are pushed to be checked for malicious behavior by workers
 	workQ chan *lstate.RoundStates
-	// queue where identified accusations are pushed to be further processed
+	// queue where identified accusations are pushed by workers to be further processed
 	accusationQ chan *Accusation
 	closeChan   chan struct{}
 }
@@ -84,12 +94,8 @@ func (m *Manager) Init(
 }
 
 func (m *Manager) StartWorkers() {
-	m.Lock()
-	defer m.Unlock()
-
 	cpuCores := runtime.NumCPU()
 	for i := 0; i < cpuCores; i++ {
-		m.numWorkers++
 		go m.runWorker()
 	}
 }
@@ -101,14 +107,6 @@ func (m *Manager) StopWorkers() {
 func (m *Manager) runWorker() {
 	for {
 		select {
-		// case <-time.After(10 * time.Second):
-		// 	m.Lock()
-		// 	if m.numWorkers > 1 {
-		// 		m.numWorkers--
-		// 		m.Unlock()
-		// 		return
-		// 	}
-		// 	m.Unlock()
 		case <-m.closeChan:
 			return
 		case lrs := <-m.workQ:
@@ -151,18 +149,18 @@ func (m *Manager) Poll() error {
 		m.logger.Debugf("Got an accusation from a worker: %v", acc)
 
 		m.database.Update(func(txn *badger.Txn) error {
-			// save accusation into DB
-			// send this accusation to Scheduler
-			// todo: could this cause a deadlock?
-			// make sure it returns OK
+			// todo: save accusation into DB
+			// todo: send this accusation to Scheduler
+			// todo: could this cause a deadlock bc Task manager will also read/write to DB?
+			// todo: make sure it returns OK if everything goes well
 
 			return nil
 		})
 		if err != nil {
-			// if this is a retryable error, then retry the accusation
-			// save accusation into memory to retry later
+			// if this is a retryable error, then retry the accusation later on
+			//   save accusation into memory to retry later
 
-			// otherwise return the error and cause a Synchronizer loop to stop,
+			// otherwise return the error which will stop the Synchronizer loop,
 			// causing the node to exit
 			return err
 		}
@@ -174,6 +172,9 @@ func (m *Manager) Poll() error {
 }
 
 func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
+	// keep track of new validators to clear the cache from old validators
+	currentValidators := make(map[string]bool)
+
 	for _, v := range lrs.ValidatorSet.Validators {
 		rs := lrs.GetRoundState(v.VAddr)
 		if rs == nil {
@@ -183,33 +184,18 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 
 		valAddress := fmt.Sprintf("0x%x", v.VAddr)
 		updated := false
+		currentValidators[valAddress] = true
 
 		m.Lock()
-		rsCacheEntry, ok := m.rsCache[valAddress]
+		rsCacheEntry, isCached := m.rsCache[valAddress]
 		m.Unlock()
 
-		if ok {
+		if isCached {
 			// validator exists in cache, let's check if there are changes in its roundState
-			rsHash, err := rs.Hash()
+			var err error
+			updated, err = rsCacheEntry.DidChange(rs)
 			if err != nil {
 				return err
-			}
-
-			if rsCacheEntry.height != rs.RCert.RClaims.Height ||
-				rsCacheEntry.round != rs.RCert.RClaims.Round ||
-				!bytes.Equal(rsCacheEntry.rsHash, rsHash) {
-				// rs updated for this validator
-
-				// m.logger.WithFields(logrus.Fields{
-				// 	"height":              rs.RCert.RClaims.Height,
-				// 	"rsCacheEntry.height": rsCacheEntry.height,
-				// 	"round":               rs.RCert.RClaims.Round,
-				// 	"rsCacheEntry.round":  rsCacheEntry.round,
-				// 	"rsHash":              fmt.Sprintf("%x", rsHash),
-				// 	"rsCacheEntry.rsHash": fmt.Sprintf("%x", rsCacheEntry.rsHash),
-				// }).Debugf("roundState updated for validator %s", valAddress)
-
-				updated = true
 			}
 		} else {
 			updated = true
@@ -244,14 +230,28 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 		}
 	}
 
-	// todo: if the validatorSet changes this will endup with old items in the cache. this needs cleanup
+	// remove validators from cache that are not in the current validatorSet,
+	// ensuring the cache is not growing indefinitely with old validators
+	m.Lock()
+	toDelete := make([]string, 0)
+	// iterate over the cache and keep track of validators not in the current validatorSet
+	for vAddr := range m.rsCache {
+		if _, ok := currentValidators[vAddr]; !ok {
+			toDelete = append(toDelete, vAddr)
+		}
+	}
+
+	// delete old validators from cache
+	for _, vAddr := range toDelete {
+		delete(m.rsCache, vAddr)
+	}
+	m.Unlock()
 
 	return nil
 }
 
 // processRoundState checks if there is an accusation for a certain roundState and if so,
-// creates an accusation task and executes it, blocking the Synchonizer loop
-// and thus consensus.
+// creates an accusation task and executes it, not blocking the Synchonizer loop and consensus.
 func (m *Manager) processRoundState(rs *objs.RoundState) {
 	for _, detector := range m.processingPipeline {
 		accusation, found := detector(rs)
@@ -260,7 +260,7 @@ func (m *Manager) processRoundState(rs *objs.RoundState) {
 			// todo: spawn an Accusation task and schedule it on the task scheduler
 			// todo: don't block while waiting for a response from the accusation task
 			// todo: store this accusation in DB, and send this accusation to the Scheduler system
-			// make sure it's restart/crash resillient
+			// todo: make sure it's restart/crash resillient
 			m.accusationQ <- accusation
 		}
 	}
