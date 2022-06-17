@@ -18,6 +18,10 @@ func PrefixTransactionWatcherState() []byte {
 	return []byte("lc")
 }
 
+func PrefixTaskManagerState() []byte {
+	return []byte("ld")
+}
+
 // TASKS
 // All functions in this file are prefix designators for database state types.
 // These functions name the resource being referenced in the function name.

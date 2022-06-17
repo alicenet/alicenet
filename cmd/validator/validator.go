@@ -274,7 +274,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)
-	tasksScheduler := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
+	if err != nil {
+		panic(err)
+	}
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)

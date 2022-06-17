@@ -63,6 +63,7 @@ type TasksScheduler struct {
 	taskResponseChan *taskResponseChan               `json:"-"`
 	taskKillChan     <-chan string                   `json:"-"`
 	logger           *logrus.Entry                   `json:"-"`
+	tasksManager     *TasksManager                   `json:"-"`
 	txWatcher        *transaction.Watcher            `json:"-"`
 }
 
@@ -91,7 +92,7 @@ type innerSequentialSchedule struct {
 	Schedule map[string]*innerBlock
 }
 
-func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string, txWatcher *transaction.Watcher) *TasksScheduler {
+func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler monitorInterfaces.IAdminHandler, taskRequestChan <-chan executorInterfaces.ITask, taskKillChan <-chan string, txWatcher *transaction.Watcher) (*TasksScheduler, error) {
 	tr := &marshaller.TypeRegistry{}
 	tr.RegisterInstanceType(&dkg.CompletionTask{})
 	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
@@ -123,7 +124,13 @@ func NewTasksScheduler(database *db.Database, eth ethereum.Network, adminHandler
 	logger := logging.GetLogger("tasks_scheduler").WithField("Schedule", s.Schedule)
 	s.logger = logger
 
-	return s
+	tasksManager, err := NewTaskManager(txWatcher, database, logger.WithField("task_manager", "task_manager"))
+	if err != nil {
+		return nil, err
+	}
+	s.tasksManager = tasksManager
+
+	return s, nil
 }
 
 func (s *TasksScheduler) Start() error {
@@ -272,7 +279,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			task := tasks[i]
 			s.logger.Infof("Task id: %s name: %s is about to start", task.Id, task.Task.GetName())
 
-			go ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan, s.txWatcher)
+			go s.tasksManager.ManageTask(ctx, task.Task, s.database, s.logger, s.eth, s.taskResponseChan)
 
 			task.isRunning = true
 			s.Schedule[task.Id] = task
