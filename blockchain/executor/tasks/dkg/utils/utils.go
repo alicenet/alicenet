@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -90,25 +91,23 @@ func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth ethereum.Network
 	return addresses, nil
 }
 
-func AmILeading(numValidators int, myIdx int, blocksSinceDesperation int, blockHash []byte, logger *logrus.Entry) bool {
-	var numValidatorsAllowed int = 1
-	for i := int(blocksSinceDesperation); i > 0; {
-		i -= constants.ETHDKGDesperationFactor / numValidatorsAllowed
-		numValidatorsAllowed++
-
-		if numValidatorsAllowed >= numValidators {
-			break
-		}
+// check if I'm a leader for this task
+func AmILeading(client ethereum.Network, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numValidators int, dkgIndex int) bool {
+	currentHeight, err := client.GetCurrentHeight(ctx)
+	if err != nil {
+		return false
 	}
 
-	// use the random nature of blockhash to deterministically define the range of validators that are allowed to take an ETHDKG action
-	rand := (&big.Int{}).SetBytes(blockHash)
-	start := int((&big.Int{}).Mod(rand, big.NewInt(int64(numValidators))).Int64())
-	end := (start + numValidatorsAllowed) % numValidators
+	blocksSinceDesperation := int(currentHeight) - start - constants.ETHDKGDesperationDelay
+	amILeading := utils.AmILeading(numberOfValidators, dkgIndex-1, blocksSinceDesperation, startBlockHash, logger)
 
-	if end > start {
-		return myIdx >= start && myIdx < end
-	} else {
-		return myIdx >= start || myIdx < end
-	}
+	logger.WithFields(logrus.Fields{
+		"currentHeight":                    currentHeight,
+		"t.Start":                          start,
+		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
+		"blocksSinceDesperation":           blocksSinceDesperation,
+		"amILeading":                       amILeading,
+	}).Infof("dkg.AmILeading")
+
+	return amILeading
 }

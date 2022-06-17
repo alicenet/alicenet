@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -32,7 +33,7 @@ func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask
 // Prepare prepares for work to be done in the KeyShareSubmissionTask.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyShareSubmissionTask) Prepare() *interfaces.TaskErr {
+func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
@@ -83,7 +84,7 @@ func (t *KeyShareSubmissionTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -101,7 +102,6 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.Ta
 
 	// Setup
 	eth := t.GetClient()
-	ctx := t.GetCtx()
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
@@ -123,11 +123,11 @@ func (t *KeyShareSubmissionTask) Execute() ([]*types.Transaction, *interfaces.Ta
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("registering failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *KeyShareSubmissionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -141,7 +141,6 @@ func (t *KeyShareSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	defaultAccount := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAccount)
 	if err != nil {

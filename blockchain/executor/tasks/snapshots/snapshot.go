@@ -1,6 +1,7 @@
 package snapshots
 
 import (
+	"context"
 	"fmt"
 	dangerousRand "math/rand"
 	"time"
@@ -30,7 +31,7 @@ func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 }
 
 // Prepare prepares for work to be done in the SnapshotTask
-func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
+func (t *SnapshotTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
 
@@ -67,7 +68,7 @@ func (t *SnapshotTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -81,7 +82,6 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 
 	// todo: remove this after leader election
 	dangerousRand.Seed(time.Now().UnixNano())
@@ -106,11 +106,11 @@ func (t *SnapshotTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *SnapshotTask) ShouldExecute() *interfaces.TaskErr {
+func (t *SnapshotTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -124,7 +124,6 @@ func (t *SnapshotTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	opts, err := client.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)

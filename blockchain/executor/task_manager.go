@@ -9,108 +9,95 @@ import (
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan, txWatcher *transaction.Watcher) {
 	taskCtx, taskCancelFunc := context.WithCancel(ctx)
+	defer taskCancelFunc()
 	taskLogger := logger.WithField("TaskName", task.GetName())
-
-	task.Initialize(taskCtx, taskCancelFunc, database, taskLogger, eth, task.GetId(), taskResponseChan)
-	defer task.Close()
-
-	retryCount := int(constants.MonitorRetryCount)
-	retryDelay := constants.MonitorRetryDelay
-
-	err := prepareTask(task, retryCount, retryDelay)
+	err := task.Initialize(taskCtx, taskCancelFunc, database, taskLogger, eth, task.GetId(), taskResponseChan)
 	if err != nil {
 		task.Finish(err)
 	}
+	retryCount := int(constants.MonitorRetryCount)
+	retryDelay := constants.MonitorRetryDelay
 
-	err = executeTask(task, retryCount, retryDelay, txWatcher)
+	err = prepareTask(ctx, task, retryCount, retryDelay)
+	if err != nil {
+		// unrecoverable errors, recoverable errors but we exhausted all attempts or
+		// ctx.done
+		task.Finish(err)
+	}
+
+	err = executeTask(ctx, task, retryCount, retryDelay, txWatcher)
 	task.Finish(err)
 }
 
 // prepareTask executes task preparation
-func prepareTask(task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
-	var count int
-	var err error
-	ctx := task.GetCtx()
-
-Loop:
-	for count < retryCount {
+func prepareTask(ctx context.Context, task interfaces.ITask, retryCount int, retryDelay time.Duration) error {
+	var taskErr *interfaces.TaskErr
+	for count := 0; count < retryCount; count++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			err = task.Prepare()
-			if err != nil {
-				err = sleepWithContext(ctx, retryDelay)
-				if err != nil {
-					return err
-				}
-				count++
-				break
-			}
-			break Loop
+		}
+		taskErr = task.Prepare(ctx)
+		// no errors or unrecoverable errors break
+		if taskErr == nil || !taskErr.IsRecoverable() {
+			break
+		}
+		err := sleepWithContext(ctx, retryDelay)
+		if err != nil {
+			return err
 		}
 	}
-
-	return err
+	// return taskErr in case is nil, nonRecoverable or Recoverable after exhausted
+	// all retry attempts
+	return taskErr
 }
 
 // executeTask executes task business logic
-func executeTask(task interfaces.ITask, retryCount int, retryDelay time.Duration, txWatcher *transaction.Watcher) error {
-	var count int
-	var success bool
-	var err error
-	var txns []*types.Transaction
-	ctx := task.GetCtx()
-
-	for !success && shouldExecute(task) { //todo:
+func executeTask(ctx context.Context, task interfaces.ITask, retryCount int, retryDelay time.Duration, txWatcher *transaction.Watcher) error {
+	var taskErr *interfaces.TaskErr
+	for count := 0; count < retryCount; count++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			txns, err = task.Execute()
-			if err != nil {
-				err = sleepWithContext(ctx, retryDelay)
+		}
+		txn, taskErr := task.Execute(ctx)
+		if taskErr != nil {
+			if !taskErr.IsRecoverable() {
+				err := sleepWithContext(ctx, retryDelay)
 				if err != nil {
 					return err
 				}
-				count++
-				break
+				continue
 			}
-
-			success, err = watchForTransactions(task.GetCtx(), txns, txWatcher, task.GetAllowTxFeeAutoReplacement())
-			if err != nil {
-				task.GetLogger().Errorf("failed to get receipts with error: %s", err.Error())
-			}
+			return taskErr
 		}
-	}
+		if txn == nil {
+			// there was no transaction to be executed
+			return nil
+		}
 
-	return err
-}
-
-func watchForTransactions(ctx context.Context, txns []*types.Transaction, txWatcher *transaction.Watcher, allowTxFeeAutoReplacement bool) (bool, error) {
-	if txns == nil || len(txns) == 0 {
-		return true, nil
-	}
-
-	for _, txn := range txns {
-		respChan, err := txWatcher.Subscribe(ctx, txn, allowTxFeeAutoReplacement)
+		respChan, err := txWatcher.Subscribe(ctx, txn, task.GetSubscribeOptions())
 		if err != nil {
-			return false, err
+			// if we get an error here, it means that we have a corrupted txn we should
+			// retry a transaction
+			task.GetLogger().Errorf("failed to subscribe tx with error: %s", err.Error())
+			continue
 		}
 	}
 
-	return true, nil
+	return taskErr
 }
 
-func shouldExecute(task interfaces.ITask) bool {
+func shouldExecute(ctx context.Context, task interfaces.ITask) bool {
 	// Make sure we're in the right block range to continue
-	currentBlock, err := task.GetClient().GetCurrentHeight(task.GetCtx())
+	currentBlock, err := task.GetClient().GetCurrentHeight(ctx)
 	if err != nil {
 		// This probably means an endpoint issue, so we have to try again
 		task.GetLogger().Warnf("could not check current height of chain: %v", err)
@@ -126,7 +113,7 @@ func shouldExecute(task interfaces.ITask) bool {
 		if err := task.ShouldExecute(); err != nil {
 			if err.IsRecoverable() {
 				task.GetLogger().Tracef("got a recoverable error during task should execute: %v", err)
-				if err := sleepWithContext(task.GetCtx(), constants.MonitorRetryDelay); err != nil {
+				if err := sleepWithContext(ctx, constants.MonitorRetryDelay); err != nil {
 					return false
 				}
 				continue

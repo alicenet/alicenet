@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 
@@ -34,21 +35,18 @@ func NewDisputeShareDistributionTask(start uint64, end uint64) *DisputeShareDist
 // Prepare prepares for work to be done in the DisputeShareDistributionTask.
 // It determines if the shares previously distributed are valid.
 // If any are invalid, disputes will be issued.
-func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
+func (t *DisputeShareDistributionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
 	dkgState := &state.DkgState{}
-	var isRecoverable bool
 	err := t.GetDB().Update(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
 		if err != nil {
-			isRecoverable = false
 			return err
 		}
 
 		if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
-			isRecoverable = false
 			return fmt.Errorf("it's not DisputeShareDistribution or ShareDistribution phase")
 		}
 
@@ -66,23 +64,20 @@ func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
 			valid, present, err := state.VerifyDistributedShares(dkgState, participant)
 			if err != nil {
 				// A major error occurred; we cannot continue
-				logger.Errorf("VerifyDistributedShares broke; Participant Address: %v", participant.Address.Hex())
-				isRecoverable = false
-				return fmt.Errorf("VerifyDistributedShares broke: %v", err.Error())
+				return fmt.Errorf("VerifyDistributedShares broke: %v Participant Address: %v", err.Error(), participant.Address.Hex())
 			}
 			if !present {
-				logger.Warningf("No share from %v", participant.Address.Hex())
+				logger.Warnf("No share from %v", participant.Address.Hex())
 				continue
 			}
 			if !valid {
-				logger.Warningf("Invalid share from %v", participant.Address.Hex())
+				logger.Warnf("Invalid share from %v", participant.Address.Hex())
 				dkgState.BadShares[participant.Address] = participant
 			}
 		}
 
 		err = dkgState.PersistState(txn)
 		if err != nil {
-			isRecoverable = false
 			return err
 		}
 
@@ -90,14 +85,15 @@ func (t *DisputeShareDistributionTask) Prepare() *interfaces.TaskErr {
 	})
 
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
+		// all errors are not recoverable
+		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 	}
 
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -110,21 +106,20 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfa
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
-	ctx := t.GetCtx()
-	eth := t.GetClient()
-	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
+	client := t.GetClient()
+	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
-	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
 	txns := make([]*types.Transaction, 0)
 	for _, participant := range dkgState.BadShares {
-		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
+		isValidator, err := client.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
 		if err != nil {
 			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), true)
 		}
@@ -140,12 +135,12 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfa
 		// Construct shared key
 		disputePublicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)
 		if err != nil {
-			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating disputePublicKeyG1: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating disputePublicKeyG1: %v", err), false)
 		}
 		sharedKeyG1 := cloudflare.GenerateSharedSecretG1(dkgState.TransportPrivateKey, disputePublicKeyG1)
 		sharedKey, err := bn256.G1ToBigIntArray(sharedKeyG1)
 		if err != nil {
-			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating sharedKeyG1: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating sharedKeyG1: %v", err), false)
 		}
 
 		// Construct shared key proof
@@ -154,28 +149,27 @@ func (t *DisputeShareDistributionTask) Execute() ([]*types.Transaction, *interfa
 		sharedKeyProof, err := cloudflare.GenerateDLEQProofG1(
 			g1Base, transportPublicKeyG1, disputePublicKeyG1, sharedKeyG1, dkgState.TransportPrivateKey, rand.Reader)
 		if err != nil {
-			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating sharedKeyProof: %v", err), true)
+			return nil, interfaces.NewTaskErr(fmt.Sprintf("failed generating sharedKeyProof: %v", err), false)
 		}
 
 		logger.Warnf("accusing participant: %v of distributing bad shares", dishonestAddress)
 		// Accuse participant
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
+		txn, err := client.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 		if err != nil {
 			return nil, interfaces.NewTaskErr(fmt.Sprintf("submit share dispute failed: %v", err), true)
 		}
 		txns = append(txns, txn)
 	}
-
-	return txns, nil
+	//todo: fix this, split this task in multiple tasks
+	return txns[0], nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	ctx := t.GetCtx()
-	eth := t.GetClient()
+	client := t.GetClient()
 	dkgState := &state.DkgState{}
 	err := t.GetDB().View(func(txn *badger.Txn) error {
 		err := dkgState.LoadState(txn)
@@ -189,11 +183,11 @@ func (t *DisputeShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from DisputeShareDistribution", dkgState.Phase), false)
 	}
 
-	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
+	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
-	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := client.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
 	}

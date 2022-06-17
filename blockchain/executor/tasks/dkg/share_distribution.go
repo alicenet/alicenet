@@ -2,6 +2,7 @@ package dkg
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 
@@ -32,7 +33,7 @@ func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 // Prepare prepares for work to be done in the ShareDistributionTask.
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
-func (t *ShareDistributionTask) Prepare() *interfaces.TaskErr {
+func (t *ShareDistributionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Tracef("preparing task")
 
@@ -92,7 +93,7 @@ func (t *ShareDistributionTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -106,7 +107,6 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.Tas
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	contracts := client.Contracts()
 	accountAddr := dkgState.Account.Address
 
@@ -127,11 +127,11 @@ func (t *ShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.Tas
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("distributing shares failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -145,7 +145,6 @@ func (t *ShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	eth := t.GetClient()
-	ctx := t.GetCtx()
 	if dkgState.Phase != state.ShareDistribution {
 		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
 	}

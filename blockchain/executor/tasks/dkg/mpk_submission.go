@@ -2,11 +2,13 @@ package dkg
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
@@ -14,6 +16,7 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
@@ -22,6 +25,8 @@ import (
 // MPKSubmissionTask stores the data required to submit the mpk
 type MPKSubmissionTask struct {
 	*objects.Task
+	// variables that are unique only for this task
+	startBlockHash common.Hash
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
@@ -37,7 +42,7 @@ func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 // Prepare prepares for work to be done in the MPKSubmissionTask
 // Here we load all key shares and construct the master public key
 // to submit in DoWork.
-func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
+func (t *MPKSubmissionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger()
 	logger.Debug("MPKSubmissionTask Prepare()...")
 
@@ -58,7 +63,6 @@ func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 		// compute MPK if not yet computed
 		if isMasterPublicKeyEmpty(dkgState.MasterPublicKey) {
 			client := t.GetClient()
-			ctx := t.GetCtx()
 			// setup leader election
 			block, err := client.GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
 			if err != nil {
@@ -67,7 +71,7 @@ func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 			}
 
 			logger.Debugf("block hash: %v\n", block.Hash())
-			t.SetStartBlockHash(block.Hash().Bytes())
+			t.startBlockHash = block.Hash()
 
 			// prepare MPK
 			g1KeyShares := make([][2]*big.Int, dkgState.NumberOfValidators)
@@ -127,7 +131,7 @@ func (t *MPKSubmissionTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger()
 	logger.Debug("MPKSubmissionTask Execute()...")
 
@@ -141,30 +145,29 @@ func (t *MPKSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr
 	}
 
 	// submit if I'm a leader for this task
-	eth := t.GetClient()
-	ctx := t.GetCtx()
-	if !t.AmILeading(dkgState) {
+	client := t.GetClient()
+	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.startBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
 		return nil, interfaces.NewTaskErr("not leading MPK submission yet", true)
 	}
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", dkgState.MasterPublicKey)
-	txn, err := eth.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
+	txn, err := client.Contracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("submitting master public key failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *MPKSubmissionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -189,7 +192,6 @@ func (t *MPKSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)

@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -34,7 +35,7 @@ func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.
 }
 
 // Prepare prepares for work to be done in the GPKjSubmissionTask
-func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
+func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
@@ -106,7 +107,7 @@ func (t *GPKjSubmissionTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -120,7 +121,6 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskEr
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
@@ -133,11 +133,11 @@ func (t *GPKjSubmissionTask) Execute() ([]*types.Transaction, *interfaces.TaskEr
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("submitting gpkj failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -151,7 +151,6 @@ func (t *GPKjSubmissionTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	if dkgState.Phase != state.GPKJSubmission {
 		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from GPKJSubmission", dkgState.Phase), false)
 	}

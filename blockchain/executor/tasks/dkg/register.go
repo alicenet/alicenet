@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -36,7 +37,7 @@ func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 // These keys are *not* used otherwise.
 // Also get the list of existing validators from the pool to assert accusation
 // in later phases
-func (t *RegisterTask) Prepare() *interfaces.TaskErr {
+func (t *RegisterTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
 
@@ -82,12 +83,11 @@ func (t *RegisterTask) Prepare() *interfaces.TaskErr {
 }
 
 // Execute executes the task business logic
-func (t *RegisterTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
 	eth := t.GetClient()
-	ctx := t.GetCtx()
 	block, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("failed to get current height : %v", err), true)
@@ -116,11 +116,11 @@ func (t *RegisterTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("registering failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *RegisterTask) ShouldExecute() *interfaces.TaskErr {
+func (t *RegisterTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -134,7 +134,6 @@ func (t *RegisterTask) ShouldExecute() *interfaces.TaskErr {
 	}
 
 	client := t.GetClient()
-	ctx := t.GetCtx()
 	if dkgState.Phase != state.RegistrationOpen {
 		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from RegistrationOpen", dkgState.Phase), false)
 	}

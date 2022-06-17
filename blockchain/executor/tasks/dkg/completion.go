@@ -1,10 +1,12 @@
 package dkg
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/blockchain/executor/constants"
@@ -12,12 +14,15 @@ import (
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/executor/objects"
 	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
 type CompletionTask struct {
 	*objects.Task
+	// variables that are unique only for this task
+	startBlockHash common.Hash
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
@@ -31,7 +36,7 @@ func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 }
 
 // Prepare prepares for work to be done in the CompletionTask
-func (t *CompletionTask) Prepare() *interfaces.TaskErr {
+func (t *CompletionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
@@ -49,18 +54,18 @@ func (t *CompletionTask) Prepare() *interfaces.TaskErr {
 	}
 
 	// setup leader election
-	block, err := t.GetClient().GetBlockByNumber(t.GetCtx(), big.NewInt(int64(t.GetStart())))
+	block, err := t.GetClient().GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
 
-	t.SetStartBlockHash(block.Hash().Bytes())
+	t.startBlockHash = block.Hash()
 
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -73,15 +78,14 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.ErrorLoadingDkgState, err), false)
 	}
 
+	client := t.GetClient()
 	// submit if I'm a leader for this task
-	if !t.AmILeading(dkgState) {
+	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.startBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("not leading Completion yet"), true)
 	}
 
-	// Setup
-	eth := t.GetClient()
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(t.GetCtx(), dkgState.Account)
+	c := client.Contracts()
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingTxnOpts, err), true)
 	}
@@ -93,18 +97,18 @@ func (t *CompletionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("completion failed: %v", err), true)
 	}
 
-	return []*types.Transaction{txn}, nil
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *CompletionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *CompletionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
 	eth := t.GetClient()
 	c := eth.Contracts()
 
-	callOpts, err := eth.GetCallOpts(t.GetCtx(), eth.GetDefaultAccount())
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingCallOpts, err), true)
 	}

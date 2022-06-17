@@ -1,6 +1,7 @@
 package dkg
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -31,14 +32,14 @@ func NewDisputeMissingShareDistributionTask(start uint64, end uint64) *DisputeMi
 }
 
 // Prepare prepares for work to be done in the DisputeMissingShareDistributionTask.
-func (t *DisputeMissingShareDistributionTask) Prepare() *interfaces.TaskErr {
+func (t *DisputeMissingShareDistributionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Debugf("preparing task")
+	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
-func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
+func (t *DisputeMissingShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
@@ -51,37 +52,33 @@ func (t *DisputeMissingShareDistributionTask) Execute() ([]*types.Transaction, *
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
-	ctx := t.GetCtx()
-	eth := t.GetClient()
-	accusableParticipants, err := t.getAccusableParticipants(dkgState)
+	client := t.GetClient()
+	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
-	// accuse missing validators
-	txns := make([]*types.Transaction, 0)
-	if len(accusableParticipants) > 0 {
-
-		txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
-		if err != nil {
-			return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
-		}
-
-		logger.Warnf("accusing participants: %v of not distributing shares", accusableParticipants)
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
-		if err != nil {
-			return nil, interfaces.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
-		}
-		txns = append(txns, txn)
-	} else {
+	if len(accusableParticipants) <= 0 {
 		logger.Debug("No accusations for missing distributed shares")
+		return nil, nil
 	}
 
-	return txns, nil
+	// accuse missing validators
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
+	if err != nil {
+		return nil, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+	}
+
+	logger.Warnf("accusing participants: %v of not distributing shares", accusableParticipants)
+	txn, err := client.Contracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
+	if err != nil {
+		return nil, interfaces.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
+	}
+	return txn, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingShareDistributionTask) ShouldExecute() *interfaces.TaskErr {
+func (t *DisputeMissingShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -98,7 +95,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute() *interfaces.TaskEr
 		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
 	}
 
-	accusableParticipants, err := t.getAccusableParticipants(dkgState)
+	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
 		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
@@ -110,18 +107,17 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute() *interfaces.TaskEr
 	return nil
 }
 
-func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
+func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx context.Context, dkgState *state.DkgState) ([]common.Address, error) {
 	logger := t.GetLogger()
-	ctx := t.GetCtx()
-	eth := t.GetClient()
+	client := t.GetClient()
 
 	var accusableParticipants []common.Address
-	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
+	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(constants.FailedGettingCallOpts, err))
 	}
 
-	validators, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := utils.GetValidatorAddressesFromPool(callOpts, client, logger)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
 	}
