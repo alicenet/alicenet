@@ -92,14 +92,14 @@ func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth ethereum.Network
 }
 
 // check if I'm a leader for this task
-func AmILeading(client ethereum.Network, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numValidators int, dkgIndex int) bool {
+func AmILeading(client ethereum.Network, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numOfValidators int, dkgIndex int) bool {
 	currentHeight, err := client.GetCurrentHeight(ctx)
 	if err != nil {
 		return false
 	}
 
 	blocksSinceDesperation := int(currentHeight) - start - constants.ETHDKGDesperationDelay
-	amILeading := utils.AmILeading(numberOfValidators, dkgIndex-1, blocksSinceDesperation, startBlockHash, logger)
+	amILeading := utils.AmILeading(numOfValidators, dkgIndex-1, blocksSinceDesperation, startBlockHash, logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":                    currentHeight,

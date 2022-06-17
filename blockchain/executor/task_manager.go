@@ -13,12 +13,16 @@ import (
 )
 
 func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan, txWatcher *transaction.Watcher) {
-	taskCtx, taskCancelFunc := context.WithCancel(ctx)
-	defer taskCancelFunc()
+	var err error
+	taskCtx, cf := context.WithCancel(ctx)
+	defer cf()
+	defer task.Close()
+	defer task.Finish(err)
+
 	taskLogger := logger.WithField("TaskName", task.GetName())
-	err := task.Initialize(taskCtx, taskCancelFunc, database, taskLogger, eth, task.GetId(), taskResponseChan)
+	err = task.Initialize(taskCtx, cf, database, taskLogger, eth, task.GetId(), taskResponseChan)
 	if err != nil {
-		task.Finish(err)
+		return
 	}
 	retryCount := int(constants.MonitorRetryCount)
 	retryDelay := constants.MonitorRetryDelay
@@ -27,11 +31,10 @@ func ManageTask(ctx context.Context, task interfaces.ITask, database *db.Databas
 	if err != nil {
 		// unrecoverable errors, recoverable errors but we exhausted all attempts or
 		// ctx.done
-		task.Finish(err)
+		return
 	}
 
 	err = executeTask(ctx, task, retryCount, retryDelay, txWatcher)
-	task.Finish(err)
 }
 
 // prepareTask executes task preparation
@@ -90,6 +93,7 @@ func executeTask(ctx context.Context, task interfaces.ITask, retryCount int, ret
 			task.GetLogger().Errorf("failed to subscribe tx with error: %s", err.Error())
 			continue
 		}
+		// do stuff with respChan
 	}
 
 	return taskErr

@@ -30,11 +30,12 @@ func NewTaskErr(message string, isRecoverable bool) *TaskErr {
 
 // ITask the interface requirements of a task
 type ITask interface {
-	Initialize(database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan ITaskResponseChan) error
+	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan ITaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) *TaskErr
 	Finish(err error)
+	Close()
 	GetId() string
 	GetStart() uint64
 	GetEnd() uint64
@@ -42,6 +43,7 @@ type ITask interface {
 	GetAllowMultiExecution() bool
 	GetSubscribedTx() *types.Transaction
 	GetSubscribeOptions() *transaction.SubscribeOptions
+	GetCtx() context.Context
 	GetClient() ethereum.Network
 	GetLogger() *logrus.Entry
 }

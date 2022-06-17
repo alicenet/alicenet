@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -24,6 +25,8 @@ type Task struct {
 	start               uint64
 	end                 uint64
 	allowMultiExecution bool
+	ctx                 context.Context
+	cancelFunc          context.CancelFunc
 	database            *db.Database
 	logger              *logrus.Entry
 	client              ethereum.Network
@@ -33,19 +36,25 @@ type Task struct {
 }
 
 func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *Task {
+	ctx, cf := context.WithCancel(context.Background())
+
 	return &Task{
 		name:                name,
 		start:               start,
 		end:                 end,
 		allowMultiExecution: allowMultiExecution,
 		subscribeOptions:    subscribeOptions,
+		ctx:                 ctx,
+		cancelFunc:          cf,
 	}
 }
 
 // Initialize default implementation for the ITask interface
-func (t *Task) Initialize(database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan interfaces.ITaskResponseChan) error {
+func (t *Task) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan interfaces.ITaskResponseChan) error {
 	if !t.isInitialized {
 		t.id = id
+		t.ctx = ctx
+		t.cancelFunc = cancelFunc
 		t.database = database
 		t.logger = logger
 		t.client = eth
@@ -97,6 +106,11 @@ func (t *Task) GetSubscribeOptions() *transaction.SubscribeOptions {
 	return t.subscribeOptions
 }
 
+// GetCtx default implementation for the ITask interface
+func (t *Task) GetCtx() context.Context {
+	return t.ctx
+}
+
 // GetEth default implementation for the ITask interface
 func (t *Task) GetClient() ethereum.Network {
 	return t.client
@@ -105,6 +119,13 @@ func (t *Task) GetClient() ethereum.Network {
 // GetLogger default implementation for the ITask interface
 func (t *Task) GetLogger() *logrus.Entry {
 	return t.logger
+}
+
+// Close default implementation for the ITask interface
+func (t *Task) Close() {
+	if t.cancelFunc != nil {
+		t.cancelFunc()
+	}
 }
 
 // Finish default implementation for the ITask interface
