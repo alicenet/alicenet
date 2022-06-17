@@ -1,237 +1,267 @@
 package accusation
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
+	"runtime"
 	"sync"
-	"time"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
 	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrOverCurrentHeight = errors.New("over current height")
-)
+// a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
+type detectorLogic = func(rs *objs.RoundState) (*Accusation, bool)
 
-// Manager polls validators' roundStates and forwards them to a Detector. Also handles detected accusations.
-type Manager struct {
-	sync.Mutex
-	detector     *Detector
-	database     *db.Database
-	logger       *logrus.Logger
-	adminHandler interfaces.AdminHandler
-	// isSynchronized *remoteVar
+// rsCacheStruct caches a validator's roundState height, round and hash to avoid checking for accusations unless anything changes
+type rsCacheStruct struct {
+	height uint32
+	round  uint32
+	rsHash []byte
 }
 
-func NewManager(adminHandler interfaces.AdminHandler, database *db.Database, logger *logrus.Logger) *Manager {
+// Manager polls validators' roundStates and checks for possible accusation conditions
+type Manager struct {
+	sync.Mutex
+	processingPipeline []detectorLogic
+	database           *db.Database
+	sstore             *lstate.Store
+	logger             *logrus.Logger
+	rsCache            map[string]*rsCacheStruct
+
+	// number of roundState processing workers
+	numWorkers int
+	// queue where new roundStates are pushed to be checked for malicious behavior
+	workQ chan *lstate.RoundStates
+	// queue where identified accusations are pushed to be further processed
+	accusationQ chan *Accusation
+	closeChan   chan struct{}
+}
+
+// NewManager creates a new *Manager
+func NewManager(database *db.Database, logger *logrus.Logger) *Manager {
 	detectorLogics := make([]detectorLogic, 0)
 	detectorLogics = append(detectorLogics, detectMultipleProposal)
 	detectorLogics = append(detectorLogics, detectDoubleSpend)
 
-	detector := NewDetector(nil, detectorLogics)
-	m := &Manager{
-		detector:     detector,
-		database:     database,
-		logger:       logger,
-		adminHandler: adminHandler,
+	workQ := make(chan *lstate.RoundStates, 1)
+	accusationQ := make(chan *Accusation, 1)
+	closeChan := make(chan struct{})
+
+	m := &Manager{}
+	err := m.Init(database, logger, detectorLogics, workQ, accusationQ, closeChan)
+	if err != nil {
+		panic(fmt.Errorf("failed to initialize Accusation.Manager: %v", err))
 	}
-	detector.manager = m
 
 	return m
 }
 
-func (m *Manager) Start() {
-	go m.run()
+func (m *Manager) Init(
+	database *db.Database,
+	logger *logrus.Logger,
+	detectorLogics []detectorLogic,
+	workQ chan *lstate.RoundStates,
+	accusationQ chan *Accusation,
+	closeChan chan struct{}) error {
+
+	sstore := &lstate.Store{}
+	sstore.Init(database)
+
+	m.processingPipeline = detectorLogics
+	m.database = database
+	m.logger = logger
+	m.sstore = sstore
+	m.rsCache = make(map[string]*rsCacheStruct)
+	m.workQ = workQ
+	m.accusationQ = accusationQ
+	m.closeChan = closeChan
+
+	return nil
 }
 
-// Stop terminates the manager and its detector
-func (m *Manager) Stop() {
-	// todo: stop the manager. close a channel or something
+func (m *Manager) StartWorkers() {
+	m.Lock()
+	defer m.Unlock()
+
+	cpuCores := runtime.NumCPU()
+	for i := 0; i < cpuCores; i++ {
+		m.numWorkers++
+		go m.runWorker()
+	}
 }
 
-func (m *Manager) run() {
-	// TODO: should only check roundStates from the last 2 epochs, including the current one
-	// todo: load current polling height and round from DB, to resume operations in case of a node restart
-	// var height uint32 = 4895 // bugs at 4899 (round 1-4 key not found), 4903 (round 2 was printed in status but it doesnt actually exist), 4929 (round 1-4 key not found)
+func (m *Manager) StopWorkers() {
+	m.closeChan <- struct{}{}
+}
 
-	var height uint32 = 2
-	var round uint32 = 1
-
-	// first let's wait for synchronization
+func (m *Manager) runWorker() {
 	for {
-		time.Sleep(1000 * time.Millisecond)
-
-		// only poll data if the node is synchronized
-		// todo: can we get this without requiring the adminHandler here? maybe a remoteVar()?
-		if !m.adminHandler.IsSynchronized() {
-			m.logger.Debugf("AccusationManager: admin.Handler is not synchronized, skipping round state polling")
-			continue
-		}
-
-		// make sure we only check the last 2 epochs
-		currentHeight := uint32(0)
-		err := m.database.View(func(txn *badger.Txn) error {
-			// get the latest block height
-			hdr, err := m.database.GetBroadcastBlockHeader(txn)
+		select {
+		// case <-time.After(10 * time.Second):
+		// 	m.Lock()
+		// 	if m.numWorkers > 1 {
+		// 		m.numWorkers--
+		// 		m.Unlock()
+		// 		return
+		// 	}
+		// 	m.Unlock()
+		case <-m.closeChan:
+			return
+		case lrs := <-m.workQ:
+			err := m.processLRS(lrs)
 			if err != nil {
-				m.logger.Warnf("AccusationManager: could not get current height: %v", err)
-				return err
+				m.logger.Errorf("failed to process LRS: %v", err)
 			}
-			currentHeight = hdr.BClaims.Height
-			m.logger.Debugf("AccusationManager: got initial height: %d", currentHeight)
+		}
+	}
+}
+
+func (m *Manager) Poll() error {
+	var lrs *lstate.RoundStates
+	err := m.database.View(func(txn *badger.Txn) error {
+		rss, err := m.sstore.LoadLocalState(txn)
+		if err != nil {
+			return err
+		}
+		lrs = rss
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if lrs.Height() < 2 {
+		return nil
+	}
+
+	// send this lstate.RoundStates to be processed by workers
+	m.workQ <- lrs
+
+	// get accusations from workers and send them to the Scheduler/TaskManager to be processed further
+	select {
+	case <-m.closeChan:
+		m.logger.Debug("AccusationManager is now closing because of <-m.closeChan")
+		return nil
+	case acc := <-m.accusationQ:
+		// an accusation has been formed and now needs to be send to the smart contracts
+		m.logger.Debugf("Got an accusation from a worker: %v", acc)
+
+		m.database.Update(func(txn *badger.Txn) error {
+			// save accusation into DB
+			// send this accusation to Scheduler
+			// todo: could this cause a deadlock?
+			// make sure it returns OK
 
 			return nil
 		})
-
 		if err != nil {
-			if errors.Is(err, badger.ErrKeyNotFound) {
-				continue
-			}
-			panic(fmt.Sprintf("AccusationManager: could not get current height: %v", err))
+			// if this is a retryable error, then retry the accusation
+			// save accusation into memory to retry later
+
+			// otherwise return the error and cause a Synchronizer loop to stop,
+			// causing the node to exit
+			return err
 		}
-
-		// calculate which height to start polling from, only considering the last 2 epochs
-		currentEpoch := currentHeight / constants.EpochLength
-		m.logger.Debugf("AccusationManager: got initial currentEpoch: %d", currentEpoch)
-		startAtEpoch := currentEpoch
-		if startAtEpoch >= 2 {
-			startAtEpoch = startAtEpoch - 2
-		}
-		m.logger.Debugf("AccusationManager: got initial startAtEpoch: %d", startAtEpoch)
-		startAtHeight := startAtEpoch * constants.EpochLength
-		m.logger.Debugf("AccusationManager: got initial startAtHeight: %d", startAtHeight)
-		height = startAtHeight
-
-		if height <= 1 {
-			height = 2
-		}
-
-		m.logger.Infof("AccusationManager: polling validators' roundStates from height %d", height)
-
-		break
+	default:
+		//m.logger.Debug("AccusationManager did not find an accusation")
 	}
 
-	var hasRoundStatesAtHeight bool = false
+	return nil
+}
 
-	// now we poll validators' roundStates
-	for {
-		time.Sleep(100 * time.Millisecond)
-
-		// fetch round states from DB
-		rss, err := m.fetchRoundStates(height, round)
-		if err != nil {
-			if !errors.Is(err, ErrOverCurrentHeight) {
-				m.logger.Errorf("AccusationManager: could not poll roundStates: %v", err)
-			}
-
+func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
+	for _, v := range lrs.ValidatorSet.Validators {
+		rs := lrs.GetRoundState(v.VAddr)
+		if rs == nil {
+			m.logger.Errorf("AccusationManager: could not get roundState for validator 0x%x", v.VAddr)
 			continue
 		}
 
-		if len(rss) > 0 {
-			hasRoundStatesAtHeight = true
+		valAddress := fmt.Sprintf("0x%x", v.VAddr)
+		updated := false
 
-			m.logger.WithFields(logrus.Fields{
-				"height": height,
-				"round":  round,
-			}).Infof("AccusationManager: polled %d roundStates", len(rss))
+		m.Lock()
+		rsCacheEntry, ok := m.rsCache[valAddress]
+		m.Unlock()
 
-			for _, rs := range rss {
-				// send round states to detector to be processed
-				m.detector.HandleRoundState(rs)
-			}
-		}
-
-		// todo: save current polling height and round into DB, to resume operations in case of a node restart
-
-		// compute next height and round
-		if round >= constants.DEADBLOCKROUND {
-			// panic if we did not find any round states at this height
-			if !hasRoundStatesAtHeight {
-				m.logger.WithFields(logrus.Fields{
-					"height": height,
-				}).Panic("AccusationManager: no roundStates at height %d", height)
-			}
-
-			round = 1
-			height++
-			hasRoundStatesAtHeight = false
-		} else {
-			round++
-		}
-	}
-}
-
-func (m *Manager) fetchRoundStates(height uint32, round uint32) ([]*objs.RoundState, error) {
-	roundStates := make([]*objs.RoundState, 0)
-
-	err := m.database.View(func(txn *badger.Txn) error {
-
-		// get the latest block height
-		hdr, err := m.database.GetBroadcastBlockHeader(txn)
-		if err != nil {
-			m.logger.Errorf("AccusationManager: could not GetBroadcastBlockHeader: %v", err)
-			return err
-		}
-		currentHeight := hdr.BClaims.Height
-		//m.logger.Infof("AccusationManager: currentHeight %d", currentHeight)
-
-		// don't poll roundStates from heights in the future, because they don't exist yet
-		if height > currentHeight {
-			return ErrOverCurrentHeight
-		}
-
-		// get the validatorSet at a certain height
-		vs, err := m.database.GetValidatorSet(txn, height)
-		if err != nil {
-			if errors.Is(err, badger.ErrKeyNotFound) {
-				return nil
-			}
-			m.logger.Errorf("AccusationManager: could not fetch validator set: %t %v", err, err)
-			return err
-		}
-
-		// get the round state at a certain height and round
-		for _, validator := range vs.Validators {
-			rs, err := m.database.GetHistoricRoundState(txn, validator.VAddr, height, round)
+		if ok {
+			// validator exists in cache, let's check if there are changes in its roundState
+			rsHash, err := rs.Hash()
 			if err != nil {
-				if errors.Is(err, badger.ErrKeyNotFound) {
-					continue
-				}
-
-				m.logger.WithFields(logrus.Fields{
-					"height":    height,
-					"round":     round,
-					"validator": fmt.Sprintf("0x%x", validator.VAddr),
-				}).Errorf("AccusationManager: could not fetch historic round state: %v", err)
-
 				return err
 			}
 
-			roundStates = append(roundStates, rs)
+			if rsCacheEntry.height != rs.RCert.RClaims.Height ||
+				rsCacheEntry.round != rs.RCert.RClaims.Round ||
+				!bytes.Equal(rsCacheEntry.rsHash, rsHash) {
+				// rs updated for this validator
+
+				// m.logger.WithFields(logrus.Fields{
+				// 	"height":              rs.RCert.RClaims.Height,
+				// 	"rsCacheEntry.height": rsCacheEntry.height,
+				// 	"round":               rs.RCert.RClaims.Round,
+				// 	"rsCacheEntry.round":  rsCacheEntry.round,
+				// 	"rsHash":              fmt.Sprintf("%x", rsHash),
+				// 	"rsCacheEntry.rsHash": fmt.Sprintf("%x", rsCacheEntry.rsHash),
+				// }).Debugf("roundState updated for validator %s", valAddress)
+
+				updated = true
+			}
+		} else {
+			updated = true
+			rsCacheEntry = &rsCacheStruct{
+				// data will be populated down below
+			}
 		}
 
-		return nil
-	})
+		if updated {
 
-	if err != nil {
-		return nil, err
+			// m.logger.WithFields(logrus.Fields{
+			// 	"lrs.height":              lrs.Height(),
+			// 	"lrs.round":               lrs.Round(),
+			// 	"rs.RCert.RClaims.Height": rs.RCert.RClaims.Height,
+			// 	"rs.RCert.RClaims.Round":  rs.RCert.RClaims.Round,
+			// 	"vAddr":                   valAddress,
+			// }).Debug("AccusationManager: processing roundState")
+
+			m.processRoundState(rs)
+
+			// update rsCache
+			rsCacheEntry.height = rs.RCert.RClaims.Height
+			rsCacheEntry.round = rs.RCert.RClaims.Round
+			rsHash, err := rs.Hash()
+			if err != nil {
+				return err
+			}
+			rsCacheEntry.rsHash = rsHash
+			m.Lock()
+			m.rsCache[valAddress] = rsCacheEntry
+			m.Unlock()
+		}
 	}
 
-	return roundStates, nil
+	// todo: if the validatorSet changes this will endup with old items in the cache. this needs cleanup
+
+	return nil
 }
 
-// HandleAccusation receives an accusation, stores it in the DB and sends it to the ethereum smart contracts
-func (m *Manager) HandleAccusation(accusation *Accusation) error {
-	// todo: store accusation in DB
-
-	if accusation == nil {
-		panic("AccusationManager: received nil accusation")
-	} else {
-		return (*accusation).SubmitToSmartContracts()
+// processRoundState checks if there is an accusation for a certain roundState and if so,
+// creates an accusation task and executes it, blocking the Synchonizer loop
+// and thus consensus.
+func (m *Manager) processRoundState(rs *objs.RoundState) {
+	for _, detector := range m.processingPipeline {
+		accusation, found := detector(rs)
+		if found {
+			m.logger.Warnf("Accusation found: %#v", accusation)
+			// todo: spawn an Accusation task and schedule it on the task scheduler
+			// todo: don't block while waiting for a response from the accusation task
+			// todo: store this accusation in DB, and send this accusation to the Scheduler system
+			// make sure it's restart/crash resillient
+			m.accusationQ <- accusation
+		}
 	}
 }

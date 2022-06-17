@@ -316,12 +316,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		mDB = rawMonitorDb
 	}
 
-	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, storage)
+	// setup Accusation Manager
+	accusationManager := accusation.NewManager(consDB, logging.GetLogger("accusations"))
+
+	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, accusationManager, storage)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
-
-	// setup Accusation Manager
-	accusationManager := accusation.NewManager(consAdminHandlers, consDB, logging.GetLogger("accusations"))
 
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
@@ -358,8 +358,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go consGossipHandlers.Start()
 	defer consGossipHandlers.Close()
 
-	go accusationManager.Start()
-	defer accusationManager.Stop()
+	go accusationManager.StartWorkers()
+	defer accusationManager.StopWorkers()
 
 	//////////////////////////////////////////////////////////////////////////////
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////
