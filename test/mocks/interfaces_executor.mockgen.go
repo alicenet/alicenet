@@ -54,9 +54,6 @@ type MockITask struct {
 	// GetSubscribeOptionsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetSubscribeOptions.
 	GetSubscribeOptionsFunc *ITaskGetSubscribeOptionsFunc
-	// GetSubscribedTxsFunc is an instance of a mock function object
-	// controlling the behavior of the method GetSubscribedTxs.
-	GetSubscribedTxsFunc *ITaskGetSubscribedTxsFunc
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *ITaskInitializeFunc
@@ -78,7 +75,7 @@ func NewMockITask() *MockITask {
 			},
 		},
 		ExecuteFunc: &ITaskExecuteFunc{
-			defaultHook: func() ([]*types.Transaction, *interfaces.TaskErr) {
+			defaultHook: func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
 				return nil, nil
 			},
 		},
@@ -132,23 +129,18 @@ func NewMockITask() *MockITask {
 				return nil
 			},
 		},
-		GetSubscribedTxsFunc: &ITaskGetSubscribedTxsFunc{
-			defaultHook: func() []*types.Transaction {
+		InitializeFunc: &ITaskInitializeFunc{
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
 				return nil
 			},
 		},
-		InitializeFunc: &ITaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) {
-				return
-			},
-		},
 		PrepareFunc: &ITaskPrepareFunc{
-			defaultHook: func() *interfaces.TaskErr {
+			defaultHook: func(context.Context) *interfaces.TaskErr {
 				return nil
 			},
 		},
 		ShouldExecuteFunc: &ITaskShouldExecuteFunc{
-			defaultHook: func() *interfaces.TaskErr {
+			defaultHook: func(context.Context) *interfaces.TaskErr {
 				return nil
 			},
 		},
@@ -165,7 +157,7 @@ func NewStrictMockITask() *MockITask {
 			},
 		},
 		ExecuteFunc: &ITaskExecuteFunc{
-			defaultHook: func() ([]*types.Transaction, *interfaces.TaskErr) {
+			defaultHook: func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
 				panic("unexpected invocation of MockITask.Execute")
 			},
 		},
@@ -219,23 +211,18 @@ func NewStrictMockITask() *MockITask {
 				panic("unexpected invocation of MockITask.GetSubscribeOptions")
 			},
 		},
-		GetSubscribedTxsFunc: &ITaskGetSubscribedTxsFunc{
-			defaultHook: func() []*types.Transaction {
-				panic("unexpected invocation of MockITask.GetSubscribedTxs")
-			},
-		},
 		InitializeFunc: &ITaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) {
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
 				panic("unexpected invocation of MockITask.Initialize")
 			},
 		},
 		PrepareFunc: &ITaskPrepareFunc{
-			defaultHook: func() *interfaces.TaskErr {
+			defaultHook: func(context.Context) *interfaces.TaskErr {
 				panic("unexpected invocation of MockITask.Prepare")
 			},
 		},
 		ShouldExecuteFunc: &ITaskShouldExecuteFunc{
-			defaultHook: func() *interfaces.TaskErr {
+			defaultHook: func(context.Context) *interfaces.TaskErr {
 				panic("unexpected invocation of MockITask.ShouldExecute")
 			},
 		},
@@ -281,9 +268,6 @@ func NewMockITaskFrom(i interfaces.ITask) *MockITask {
 		},
 		GetSubscribeOptionsFunc: &ITaskGetSubscribeOptionsFunc{
 			defaultHook: i.GetSubscribeOptions,
-		},
-		GetSubscribedTxsFunc: &ITaskGetSubscribedTxsFunc{
-			defaultHook: i.GetSubscribedTxs,
 		},
 		InitializeFunc: &ITaskInitializeFunc{
 			defaultHook: i.Initialize,
@@ -394,23 +378,23 @@ func (c ITaskCloseFuncCall) Results() []interface{} {
 // ITaskExecuteFunc describes the behavior when the Execute method of the
 // parent MockITask instance is invoked.
 type ITaskExecuteFunc struct {
-	defaultHook func() ([]*types.Transaction, *interfaces.TaskErr)
-	hooks       []func() ([]*types.Transaction, *interfaces.TaskErr)
+	defaultHook func(context.Context) (*types.Transaction, *interfaces.TaskErr)
+	hooks       []func(context.Context) (*types.Transaction, *interfaces.TaskErr)
 	history     []ITaskExecuteFuncCall
 	mutex       sync.Mutex
 }
 
 // Execute delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Execute() ([]*types.Transaction, *interfaces.TaskErr) {
-	r0, r1 := m.ExecuteFunc.nextHook()()
-	m.ExecuteFunc.appendCall(ITaskExecuteFuncCall{r0, r1})
+func (m *MockITask) Execute(v0 context.Context) (*types.Transaction, *interfaces.TaskErr) {
+	r0, r1 := m.ExecuteFunc.nextHook()(v0)
+	m.ExecuteFunc.appendCall(ITaskExecuteFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Execute method of
 // the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskExecuteFunc) SetDefaultHook(hook func() ([]*types.Transaction, *interfaces.TaskErr)) {
+func (f *ITaskExecuteFunc) SetDefaultHook(hook func(context.Context) (*types.Transaction, *interfaces.TaskErr)) {
 	f.defaultHook = hook
 }
 
@@ -418,7 +402,7 @@ func (f *ITaskExecuteFunc) SetDefaultHook(hook func() ([]*types.Transaction, *in
 // Execute method of the parent MockITask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskExecuteFunc) PushHook(hook func() ([]*types.Transaction, *interfaces.TaskErr)) {
+func (f *ITaskExecuteFunc) PushHook(hook func(context.Context) (*types.Transaction, *interfaces.TaskErr)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -426,20 +410,20 @@ func (f *ITaskExecuteFunc) PushHook(hook func() ([]*types.Transaction, *interfac
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskExecuteFunc) SetDefaultReturn(r0 []*types.Transaction, r1 *interfaces.TaskErr) {
-	f.SetDefaultHook(func() ([]*types.Transaction, *interfaces.TaskErr) {
+func (f *ITaskExecuteFunc) SetDefaultReturn(r0 *types.Transaction, r1 *interfaces.TaskErr) {
+	f.SetDefaultHook(func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskExecuteFunc) PushReturn(r0 []*types.Transaction, r1 *interfaces.TaskErr) {
-	f.PushHook(func() ([]*types.Transaction, *interfaces.TaskErr) {
+func (f *ITaskExecuteFunc) PushReturn(r0 *types.Transaction, r1 *interfaces.TaskErr) {
+	f.PushHook(func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
 		return r0, r1
 	})
 }
 
-func (f *ITaskExecuteFunc) nextHook() func() ([]*types.Transaction, *interfaces.TaskErr) {
+func (f *ITaskExecuteFunc) nextHook() func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -472,9 +456,12 @@ func (f *ITaskExecuteFunc) History() []ITaskExecuteFuncCall {
 // ITaskExecuteFuncCall is an object that describes an invocation of method
 // Execute on an instance of MockITask.
 type ITaskExecuteFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 []*types.Transaction
+	Result0 *types.Transaction
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 *interfaces.TaskErr
@@ -483,7 +470,7 @@ type ITaskExecuteFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c ITaskExecuteFuncCall) Args() []interface{} {
-	return []interface{}{}
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
@@ -1475,125 +1462,26 @@ func (c ITaskGetSubscribeOptionsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetSubscribedTxsFunc describes the behavior when the
-// GetSubscribedTxs method of the parent MockITask instance is invoked.
-type ITaskGetSubscribedTxsFunc struct {
-	defaultHook func() []*types.Transaction
-	hooks       []func() []*types.Transaction
-	history     []ITaskGetSubscribedTxsFuncCall
-	mutex       sync.Mutex
-}
-
-// GetSubscribedTxs delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockITask) GetSubscribedTxs() []*types.Transaction {
-	r0 := m.GetSubscribedTxsFunc.nextHook()()
-	m.GetSubscribedTxsFunc.appendCall(ITaskGetSubscribedTxsFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the GetSubscribedTxs
-// method of the parent MockITask instance is invoked and the hook queue is
-// empty.
-func (f *ITaskGetSubscribedTxsFunc) SetDefaultHook(hook func() []*types.Transaction) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSubscribedTxs method of the parent MockITask instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ITaskGetSubscribedTxsFunc) PushHook(hook func() []*types.Transaction) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ITaskGetSubscribedTxsFunc) SetDefaultReturn(r0 []*types.Transaction) {
-	f.SetDefaultHook(func() []*types.Transaction {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetSubscribedTxsFunc) PushReturn(r0 []*types.Transaction) {
-	f.PushHook(func() []*types.Transaction {
-		return r0
-	})
-}
-
-func (f *ITaskGetSubscribedTxsFunc) nextHook() func() []*types.Transaction {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ITaskGetSubscribedTxsFunc) appendCall(r0 ITaskGetSubscribedTxsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of ITaskGetSubscribedTxsFuncCall objects
-// describing the invocations of this function.
-func (f *ITaskGetSubscribedTxsFunc) History() []ITaskGetSubscribedTxsFuncCall {
-	f.mutex.Lock()
-	history := make([]ITaskGetSubscribedTxsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ITaskGetSubscribedTxsFuncCall is an object that describes an invocation
-// of method GetSubscribedTxs on an instance of MockITask.
-type ITaskGetSubscribedTxsFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 []*types.Transaction
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ITaskGetSubscribedTxsFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ITaskGetSubscribedTxsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
 // ITaskInitializeFunc describes the behavior when the Initialize method of
 // the parent MockITask instance is invoked.
 type ITaskInitializeFunc struct {
-	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan)
-	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan)
+	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error
+	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error
 	history     []ITaskInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockITask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 ethereum.Network, v5 string, v6 interfaces.ITaskResponseChan) {
-	m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6)
-	m.InitializeFunc.appendCall(ITaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6})
-	return
+func (m *MockITask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 ethereum.Network, v5 string, v6 interfaces.ITaskResponseChan) error {
+	r0 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6)
+	m.InitializeFunc.appendCall(ITaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, r0})
+	return r0
 }
 
 // SetDefaultHook sets function that is called when the Initialize method of
 // the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan)) {
+func (f *ITaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error) {
 	f.defaultHook = hook
 }
 
@@ -1601,7 +1489,7 @@ func (f *ITaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.
 // Initialize method of the parent MockITask instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *ITaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan)) {
+func (f *ITaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1609,20 +1497,20 @@ func (f *ITaskInitializeFunc) PushHook(hook func(context.Context, context.Cancel
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskInitializeFunc) SetDefaultReturn() {
-	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) {
-		return
+func (f *ITaskInitializeFunc) SetDefaultReturn(r0 error) {
+	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskInitializeFunc) PushReturn() {
-	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) {
-		return
+func (f *ITaskInitializeFunc) PushReturn(r0 error) {
+	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+		return r0
 	})
 }
 
-func (f *ITaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) {
+func (f *ITaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1676,6 +1564,9 @@ type ITaskInitializeFuncCall struct {
 	// Arg6 is the value of the 7th argument passed to this method
 	// invocation.
 	Arg6 interfaces.ITaskResponseChan
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 error
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -1687,29 +1578,29 @@ func (c ITaskInitializeFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ITaskInitializeFuncCall) Results() []interface{} {
-	return []interface{}{}
+	return []interface{}{c.Result0}
 }
 
 // ITaskPrepareFunc describes the behavior when the Prepare method of the
 // parent MockITask instance is invoked.
 type ITaskPrepareFunc struct {
-	defaultHook func() *interfaces.TaskErr
-	hooks       []func() *interfaces.TaskErr
+	defaultHook func(context.Context) *interfaces.TaskErr
+	hooks       []func(context.Context) *interfaces.TaskErr
 	history     []ITaskPrepareFuncCall
 	mutex       sync.Mutex
 }
 
 // Prepare delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Prepare() *interfaces.TaskErr {
-	r0 := m.PrepareFunc.nextHook()()
-	m.PrepareFunc.appendCall(ITaskPrepareFuncCall{r0})
+func (m *MockITask) Prepare(v0 context.Context) *interfaces.TaskErr {
+	r0 := m.PrepareFunc.nextHook()(v0)
+	m.PrepareFunc.appendCall(ITaskPrepareFuncCall{v0, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the Prepare method of
 // the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskPrepareFunc) SetDefaultHook(hook func() *interfaces.TaskErr) {
+func (f *ITaskPrepareFunc) SetDefaultHook(hook func(context.Context) *interfaces.TaskErr) {
 	f.defaultHook = hook
 }
 
@@ -1717,7 +1608,7 @@ func (f *ITaskPrepareFunc) SetDefaultHook(hook func() *interfaces.TaskErr) {
 // Prepare method of the parent MockITask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskPrepareFunc) PushHook(hook func() *interfaces.TaskErr) {
+func (f *ITaskPrepareFunc) PushHook(hook func(context.Context) *interfaces.TaskErr) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1726,19 +1617,19 @@ func (f *ITaskPrepareFunc) PushHook(hook func() *interfaces.TaskErr) {
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *ITaskPrepareFunc) SetDefaultReturn(r0 *interfaces.TaskErr) {
-	f.SetDefaultHook(func() *interfaces.TaskErr {
+	f.SetDefaultHook(func(context.Context) *interfaces.TaskErr {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *ITaskPrepareFunc) PushReturn(r0 *interfaces.TaskErr) {
-	f.PushHook(func() *interfaces.TaskErr {
+	f.PushHook(func(context.Context) *interfaces.TaskErr {
 		return r0
 	})
 }
 
-func (f *ITaskPrepareFunc) nextHook() func() *interfaces.TaskErr {
+func (f *ITaskPrepareFunc) nextHook() func(context.Context) *interfaces.TaskErr {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1771,6 +1662,9 @@ func (f *ITaskPrepareFunc) History() []ITaskPrepareFuncCall {
 // ITaskPrepareFuncCall is an object that describes an invocation of method
 // Prepare on an instance of MockITask.
 type ITaskPrepareFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *interfaces.TaskErr
@@ -1779,7 +1673,7 @@ type ITaskPrepareFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c ITaskPrepareFuncCall) Args() []interface{} {
-	return []interface{}{}
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
@@ -1791,23 +1685,23 @@ func (c ITaskPrepareFuncCall) Results() []interface{} {
 // ITaskShouldExecuteFunc describes the behavior when the ShouldExecute
 // method of the parent MockITask instance is invoked.
 type ITaskShouldExecuteFunc struct {
-	defaultHook func() *interfaces.TaskErr
-	hooks       []func() *interfaces.TaskErr
+	defaultHook func(context.Context) *interfaces.TaskErr
+	hooks       []func(context.Context) *interfaces.TaskErr
 	history     []ITaskShouldExecuteFuncCall
 	mutex       sync.Mutex
 }
 
 // ShouldExecute delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockITask) ShouldExecute() *interfaces.TaskErr {
-	r0 := m.ShouldExecuteFunc.nextHook()()
-	m.ShouldExecuteFunc.appendCall(ITaskShouldExecuteFuncCall{r0})
+func (m *MockITask) ShouldExecute(v0 context.Context) *interfaces.TaskErr {
+	r0 := m.ShouldExecuteFunc.nextHook()(v0)
+	m.ShouldExecuteFunc.appendCall(ITaskShouldExecuteFuncCall{v0, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the ShouldExecute method
 // of the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskShouldExecuteFunc) SetDefaultHook(hook func() *interfaces.TaskErr) {
+func (f *ITaskShouldExecuteFunc) SetDefaultHook(hook func(context.Context) *interfaces.TaskErr) {
 	f.defaultHook = hook
 }
 
@@ -1815,7 +1709,7 @@ func (f *ITaskShouldExecuteFunc) SetDefaultHook(hook func() *interfaces.TaskErr)
 // ShouldExecute method of the parent MockITask instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *ITaskShouldExecuteFunc) PushHook(hook func() *interfaces.TaskErr) {
+func (f *ITaskShouldExecuteFunc) PushHook(hook func(context.Context) *interfaces.TaskErr) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1824,19 +1718,19 @@ func (f *ITaskShouldExecuteFunc) PushHook(hook func() *interfaces.TaskErr) {
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *ITaskShouldExecuteFunc) SetDefaultReturn(r0 *interfaces.TaskErr) {
-	f.SetDefaultHook(func() *interfaces.TaskErr {
+	f.SetDefaultHook(func(context.Context) *interfaces.TaskErr {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *ITaskShouldExecuteFunc) PushReturn(r0 *interfaces.TaskErr) {
-	f.PushHook(func() *interfaces.TaskErr {
+	f.PushHook(func(context.Context) *interfaces.TaskErr {
 		return r0
 	})
 }
 
-func (f *ITaskShouldExecuteFunc) nextHook() func() *interfaces.TaskErr {
+func (f *ITaskShouldExecuteFunc) nextHook() func(context.Context) *interfaces.TaskErr {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1869,6 +1763,9 @@ func (f *ITaskShouldExecuteFunc) History() []ITaskShouldExecuteFuncCall {
 // ITaskShouldExecuteFuncCall is an object that describes an invocation of
 // method ShouldExecute on an instance of MockITask.
 type ITaskShouldExecuteFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *interfaces.TaskErr
@@ -1877,7 +1774,7 @@ type ITaskShouldExecuteFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c ITaskShouldExecuteFuncCall) Args() []interface{} {
-	return []interface{}{}
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this

@@ -22,7 +22,7 @@ import (
 type CompletionTask struct {
 	*objects.Task
 	// variables that are unique only for this task
-	startBlockHash common.Hash
+	StartBlockHash common.Hash `json:"startBlockHash"`
 }
 
 // asserting that CompletionTask struct implements interface interfaces.Task
@@ -59,7 +59,7 @@ func (t *CompletionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 		return interfaces.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
 
-	t.startBlockHash = block.Hash()
+	t.StartBlockHash = block.Hash()
 
 	return nil
 }
@@ -80,7 +80,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *inte
 
 	client := t.GetClient()
 	// submit if I'm a leader for this task
-	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.startBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
+	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
 		return nil, interfaces.NewTaskErr(fmt.Sprintf("not leading Completion yet"), true)
 	}
 

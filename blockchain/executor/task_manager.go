@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"time"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
@@ -20,11 +21,12 @@ import (
 
 type TasksManager struct {
 	Transactions map[string]*types.Transaction `json:"transactions"`
-	txWatcher    *transaction.Watcher
-	database     *db.Database  `json:"-"`
-	logger       *logrus.Entry `json:"-"`
+	txWatcher    *transaction.Watcher          `json:"-"`
+	database     *db.Database                  `json:"-"`
+	logger       *logrus.Entry                 `json:"-"`
 }
 
+// Creates a new TasksManager instance
 func NewTaskManager(txWatcher *transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
 		Transactions: map[string]*types.Transaction{},
@@ -44,7 +46,9 @@ func NewTaskManager(txWatcher *transaction.Watcher, database *db.Database, logge
 	return taskManager, nil
 }
 
-func (t *TasksManager) ManageTask(mainCtx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan) {
+// main function to manage a task. It basically an abstraction to handle the
+// task execution in a separate process.
+func (tm *TasksManager) ManageTask(mainCtx context.Context, task interfaces.ITask, database *db.Database, logger *logrus.Entry, eth ethereum.Network, taskResponseChan interfaces.ITaskResponseChan) {
 	var err error
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
@@ -58,17 +62,38 @@ func (t *TasksManager) ManageTask(mainCtx context.Context, task interfaces.ITask
 	}
 	retryDelay := constants.MonitorRetryDelay
 
-	err = prepareTask(taskCtx, task, retryDelay)
-	if err != nil {
-		// unrecoverable errors, recoverable errors but we exhausted all attempts or
-		// ctx.done
-		return
+	isComplete := false
+	if txn, present := tm.Transactions[task.GetId()]; present {
+		isComplete, err = tm.checkCompletion(taskCtx, task, txn)
+		if err != nil {
+			return
+		}
+	} else {
+		err = prepareTask(taskCtx, task, retryDelay)
+		if err != nil {
+			// unrecoverable errors or ctx.done
+			return
+		}
 	}
 
-	err = t.executeTask(taskCtx, task, retryDelay)
+	if !isComplete {
+		err = tm.executeTask(taskCtx, task, retryDelay)
+		if err != nil {
+			// unrecoverable errors, staleTx errors or ctx.done
+			return
+		}
+	}
+
+	// We got a successful receipt, removing from state
+	delete(tm.Transactions, task.GetId())
+	err = tm.persistState()
+	if err != nil {
+		return
+	}
 }
 
-// prepareTask executes task preparation
+// prepareTask executes task preparation. We keep retrying until the task is
+// killed, we get an unrecoverable error or we succeed
 func prepareTask(ctx context.Context, task interfaces.ITask, retryDelay time.Duration) error {
 	for {
 		select {
@@ -77,7 +102,7 @@ func prepareTask(ctx context.Context, task interfaces.ITask, retryDelay time.Dur
 		default:
 		}
 		taskErr := task.Prepare(ctx)
-		// no errors or unrecoverable errors break
+		// no errors or unrecoverable errors
 		if taskErr == nil || !taskErr.IsRecoverable() {
 			return taskErr
 		}
@@ -88,9 +113,14 @@ func prepareTask(ctx context.Context, task interfaces.ITask, retryDelay time.Dur
 	}
 }
 
-// executeTask executes task business logic
-func (t *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, retryDelay time.Duration) error {
-	if shouldExecute(ctx, task) {
+// executeTask executes task business logic. We keep retrying until the task is
+// killed, we get an unrecoverable error or we succeed
+func (tm *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, retryDelay time.Duration) error {
+	hasToExecute, err := shouldExecute(task.GetCtx(), task)
+	if err != nil {
+		return err
+	}
+	if hasToExecute {
 		for {
 			select {
 			case <-ctx.Done():
@@ -110,13 +140,13 @@ func (t *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, r
 				return taskErr
 			}
 			if txn != nil {
-				t.Transactions[task.GetId()] = txn
-				err := t.persistState()
+				tm.Transactions[task.GetId()] = txn
+				err := tm.persistState()
 				if err != nil {
 					return err
 				}
 
-				isComplete, err := t.checkCompletion(ctx, task, txn)
+				isComplete, err := tm.checkCompletion(ctx, task, txn)
 				if err != nil {
 					return err
 				}
@@ -132,15 +162,18 @@ func (t *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, r
 	return nil
 }
 
-func (t *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITask, txn *types.Transaction) (bool, error) {
+// checks if a task is complete. The function is going to subscribe a
+// transaction in the transactionWatcher and it will wait until it gets the
+// receipt, the task is killed, or shouldExecute returns false.
+func (tm *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITask, txn *types.Transaction) (bool, error) {
 	var err error
 	var receipt *types.Receipt
 	isComplete := false
-	receiptResponse, err := t.txWatcher.Subscribe(ctx, txn, task.GetSubscribeOptions())
+	receiptResponse, err := tm.txWatcher.Subscribe(ctx, txn, task.GetSubscribeOptions())
 	if err != nil {
 		// if we get an error here, it means that we have a corrupted txn we should
 		// retry a transaction
-		t.logger.Errorf("failed to subscribe tx with error: %s", err.Error())
+		tm.logger.Errorf("failed to subscribe tx with error: %s", err.Error())
 		return isComplete, nil
 	}
 
@@ -149,7 +182,7 @@ func (t *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITas
 		case <-ctx.Done():
 			isComplete = true
 			return isComplete, ctx.Err()
-		case <-time.After(1 * time.Second):
+		case <-time.After(constants.TaskManagerPoolingTime):
 		}
 
 		if receiptResponse.IsReady() {
@@ -168,7 +201,11 @@ func (t *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITas
 			}
 		}
 
-		if !shouldExecute(task.GetCtx(), task) {
+		hasToExecute, err := shouldExecute(task.GetCtx(), task)
+		if err != nil {
+			return isComplete, err
+		}
+		if !hasToExecute {
 			isComplete = true
 			return isComplete, nil
 		}
@@ -177,35 +214,47 @@ func (t *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITas
 	return isComplete, nil
 }
 
-func shouldExecute(ctx context.Context, task interfaces.ITask) bool {
+// checks if a task should be executed. In case of recoverable errors the
+// function is going to retry `constants.MonitorRetryCount` times. If it
+// exhausted the number of retries, it sends true since there's no information.
+// The function returns false in case of unrecoverable errors, or if it
+// shouldn't execute a task. In case of no errors, the return value is true
+// (default case to t.ShouldExecute to return that a task should be executed).
+func shouldExecute(ctx context.Context, task interfaces.ITask) (bool, error) {
 	for i := uint64(1); i <= constants.MonitorRetryCount; i++ {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		default:
+		}
 		if err := task.ShouldExecute(ctx); err != nil {
 			if err.IsRecoverable() {
 				task.GetLogger().Tracef("got a recoverable error during task should execute: %v", err)
 				if err := sleepWithContext(ctx, constants.MonitorRetryDelay); err != nil {
-					return false
+					return false, err
 				}
 				continue
 			}
 			task.GetLogger().Debugf("got a non recoverable error during task should execute: %v", err)
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
-func (t *TasksManager) persistState() error {
-	rawData, err := json.Marshal(t)
+// persist task manager state to disk
+func (tm *TasksManager) persistState() error {
+	rawData, err := json.Marshal(tm)
 	if err != nil {
 		return err
 	}
 
-	err = t.database.Update(func(txn *badger.Txn) error {
+	err = tm.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		t.logger.WithField("Key", string(key)).Infof("Saving state")
+		tm.logger.WithField("Key", string(key)).Infof("Saving state")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
-			t.logger.Error("Failed to set Value")
+			tm.logger.Error("Failed to set Value")
 			return err
 		}
 		return nil
@@ -214,25 +263,26 @@ func (t *TasksManager) persistState() error {
 		return err
 	}
 
-	if err := t.database.Sync(); err != nil {
-		t.logger.Error("Failed to set sync")
+	if err := tm.database.Sync(); err != nil {
+		tm.logger.Error("Failed to set sync")
 		return err
 	}
 
 	return nil
 }
 
-func (t *TasksManager) loadState() error {
+// load task's manager state from database
+func (tm *TasksManager) loadState() error {
 
-	if err := t.database.View(func(txn *badger.Txn) error {
+	if err := tm.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		t.logger.WithField("Key", string(key)).Infof("Looking up state")
+		tm.logger.WithField("Key", string(key)).Infof("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(rawData, t)
+		err = json.Unmarshal(rawData, tm)
 		if err != nil {
 			return err
 		}
@@ -243,8 +293,8 @@ func (t *TasksManager) loadState() error {
 	}
 
 	// synchronizing db state to disk
-	if err := t.database.Sync(); err != nil {
-		t.logger.Error("Failed to set sync")
+	if err := tm.database.Sync(); err != nil {
+		tm.logger.Error("Failed to set sync")
 		return err
 	}
 
@@ -252,6 +302,8 @@ func (t *TasksManager) loadState() error {
 
 }
 
+// sleeps a certain amount of time also checking the context. It fails in case
+// the context is cancelled.
 func sleepWithContext(ctx context.Context, delay time.Duration) error {
 	select {
 	case <-ctx.Done():

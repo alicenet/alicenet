@@ -3,36 +3,28 @@ package objects
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
 	"github.com/MadBase/MadNet/blockchain/transaction"
 	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-type InternalTransaction struct {
-	mu          sync.RWMutex
-	transaction *types.Transaction
-}
-
 type Task struct {
-	isInitialized       bool
-	id                  string
-	name                string
-	start               uint64
-	end                 uint64
-	allowMultiExecution bool
-	ctx                 context.Context
-	cancelFunc          context.CancelFunc
-	database            *db.Database
-	logger              *logrus.Entry
-	client              ethereum.Network
-	taskResponseChan    interfaces.ITaskResponseChan
-	subscribedTxn       *InternalTransaction
-	subscribeOptions    *transaction.SubscribeOptions
+	isInitialized       bool                          `json:"-"`
+	id                  string                        `json:"-"`
+	name                string                        `json:"-"`
+	start               uint64                        `json:"-"`
+	end                 uint64                        `json:"-"`
+	allowMultiExecution bool                          `json:"-"`
+	ctx                 context.Context               `json:"-"`
+	cancelFunc          context.CancelFunc            `json:"-"`
+	database            *db.Database                  `json:"-"`
+	logger              *logrus.Entry                 `json:"-"`
+	client              ethereum.Network              `json:"-"`
+	taskResponseChan    interfaces.ITaskResponseChan  `json:"-"`
+	subscribeOptions    *transaction.SubscribeOptions `json:"-"`
 }
 
 func NewTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *Task {
@@ -88,18 +80,6 @@ func (t *Task) GetName() string {
 // GetAllowMultiExecution default implementation for the ITask interface
 func (t *Task) GetAllowMultiExecution() bool {
 	return t.allowMultiExecution
-}
-
-func (t *Task) SetSubscribedTx(txn *types.Transaction) {
-	t.subscribedTxn.mu.Lock()
-	defer t.subscribedTxn.mu.Unlock()
-	t.subscribedTxn.transaction = txn
-}
-
-func (t *Task) GetSubscribedTx() *types.Transaction {
-	t.subscribedTxn.mu.RLock()
-	defer t.subscribedTxn.mu.RUnlock()
-	return t.subscribedTxn.transaction
 }
 
 func (t *Task) GetSubscribeOptions() *transaction.SubscribeOptions {

@@ -26,7 +26,7 @@ import (
 type MPKSubmissionTask struct {
 	*objects.Task
 	// variables that are unique only for this task
-	startBlockHash common.Hash
+	StartBlockHash common.Hash `json:"startBlockHash"`
 }
 
 // asserting that MPKSubmissionTask struct implements interface interfaces.Task
@@ -71,7 +71,7 @@ func (t *MPKSubmissionTask) Prepare(ctx context.Context) *interfaces.TaskErr {
 			}
 
 			logger.Debugf("block hash: %v\n", block.Hash())
-			t.startBlockHash = block.Hash()
+			t.StartBlockHash = block.Hash()
 
 			// prepare MPK
 			g1KeyShares := make([][2]*big.Int, dkgState.NumberOfValidators)
@@ -146,7 +146,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *i
 
 	// submit if I'm a leader for this task
 	client := t.GetClient()
-	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.startBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
+	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
 		return nil, interfaces.NewTaskErr("not leading MPK submission yet", true)
 	}
 

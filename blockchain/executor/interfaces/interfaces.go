@@ -41,7 +41,6 @@ type ITask interface {
 	GetEnd() uint64
 	GetName() string
 	GetAllowMultiExecution() bool
-	GetSubscribedTx() *types.Transaction
 	GetSubscribeOptions() *transaction.SubscribeOptions
 	GetCtx() context.Context
 	GetClient() ethereum.Network

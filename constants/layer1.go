@@ -3,6 +3,11 @@ package constants
 import "time"
 
 const (
+	// How much time we are going to poll to check if the task is completed
+	TaskManagerPoolingTime time.Duration = 7 * time.Second
+)
+
+const (
 	// The size of the buffered channels used by the task scheduler
 	TaskSchedulerBufferSize uint64 = 1024
 )
@@ -23,7 +28,7 @@ const (
 	TxReceiptCacheMaxBlocks uint64 = 100
 	// time which we should poll the layer1 node to check for new blocks
 	TxPollingTime time.Duration = 7 * time.Second
-	// time which we should poll the layer1 node to check for new blocks
+	// time which we should display the gas metrics
 	TxStatusTime time.Duration = 60 * time.Second
 	// max timeout for all rpc call requests during an iteration
 	TxNetworkTimeout time.Duration = 2 * time.Second
