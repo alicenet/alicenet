@@ -10,6 +10,10 @@ const (
 const (
 	// The size of the buffered channels used by the task scheduler
 	TaskSchedulerBufferSize uint64 = 1024
+	// Timeout in seconds for the network interactions
+	TaskSchedulerNetworkTimeout time.Duration = 1 * time.Second
+	// Time in which the scheduler it's going to enter in the main loop to spawn tasks
+	TaskSchedulerProcessingTime time.Duration = 3 * time.Second
 )
 
 // Monitor constants

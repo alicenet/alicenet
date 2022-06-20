@@ -110,7 +110,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *interf
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *SnapshotTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -120,24 +120,29 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	opts, err := client.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	height, err := client.Contracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
 	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
-		return interfaces.NewTaskErr(fmt.Sprint("block height we want to snapshot is older than (or same as) what's already been snapshotted"), false)
+		logger.Debugf(
+			"block height we want to snapshot height:%v is older than (or same as) what's already been snapshotted height:%v",
+			snapshotState.BlockHeader.BClaims.Height,
+			uint32(height.Uint64()),
+		)
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

@@ -33,7 +33,7 @@ type ITask interface {
 	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth ethereum.Network, id string, taskResponseChan ITaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
-	ShouldExecute(ctx context.Context) *TaskErr
+	ShouldExecute(ctx context.Context) (bool, *TaskErr)
 	Finish(err error)
 	Close()
 	GetId() string

@@ -167,7 +167,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *i
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -177,45 +177,47 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskE
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.MPKSubmission {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from MPKSubmission", dkgState.Phase), false)
+		logger.Debugf("phase %v different from MPKSubmission", dkgState.Phase)
+		return false, nil
 	}
 
 	// if the mpk is empty in the state that we loaded from db, it means that
-	// something really bad happened (ew.g initiate was not successful, data
+	// something really bad happened (e.g initiate was not successful, data
 	// corruption)
 	if isMasterPublicKeyEmpty(dkgState.MasterPublicKey) {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from MPKSubmission", dkgState.Phase), false)
+		return false, interfaces.NewTaskErr("empty master public key", false)
 	}
 
 	client := t.GetClient()
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	mpkHash, err := client.Contracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed to retrieve mpk from smart contracts: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed to retrieve mpk from smart contracts: %v", err), true)
 	}
 
 	// If we fail here, it means that we had a data corruption or we stored wrong
 	// data for dkgstate the master public key
 	mpkHashBin, err := bn256.MarshalBigIntSlice(dkgState.MasterPublicKey[:])
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed to serialize internal mpk: %v", err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed to serialize internal mpk: %v", err), false)
 	}
 
 	mpkHashSlice := crypto.Hasher(mpkHashBin)
 	if bytes.Equal(mpkHash[:], mpkHashSlice) {
-		return interfaces.NewTaskErr("state mpkHash is equal to the received", false)
+		logger.Debug("state mpkHash is equal to the received")
+		return false, nil
 	}
 
 	logger.Tracef("state mpkHash is not equal to the received, should execute")
-	return nil
+	return true, nil
 }
 
 func isMasterPublicKeyEmpty(masterPublicKey [4]*big.Int) bool {

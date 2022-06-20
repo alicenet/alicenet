@@ -116,30 +116,19 @@ func prepareTask(ctx context.Context, task interfaces.ITask, retryDelay time.Dur
 // executeTask executes task business logic. We keep retrying until the task is
 // killed, we get an unrecoverable error or we succeed
 func (tm *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, retryDelay time.Duration) error {
-	hasToExecute, err := shouldExecute(task.GetCtx(), task)
+	logger := task.GetLogger()
+	hasToExecute, err := shouldExecute(ctx, task)
 	if err != nil {
 		return err
 	}
-	if hasToExecute {
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-			}
-
-			txn, taskErr := task.Execute(ctx)
-			if taskErr != nil {
-				if !taskErr.IsRecoverable() {
-					err := sleepWithContext(ctx, retryDelay)
-					if err != nil {
-						return err
-					}
-					continue
-				}
-				return taskErr
+	for {
+		if hasToExecute {
+			txn, err := tm.taskExecution(ctx, task, retryDelay)
+			if err != nil {
+				return err
 			}
 			if txn != nil {
+				logger.Debug("got a successful txn: %v", txn.Hash().Hex())
 				tm.Transactions[task.GetId()] = txn
 				err := tm.persistState()
 				if err != nil {
@@ -153,13 +142,36 @@ func (tm *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, 
 				if isComplete {
 					return nil
 				}
-			} else {
-				return nil
 			}
 		}
 	}
+}
 
-	return nil
+func (tm *TasksManager) taskExecution(ctx context.Context, task interfaces.ITask, retryDelay time.Duration) (*types.Transaction, error) {
+	logger := task.GetLogger()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		txn, taskErr := task.Execute(ctx)
+		if taskErr != nil {
+			if taskErr.IsRecoverable() {
+				logger.Trace("got a recoverable error during task.execute: %v", taskErr.Error())
+				err := sleepWithContext(ctx, retryDelay)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+			logger.Debug("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
+			return nil, taskErr
+		}
+		logger.Trace("successfully executed task")
+		return txn, nil
+	}
 }
 
 // checks if a task is complete. The function is going to subscribe a
@@ -168,20 +180,19 @@ func (tm *TasksManager) executeTask(ctx context.Context, task interfaces.ITask, 
 func (tm *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITask, txn *types.Transaction) (bool, error) {
 	var err error
 	var receipt *types.Receipt
-	isComplete := false
+	logger := task.GetLogger()
 	receiptResponse, err := tm.txWatcher.Subscribe(ctx, txn, task.GetSubscribeOptions())
 	if err != nil {
 		// if we get an error here, it means that we have a corrupted txn we should
 		// retry a transaction
-		tm.logger.Errorf("failed to subscribe tx with error: %s", err.Error())
-		return isComplete, nil
+		logger.Errorf("failed to subscribe tx with error: %s", err.Error())
+		return false, nil
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			isComplete = true
-			return isComplete, ctx.Err()
+			return true, ctx.Err()
 		case <-time.After(constants.TaskManagerPoolingTime):
 		}
 
@@ -190,28 +201,30 @@ func (tm *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITa
 			if err != nil {
 				var txnStaleError *transaction.ErrTransactionStale
 				if errors.As(err, &txnStaleError) {
-					return isComplete, err
+					logger.Info("got a stale transaction and couldn't retry, finishing execution")
+					return false, err
 				}
-				break
+				logger.Warnf("got a error while waiting for receipt %v, retrying execution", err)
+				return false, nil
 			}
 
 			if receipt.Status == types.ReceiptStatusSuccessful {
-				isComplete = true
-				return isComplete, nil
+				logger.Debug("got a successful receipt")
+				return true, nil
+			} else {
+				logger.Debug("got a reverted receipt")
+				return false, nil
 			}
 		}
 
-		hasToExecute, err := shouldExecute(task.GetCtx(), task)
+		hasToExecute, err := shouldExecute(ctx, task)
 		if err != nil {
-			return isComplete, err
+			return false, err
 		}
 		if !hasToExecute {
-			isComplete = true
-			return isComplete, nil
+			return true, nil
 		}
 	}
-
-	return isComplete, nil
 }
 
 // checks if a task should be executed. In case of recoverable errors the
@@ -221,22 +234,26 @@ func (tm *TasksManager) checkCompletion(ctx context.Context, task interfaces.ITa
 // shouldn't execute a task. In case of no errors, the return value is true
 // (default case to t.ShouldExecute to return that a task should be executed).
 func shouldExecute(ctx context.Context, task interfaces.ITask) (bool, error) {
+	logger := task.GetLogger()
 	for i := uint64(1); i <= constants.MonitorRetryCount; i++ {
 		select {
 		case <-ctx.Done():
 			return false, ctx.Err()
 		default:
 		}
-		if err := task.ShouldExecute(ctx); err != nil {
+		if hasToExecute, err := task.ShouldExecute(ctx); err != nil {
 			if err.IsRecoverable() {
-				task.GetLogger().Tracef("got a recoverable error during task should execute: %v", err)
+				logger.Tracef("got a recoverable error during task.ShouldExecute: %v", err)
 				if err := sleepWithContext(ctx, constants.MonitorRetryDelay); err != nil {
 					return false, err
 				}
 				continue
 			}
-			task.GetLogger().Debugf("got a non recoverable error during task should execute: %v", err)
-			return false, nil
+			logger.Debugf("got a non recoverable error during task.ShouldExecute: %v", err)
+			return false, err
+		} else {
+			logger.Trace("should execute task: %v", hasToExecute)
+			return hasToExecute, nil
 		}
 	}
 

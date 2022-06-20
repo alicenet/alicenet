@@ -176,7 +176,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *int
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -186,31 +186,32 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+	}
+
+	if dkgState.Phase != state.DisputeGPKJSubmission {
+		logger.Debug("phase %v different from DisputeGPKJSubmission", dkgState.Phase)
+		return false, nil
 	}
 
 	client := t.GetClient()
-	if dkgState.Phase != state.DisputeGPKJSubmission {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from DisputeGPKJSubmission", dkgState.Phase), false)
-	}
 
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 	badParticipants, err := client.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
 	}
-
-	logger.WithFields(logrus.Fields{
-		"state.BadShares":     len(dkgState.BadShares),
-		"eth.badParticipants": badParticipants,
-	}).Debug("DisputeGPKjTask ShouldExecute()")
 
 	if len(dkgState.DishonestValidators) == int(badParticipants.Int64()) {
-		return interfaces.NewTaskErr(fmt.Sprintf("all bad participants already accused"), false)
+		logger.WithFields(logrus.Fields{
+			"state.BadShares":     len(dkgState.BadShares),
+			"eth.badParticipants": badParticipants,
+		}).Debug("all bad participants already accused")
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

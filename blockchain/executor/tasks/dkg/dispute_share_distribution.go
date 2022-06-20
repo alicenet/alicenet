@@ -165,7 +165,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -176,26 +176,27 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) *inter
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeShareDistribution {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from DisputeShareDistribution", dkgState.Phase), false)
+		logger.Debugf("phase %v different from DisputeShareDistribution", dkgState.Phase)
+		return false, nil
 	}
 
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 	badParticipants, err := client.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
 	}
 
-	// if there is someone that wasn't accused we need to retry
 	if len(dkgState.BadShares) == int(badParticipants.Int64()) {
-		return interfaces.NewTaskErr(fmt.Sprintf("all bad participants already accused"), false)
+		logger.Debug("all bad participants already accused")
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

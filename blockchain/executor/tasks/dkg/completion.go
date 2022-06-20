@@ -101,7 +101,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *inte
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *CompletionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *CompletionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -110,16 +110,17 @@ func (t *CompletionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr 
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingCallOpts, err), true)
 	}
 	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("error getting ethdkg phases in completion task: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("error getting ethdkg phases in completion task: %v", err), true)
 	}
 
 	if phase == uint8(state.Completion) {
-		return interfaces.NewTaskErr(fmt.Sprintf("completion already ocurred: %v", phase), false)
+		logger.Debugf("completion already ocurred: %v", phase)
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

@@ -120,7 +120,7 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *interf
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *RegisterTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -130,27 +130,29 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+	}
+
+	if dkgState.Phase != state.RegistrationOpen {
+		logger.Debugf("phase %v different from RegistrationOpen", dkgState.Phase)
+		return false, nil
 	}
 
 	client := t.GetClient()
-	if dkgState.Phase != state.RegistrationOpen {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from RegistrationOpen", dkgState.Phase), false)
-	}
-
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	status, err := state.CheckRegistration(client.Contracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)
 	logger.Debugf("registration status: %v", status)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)
 	}
 	if status == state.Registered || status == state.BadRegistration {
-		return interfaces.NewTaskErr(fmt.Sprintf("registration already occurred %v", status), false)
+		logger.Debug("registration already occurred %v", status)
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

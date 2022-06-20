@@ -127,7 +127,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -137,35 +137,37 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	defaultAccount := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAccount)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
 	}
 
 	phase, err := client.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("error getting ETHDKGPhase: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("error getting ETHDKGPhase: %v", err), true)
 	}
 
 	// DisputeShareDistribution || KeyShareSubmission
 	if phase != uint8(state.DisputeShareDistribution) && phase != uint8(state.KeyShareSubmission) {
-		return interfaces.NewTaskErr("on dispute ShareDistribution phase should not submit keyShare", false)
+		logger.Debugf("on dispute ShareDistribution phase should not submit keyShare")
+		return false, nil
 	}
 
 	// Check the key share submission status
 	status, err := state.CheckKeyShare(ctx, client.Contracts().Ethdkg(), logger, callOpts, defaultAccount.Address, dkgState.Participants[defaultAccount.Address].KeyShareG1s)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("error checkingKeyShare: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("error checkingKeyShare: %v", err), true)
 	}
 
 	if status == state.KeyShared || status == state.BadKeyShared {
-		return interfaces.NewTaskErr("already shared keyShare", false)
+		logger.Debug("already shared keyShare")
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }

@@ -137,7 +137,7 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -147,32 +147,34 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) *interfaces.Task
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	if dkgState.Phase != state.GPKJSubmission {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from GPKJSubmission", dkgState.Phase), false)
+		logger.Debugf("phase %v different from GPKJSubmission", dkgState.Phase)
+		return false, nil
 	}
 
 	//Check if my GPKj is submitted, if not should retry
 	defaultAddr := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAddr)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingCallOpts, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingCallOpts, err), true)
 	}
 	participantState, err := client.Contracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed getting participants state: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed getting participants state: %v", err), true)
 	}
 	if participantState.Gpkj[0].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[0]) == 0 &&
 		participantState.Gpkj[1].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[1]) == 0 &&
 		participantState.Gpkj[2].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[2]) == 0 &&
 		participantState.Gpkj[3].Cmp(dkgState.Participants[defaultAddr.Address].GPKj[3]) == 0 {
-		return interfaces.NewTaskErr(fmt.Sprint("GPKj already set"), false)
+		logger.Debug("GPKj already set")
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }
 
 // SetAdminHandler sets the task adminHandler

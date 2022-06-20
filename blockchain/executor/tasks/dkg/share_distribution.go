@@ -131,7 +131,7 @@ func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction
 }
 
 // ShouldRetry checks if it makes sense to try again
-func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -141,30 +141,32 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) *interfaces.T
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
 	}
 
 	eth := t.GetClient()
 	if dkgState.Phase != state.ShareDistribution {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from ShareDistribution", dkgState.Phase), false)
+		logger.Debugf("phase %v different from ShareDistribution", dkgState.Phase)
+		return false, nil
 	}
 
 	// If it's generally good to retry, let's try to be more specific
 	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
 	}
 	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, dkgState.Account.Address)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
 
 	logger.Debugf("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
 	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
-		return interfaces.NewTaskErr("did distribute shares after all. needs no retry", false)
+		logger.Debug("did distribute shares after all. needs no retry")
+		return false, nil
 	}
 
 	logger.Debugf("Did not distribute shares after all. needs retry")
-	return nil
+	return true, nil
 }

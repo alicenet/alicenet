@@ -82,7 +82,7 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 }
 
 // ShouldExecute checks if it makes sense to execute the task
-func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) *interfaces.TaskErr {
+func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (bool, *interfaces.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
@@ -92,23 +92,25 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) *int
 		return err
 	})
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.RegistrationOpen {
-		return interfaces.NewTaskErr(fmt.Sprintf("phase %v different from RegistrationOpen", dkgState.Phase), false)
+		logger.Debugf("phase %v different from RegistrationOpen", dkgState.Phase)
+		return false, nil
 	}
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return false, interfaces.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		return interfaces.NewTaskErr(fmt.Sprintf(constants.NobodyToAccuse), false)
+		logger.Debug(constants.NobodyToAccuse)
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, dkgState *state.DkgState) ([]common.Address, error) {
