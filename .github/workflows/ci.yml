@@ -115,56 +115,56 @@ jobs:
           files: ./coverage.out
           verbose: true
 
-  golang-blockchain-tests:
-    runs-on: ${{ matrix.os }}
-    needs: golang-unit-tests
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-20.04 ]
-        test-cmd: [
-          github.com/MadBase/MadNet/blockchain/monitor/testing,
-          github.com/MadBase/MadNet/blockchain/executor,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestShareDistribution_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestShareDistribution_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestShareDistribution_Group_3,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestRegisterTask_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestRegisterTask_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestRegisterTask_Group_3,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestMPKSubmission_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestMPKSubmission_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestKeyShareSubmission,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestGPKjSubmission_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestGPKjSubmission_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingKeySharesTask,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestGPKjDispute,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestCompletion_Group_1,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestCompletion_Group_2,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg -run TestCompletion_Group_3,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/state,
-          github.com/MadBase/MadNet/blockchain/executor/tasks/dkg/utils,
-          github.com/MadBase/MadNet/blockchain/monitor,
-          github.com/MadBase/MadNet/blockchain/monitor/events,
-          github.com/MadBase/MadNet/blockchain/monitor/objects,
-          github.com/MadBase/MadNet/blockchain/transaction
-        ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - name: Set up gotestfmt
-        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      - name: Run tests ${{ matrix.test-cmd }}
-        timeout-minutes: 20
-        run: |
-          set -euo pipefail
-          ./scripts/main.sh init 5
-          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+  # golang-blockchain-tests:
+  #   runs-on: ${{ matrix.os }}
+  #   needs: golang-unit-tests
+  #   timeout-minutes: 60
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [ ubuntu-20.04 ]
+  #       test-cmd: [
+  #         github.com/MadBase/MadNet/layer1/monitor/testing,
+  #         github.com/MadBase/MadNet/layer1/executor,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_3,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_3,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestMPKSubmission_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestMPKSubmission_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestKeyShareSubmission,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjSubmission_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjSubmission_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingKeySharesTask,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjDispute,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_1,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_2,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_3,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state,
+  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils,
+  #         github.com/MadBase/MadNet/layer1/monitor,
+  #         github.com/MadBase/MadNet/layer1/monitor/events,
+  #         github.com/MadBase/MadNet/layer1/monitor/objects,
+  #         github.com/MadBase/MadNet/layer1/transaction
+  #       ]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/alicenet-config
+  #     - name: Set up gotestfmt
+  #       run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+  #     - name: Run tests ${{ matrix.test-cmd }}
+  #       timeout-minutes: 20
+  #       run: |
+  #         set -euo pipefail
+  #         ./scripts/main.sh init 5
+  #         go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt

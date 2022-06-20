@@ -6,145 +6,145 @@ import (
 	"context"
 	"sync"
 
-	transaction "github.com/MadBase/MadNet/blockchain/transaction"
+	transaction "github.com/MadBase/MadNet/layer1/transaction"
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
-// MockIWatcher is a mock implementation of the IWatcher interface (from the
-// package github.com/MadBase/MadNet/blockchain/transaction) used for unit
+// MockWatcher is a mock implementation of the Watcher interface (from the
+// package github.com/MadBase/MadNet/layer1/transaction) used for unit
 // testing.
-type MockIWatcher struct {
+type MockWatcher struct {
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.
-	CloseFunc *IWatcherCloseFunc
+	CloseFunc *WatcherCloseFunc
 	// StartFunc is an instance of a mock function object controlling the
 	// behavior of the method Start.
-	StartFunc *IWatcherStartFunc
+	StartFunc *WatcherStartFunc
 	// SubscribeFunc is an instance of a mock function object controlling
 	// the behavior of the method Subscribe.
-	SubscribeFunc *IWatcherSubscribeFunc
+	SubscribeFunc *WatcherSubscribeFunc
 	// SubscribeAndWaitFunc is an instance of a mock function object
 	// controlling the behavior of the method SubscribeAndWait.
-	SubscribeAndWaitFunc *IWatcherSubscribeAndWaitFunc
+	SubscribeAndWaitFunc *WatcherSubscribeAndWaitFunc
 	// WaitFunc is an instance of a mock function object controlling the
 	// behavior of the method Wait.
-	WaitFunc *IWatcherWaitFunc
+	WaitFunc *WatcherWaitFunc
 }
 
-// NewMockIWatcher creates a new mock of the IWatcher interface. All methods
+// NewMockWatcher creates a new mock of the Watcher interface. All methods
 // return zero values for all results, unless overwritten.
-func NewMockIWatcher() *MockIWatcher {
-	return &MockIWatcher{
-		CloseFunc: &IWatcherCloseFunc{
+func NewMockWatcher() *MockWatcher {
+	return &MockWatcher{
+		CloseFunc: &WatcherCloseFunc{
 			defaultHook: func() {
 				return
 			},
 		},
-		StartFunc: &IWatcherStartFunc{
+		StartFunc: &WatcherStartFunc{
 			defaultHook: func() error {
 				return nil
 			},
 		},
-		SubscribeFunc: &IWatcherSubscribeFunc{
-			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
+		SubscribeFunc: &WatcherSubscribeFunc{
+			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
 				return nil, nil
 			},
 		},
-		SubscribeAndWaitFunc: &IWatcherSubscribeAndWaitFunc{
+		SubscribeAndWaitFunc: &WatcherSubscribeAndWaitFunc{
 			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
 				return nil, nil
 			},
 		},
-		WaitFunc: &IWatcherWaitFunc{
-			defaultHook: func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error) {
+		WaitFunc: &WatcherWaitFunc{
+			defaultHook: func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error) {
 				return nil, nil
 			},
 		},
 	}
 }
 
-// NewStrictMockIWatcher creates a new mock of the IWatcher interface. All
+// NewStrictMockWatcher creates a new mock of the Watcher interface. All
 // methods panic on invocation, unless overwritten.
-func NewStrictMockIWatcher() *MockIWatcher {
-	return &MockIWatcher{
-		CloseFunc: &IWatcherCloseFunc{
+func NewStrictMockWatcher() *MockWatcher {
+	return &MockWatcher{
+		CloseFunc: &WatcherCloseFunc{
 			defaultHook: func() {
-				panic("unexpected invocation of MockIWatcher.Close")
+				panic("unexpected invocation of MockWatcher.Close")
 			},
 		},
-		StartFunc: &IWatcherStartFunc{
+		StartFunc: &WatcherStartFunc{
 			defaultHook: func() error {
-				panic("unexpected invocation of MockIWatcher.Start")
+				panic("unexpected invocation of MockWatcher.Start")
 			},
 		},
-		SubscribeFunc: &IWatcherSubscribeFunc{
-			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
-				panic("unexpected invocation of MockIWatcher.Subscribe")
+		SubscribeFunc: &WatcherSubscribeFunc{
+			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
+				panic("unexpected invocation of MockWatcher.Subscribe")
 			},
 		},
-		SubscribeAndWaitFunc: &IWatcherSubscribeAndWaitFunc{
+		SubscribeAndWaitFunc: &WatcherSubscribeAndWaitFunc{
 			defaultHook: func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
-				panic("unexpected invocation of MockIWatcher.SubscribeAndWait")
+				panic("unexpected invocation of MockWatcher.SubscribeAndWait")
 			},
 		},
-		WaitFunc: &IWatcherWaitFunc{
-			defaultHook: func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error) {
-				panic("unexpected invocation of MockIWatcher.Wait")
+		WaitFunc: &WatcherWaitFunc{
+			defaultHook: func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error) {
+				panic("unexpected invocation of MockWatcher.Wait")
 			},
 		},
 	}
 }
 
-// NewMockIWatcherFrom creates a new mock of the MockIWatcher interface. All
+// NewMockWatcherFrom creates a new mock of the MockWatcher interface. All
 // methods delegate to the given implementation, unless overwritten.
-func NewMockIWatcherFrom(i transaction.IWatcher) *MockIWatcher {
-	return &MockIWatcher{
-		CloseFunc: &IWatcherCloseFunc{
+func NewMockWatcherFrom(i transaction.Watcher) *MockWatcher {
+	return &MockWatcher{
+		CloseFunc: &WatcherCloseFunc{
 			defaultHook: i.Close,
 		},
-		StartFunc: &IWatcherStartFunc{
+		StartFunc: &WatcherStartFunc{
 			defaultHook: i.Start,
 		},
-		SubscribeFunc: &IWatcherSubscribeFunc{
+		SubscribeFunc: &WatcherSubscribeFunc{
 			defaultHook: i.Subscribe,
 		},
-		SubscribeAndWaitFunc: &IWatcherSubscribeAndWaitFunc{
+		SubscribeAndWaitFunc: &WatcherSubscribeAndWaitFunc{
 			defaultHook: i.SubscribeAndWait,
 		},
-		WaitFunc: &IWatcherWaitFunc{
+		WaitFunc: &WatcherWaitFunc{
 			defaultHook: i.Wait,
 		},
 	}
 }
 
-// IWatcherCloseFunc describes the behavior when the Close method of the
-// parent MockIWatcher instance is invoked.
-type IWatcherCloseFunc struct {
+// WatcherCloseFunc describes the behavior when the Close method of the
+// parent MockWatcher instance is invoked.
+type WatcherCloseFunc struct {
 	defaultHook func()
 	hooks       []func()
-	history     []IWatcherCloseFuncCall
+	history     []WatcherCloseFuncCall
 	mutex       sync.Mutex
 }
 
 // Close delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIWatcher) Close() {
+func (m *MockWatcher) Close() {
 	m.CloseFunc.nextHook()()
-	m.CloseFunc.appendCall(IWatcherCloseFuncCall{})
+	m.CloseFunc.appendCall(WatcherCloseFuncCall{})
 	return
 }
 
 // SetDefaultHook sets function that is called when the Close method of the
-// parent MockIWatcher instance is invoked and the hook queue is empty.
-func (f *IWatcherCloseFunc) SetDefaultHook(hook func()) {
+// parent MockWatcher instance is invoked and the hook queue is empty.
+func (f *WatcherCloseFunc) SetDefaultHook(hook func()) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Close method of the parent MockIWatcher instance invokes the hook at the
+// Close method of the parent MockWatcher instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *IWatcherCloseFunc) PushHook(hook func()) {
+func (f *WatcherCloseFunc) PushHook(hook func()) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -152,20 +152,20 @@ func (f *IWatcherCloseFunc) PushHook(hook func()) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IWatcherCloseFunc) SetDefaultReturn() {
+func (f *WatcherCloseFunc) SetDefaultReturn() {
 	f.SetDefaultHook(func() {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IWatcherCloseFunc) PushReturn() {
+func (f *WatcherCloseFunc) PushReturn() {
 	f.PushHook(func() {
 		return
 	})
 }
 
-func (f *IWatcherCloseFunc) nextHook() func() {
+func (f *WatcherCloseFunc) nextHook() func() {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -178,67 +178,67 @@ func (f *IWatcherCloseFunc) nextHook() func() {
 	return hook
 }
 
-func (f *IWatcherCloseFunc) appendCall(r0 IWatcherCloseFuncCall) {
+func (f *WatcherCloseFunc) appendCall(r0 WatcherCloseFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IWatcherCloseFuncCall objects describing
-// the invocations of this function.
-func (f *IWatcherCloseFunc) History() []IWatcherCloseFuncCall {
+// History returns a sequence of WatcherCloseFuncCall objects describing the
+// invocations of this function.
+func (f *WatcherCloseFunc) History() []WatcherCloseFuncCall {
 	f.mutex.Lock()
-	history := make([]IWatcherCloseFuncCall, len(f.history))
+	history := make([]WatcherCloseFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IWatcherCloseFuncCall is an object that describes an invocation of method
-// Close on an instance of MockIWatcher.
-type IWatcherCloseFuncCall struct{}
+// WatcherCloseFuncCall is an object that describes an invocation of method
+// Close on an instance of MockWatcher.
+type WatcherCloseFuncCall struct{}
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IWatcherCloseFuncCall) Args() []interface{} {
+func (c WatcherCloseFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IWatcherCloseFuncCall) Results() []interface{} {
+func (c WatcherCloseFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
-// IWatcherStartFunc describes the behavior when the Start method of the
-// parent MockIWatcher instance is invoked.
-type IWatcherStartFunc struct {
+// WatcherStartFunc describes the behavior when the Start method of the
+// parent MockWatcher instance is invoked.
+type WatcherStartFunc struct {
 	defaultHook func() error
 	hooks       []func() error
-	history     []IWatcherStartFuncCall
+	history     []WatcherStartFuncCall
 	mutex       sync.Mutex
 }
 
 // Start delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIWatcher) Start() error {
+func (m *MockWatcher) Start() error {
 	r0 := m.StartFunc.nextHook()()
-	m.StartFunc.appendCall(IWatcherStartFuncCall{r0})
+	m.StartFunc.appendCall(WatcherStartFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the Start method of the
-// parent MockIWatcher instance is invoked and the hook queue is empty.
-func (f *IWatcherStartFunc) SetDefaultHook(hook func() error) {
+// parent MockWatcher instance is invoked and the hook queue is empty.
+func (f *WatcherStartFunc) SetDefaultHook(hook func() error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Start method of the parent MockIWatcher instance invokes the hook at the
+// Start method of the parent MockWatcher instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *IWatcherStartFunc) PushHook(hook func() error) {
+func (f *WatcherStartFunc) PushHook(hook func() error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -246,20 +246,20 @@ func (f *IWatcherStartFunc) PushHook(hook func() error) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IWatcherStartFunc) SetDefaultReturn(r0 error) {
+func (f *WatcherStartFunc) SetDefaultReturn(r0 error) {
 	f.SetDefaultHook(func() error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IWatcherStartFunc) PushReturn(r0 error) {
+func (f *WatcherStartFunc) PushReturn(r0 error) {
 	f.PushHook(func() error {
 		return r0
 	})
 }
 
-func (f *IWatcherStartFunc) nextHook() func() error {
+func (f *WatcherStartFunc) nextHook() func() error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -272,26 +272,26 @@ func (f *IWatcherStartFunc) nextHook() func() error {
 	return hook
 }
 
-func (f *IWatcherStartFunc) appendCall(r0 IWatcherStartFuncCall) {
+func (f *WatcherStartFunc) appendCall(r0 WatcherStartFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IWatcherStartFuncCall objects describing
-// the invocations of this function.
-func (f *IWatcherStartFunc) History() []IWatcherStartFuncCall {
+// History returns a sequence of WatcherStartFuncCall objects describing the
+// invocations of this function.
+func (f *WatcherStartFunc) History() []WatcherStartFuncCall {
 	f.mutex.Lock()
-	history := make([]IWatcherStartFuncCall, len(f.history))
+	history := make([]WatcherStartFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IWatcherStartFuncCall is an object that describes an invocation of method
-// Start on an instance of MockIWatcher.
-type IWatcherStartFuncCall struct {
+// WatcherStartFuncCall is an object that describes an invocation of method
+// Start on an instance of MockWatcher.
+type WatcherStartFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error
@@ -299,44 +299,44 @@ type IWatcherStartFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IWatcherStartFuncCall) Args() []interface{} {
+func (c WatcherStartFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IWatcherStartFuncCall) Results() []interface{} {
+func (c WatcherStartFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// IWatcherSubscribeFunc describes the behavior when the Subscribe method of
-// the parent MockIWatcher instance is invoked.
-type IWatcherSubscribeFunc struct {
-	defaultHook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error)
-	hooks       []func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error)
-	history     []IWatcherSubscribeFuncCall
+// WatcherSubscribeFunc describes the behavior when the Subscribe method of
+// the parent MockWatcher instance is invoked.
+type WatcherSubscribeFunc struct {
+	defaultHook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error)
+	hooks       []func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error)
+	history     []WatcherSubscribeFuncCall
 	mutex       sync.Mutex
 }
 
 // Subscribe delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIWatcher) Subscribe(v0 context.Context, v1 *types.Transaction, v2 *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
+func (m *MockWatcher) Subscribe(v0 context.Context, v1 *types.Transaction, v2 *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
 	r0, r1 := m.SubscribeFunc.nextHook()(v0, v1, v2)
-	m.SubscribeFunc.appendCall(IWatcherSubscribeFuncCall{v0, v1, v2, r0, r1})
+	m.SubscribeFunc.appendCall(WatcherSubscribeFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Subscribe method of
-// the parent MockIWatcher instance is invoked and the hook queue is empty.
-func (f *IWatcherSubscribeFunc) SetDefaultHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error)) {
+// the parent MockWatcher instance is invoked and the hook queue is empty.
+func (f *WatcherSubscribeFunc) SetDefaultHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Subscribe method of the parent MockIWatcher instance invokes the hook at
+// Subscribe method of the parent MockWatcher instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IWatcherSubscribeFunc) PushHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error)) {
+func (f *WatcherSubscribeFunc) PushHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -344,20 +344,20 @@ func (f *IWatcherSubscribeFunc) PushHook(hook func(context.Context, *types.Trans
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IWatcherSubscribeFunc) SetDefaultReturn(r0 transaction.IReceiptResponse, r1 error) {
-	f.SetDefaultHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
+func (f *WatcherSubscribeFunc) SetDefaultReturn(r0 transaction.ReceiptResponse, r1 error) {
+	f.SetDefaultHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IWatcherSubscribeFunc) PushReturn(r0 transaction.IReceiptResponse, r1 error) {
-	f.PushHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
+func (f *WatcherSubscribeFunc) PushReturn(r0 transaction.ReceiptResponse, r1 error) {
+	f.PushHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
 		return r0, r1
 	})
 }
 
-func (f *IWatcherSubscribeFunc) nextHook() func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.IReceiptResponse, error) {
+func (f *WatcherSubscribeFunc) nextHook() func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (transaction.ReceiptResponse, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -370,26 +370,26 @@ func (f *IWatcherSubscribeFunc) nextHook() func(context.Context, *types.Transact
 	return hook
 }
 
-func (f *IWatcherSubscribeFunc) appendCall(r0 IWatcherSubscribeFuncCall) {
+func (f *WatcherSubscribeFunc) appendCall(r0 WatcherSubscribeFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IWatcherSubscribeFuncCall objects
-// describing the invocations of this function.
-func (f *IWatcherSubscribeFunc) History() []IWatcherSubscribeFuncCall {
+// History returns a sequence of WatcherSubscribeFuncCall objects describing
+// the invocations of this function.
+func (f *WatcherSubscribeFunc) History() []WatcherSubscribeFuncCall {
 	f.mutex.Lock()
-	history := make([]IWatcherSubscribeFuncCall, len(f.history))
+	history := make([]WatcherSubscribeFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IWatcherSubscribeFuncCall is an object that describes an invocation of
-// method Subscribe on an instance of MockIWatcher.
-type IWatcherSubscribeFuncCall struct {
+// WatcherSubscribeFuncCall is an object that describes an invocation of
+// method Subscribe on an instance of MockWatcher.
+type WatcherSubscribeFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
@@ -401,7 +401,7 @@ type IWatcherSubscribeFuncCall struct {
 	Arg2 *transaction.SubscribeOptions
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 transaction.IReceiptResponse
+	Result0 transaction.ReceiptResponse
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -409,45 +409,45 @@ type IWatcherSubscribeFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IWatcherSubscribeFuncCall) Args() []interface{} {
+func (c WatcherSubscribeFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IWatcherSubscribeFuncCall) Results() []interface{} {
+func (c WatcherSubscribeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IWatcherSubscribeAndWaitFunc describes the behavior when the
-// SubscribeAndWait method of the parent MockIWatcher instance is invoked.
-type IWatcherSubscribeAndWaitFunc struct {
+// WatcherSubscribeAndWaitFunc describes the behavior when the
+// SubscribeAndWait method of the parent MockWatcher instance is invoked.
+type WatcherSubscribeAndWaitFunc struct {
 	defaultHook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)
 	hooks       []func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)
-	history     []IWatcherSubscribeAndWaitFuncCall
+	history     []WatcherSubscribeAndWaitFuncCall
 	mutex       sync.Mutex
 }
 
 // SubscribeAndWait delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIWatcher) SubscribeAndWait(v0 context.Context, v1 *types.Transaction, v2 *transaction.SubscribeOptions) (*types.Receipt, error) {
+func (m *MockWatcher) SubscribeAndWait(v0 context.Context, v1 *types.Transaction, v2 *transaction.SubscribeOptions) (*types.Receipt, error) {
 	r0, r1 := m.SubscribeAndWaitFunc.nextHook()(v0, v1, v2)
-	m.SubscribeAndWaitFunc.appendCall(IWatcherSubscribeAndWaitFuncCall{v0, v1, v2, r0, r1})
+	m.SubscribeAndWaitFunc.appendCall(WatcherSubscribeAndWaitFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the SubscribeAndWait
-// method of the parent MockIWatcher instance is invoked and the hook queue
+// method of the parent MockWatcher instance is invoked and the hook queue
 // is empty.
-func (f *IWatcherSubscribeAndWaitFunc) SetDefaultHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)) {
+func (f *WatcherSubscribeAndWaitFunc) SetDefaultHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// SubscribeAndWait method of the parent MockIWatcher instance invokes the
+// SubscribeAndWait method of the parent MockWatcher instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IWatcherSubscribeAndWaitFunc) PushHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)) {
+func (f *WatcherSubscribeAndWaitFunc) PushHook(hook func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -455,20 +455,20 @@ func (f *IWatcherSubscribeAndWaitFunc) PushHook(hook func(context.Context, *type
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IWatcherSubscribeAndWaitFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
+func (f *WatcherSubscribeAndWaitFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
 	f.SetDefaultHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IWatcherSubscribeAndWaitFunc) PushReturn(r0 *types.Receipt, r1 error) {
+func (f *WatcherSubscribeAndWaitFunc) PushReturn(r0 *types.Receipt, r1 error) {
 	f.PushHook(func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
-func (f *IWatcherSubscribeAndWaitFunc) nextHook() func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
+func (f *WatcherSubscribeAndWaitFunc) nextHook() func(context.Context, *types.Transaction, *transaction.SubscribeOptions) (*types.Receipt, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -481,26 +481,26 @@ func (f *IWatcherSubscribeAndWaitFunc) nextHook() func(context.Context, *types.T
 	return hook
 }
 
-func (f *IWatcherSubscribeAndWaitFunc) appendCall(r0 IWatcherSubscribeAndWaitFuncCall) {
+func (f *WatcherSubscribeAndWaitFunc) appendCall(r0 WatcherSubscribeAndWaitFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IWatcherSubscribeAndWaitFuncCall objects
+// History returns a sequence of WatcherSubscribeAndWaitFuncCall objects
 // describing the invocations of this function.
-func (f *IWatcherSubscribeAndWaitFunc) History() []IWatcherSubscribeAndWaitFuncCall {
+func (f *WatcherSubscribeAndWaitFunc) History() []WatcherSubscribeAndWaitFuncCall {
 	f.mutex.Lock()
-	history := make([]IWatcherSubscribeAndWaitFuncCall, len(f.history))
+	history := make([]WatcherSubscribeAndWaitFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IWatcherSubscribeAndWaitFuncCall is an object that describes an
-// invocation of method SubscribeAndWait on an instance of MockIWatcher.
-type IWatcherSubscribeAndWaitFuncCall struct {
+// WatcherSubscribeAndWaitFuncCall is an object that describes an invocation
+// of method SubscribeAndWait on an instance of MockWatcher.
+type WatcherSubscribeAndWaitFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
@@ -520,44 +520,44 @@ type IWatcherSubscribeAndWaitFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IWatcherSubscribeAndWaitFuncCall) Args() []interface{} {
+func (c WatcherSubscribeAndWaitFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IWatcherSubscribeAndWaitFuncCall) Results() []interface{} {
+func (c WatcherSubscribeAndWaitFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IWatcherWaitFunc describes the behavior when the Wait method of the
-// parent MockIWatcher instance is invoked.
-type IWatcherWaitFunc struct {
-	defaultHook func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error)
-	hooks       []func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error)
-	history     []IWatcherWaitFuncCall
+// WatcherWaitFunc describes the behavior when the Wait method of the parent
+// MockWatcher instance is invoked.
+type WatcherWaitFunc struct {
+	defaultHook func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error)
+	hooks       []func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error)
+	history     []WatcherWaitFuncCall
 	mutex       sync.Mutex
 }
 
 // Wait delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIWatcher) Wait(v0 context.Context, v1 transaction.IReceiptResponse) (*types.Receipt, error) {
+func (m *MockWatcher) Wait(v0 context.Context, v1 transaction.ReceiptResponse) (*types.Receipt, error) {
 	r0, r1 := m.WaitFunc.nextHook()(v0, v1)
-	m.WaitFunc.appendCall(IWatcherWaitFuncCall{v0, v1, r0, r1})
+	m.WaitFunc.appendCall(WatcherWaitFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Wait method of the
-// parent MockIWatcher instance is invoked and the hook queue is empty.
-func (f *IWatcherWaitFunc) SetDefaultHook(hook func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error)) {
+// parent MockWatcher instance is invoked and the hook queue is empty.
+func (f *WatcherWaitFunc) SetDefaultHook(hook func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Wait method of the parent MockIWatcher instance invokes the hook at the
+// Wait method of the parent MockWatcher instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *IWatcherWaitFunc) PushHook(hook func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error)) {
+func (f *WatcherWaitFunc) PushHook(hook func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -565,20 +565,20 @@ func (f *IWatcherWaitFunc) PushHook(hook func(context.Context, transaction.IRece
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IWatcherWaitFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
-	f.SetDefaultHook(func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error) {
+func (f *WatcherWaitFunc) SetDefaultReturn(r0 *types.Receipt, r1 error) {
+	f.SetDefaultHook(func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IWatcherWaitFunc) PushReturn(r0 *types.Receipt, r1 error) {
-	f.PushHook(func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error) {
+func (f *WatcherWaitFunc) PushReturn(r0 *types.Receipt, r1 error) {
+	f.PushHook(func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error) {
 		return r0, r1
 	})
 }
 
-func (f *IWatcherWaitFunc) nextHook() func(context.Context, transaction.IReceiptResponse) (*types.Receipt, error) {
+func (f *WatcherWaitFunc) nextHook() func(context.Context, transaction.ReceiptResponse) (*types.Receipt, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -591,32 +591,32 @@ func (f *IWatcherWaitFunc) nextHook() func(context.Context, transaction.IReceipt
 	return hook
 }
 
-func (f *IWatcherWaitFunc) appendCall(r0 IWatcherWaitFuncCall) {
+func (f *WatcherWaitFunc) appendCall(r0 WatcherWaitFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IWatcherWaitFuncCall objects describing the
+// History returns a sequence of WatcherWaitFuncCall objects describing the
 // invocations of this function.
-func (f *IWatcherWaitFunc) History() []IWatcherWaitFuncCall {
+func (f *WatcherWaitFunc) History() []WatcherWaitFuncCall {
 	f.mutex.Lock()
-	history := make([]IWatcherWaitFuncCall, len(f.history))
+	history := make([]WatcherWaitFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IWatcherWaitFuncCall is an object that describes an invocation of method
-// Wait on an instance of MockIWatcher.
-type IWatcherWaitFuncCall struct {
+// WatcherWaitFuncCall is an object that describes an invocation of method
+// Wait on an instance of MockWatcher.
+type WatcherWaitFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 transaction.IReceiptResponse
+	Arg1 transaction.ReceiptResponse
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Receipt
@@ -627,12 +627,12 @@ type IWatcherWaitFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IWatcherWaitFuncCall) Args() []interface{} {
+func (c WatcherWaitFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IWatcherWaitFuncCall) Results() []interface{} {
+func (c WatcherWaitFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }

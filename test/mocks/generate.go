@@ -2,10 +2,10 @@ package mocks
 
 // Mocks created from interfaces:
 // * Mocks to be used directly:
-//go:generate go-mockgen -f -i ITask -o interfaces_executor.mockgen.go ../../blockchain/executor/interfaces
-//go:generate go-mockgen -f -i IWatcher -o interfaces_transaction.mockgen.go ../../blockchain/transaction
-//go:generate go-mockgen -f -i IAdminHandler -o interfaces_monitor.mockgen.go ../../blockchain/monitor/interfaces
-//go:generate go-mockgen -f -i Network -i Contracts -o interfaces_ethereum.mockgen.go ../../blockchain/ethereum
+//go:generate go-mockgen -f -i Task -o interfaces_executor.mockgen.go ../../layer1/executor/tasks
+//go:generate go-mockgen -f -i Watcher -o interfaces_transaction.mockgen.go ../../layer1/transaction
+//go:generate go-mockgen -f -i AdminHandler -o interfaces_monitor.mockgen.go ../../layer1/monitor/interfaces
+//go:generate go-mockgen -f -i Client -o interfaces_ethereum.mockgen.go ../../layer1
 
 // Mocks created from bindings:
 

@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/monitor/objects"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/crypto"
 	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/MadBase/MadNet/layer1/monitor/objects"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"

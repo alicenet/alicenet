@@ -6,309 +6,308 @@ import (
 	"context"
 	"sync"
 
-	ethereum "github.com/MadBase/MadNet/blockchain/ethereum"
-	interfaces "github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	transaction "github.com/MadBase/MadNet/blockchain/transaction"
 	db "github.com/MadBase/MadNet/consensus/db"
+	layer1 "github.com/MadBase/MadNet/layer1"
+	tasks "github.com/MadBase/MadNet/layer1/executor/tasks"
+	transaction "github.com/MadBase/MadNet/layer1/transaction"
 	types "github.com/ethereum/go-ethereum/core/types"
 	logrus "github.com/sirupsen/logrus"
 )
 
-// MockITask is a mock implementation of the ITask interface (from the
-// package github.com/MadBase/MadNet/blockchain/executor/interfaces) used
-// for unit testing.
-type MockITask struct {
+// MockTask is a mock implementation of the Task interface (from the package
+// github.com/MadBase/MadNet/layer1/executor/tasks) used for unit testing.
+type MockTask struct {
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.
-	CloseFunc *ITaskCloseFunc
+	CloseFunc *TaskCloseFunc
 	// ExecuteFunc is an instance of a mock function object controlling the
 	// behavior of the method Execute.
-	ExecuteFunc *ITaskExecuteFunc
+	ExecuteFunc *TaskExecuteFunc
 	// FinishFunc is an instance of a mock function object controlling the
 	// behavior of the method Finish.
-	FinishFunc *ITaskFinishFunc
+	FinishFunc *TaskFinishFunc
 	// GetAllowMultiExecutionFunc is an instance of a mock function object
 	// controlling the behavior of the method GetAllowMultiExecution.
-	GetAllowMultiExecutionFunc *ITaskGetAllowMultiExecutionFunc
+	GetAllowMultiExecutionFunc *TaskGetAllowMultiExecutionFunc
 	// GetClientFunc is an instance of a mock function object controlling
 	// the behavior of the method GetClient.
-	GetClientFunc *ITaskGetClientFunc
+	GetClientFunc *TaskGetClientFunc
 	// GetCtxFunc is an instance of a mock function object controlling the
 	// behavior of the method GetCtx.
-	GetCtxFunc *ITaskGetCtxFunc
+	GetCtxFunc *TaskGetCtxFunc
 	// GetEndFunc is an instance of a mock function object controlling the
 	// behavior of the method GetEnd.
-	GetEndFunc *ITaskGetEndFunc
+	GetEndFunc *TaskGetEndFunc
 	// GetIdFunc is an instance of a mock function object controlling the
 	// behavior of the method GetId.
-	GetIdFunc *ITaskGetIdFunc
+	GetIdFunc *TaskGetIdFunc
 	// GetLoggerFunc is an instance of a mock function object controlling
 	// the behavior of the method GetLogger.
-	GetLoggerFunc *ITaskGetLoggerFunc
+	GetLoggerFunc *TaskGetLoggerFunc
 	// GetNameFunc is an instance of a mock function object controlling the
 	// behavior of the method GetName.
-	GetNameFunc *ITaskGetNameFunc
+	GetNameFunc *TaskGetNameFunc
 	// GetStartFunc is an instance of a mock function object controlling the
 	// behavior of the method GetStart.
-	GetStartFunc *ITaskGetStartFunc
+	GetStartFunc *TaskGetStartFunc
 	// GetSubscribeOptionsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetSubscribeOptions.
-	GetSubscribeOptionsFunc *ITaskGetSubscribeOptionsFunc
+	GetSubscribeOptionsFunc *TaskGetSubscribeOptionsFunc
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
-	InitializeFunc *ITaskInitializeFunc
+	InitializeFunc *TaskInitializeFunc
 	// PrepareFunc is an instance of a mock function object controlling the
 	// behavior of the method Prepare.
-	PrepareFunc *ITaskPrepareFunc
+	PrepareFunc *TaskPrepareFunc
 	// ShouldExecuteFunc is an instance of a mock function object
 	// controlling the behavior of the method ShouldExecute.
-	ShouldExecuteFunc *ITaskShouldExecuteFunc
+	ShouldExecuteFunc *TaskShouldExecuteFunc
 }
 
-// NewMockITask creates a new mock of the ITask interface. All methods
-// return zero values for all results, unless overwritten.
-func NewMockITask() *MockITask {
-	return &MockITask{
-		CloseFunc: &ITaskCloseFunc{
+// NewMockTask creates a new mock of the Task interface. All methods return
+// zero values for all results, unless overwritten.
+func NewMockTask() *MockTask {
+	return &MockTask{
+		CloseFunc: &TaskCloseFunc{
 			defaultHook: func() {
 				return
 			},
 		},
-		ExecuteFunc: &ITaskExecuteFunc{
-			defaultHook: func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
+		ExecuteFunc: &TaskExecuteFunc{
+			defaultHook: func(context.Context) (*types.Transaction, *tasks.TaskErr) {
 				return nil, nil
 			},
 		},
-		FinishFunc: &ITaskFinishFunc{
+		FinishFunc: &TaskFinishFunc{
 			defaultHook: func(error) {
 				return
 			},
 		},
-		GetAllowMultiExecutionFunc: &ITaskGetAllowMultiExecutionFunc{
+		GetAllowMultiExecutionFunc: &TaskGetAllowMultiExecutionFunc{
 			defaultHook: func() bool {
 				return false
 			},
 		},
-		GetClientFunc: &ITaskGetClientFunc{
-			defaultHook: func() ethereum.Network {
+		GetClientFunc: &TaskGetClientFunc{
+			defaultHook: func() layer1.Client {
 				return nil
 			},
 		},
-		GetCtxFunc: &ITaskGetCtxFunc{
+		GetCtxFunc: &TaskGetCtxFunc{
 			defaultHook: func() context.Context {
 				return nil
 			},
 		},
-		GetEndFunc: &ITaskGetEndFunc{
+		GetEndFunc: &TaskGetEndFunc{
 			defaultHook: func() uint64 {
 				return 0
 			},
 		},
-		GetIdFunc: &ITaskGetIdFunc{
+		GetIdFunc: &TaskGetIdFunc{
 			defaultHook: func() string {
 				return ""
 			},
 		},
-		GetLoggerFunc: &ITaskGetLoggerFunc{
+		GetLoggerFunc: &TaskGetLoggerFunc{
 			defaultHook: func() *logrus.Entry {
 				return nil
 			},
 		},
-		GetNameFunc: &ITaskGetNameFunc{
+		GetNameFunc: &TaskGetNameFunc{
 			defaultHook: func() string {
 				return ""
 			},
 		},
-		GetStartFunc: &ITaskGetStartFunc{
+		GetStartFunc: &TaskGetStartFunc{
 			defaultHook: func() uint64 {
 				return 0
 			},
 		},
-		GetSubscribeOptionsFunc: &ITaskGetSubscribeOptionsFunc{
+		GetSubscribeOptionsFunc: &TaskGetSubscribeOptionsFunc{
 			defaultHook: func() *transaction.SubscribeOptions {
 				return nil
 			},
 		},
-		InitializeFunc: &ITaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+		InitializeFunc: &TaskInitializeFunc{
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error {
 				return nil
 			},
 		},
-		PrepareFunc: &ITaskPrepareFunc{
-			defaultHook: func(context.Context) *interfaces.TaskErr {
+		PrepareFunc: &TaskPrepareFunc{
+			defaultHook: func(context.Context) *tasks.TaskErr {
 				return nil
 			},
 		},
-		ShouldExecuteFunc: &ITaskShouldExecuteFunc{
-			defaultHook: func(context.Context) *interfaces.TaskErr {
-				return nil
+		ShouldExecuteFunc: &TaskShouldExecuteFunc{
+			defaultHook: func(context.Context) (bool, *tasks.TaskErr) {
+				return false, nil
 			},
 		},
 	}
 }
 
-// NewStrictMockITask creates a new mock of the ITask interface. All methods
+// NewStrictMockTask creates a new mock of the Task interface. All methods
 // panic on invocation, unless overwritten.
-func NewStrictMockITask() *MockITask {
-	return &MockITask{
-		CloseFunc: &ITaskCloseFunc{
+func NewStrictMockTask() *MockTask {
+	return &MockTask{
+		CloseFunc: &TaskCloseFunc{
 			defaultHook: func() {
-				panic("unexpected invocation of MockITask.Close")
+				panic("unexpected invocation of MockTask.Close")
 			},
 		},
-		ExecuteFunc: &ITaskExecuteFunc{
-			defaultHook: func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
-				panic("unexpected invocation of MockITask.Execute")
+		ExecuteFunc: &TaskExecuteFunc{
+			defaultHook: func(context.Context) (*types.Transaction, *tasks.TaskErr) {
+				panic("unexpected invocation of MockTask.Execute")
 			},
 		},
-		FinishFunc: &ITaskFinishFunc{
+		FinishFunc: &TaskFinishFunc{
 			defaultHook: func(error) {
-				panic("unexpected invocation of MockITask.Finish")
+				panic("unexpected invocation of MockTask.Finish")
 			},
 		},
-		GetAllowMultiExecutionFunc: &ITaskGetAllowMultiExecutionFunc{
+		GetAllowMultiExecutionFunc: &TaskGetAllowMultiExecutionFunc{
 			defaultHook: func() bool {
-				panic("unexpected invocation of MockITask.GetAllowMultiExecution")
+				panic("unexpected invocation of MockTask.GetAllowMultiExecution")
 			},
 		},
-		GetClientFunc: &ITaskGetClientFunc{
-			defaultHook: func() ethereum.Network {
-				panic("unexpected invocation of MockITask.GetClient")
+		GetClientFunc: &TaskGetClientFunc{
+			defaultHook: func() layer1.Client {
+				panic("unexpected invocation of MockTask.GetClient")
 			},
 		},
-		GetCtxFunc: &ITaskGetCtxFunc{
+		GetCtxFunc: &TaskGetCtxFunc{
 			defaultHook: func() context.Context {
-				panic("unexpected invocation of MockITask.GetCtx")
+				panic("unexpected invocation of MockTask.GetCtx")
 			},
 		},
-		GetEndFunc: &ITaskGetEndFunc{
+		GetEndFunc: &TaskGetEndFunc{
 			defaultHook: func() uint64 {
-				panic("unexpected invocation of MockITask.GetEnd")
+				panic("unexpected invocation of MockTask.GetEnd")
 			},
 		},
-		GetIdFunc: &ITaskGetIdFunc{
+		GetIdFunc: &TaskGetIdFunc{
 			defaultHook: func() string {
-				panic("unexpected invocation of MockITask.GetId")
+				panic("unexpected invocation of MockTask.GetId")
 			},
 		},
-		GetLoggerFunc: &ITaskGetLoggerFunc{
+		GetLoggerFunc: &TaskGetLoggerFunc{
 			defaultHook: func() *logrus.Entry {
-				panic("unexpected invocation of MockITask.GetLogger")
+				panic("unexpected invocation of MockTask.GetLogger")
 			},
 		},
-		GetNameFunc: &ITaskGetNameFunc{
+		GetNameFunc: &TaskGetNameFunc{
 			defaultHook: func() string {
-				panic("unexpected invocation of MockITask.GetName")
+				panic("unexpected invocation of MockTask.GetName")
 			},
 		},
-		GetStartFunc: &ITaskGetStartFunc{
+		GetStartFunc: &TaskGetStartFunc{
 			defaultHook: func() uint64 {
-				panic("unexpected invocation of MockITask.GetStart")
+				panic("unexpected invocation of MockTask.GetStart")
 			},
 		},
-		GetSubscribeOptionsFunc: &ITaskGetSubscribeOptionsFunc{
+		GetSubscribeOptionsFunc: &TaskGetSubscribeOptionsFunc{
 			defaultHook: func() *transaction.SubscribeOptions {
-				panic("unexpected invocation of MockITask.GetSubscribeOptions")
+				panic("unexpected invocation of MockTask.GetSubscribeOptions")
 			},
 		},
-		InitializeFunc: &ITaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
-				panic("unexpected invocation of MockITask.Initialize")
+		InitializeFunc: &TaskInitializeFunc{
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error {
+				panic("unexpected invocation of MockTask.Initialize")
 			},
 		},
-		PrepareFunc: &ITaskPrepareFunc{
-			defaultHook: func(context.Context) *interfaces.TaskErr {
-				panic("unexpected invocation of MockITask.Prepare")
+		PrepareFunc: &TaskPrepareFunc{
+			defaultHook: func(context.Context) *tasks.TaskErr {
+				panic("unexpected invocation of MockTask.Prepare")
 			},
 		},
-		ShouldExecuteFunc: &ITaskShouldExecuteFunc{
-			defaultHook: func(context.Context) *interfaces.TaskErr {
-				panic("unexpected invocation of MockITask.ShouldExecute")
+		ShouldExecuteFunc: &TaskShouldExecuteFunc{
+			defaultHook: func(context.Context) (bool, *tasks.TaskErr) {
+				panic("unexpected invocation of MockTask.ShouldExecute")
 			},
 		},
 	}
 }
 
-// NewMockITaskFrom creates a new mock of the MockITask interface. All
-// methods delegate to the given implementation, unless overwritten.
-func NewMockITaskFrom(i interfaces.ITask) *MockITask {
-	return &MockITask{
-		CloseFunc: &ITaskCloseFunc{
+// NewMockTaskFrom creates a new mock of the MockTask interface. All methods
+// delegate to the given implementation, unless overwritten.
+func NewMockTaskFrom(i tasks.Task) *MockTask {
+	return &MockTask{
+		CloseFunc: &TaskCloseFunc{
 			defaultHook: i.Close,
 		},
-		ExecuteFunc: &ITaskExecuteFunc{
+		ExecuteFunc: &TaskExecuteFunc{
 			defaultHook: i.Execute,
 		},
-		FinishFunc: &ITaskFinishFunc{
+		FinishFunc: &TaskFinishFunc{
 			defaultHook: i.Finish,
 		},
-		GetAllowMultiExecutionFunc: &ITaskGetAllowMultiExecutionFunc{
+		GetAllowMultiExecutionFunc: &TaskGetAllowMultiExecutionFunc{
 			defaultHook: i.GetAllowMultiExecution,
 		},
-		GetClientFunc: &ITaskGetClientFunc{
+		GetClientFunc: &TaskGetClientFunc{
 			defaultHook: i.GetClient,
 		},
-		GetCtxFunc: &ITaskGetCtxFunc{
+		GetCtxFunc: &TaskGetCtxFunc{
 			defaultHook: i.GetCtx,
 		},
-		GetEndFunc: &ITaskGetEndFunc{
+		GetEndFunc: &TaskGetEndFunc{
 			defaultHook: i.GetEnd,
 		},
-		GetIdFunc: &ITaskGetIdFunc{
+		GetIdFunc: &TaskGetIdFunc{
 			defaultHook: i.GetId,
 		},
-		GetLoggerFunc: &ITaskGetLoggerFunc{
+		GetLoggerFunc: &TaskGetLoggerFunc{
 			defaultHook: i.GetLogger,
 		},
-		GetNameFunc: &ITaskGetNameFunc{
+		GetNameFunc: &TaskGetNameFunc{
 			defaultHook: i.GetName,
 		},
-		GetStartFunc: &ITaskGetStartFunc{
+		GetStartFunc: &TaskGetStartFunc{
 			defaultHook: i.GetStart,
 		},
-		GetSubscribeOptionsFunc: &ITaskGetSubscribeOptionsFunc{
+		GetSubscribeOptionsFunc: &TaskGetSubscribeOptionsFunc{
 			defaultHook: i.GetSubscribeOptions,
 		},
-		InitializeFunc: &ITaskInitializeFunc{
+		InitializeFunc: &TaskInitializeFunc{
 			defaultHook: i.Initialize,
 		},
-		PrepareFunc: &ITaskPrepareFunc{
+		PrepareFunc: &TaskPrepareFunc{
 			defaultHook: i.Prepare,
 		},
-		ShouldExecuteFunc: &ITaskShouldExecuteFunc{
+		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: i.ShouldExecute,
 		},
 	}
 }
 
-// ITaskCloseFunc describes the behavior when the Close method of the parent
-// MockITask instance is invoked.
-type ITaskCloseFunc struct {
+// TaskCloseFunc describes the behavior when the Close method of the parent
+// MockTask instance is invoked.
+type TaskCloseFunc struct {
 	defaultHook func()
 	hooks       []func()
-	history     []ITaskCloseFuncCall
+	history     []TaskCloseFuncCall
 	mutex       sync.Mutex
 }
 
 // Close delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Close() {
+func (m *MockTask) Close() {
 	m.CloseFunc.nextHook()()
-	m.CloseFunc.appendCall(ITaskCloseFuncCall{})
+	m.CloseFunc.appendCall(TaskCloseFuncCall{})
 	return
 }
 
 // SetDefaultHook sets function that is called when the Close method of the
-// parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskCloseFunc) SetDefaultHook(hook func()) {
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskCloseFunc) SetDefaultHook(hook func()) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Close method of the parent MockITask instance invokes the hook at the
+// Close method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskCloseFunc) PushHook(hook func()) {
+func (f *TaskCloseFunc) PushHook(hook func()) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -316,20 +315,20 @@ func (f *ITaskCloseFunc) PushHook(hook func()) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskCloseFunc) SetDefaultReturn() {
+func (f *TaskCloseFunc) SetDefaultReturn() {
 	f.SetDefaultHook(func() {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskCloseFunc) PushReturn() {
+func (f *TaskCloseFunc) PushReturn() {
 	f.PushHook(func() {
 		return
 	})
 }
 
-func (f *ITaskCloseFunc) nextHook() func() {
+func (f *TaskCloseFunc) nextHook() func() {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -342,67 +341,67 @@ func (f *ITaskCloseFunc) nextHook() func() {
 	return hook
 }
 
-func (f *ITaskCloseFunc) appendCall(r0 ITaskCloseFuncCall) {
+func (f *TaskCloseFunc) appendCall(r0 TaskCloseFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskCloseFuncCall objects describing the
+// History returns a sequence of TaskCloseFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskCloseFunc) History() []ITaskCloseFuncCall {
+func (f *TaskCloseFunc) History() []TaskCloseFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskCloseFuncCall, len(f.history))
+	history := make([]TaskCloseFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskCloseFuncCall is an object that describes an invocation of method
-// Close on an instance of MockITask.
-type ITaskCloseFuncCall struct{}
+// TaskCloseFuncCall is an object that describes an invocation of method
+// Close on an instance of MockTask.
+type TaskCloseFuncCall struct{}
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskCloseFuncCall) Args() []interface{} {
+func (c TaskCloseFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskCloseFuncCall) Results() []interface{} {
+func (c TaskCloseFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
-// ITaskExecuteFunc describes the behavior when the Execute method of the
-// parent MockITask instance is invoked.
-type ITaskExecuteFunc struct {
-	defaultHook func(context.Context) (*types.Transaction, *interfaces.TaskErr)
-	hooks       []func(context.Context) (*types.Transaction, *interfaces.TaskErr)
-	history     []ITaskExecuteFuncCall
+// TaskExecuteFunc describes the behavior when the Execute method of the
+// parent MockTask instance is invoked.
+type TaskExecuteFunc struct {
+	defaultHook func(context.Context) (*types.Transaction, *tasks.TaskErr)
+	hooks       []func(context.Context) (*types.Transaction, *tasks.TaskErr)
+	history     []TaskExecuteFuncCall
 	mutex       sync.Mutex
 }
 
 // Execute delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Execute(v0 context.Context) (*types.Transaction, *interfaces.TaskErr) {
+func (m *MockTask) Execute(v0 context.Context) (*types.Transaction, *tasks.TaskErr) {
 	r0, r1 := m.ExecuteFunc.nextHook()(v0)
-	m.ExecuteFunc.appendCall(ITaskExecuteFuncCall{v0, r0, r1})
+	m.ExecuteFunc.appendCall(TaskExecuteFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Execute method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskExecuteFunc) SetDefaultHook(hook func(context.Context) (*types.Transaction, *interfaces.TaskErr)) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskExecuteFunc) SetDefaultHook(hook func(context.Context) (*types.Transaction, *tasks.TaskErr)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Execute method of the parent MockITask instance invokes the hook at the
+// Execute method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskExecuteFunc) PushHook(hook func(context.Context) (*types.Transaction, *interfaces.TaskErr)) {
+func (f *TaskExecuteFunc) PushHook(hook func(context.Context) (*types.Transaction, *tasks.TaskErr)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -410,20 +409,20 @@ func (f *ITaskExecuteFunc) PushHook(hook func(context.Context) (*types.Transacti
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskExecuteFunc) SetDefaultReturn(r0 *types.Transaction, r1 *interfaces.TaskErr) {
-	f.SetDefaultHook(func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
+func (f *TaskExecuteFunc) SetDefaultReturn(r0 *types.Transaction, r1 *tasks.TaskErr) {
+	f.SetDefaultHook(func(context.Context) (*types.Transaction, *tasks.TaskErr) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskExecuteFunc) PushReturn(r0 *types.Transaction, r1 *interfaces.TaskErr) {
-	f.PushHook(func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
+func (f *TaskExecuteFunc) PushReturn(r0 *types.Transaction, r1 *tasks.TaskErr) {
+	f.PushHook(func(context.Context) (*types.Transaction, *tasks.TaskErr) {
 		return r0, r1
 	})
 }
 
-func (f *ITaskExecuteFunc) nextHook() func(context.Context) (*types.Transaction, *interfaces.TaskErr) {
+func (f *TaskExecuteFunc) nextHook() func(context.Context) (*types.Transaction, *tasks.TaskErr) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -436,26 +435,26 @@ func (f *ITaskExecuteFunc) nextHook() func(context.Context) (*types.Transaction,
 	return hook
 }
 
-func (f *ITaskExecuteFunc) appendCall(r0 ITaskExecuteFuncCall) {
+func (f *TaskExecuteFunc) appendCall(r0 TaskExecuteFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskExecuteFuncCall objects describing the
+// History returns a sequence of TaskExecuteFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskExecuteFunc) History() []ITaskExecuteFuncCall {
+func (f *TaskExecuteFunc) History() []TaskExecuteFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskExecuteFuncCall, len(f.history))
+	history := make([]TaskExecuteFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskExecuteFuncCall is an object that describes an invocation of method
-// Execute on an instance of MockITask.
-type ITaskExecuteFuncCall struct {
+// TaskExecuteFuncCall is an object that describes an invocation of method
+// Execute on an instance of MockTask.
+type TaskExecuteFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
@@ -464,49 +463,49 @@ type ITaskExecuteFuncCall struct {
 	Result0 *types.Transaction
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
-	Result1 *interfaces.TaskErr
+	Result1 *tasks.TaskErr
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskExecuteFuncCall) Args() []interface{} {
+func (c TaskExecuteFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskExecuteFuncCall) Results() []interface{} {
+func (c TaskExecuteFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// ITaskFinishFunc describes the behavior when the Finish method of the
-// parent MockITask instance is invoked.
-type ITaskFinishFunc struct {
+// TaskFinishFunc describes the behavior when the Finish method of the
+// parent MockTask instance is invoked.
+type TaskFinishFunc struct {
 	defaultHook func(error)
 	hooks       []func(error)
-	history     []ITaskFinishFuncCall
+	history     []TaskFinishFuncCall
 	mutex       sync.Mutex
 }
 
 // Finish delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Finish(v0 error) {
+func (m *MockTask) Finish(v0 error) {
 	m.FinishFunc.nextHook()(v0)
-	m.FinishFunc.appendCall(ITaskFinishFuncCall{v0})
+	m.FinishFunc.appendCall(TaskFinishFuncCall{v0})
 	return
 }
 
 // SetDefaultHook sets function that is called when the Finish method of the
-// parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskFinishFunc) SetDefaultHook(hook func(error)) {
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskFinishFunc) SetDefaultHook(hook func(error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Finish method of the parent MockITask instance invokes the hook at the
+// Finish method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskFinishFunc) PushHook(hook func(error)) {
+func (f *TaskFinishFunc) PushHook(hook func(error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -514,20 +513,20 @@ func (f *ITaskFinishFunc) PushHook(hook func(error)) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskFinishFunc) SetDefaultReturn() {
+func (f *TaskFinishFunc) SetDefaultReturn() {
 	f.SetDefaultHook(func(error) {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskFinishFunc) PushReturn() {
+func (f *TaskFinishFunc) PushReturn() {
 	f.PushHook(func(error) {
 		return
 	})
 }
 
-func (f *ITaskFinishFunc) nextHook() func(error) {
+func (f *TaskFinishFunc) nextHook() func(error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -540,26 +539,26 @@ func (f *ITaskFinishFunc) nextHook() func(error) {
 	return hook
 }
 
-func (f *ITaskFinishFunc) appendCall(r0 ITaskFinishFuncCall) {
+func (f *TaskFinishFunc) appendCall(r0 TaskFinishFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskFinishFuncCall objects describing the
+// History returns a sequence of TaskFinishFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskFinishFunc) History() []ITaskFinishFuncCall {
+func (f *TaskFinishFunc) History() []TaskFinishFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskFinishFuncCall, len(f.history))
+	history := make([]TaskFinishFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskFinishFuncCall is an object that describes an invocation of method
-// Finish on an instance of MockITask.
-type ITaskFinishFuncCall struct {
+// TaskFinishFuncCall is an object that describes an invocation of method
+// Finish on an instance of MockTask.
+type TaskFinishFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 error
@@ -567,46 +566,45 @@ type ITaskFinishFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskFinishFuncCall) Args() []interface{} {
+func (c TaskFinishFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskFinishFuncCall) Results() []interface{} {
+func (c TaskFinishFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
-// ITaskGetAllowMultiExecutionFunc describes the behavior when the
-// GetAllowMultiExecution method of the parent MockITask instance is
-// invoked.
-type ITaskGetAllowMultiExecutionFunc struct {
+// TaskGetAllowMultiExecutionFunc describes the behavior when the
+// GetAllowMultiExecution method of the parent MockTask instance is invoked.
+type TaskGetAllowMultiExecutionFunc struct {
 	defaultHook func() bool
 	hooks       []func() bool
-	history     []ITaskGetAllowMultiExecutionFuncCall
+	history     []TaskGetAllowMultiExecutionFuncCall
 	mutex       sync.Mutex
 }
 
 // GetAllowMultiExecution delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockITask) GetAllowMultiExecution() bool {
+func (m *MockTask) GetAllowMultiExecution() bool {
 	r0 := m.GetAllowMultiExecutionFunc.nextHook()()
-	m.GetAllowMultiExecutionFunc.appendCall(ITaskGetAllowMultiExecutionFuncCall{r0})
+	m.GetAllowMultiExecutionFunc.appendCall(TaskGetAllowMultiExecutionFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the
-// GetAllowMultiExecution method of the parent MockITask instance is invoked
+// GetAllowMultiExecution method of the parent MockTask instance is invoked
 // and the hook queue is empty.
-func (f *ITaskGetAllowMultiExecutionFunc) SetDefaultHook(hook func() bool) {
+func (f *TaskGetAllowMultiExecutionFunc) SetDefaultHook(hook func() bool) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetAllowMultiExecution method of the parent MockITask instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *ITaskGetAllowMultiExecutionFunc) PushHook(hook func() bool) {
+// GetAllowMultiExecution method of the parent MockTask instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *TaskGetAllowMultiExecutionFunc) PushHook(hook func() bool) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -614,20 +612,20 @@ func (f *ITaskGetAllowMultiExecutionFunc) PushHook(hook func() bool) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetAllowMultiExecutionFunc) SetDefaultReturn(r0 bool) {
+func (f *TaskGetAllowMultiExecutionFunc) SetDefaultReturn(r0 bool) {
 	f.SetDefaultHook(func() bool {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetAllowMultiExecutionFunc) PushReturn(r0 bool) {
+func (f *TaskGetAllowMultiExecutionFunc) PushReturn(r0 bool) {
 	f.PushHook(func() bool {
 		return r0
 	})
 }
 
-func (f *ITaskGetAllowMultiExecutionFunc) nextHook() func() bool {
+func (f *TaskGetAllowMultiExecutionFunc) nextHook() func() bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -640,26 +638,26 @@ func (f *ITaskGetAllowMultiExecutionFunc) nextHook() func() bool {
 	return hook
 }
 
-func (f *ITaskGetAllowMultiExecutionFunc) appendCall(r0 ITaskGetAllowMultiExecutionFuncCall) {
+func (f *TaskGetAllowMultiExecutionFunc) appendCall(r0 TaskGetAllowMultiExecutionFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetAllowMultiExecutionFuncCall objects
+// History returns a sequence of TaskGetAllowMultiExecutionFuncCall objects
 // describing the invocations of this function.
-func (f *ITaskGetAllowMultiExecutionFunc) History() []ITaskGetAllowMultiExecutionFuncCall {
+func (f *TaskGetAllowMultiExecutionFunc) History() []TaskGetAllowMultiExecutionFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetAllowMultiExecutionFuncCall, len(f.history))
+	history := make([]TaskGetAllowMultiExecutionFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetAllowMultiExecutionFuncCall is an object that describes an
-// invocation of method GetAllowMultiExecution on an instance of MockITask.
-type ITaskGetAllowMultiExecutionFuncCall struct {
+// TaskGetAllowMultiExecutionFuncCall is an object that describes an
+// invocation of method GetAllowMultiExecution on an instance of MockTask.
+type TaskGetAllowMultiExecutionFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 bool
@@ -667,44 +665,44 @@ type ITaskGetAllowMultiExecutionFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetAllowMultiExecutionFuncCall) Args() []interface{} {
+func (c TaskGetAllowMultiExecutionFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetAllowMultiExecutionFuncCall) Results() []interface{} {
+func (c TaskGetAllowMultiExecutionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetClientFunc describes the behavior when the GetClient method of
-// the parent MockITask instance is invoked.
-type ITaskGetClientFunc struct {
-	defaultHook func() ethereum.Network
-	hooks       []func() ethereum.Network
-	history     []ITaskGetClientFuncCall
+// TaskGetClientFunc describes the behavior when the GetClient method of the
+// parent MockTask instance is invoked.
+type TaskGetClientFunc struct {
+	defaultHook func() layer1.Client
+	hooks       []func() layer1.Client
+	history     []TaskGetClientFuncCall
 	mutex       sync.Mutex
 }
 
 // GetClient delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetClient() ethereum.Network {
+func (m *MockTask) GetClient() layer1.Client {
 	r0 := m.GetClientFunc.nextHook()()
-	m.GetClientFunc.appendCall(ITaskGetClientFuncCall{r0})
+	m.GetClientFunc.appendCall(TaskGetClientFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetClient method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetClientFunc) SetDefaultHook(hook func() ethereum.Network) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetClientFunc) SetDefaultHook(hook func() layer1.Client) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetClient method of the parent MockITask instance invokes the hook at the
+// GetClient method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetClientFunc) PushHook(hook func() ethereum.Network) {
+func (f *TaskGetClientFunc) PushHook(hook func() layer1.Client) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -712,20 +710,20 @@ func (f *ITaskGetClientFunc) PushHook(hook func() ethereum.Network) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetClientFunc) SetDefaultReturn(r0 ethereum.Network) {
-	f.SetDefaultHook(func() ethereum.Network {
+func (f *TaskGetClientFunc) SetDefaultReturn(r0 layer1.Client) {
+	f.SetDefaultHook(func() layer1.Client {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetClientFunc) PushReturn(r0 ethereum.Network) {
-	f.PushHook(func() ethereum.Network {
+func (f *TaskGetClientFunc) PushReturn(r0 layer1.Client) {
+	f.PushHook(func() layer1.Client {
 		return r0
 	})
 }
 
-func (f *ITaskGetClientFunc) nextHook() func() ethereum.Network {
+func (f *TaskGetClientFunc) nextHook() func() layer1.Client {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -738,71 +736,71 @@ func (f *ITaskGetClientFunc) nextHook() func() ethereum.Network {
 	return hook
 }
 
-func (f *ITaskGetClientFunc) appendCall(r0 ITaskGetClientFuncCall) {
+func (f *TaskGetClientFunc) appendCall(r0 TaskGetClientFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetClientFuncCall objects describing
+// History returns a sequence of TaskGetClientFuncCall objects describing
 // the invocations of this function.
-func (f *ITaskGetClientFunc) History() []ITaskGetClientFuncCall {
+func (f *TaskGetClientFunc) History() []TaskGetClientFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetClientFuncCall, len(f.history))
+	history := make([]TaskGetClientFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetClientFuncCall is an object that describes an invocation of
-// method GetClient on an instance of MockITask.
-type ITaskGetClientFuncCall struct {
+// TaskGetClientFuncCall is an object that describes an invocation of method
+// GetClient on an instance of MockTask.
+type TaskGetClientFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 ethereum.Network
+	Result0 layer1.Client
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetClientFuncCall) Args() []interface{} {
+func (c TaskGetClientFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetClientFuncCall) Results() []interface{} {
+func (c TaskGetClientFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetCtxFunc describes the behavior when the GetCtx method of the
-// parent MockITask instance is invoked.
-type ITaskGetCtxFunc struct {
+// TaskGetCtxFunc describes the behavior when the GetCtx method of the
+// parent MockTask instance is invoked.
+type TaskGetCtxFunc struct {
 	defaultHook func() context.Context
 	hooks       []func() context.Context
-	history     []ITaskGetCtxFuncCall
+	history     []TaskGetCtxFuncCall
 	mutex       sync.Mutex
 }
 
 // GetCtx delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetCtx() context.Context {
+func (m *MockTask) GetCtx() context.Context {
 	r0 := m.GetCtxFunc.nextHook()()
-	m.GetCtxFunc.appendCall(ITaskGetCtxFuncCall{r0})
+	m.GetCtxFunc.appendCall(TaskGetCtxFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetCtx method of the
-// parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetCtxFunc) SetDefaultHook(hook func() context.Context) {
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetCtxFunc) SetDefaultHook(hook func() context.Context) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetCtx method of the parent MockITask instance invokes the hook at the
+// GetCtx method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetCtxFunc) PushHook(hook func() context.Context) {
+func (f *TaskGetCtxFunc) PushHook(hook func() context.Context) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -810,20 +808,20 @@ func (f *ITaskGetCtxFunc) PushHook(hook func() context.Context) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetCtxFunc) SetDefaultReturn(r0 context.Context) {
+func (f *TaskGetCtxFunc) SetDefaultReturn(r0 context.Context) {
 	f.SetDefaultHook(func() context.Context {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetCtxFunc) PushReturn(r0 context.Context) {
+func (f *TaskGetCtxFunc) PushReturn(r0 context.Context) {
 	f.PushHook(func() context.Context {
 		return r0
 	})
 }
 
-func (f *ITaskGetCtxFunc) nextHook() func() context.Context {
+func (f *TaskGetCtxFunc) nextHook() func() context.Context {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -836,26 +834,26 @@ func (f *ITaskGetCtxFunc) nextHook() func() context.Context {
 	return hook
 }
 
-func (f *ITaskGetCtxFunc) appendCall(r0 ITaskGetCtxFuncCall) {
+func (f *TaskGetCtxFunc) appendCall(r0 TaskGetCtxFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetCtxFuncCall objects describing the
+// History returns a sequence of TaskGetCtxFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskGetCtxFunc) History() []ITaskGetCtxFuncCall {
+func (f *TaskGetCtxFunc) History() []TaskGetCtxFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetCtxFuncCall, len(f.history))
+	history := make([]TaskGetCtxFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetCtxFuncCall is an object that describes an invocation of method
-// GetCtx on an instance of MockITask.
-type ITaskGetCtxFuncCall struct {
+// TaskGetCtxFuncCall is an object that describes an invocation of method
+// GetCtx on an instance of MockTask.
+type TaskGetCtxFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 context.Context
@@ -863,44 +861,44 @@ type ITaskGetCtxFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetCtxFuncCall) Args() []interface{} {
+func (c TaskGetCtxFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetCtxFuncCall) Results() []interface{} {
+func (c TaskGetCtxFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetEndFunc describes the behavior when the GetEnd method of the
-// parent MockITask instance is invoked.
-type ITaskGetEndFunc struct {
+// TaskGetEndFunc describes the behavior when the GetEnd method of the
+// parent MockTask instance is invoked.
+type TaskGetEndFunc struct {
 	defaultHook func() uint64
 	hooks       []func() uint64
-	history     []ITaskGetEndFuncCall
+	history     []TaskGetEndFuncCall
 	mutex       sync.Mutex
 }
 
 // GetEnd delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetEnd() uint64 {
+func (m *MockTask) GetEnd() uint64 {
 	r0 := m.GetEndFunc.nextHook()()
-	m.GetEndFunc.appendCall(ITaskGetEndFuncCall{r0})
+	m.GetEndFunc.appendCall(TaskGetEndFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetEnd method of the
-// parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetEndFunc) SetDefaultHook(hook func() uint64) {
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetEndFunc) SetDefaultHook(hook func() uint64) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetEnd method of the parent MockITask instance invokes the hook at the
+// GetEnd method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetEndFunc) PushHook(hook func() uint64) {
+func (f *TaskGetEndFunc) PushHook(hook func() uint64) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -908,20 +906,20 @@ func (f *ITaskGetEndFunc) PushHook(hook func() uint64) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetEndFunc) SetDefaultReturn(r0 uint64) {
+func (f *TaskGetEndFunc) SetDefaultReturn(r0 uint64) {
 	f.SetDefaultHook(func() uint64 {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetEndFunc) PushReturn(r0 uint64) {
+func (f *TaskGetEndFunc) PushReturn(r0 uint64) {
 	f.PushHook(func() uint64 {
 		return r0
 	})
 }
 
-func (f *ITaskGetEndFunc) nextHook() func() uint64 {
+func (f *TaskGetEndFunc) nextHook() func() uint64 {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -934,26 +932,26 @@ func (f *ITaskGetEndFunc) nextHook() func() uint64 {
 	return hook
 }
 
-func (f *ITaskGetEndFunc) appendCall(r0 ITaskGetEndFuncCall) {
+func (f *TaskGetEndFunc) appendCall(r0 TaskGetEndFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetEndFuncCall objects describing the
+// History returns a sequence of TaskGetEndFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskGetEndFunc) History() []ITaskGetEndFuncCall {
+func (f *TaskGetEndFunc) History() []TaskGetEndFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetEndFuncCall, len(f.history))
+	history := make([]TaskGetEndFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetEndFuncCall is an object that describes an invocation of method
-// GetEnd on an instance of MockITask.
-type ITaskGetEndFuncCall struct {
+// TaskGetEndFuncCall is an object that describes an invocation of method
+// GetEnd on an instance of MockTask.
+type TaskGetEndFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 uint64
@@ -961,44 +959,44 @@ type ITaskGetEndFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetEndFuncCall) Args() []interface{} {
+func (c TaskGetEndFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetEndFuncCall) Results() []interface{} {
+func (c TaskGetEndFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetIdFunc describes the behavior when the GetId method of the parent
-// MockITask instance is invoked.
-type ITaskGetIdFunc struct {
+// TaskGetIdFunc describes the behavior when the GetId method of the parent
+// MockTask instance is invoked.
+type TaskGetIdFunc struct {
 	defaultHook func() string
 	hooks       []func() string
-	history     []ITaskGetIdFuncCall
+	history     []TaskGetIdFuncCall
 	mutex       sync.Mutex
 }
 
 // GetId delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetId() string {
+func (m *MockTask) GetId() string {
 	r0 := m.GetIdFunc.nextHook()()
-	m.GetIdFunc.appendCall(ITaskGetIdFuncCall{r0})
+	m.GetIdFunc.appendCall(TaskGetIdFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetId method of the
-// parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetIdFunc) SetDefaultHook(hook func() string) {
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetIdFunc) SetDefaultHook(hook func() string) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetId method of the parent MockITask instance invokes the hook at the
+// GetId method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetIdFunc) PushHook(hook func() string) {
+func (f *TaskGetIdFunc) PushHook(hook func() string) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1006,20 +1004,20 @@ func (f *ITaskGetIdFunc) PushHook(hook func() string) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetIdFunc) SetDefaultReturn(r0 string) {
+func (f *TaskGetIdFunc) SetDefaultReturn(r0 string) {
 	f.SetDefaultHook(func() string {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetIdFunc) PushReturn(r0 string) {
+func (f *TaskGetIdFunc) PushReturn(r0 string) {
 	f.PushHook(func() string {
 		return r0
 	})
 }
 
-func (f *ITaskGetIdFunc) nextHook() func() string {
+func (f *TaskGetIdFunc) nextHook() func() string {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1032,26 +1030,26 @@ func (f *ITaskGetIdFunc) nextHook() func() string {
 	return hook
 }
 
-func (f *ITaskGetIdFunc) appendCall(r0 ITaskGetIdFuncCall) {
+func (f *TaskGetIdFunc) appendCall(r0 TaskGetIdFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetIdFuncCall objects describing the
+// History returns a sequence of TaskGetIdFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskGetIdFunc) History() []ITaskGetIdFuncCall {
+func (f *TaskGetIdFunc) History() []TaskGetIdFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetIdFuncCall, len(f.history))
+	history := make([]TaskGetIdFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetIdFuncCall is an object that describes an invocation of method
-// GetId on an instance of MockITask.
-type ITaskGetIdFuncCall struct {
+// TaskGetIdFuncCall is an object that describes an invocation of method
+// GetId on an instance of MockTask.
+type TaskGetIdFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 string
@@ -1059,44 +1057,44 @@ type ITaskGetIdFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetIdFuncCall) Args() []interface{} {
+func (c TaskGetIdFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetIdFuncCall) Results() []interface{} {
+func (c TaskGetIdFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetLoggerFunc describes the behavior when the GetLogger method of
-// the parent MockITask instance is invoked.
-type ITaskGetLoggerFunc struct {
+// TaskGetLoggerFunc describes the behavior when the GetLogger method of the
+// parent MockTask instance is invoked.
+type TaskGetLoggerFunc struct {
 	defaultHook func() *logrus.Entry
 	hooks       []func() *logrus.Entry
-	history     []ITaskGetLoggerFuncCall
+	history     []TaskGetLoggerFuncCall
 	mutex       sync.Mutex
 }
 
 // GetLogger delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetLogger() *logrus.Entry {
+func (m *MockTask) GetLogger() *logrus.Entry {
 	r0 := m.GetLoggerFunc.nextHook()()
-	m.GetLoggerFunc.appendCall(ITaskGetLoggerFuncCall{r0})
+	m.GetLoggerFunc.appendCall(TaskGetLoggerFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetLogger method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetLoggerFunc) SetDefaultHook(hook func() *logrus.Entry) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetLoggerFunc) SetDefaultHook(hook func() *logrus.Entry) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetLogger method of the parent MockITask instance invokes the hook at the
+// GetLogger method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetLoggerFunc) PushHook(hook func() *logrus.Entry) {
+func (f *TaskGetLoggerFunc) PushHook(hook func() *logrus.Entry) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1104,20 +1102,20 @@ func (f *ITaskGetLoggerFunc) PushHook(hook func() *logrus.Entry) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetLoggerFunc) SetDefaultReturn(r0 *logrus.Entry) {
+func (f *TaskGetLoggerFunc) SetDefaultReturn(r0 *logrus.Entry) {
 	f.SetDefaultHook(func() *logrus.Entry {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetLoggerFunc) PushReturn(r0 *logrus.Entry) {
+func (f *TaskGetLoggerFunc) PushReturn(r0 *logrus.Entry) {
 	f.PushHook(func() *logrus.Entry {
 		return r0
 	})
 }
 
-func (f *ITaskGetLoggerFunc) nextHook() func() *logrus.Entry {
+func (f *TaskGetLoggerFunc) nextHook() func() *logrus.Entry {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1130,26 +1128,26 @@ func (f *ITaskGetLoggerFunc) nextHook() func() *logrus.Entry {
 	return hook
 }
 
-func (f *ITaskGetLoggerFunc) appendCall(r0 ITaskGetLoggerFuncCall) {
+func (f *TaskGetLoggerFunc) appendCall(r0 TaskGetLoggerFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetLoggerFuncCall objects describing
+// History returns a sequence of TaskGetLoggerFuncCall objects describing
 // the invocations of this function.
-func (f *ITaskGetLoggerFunc) History() []ITaskGetLoggerFuncCall {
+func (f *TaskGetLoggerFunc) History() []TaskGetLoggerFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetLoggerFuncCall, len(f.history))
+	history := make([]TaskGetLoggerFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetLoggerFuncCall is an object that describes an invocation of
-// method GetLogger on an instance of MockITask.
-type ITaskGetLoggerFuncCall struct {
+// TaskGetLoggerFuncCall is an object that describes an invocation of method
+// GetLogger on an instance of MockTask.
+type TaskGetLoggerFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *logrus.Entry
@@ -1157,44 +1155,44 @@ type ITaskGetLoggerFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetLoggerFuncCall) Args() []interface{} {
+func (c TaskGetLoggerFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetLoggerFuncCall) Results() []interface{} {
+func (c TaskGetLoggerFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetNameFunc describes the behavior when the GetName method of the
-// parent MockITask instance is invoked.
-type ITaskGetNameFunc struct {
+// TaskGetNameFunc describes the behavior when the GetName method of the
+// parent MockTask instance is invoked.
+type TaskGetNameFunc struct {
 	defaultHook func() string
 	hooks       []func() string
-	history     []ITaskGetNameFuncCall
+	history     []TaskGetNameFuncCall
 	mutex       sync.Mutex
 }
 
 // GetName delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetName() string {
+func (m *MockTask) GetName() string {
 	r0 := m.GetNameFunc.nextHook()()
-	m.GetNameFunc.appendCall(ITaskGetNameFuncCall{r0})
+	m.GetNameFunc.appendCall(TaskGetNameFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetName method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetNameFunc) SetDefaultHook(hook func() string) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetNameFunc) SetDefaultHook(hook func() string) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetName method of the parent MockITask instance invokes the hook at the
+// GetName method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetNameFunc) PushHook(hook func() string) {
+func (f *TaskGetNameFunc) PushHook(hook func() string) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1202,20 +1200,20 @@ func (f *ITaskGetNameFunc) PushHook(hook func() string) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetNameFunc) SetDefaultReturn(r0 string) {
+func (f *TaskGetNameFunc) SetDefaultReturn(r0 string) {
 	f.SetDefaultHook(func() string {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetNameFunc) PushReturn(r0 string) {
+func (f *TaskGetNameFunc) PushReturn(r0 string) {
 	f.PushHook(func() string {
 		return r0
 	})
 }
 
-func (f *ITaskGetNameFunc) nextHook() func() string {
+func (f *TaskGetNameFunc) nextHook() func() string {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1228,26 +1226,26 @@ func (f *ITaskGetNameFunc) nextHook() func() string {
 	return hook
 }
 
-func (f *ITaskGetNameFunc) appendCall(r0 ITaskGetNameFuncCall) {
+func (f *TaskGetNameFunc) appendCall(r0 TaskGetNameFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetNameFuncCall objects describing the
+// History returns a sequence of TaskGetNameFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskGetNameFunc) History() []ITaskGetNameFuncCall {
+func (f *TaskGetNameFunc) History() []TaskGetNameFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetNameFuncCall, len(f.history))
+	history := make([]TaskGetNameFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetNameFuncCall is an object that describes an invocation of method
-// GetName on an instance of MockITask.
-type ITaskGetNameFuncCall struct {
+// TaskGetNameFuncCall is an object that describes an invocation of method
+// GetName on an instance of MockTask.
+type TaskGetNameFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 string
@@ -1255,44 +1253,44 @@ type ITaskGetNameFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetNameFuncCall) Args() []interface{} {
+func (c TaskGetNameFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetNameFuncCall) Results() []interface{} {
+func (c TaskGetNameFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetStartFunc describes the behavior when the GetStart method of the
-// parent MockITask instance is invoked.
-type ITaskGetStartFunc struct {
+// TaskGetStartFunc describes the behavior when the GetStart method of the
+// parent MockTask instance is invoked.
+type TaskGetStartFunc struct {
 	defaultHook func() uint64
 	hooks       []func() uint64
-	history     []ITaskGetStartFuncCall
+	history     []TaskGetStartFuncCall
 	mutex       sync.Mutex
 }
 
 // GetStart delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) GetStart() uint64 {
+func (m *MockTask) GetStart() uint64 {
 	r0 := m.GetStartFunc.nextHook()()
-	m.GetStartFunc.appendCall(ITaskGetStartFuncCall{r0})
+	m.GetStartFunc.appendCall(TaskGetStartFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetStart method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskGetStartFunc) SetDefaultHook(hook func() uint64) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskGetStartFunc) SetDefaultHook(hook func() uint64) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStart method of the parent MockITask instance invokes the hook at the
+// GetStart method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskGetStartFunc) PushHook(hook func() uint64) {
+func (f *TaskGetStartFunc) PushHook(hook func() uint64) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1300,20 +1298,20 @@ func (f *ITaskGetStartFunc) PushHook(hook func() uint64) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetStartFunc) SetDefaultReturn(r0 uint64) {
+func (f *TaskGetStartFunc) SetDefaultReturn(r0 uint64) {
 	f.SetDefaultHook(func() uint64 {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetStartFunc) PushReturn(r0 uint64) {
+func (f *TaskGetStartFunc) PushReturn(r0 uint64) {
 	f.PushHook(func() uint64 {
 		return r0
 	})
 }
 
-func (f *ITaskGetStartFunc) nextHook() func() uint64 {
+func (f *TaskGetStartFunc) nextHook() func() uint64 {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1326,26 +1324,26 @@ func (f *ITaskGetStartFunc) nextHook() func() uint64 {
 	return hook
 }
 
-func (f *ITaskGetStartFunc) appendCall(r0 ITaskGetStartFuncCall) {
+func (f *TaskGetStartFunc) appendCall(r0 TaskGetStartFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetStartFuncCall objects describing
-// the invocations of this function.
-func (f *ITaskGetStartFunc) History() []ITaskGetStartFuncCall {
+// History returns a sequence of TaskGetStartFuncCall objects describing the
+// invocations of this function.
+func (f *TaskGetStartFunc) History() []TaskGetStartFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetStartFuncCall, len(f.history))
+	history := make([]TaskGetStartFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetStartFuncCall is an object that describes an invocation of method
-// GetStart on an instance of MockITask.
-type ITaskGetStartFuncCall struct {
+// TaskGetStartFuncCall is an object that describes an invocation of method
+// GetStart on an instance of MockTask.
+type TaskGetStartFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 uint64
@@ -1353,45 +1351,45 @@ type ITaskGetStartFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetStartFuncCall) Args() []interface{} {
+func (c TaskGetStartFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetStartFuncCall) Results() []interface{} {
+func (c TaskGetStartFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskGetSubscribeOptionsFunc describes the behavior when the
-// GetSubscribeOptions method of the parent MockITask instance is invoked.
-type ITaskGetSubscribeOptionsFunc struct {
+// TaskGetSubscribeOptionsFunc describes the behavior when the
+// GetSubscribeOptions method of the parent MockTask instance is invoked.
+type TaskGetSubscribeOptionsFunc struct {
 	defaultHook func() *transaction.SubscribeOptions
 	hooks       []func() *transaction.SubscribeOptions
-	history     []ITaskGetSubscribeOptionsFuncCall
+	history     []TaskGetSubscribeOptionsFuncCall
 	mutex       sync.Mutex
 }
 
 // GetSubscribeOptions delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockITask) GetSubscribeOptions() *transaction.SubscribeOptions {
+func (m *MockTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 	r0 := m.GetSubscribeOptionsFunc.nextHook()()
-	m.GetSubscribeOptionsFunc.appendCall(ITaskGetSubscribeOptionsFuncCall{r0})
+	m.GetSubscribeOptionsFunc.appendCall(TaskGetSubscribeOptionsFuncCall{r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the GetSubscribeOptions
-// method of the parent MockITask instance is invoked and the hook queue is
+// method of the parent MockTask instance is invoked and the hook queue is
 // empty.
-func (f *ITaskGetSubscribeOptionsFunc) SetDefaultHook(hook func() *transaction.SubscribeOptions) {
+func (f *TaskGetSubscribeOptionsFunc) SetDefaultHook(hook func() *transaction.SubscribeOptions) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSubscribeOptions method of the parent MockITask instance invokes the
+// GetSubscribeOptions method of the parent MockTask instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *ITaskGetSubscribeOptionsFunc) PushHook(hook func() *transaction.SubscribeOptions) {
+func (f *TaskGetSubscribeOptionsFunc) PushHook(hook func() *transaction.SubscribeOptions) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1399,20 +1397,20 @@ func (f *ITaskGetSubscribeOptionsFunc) PushHook(hook func() *transaction.Subscri
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskGetSubscribeOptionsFunc) SetDefaultReturn(r0 *transaction.SubscribeOptions) {
+func (f *TaskGetSubscribeOptionsFunc) SetDefaultReturn(r0 *transaction.SubscribeOptions) {
 	f.SetDefaultHook(func() *transaction.SubscribeOptions {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskGetSubscribeOptionsFunc) PushReturn(r0 *transaction.SubscribeOptions) {
+func (f *TaskGetSubscribeOptionsFunc) PushReturn(r0 *transaction.SubscribeOptions) {
 	f.PushHook(func() *transaction.SubscribeOptions {
 		return r0
 	})
 }
 
-func (f *ITaskGetSubscribeOptionsFunc) nextHook() func() *transaction.SubscribeOptions {
+func (f *TaskGetSubscribeOptionsFunc) nextHook() func() *transaction.SubscribeOptions {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1425,26 +1423,26 @@ func (f *ITaskGetSubscribeOptionsFunc) nextHook() func() *transaction.SubscribeO
 	return hook
 }
 
-func (f *ITaskGetSubscribeOptionsFunc) appendCall(r0 ITaskGetSubscribeOptionsFuncCall) {
+func (f *TaskGetSubscribeOptionsFunc) appendCall(r0 TaskGetSubscribeOptionsFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskGetSubscribeOptionsFuncCall objects
+// History returns a sequence of TaskGetSubscribeOptionsFuncCall objects
 // describing the invocations of this function.
-func (f *ITaskGetSubscribeOptionsFunc) History() []ITaskGetSubscribeOptionsFuncCall {
+func (f *TaskGetSubscribeOptionsFunc) History() []TaskGetSubscribeOptionsFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskGetSubscribeOptionsFuncCall, len(f.history))
+	history := make([]TaskGetSubscribeOptionsFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskGetSubscribeOptionsFuncCall is an object that describes an
-// invocation of method GetSubscribeOptions on an instance of MockITask.
-type ITaskGetSubscribeOptionsFuncCall struct {
+// TaskGetSubscribeOptionsFuncCall is an object that describes an invocation
+// of method GetSubscribeOptions on an instance of MockTask.
+type TaskGetSubscribeOptionsFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *transaction.SubscribeOptions
@@ -1452,44 +1450,44 @@ type ITaskGetSubscribeOptionsFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskGetSubscribeOptionsFuncCall) Args() []interface{} {
+func (c TaskGetSubscribeOptionsFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskGetSubscribeOptionsFuncCall) Results() []interface{} {
+func (c TaskGetSubscribeOptionsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskInitializeFunc describes the behavior when the Initialize method of
-// the parent MockITask instance is invoked.
-type ITaskInitializeFunc struct {
-	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error
-	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error
-	history     []ITaskInitializeFuncCall
+// TaskInitializeFunc describes the behavior when the Initialize method of
+// the parent MockTask instance is invoked.
+type TaskInitializeFunc struct {
+	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error
+	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error
+	history     []TaskInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockITask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 ethereum.Network, v5 string, v6 interfaces.ITaskResponseChan) error {
+func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 layer1.Client, v5 string, v6 tasks.TaskResponseChan) error {
 	r0 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6)
-	m.InitializeFunc.appendCall(ITaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, r0})
+	m.InitializeFunc.appendCall(TaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the Initialize method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Initialize method of the parent MockITask instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *ITaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error) {
+// Initialize method of the parent MockTask instance invokes the hook at the
+// front of the queue and discards it. After the queue is empty, the default
+// hook function is invoked for any future action.
+func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1497,20 +1495,20 @@ func (f *ITaskInitializeFunc) PushHook(hook func(context.Context, context.Cancel
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskInitializeFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+func (f *TaskInitializeFunc) SetDefaultReturn(r0 error) {
+	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskInitializeFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+func (f *TaskInitializeFunc) PushReturn(r0 error) {
+	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error {
 		return r0
 	})
 }
 
-func (f *ITaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, ethereum.Network, string, interfaces.ITaskResponseChan) error {
+func (f *TaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, tasks.TaskResponseChan) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1523,26 +1521,26 @@ func (f *ITaskInitializeFunc) nextHook() func(context.Context, context.CancelFun
 	return hook
 }
 
-func (f *ITaskInitializeFunc) appendCall(r0 ITaskInitializeFuncCall) {
+func (f *TaskInitializeFunc) appendCall(r0 TaskInitializeFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskInitializeFuncCall objects describing
+// History returns a sequence of TaskInitializeFuncCall objects describing
 // the invocations of this function.
-func (f *ITaskInitializeFunc) History() []ITaskInitializeFuncCall {
+func (f *TaskInitializeFunc) History() []TaskInitializeFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskInitializeFuncCall, len(f.history))
+	history := make([]TaskInitializeFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskInitializeFuncCall is an object that describes an invocation of
-// method Initialize on an instance of MockITask.
-type ITaskInitializeFuncCall struct {
+// TaskInitializeFuncCall is an object that describes an invocation of
+// method Initialize on an instance of MockTask.
+type TaskInitializeFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
@@ -1557,13 +1555,13 @@ type ITaskInitializeFuncCall struct {
 	Arg3 *logrus.Entry
 	// Arg4 is the value of the 5th argument passed to this method
 	// invocation.
-	Arg4 ethereum.Network
+	Arg4 layer1.Client
 	// Arg5 is the value of the 6th argument passed to this method
 	// invocation.
 	Arg5 string
 	// Arg6 is the value of the 7th argument passed to this method
 	// invocation.
-	Arg6 interfaces.ITaskResponseChan
+	Arg6 tasks.TaskResponseChan
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error
@@ -1571,44 +1569,44 @@ type ITaskInitializeFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskInitializeFuncCall) Args() []interface{} {
+func (c TaskInitializeFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4, c.Arg5, c.Arg6}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskInitializeFuncCall) Results() []interface{} {
+func (c TaskInitializeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskPrepareFunc describes the behavior when the Prepare method of the
-// parent MockITask instance is invoked.
-type ITaskPrepareFunc struct {
-	defaultHook func(context.Context) *interfaces.TaskErr
-	hooks       []func(context.Context) *interfaces.TaskErr
-	history     []ITaskPrepareFuncCall
+// TaskPrepareFunc describes the behavior when the Prepare method of the
+// parent MockTask instance is invoked.
+type TaskPrepareFunc struct {
+	defaultHook func(context.Context) *tasks.TaskErr
+	hooks       []func(context.Context) *tasks.TaskErr
+	history     []TaskPrepareFuncCall
 	mutex       sync.Mutex
 }
 
 // Prepare delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockITask) Prepare(v0 context.Context) *interfaces.TaskErr {
+func (m *MockTask) Prepare(v0 context.Context) *tasks.TaskErr {
 	r0 := m.PrepareFunc.nextHook()(v0)
-	m.PrepareFunc.appendCall(ITaskPrepareFuncCall{v0, r0})
+	m.PrepareFunc.appendCall(TaskPrepareFuncCall{v0, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the Prepare method of
-// the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskPrepareFunc) SetDefaultHook(hook func(context.Context) *interfaces.TaskErr) {
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskPrepareFunc) SetDefaultHook(hook func(context.Context) *tasks.TaskErr) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// Prepare method of the parent MockITask instance invokes the hook at the
+// Prepare method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *ITaskPrepareFunc) PushHook(hook func(context.Context) *interfaces.TaskErr) {
+func (f *TaskPrepareFunc) PushHook(hook func(context.Context) *tasks.TaskErr) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1616,20 +1614,20 @@ func (f *ITaskPrepareFunc) PushHook(hook func(context.Context) *interfaces.TaskE
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskPrepareFunc) SetDefaultReturn(r0 *interfaces.TaskErr) {
-	f.SetDefaultHook(func(context.Context) *interfaces.TaskErr {
+func (f *TaskPrepareFunc) SetDefaultReturn(r0 *tasks.TaskErr) {
+	f.SetDefaultHook(func(context.Context) *tasks.TaskErr {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskPrepareFunc) PushReturn(r0 *interfaces.TaskErr) {
-	f.PushHook(func(context.Context) *interfaces.TaskErr {
+func (f *TaskPrepareFunc) PushReturn(r0 *tasks.TaskErr) {
+	f.PushHook(func(context.Context) *tasks.TaskErr {
 		return r0
 	})
 }
 
-func (f *ITaskPrepareFunc) nextHook() func(context.Context) *interfaces.TaskErr {
+func (f *TaskPrepareFunc) nextHook() func(context.Context) *tasks.TaskErr {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1642,74 +1640,74 @@ func (f *ITaskPrepareFunc) nextHook() func(context.Context) *interfaces.TaskErr 
 	return hook
 }
 
-func (f *ITaskPrepareFunc) appendCall(r0 ITaskPrepareFuncCall) {
+func (f *TaskPrepareFunc) appendCall(r0 TaskPrepareFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskPrepareFuncCall objects describing the
+// History returns a sequence of TaskPrepareFuncCall objects describing the
 // invocations of this function.
-func (f *ITaskPrepareFunc) History() []ITaskPrepareFuncCall {
+func (f *TaskPrepareFunc) History() []TaskPrepareFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskPrepareFuncCall, len(f.history))
+	history := make([]TaskPrepareFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskPrepareFuncCall is an object that describes an invocation of method
-// Prepare on an instance of MockITask.
-type ITaskPrepareFuncCall struct {
+// TaskPrepareFuncCall is an object that describes an invocation of method
+// Prepare on an instance of MockTask.
+type TaskPrepareFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *interfaces.TaskErr
+	Result0 *tasks.TaskErr
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskPrepareFuncCall) Args() []interface{} {
+func (c TaskPrepareFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskPrepareFuncCall) Results() []interface{} {
+func (c TaskPrepareFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// ITaskShouldExecuteFunc describes the behavior when the ShouldExecute
-// method of the parent MockITask instance is invoked.
-type ITaskShouldExecuteFunc struct {
-	defaultHook func(context.Context) *interfaces.TaskErr
-	hooks       []func(context.Context) *interfaces.TaskErr
-	history     []ITaskShouldExecuteFuncCall
+// TaskShouldExecuteFunc describes the behavior when the ShouldExecute
+// method of the parent MockTask instance is invoked.
+type TaskShouldExecuteFunc struct {
+	defaultHook func(context.Context) (bool, *tasks.TaskErr)
+	hooks       []func(context.Context) (bool, *tasks.TaskErr)
+	history     []TaskShouldExecuteFuncCall
 	mutex       sync.Mutex
 }
 
 // ShouldExecute delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockITask) ShouldExecute(v0 context.Context) *interfaces.TaskErr {
-	r0 := m.ShouldExecuteFunc.nextHook()(v0)
-	m.ShouldExecuteFunc.appendCall(ITaskShouldExecuteFuncCall{v0, r0})
-	return r0
+func (m *MockTask) ShouldExecute(v0 context.Context) (bool, *tasks.TaskErr) {
+	r0, r1 := m.ShouldExecuteFunc.nextHook()(v0)
+	m.ShouldExecuteFunc.appendCall(TaskShouldExecuteFuncCall{v0, r0, r1})
+	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the ShouldExecute method
-// of the parent MockITask instance is invoked and the hook queue is empty.
-func (f *ITaskShouldExecuteFunc) SetDefaultHook(hook func(context.Context) *interfaces.TaskErr) {
+// of the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskShouldExecuteFunc) SetDefaultHook(hook func(context.Context) (bool, *tasks.TaskErr)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// ShouldExecute method of the parent MockITask instance invokes the hook at
+// ShouldExecute method of the parent MockTask instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *ITaskShouldExecuteFunc) PushHook(hook func(context.Context) *interfaces.TaskErr) {
+func (f *TaskShouldExecuteFunc) PushHook(hook func(context.Context) (bool, *tasks.TaskErr)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1717,20 +1715,20 @@ func (f *ITaskShouldExecuteFunc) PushHook(hook func(context.Context) *interfaces
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ITaskShouldExecuteFunc) SetDefaultReturn(r0 *interfaces.TaskErr) {
-	f.SetDefaultHook(func(context.Context) *interfaces.TaskErr {
-		return r0
+func (f *TaskShouldExecuteFunc) SetDefaultReturn(r0 bool, r1 *tasks.TaskErr) {
+	f.SetDefaultHook(func(context.Context) (bool, *tasks.TaskErr) {
+		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ITaskShouldExecuteFunc) PushReturn(r0 *interfaces.TaskErr) {
-	f.PushHook(func(context.Context) *interfaces.TaskErr {
-		return r0
+func (f *TaskShouldExecuteFunc) PushReturn(r0 bool, r1 *tasks.TaskErr) {
+	f.PushHook(func(context.Context) (bool, *tasks.TaskErr) {
+		return r0, r1
 	})
 }
 
-func (f *ITaskShouldExecuteFunc) nextHook() func(context.Context) *interfaces.TaskErr {
+func (f *TaskShouldExecuteFunc) nextHook() func(context.Context) (bool, *tasks.TaskErr) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1743,42 +1741,45 @@ func (f *ITaskShouldExecuteFunc) nextHook() func(context.Context) *interfaces.Ta
 	return hook
 }
 
-func (f *ITaskShouldExecuteFunc) appendCall(r0 ITaskShouldExecuteFuncCall) {
+func (f *TaskShouldExecuteFunc) appendCall(r0 TaskShouldExecuteFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of ITaskShouldExecuteFuncCall objects
+// History returns a sequence of TaskShouldExecuteFuncCall objects
 // describing the invocations of this function.
-func (f *ITaskShouldExecuteFunc) History() []ITaskShouldExecuteFuncCall {
+func (f *TaskShouldExecuteFunc) History() []TaskShouldExecuteFuncCall {
 	f.mutex.Lock()
-	history := make([]ITaskShouldExecuteFuncCall, len(f.history))
+	history := make([]TaskShouldExecuteFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// ITaskShouldExecuteFuncCall is an object that describes an invocation of
-// method ShouldExecute on an instance of MockITask.
-type ITaskShouldExecuteFuncCall struct {
+// TaskShouldExecuteFuncCall is an object that describes an invocation of
+// method ShouldExecute on an instance of MockTask.
+type TaskShouldExecuteFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 context.Context
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *interfaces.TaskErr
+	Result0 bool
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 *tasks.TaskErr
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c ITaskShouldExecuteFuncCall) Args() []interface{} {
+func (c TaskShouldExecuteFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c ITaskShouldExecuteFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
+func (c TaskShouldExecuteFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }

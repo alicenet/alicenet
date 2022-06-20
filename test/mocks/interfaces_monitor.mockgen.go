@@ -5,58 +5,57 @@ package mocks
 import (
 	"sync"
 
-	interfaces "github.com/MadBase/MadNet/blockchain/monitor/interfaces"
 	objs "github.com/MadBase/MadNet/consensus/objs"
 	constants "github.com/MadBase/MadNet/constants"
+	interfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
 )
 
-// MockIAdminHandler is a mock implementation of the IAdminHandler interface
-// (from the package
-// github.com/MadBase/MadNet/blockchain/monitor/interfaces) used for unit
-// testing.
-type MockIAdminHandler struct {
+// MockAdminHandler is a mock implementation of the AdminHandler interface
+// (from the package github.com/MadBase/MadNet/layer1/monitor/interfaces)
+// used for unit testing.
+type MockAdminHandler struct {
 	// AddPrivateKeyFunc is an instance of a mock function object
 	// controlling the behavior of the method AddPrivateKey.
-	AddPrivateKeyFunc *IAdminHandlerAddPrivateKeyFunc
+	AddPrivateKeyFunc *AdminHandlerAddPrivateKeyFunc
 	// AddSnapshotFunc is an instance of a mock function object controlling
 	// the behavior of the method AddSnapshot.
-	AddSnapshotFunc *IAdminHandlerAddSnapshotFunc
+	AddSnapshotFunc *AdminHandlerAddSnapshotFunc
 	// AddValidatorSetFunc is an instance of a mock function object
 	// controlling the behavior of the method AddValidatorSet.
-	AddValidatorSetFunc *IAdminHandlerAddValidatorSetFunc
+	AddValidatorSetFunc *AdminHandlerAddValidatorSetFunc
 	// RegisterSnapshotCallbackFunc is an instance of a mock function object
 	// controlling the behavior of the method RegisterSnapshotCallback.
-	RegisterSnapshotCallbackFunc *IAdminHandlerRegisterSnapshotCallbackFunc
+	RegisterSnapshotCallbackFunc *AdminHandlerRegisterSnapshotCallbackFunc
 	// SetSynchronizedFunc is an instance of a mock function object
 	// controlling the behavior of the method SetSynchronized.
-	SetSynchronizedFunc *IAdminHandlerSetSynchronizedFunc
+	SetSynchronizedFunc *AdminHandlerSetSynchronizedFunc
 }
 
-// NewMockIAdminHandler creates a new mock of the IAdminHandler interface.
-// All methods return zero values for all results, unless overwritten.
-func NewMockIAdminHandler() *MockIAdminHandler {
-	return &MockIAdminHandler{
-		AddPrivateKeyFunc: &IAdminHandlerAddPrivateKeyFunc{
+// NewMockAdminHandler creates a new mock of the AdminHandler interface. All
+// methods return zero values for all results, unless overwritten.
+func NewMockAdminHandler() *MockAdminHandler {
+	return &MockAdminHandler{
+		AddPrivateKeyFunc: &AdminHandlerAddPrivateKeyFunc{
 			defaultHook: func([]byte, constants.CurveSpec) error {
 				return nil
 			},
 		},
-		AddSnapshotFunc: &IAdminHandlerAddSnapshotFunc{
+		AddSnapshotFunc: &AdminHandlerAddSnapshotFunc{
 			defaultHook: func(*objs.BlockHeader, bool) error {
 				return nil
 			},
 		},
-		AddValidatorSetFunc: &IAdminHandlerAddValidatorSetFunc{
+		AddValidatorSetFunc: &AdminHandlerAddValidatorSetFunc{
 			defaultHook: func(*objs.ValidatorSet) error {
 				return nil
 			},
 		},
-		RegisterSnapshotCallbackFunc: &IAdminHandlerRegisterSnapshotCallbackFunc{
+		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
 			defaultHook: func(func(*objs.BlockHeader) error) {
 				return
 			},
 		},
-		SetSynchronizedFunc: &IAdminHandlerSetSynchronizedFunc{
+		SetSynchronizedFunc: &AdminHandlerSetSynchronizedFunc{
 			defaultHook: func(bool) {
 				return
 			},
@@ -64,90 +63,90 @@ func NewMockIAdminHandler() *MockIAdminHandler {
 	}
 }
 
-// NewStrictMockIAdminHandler creates a new mock of the IAdminHandler
+// NewStrictMockAdminHandler creates a new mock of the AdminHandler
 // interface. All methods panic on invocation, unless overwritten.
-func NewStrictMockIAdminHandler() *MockIAdminHandler {
-	return &MockIAdminHandler{
-		AddPrivateKeyFunc: &IAdminHandlerAddPrivateKeyFunc{
+func NewStrictMockAdminHandler() *MockAdminHandler {
+	return &MockAdminHandler{
+		AddPrivateKeyFunc: &AdminHandlerAddPrivateKeyFunc{
 			defaultHook: func([]byte, constants.CurveSpec) error {
-				panic("unexpected invocation of MockIAdminHandler.AddPrivateKey")
+				panic("unexpected invocation of MockAdminHandler.AddPrivateKey")
 			},
 		},
-		AddSnapshotFunc: &IAdminHandlerAddSnapshotFunc{
+		AddSnapshotFunc: &AdminHandlerAddSnapshotFunc{
 			defaultHook: func(*objs.BlockHeader, bool) error {
-				panic("unexpected invocation of MockIAdminHandler.AddSnapshot")
+				panic("unexpected invocation of MockAdminHandler.AddSnapshot")
 			},
 		},
-		AddValidatorSetFunc: &IAdminHandlerAddValidatorSetFunc{
+		AddValidatorSetFunc: &AdminHandlerAddValidatorSetFunc{
 			defaultHook: func(*objs.ValidatorSet) error {
-				panic("unexpected invocation of MockIAdminHandler.AddValidatorSet")
+				panic("unexpected invocation of MockAdminHandler.AddValidatorSet")
 			},
 		},
-		RegisterSnapshotCallbackFunc: &IAdminHandlerRegisterSnapshotCallbackFunc{
+		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
 			defaultHook: func(func(*objs.BlockHeader) error) {
-				panic("unexpected invocation of MockIAdminHandler.RegisterSnapshotCallback")
+				panic("unexpected invocation of MockAdminHandler.RegisterSnapshotCallback")
 			},
 		},
-		SetSynchronizedFunc: &IAdminHandlerSetSynchronizedFunc{
+		SetSynchronizedFunc: &AdminHandlerSetSynchronizedFunc{
 			defaultHook: func(bool) {
-				panic("unexpected invocation of MockIAdminHandler.SetSynchronized")
+				panic("unexpected invocation of MockAdminHandler.SetSynchronized")
 			},
 		},
 	}
 }
 
-// NewMockIAdminHandlerFrom creates a new mock of the MockIAdminHandler
+// NewMockAdminHandlerFrom creates a new mock of the MockAdminHandler
 // interface. All methods delegate to the given implementation, unless
 // overwritten.
-func NewMockIAdminHandlerFrom(i interfaces.IAdminHandler) *MockIAdminHandler {
-	return &MockIAdminHandler{
-		AddPrivateKeyFunc: &IAdminHandlerAddPrivateKeyFunc{
+func NewMockAdminHandlerFrom(i interfaces.AdminHandler) *MockAdminHandler {
+	return &MockAdminHandler{
+		AddPrivateKeyFunc: &AdminHandlerAddPrivateKeyFunc{
 			defaultHook: i.AddPrivateKey,
 		},
-		AddSnapshotFunc: &IAdminHandlerAddSnapshotFunc{
+		AddSnapshotFunc: &AdminHandlerAddSnapshotFunc{
 			defaultHook: i.AddSnapshot,
 		},
-		AddValidatorSetFunc: &IAdminHandlerAddValidatorSetFunc{
+		AddValidatorSetFunc: &AdminHandlerAddValidatorSetFunc{
 			defaultHook: i.AddValidatorSet,
 		},
-		RegisterSnapshotCallbackFunc: &IAdminHandlerRegisterSnapshotCallbackFunc{
+		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
 			defaultHook: i.RegisterSnapshotCallback,
 		},
-		SetSynchronizedFunc: &IAdminHandlerSetSynchronizedFunc{
+		SetSynchronizedFunc: &AdminHandlerSetSynchronizedFunc{
 			defaultHook: i.SetSynchronized,
 		},
 	}
 }
 
-// IAdminHandlerAddPrivateKeyFunc describes the behavior when the
-// AddPrivateKey method of the parent MockIAdminHandler instance is invoked.
-type IAdminHandlerAddPrivateKeyFunc struct {
+// AdminHandlerAddPrivateKeyFunc describes the behavior when the
+// AddPrivateKey method of the parent MockAdminHandler instance is invoked.
+type AdminHandlerAddPrivateKeyFunc struct {
 	defaultHook func([]byte, constants.CurveSpec) error
 	hooks       []func([]byte, constants.CurveSpec) error
-	history     []IAdminHandlerAddPrivateKeyFuncCall
+	history     []AdminHandlerAddPrivateKeyFuncCall
 	mutex       sync.Mutex
 }
 
 // AddPrivateKey delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIAdminHandler) AddPrivateKey(v0 []byte, v1 constants.CurveSpec) error {
+func (m *MockAdminHandler) AddPrivateKey(v0 []byte, v1 constants.CurveSpec) error {
 	r0 := m.AddPrivateKeyFunc.nextHook()(v0, v1)
-	m.AddPrivateKeyFunc.appendCall(IAdminHandlerAddPrivateKeyFuncCall{v0, v1, r0})
+	m.AddPrivateKeyFunc.appendCall(AdminHandlerAddPrivateKeyFuncCall{v0, v1, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the AddPrivateKey method
-// of the parent MockIAdminHandler instance is invoked and the hook queue is
+// of the parent MockAdminHandler instance is invoked and the hook queue is
 // empty.
-func (f *IAdminHandlerAddPrivateKeyFunc) SetDefaultHook(hook func([]byte, constants.CurveSpec) error) {
+func (f *AdminHandlerAddPrivateKeyFunc) SetDefaultHook(hook func([]byte, constants.CurveSpec) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// AddPrivateKey method of the parent MockIAdminHandler instance invokes the
+// AddPrivateKey method of the parent MockAdminHandler instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IAdminHandlerAddPrivateKeyFunc) PushHook(hook func([]byte, constants.CurveSpec) error) {
+func (f *AdminHandlerAddPrivateKeyFunc) PushHook(hook func([]byte, constants.CurveSpec) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -155,20 +154,20 @@ func (f *IAdminHandlerAddPrivateKeyFunc) PushHook(hook func([]byte, constants.Cu
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAdminHandlerAddPrivateKeyFunc) SetDefaultReturn(r0 error) {
+func (f *AdminHandlerAddPrivateKeyFunc) SetDefaultReturn(r0 error) {
 	f.SetDefaultHook(func([]byte, constants.CurveSpec) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAdminHandlerAddPrivateKeyFunc) PushReturn(r0 error) {
+func (f *AdminHandlerAddPrivateKeyFunc) PushReturn(r0 error) {
 	f.PushHook(func([]byte, constants.CurveSpec) error {
 		return r0
 	})
 }
 
-func (f *IAdminHandlerAddPrivateKeyFunc) nextHook() func([]byte, constants.CurveSpec) error {
+func (f *AdminHandlerAddPrivateKeyFunc) nextHook() func([]byte, constants.CurveSpec) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -181,26 +180,26 @@ func (f *IAdminHandlerAddPrivateKeyFunc) nextHook() func([]byte, constants.Curve
 	return hook
 }
 
-func (f *IAdminHandlerAddPrivateKeyFunc) appendCall(r0 IAdminHandlerAddPrivateKeyFuncCall) {
+func (f *AdminHandlerAddPrivateKeyFunc) appendCall(r0 AdminHandlerAddPrivateKeyFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IAdminHandlerAddPrivateKeyFuncCall objects
+// History returns a sequence of AdminHandlerAddPrivateKeyFuncCall objects
 // describing the invocations of this function.
-func (f *IAdminHandlerAddPrivateKeyFunc) History() []IAdminHandlerAddPrivateKeyFuncCall {
+func (f *AdminHandlerAddPrivateKeyFunc) History() []AdminHandlerAddPrivateKeyFuncCall {
 	f.mutex.Lock()
-	history := make([]IAdminHandlerAddPrivateKeyFuncCall, len(f.history))
+	history := make([]AdminHandlerAddPrivateKeyFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IAdminHandlerAddPrivateKeyFuncCall is an object that describes an
-// invocation of method AddPrivateKey on an instance of MockIAdminHandler.
-type IAdminHandlerAddPrivateKeyFuncCall struct {
+// AdminHandlerAddPrivateKeyFuncCall is an object that describes an
+// invocation of method AddPrivateKey on an instance of MockAdminHandler.
+type AdminHandlerAddPrivateKeyFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 []byte
@@ -214,45 +213,45 @@ type IAdminHandlerAddPrivateKeyFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IAdminHandlerAddPrivateKeyFuncCall) Args() []interface{} {
+func (c AdminHandlerAddPrivateKeyFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IAdminHandlerAddPrivateKeyFuncCall) Results() []interface{} {
+func (c AdminHandlerAddPrivateKeyFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// IAdminHandlerAddSnapshotFunc describes the behavior when the AddSnapshot
-// method of the parent MockIAdminHandler instance is invoked.
-type IAdminHandlerAddSnapshotFunc struct {
+// AdminHandlerAddSnapshotFunc describes the behavior when the AddSnapshot
+// method of the parent MockAdminHandler instance is invoked.
+type AdminHandlerAddSnapshotFunc struct {
 	defaultHook func(*objs.BlockHeader, bool) error
 	hooks       []func(*objs.BlockHeader, bool) error
-	history     []IAdminHandlerAddSnapshotFuncCall
+	history     []AdminHandlerAddSnapshotFuncCall
 	mutex       sync.Mutex
 }
 
 // AddSnapshot delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIAdminHandler) AddSnapshot(v0 *objs.BlockHeader, v1 bool) error {
+func (m *MockAdminHandler) AddSnapshot(v0 *objs.BlockHeader, v1 bool) error {
 	r0 := m.AddSnapshotFunc.nextHook()(v0, v1)
-	m.AddSnapshotFunc.appendCall(IAdminHandlerAddSnapshotFuncCall{v0, v1, r0})
+	m.AddSnapshotFunc.appendCall(AdminHandlerAddSnapshotFuncCall{v0, v1, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the AddSnapshot method
-// of the parent MockIAdminHandler instance is invoked and the hook queue is
+// of the parent MockAdminHandler instance is invoked and the hook queue is
 // empty.
-func (f *IAdminHandlerAddSnapshotFunc) SetDefaultHook(hook func(*objs.BlockHeader, bool) error) {
+func (f *AdminHandlerAddSnapshotFunc) SetDefaultHook(hook func(*objs.BlockHeader, bool) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// AddSnapshot method of the parent MockIAdminHandler instance invokes the
+// AddSnapshot method of the parent MockAdminHandler instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IAdminHandlerAddSnapshotFunc) PushHook(hook func(*objs.BlockHeader, bool) error) {
+func (f *AdminHandlerAddSnapshotFunc) PushHook(hook func(*objs.BlockHeader, bool) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -260,20 +259,20 @@ func (f *IAdminHandlerAddSnapshotFunc) PushHook(hook func(*objs.BlockHeader, boo
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAdminHandlerAddSnapshotFunc) SetDefaultReturn(r0 error) {
+func (f *AdminHandlerAddSnapshotFunc) SetDefaultReturn(r0 error) {
 	f.SetDefaultHook(func(*objs.BlockHeader, bool) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAdminHandlerAddSnapshotFunc) PushReturn(r0 error) {
+func (f *AdminHandlerAddSnapshotFunc) PushReturn(r0 error) {
 	f.PushHook(func(*objs.BlockHeader, bool) error {
 		return r0
 	})
 }
 
-func (f *IAdminHandlerAddSnapshotFunc) nextHook() func(*objs.BlockHeader, bool) error {
+func (f *AdminHandlerAddSnapshotFunc) nextHook() func(*objs.BlockHeader, bool) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -286,26 +285,26 @@ func (f *IAdminHandlerAddSnapshotFunc) nextHook() func(*objs.BlockHeader, bool) 
 	return hook
 }
 
-func (f *IAdminHandlerAddSnapshotFunc) appendCall(r0 IAdminHandlerAddSnapshotFuncCall) {
+func (f *AdminHandlerAddSnapshotFunc) appendCall(r0 AdminHandlerAddSnapshotFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IAdminHandlerAddSnapshotFuncCall objects
+// History returns a sequence of AdminHandlerAddSnapshotFuncCall objects
 // describing the invocations of this function.
-func (f *IAdminHandlerAddSnapshotFunc) History() []IAdminHandlerAddSnapshotFuncCall {
+func (f *AdminHandlerAddSnapshotFunc) History() []AdminHandlerAddSnapshotFuncCall {
 	f.mutex.Lock()
-	history := make([]IAdminHandlerAddSnapshotFuncCall, len(f.history))
+	history := make([]AdminHandlerAddSnapshotFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IAdminHandlerAddSnapshotFuncCall is an object that describes an
-// invocation of method AddSnapshot on an instance of MockIAdminHandler.
-type IAdminHandlerAddSnapshotFuncCall struct {
+// AdminHandlerAddSnapshotFuncCall is an object that describes an invocation
+// of method AddSnapshot on an instance of MockAdminHandler.
+type AdminHandlerAddSnapshotFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *objs.BlockHeader
@@ -319,46 +318,46 @@ type IAdminHandlerAddSnapshotFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IAdminHandlerAddSnapshotFuncCall) Args() []interface{} {
+func (c AdminHandlerAddSnapshotFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IAdminHandlerAddSnapshotFuncCall) Results() []interface{} {
+func (c AdminHandlerAddSnapshotFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// IAdminHandlerAddValidatorSetFunc describes the behavior when the
-// AddValidatorSet method of the parent MockIAdminHandler instance is
+// AdminHandlerAddValidatorSetFunc describes the behavior when the
+// AddValidatorSet method of the parent MockAdminHandler instance is
 // invoked.
-type IAdminHandlerAddValidatorSetFunc struct {
+type AdminHandlerAddValidatorSetFunc struct {
 	defaultHook func(*objs.ValidatorSet) error
 	hooks       []func(*objs.ValidatorSet) error
-	history     []IAdminHandlerAddValidatorSetFuncCall
+	history     []AdminHandlerAddValidatorSetFuncCall
 	mutex       sync.Mutex
 }
 
 // AddValidatorSet delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAdminHandler) AddValidatorSet(v0 *objs.ValidatorSet) error {
+func (m *MockAdminHandler) AddValidatorSet(v0 *objs.ValidatorSet) error {
 	r0 := m.AddValidatorSetFunc.nextHook()(v0)
-	m.AddValidatorSetFunc.appendCall(IAdminHandlerAddValidatorSetFuncCall{v0, r0})
+	m.AddValidatorSetFunc.appendCall(AdminHandlerAddValidatorSetFuncCall{v0, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the AddValidatorSet
-// method of the parent MockIAdminHandler instance is invoked and the hook
+// method of the parent MockAdminHandler instance is invoked and the hook
 // queue is empty.
-func (f *IAdminHandlerAddValidatorSetFunc) SetDefaultHook(hook func(*objs.ValidatorSet) error) {
+func (f *AdminHandlerAddValidatorSetFunc) SetDefaultHook(hook func(*objs.ValidatorSet) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// AddValidatorSet method of the parent MockIAdminHandler instance invokes
+// AddValidatorSet method of the parent MockAdminHandler instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IAdminHandlerAddValidatorSetFunc) PushHook(hook func(*objs.ValidatorSet) error) {
+func (f *AdminHandlerAddValidatorSetFunc) PushHook(hook func(*objs.ValidatorSet) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -366,20 +365,20 @@ func (f *IAdminHandlerAddValidatorSetFunc) PushHook(hook func(*objs.ValidatorSet
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAdminHandlerAddValidatorSetFunc) SetDefaultReturn(r0 error) {
+func (f *AdminHandlerAddValidatorSetFunc) SetDefaultReturn(r0 error) {
 	f.SetDefaultHook(func(*objs.ValidatorSet) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAdminHandlerAddValidatorSetFunc) PushReturn(r0 error) {
+func (f *AdminHandlerAddValidatorSetFunc) PushReturn(r0 error) {
 	f.PushHook(func(*objs.ValidatorSet) error {
 		return r0
 	})
 }
 
-func (f *IAdminHandlerAddValidatorSetFunc) nextHook() func(*objs.ValidatorSet) error {
+func (f *AdminHandlerAddValidatorSetFunc) nextHook() func(*objs.ValidatorSet) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -392,26 +391,26 @@ func (f *IAdminHandlerAddValidatorSetFunc) nextHook() func(*objs.ValidatorSet) e
 	return hook
 }
 
-func (f *IAdminHandlerAddValidatorSetFunc) appendCall(r0 IAdminHandlerAddValidatorSetFuncCall) {
+func (f *AdminHandlerAddValidatorSetFunc) appendCall(r0 AdminHandlerAddValidatorSetFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IAdminHandlerAddValidatorSetFuncCall
-// objects describing the invocations of this function.
-func (f *IAdminHandlerAddValidatorSetFunc) History() []IAdminHandlerAddValidatorSetFuncCall {
+// History returns a sequence of AdminHandlerAddValidatorSetFuncCall objects
+// describing the invocations of this function.
+func (f *AdminHandlerAddValidatorSetFunc) History() []AdminHandlerAddValidatorSetFuncCall {
 	f.mutex.Lock()
-	history := make([]IAdminHandlerAddValidatorSetFuncCall, len(f.history))
+	history := make([]AdminHandlerAddValidatorSetFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IAdminHandlerAddValidatorSetFuncCall is an object that describes an
-// invocation of method AddValidatorSet on an instance of MockIAdminHandler.
-type IAdminHandlerAddValidatorSetFuncCall struct {
+// AdminHandlerAddValidatorSetFuncCall is an object that describes an
+// invocation of method AddValidatorSet on an instance of MockAdminHandler.
+type AdminHandlerAddValidatorSetFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *objs.ValidatorSet
@@ -422,47 +421,47 @@ type IAdminHandlerAddValidatorSetFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IAdminHandlerAddValidatorSetFuncCall) Args() []interface{} {
+func (c AdminHandlerAddValidatorSetFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IAdminHandlerAddValidatorSetFuncCall) Results() []interface{} {
+func (c AdminHandlerAddValidatorSetFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// IAdminHandlerRegisterSnapshotCallbackFunc describes the behavior when the
-// RegisterSnapshotCallback method of the parent MockIAdminHandler instance
+// AdminHandlerRegisterSnapshotCallbackFunc describes the behavior when the
+// RegisterSnapshotCallback method of the parent MockAdminHandler instance
 // is invoked.
-type IAdminHandlerRegisterSnapshotCallbackFunc struct {
+type AdminHandlerRegisterSnapshotCallbackFunc struct {
 	defaultHook func(func(*objs.BlockHeader) error)
 	hooks       []func(func(*objs.BlockHeader) error)
-	history     []IAdminHandlerRegisterSnapshotCallbackFuncCall
+	history     []AdminHandlerRegisterSnapshotCallbackFuncCall
 	mutex       sync.Mutex
 }
 
 // RegisterSnapshotCallback delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIAdminHandler) RegisterSnapshotCallback(v0 func(*objs.BlockHeader) error) {
+func (m *MockAdminHandler) RegisterSnapshotCallback(v0 func(*objs.BlockHeader) error) {
 	m.RegisterSnapshotCallbackFunc.nextHook()(v0)
-	m.RegisterSnapshotCallbackFunc.appendCall(IAdminHandlerRegisterSnapshotCallbackFuncCall{v0})
+	m.RegisterSnapshotCallbackFunc.appendCall(AdminHandlerRegisterSnapshotCallbackFuncCall{v0})
 	return
 }
 
 // SetDefaultHook sets function that is called when the
-// RegisterSnapshotCallback method of the parent MockIAdminHandler instance
+// RegisterSnapshotCallback method of the parent MockAdminHandler instance
 // is invoked and the hook queue is empty.
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) SetDefaultHook(hook func(func(*objs.BlockHeader) error)) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultHook(hook func(func(*objs.BlockHeader) error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// RegisterSnapshotCallback method of the parent MockIAdminHandler instance
+// RegisterSnapshotCallback method of the parent MockAdminHandler instance
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*objs.BlockHeader) error)) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*objs.BlockHeader) error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -470,20 +469,20 @@ func (f *IAdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*obj
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) SetDefaultReturn() {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultReturn() {
 	f.SetDefaultHook(func(func(*objs.BlockHeader) error) {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) PushReturn() {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushReturn() {
 	f.PushHook(func(func(*objs.BlockHeader) error) {
 		return
 	})
 }
 
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) nextHook() func(func(*objs.BlockHeader) error) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) nextHook() func(func(*objs.BlockHeader) error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -496,28 +495,28 @@ func (f *IAdminHandlerRegisterSnapshotCallbackFunc) nextHook() func(func(*objs.B
 	return hook
 }
 
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) appendCall(r0 IAdminHandlerRegisterSnapshotCallbackFuncCall) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) appendCall(r0 AdminHandlerRegisterSnapshotCallbackFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
 // History returns a sequence of
-// IAdminHandlerRegisterSnapshotCallbackFuncCall objects describing the
+// AdminHandlerRegisterSnapshotCallbackFuncCall objects describing the
 // invocations of this function.
-func (f *IAdminHandlerRegisterSnapshotCallbackFunc) History() []IAdminHandlerRegisterSnapshotCallbackFuncCall {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) History() []AdminHandlerRegisterSnapshotCallbackFuncCall {
 	f.mutex.Lock()
-	history := make([]IAdminHandlerRegisterSnapshotCallbackFuncCall, len(f.history))
+	history := make([]AdminHandlerRegisterSnapshotCallbackFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IAdminHandlerRegisterSnapshotCallbackFuncCall is an object that describes
+// AdminHandlerRegisterSnapshotCallbackFuncCall is an object that describes
 // an invocation of method RegisterSnapshotCallback on an instance of
-// MockIAdminHandler.
-type IAdminHandlerRegisterSnapshotCallbackFuncCall struct {
+// MockAdminHandler.
+type AdminHandlerRegisterSnapshotCallbackFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 func(*objs.BlockHeader) error
@@ -525,46 +524,46 @@ type IAdminHandlerRegisterSnapshotCallbackFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IAdminHandlerRegisterSnapshotCallbackFuncCall) Args() []interface{} {
+func (c AdminHandlerRegisterSnapshotCallbackFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IAdminHandlerRegisterSnapshotCallbackFuncCall) Results() []interface{} {
+func (c AdminHandlerRegisterSnapshotCallbackFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
-// IAdminHandlerSetSynchronizedFunc describes the behavior when the
-// SetSynchronized method of the parent MockIAdminHandler instance is
+// AdminHandlerSetSynchronizedFunc describes the behavior when the
+// SetSynchronized method of the parent MockAdminHandler instance is
 // invoked.
-type IAdminHandlerSetSynchronizedFunc struct {
+type AdminHandlerSetSynchronizedFunc struct {
 	defaultHook func(bool)
 	hooks       []func(bool)
-	history     []IAdminHandlerSetSynchronizedFuncCall
+	history     []AdminHandlerSetSynchronizedFuncCall
 	mutex       sync.Mutex
 }
 
 // SetSynchronized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAdminHandler) SetSynchronized(v0 bool) {
+func (m *MockAdminHandler) SetSynchronized(v0 bool) {
 	m.SetSynchronizedFunc.nextHook()(v0)
-	m.SetSynchronizedFunc.appendCall(IAdminHandlerSetSynchronizedFuncCall{v0})
+	m.SetSynchronizedFunc.appendCall(AdminHandlerSetSynchronizedFuncCall{v0})
 	return
 }
 
 // SetDefaultHook sets function that is called when the SetSynchronized
-// method of the parent MockIAdminHandler instance is invoked and the hook
+// method of the parent MockAdminHandler instance is invoked and the hook
 // queue is empty.
-func (f *IAdminHandlerSetSynchronizedFunc) SetDefaultHook(hook func(bool)) {
+func (f *AdminHandlerSetSynchronizedFunc) SetDefaultHook(hook func(bool)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// SetSynchronized method of the parent MockIAdminHandler instance invokes
+// SetSynchronized method of the parent MockAdminHandler instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IAdminHandlerSetSynchronizedFunc) PushHook(hook func(bool)) {
+func (f *AdminHandlerSetSynchronizedFunc) PushHook(hook func(bool)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -572,20 +571,20 @@ func (f *IAdminHandlerSetSynchronizedFunc) PushHook(hook func(bool)) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAdminHandlerSetSynchronizedFunc) SetDefaultReturn() {
+func (f *AdminHandlerSetSynchronizedFunc) SetDefaultReturn() {
 	f.SetDefaultHook(func(bool) {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAdminHandlerSetSynchronizedFunc) PushReturn() {
+func (f *AdminHandlerSetSynchronizedFunc) PushReturn() {
 	f.PushHook(func(bool) {
 		return
 	})
 }
 
-func (f *IAdminHandlerSetSynchronizedFunc) nextHook() func(bool) {
+func (f *AdminHandlerSetSynchronizedFunc) nextHook() func(bool) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -598,26 +597,26 @@ func (f *IAdminHandlerSetSynchronizedFunc) nextHook() func(bool) {
 	return hook
 }
 
-func (f *IAdminHandlerSetSynchronizedFunc) appendCall(r0 IAdminHandlerSetSynchronizedFuncCall) {
+func (f *AdminHandlerSetSynchronizedFunc) appendCall(r0 AdminHandlerSetSynchronizedFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IAdminHandlerSetSynchronizedFuncCall
-// objects describing the invocations of this function.
-func (f *IAdminHandlerSetSynchronizedFunc) History() []IAdminHandlerSetSynchronizedFuncCall {
+// History returns a sequence of AdminHandlerSetSynchronizedFuncCall objects
+// describing the invocations of this function.
+func (f *AdminHandlerSetSynchronizedFunc) History() []AdminHandlerSetSynchronizedFuncCall {
 	f.mutex.Lock()
-	history := make([]IAdminHandlerSetSynchronizedFuncCall, len(f.history))
+	history := make([]AdminHandlerSetSynchronizedFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IAdminHandlerSetSynchronizedFuncCall is an object that describes an
-// invocation of method SetSynchronized on an instance of MockIAdminHandler.
-type IAdminHandlerSetSynchronizedFuncCall struct {
+// AdminHandlerSetSynchronizedFuncCall is an object that describes an
+// invocation of method SetSynchronized on an instance of MockAdminHandler.
+type AdminHandlerSetSynchronizedFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 bool
@@ -625,12 +624,12 @@ type IAdminHandlerSetSynchronizedFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IAdminHandlerSetSynchronizedFuncCall) Args() []interface{} {
+func (c AdminHandlerSetSynchronizedFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IAdminHandlerSetSynchronizedFuncCall) Results() []interface{} {
+func (c AdminHandlerSetSynchronizedFuncCall) Results() []interface{} {
 	return []interface{}{}
 }

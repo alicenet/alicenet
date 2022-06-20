@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/layer1/monitor"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
 	"github.com/sirupsen/logrus"

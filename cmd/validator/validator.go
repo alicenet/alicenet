@@ -7,18 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/MadBase/MadNet/blockchain/executor/interfaces"
-	"github.com/MadBase/MadNet/blockchain/transaction"
-
-	"github.com/sirupsen/logrus"
-
 	_ "net/http/pprof"
 
 	"github.com/MadBase/MadNet/application"
 	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/blockchain/executor"
-	"github.com/MadBase/MadNet/blockchain/monitor"
 	"github.com/MadBase/MadNet/cmd/utils"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/consensus"
@@ -32,6 +24,12 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	mncrypto "github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/dynamics"
+	"github.com/MadBase/MadNet/layer1"
+	"github.com/MadBase/MadNet/layer1/ethereum"
+	"github.com/MadBase/MadNet/layer1/executor"
+	"github.com/MadBase/MadNet/layer1/executor/tasks"
+	"github.com/MadBase/MadNet/layer1/monitor"
+	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/MadBase/MadNet/localrpc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/peering"
@@ -40,6 +38,7 @@ import (
 	mnutils "github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -50,10 +49,10 @@ var Command = cobra.Command{
 	Long:  "Runs a MadNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *mncrypto.Secp256k1Signer, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
-	eth, err := ethereum.NewEndpoint(
+	eth, err := ethereum.NewClient(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
@@ -72,8 +71,9 @@ func initEthereumConnection(logger *logrus.Logger) (ethereum.Network, *mncrypto.
 		panic(err)
 	}
 	logger.Infof("Looking up smart contracts on Ethereum...")
-	// Find all the contracts
-	eth.Contracts().Initialize(context.Background(), common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
+	// Initialize and find all the contracts
+	ethereum.NewContracts(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
+
 	utils.LogStatus(logger.WithField("Component", "validator"), eth)
 
 	secp256k1, err := eth.CreateSecp256k1Signer()
@@ -270,7 +270,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan interfaces.ITask, constants.TaskSchedulerBufferSize)
+	taskRequestChan := make(chan tasks.Task, constants.TaskSchedulerBufferSize)
 	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
 	defer close(taskKillChan)

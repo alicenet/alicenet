@@ -6,9 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/ethereum"
 	"github.com/MadBase/MadNet/config"
 	"github.com/MadBase/MadNet/constants"
+	"github.com/MadBase/MadNet/layer1"
+	"github.com/MadBase/MadNet/layer1/ethereum"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -36,9 +37,9 @@ var SendWeiCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
+func setupEthereum(logger *logrus.Entry) (layer1.Client, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
-	eth, err := ethereum.NewEndpoint(
+	eth, err := ethereum.NewClient(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
@@ -54,16 +55,13 @@ func setupEthereum(logger *logrus.Entry) (ethereum.Network, error) {
 
 	factoryAddress := common.HexToAddress(config.Configuration.Ethereum.FactoryAddress)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	eth.Contracts().Initialize(ctx, factoryAddress)
+	ethereum.NewContracts(eth, factoryAddress)
 
 	return eth, err
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
+func LogStatus(logger *logrus.Entry, eth layer1.Client) {
 
 	acct := eth.GetDefaultAccount()
 
@@ -73,7 +71,7 @@ func LogStatus(logger *logrus.Entry, eth ethereum.Network) {
 		return
 	}
 
-	c := eth.Contracts()
+	c := ethereum.GetContracts()
 	callOpts, err := eth.GetCallOpts(context.Background(), acct)
 	if err != nil {
 		logger.Warnf("Failed to get call options: %v", err)
@@ -128,7 +126,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func sendWei(logger *logrus.Entry, eth ethereum.Network, cmd *cobra.Command, args []string) int {
+func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
