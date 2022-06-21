@@ -1,6 +1,6 @@
 //go:build integration
 
-package ethereum
+package tests
 
 import (
 	"context"
@@ -13,8 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/blockchain/testutils"
+	"github.com/MadBase/MadNet/layer1"
+	"github.com/MadBase/MadNet/layer1/ethereum"
+	"github.com/MadBase/MadNet/layer1/tests"
 
 	"github.com/MadBase/MadNet/logging"
 	"github.com/sirupsen/logrus"
@@ -24,8 +25,8 @@ import (
 func setupEthereum(t *testing.T, n int) layer1.Client {
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
-	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
-	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	ecdsaPrivateKeys, _ := tests.InitializePrivateKeysAndAccounts(n)
+	eth := tests.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	acct := eth.GetDefaultAccount()
@@ -52,7 +53,7 @@ func TestEthereum_AccountsFound(t *testing.T) {
 }
 
 func TestEthereum_HardhatNode(t *testing.T) {
-	privateKeys, _ := testutils.InitializePrivateKeysAndAccounts(4)
+	privateKeys, _ := tests.InitializePrivateKeysAndAccounts(4)
 
 	eth, err := ethereum.NewSimulator(
 		privateKeys,
@@ -82,14 +83,14 @@ func TestEthereum_HardhatNode(t *testing.T) {
 
 	t.Logf("deploy account: %v", deployAccount.Address.String())
 
-	err = testutils.StartHardHatNode(eth)
+	err = tests.StartHardHatNode(eth)
 	if err != nil {
 		t.Fatalf("error starting hardhat node: %v", err)
 	}
 
 	t.Logf("waiting on hardhat node to start...")
 
-	err = testutils.WaitForHardHatNode(ctx)
+	err = tests.WaitForHardHatNode(ctx)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
