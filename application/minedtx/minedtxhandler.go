@@ -1,12 +1,12 @@
 package minedtx
 
 import (
-	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 
-	"github.com/MadBase/MadNet/application/db"
-	"github.com/MadBase/MadNet/application/indexer"
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/db"
+	"github.com/alicenet/alicenet/application/indexer"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

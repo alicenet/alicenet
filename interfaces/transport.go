@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/types"
 )
 
 // The NodeAddr interface implements net.Addr and other functionality needed for

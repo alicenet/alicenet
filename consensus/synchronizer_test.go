@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/gossip"
-	"github.com/MadBase/MadNet/constants"
-	mncrypto "github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/consensus/admin"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/gossip"
+	"github.com/alicenet/alicenet/constants"
+	mncrypto "github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,8 +3,8 @@ package dynamics
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // NodeKey stores the necessary information to load a Node

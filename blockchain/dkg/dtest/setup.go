@@ -28,16 +28,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/MadBase/MadNet/blockchain"
-	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/etest"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/bridge/bindings"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/blockchain"
+	dkgMath "github.com/alicenet/alicenet/blockchain/dkg/math"
+	"github.com/alicenet/alicenet/blockchain/etest"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/monitor"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 type nullWriter struct{}
@@ -287,11 +287,11 @@ func GenerateGPKJ(dkgStates []*objects.DkgState) {
 	}
 }
 
-func GetMadnetRootPath() []string {
+func GetAliceNetRootPath() []string {
 
 	rootPath := []string{string(os.PathSeparator)}
 
-	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/MadBase/MadNet")
+	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/alicenet/alicenet")
 	stdout, err := cmd.Output()
 	if err != nil {
 		log.Printf("Error getting project root path: %v", err)
@@ -326,7 +326,7 @@ func InitializePrivateKeysAndAccounts(n int) ([]*ecdsa.PrivateKey, []accounts.Ac
 }
 
 func ReadFromFileOnRoot(filePath string, configVar string) (string, error) {
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 	rootPath = append(rootPath, filePath)
 	fileFullPath := filepath.Join(rootPath...)
 
@@ -353,7 +353,7 @@ func ReadFromFileOnRoot(filePath string, configVar string) (string, error) {
 }
 
 func GetOwnerAccount() (*common.Address, *ecdsa.PrivateKey, error) {
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 
 	// open config file owner.toml
 	acctAddress, err := ReadFromFileOnRoot("scripts/base-files/owner.toml", "defaultAccount")
@@ -478,7 +478,7 @@ func ConnectSimulatorEndpoint(t *testing.T, privateKeys []*ecdsa.PrivateKey, blo
 
 func StartHardHatNode(eth *blockchain.EthereumDetails) error {
 
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 	scriptPath := append(rootPath, "scripts")
 	scriptPath = append(scriptPath, "main.sh")
 	scriptPathJoined := filepath.Join(scriptPath...)
@@ -545,7 +545,7 @@ func setCommandStdOut(cmd *exec.Cmd) {
 
 func InitializeValidatorFiles(n int) error {
 
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 	scriptPath := append(rootPath, "scripts")
 	scriptPath = append(scriptPath, "main.sh")
 	scriptPathJoined := filepath.Join(scriptPath...)
@@ -568,7 +568,7 @@ func InitializeValidatorFiles(n int) error {
 
 func StartDeployScripts(eth *blockchain.EthereumDetails, ctx context.Context) error {
 
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 	scriptPath := append(rootPath, "scripts")
 	scriptPath = append(scriptPath, "main.sh")
 	scriptPathJoined := filepath.Join(scriptPath...)
@@ -660,7 +660,7 @@ func WaitForHardHatNode(ctx context.Context) error {
 
 func RegisterValidators(eth *blockchain.EthereumDetails, validatorAddresses []string) error {
 
-	rootPath := GetMadnetRootPath()
+	rootPath := GetAliceNetRootPath()
 	scriptPath := append(rootPath, "scripts")
 	scriptPath = append(scriptPath, "main.sh")
 	scriptPathJoined := filepath.Join(scriptPath...)

@@ -3,7 +3,7 @@ package utils
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 
 	"testing"
 )

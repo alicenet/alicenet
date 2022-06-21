@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"net"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
 )
 
 type NetAddress struct {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/dkg"
+	"github.com/alicenet/alicenet/blockchain/dkg/math"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 

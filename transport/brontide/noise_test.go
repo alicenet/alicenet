@@ -11,8 +11,8 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/types"
 )
 
 const (

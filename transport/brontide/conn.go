@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/types"
 )
 
 // A compile-time assertion to ensure that Conn meets the net.Conn interface.

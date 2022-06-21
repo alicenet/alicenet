@@ -3,9 +3,9 @@ package peering
 import (
 	"errors"
 
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/transport"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/transport"
 )
 
 type bootNodeList struct{}

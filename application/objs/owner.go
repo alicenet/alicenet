@@ -1,9 +1,9 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Owner contains information related to a general owner object

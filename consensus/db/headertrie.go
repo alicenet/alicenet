@@ -3,16 +3,16 @@ package db
 import (
 	"errors"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/sirupsen/logrus"
 
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
 )
 

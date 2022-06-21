@@ -1,8 +1,8 @@
 package dynamics
 
 import (
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // LinkedList is a doubly linked list which will store nodes corresponding

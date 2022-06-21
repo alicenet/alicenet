@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/MadBase/MadNet/cmd/firewalld/lib"
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 )
 
 type Msg struct {

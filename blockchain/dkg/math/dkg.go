@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
 )
 

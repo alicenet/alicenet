@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	types "github.com/ethereum/go-ethereum/core/types"
 )

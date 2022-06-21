@@ -8,7 +8,7 @@ package trie
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/dgraph-io/badger/v2"
 )
 

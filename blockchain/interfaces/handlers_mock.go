@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
 )
 
 //

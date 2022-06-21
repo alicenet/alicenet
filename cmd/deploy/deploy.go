@@ -7,10 +7,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/blockchain"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/MadBase/bridge/bindings"
 	"github.com/spf13/cobra"
 )

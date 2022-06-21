@@ -3,7 +3,7 @@ package transport
 import (
 	"encoding/hex"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
 )
 
 // NewTransportPrivateKey returns a new transport private key as a hex string.

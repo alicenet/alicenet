@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/alicenet/alicenet/blockchain/dkg"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"

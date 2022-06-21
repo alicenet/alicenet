@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/common"
 )
 

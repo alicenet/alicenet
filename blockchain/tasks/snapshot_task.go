@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/sirupsen/logrus"
 )

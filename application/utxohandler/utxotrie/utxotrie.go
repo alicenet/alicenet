@@ -3,12 +3,12 @@ package utxotrie
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/application/objs"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/objs"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

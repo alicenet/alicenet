@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/dkg/math"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"

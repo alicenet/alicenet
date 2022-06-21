@@ -6,7 +6,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 )
 

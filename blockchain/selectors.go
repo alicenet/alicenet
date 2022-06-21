@@ -3,7 +3,7 @@ package blockchain
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 

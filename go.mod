@@ -1,4 +1,4 @@
-module github.com/MadBase/MadNet
+module github.com/alicenet/alicenet
 
 go 1.18
 

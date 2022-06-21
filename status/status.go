@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/lstate"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/peering"
+	"github.com/alicenet/alicenet/blockchain/monitor"
+	"github.com/alicenet/alicenet/consensus/admin"
+	"github.com/alicenet/alicenet/consensus/lstate"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/peering"
 	"github.com/sirupsen/logrus"
 )
 

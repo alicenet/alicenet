@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/errorz"
 
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/tx"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/wrapper"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/tx"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 )
 
 var _ interfaces.Transaction = (*Tx)(nil)

@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
 )
 

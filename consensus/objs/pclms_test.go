@@ -3,9 +3,9 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestPClaims(t *testing.T) {

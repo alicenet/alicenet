@@ -1,9 +1,9 @@
 package pendingindex
 
 import (
-	"github.com/MadBase/MadNet/application/indexer"
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/indexer"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

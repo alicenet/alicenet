@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -88,7 +88,7 @@ type validatorConfig struct {
 }
 
 type loggingConfig struct {
-	Madnet     string
+	AliceNet   string
 	Consensus  string
 	Transport  string
 	App        string

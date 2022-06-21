@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type testObj struct {

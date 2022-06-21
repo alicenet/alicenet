@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/cmd/bootnode"
-	"github.com/MadBase/MadNet/cmd/firewalld"
-	"github.com/MadBase/MadNet/cmd/utils"
-	"github.com/MadBase/MadNet/cmd/validator"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/cmd/bootnode"
+	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/utils"
+	"github.com/alicenet/alicenet/cmd/validator"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -81,16 +81,16 @@ func main() {
 
 	// Root for all commands
 	rootCommand := cobra.Command{
-		Use:   "madnet",
-		Short: "Short description of madnet",
-		Long:  "This is a not so long description for madnet"}
+		Use:   "alicenet",
+		Short: "Short description of alicenet",
+		Long:  "This is a not so long description for alicenet"}
 
 	// All the configuration options available. Used for command line and config file.
 	options := map[*cobra.Command][]*option{
 		&rootCommand: {
 			{"config", "c", "Name of config file", &config.Configuration.ConfigurationFileName},
 			{"logging", "", "", &config.Configuration.LoggingLevels},
-			{"loglevel.madnet", "", "", &config.Configuration.Logging.Madnet},
+			{"loglevel.alicenet", "", "", &config.Configuration.Logging.AliceNet},
 			{"loglevel.consensus", "", "", &config.Configuration.Logging.Consensus},
 			{"loglevel.transport", "", "", &config.Configuration.Logging.Transport},
 			{"loglevel.app", "", "", &config.Configuration.Logging.App},

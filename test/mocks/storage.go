@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/MadBase/MadNet/dynamics"
+import "github.com/alicenet/alicenet/dynamics"
 
 func NewMockStorage() *dynamics.Storage {
 	storage := &dynamics.Storage{}

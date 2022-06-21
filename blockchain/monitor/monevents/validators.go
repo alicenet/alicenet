@@ -6,11 +6,11 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/crypto/bn256"
+	"github.com/alicenet/alicenet/blockchain/dkg"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -46,7 +46,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	epoch := uint32(event.Epoch.Int64())
 
 	vs := state.ValidatorSets[epoch]
-	vs.NotBeforeMadNetHeight = uint32(event.AliceNetHeight.Uint64())
+	vs.NotBeforeAliceNetHeight = uint32(event.AliceNetHeight.Uint64())
 	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1
@@ -166,9 +166,9 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 
 	// Log validator set status
 	logger.WithFields(logrus.Fields{
-		"NotBeforeMadNetHeight": validatorSet.NotBeforeMadNetHeight,
-		"ValidatorsReceived":    receivedCount,
-		"ValidatorsExpected":    expectedCount,
+		"NotBeforeAliceNetHeight": validatorSet.NotBeforeAliceNetHeight,
+		"ValidatorsReceived":      receivedCount,
+		"ValidatorsExpected":      expectedCount,
 	}).Infof("Building ValidatorSet...")
 
 	if receivedCount == expectedCount || receivedCount == 0 {
@@ -182,7 +182,7 @@ func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus
 		vs := &objs.ValidatorSet{
 			GroupKey:   groupKey,
 			Validators: make([]*objs.Validator, validatorSet.ValidatorCount),
-			NotBefore:  validatorSet.NotBeforeMadNetHeight}
+			NotBefore:  validatorSet.NotBeforeAliceNetHeight}
 		// Loop over the Validators
 		if receivedCount != 0 {
 			for _, validator := range validators {

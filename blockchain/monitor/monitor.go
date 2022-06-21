@@ -9,16 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/blockchain/dkg/dkgtasks"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/tasks"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -270,7 +270,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 		}
 		select {
 		case <-gcTimer:
-			err := mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio) 
+			err := mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio)
 			if err != nil {
 				logger.Errorf("Failed to run value log GC: %v", err)
 			}

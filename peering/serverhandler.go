@@ -4,10 +4,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )

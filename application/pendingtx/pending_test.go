@@ -11,14 +11,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 )

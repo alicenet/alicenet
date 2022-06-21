@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	pb "github.com/MadBase/MadNet/proto"
+	pb "github.com/alicenet/alicenet/proto"
 )
 
 // StateServer implements the State server service from the protobuf definition.

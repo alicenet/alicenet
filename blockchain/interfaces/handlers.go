@@ -3,9 +3,9 @@ package interfaces
 import (
 	"math/big"
 
-	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
+	aobjs "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/dgraph-io/badger/v2"
 )
 

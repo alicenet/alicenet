@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

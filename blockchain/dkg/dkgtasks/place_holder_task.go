@@ -3,8 +3,8 @@ package dkgtasks
 import (
 	"context"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 

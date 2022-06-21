@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ExtractHR extracts the Height and Round from an interface;

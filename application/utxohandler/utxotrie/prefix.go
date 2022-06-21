@@ -1,7 +1,7 @@
 package utxotrie
 
 import (
-	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 )
 
 func getTriePrefix() []byte {

@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/transport/brontide"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/transport/brontide"
+	"github.com/alicenet/alicenet/types"
 )
 
 var _ net.Addr = (*NodeAddr)(nil)

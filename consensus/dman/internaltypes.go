@@ -4,9 +4,9 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

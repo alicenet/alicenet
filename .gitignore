@@ -1,8 +1,8 @@
 local-geth/*
 
 # output files
-/madnet
-/madrace
+/alicenet
+/alicerace
 /mngen
 **/__debug_bin
 **/*.log

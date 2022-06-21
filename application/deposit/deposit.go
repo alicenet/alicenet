@@ -3,16 +3,16 @@ package deposit
 import (
 	"math/big"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
 
-	"github.com/MadBase/MadNet/application/db"
-	"github.com/MadBase/MadNet/application/indexer"
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/db"
+	"github.com/alicenet/alicenet/application/indexer"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

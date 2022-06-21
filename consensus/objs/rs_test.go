@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/errorz"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func rsEqual(t *testing.T, a, b *RoundState) {

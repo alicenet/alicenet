@@ -3,7 +3,7 @@ package objects_test
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/stretchr/testify/assert"
 )
 

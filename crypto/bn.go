@@ -3,7 +3,7 @@ package crypto
 import (
 	"math/big"
 
-	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 // BNSigner creates cryptographic signatures using the bn256 curve.

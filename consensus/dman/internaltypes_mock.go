@@ -2,7 +2,7 @@ package dman
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )

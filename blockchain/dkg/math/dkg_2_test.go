@@ -4,12 +4,12 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	dkgMath "github.com/MadBase/MadNet/blockchain/dkg/math"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	mnCrypto "github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/utils"
+	dkgMath "github.com/alicenet/alicenet/blockchain/dkg/math"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	mnCrypto "github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
 )

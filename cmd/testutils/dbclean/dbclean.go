@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/dgraph-io/badger/v2"
 )
 
