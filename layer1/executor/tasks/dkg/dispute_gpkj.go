@@ -1,10 +1,12 @@
 package dkg
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/crypto"
@@ -13,23 +15,26 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
+	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/layer1/transaction"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeGPKjTask contains required state for performing a group accusation
 type DisputeGPKjTask struct {
 	*tasks.BaseTask
+	// additional fields that are not part of the default task
+	Address common.Address
 }
 
 // asserting that DisputeGPKjTask struct implements interface tasks.Task
 var _ tasks.Task = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
-func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
+func NewDisputeGPKjTask(start uint64, end uint64, address common.Address) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
 		BaseTask: tasks.NewBaseTask(constants.DisputeGPKjTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		Address:  address,
 	}
 }
 
@@ -38,14 +43,21 @@ func NewDisputeGPKjTask(start uint64, end uint64) *DisputeGPKjTask {
 func (t *DisputeGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
+	return nil
+}
+
+// Execute executes the task business logic
+func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission && dkgState.Phase != state.GPKJSubmission {
-		return tasks.NewTaskErr(fmt.Sprintf("it's not DisputeGPKJSubmission or GPKJSubmission phase"), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("it's not DisputeGPKJSubmission or GPKJSubmission phase"), false)
 	}
 
 	var (
@@ -63,100 +75,28 @@ func (t *DisputeGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	honest, dishonest, missing, err := state.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf("failed to determine honest vs dishonest validators: %v", err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to determine honest vs dishonest validators: %v", err), false)
+	}
+	// we had a address that was not processed
+	if len(honest)+len(missing)+len(dishonest) != len(participantList) {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("missing information when computing honest, dishonest, missing validators: %v", err), false)
 	}
 
-	inverse, err := state.InverseArrayForUserCount(dkgState.NumberOfValidators)
-	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf("failed to calculate inversion: %v", err), false)
-	}
-
-	logger.Debugf("   Honest indices: %v", honest.ExtractIndices())
-	logger.Debugf("Dishonest indices: %v", dishonest.ExtractIndices())
-	logger.Debugf("  Missing indices: %v", missing.ExtractIndices())
-
-	dkgState.DishonestValidators = dishonest
-	dkgState.HonestValidators = honest
-	dkgState.Inverse = inverse
-
-	err = state.SaveDkgState(t.GetDB(), dkgState)
-	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
-	}
-
-	return nil
-}
-
-// Execute executes the task business logic
-func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "Execute()")
-	logger.Debug("initiate execution")
-
-	dkgState, err := state.GetDkgState(t.GetDB())
-	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
-	}
-
-	// Perform group accusation
-	logger.Debugf("   Honest indices: %v", dkgState.HonestValidators.ExtractIndices())
-	logger.Debugf("Dishonest indices: %v", dkgState.DishonestValidators.ExtractIndices())
-
-	var groupEncryptedSharesHash [][32]byte
-	var groupCommitments [][][2]*big.Int
-	var validatorAddresses []common.Address
-	var participantList = dkgState.GetSortedParticipants()
-
-	for _, participant := range participantList {
-		// Get group encrypted shares
-		es := participant.EncryptedShares
-		encryptedSharesBin, err := bn256.MarshalBigIntSlice(es)
-		if err != nil {
-			return nil, tasks.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
+	for _, honestParticipant := range honest {
+		if bytes.Equal(honestParticipant.Address.Bytes(), t.Address.Bytes()) {
+			logger.Info("finishing accusation task %v is honest", t.Address.Hex())
+			return nil, nil
 		}
-		hashSlice := crypto.Hasher(encryptedSharesBin)
-		var hashSlice32 [32]byte
-		copy(hashSlice32[:], hashSlice)
-		groupEncryptedSharesHash = append(groupEncryptedSharesHash, hashSlice32)
-		// Get group commitments
-		com := participant.Commitments
-		groupCommitments = append(groupCommitments, com)
-		validatorAddresses = append(validatorAddresses, participant.Address)
 	}
 
-	client := t.GetClient()
-	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
-	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
-	}
-
-	// Setup
-	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
-	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
-	}
-
-	txns := make([]*types.Transaction, 0)
-	// Loop through dishonest participants and perform accusation
-	for _, dishonestParticipant := range dkgState.DishonestValidators {
-
-		isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, dishonestParticipant.Address)
-		if err != nil {
-			return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), true)
+	for _, dishonestParticipant := range dishonest {
+		if bytes.Equal(dishonestParticipant.Address.Bytes(), t.Address.Bytes()) {
+			return t.accuseDishonestValidator(ctx, logger, dkgState, participantList, groupCommitments)
 		}
-
-		if !isValidator {
-			continue
-		}
-
-		logger.Warnf("accusing participant: %v of distributing bad dpkj", dishonestParticipant.Address.Hex())
-		txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, dishonestParticipant.Address)
-		if err != nil {
-			return nil, tasks.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
-		}
-		txns = append(txns, txn)
 	}
-	//todo: fix this, split this task in multiple tasks
-	return txns[0], nil
+
+	// address didn't shared it's gpkj another task will be responsible for accusing him
+	return nil, nil
 }
 
 // ShouldExecute checks if it makes sense to execute the task
@@ -174,24 +114,56 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 		return false, nil
 	}
 
+	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), false)
+	}
+	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant already accused")
+
+	return isValidator, nil
+}
+
+func (t *DisputeGPKjTask) accuseDishonestValidator(ctx context.Context, logger *logrus.Entry, dkgState *state.DkgState, participantList state.ParticipantList, groupCommitments [][][2]*big.Int) (*types.Transaction, *tasks.TaskErr) {
+	var groupEncryptedSharesHash [][32]byte
+	var validatorAddresses []common.Address
+
+	for _, participant := range participantList {
+		// Get group encrypted shares
+		es := participant.EncryptedShares
+		encryptedSharesBin, err := bn256.MarshalBigIntSlice(es)
+		if err != nil {
+			return nil, tasks.NewTaskErr(fmt.Sprintf("group accusation failed: %v", err), true)
+		}
+		hashSlice := crypto.Hasher(encryptedSharesBin)
+		var hashSlice32 [32]byte
+		copy(hashSlice32[:], hashSlice)
+		groupEncryptedSharesHash = append(groupEncryptedSharesHash, hashSlice32)
+		validatorAddresses = append(validatorAddresses, participant.Address)
+	}
+
 	client := t.GetClient()
 
-	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
+	// Setup
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
-	}
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
-	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("could not get BadParticipants: %v", err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
 	}
 
-	if len(dkgState.DishonestValidators) == int(badParticipants.Int64()) {
-		logger.WithFields(logrus.Fields{
-			"state.BadShares":     len(dkgState.BadShares),
-			"eth.badParticipants": badParticipants,
-		}).Debug("all bad participants already accused")
-		return false, nil
+	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), false)
 	}
 
-	return true, nil
+	// it means that the guys was already accused and evicted from the validatorPool
+	if !isValidator {
+		logger.Debugf("%v is not a validator anymore", t.Address.Hex())
+		return nil, nil
+	}
+
+	logger.Warnf("accusing participant: %v of distributing bad dpkj", t.Address.Hex())
+	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, t.Address)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("bad dpkj accusation failed: %v", err), true)
+	}
+	return txn, nil
 }

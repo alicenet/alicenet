@@ -141,7 +141,6 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 	logger.Info("ProcessRegistrationComplete() ...")
 	shareDistributionTask := &dkgtasks.ShareDistributionTask{}
 	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
-	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
@@ -162,7 +161,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 		"BlockNumber": event.BlockNumber,
 	}).Info("ETHDKG Registration Complete")
 
-	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
+	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks := UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
@@ -189,18 +188,20 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 
 	taskRequestChan <- disputeMissingShareDistributionTask
 
-	// schedule DisputeDistributeSharesTask
-	logger.WithFields(logrus.Fields{
-		"TaskStart": disputeBadSharesTask.GetStart(),
-		"TaskEnd":   disputeBadSharesTask.GetEnd(),
-	}).Info("Scheduling NewDisputeDistributeSharesTask")
-
-	taskRequestChan <- disputeBadSharesTask
+	for _, disputeBadSharesTask := range disputeBadSharesTasks {
+		// schedule DisputeDistributeSharesTask
+		logger.WithFields(logrus.Fields{
+			"TaskStart": disputeBadSharesTask.GetStart(),
+			"TaskEnd":   disputeBadSharesTask.GetEnd(),
+			"Address":   disputeBadSharesTask.Address,
+		}).Info("Scheduling NewDisputeDistributeSharesTask")
+		taskRequestChan <- disputeBadSharesTask
+	}
 
 	return nil
 }
 
-func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, *dkgtasks.DisputeShareDistributionTask) {
+func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, []*dkgtasks.DisputeShareDistributionTask) {
 	dkgState.OnRegistrationComplete(shareDistributionStartBlockNumber)
 
 	shareDistStartBlock := dkgState.PhaseStart
@@ -210,9 +211,9 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	var dispShareStartBlock = shareDistEndBlock
 	var dispShareEndBlock = dispShareStartBlock + dkgState.PhaseLength
 	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
-	disputeBadSharesTask := dkgtasks.NewDisputeShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
+	disputeBadSharesTasks := GetDisputeShareDistributionTasks(dkgState, dispShareEndBlock)
 
-	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask
+	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks
 }
 
 func ProcessShareDistribution(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
@@ -251,7 +252,6 @@ func ProcessShareDistribution(eth layer1.Client, logger *logrus.Entry, log types
 
 func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
 	logger.Info("ProcessShareDistributionComplete() ...")
-	disputeShareDistributionTask := &dkgtasks.DisputeShareDistributionTask{}
 	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
@@ -273,7 +273,7 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 		"BlockNumber": event.BlockNumber,
 	}).Info("Received share distribution complete")
 
-	disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
+	disputeShareDistributionTasks, keyShareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
@@ -284,12 +284,15 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 	taskKillChan <- constants.DisputeMissingShareDistributionTaskName
 	taskKillChan <- constants.DisputeShareDistributionTaskName
 
-	// schedule DisputeShareDistributionTask
-	logger.WithFields(logrus.Fields{
-		"TaskStart": disputeShareDistributionTask.GetStart(),
-		"TaskEnd":   disputeShareDistributionTask.GetEnd(),
-	}).Info("Scheduling NewDisputeShareDistributionTask")
-	taskRequestChan <- disputeShareDistributionTask
+	for _, disputeShareDistributionTask := range disputeShareDistributionTasks {
+		// schedule DisputeShareDistributionTask
+		logger.WithFields(logrus.Fields{
+			"TaskStart": disputeShareDistributionTask.GetStart(),
+			"TaskEnd":   disputeShareDistributionTask.GetEnd(),
+			"Address":   disputeShareDistributionTask.Address,
+		}).Info("Scheduling NewDisputeShareDistributionTask")
+		taskRequestChan <- disputeShareDistributionTask
+	}
 
 	// schedule SubmitKeySharesPhase
 	logger.WithFields(logrus.Fields{
@@ -308,12 +311,12 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 	return nil
 }
 
-func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) (*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
+func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) ([]*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
 	dkgState.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 
 	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	disputeShareDistributionTask := dkgtasks.NewDisputeShareDistributionTask(dkgState.PhaseStart, phaseEnd)
 
+	disputeShareDistributionTasks := GetDisputeShareDistributionTasks(dkgState, phaseEnd)
 	// schedule SubmitKeySharesPhase
 	submitKeySharesPhaseStart := phaseEnd
 	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + dkgState.PhaseLength
@@ -324,7 +327,7 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 	missingKeySharesDisputeEnd := missingKeySharesDisputeStart + dkgState.PhaseLength
 	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
 
-	return disputeShareDistributionTask, keyshareSubmissionTask, disputeMissingKeySharesTask
+	return disputeShareDistributionTasks, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
 
 func ProcessKeyShareSubmitted(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
@@ -425,7 +428,6 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 
 	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
 	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
-	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
@@ -436,7 +438,7 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 		return nil
 	}
 
-	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
+	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks := UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
@@ -465,18 +467,19 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 	taskRequestChan <- disputeMissingGPKjTask
 
 	// schedule DisputeGPKjTask
-	logger.WithFields(logrus.Fields{
-		"BlockNumber": event.BlockNumber,
-		"TaskStart":   gpkjSubmissionTask.GetStart(),
-		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
-	}).Info("Scheduling DisputeGPKjTask")
-
-	taskRequestChan <- disputeGPKjTask
+	for _, disputeGPKjTask := range disputeGPKjTasks {
+		logger.WithFields(logrus.Fields{
+			"BlockNumber": event.BlockNumber,
+			"TaskStart":   disputeGPKjTask.GetStart(),
+			"TaskEnd":     disputeGPKjTask.GetEnd(),
+		}).Info("Scheduling DisputeGPKjTask")
+		taskRequestChan <- disputeGPKjTask
+	}
 
 	return nil
 }
 
-func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, *dkgtasks.DisputeGPKjTask) {
+func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, []*dkgtasks.DisputeGPKjTask) {
 	dkgState.OnMPKSet(gpkjSubmissionStartBlock)
 	gpkjSubmissionEnd := dkgState.PhaseStart + dkgState.PhaseLength
 	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(dkgState.PhaseStart, gpkjSubmissionEnd, adminHandler)
@@ -484,9 +487,9 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 	disputeMissingGPKjStart := gpkjSubmissionEnd
 	disputeMissingGPKjEnd := disputeMissingGPKjStart + dkgState.PhaseLength
 	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(disputeMissingGPKjStart, disputeMissingGPKjEnd)
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeGPKjTasks := GetDisputeGPKjTasks(dkgState, disputeMissingGPKjEnd)
 
-	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask
+	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks
 }
 
 func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
@@ -500,7 +503,6 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessGPKJSubmissionComplete() ...")
 
-	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	completionTask := &dkgtasks.CompletionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
@@ -511,7 +513,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 		return nil
 	}
 
-	disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+	disputeGPKjTasks, completionTask := UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
@@ -523,14 +525,16 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 	taskKillChan <- constants.DisputeMissingGPKjTaskName
 	taskKillChan <- constants.DisputeGPKjTaskName
 
-	// schedule DisputeGPKJSubmissionTask
-	logger.WithFields(logrus.Fields{
-		"BlockNumber": event.BlockNumber,
-		"TaskStart":   disputeGPKjTask.GetStart(),
-		"TaskEnd":     disputeGPKjTask.GetEnd(),
-	}).Info("Scheduling NewGPKJDisputeTask")
-
-	taskRequestChan <- disputeGPKjTask
+	for _, disputeGPKjTask := range disputeGPKjTasks {
+		// schedule DisputeGPKJSubmissionTask
+		logger.WithFields(logrus.Fields{
+			"BlockNumber": event.BlockNumber,
+			"TaskStart":   disputeGPKjTask.GetStart(),
+			"TaskEnd":     disputeGPKjTask.GetEnd(),
+			"Address":     disputeGPKjTask.Address,
+		}).Info("Scheduling NewGPKJDisputeTask")
+		taskRequestChan <- disputeGPKjTask
+	}
 
 	// schedule Completion
 	logger.WithFields(logrus.Fields{
@@ -544,15 +548,31 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 	return nil
 }
 
-func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) (*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
+func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) ([]*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
 	dkgState.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
 
 	disputeGPKjPhaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	disputeGPKjTask := dkgtasks.NewDisputeGPKjTask(dkgState.PhaseStart, disputeGPKjPhaseEnd)
 
+	disputeGPKjTasks := GetDisputeGPKjTasks(dkgState, disputeGPKjPhaseEnd)
 	completionStart := disputeGPKjPhaseEnd
 	completionEnd := completionStart + dkgState.PhaseLength
 	completionTask := dkgtasks.NewCompletionTask(completionStart, completionEnd)
 
-	return disputeGPKjTask, completionTask
+	return disputeGPKjTasks, completionTask
+}
+
+func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
+	var disputeShareDistributionTasks []*dkgtasks.DisputeShareDistributionTask
+	for address := range dkgState.Participants {
+		disputeShareDistributionTasks = append(disputeShareDistributionTasks, dkgtasks.NewDisputeShareDistributionTask(dkgState.PhaseStart, phaseEnd, address))
+	}
+	return disputeShareDistributionTasks
+}
+
+func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
+	var disputeGPKjTasks []*dkgtasks.DisputeGPKjTask
+	for address := range dkgState.Participants {
+		disputeGPKjTasks = append(disputeGPKjTasks, dkgtasks.NewDisputeGPKjTask(dkgState.PhaseStart, phaseEnd, address))
+	}
+	return disputeGPKjTasks
 }

@@ -93,6 +93,18 @@ func GetValidatorAddresses(monitorDB *db.Database, logger *logrus.Entry) ([]comm
 	return validatorAddresses, nil
 }
 
+// GetValidatorAddresses retrieves validator addresses from the last monitor
+// State saved on disk and check if a address sent is a potential validator
+// address
+func IsValidator(monitorDB *db.Database, logger *logrus.Entry, address common.Address) (bool, error) {
+	monState, err := objects.GetMonitorState(monitorDB, logger)
+	if err != nil {
+		return false, fmt.Errorf("failed to get monitor state: %v", err)
+	}
+	_, present := monState.PotentialValidators[address]
+	return present, nil
+}
+
 // check if I'm a leader for this task
 func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numOfValidators int, dkgIndex int) bool {
 	currentHeight, err := client.GetCurrentHeight(ctx)
