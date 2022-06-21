@@ -43,7 +43,7 @@ const (
 	// this constant set how many times we will be multiplying the maxStaleBlock
 	// amount before trying to replace a transaction that was already replaced more
 	// than once
-	TxBackOffDelayStaleTxMultiplier = 4
+	TxBackOffDelayStaleTxMultiplier = 2
 )
 
 // ethereum client const

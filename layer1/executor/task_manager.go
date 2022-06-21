@@ -116,15 +116,24 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 // killed, we get an unrecoverable error or we succeed
 func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	logger := task.GetLogger()
-	hasToExecute, err := shouldExecute(ctx, task)
-	if err != nil {
-		return err
-	}
 	for {
+		hasToExecute, err := shouldExecute(ctx, task)
+		if err != nil {
+			return err
+		}
 		if hasToExecute {
-			txn, err := tm.taskExecution(ctx, task, retryDelay)
-			if err != nil {
-				return err
+			txn, taskErr := task.Execute(ctx)
+			if taskErr != nil {
+				if taskErr.IsRecoverable() {
+					logger.Trace("got a recoverable error during task.execute: %v", taskErr.Error())
+					err := sleepWithContext(ctx, retryDelay)
+					if err != nil {
+						return err
+					}
+					continue
+				}
+				logger.Debug("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
+				return taskErr
 			}
 			if txn != nil {
 				logger.Debug("got a successful txn: %v", txn.Hash().Hex())
@@ -146,33 +155,6 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 				return nil
 			}
 		}
-	}
-}
-
-func (tm *TasksManager) taskExecution(ctx context.Context, task tasks.Task, retryDelay time.Duration) (*types.Transaction, error) {
-	logger := task.GetLogger()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		txn, taskErr := task.Execute(ctx)
-		if taskErr != nil {
-			if taskErr.IsRecoverable() {
-				logger.Trace("got a recoverable error during task.execute: %v", taskErr.Error())
-				err := sleepWithContext(ctx, retryDelay)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-			logger.Debug("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
-			return nil, taskErr
-		}
-		logger.Trace("successfully executed task")
-		return txn, nil
 	}
 }
 
