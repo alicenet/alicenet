@@ -106,15 +106,10 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (boo
 
 func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, dkgState *state.DkgState) ([]common.Address, error) {
 	logger := t.GetLogger()
-	client := t.GetClient()
 
 	var accusableParticipants []common.Address
-	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf(constants.FailedGettingCallOpts, err))
-	}
 
-	validators, err := utils.GetValidatorAddressesFromPool(callOpts, client, logger)
+	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
 	}

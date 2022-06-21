@@ -1,11 +1,6 @@
 package events
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"time"
-
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/ethereum"
@@ -15,58 +10,29 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	monitorInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
+	"github.com/MadBase/MadNet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrNotAValidator = errors.New("nothing schedule for time")
-)
-
-// todo: improve this
-func isValidator(eth layer1.Client, logger *logrus.Entry, acct accounts.Account) (bool, error) {
-	ctx := context.Background()
-	callOpts, err := eth.GetCallOpts(ctx, acct)
-	if err != nil {
-		return false, errors.New(fmt.Sprintf("cannot check if I'm a validator, failed getting call options: %v", err))
-	}
-	isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, acct.Address)
-	if err != nil {
-		return false, errors.New(fmt.Sprintf("cannot check if I'm a validator :%v", err))
-	}
-	if !isValidator {
-		logger.Info("cannot take part in ETHDKG because I'm not a validator")
-		return false, nil
-	}
-
-	return true, nil
+func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
+	_, present := state.PotentialValidators[acct.Address]
+	return present
 }
 
-func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task) error {
+func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskRequestChan chan<- tasks.Task) error {
 	logger.Info("ProcessRegistrationOpened() ...")
 	event, err := ethereum.GetContracts().Ethdkg().ParseRegistrationOpened(log)
 	if err != nil {
 		return err
 	}
 
-	amIaValidator, err := isValidator(eth, logger, eth.GetDefaultAccount())
-	if err != nil {
-		return utils.LogReturnErrorf(logger, "I'm not a validator: %v", err)
-	}
-
-	// get validators from ValidatorPool
-	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cf()
-
-	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	if err != nil {
-		return utils.LogReturnErrorf(logger, "failed to get call options to retrieve validators address from pool: %v", err)
-	}
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
-	if err != nil {
-		return utils.LogReturnErrorf(logger, "failed to retrieve validator state from validator pool: %v", err)
+	// get potential validators
+	var validatorAddresses []common.Address
+	for address := range monState.PotentialValidators {
+		validatorAddresses = append(validatorAddresses, address)
 	}
 
 	dkgState, registrationTask, disputeMissingRegistrationTask := UpdateStateOnRegistrationOpened(
@@ -75,7 +41,7 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 		event.PhaseLength.Uint64(),
 		event.ConfirmationLength.Uint64(),
 		event.Nonce.Uint64(),
-		amIaValidator,
+		isValidator(eth.GetDefaultAccount(), monState),
 		validatorAddresses,
 	)
 
@@ -87,6 +53,11 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 		"ConfirmationLength": event.ConfirmationLength,
 		"RegistrationEnd":    registrationTask.GetEnd(),
 	}).Info("ETHDKG RegistrationOpened")
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
+	}
 
 	if !dkgState.IsValidator {
 		return nil
@@ -107,11 +78,6 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
 	taskRequestChan <- disputeMissingRegistrationTask
-
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
-	}
 
 	return nil
 }

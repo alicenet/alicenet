@@ -142,7 +142,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, n int, unregisteredValidators 
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := utils.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validatorAddresses, err := utils.GetValidatorAddresses(callOpts, eth, logger)
 	assert.Nil(t, err)
 
 	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)

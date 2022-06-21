@@ -13,14 +13,13 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/ethereum"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots/state"
 	"github.com/MadBase/MadNet/layer1/monitor/events"
-	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
+	"github.com/MadBase/MadNet/layer1/monitor/interfaces"
 	"github.com/MadBase/MadNet/layer1/monitor/objects"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
@@ -28,14 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
-)
-
-var (
-	// ErrUnknownRequest a service was invoked but couldn't figure out which
-	ErrUnknownRequest = errors.New("unknown request")
-
-	// ErrUnknownResponse only used when response to a service is not of the expected type
-	ErrUnknownResponse = errors.New("response isn't in expected form")
 )
 
 // Monitor describes required functionality to monitor Ethereum
@@ -47,8 +38,8 @@ type Monitor interface {
 
 type monitor struct {
 	sync.RWMutex
-	adminHandler   monInterfaces.AdminHandler
-	depositHandler monInterfaces.DepositHandler
+	adminHandler   interfaces.AdminHandler
+	depositHandler interfaces.DepositHandler
 	eth            layer1.Client
 	eventMap       *objects.EventMap
 	db             *db.Database
@@ -70,8 +61,8 @@ type monitor struct {
 // NewMonitor creates a new Monitor
 func NewMonitor(cdb *db.Database,
 	monDB *db.Database,
-	adminHandler monInterfaces.AdminHandler,
-	depositHandler monInterfaces.DepositHandler,
+	adminHandler interfaces.AdminHandler,
+	depositHandler interfaces.DepositHandler,
 	eth layer1.Client,
 	tickInterval time.Duration,
 	batchSize uint64,
@@ -118,64 +109,6 @@ func NewMonitor(cdb *db.Database,
 
 }
 
-func (mon *monitor) LoadState() error {
-
-	mon.Lock()
-	defer mon.Unlock()
-
-	if err := mon.db.View(func(txn *badger.Txn) error {
-		key := dbprefix.PrefixMonitorState()
-		mon.logger.WithField("Key", string(key)).Infof("Looking up state")
-		rawData, err := utils.GetValue(txn, key)
-		if err != nil {
-			return err
-		}
-
-		err = json.Unmarshal(rawData, mon)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-func (mon *monitor) PersistState() error {
-
-	mon.Lock()
-	defer mon.Unlock()
-
-	rawData, err := json.Marshal(mon)
-	if err != nil {
-		return err
-	}
-
-	err = mon.db.Update(func(txn *badger.Txn) error {
-		key := dbprefix.PrefixMonitorState()
-		mon.logger.WithField("Key", string(key)).Infof("Saving state")
-		if err := utils.SetValue(txn, key, rawData); err != nil {
-			mon.logger.Error("Failed to set Value")
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := mon.db.Sync(); err != nil {
-		mon.logger.Error("Failed to set sync")
-		return err
-	}
-
-	return nil
-}
-
 func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
@@ -192,7 +125,7 @@ func (mon *monitor) Start() error {
 	// Load or create initial State
 	logger.Info(strings.Repeat("-", 80))
 	startingBlock := config.Configuration.Ethereum.StartingBlock
-	err := mon.LoadState()
+	err := mon.State.LoadState(mon.db, mon.logger)
 	if err != nil {
 		logger.Warnf("could not find previous State: %v", err)
 		if err != badger.ErrKeyNotFound {
@@ -264,7 +197,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 			oldMonitorState := mon.State.Clone()
 
 			persistMonitorCB := func() {
-				err := mon.PersistState()
+				err := mon.State.PersistState(mon.db, mon.logger)
 				if err != nil {
 					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
 				}
@@ -277,7 +210,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 			diff, shouldWrite := oldMonitorState.Diff(mon.State)
 
 			if shouldWrite {
-				if err := mon.PersistState(); err != nil {
+				if err := mon.State.PersistState(mon.db, mon.logger); err != nil {
 					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
 				}
 			}
@@ -309,7 +242,7 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
 func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth layer1.Client, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler monInterfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -387,8 +320,8 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		currentBlock++
 		logs := logsList[i]
 
-		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
 		var forceExit bool
+		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				return err
@@ -484,12 +417,12 @@ type eventSorter struct {
 func (es *eventSorter) Start(num uint64) {
 	for i := uint64(0); i < num; i++ {
 		es.wg.Add(1)
-		go es.wrkr()
+		go es.worker()
 	}
 	es.wg.Wait()
 }
 
-func (es *eventSorter) wrkr() {
+func (es *eventSorter) worker() {
 	defer es.wg.Done()
 	for {
 		wrk, ok := <-es.pending

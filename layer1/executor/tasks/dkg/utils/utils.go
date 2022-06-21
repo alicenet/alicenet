@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/ethereum"
+	"github.com/MadBase/MadNet/layer1/monitor/objects"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -78,18 +80,17 @@ func FormatBigIntSlice(slice []*big.Int) string {
 	return fmt.Sprintf("0x%v...%v", str[0:3], str[len(str)-3:])
 }
 
-// GetValidatorAddressesFromPool retrieves validator addresses from ValidatorPool
-func GetValidatorAddressesFromPool(callOpts *bind.CallOpts, eth layer1.Client, logger *logrus.Entry) ([]common.Address, error) {
-	c := ethereum.GetContracts()
-
-	addresses, err := c.ValidatorPool().GetValidatorsAddresses(callOpts)
+// GetValidatorAddresses retrieves validator addresses from the last monitor State saved on disk
+func GetValidatorAddresses(monitorDB *db.Database, logger *logrus.Entry) ([]common.Address, error) {
+	monState, err := objects.GetMonitorState(monitorDB, logger)
 	if err != nil {
-		message := fmt.Sprintf("could not get validator addresses from ValidatorPool: %v", err)
-		logger.Errorf(message)
-		return nil, err
+		return nil, fmt.Errorf("failed to get monitor state: %v", err)
 	}
-
-	return addresses, nil
+	var validatorAddresses []common.Address
+	for address := range monState.PotentialValidators {
+		validatorAddresses = append(validatorAddresses, address)
+	}
+	return validatorAddresses, nil
 }
 
 // check if I'm a leader for this task

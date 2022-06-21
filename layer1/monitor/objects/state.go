@@ -7,9 +7,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/MadBase/MadNet/utils"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
+// todo: ask Hunter
 // CRITICAL TODO: MONITOR STATE MUST BE SPLIT UP INTO DIFFERENT OBJECTS OR
 // MAPPINGS MUST BE PRUNED AFTER SOME DELAY. THIS DELAY MAY BE ON THE SCALE OF
 // 5 EPOCHS AS A VERY CONSERVATIVE NUMBER AFTER WHICH DATA MUST HAVE BEEN FLUSHED
@@ -18,40 +24,59 @@ import (
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
-	Version                uint8                   `json:"version"`
-	CommunicationFailures  uint32                  `json:"communicationFailures"`
-	EthereumInSync         bool                    `json:"-"`
-	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
-	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
-	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
-	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
-	EndpointInSync         bool                    `json:"-"`
-	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
-	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
-	PeerCount              uint32                  `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
-	Validators             map[uint32][]Validator  `json:"validators"`
+	Version                uint8                                 `json:"version"`
+	CommunicationFailures  uint32                                `json:"communicationFailures"`
+	EthereumInSync         bool                                  `json:"-"`
+	HighestBlockProcessed  uint64                                `json:"highestBlockProcessed"`
+	HighestBlockFinalized  uint64                                `json:"highestBlockFinalized"`
+	HighestEpochProcessed  uint32                                `json:"highestEpochProcessed"`
+	HighestEpochSeen       uint32                                `json:"highestEpochSeen"`
+	EndpointInSync         bool                                  `json:"-"`
+	LatestDepositProcessed uint32                                `json:"latestDepositProcessed"`
+	LatestDepositSeen      uint32                                `json:"latestDepositSeen"`
+	PeerCount              uint32                                `json:"peerCount"`
+	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
+	Validators             map[uint32][]Validator                `json:"validators"`
+	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
 }
 
-// ValidatorSet is summary information about a ValidatorSet
+// ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG
 type ValidatorSet struct {
 	ValidatorCount        uint8       `json:"validator_count"`
 	GroupKey              [4]*big.Int `json:"group_key"`
 	NotBeforeMadNetHeight uint32      `json:"not_before_mad_net_height"`
 }
 
-// Validator contains information about a Validator
+// Validator contains information about a Validator that participated on ETHDKG
 type Validator struct {
 	Account   common.Address `json:"account"`
 	Index     uint8          `json:"index"`
 	SharedKey [4]*big.Int    `json:"shared_key"`
 }
 
+// Potential Validator contains information about a validators that entered the
+// pool, but might not participated on ETHDKG yet
+type PotentialValidator struct {
+	Account common.Address `json:"account"`
+	TokenID uint64         `json:"tokenID"`
+}
+
 func NewMonitorState() *MonitorState {
 	return &MonitorState{
-		ValidatorSets: make(map[uint32]ValidatorSet),
-		Validators:    make(map[uint32][]Validator),
+		ValidatorSets:       make(map[uint32]ValidatorSet),
+		Validators:          make(map[uint32][]Validator),
+		PotentialValidators: make(map[common.Address]PotentialValidator),
 	}
+}
+
+// Get a copy of the monitor state that is saved on disk
+func GetMonitorState(db *db.Database, logger *logrus.Entry) (*MonitorState, error) {
+	monState := NewMonitorState()
+	err := monState.LoadState(db, logger)
+	if err != nil {
+		return nil, err
+	}
+	return monState, nil
 }
 
 func (s *MonitorState) String() string {
@@ -83,6 +108,64 @@ func (s *MonitorState) Clone() *MonitorState {
 	ns.PeerCount = s.PeerCount
 
 	return ns
+}
+
+func (s *MonitorState) LoadState(db *db.Database, logger *logrus.Entry) error {
+
+	s.Lock()
+	defer s.Unlock()
+
+	if err := db.View(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixMonitorState()
+		logger.WithField("Key", string(key)).Infof("Looking up state")
+		rawData, err := utils.GetValue(txn, key)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, s)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (mon *MonitorState) PersistState(db *db.Database, logger *logrus.Entry) error {
+
+	mon.Lock()
+	defer mon.Unlock()
+
+	rawData, err := json.Marshal(mon)
+	if err != nil {
+		return err
+	}
+
+	err = db.Update(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixMonitorState()
+		logger.WithField("Key", string(key)).Infof("Saving state")
+		if err := utils.SetValue(txn, key, rawData); err != nil {
+			logger.Error("Failed to set Value")
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := db.Sync(); err != nil {
+		logger.Error("Failed to set sync")
+		return err
+	}
+
+	return nil
 }
 
 // Diff builds a textual description between states

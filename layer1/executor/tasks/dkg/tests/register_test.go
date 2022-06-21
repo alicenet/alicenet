@@ -81,7 +81,7 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 
 	//logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	// callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Create a task to register and make sure it succeeds
@@ -144,7 +144,7 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
@@ -227,7 +227,7 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
@@ -286,7 +286,7 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
@@ -377,7 +377,7 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
@@ -459,7 +459,7 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	// get validator addresses
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task
@@ -548,7 +548,7 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	defer cf()
 	//logger = logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
 	//callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := dkgUtils.GetValidatorAddressesFromPool(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
+	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
 	assert.Nil(t, err)
 
 	// Do Register task

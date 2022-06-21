@@ -2,6 +2,7 @@ package events
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
 	"github.com/MadBase/MadNet/layer1/monitor/objects"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -162,8 +164,52 @@ func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monito
 	return nil
 }
 
+// ProcessValidatorJoined handles the Minor Slash event
+func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessValidatorJoined() ...")
+
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorJoined(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.ValidatorStakingTokenID.Uint64(),
+	})
+
+	addPotentialValidator(state, event.Account, event.ValidatorStakingTokenID.Uint64())
+	logger.Info("ValidatorJoined")
+
+	return nil
+}
+
+// ProcessValidatorLeft handles the Minor Slash event
+func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	logger.Info("ProcessValidatorLeft() ...")
+
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorLeft(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
+	})
+
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
+	logger.Info("ValidatorLeft")
+
+	return nil
+}
+
 // ProcessValidatorMajorSlashed handles the Major Slash event
-func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, log types.Log) error {
+func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info("ProcessValidatorMajorSlashed() ...")
 
@@ -176,13 +222,16 @@ func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, log t
 		"Account": event.Account.String(),
 	})
 
-	logger.Infof("ValidatorMajorSlashed")
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
+	logger.Info("ValidatorMajorSlashed")
 
 	return nil
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event
-func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, log types.Log) error {
+func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
 	logger.Info("ProcessValidatorMinorSlashed() ...")
 
@@ -196,8 +245,32 @@ func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, log t
 		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
 	})
 
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
 	logger.Infof("ValidatorMinorSlashed")
 
+	return nil
+}
+
+func addPotentialValidator(state *objects.MonitorState, account common.Address, tokenID uint64) {
+	state.Lock()
+	defer state.Unlock()
+
+	state.PotentialValidators[account] = objects.PotentialValidator{
+		Account: account,
+		TokenID: tokenID,
+	}
+}
+
+func deletePotentialValidator(state *objects.MonitorState, account common.Address) error {
+	state.Lock()
+	defer state.Unlock()
+
+	if _, present := state.PotentialValidators[account]; !present {
+		return errors.New("validator is not present in the potential validators")
+	}
+	delete(state.PotentialValidators, account)
 	return nil
 }
 

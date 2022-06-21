@@ -74,7 +74,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
 	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, logger, log, monDB, taskRequestChan)
+		return ProcessRegistrationOpened(eth, logger, log, state, monDB, taskRequestChan)
 	}
 	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessAddressRegistered(eth, logger, log, monDB)
@@ -169,16 +169,43 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 
 	// ValidatorPool.ValidatorMinorSlashed
 	vpEvents := GetValidatorPoolEvents()
+
+	// possible validator joined
+	validatorJoinedEvent, ok := vpEvents["ValidatorJoined"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorJoined")
+	}
+
+	processValidatorJoinedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorJoined(eth, logger, state, log)
+	}
+	if err := em.RegisterLocked(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator joined event:%v", err))
+	}
+
+	// possible validator left
+	validatorLeftEvent, ok := vpEvents["ValidatorLeft"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorLeft")
+	}
+
+	processValidatorLeftFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorLeft(eth, logger, state, log)
+	}
+	if err := em.RegisterLocked(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator left event:%v", err))
+	}
+
 	validatorMinorSlashedEvent, ok := vpEvents["ValidatorMinorSlashed"]
 	if !ok {
 		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
 	}
 
 	processValidatorMinorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMinorSlashed(eth, logger, log)
+		return ProcessValidatorMinorSlashed(eth, logger, state, log)
 	}
 	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
 	}
 
 	// ValidatorPool.ValidatorMajorSlashed
@@ -188,7 +215,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	processValidatorMajorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMajorSlashed(eth, logger, log)
+		return ProcessValidatorMajorSlashed(eth, logger, state, log)
 	}
 	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)

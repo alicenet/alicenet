@@ -86,9 +86,6 @@ func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, dat
 	// We got a successful receipt, removing from state
 	delete(tm.Transactions, task.GetId())
 	err = tm.persistState()
-	if err != nil {
-		return
-	}
 }
 
 // prepareTask executes task preparation. We keep retrying until the task is
