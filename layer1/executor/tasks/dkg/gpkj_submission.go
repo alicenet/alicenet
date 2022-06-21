@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/constants"
@@ -39,68 +38,52 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState := &state.DkgState{}
-	var isRecoverable bool
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			isRecoverable = false
-			return err
-		}
-
-		if dkgState.GroupPrivateKey == nil ||
-			dkgState.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
-
-			// Collecting all the participants encrypted shares to be used for the GPKj
-			var participantsList = dkgState.GetSortedParticipants()
-			encryptedShares := make([][]*big.Int, 0, dkgState.NumberOfValidators)
-			for _, participant := range participantsList {
-				logger.Tracef(
-					"Collecting encrypted shares... Participant %v %v",
-					participant.Index,
-					participant.Address.Hex(),
-				)
-				encryptedShares = append(encryptedShares, participant.EncryptedShares)
-			}
-
-			// Generate the GPKj
-			groupPrivateKey, groupPublicKey, err := state.GenerateGroupKeys(
-				dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
-				encryptedShares, dkgState.Index, participantsList)
-			if err != nil {
-				isRecoverable = false
-				return fmt.Errorf(
-					"Could not generate group keys: %v for index: %v",
-					err,
-					dkgState.Index,
-				)
-			}
-
-			dkgState.GroupPrivateKey = groupPrivateKey
-			dkgState.Participants[dkgState.Account.Address].GPKj = groupPublicKey
-
-			// Pass private key on to consensus
-			logger.Debugf("Adding private bn256eth key... using %p", t.adminHandler)
-			err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
-			if err != nil {
-				isRecoverable = true
-				return fmt.Errorf("error adding private key: %v", err)
-			}
-
-			err = dkgState.PersistState(txn)
-			if err != nil {
-				isRecoverable = false
-				return err
-			}
-		} else {
-			logger.Debugf("group private-public key already defined")
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), isRecoverable)
+		return tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), false)
+	}
+
+	if dkgState.GroupPrivateKey == nil ||
+		dkgState.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
+
+		// Collecting all the participants encrypted shares to be used for the GPKj
+		var participantsList = dkgState.GetSortedParticipants()
+		encryptedShares := make([][]*big.Int, 0, dkgState.NumberOfValidators)
+		for _, participant := range participantsList {
+			logger.Tracef(
+				"Collecting encrypted shares... Participant %v %v",
+				participant.Index,
+				participant.Address.Hex(),
+			)
+			encryptedShares = append(encryptedShares, participant.EncryptedShares)
+		}
+
+		// Generate the GPKj
+		groupPrivateKey, groupPublicKey, err := state.GenerateGroupKeys(
+			dkgState.TransportPrivateKey, dkgState.PrivateCoefficients,
+			encryptedShares, dkgState.Index, participantsList)
+		if err != nil {
+			return tasks.NewTaskErr(
+				fmt.Sprintf("Could not generate group keys: %v for index: %v", err, dkgState.Index), false,
+			)
+		}
+
+		dkgState.GroupPrivateKey = groupPrivateKey
+		dkgState.Participants[dkgState.Account.Address].GPKj = groupPublicKey
+
+		// Pass private key on to consensus
+		logger.Debugf("Adding private bn256eth key... using %p", t.adminHandler)
+		err = t.adminHandler.AddPrivateKey(groupPrivateKey.Bytes(), constants.CurveBN256Eth)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf("error adding private key: %v", err), true)
+		}
+
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), false)
+		}
+	} else {
+		logger.Debugf("group private-public key already defined")
 	}
 
 	return nil
@@ -111,11 +94,7 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
 	}
@@ -141,11 +120,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
 	}

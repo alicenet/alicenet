@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
@@ -45,11 +44,7 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -83,11 +78,7 @@ func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *task
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

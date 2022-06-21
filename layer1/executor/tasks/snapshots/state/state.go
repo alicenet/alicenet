@@ -2,7 +2,9 @@ package state
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
@@ -49,4 +51,28 @@ func (state *SnapshotState) LoadState(txn *badger.Txn) error {
 
 	return nil
 
+}
+
+func GetSnapshotState(monDB *db.Database) (*SnapshotState, error) {
+	snapshotState := &SnapshotState{}
+	err := monDB.View(func(txn *badger.Txn) error {
+		return snapshotState.LoadState(txn)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return snapshotState, nil
+}
+
+func SaveSnapshotState(monDB *db.Database, snapshotState *SnapshotState) error {
+	err := monDB.Update(func(txn *badger.Txn) error {
+		return snapshotState.PersistState(txn)
+	})
+	if err != nil {
+		return err
+	}
+	if err = monDB.Sync(); err != nil {
+		return fmt.Errorf("Failed to set sync of snapshotState: %v", err)
+	}
+	return nil
 }

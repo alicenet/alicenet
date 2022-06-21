@@ -142,8 +142,7 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 					return nil
 				}
 			} else {
-				// if we get a txn equals nil, it means that there was no transaction to be
-				// executed, so the task is complete
+				logger.Debug("Task returned no transaction, finishing")
 				return nil
 			}
 		}

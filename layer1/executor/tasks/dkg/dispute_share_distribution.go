@@ -12,7 +12,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/transaction"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -39,53 +38,43 @@ func (t *DisputeShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskE
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
-			return fmt.Errorf("it's not DisputeShareDistribution or ShareDistribution phase")
-		}
-
-		var participantsList = dkgState.GetSortedParticipants()
-		// Loop through all participants and check to see if shares are valid
-		for idx := 0; idx < dkgState.NumberOfValidators; idx++ {
-			participant := participantsList[idx]
-
-			var emptyHash [32]byte
-			if participant.DistributedSharesHash == emptyHash {
-				continue
-			}
-
-			logger.Debugf("participant idx: %v:%v:%v\n", idx, participant.Index, dkgState.Index)
-			valid, present, err := state.VerifyDistributedShares(dkgState, participant)
-			if err != nil {
-				// A major error occurred; we cannot continue
-				return fmt.Errorf("VerifyDistributedShares broke: %v Participant Address: %v", err.Error(), participant.Address.Hex())
-			}
-			if !present {
-				logger.Warnf("No share from %v", participant.Address.Hex())
-				continue
-			}
-			if !valid {
-				logger.Warnf("Invalid share from %v", participant.Address.Hex())
-				dkgState.BadShares[participant.Address] = participant
-			}
-		}
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		// all errors are not recoverable
+		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+	}
+
+	if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
+		return tasks.NewTaskErr(fmt.Sprintf("it's not DisputeShareDistribution or ShareDistribution phase"), false)
+	}
+
+	var participantsList = dkgState.GetSortedParticipants()
+	// Loop through all participants and check to see if shares are valid
+	for idx := 0; idx < dkgState.NumberOfValidators; idx++ {
+		participant := participantsList[idx]
+
+		var emptyHash [32]byte
+		if participant.DistributedSharesHash == emptyHash {
+			continue
+		}
+
+		logger.Debugf("participant idx: %v:%v:%v\n", idx, participant.Index, dkgState.Index)
+		valid, present, err := state.VerifyDistributedShares(dkgState, participant)
+		if err != nil {
+			// A major error occurred; we cannot continue
+			return tasks.NewTaskErr(fmt.Sprintf("VerifyDistributedShares broke: %v Participant Address: %v", err.Error(), participant.Address.Hex()), false)
+		}
+		if !present {
+			logger.Warnf("No share from %v", participant.Address.Hex())
+			continue
+		}
+		if !valid {
+			logger.Warnf("Invalid share from %v", participant.Address.Hex())
+			dkgState.BadShares[participant.Address] = participant
+		}
+	}
+
+	err = state.SaveDkgState(t.GetDB(), dkgState)
+	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 	}
 
@@ -97,11 +86,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -170,11 +155,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 	logger.Debug("should execute task")
 
 	client := t.GetClient()
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

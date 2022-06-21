@@ -9,7 +9,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/ethereum"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots/state"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/executor/constants"
@@ -35,32 +34,21 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
 
-	snapshotState := &state.SnapshotState{}
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := snapshotState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
-		if err != nil {
-			logger.Errorf("unable to marshal block header for snapshot: %v", err)
-			return err
-		}
-
-		snapshotState.RawBClaims = rawBClaims
-		snapshotState.RawSigGroup = snapshotState.BlockHeader.SigGroup
-
-		err = snapshotState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		// all errors are not recoverable
+		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+	}
+
+	rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf("unable to marshal block header for snapshot: %v", err), false)
+	}
+
+	snapshotState.RawBClaims = rawBClaims
+	snapshotState.RawSigGroup = snapshotState.BlockHeader.SigGroup
+
+	err = state.SaveSnapshotState(t.GetDB(), snapshotState)
+	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 	}
 
@@ -72,11 +60,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	snapshotState := &state.SnapshotState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := snapshotState.LoadState(txn)
-		return err
-	})
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -114,11 +98,7 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	snapshotState := &state.SnapshotState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := snapshotState.LoadState(txn)
-		return err
-	})
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

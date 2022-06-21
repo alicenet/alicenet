@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/crypto"
@@ -40,58 +39,48 @@ func (t *DisputeGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if dkgState.Phase != state.DisputeGPKJSubmission && dkgState.Phase != state.GPKJSubmission {
-			return fmt.Errorf("it's not DisputeGPKJSubmission or GPKJSubmission phase")
-		}
-
-		var (
-			groupPublicKeys  [][4]*big.Int
-			groupCommitments [][][2]*big.Int
-		)
-
-		var participantList = dkgState.GetSortedParticipants()
-
-		for _, participant := range participantList {
-			// Build array
-			groupPublicKeys = append(groupPublicKeys, participant.GPKj)
-			groupCommitments = append(groupCommitments, participant.Commitments)
-		}
-
-		honest, dishonest, missing, err := state.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
-		if err != nil {
-			return fmt.Errorf("failed to determine honest vs dishonest validators: %v", err)
-		}
-
-		inverse, err := state.InverseArrayForUserCount(dkgState.NumberOfValidators)
-		if err != nil {
-			return fmt.Errorf("failed to calculate inversion: %v", err)
-		}
-
-		logger.Debugf("   Honest indices: %v", honest.ExtractIndices())
-		logger.Debugf("Dishonest indices: %v", dishonest.ExtractIndices())
-		logger.Debugf("  Missing indices: %v", missing.ExtractIndices())
-
-		dkgState.DishonestValidators = dishonest
-		dkgState.HonestValidators = honest
-		dkgState.Inverse = inverse
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		// all errors are non recoverable
+		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+	}
+
+	if dkgState.Phase != state.DisputeGPKJSubmission && dkgState.Phase != state.GPKJSubmission {
+		return tasks.NewTaskErr(fmt.Sprintf("it's not DisputeGPKJSubmission or GPKJSubmission phase"), false)
+	}
+
+	var (
+		groupPublicKeys  [][4]*big.Int
+		groupCommitments [][][2]*big.Int
+	)
+
+	var participantList = dkgState.GetSortedParticipants()
+
+	for _, participant := range participantList {
+		// Build array
+		groupPublicKeys = append(groupPublicKeys, participant.GPKj)
+		groupCommitments = append(groupCommitments, participant.Commitments)
+	}
+
+	honest, dishonest, missing, err := state.CategorizeGroupSigners(groupPublicKeys, participantList, groupCommitments)
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf("failed to determine honest vs dishonest validators: %v", err), false)
+	}
+
+	inverse, err := state.InverseArrayForUserCount(dkgState.NumberOfValidators)
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf("failed to calculate inversion: %v", err), false)
+	}
+
+	logger.Debugf("   Honest indices: %v", honest.ExtractIndices())
+	logger.Debugf("Dishonest indices: %v", dishonest.ExtractIndices())
+	logger.Debugf("  Missing indices: %v", missing.ExtractIndices())
+
+	dkgState.DishonestValidators = dishonest
+	dkgState.HonestValidators = honest
+	dkgState.Inverse = inverse
+
+	err = state.SaveDkgState(t.GetDB(), dkgState)
+	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 	}
 
@@ -103,11 +92,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -179,11 +164,7 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

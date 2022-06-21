@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 
@@ -226,6 +227,30 @@ func NewDkgState(account accounts.Account) *DkgState {
 		BadShares:    make(map[common.Address]*Participant),
 		Participants: make(map[common.Address]*Participant),
 	}
+}
+
+func GetDkgState(monDB *db.Database) (*DkgState, error) {
+	dkgState := &DkgState{}
+	err := monDB.View(func(txn *badger.Txn) error {
+		return dkgState.LoadState(txn)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return dkgState, nil
+}
+
+func SaveDkgState(monDB *db.Database, dkgState *DkgState) error {
+	err := monDB.Update(func(txn *badger.Txn) error {
+		return dkgState.PersistState(txn)
+	})
+	if err != nil {
+		return err
+	}
+	if err = monDB.Sync(); err != nil {
+		return fmt.Errorf("Failed to set sync of dkgState: %v", err)
+	}
+	return nil
 }
 
 func (state *DkgState) PersistState(txn *badger.Txn) error {

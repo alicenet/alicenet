@@ -11,7 +11,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	"github.com/MadBase/MadNet/layer1/transaction"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -43,11 +42,7 @@ func (t *DisputeMissingShareDistributionTask) Execute(ctx context.Context) (*typ
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -82,11 +77,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute(ctx context.Context)
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

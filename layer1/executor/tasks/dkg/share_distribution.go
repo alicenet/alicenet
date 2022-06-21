@@ -3,7 +3,6 @@ package dkg
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
@@ -11,7 +10,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/transaction"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -35,58 +33,43 @@ func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 // submitting them to the associated smart contract.
 func (t *ShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
-	logger.Tracef("preparing task")
+	logger.Debug("preparing task")
 
-	dkgState := &state.DkgState{}
-	var isRecoverable bool
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			isRecoverable = false
-			return err
-		}
-
-		if dkgState.Phase != state.ShareDistribution {
-			isRecoverable = false
-			return errors.New("not in ShareDistribution phase")
-		}
-
-		if dkgState.SecretValue == nil {
-
-			participants := dkgState.GetSortedParticipants()
-			numParticipants := len(participants)
-			threshold := state.ThresholdForUserCount(numParticipants)
-
-			// Generate shares
-			encryptedShares, privateCoefficients, commitments, err := state.GenerateShares(
-				dkgState.TransportPrivateKey, participants)
-			if err != nil {
-				isRecoverable = true
-				return fmt.Errorf("Failed to generate shares: %v %#v", err, participants)
-			}
-
-			// Store calculated values
-			dkgState.Participants[dkgState.Account.Address].Commitments = commitments
-			dkgState.Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
-
-			dkgState.PrivateCoefficients = privateCoefficients
-			dkgState.SecretValue = privateCoefficients[0]
-			dkgState.ValidatorThreshold = threshold
-
-			err = dkgState.PersistState(txn)
-			if err != nil {
-				isRecoverable = false
-				return err
-			}
-		} else {
-			logger.Debugf("ShareDistributionTask Prepare(): encrypted shares already defined")
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf("error during the preparation: %v", err), isRecoverable)
+		return tasks.NewTaskErr(fmt.Sprintf("error during the preparation: %v", err), false)
+	}
+
+	if dkgState.Phase != state.ShareDistribution {
+		return tasks.NewTaskErr("not in ShareDistribution phase", false)
+	}
+
+	if dkgState.SecretValue == nil {
+		participants := dkgState.GetSortedParticipants()
+		numParticipants := len(participants)
+		threshold := state.ThresholdForUserCount(numParticipants)
+
+		// Generate shares
+		encryptedShares, privateCoefficients, commitments, err := state.GenerateShares(
+			dkgState.TransportPrivateKey, participants)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf("Failed to generate shares: %v %#v", err, participants), true)
+		}
+
+		// Store calculated values
+		dkgState.Participants[dkgState.Account.Address].Commitments = commitments
+		dkgState.Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
+
+		dkgState.PrivateCoefficients = privateCoefficients
+		dkgState.SecretValue = privateCoefficients[0]
+		dkgState.ValidatorThreshold = threshold
+
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		}
+	} else {
+		logger.Debug("encrypted shares already defined")
 	}
 
 	return nil
@@ -97,11 +80,7 @@ func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error loading dkgState: %v", err), false)
 	}
@@ -135,11 +114,7 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
@@ -41,42 +40,30 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
 
-	dkgState := &state.DkgState{}
-	var isRecoverable bool
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			isRecoverable = false
-			return err
-		}
-
-		if dkgState.TransportPrivateKey == nil ||
-			dkgState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
-
-			logger.Debugf("generating private-public transport keys")
-			// If this function fails, probably we got a bad random value. We can retry
-			// later to get a new value.
-			priv, pub, err := state.GenerateKeys()
-			if err != nil {
-				isRecoverable = true
-				return err
-			}
-			dkgState.TransportPrivateKey = priv
-			dkgState.TransportPublicKey = pub
-
-			err = dkgState.PersistState(txn)
-			if err != nil {
-				isRecoverable = false
-				return err
-			}
-		} else {
-			logger.Debugf("private-public transport keys already defined")
-		}
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), isRecoverable)
+		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+	}
+
+	if dkgState.TransportPrivateKey == nil ||
+		dkgState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
+
+		logger.Debugf("generating private-public transport keys")
+		// If this function fails, probably we got a bad random value. We can retry
+		// later to get a new value.
+		priv, pub, err := state.GenerateKeys()
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf("failed to generate keys: %v", err), true)
+		}
+		dkgState.TransportPrivateKey = priv
+		dkgState.TransportPublicKey = pub
+
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		}
+	} else {
+		logger.Debugf("private-public transport keys already defined")
 	}
 
 	return nil
@@ -93,11 +80,7 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to get current height : %v", err), true)
 	}
 
-	dkgState := &state.DkgState{}
-	err = t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -124,11 +107,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}

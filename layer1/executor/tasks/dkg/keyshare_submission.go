@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
@@ -37,47 +36,37 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		defaultAddr := dkgState.Account.Address
-
-		isKeyShareNil := dkgState.Participants[defaultAddr].KeyShareG1s[0] == nil ||
-			dkgState.Participants[defaultAddr].KeyShareG1s[1] == nil
-		isKeyShareZero := (dkgState.Participants[defaultAddr].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
-			dkgState.Participants[defaultAddr].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0)
-
-		// check if task already defined key shares
-		if isKeyShareNil || isKeyShareZero {
-			// Generate the key shares. If this function fails it means that we don't have
-			// all the data or we have bad data stored in state. No way to recover
-			g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(dkgState.SecretValue)
-			if err != nil {
-				return err
-			}
-
-			dkgState.Participants[defaultAddr].KeyShareG1s = g1KeyShare
-			dkgState.Participants[defaultAddr].KeyShareG1CorrectnessProofs = g1Proof
-			dkgState.Participants[defaultAddr].KeyShareG2s = g2KeyShare
-
-			err = dkgState.PersistState(txn)
-			if err != nil {
-				return err
-			}
-		} else {
-			logger.Debugf("key shares already defined")
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		// all errors are not recoverable
 		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+	}
+
+	defaultAddr := dkgState.Account.Address
+
+	isKeyShareNil := dkgState.Participants[defaultAddr].KeyShareG1s[0] == nil ||
+		dkgState.Participants[defaultAddr].KeyShareG1s[1] == nil
+	isKeyShareZero := (dkgState.Participants[defaultAddr].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.Participants[defaultAddr].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0)
+
+	// check if task already defined key shares
+	if isKeyShareNil || isKeyShareZero {
+		// Generate the key shares. If this function fails it means that we don't have
+		// all the data or we have bad data stored in state. No way to recover
+		g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(dkgState.SecretValue)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf("failed to generate key share: %v", err), false)
+		}
+
+		dkgState.Participants[defaultAddr].KeyShareG1s = g1KeyShare
+		dkgState.Participants[defaultAddr].KeyShareG1CorrectnessProofs = g1Proof
+		dkgState.Participants[defaultAddr].KeyShareG2s = g2KeyShare
+
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		}
+	} else {
+		logger.Debugf("key shares already defined")
 	}
 
 	return nil
@@ -88,11 +77,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
@@ -131,11 +116,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *task
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState := &state.DkgState{}
-	err := t.GetDB().View(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		return err
-	})
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
 	}
