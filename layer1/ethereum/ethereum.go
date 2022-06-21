@@ -85,7 +85,7 @@ type Client struct {
 	internalClient       *ethclient.Client
 	chainID              *big.Int
 	txMaxGasFeeAllowed   *big.Int
-	endpointMinimumPeers uint32
+	endpointMinimumPeers uint64
 }
 
 // NewClient creates a new Ethereum abstraction
@@ -96,7 +96,7 @@ func NewClient(
 	defaultAccount string,
 	finalityDelay uint64,
 	txMaxGasFeeAllowedInGwei uint64,
-	endpointMinimumPeers uint32) (*Client, error) {
+	endpointMinimumPeers uint64) (*Client, error) {
 
 	logger := logging.GetLogger("ethereum")
 

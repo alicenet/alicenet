@@ -54,6 +54,8 @@ func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.
 
 	logger := logging.GetLogger("transaction")
 
+	logger.Info("Creating transaction watcher")
+
 	backend := newWatcherBackend(mainCtx, requestChannel, client, logger, database, statusDisplay)
 
 	transactionWatcher := &FrontWatcher{
@@ -68,7 +70,10 @@ func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.
 // WatcherFromNetwork creates a transaction Watcher from a given ethereum network.
 func WatcherFromNetwork(network layer1.Client, database *db.Database, statusDisplay bool) *FrontWatcher {
 	watcher := NewWatcher(network, network.GetFinalityDelay(), database, statusDisplay)
-	watcher.Start()
+	err := watcher.Start()
+	if err != nil {
+		panic(fmt.Sprintf("couldn't start transaction watcher: %v", err))
+	}
 	return watcher
 }
 
@@ -81,13 +86,14 @@ func (f *FrontWatcher) Start() error {
 			return fmt.Errorf("could not find previous State: %v", err)
 		}
 	}
+	f.logger.Info("loaded state for transaction watcher")
 	go f.backend.Loop()
 	return nil
 }
 
 // Close the transaction watcher service
 func (f *FrontWatcher) Close() {
-	f.logger.Debug("closing request channel...")
+	f.logger.Warning("Closing transaction watcher")
 	close(f.requestChannel)
 	f.closeMainContext()
 }

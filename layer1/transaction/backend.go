@@ -16,11 +16,22 @@ import (
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 type FuncSelector [4]byte
+
+// MarshalText returns the hex representation of a.
+func (fs FuncSelector) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(fs[:]).MarshalText()
+}
+
+// UnmarshalText parses a hash in hex syntax.
+func (fs FuncSelector) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("FuncSelector", input, fs[:])
+}
 
 // Internal struct to keep track of transactions that are being monitoring
 type info struct {
@@ -310,11 +321,11 @@ func (wb *WatcherBackend) LoadState() error {
 		wb.logger.WithField("Key", string(key)).Tracef("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
-			return fmt.Errorf("failed to get value %v", err)
+			return err
 		}
 		err = json.Unmarshal(rawData, wb)
 		if err != nil {
-			return fmt.Errorf("failed to unmarshal %v", err)
+			return err
 		}
 		return nil
 	}); err != nil {

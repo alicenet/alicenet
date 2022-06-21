@@ -124,10 +124,10 @@ func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler mo
 		txWatcher:        txWatcher,
 	}
 
-	logger := logging.GetLogger("tasks_scheduler")
-	s.logger = logger.WithField("Schedule", s.Schedule)
+	logger := logging.GetLogger("tasks")
+	s.logger = logger.WithField("Component", "schedule")
 
-	tasksManager, err := NewTaskManager(txWatcher, database, logger.WithField("task_manager", "task_manager"))
+	tasksManager, err := NewTaskManager(txWatcher, database, logger.WithField("Component", "manager"))
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +157,7 @@ func (s *TasksScheduler) Start() error {
 }
 
 func (s *TasksScheduler) Close() {
+	s.logger.Warn("Closing scheduler")
 	s.cancelChan <- true
 }
 
@@ -172,6 +173,7 @@ func (s *TasksScheduler) eventLoop() {
 			s.taskResponseChan.close()
 			return
 		case taskRequest := <-s.taskRequestChan:
+			s.logger.Trace("received request for a task")
 			err := s.schedule(ctx, taskRequest)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
@@ -181,6 +183,7 @@ func (s *TasksScheduler) eventLoop() {
 				s.logger.WithError(err).Errorf("Failed to persist state %d on task request", s.LastHeightSeen)
 			}
 		case taskResponse := <-s.taskResponseChan.trChan:
+			s.logger.Trace("received a task response")
 			err := s.processTaskResponse(ctx, taskResponse)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
@@ -190,13 +193,15 @@ func (s *TasksScheduler) eventLoop() {
 				s.logger.WithError(err).Errorf("Failed to persist state %d on task response", s.LastHeightSeen)
 			}
 		case taskToKill := <-s.taskKillChan:
+			s.logger.Trace("received request to kill a task")
 			err := s.killTaskByName(ctx, taskToKill)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskToKill)
 			}
 		case <-processingTime:
+			s.logger.Trace("processing latest height")
 			networkCtx, networkCf := context.WithTimeout(ctx, constants.TaskSchedulerNetworkTimeout)
-			height, err := s.eth.GetCurrentHeight(networkCtx)
+			height, err := s.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
 				s.logger.WithError(err).Debug("Failed to retrieve the latest height from eth node")
@@ -250,10 +255,13 @@ func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
 
 		id := uuid.New()
 		logEntry := s.logger.WithFields(logrus.Fields{
-			"taskId":   id,
-			"taskName": task.GetName(),
+			"taskId":    id,
+			"taskName":  task.GetName(),
+			"taskStart": task.GetStart(),
+			"taskEnd":   task.GetEnd(),
 		})
 		s.Schedule[id.String()] = TaskRequestInfo{Id: id.String(), Start: start, End: end, Task: task, logger: logEntry}
+		logEntry.Debug("Received task request")
 	}
 	return nil
 }
@@ -425,7 +433,7 @@ func (s *TasksScheduler) persistState() error {
 
 	err = s.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskSchedulerState()
-		s.logger.WithField("Key", string(key)).Infof("Saving state")
+		s.logger.WithField("Key", string(key)).Debug("Saving state")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			s.logger.Error("Failed to set Value")
 			return err

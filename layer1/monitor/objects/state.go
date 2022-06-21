@@ -117,7 +117,7 @@ func (s *MonitorState) LoadState(db *db.Database, logger *logrus.Entry) error {
 
 	if err := db.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixMonitorState()
-		logger.WithField("Key", string(key)).Infof("Looking up state")
+		logger.WithField("Key", string(key)).Debug("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -149,7 +149,7 @@ func (mon *MonitorState) PersistState(db *db.Database, logger *logrus.Entry) err
 
 	err = db.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixMonitorState()
-		logger.WithField("Key", string(key)).Infof("Saving state")
+		logger.WithField("Key", string(key)).Debug("Saving state")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
 			return err

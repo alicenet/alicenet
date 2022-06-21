@@ -265,8 +265,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
 	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
 
+	// Setup monitor
+	monDB.Init(rawMonitorDb)
+
 	// Layer 1 transaction watcher
-	txWatcher := transaction.WatcherFromNetwork(eth, consDB, config.Configuration.Ethereum.TxMetricsDisplay)
+	txWatcher := transaction.WatcherFromNetwork(eth, monDB, config.Configuration.Ethereum.TxMetricsDisplay)
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
@@ -279,8 +282,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	// Setup monitor
-	monDB.Init(rawMonitorDb)
 	monitorInterval := config.Configuration.Monitor.Interval
 	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan, taskKillChan)
 	if err != nil {

@@ -276,7 +276,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		return nil
 	}
 
-	if peerCount < config.Configuration.Ethereum.EndpointMinimumPeers {
+	if peerCount < uint32(config.Configuration.Ethereum.EndpointMinimumPeers) {
 		return nil
 	}
 
