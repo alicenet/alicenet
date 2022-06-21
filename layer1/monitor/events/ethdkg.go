@@ -15,7 +15,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	monitorInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -109,20 +108,9 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 
 	taskRequestChan <- disputeMissingRegistrationTask
 
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
+	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
-	}
-
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationOpened: %v", err)
 	}
 
 	return nil
@@ -157,39 +145,26 @@ func ProcessAddressRegistered(eth layer1.Client, logger *logrus.Entry, log types
 		return err
 	}
 
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		logger.WithFields(logrus.Fields{
-			"Account":       event.Account.Hex(),
-			"Index":         event.Index,
-			"numRegistered": event.Index,
-			"Nonce":         event.Nonce,
-			"PublicKey":     event.PublicKey,
-			"#Participants": len(dkgState.Participants),
-			"#Validators":   len(dkgState.ValidatorAddresses),
-		}).Info("Address registered!")
-
-		dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessAddressRegistered: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessAddressRegistered: %v", err)
+	logger.WithFields(logrus.Fields{
+		"Account":       event.Account.Hex(),
+		"Index":         event.Index,
+		"numRegistered": event.Index,
+		"Nonce":         event.Nonce,
+		"PublicKey":     event.PublicKey,
+		"#Participants": len(dkgState.Participants),
+		"#Validators":   len(dkgState.ValidatorAddresses),
+	}).Info("Address registered!")
+
+	dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
 	}
 
 	return nil
@@ -202,46 +177,30 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
 	disputeBadSharesTask := &dkgtasks.DisputeShareDistributionTask{}
 
-	dkgState := &state.DkgState{}
-	err := monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if !dkgState.IsValidator {
-			return ErrNotAValidator
-		}
-
-		event, err := ethereum.GetContracts().Ethdkg().ParseRegistrationComplete(log)
-		if err != nil {
-			return err
-		}
-
-		logger.WithFields(logrus.Fields{
-			"BlockNumber": event.BlockNumber,
-		}).Info("ETHDKG Registration Complete")
-
-		shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		//If Im not a Validator we just return nil
-		if errors.Is(err, ErrNotAValidator) {
-			return nil
-		}
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessRegistrationComplete: %v", err)
+	if !dkgState.IsValidator {
+		// If Im not a potential validator we just return nil
+		return nil
+	}
+
+	event, err := ethereum.GetContracts().Ethdkg().ParseRegistrationComplete(log)
+	if err != nil {
+		return err
+	}
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+	}).Info("ETHDKG Registration Complete")
+
+	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTask = UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -306,32 +265,19 @@ func ProcessShareDistribution(eth layer1.Client, logger *logrus.Entry, log types
 		"Commitments":     event.Commitments,
 	}).Info("Received share distribution")
 
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		err = dkgState.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
-		if err != nil {
-			return err
-		}
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistribution: %v", err)
+	err = dkgState.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
+	if err != nil {
+		return err
+	}
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
 	return nil
@@ -343,45 +289,28 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
-	dkgState := &state.DkgState{}
-	err := monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if !dkgState.IsValidator {
-			return ErrNotAValidator
-		}
-
-		event, err := ethereum.GetContracts().Ethdkg().ParseShareDistributionComplete(log)
-		if err != nil {
-			return err
-		}
-
-		logger.WithFields(logrus.Fields{
-			"BlockNumber": event.BlockNumber,
-		}).Info("Received share distribution complete")
-
-		disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		//If Im not a Validator we just return nil
-		if errors.Is(err, ErrNotAValidator) {
-			return nil
-		}
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessShareDistributionCompleted: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessShareDistributionComplete: %v", err)
+	if !dkgState.IsValidator {
+		return nil
+	}
+
+	event, err := ethereum.GetContracts().Ethdkg().ParseShareDistributionComplete(log)
+	if err != nil {
+		return err
+	}
+
+	logger.WithFields(logrus.Fields{
+		"BlockNumber": event.BlockNumber,
+	}).Info("Received share distribution complete")
+
+	disputeShareDistributionTask, keyShareSubmissionTask, disputeMissingKeySharesTask = UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -448,28 +377,15 @@ func ProcessKeyShareSubmitted(eth layer1.Client, logger *logrus.Entry, log types
 		"KeyShareG2":                 event.KeyShareG2,
 	}).Info("Received key shares")
 
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmitted: %v", err)
+	dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
 	return nil
@@ -486,37 +402,21 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, logger *logrus.Entry, 
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if dkgState.IsValidator {
-			return ErrNotAValidator
-		}
-
-		// schedule MPK submission
-		mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		//If Im not a Validator we just return nil
-		if errors.Is(err, ErrNotAValidator) {
-			return nil
-		}
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessKeyShareSubmissionComplete: %v", err)
+	if dkgState.IsValidator {
+		return nil
+	}
+
+	// schedule MPK submission
+	mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -560,36 +460,21 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
 	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
 
-		if dkgState.IsValidator {
-			return ErrNotAValidator
-		}
-
-		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		//If Im not a Validator we just return nil
-		if errors.Is(err, ErrNotAValidator) {
-			return nil
-		}
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessMPKSet: %v", err)
+		utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessMPKSet: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessMPKSet: %v", err)
+	if dkgState.IsValidator {
+		return nil
+	}
+
+	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask = UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
 	//Killing previous tasks
@@ -651,36 +536,20 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 
 	disputeGPKjTask := &dkgtasks.DisputeGPKjTask{}
 	completionTask := &dkgtasks.CompletionTask{}
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		if !dkgState.IsValidator {
-			return ErrNotAValidator
-		}
-
-		disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		//If Im not a Validator we just return nil
-		if errors.Is(err, ErrNotAValidator) {
-			return nil
-		}
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessGPKJSubmissionComplete: %v", err)
+	if !dkgState.IsValidator {
+		return nil
+	}
+
+	disputeGPKjTask, completionTask = UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
 	//Killing previous tasks

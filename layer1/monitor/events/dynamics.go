@@ -7,7 +7,6 @@ import (
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/ethereum"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -18,21 +17,12 @@ func ProcessValueUpdated(eth layer1.Client, logger *logrus.Entry, log types.Log,
 
 	logger.Info("ProcessValueUpdated() ...")
 
-	dkgState := &state.DkgState{}
-	var err error
-	err = monDB.View(func(txn *badger.Txn) error {
-		err = dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		return err
 	}
 
+	// todo: ask Hunter only validators allowed?
 	if !dkgState.IsValidator {
 		return nil
 	}

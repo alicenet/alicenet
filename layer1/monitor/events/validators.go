@@ -15,7 +15,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
 	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
 	"github.com/MadBase/MadNet/layer1/monitor/objects"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -73,35 +72,16 @@ func ProcessValidatorSetCompleted(eth layer1.Client, logger *logrus.Entry, monit
 		return err
 	}
 
-	//TODO: remove all the EthDKG tasks
-	//logger.WithFields(logrus.Fields{
-	//	"Phase": state.EthDKG.Phase,
-	//}).Infof("Purging schedule")
-	//state.Schedule.Purge()
-
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		dkgState.OnCompletion()
-
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get DkgState on ProcessValidatorSetCompleted: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return err
+	dkgState.OnCompletion()
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return fmt.Errorf("failed to save DkgState on ProcessValidatorSetCompleted: %v", err)
 	}
 
 	return nil
@@ -131,43 +111,31 @@ func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monito
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 
-	dkgState := &state.DkgState{}
-	err = monDB.Update(func(txn *badger.Txn) error {
-		err := dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		// sanity check
-		if v.Account == dkgState.Account.Address &&
-			dkgState.Participants[event.Account].GPKj[0] != nil &&
-			dkgState.Participants[event.Account].GPKj[1] != nil &&
-			dkgState.Participants[event.Account].GPKj[2] != nil &&
-			dkgState.Participants[event.Account].GPKj[3] != nil &&
-			(dkgState.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
-				dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
-				dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
-				dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
-
-			return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
-		}
-
-		// state update
-		dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
-		err = dkgState.PersistState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessValidatorMemberAdded: %v", err)
+		return fmt.Errorf("failed to get DkgState on ProcessValidatorMemberAdded: %v", err)
 	}
 
-	if err = monDB.Sync(); err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to set sync on ProcessValidatorMemberAdded: %v", err)
+	// sanity check
+	if v.Account == dkgState.Account.Address &&
+		dkgState.Participants[event.Account].GPKj[0] != nil &&
+		dkgState.Participants[event.Account].GPKj[1] != nil &&
+		dkgState.Participants[event.Account].GPKj[2] != nil &&
+		dkgState.Participants[event.Account].GPKj[3] != nil &&
+		(dkgState.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+
+		return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
+	}
+
+	// state update
+	dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return fmt.Errorf("failed to save DkgState on ProcessValidatorMemberAdded: %v", err)
 	}
 
 	if len(monitorState.Validators[epoch]) < int(participantIndex) {
@@ -249,17 +217,7 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 		logger.Warnf("No ValidatorMember received for epoch")
 	}
 
-	dkgState := &state.DkgState{}
-	var err error
-	err = monDB.View(func(txn *badger.Txn) error {
-		err = dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		return utils.LogReturnErrorf(logger, "Failed to load dkgState on checkValidatorSet: %v", err)
 	}

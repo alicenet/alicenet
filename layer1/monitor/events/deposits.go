@@ -21,21 +21,12 @@ func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.L
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	dkgState := &state.DkgState{}
-	var err error
-	err = monDB.View(func(txn *badger.Txn) error {
-		err = dkgState.LoadState(txn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		return err
 	}
 
+	//todo: ask Hunter only validators allowed
 	if !dkgState.IsValidator {
 		return nil
 	}
@@ -59,7 +50,7 @@ func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.L
 		depositNonce := event.DepositID.Bytes()
 		account := event.Depositor.Bytes()
 		owner := &aobjs.Owner{}
-		// todo: evvaluate sec concern of non-validated CurveSpec if any
+		// todo: evaluate sec concern of non-validated CurveSpec if any
 		if err := owner.New(account, constants.CurveSpec(event.AccountType)); err != nil {
 			logger.Debugf("Error in Services.ProcessDepositReceived at owner.New: %v", err)
 			return err
