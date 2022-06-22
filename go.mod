@@ -8,9 +8,9 @@ require (
 	github.com/derision-test/go-mockgen v1.1.4
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.9.0
-	github.com/ethereum/go-ethereum v1.10.16
+	github.com/ethereum/go-ethereum v1.10.17
 	github.com/golang/mock v1.4.4
-	github.com/google/uuid v1.1.5
+	github.com/google/uuid v1.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
@@ -40,6 +40,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.1.2 // indirect
 	github.com/bufbuild/connect-go v0.0.0-20220525141242-b79148bf7e44 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -47,6 +48,7 @@ require (
 	github.com/dave/jennifer v1.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/deepmap/oapi-codegen v1.8.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3-0.20200630154024-f66de99634de // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -59,6 +61,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -67,7 +70,7 @@ require (
 	github.com/hashicorp/go-bexpr v0.1.10 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
-	github.com/huin/goupnp v1.0.2 // indirect
+	github.com/huin/goupnp v1.0.3-0.20220313090229-ca81a64b4204 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.8.3 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.4.0 // indirect
