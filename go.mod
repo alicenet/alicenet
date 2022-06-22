@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
 	github.com/bufbuild/buf v1.5.0
-	github.com/derision-test/go-mockgen v1.1.4
+	github.com/derision-test/go-mockgen v1.3.3
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.17
@@ -38,14 +38,14 @@ require (
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.1.2 // indirect
 	github.com/bufbuild/connect-go v0.0.0-20220525141242-b79148bf7e44 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/dave/jennifer v1.4.1 // indirect
+	github.com/dave/jennifer v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
