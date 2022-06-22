@@ -115,7 +115,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 			panic(fmt.Errorf("%v event not found in ABI", eventName))
 		}
 		// register it
-		if err := em.RegisterLocked(event.ID.String(), eventName, processor); err != nil {
+		if err := em.Register(event.ID.String(), eventName, processor); err != nil {
 			panic(fmt.Errorf("could not register event %v", eventName))
 		}
 	}
@@ -132,7 +132,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event MadByte.DepositReceived")
 	}
 
-	if err := em.RegisterLocked(depositReceived.ID.String(), depositReceived.Name,
+	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
 		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return ProcessDepositReceived(eth, logger, log, cdb, monDB, depositHandler)
 		}); err != nil {
@@ -146,7 +146,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event Snapshots.SnapshotTaken")
 	}
 
-	if err := em.RegisterLocked(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
+	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return ProcessSnapshotTaken(eth, logger, log, adminHandler)
 		}); err != nil {
@@ -160,7 +160,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event Governance.ValueUpdated")
 	}
 
-	if err := em.RegisterLocked(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
+	if err := em.Register(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
 		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return ProcessValueUpdated(eth, logger, log, monDB)
 		}); err != nil {
@@ -179,7 +179,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	processValidatorJoinedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorJoined(eth, logger, state, log)
 	}
-	if err := em.RegisterLocked(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
+	if err := em.Register(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator joined event:%v", err))
 	}
 
@@ -192,7 +192,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	processValidatorLeftFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorLeft(eth, logger, state, log)
 	}
-	if err := em.RegisterLocked(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
+	if err := em.Register(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator left event:%v", err))
 	}
 
@@ -204,7 +204,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	processValidatorMinorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorMinorSlashed(eth, logger, state, log)
 	}
-	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
+	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
 	}
 
@@ -217,7 +217,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	processValidatorMajorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorMajorSlashed(eth, logger, state, log)
 	}
-	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
+	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)
 	}
 

@@ -277,5 +277,5 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Execute() failed:%q", err)
 	}
-	logger.Debugf("main() -- Configuration:%q", config.Configuration.Ethereum)
+	logger.Debugf("main() -- Configuration:%v", config.Configuration.Ethereum)
 }

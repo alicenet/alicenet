@@ -72,7 +72,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 	client := t.GetClient()
 	// submit if I'm a leader for this task
 	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("not leading Completion yet"), true)
+		return nil, tasks.NewTaskErr("not leading Completion yet", true)
 	}
 
 	c := ethereum.GetContracts()

@@ -24,6 +24,7 @@ var (
 // Contracts contains bindings to smart contract system
 type Contracts struct {
 	isInitialized           bool
+	allAddresses            map[common.Address]bool
 	eth                     *Client
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
@@ -57,7 +58,11 @@ func GetContracts() *Contracts {
 /// to this functions are no-op.
 func NewContracts(eth *Client, contractFactoryAddress common.Address) {
 	once.Do(func() {
-		contracts = &Contracts{eth: eth, contractFactoryAddress: contractFactoryAddress}
+		contracts = &Contracts{
+			allAddresses:           make(map[common.Address]bool),
+			eth:                    eth,
+			contractFactoryAddress: contractFactoryAddress,
+		}
 		err := contracts.lookupContracts()
 		if err != nil {
 			panic(err)
@@ -105,6 +110,7 @@ func (c *Contracts) lookupContracts() error {
 			} else {
 				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
 			}
+			c.allAddresses[addr] = true
 			return addr, err
 		}
 
@@ -192,6 +198,15 @@ func (c *Contracts) lookupContracts() error {
 	}
 
 	return nil
+}
+
+// return all addresses from all contracts in the contract struct
+func (c *Contracts) GetAllAddresses() []common.Address {
+	var allAddresses []common.Address
+	for addr := range c.allAddresses {
+		allAddresses = append(allAddresses, addr)
+	}
+	return allAddresses
 }
 
 func (c *Contracts) Ethdkg() bindings.IETHDKG {

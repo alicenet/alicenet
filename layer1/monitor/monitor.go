@@ -251,7 +251,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 		"EthereumInSync": monitorState.EthereumInSync})
 
 	c := ethereum.GetContracts()
-	addresses := []common.Address{c.EthdkgAddress(), c.SnapshotsAddress(), c.BTokenAddress()}
+	addresses := c.GetAllAddresses()
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
@@ -378,12 +378,7 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 		BlockHeader: bh,
 	}
 
-	//todo: ask Hunter?
-	err := monDB.Update(func(txn *badger.Txn) error {
-		err := snapshotState.PersistState(txn)
-		return err
-	})
-
+	err := state.SaveSnapshotState(monDB, snapshotState)
 	if err != nil {
 		return err
 	}

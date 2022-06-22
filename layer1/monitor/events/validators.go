@@ -166,9 +166,6 @@ func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monito
 
 // ProcessValidatorJoined handles the Minor Slash event
 func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-
-	logger.Info("ProcessValidatorJoined() ...")
-
 	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorJoined(log)
 	if err != nil {
 		return err
@@ -187,9 +184,6 @@ func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *obje
 
 // ProcessValidatorLeft handles the Minor Slash event
 func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-
-	logger.Info("ProcessValidatorLeft() ...")
-
 	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorLeft(log)
 	if err != nil {
 		return err
@@ -210,9 +204,6 @@ func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *object
 
 // ProcessValidatorMajorSlashed handles the Major Slash event
 func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-
-	logger.Info("ProcessValidatorMajorSlashed() ...")
-
 	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
 	if err != nil {
 		return err
@@ -232,8 +223,6 @@ func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event
 func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-
-	logger.Info("ProcessValidatorMinorSlashed() ...")
 
 	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
 	if err != nil {

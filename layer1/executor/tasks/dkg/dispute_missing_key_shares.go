@@ -2,7 +2,6 @@ package dkg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -109,7 +108,7 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 
 	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
+		return nil, fmt.Errorf(constants.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)

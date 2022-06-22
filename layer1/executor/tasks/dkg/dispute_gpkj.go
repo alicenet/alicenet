@@ -57,7 +57,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission && dkgState.Phase != state.GPKJSubmission {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("it's not DisputeGPKJSubmission or GPKJSubmission phase"), false)
+		return nil, tasks.NewTaskErr("it's not DisputeGPKJSubmission or GPKJSubmission phase", false)
 	}
 
 	var (
@@ -84,7 +84,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 
 	for _, honestParticipant := range honest {
 		if bytes.Equal(honestParticipant.Address.Bytes(), t.Address.Bytes()) {
-			logger.Info("finishing accusation task %v is honest", t.Address.Hex())
+			logger.Infof("finishing accusation task %v is honest", t.Address.Hex())
 			return nil, nil
 		}
 	}
@@ -110,7 +110,7 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission {
-		logger.Debug("phase %v different from DisputeGPKJSubmission", dkgState.Phase)
+		logger.Debugf("phase %v different from DisputeGPKJSubmission", dkgState.Phase)
 		return false, nil
 	}
 

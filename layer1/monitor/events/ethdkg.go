@@ -23,7 +23,8 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 }
 
 func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskRequestChan chan<- tasks.Task) error {
-	logger.Info("ProcessRegistrationOpened() ...")
+	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
+	logEntry.Info("processing registration")
 	event, err := ethereum.GetContracts().Ethdkg().ParseRegistrationOpened(log)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 		validatorAddresses,
 	)
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"StartBlock":         event.StartBlock,
 		"NumberValidators":   event.NumberValidators,
 		"Nonce":              event.Nonce,
@@ -56,15 +57,16 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
 	}
 
 	if !dkgState.IsValidator {
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
 	// schedule Registration
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": registrationTask.GetStart(),
 		"TaskEnd":   registrationTask.GetEnd(),
 	}).Info("Scheduling NewRegisterTask")
@@ -72,7 +74,7 @@ func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log type
 	taskRequestChan <- registrationTask
 
 	// schedule DisputeRegistration
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": disputeMissingRegistrationTask.GetStart(),
 		"TaskEnd":   disputeMissingRegistrationTask.GetEnd(),
 	}).Info("Scheduling NewDisputeRegistrationTask")
@@ -103,8 +105,8 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 }
 
 func ProcessAddressRegistered(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
-
-	logger.Info("ProcessAddressRegistered() ...")
+	logEntry := logger.WithField("eventProcessor", "ProcessAddressRegistered")
+	logEntry.Info("processing address registered")
 
 	event, err := ethereum.GetContracts().Ethdkg().ParseAddressRegistered(log)
 	if err != nil {
@@ -113,10 +115,10 @@ func ProcessAddressRegistered(eth layer1.Client, logger *logrus.Entry, log types
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessAddressRegistered: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessAddressRegistered: %v", err)
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"Account":       event.Account.Hex(),
 		"Index":         event.Index,
 		"numRegistered": event.Index,
@@ -130,25 +132,26 @@ func ProcessAddressRegistered(eth layer1.Client, logger *logrus.Entry, log types
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
 	}
 
 	return nil
 }
 
 func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
+	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationComplete")
+	logEntry.Info("processing registration complete")
 
-	logger.Info("ProcessRegistrationComplete() ...")
 	shareDistributionTask := &dkgtasks.ShareDistributionTask{}
 	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessRegistrationComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
 	if !dkgState.IsValidator {
-		// If Im not a potential validator we just return nil
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
@@ -157,7 +160,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 	}).Info("ETHDKG Registration Complete")
 
@@ -165,7 +168,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -173,7 +176,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 	taskKillChan <- constants.DisputeMissingRegistrationTaskName
 
 	// schedule ShareDistribution phase
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": shareDistributionTask.GetStart(),
 		"TaskEnd":   shareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewShareDistributionTask")
@@ -181,7 +184,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 	taskRequestChan <- shareDistributionTask
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": disputeMissingShareDistributionTask.GetStart(),
 		"TaskEnd":   disputeMissingShareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
@@ -190,7 +193,7 @@ func ProcessRegistrationComplete(eth layer1.Client, logger *logrus.Entry, log ty
 
 	for _, disputeBadSharesTask := range disputeBadSharesTasks {
 		// schedule DisputeDistributeSharesTask
-		logger.WithFields(logrus.Fields{
+		logEntry.WithFields(logrus.Fields{
 			"TaskStart": disputeBadSharesTask.GetStart(),
 			"TaskEnd":   disputeBadSharesTask.GetEnd(),
 			"Address":   disputeBadSharesTask.Address,
@@ -217,15 +220,15 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 }
 
 func ProcessShareDistribution(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
-
-	logger.Info("ProcessShareDistribution() ...")
+	logEntry := logger.WithField("eventProcessor", "ProcessShareDistribution")
+	logEntry.Info("processing share distribution")
 
 	event, err := ethereum.GetContracts().Ethdkg().ParseSharesDistributed(log)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"Issuer":          event.Account.Hex(),
 		"Index":           event.Index,
 		"EncryptedShares": event.EncryptedShares,
@@ -234,33 +237,36 @@ func ProcessShareDistribution(eth layer1.Client, logger *logrus.Entry, log types
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
-	err = dkgState.OnSharesDistributed(logger, event.Account, event.EncryptedShares, event.Commitments)
+	err = dkgState.OnSharesDistributed(logEntry, event.Account, event.EncryptedShares, event.Commitments)
 	if err != nil {
 		return err
 	}
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistribution: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistribution: %v", err)
 	}
 
 	return nil
 }
 
 func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
-	logger.Info("ProcessShareDistributionComplete() ...")
+	logEntry := logger.WithField("eventProcessor", "ProcessShareDistributionComplete")
+	logEntry.Info("processing share distribution complete")
+
 	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
 	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessShareDistributionCompleted: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessShareDistributionCompleted: %v", err)
 	}
 
 	if !dkgState.IsValidator {
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
@@ -269,14 +275,14 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 	}).Info("Received share distribution complete")
 
 	disputeShareDistributionTasks, keyShareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -286,7 +292,7 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 
 	for _, disputeShareDistributionTask := range disputeShareDistributionTasks {
 		// schedule DisputeShareDistributionTask
-		logger.WithFields(logrus.Fields{
+		logEntry.WithFields(logrus.Fields{
 			"TaskStart": disputeShareDistributionTask.GetStart(),
 			"TaskEnd":   disputeShareDistributionTask.GetEnd(),
 			"Address":   disputeShareDistributionTask.Address,
@@ -295,14 +301,14 @@ func ProcessShareDistributionComplete(eth layer1.Client, logger *logrus.Entry, l
 	}
 
 	// schedule SubmitKeySharesPhase
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": keyShareSubmissionTask.GetStart(),
 		"TaskEnd":   keyShareSubmissionTask.GetEnd(),
 	}).Info("Scheduling NewKeyShareSubmissionTask")
 	taskRequestChan <- keyShareSubmissionTask
 
 	// schedule DisputeMissingKeySharesPhase
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"TaskStart": disputeMissingKeySharesTask.GetStart(),
 		"TaskEnd":   disputeMissingKeySharesTask.GetEnd(),
 	}).Info("Scheduling NewDisputeMissingKeySharesTask")
@@ -331,15 +337,15 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 }
 
 func ProcessKeyShareSubmitted(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
-
-	logger.Info("ProcessKeyShareSubmitted() ...")
+	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmitted")
+	logEntry.Info("processing key share submission")
 
 	event, err := ethereum.GetContracts().Ethdkg().ParseKeyShareSubmitted(log)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"Issuer":                     event.Account.Hex(),
 		"KeyShareG1":                 event.KeyShareG1,
 		"KeyShareG1CorrectnessProof": event.KeyShareG1CorrectnessProof,
@@ -348,35 +354,39 @@ func ProcessKeyShareSubmitted(eth layer1.Client, logger *logrus.Entry, log types
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessKeyShareSubmitted: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
 	dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
 	}
 
 	return nil
 }
 
 func ProcessKeyShareSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
+	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmissionComplete")
+	logEntry.Info("processing key share submission complete")
+
 	event, err := ethereum.GetContracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
 	if dkgState.IsValidator {
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
@@ -385,7 +395,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, logger *logrus.Entry, 
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -395,7 +405,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, logger *logrus.Entry, 
 	// schedule MPKSubmissionTask
 	taskRequestChan <- mpkSubmissionTask
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"TaskStart":   mpkSubmissionTask.GetStart(),
 		"TaskEnd":     mpkSubmissionTask.GetEnd(),
@@ -414,13 +424,15 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 }
 
 func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
+	logEntry := logger.WithField("eventProcessor", "ProcessMPKSet")
+	logEntry.Info("processing master public key set")
 
 	event, err := ethereum.GetContracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"Nonce":       event.Nonce,
 		"MPK":         event.Mpk,
@@ -431,10 +443,11 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessMPKSet: %v", err)
+		utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessMPKSet: %v", err)
 	}
 
 	if dkgState.IsValidator {
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
@@ -442,14 +455,14 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessMPKSet: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
 	//Killing previous tasks
 	taskKillChan <- constants.MPKSubmissionTaskName
 
 	// schedule GPKJSubmissionTask
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
@@ -458,7 +471,7 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 	taskRequestChan <- gpkjSubmissionTask
 
 	// schedule DisputeMissingGPKjTask
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
@@ -468,7 +481,7 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 
 	// schedule DisputeGPKjTask
 	for _, disputeGPKjTask := range disputeGPKjTasks {
-		logger.WithFields(logrus.Fields{
+		logEntry.WithFields(logrus.Fields{
 			"BlockNumber": event.BlockNumber,
 			"TaskStart":   disputeGPKjTask.GetStart(),
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
@@ -493,23 +506,25 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 }
 
 func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
-
+	logEntry := logger.WithField("eventProcessor", "ProcessGPKJSubmissionComplete")
+	logEntry.Info("processing gpkj submission complete")
 	event, err := ethereum.GetContracts().Ethdkg().ParseGPKJSubmissionComplete(log)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessGPKJSubmissionComplete() ...")
 
 	completionTask := &dkgtasks.CompletionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
 	if !dkgState.IsValidator {
+		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
 
@@ -517,7 +532,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 
 	err = state.SaveDkgState(monDB, dkgState)
 	if err != nil {
-		return utils.LogReturnErrorf(logger, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
 	//Killing previous tasks
@@ -527,7 +542,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 
 	for _, disputeGPKjTask := range disputeGPKjTasks {
 		// schedule DisputeGPKJSubmissionTask
-		logger.WithFields(logrus.Fields{
+		logEntry.WithFields(logrus.Fields{
 			"BlockNumber": event.BlockNumber,
 			"TaskStart":   disputeGPKjTask.GetStart(),
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
@@ -537,7 +552,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, logger *logrus.Entry, log 
 	}
 
 	// schedule Completion
-	logger.WithFields(logrus.Fields{
+	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"TaskStart":   completionTask.GetStart(),
 		"TaskEnd":     completionTask.GetEnd(),

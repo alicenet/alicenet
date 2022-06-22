@@ -115,9 +115,9 @@ func (bt *BaseTask) Close() {
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		bt.logger.WithError(err).Errorf("Id: %s, name: %s task is done", bt.id, bt.name)
+		bt.logger.WithError(err).Errorf("Id: %v, name: %s task is done", bt.id, bt.name)
 	} else {
-		bt.logger.Infof("Id: %s, name: %s task is done", bt.id, bt.name)
+		bt.logger.Infof("Id: %v, name: %s task is done", bt.id, bt.name)
 	}
 
 	bt.taskResponseChan.Add(TaskResponse{Id: bt.id, Err: err})

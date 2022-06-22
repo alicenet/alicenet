@@ -129,7 +129,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)
 	}
 	if status == state.Registered || status == state.BadRegistration {
-		logger.Debug("registration already occurred %v", status)
+		logger.Debugf("registration already occurred %v", status)
 		return false, nil
 	}
 

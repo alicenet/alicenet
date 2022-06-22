@@ -2,7 +2,6 @@ package dkg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -84,7 +83,7 @@ func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *task
 	}
 
 	if dkgState.Phase != state.GPKJSubmission {
-		logger.Debug("phase %v different from GPKJSubmission", dkgState.Phase)
+		logger.Debugf("phase %v different from GPKJSubmission", dkgState.Phase)
 		return false, nil
 	}
 
@@ -108,7 +107,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, d
 
 	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf(constants.ErrorGettingValidators, err))
+		return nil, fmt.Errorf(constants.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)

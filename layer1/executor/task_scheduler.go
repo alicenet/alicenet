@@ -254,7 +254,9 @@ func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
 		}
 
 		id := uuid.New()
-		logEntry := s.logger.WithFields(logrus.Fields{
+		logger := logging.GetLogger("tasks")
+		logEntry := logger.WithFields(logrus.Fields{
+			"Component": "task",
 			"taskId":    id,
 			"taskName":  task.GetName(),
 			"taskStart": task.GetStart(),
@@ -279,7 +281,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 		if taskResponse.Err != nil {
 			logger.Errorf("Task id: %s executed with error: %v", taskResponse.Id, taskResponse.Err)
 		} else {
-			logger.Infof("Task id: %s executed with successfully", taskResponse.Id)
+			logger.Infof("Task id: %s successfully executed", taskResponse.Id)
 		}
 		err := s.remove(taskResponse.Id)
 		if err != nil {

@@ -57,7 +57,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 	}
 
 	if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("it's not DisputeShareDistribution or ShareDistribution phase"), false)
+		return nil, tasks.NewTaskErr("it's not DisputeShareDistribution or ShareDistribution phase", false)
 	}
 
 	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
