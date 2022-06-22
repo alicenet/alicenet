@@ -2,9 +2,9 @@ package request
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/middleware"
-	"github.com/MadBase/MadNet/proto"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/middleware"
+	"github.com/alicenet/alicenet/proto"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )

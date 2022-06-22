@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/dkg/dtest"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/blockchain"
+	"github.com/alicenet/alicenet/blockchain/dkg/dtest"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )

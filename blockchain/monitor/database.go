@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

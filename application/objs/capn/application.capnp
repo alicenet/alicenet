@@ -1,7 +1,7 @@
 using Go = import "/go.capnp";
 @0xb99093b7d2518300;
 $Go.package("capn");
-$Go.import("github.com/MadBase/MadNet/application/capn");
+$Go.import("github.com/alicenet/alicenet/application/capn");
 
 const defaultDSPreImage :DSPreImage = (chainID = 0, index = 0x"00", issuedAt = 0, deposit = 0, rawData = 0x"00", owner = 0x"00", deposit1 = 0, deposit2 = 0, deposit3 = 0, deposit4 = 0, deposit5 = 0, deposit6 = 0, deposit7 = 0, fee0 = 0, fee1 = 0, fee2 = 0, fee3 = 0, fee4 = 0, fee5 = 0, fee6 = 0, fee7 = 0);
 const defaultDSLinker :DSLinker = (txHash = 0x"00", dSPreImage = .defaultDSPreImage);

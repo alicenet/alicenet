@@ -12,9 +12,9 @@ import (
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/blockchain/tasks"
-	"github.com/MadBase/MadNet/test/mocks"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/tasks"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/stretchr/testify/assert"
 )

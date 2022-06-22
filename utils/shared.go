@@ -5,9 +5,9 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

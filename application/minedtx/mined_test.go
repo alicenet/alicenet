@@ -5,13 +5,13 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/internal/testing/environment"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
 )
 

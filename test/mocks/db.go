@@ -4,10 +4,10 @@ import (
 	"context"
 	"io/ioutil"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	constants "github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/db"
+	constants "github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

@@ -7,11 +7,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgevents"
-	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/blockchain/dkg/dkgevents"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
 )
 

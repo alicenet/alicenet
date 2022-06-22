@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func rclaimsEqual(t *testing.T, rclaims, rclaims2 *RClaims) {

@@ -1,8 +1,8 @@
 package indexer
 
 import (
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

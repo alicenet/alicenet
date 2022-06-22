@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/MadBase/MadNet/bridge/bindings"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"

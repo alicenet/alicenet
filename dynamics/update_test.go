@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestUpdateGet(t *testing.T) {

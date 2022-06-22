@@ -3,8 +3,8 @@ package transport
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/types"
 	"github.com/hashicorp/yamux"
 )
 

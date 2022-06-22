@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	pb "github.com/MadBase/MadNet/proto"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	pb "github.com/alicenet/alicenet/proto"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestHandlers_HandleLocalStateGetBlockHeader(t *testing.T) {

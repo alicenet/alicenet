@@ -2,12 +2,12 @@ package lstate
 
 import (
 	"context"
-	"github.com/MadBase/MadNet/consensus/appmock"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/dman"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/appmock"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/dman"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 	"strconv"

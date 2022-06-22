@@ -7,11 +7,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/MadBase/MadNet/cmd/firewalld/gcloud"
-	"github.com/MadBase/MadNet/cmd/firewalld/lib"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/cmd/firewalld/gcloud"
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ var ErrNoConn = fmt.Errorf("no conn")
 var Command = cobra.Command{
 	Use:   "firewalld",
 	Short: "Continously updates a given firewall in the background",
-	Long:  "Continously updates a given firewall using values received over IPC from main MadNet process",
+	Long:  "Continously updates a given firewall using values received over IPC from main AliceNet process",
 	Run:   FirewallDaemon,
 }
 

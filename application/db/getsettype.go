@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

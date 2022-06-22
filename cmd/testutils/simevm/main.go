@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain"
+	"github.com/alicenet/alicenet/blockchain"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 

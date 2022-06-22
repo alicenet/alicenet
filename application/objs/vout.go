@@ -1,9 +1,9 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/wrapper"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Vout is a vector of TXOut objects

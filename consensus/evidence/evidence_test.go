@@ -3,7 +3,7 @@ package evidence
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/db"
 )
 
 func TestNewPool(t *testing.T) {

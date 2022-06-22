@@ -3,8 +3,8 @@ package crypto
 import (
 	"math/big"
 
-	"github.com/MadBase/MadNet/constants"
-	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/constants"
+	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 // BNGroupSigner creates cryptographic signatures using the bn256 curve.

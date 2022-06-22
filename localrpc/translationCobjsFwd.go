@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"errors"
 
-	from "github.com/MadBase/MadNet/consensus/objs"
-	to "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/utils"
+	from "github.com/alicenet/alicenet/consensus/objs"
+	to "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func ForwardTranslateBlockHeader(f *from.BlockHeader) (*to.BlockHeader, error) {

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 )
 
 func TestLinkedListMakeKeys(t *testing.T) {

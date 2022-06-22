@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/MadBase/MadNet/application/wrapper"
-	"github.com/MadBase/MadNet/dynamics"
+	"github.com/alicenet/alicenet/application/wrapper"
+	"github.com/alicenet/alicenet/dynamics"
 	"github.com/dgraph-io/badger/v2"
 )
 

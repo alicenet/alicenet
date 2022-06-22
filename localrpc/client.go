@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	pb "github.com/MadBase/MadNet/proto"
+	aobjs "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	pb "github.com/alicenet/alicenet/proto"
 	"google.golang.org/grpc"
 )
 

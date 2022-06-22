@@ -2,10 +2,10 @@ package lstate
 
 import (
 	"errors"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 	"testing"
 )
 

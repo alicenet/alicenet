@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 	eth "github.com/ethereum/go-ethereum/crypto"
 )
 

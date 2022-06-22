@@ -52,9 +52,9 @@ const (
 
 // ValidatorSet is summary information about a ValidatorSet
 type ValidatorSet struct {
-	ValidatorCount        uint8       `json:"validator_count"`
-	GroupKey              [4]*big.Int `json:"group_key"`
-	NotBeforeMadNetHeight uint32      `json:"not_before_mad_net_height"`
+	ValidatorCount          uint8       `json:"validator_count"`
+	GroupKey                [4]*big.Int `json:"group_key"`
+	NotBeforeAliceNetHeight uint32      `json:"not_before_mad_net_height"`
 }
 
 // Validator contains information about a Validator

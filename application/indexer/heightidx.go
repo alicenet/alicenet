@@ -11,8 +11,8 @@ given height index get txHash
 */
 
 import (
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

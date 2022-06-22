@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/localrpc"
-	"github.com/MadBase/MadNet/utils"
+	aobjs "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/localrpc"
+	"github.com/alicenet/alicenet/utils"
 )
 
 var numEpochs uint32 = 1

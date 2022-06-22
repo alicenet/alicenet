@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
+	"github.com/alicenet/alicenet/blockchain/dkg"
 	"github.com/holiman/uint256"
 )
 

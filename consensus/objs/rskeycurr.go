@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 //# index historic by by groupKey|height|round|vAddr

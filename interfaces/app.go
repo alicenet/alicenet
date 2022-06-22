@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	trie "github.com/MadBase/MadNet/badgerTrie"
+	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/dgraph-io/badger/v2"
 )
 

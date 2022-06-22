@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/consensus/objs/bclaims"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/consensus/objs/bclaims"
 )
 
 func main() {

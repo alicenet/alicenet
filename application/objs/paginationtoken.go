@@ -3,8 +3,8 @@ package objs
 import (
 	"fmt"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 type PaginationToken struct {

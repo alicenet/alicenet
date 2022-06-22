@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/interfaces"
 )
 
 // inactivePeerStore tracks inactive peers

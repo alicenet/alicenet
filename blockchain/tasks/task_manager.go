@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/dkg"
-	"github.com/MadBase/MadNet/blockchain/dkg/dkgtasks"
+	"github.com/alicenet/alicenet/blockchain/dkg"
+	"github.com/alicenet/alicenet/blockchain/dkg/dkgtasks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/objects"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,7 +1,7 @@
 package trie
 
 import (
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

@@ -1,11 +1,11 @@
 package objs
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/nextround"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/nextround"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // NextRound ...

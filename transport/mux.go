@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/types"
 	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
 )

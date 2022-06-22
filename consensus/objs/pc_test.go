@@ -3,7 +3,7 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestPreCommit(t *testing.T) {

@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	objs "github.com/MadBase/MadNet/consensus/objs"
+	objs "github.com/alicenet/alicenet/consensus/objs"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

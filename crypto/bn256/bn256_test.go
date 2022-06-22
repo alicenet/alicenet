@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 func TestMarshalBigInt(t *testing.T) {

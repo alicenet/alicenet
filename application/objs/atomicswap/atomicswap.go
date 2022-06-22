@@ -1,10 +1,10 @@
 package atomicswap
 
 import (
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	// "github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	// "github.com/MadBase/MadNet/utils"
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	// "github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	// "github.com/alicenet/alicenet/utils"
 	// capnp "github.com/MadBase/go-capnproto2/v2"
 )
 

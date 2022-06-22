@@ -11,30 +11,30 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/MadBase/MadNet/application"
-	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/blockchain"
-	"github.com/MadBase/MadNet/blockchain/interfaces"
-	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/cmd/utils"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus"
-	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/dman"
-	"github.com/MadBase/MadNet/consensus/evidence"
-	"github.com/MadBase/MadNet/consensus/gossip"
-	"github.com/MadBase/MadNet/consensus/lstate"
-	"github.com/MadBase/MadNet/consensus/request"
-	"github.com/MadBase/MadNet/constants"
-	mncrypto "github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/localrpc"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/peering"
-	"github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/status"
-	mnutils "github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application"
+	"github.com/alicenet/alicenet/application/deposit"
+	"github.com/alicenet/alicenet/blockchain"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/monitor"
+	"github.com/alicenet/alicenet/cmd/utils"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/consensus"
+	"github.com/alicenet/alicenet/consensus/admin"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/dman"
+	"github.com/alicenet/alicenet/consensus/evidence"
+	"github.com/alicenet/alicenet/consensus/gossip"
+	"github.com/alicenet/alicenet/consensus/lstate"
+	"github.com/alicenet/alicenet/consensus/request"
+	"github.com/alicenet/alicenet/constants"
+	mncrypto "github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/localrpc"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/peering"
+	"github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/status"
+	mnutils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +46,7 @@ import (
 var Command = cobra.Command{
 	Use:   "validator",
 	Short: "Starts a node",
-	Long:  "Runs a MadNet node in mining or non-mining mode",
+	Long:  "Runs a AliceNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
 func initEthereumConnection(logger *logrus.Logger) (interfaces.Ethereum, *keystore.Key, []byte) {
@@ -228,7 +228,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consDB := &db.Database{}
 	monDB := &db.Database{}
 
-	// app maintains the UTXO set of the MadNet blockchain (module is separate from consensus e.d.)
+	// app maintains the UTXO set of the AliceNet blockchain (module is separate from consensus e.d.)
 	app := &application.Application{}
 	appDepositHandler := &deposit.Handler{} // watches ETH blockchain about deposits
 

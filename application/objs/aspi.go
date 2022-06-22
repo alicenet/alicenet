@@ -1,13 +1,13 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/application/objs/aspreimage"
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+	"github.com/alicenet/alicenet/application/objs/aspreimage"
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ASPreImage holds the values required for an AtomicSwap object

@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 
 	"github.com/holiman/uint256"
 )

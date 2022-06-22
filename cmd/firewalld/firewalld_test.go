@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/MadBase/MadNet/cmd/firewalld/lib"
-	"github.com/MadBase/MadNet/cmd/firewalld/mock"
-	"github.com/MadBase/MadNet/test/testutils"
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
+	"github.com/alicenet/alicenet/cmd/firewalld/mock"
+	"github.com/alicenet/alicenet/test/testutils"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
