@@ -222,6 +222,7 @@ func (s *TasksScheduler) eventLoop() {
 			networkCf()
 			if err != nil {
 				s.logger.WithError(err).Debug("Failed to retrieve the latest height from eth node")
+				processingTime = time.After(constants.TaskSchedulerProcessingTime)
 				continue
 			}
 			s.LastHeightSeen = height

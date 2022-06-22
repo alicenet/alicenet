@@ -41,14 +41,14 @@ func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Ad
 // determines if the shares previously distributed are valid. If any are
 // invalid, disputes will be issued.
 func (t *DisputeShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
-	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger := t.GetLogger().WithField("method", "Prepare()").WithField("address", t.Address)
 	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
 
 	dkgState, err := state.GetDkgState(t.GetDB())
@@ -142,7 +142,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")
 
 	dkgState, err := state.GetDkgState(t.GetDB())

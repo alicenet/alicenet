@@ -41,14 +41,14 @@ func NewDisputeGPKjTask(start uint64, end uint64, address common.Address) *Dispu
 // Prepare prepares for work to be done in the DisputeGPKjTask.
 // Here, we determine if anyone submitted an invalid gpkj.
 func (t *DisputeGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
-	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger := t.GetLogger().WithField("method", "Prepare()").WithField("address", t.Address)
 	logger.Debug("preparing task")
 	return nil
 }
 
 // Execute executes the task business logic
 func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
 
 	dkgState, err := state.GetDkgState(t.GetDB())
@@ -101,7 +101,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")
 
 	dkgState, err := state.GetDkgState(t.GetDB())

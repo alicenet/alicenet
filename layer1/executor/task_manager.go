@@ -149,16 +149,18 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 				if isComplete {
 					return nil
 				}
+				continue
 			} else {
 				logger.Debug("Task returned no transaction, finishing")
 				return nil
 			}
 		}
+		return nil
 	}
 }
 
 // checks if a task is complete. The function is going to subscribe a
-// transaction in the transactionWatcher and it will wait until it gets the
+// transaction in the transactionWatcher, and it will wait until it gets the
 // receipt, the task is killed, or shouldExecute returns false.
 func (tm *TasksManager) checkCompletion(ctx context.Context, task tasks.Task, txn *types.Transaction) (bool, error) {
 	var err error
