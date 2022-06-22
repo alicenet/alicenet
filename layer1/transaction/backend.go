@@ -13,6 +13,7 @@ import (
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -45,11 +46,9 @@ type info struct {
 	MonitoringHeight  uint64             `json:"monitoringHeight"`  // ethereum height where we first added the tx to be watched or did a tx retry.
 	RetryAmount       uint64             `json:"retryAmount"`       // counter to indicate how many times we tried to retry a transaction
 	NotFoundBlocks    uint64             `json:"notFoundBlocks"`    // counter to indicate approximate number of blocks that we could not find a tx
-	logger            *logrus.Entry      `json:"-"`                 // logger to log transaction info
 }
 
 func newInfo(
-	logEntry *logrus.Entry,
 	txn *types.Transaction,
 	fromAddr common.Address,
 	selector FuncSelector,
@@ -66,13 +65,11 @@ func newInfo(
 		RetryGroup:        retryGroup,
 		EnableAutoRetry:   enableAutoRetry,
 		MaxStaleBlocks:    maxStaleBlocks,
-		logger:            logEntry,
 	}
 }
 
 func newReplacedInfo(newTxn *types.Transaction, originalTxInfo info) info {
 	return newInfo(
-		originalTxInfo.logger,
 		newTxn,
 		originalTxInfo.FromAddress,
 		originalTxInfo.Selector,
@@ -318,7 +315,7 @@ func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeR
 func (wb *WatcherBackend) LoadState() error {
 	if err := wb.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTransactionWatcherState()
-		wb.logger.WithField("Key", string(key)).Tracef("Looking up state")
+		wb.logger.WithField("Key", string(key)).Debug("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -342,7 +339,7 @@ func (wb *WatcherBackend) PersistState() error {
 	}
 	err = wb.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTransactionWatcherState()
-		wb.logger.WithField("Key", string(key)).Tracef("Saving state")
+		wb.logger.WithField("Key", string(key)).Debug("Saving state")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			return fmt.Errorf("failed to set Value %v", err)
 		}
@@ -433,9 +430,6 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 			}
 			sig := bindings.FunctionMapping[selector]
 
-			logEntry := wb.logger.WithField("Transaction", txnHash).
-				WithField("Function", sig).
-				WithField("Selector", fmt.Sprintf("%x", selector))
 			var enableAutoRetry bool
 			var maxStaleBlocks uint64
 			if req.subscribeOptions != nil {
@@ -445,10 +439,12 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 				enableAutoRetry = true
 				maxStaleBlocks = wb.client.GetTxMaxStaleBlocks()
 			}
-			wb.MonitoredTxns[txnHash] = newInfo(logEntry, req.txn, fromAddr, selector, sig, txnHash, enableAutoRetry, maxStaleBlocks)
+			newInfo := newInfo(req.txn, fromAddr, selector, sig, txnHash, enableAutoRetry, maxStaleBlocks)
+			wb.MonitoredTxns[txnHash] = newInfo
 			txGroup := newGroup()
 			txGroup.add(txnHash)
 			wb.RetryGroups[txnHash] = txGroup
+			logEntry := getTransactionLogger(newInfo)
 			logEntry.Debug("Transaction queued")
 			txGroupHash = txnHash
 		}
@@ -532,7 +528,7 @@ func (wb *WatcherBackend) collectReceipts() {
 			wb.logger.Trace("got a invalid tx with hash from workers")
 			continue
 		}
-		logEntry := txInfo.logger
+		logEntry := getTransactionLogger(txInfo)
 		newTxInfo, isFinished := wb.handleWorkerResponse(logEntry, workResponse, txInfo, blockInfo.Height)
 		if isFinished {
 			finishedTxs[workResponse.txnHash] = workResponse
@@ -622,7 +618,7 @@ func (wb *WatcherBackend) dispatchFinishedTxs(finishedTxs map[common.Hash]Monito
 	for txnHash, workResponse := range finishedTxs {
 		if txnInfo, ok := wb.MonitoredTxns[txnHash]; ok {
 			if txGroup, ok := wb.RetryGroups[txnInfo.RetryGroup]; ok {
-				logger := txnInfo.logger.WithFields(logrus.Fields{
+				logger := getTransactionLogger(txnInfo).WithFields(logrus.Fields{
 					"group": txnInfo.RetryGroup,
 				})
 				if workResponse.receipt != nil {
@@ -639,7 +635,7 @@ func (wb *WatcherBackend) dispatchFinishedTxs(finishedTxs map[common.Hash]Monito
 					}
 				}
 			} else {
-				txnInfo.logger.Debugf("Failed to find a group for txn")
+				getTransactionLogger(txnInfo).Debugf("Failed to find a group for txn")
 			}
 			delete(wb.MonitoredTxns, txnHash)
 		} else {
@@ -683,4 +679,11 @@ func ExtractSelector(data []byte) (FuncSelector, error) {
 		selector[idx] = data[idx]
 	}
 	return selector, nil
+}
+
+func getTransactionLogger(txn info) *logrus.Entry {
+	logger := logging.GetLogger("transaction").WithField("Component", "TransactionWatcher")
+	return logger.WithField("Transaction", txn.Txn.Hash().Hex()).
+		WithField("Function", txn.FunctionSignature).
+		WithField("Selector", fmt.Sprintf("%x", txn.Selector))
 }

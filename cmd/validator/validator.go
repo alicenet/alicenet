@@ -169,15 +169,18 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 }
 
 func validatorNode(cmd *cobra.Command, args []string) {
-	// create execution context for application
-	ctx := context.Background()
-	nodeCtx, cf := context.WithCancel(ctx)
-	defer cf()
+
+	defer func() { os.Exit(0) }()
 
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
 	logger.Infof("Starting node with args %v", args)
-	defer func() { logger.Warning("Goodbye.") }()
+	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
+
+	// create execution context for application
+	ctx := context.Background()
+	nodeCtx, cf := context.WithCancel(ctx)
+	defer cf()
 
 	chainID := uint32(config.Configuration.Chain.ID)
 	batchSize := config.Configuration.Monitor.BatchSize
@@ -275,8 +278,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Setup tasks scheduler
 	taskRequestChan := make(chan tasks.Task, constants.TaskSchedulerBufferSize)
 	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
-	defer close(taskRequestChan)
-	defer close(taskKillChan)
+
 	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
 	if err != nil {
 		panic(err)
@@ -304,8 +306,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
-	defer func() { os.Exit(0) }()
-	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
+
+	defer close(taskRequestChan)
+	defer close(taskKillChan)
 
 	go storage.Start()
 

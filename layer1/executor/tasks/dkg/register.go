@@ -48,7 +48,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	if dkgState.TransportPrivateKey == nil ||
 		dkgState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
 
-		logger.Debugf("generating private-public transport keys")
+		logger.Debug("generating private-public transport keys")
 		// If this function fails, probably we got a bad random value. We can retry
 		// later to get a new value.
 		priv, pub, err := state.GenerateKeys()
@@ -63,7 +63,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
 		}
 	} else {
-		logger.Debugf("private-public transport keys already defined")
+		logger.Debug("private-public transport keys already defined")
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)
 	}
 	if status == state.Registered || status == state.BadRegistration {
-		logger.Debugf("registration already occurred %v", status)
+		logger.Debug("registration already occurred")
 		return false, nil
 	}
 

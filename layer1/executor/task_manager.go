@@ -47,15 +47,14 @@ func NewTaskManager(txWatcher *transaction.FrontWatcher, database *db.Database, 
 
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
-func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
+func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
 	var err error
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 	defer task.Close()
 	defer task.Finish(err)
 
-	taskLogger := logger.WithField("TaskName", task.GetName())
-	err = task.Initialize(taskCtx, cf, database, taskLogger, eth, task.GetId(), taskResponseChan)
+	err = task.Initialize(taskCtx, cf, database, logger, eth, taskId, taskResponseChan)
 	if err != nil {
 		return
 	}
@@ -99,7 +98,10 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 		}
 		taskErr := task.Prepare(ctx)
 		// no errors or unrecoverable errors
-		if taskErr == nil || !taskErr.IsRecoverable() {
+		if taskErr == nil {
+			return nil
+		}
+		if !taskErr.IsRecoverable() {
 			return taskErr
 		}
 		err := sleepWithContext(ctx, retryDelay)
@@ -133,7 +135,7 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 				return taskErr
 			}
 			if txn != nil {
-				logger.Debug("got a successful txn: %v", txn.Hash().Hex())
+				logger.Debugf("got a successful txn: %v", txn.Hash().Hex())
 				tm.Transactions[task.GetId()] = txn
 				err := tm.persistState()
 				if err != nil {
@@ -233,7 +235,7 @@ func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 			logger.Debugf("got a non recoverable error during task.ShouldExecute: %v", err)
 			return false, err
 		} else {
-			logger.Trace("should execute BaseTask: %v", hasToExecute)
+			logger.Tracef("should execute BaseTask: %v", hasToExecute)
 			return hasToExecute, nil
 		}
 	}
@@ -250,7 +252,7 @@ func (tm *TasksManager) persistState() error {
 
 	err = tm.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		tm.logger.WithField("Key", string(key)).Infof("Saving state")
+		tm.logger.WithField("Key", string(key)).Debug("Saving state")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			tm.logger.Error("Failed to set Value")
 			return err
@@ -274,7 +276,7 @@ func (tm *TasksManager) loadState() error {
 
 	if err := tm.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		tm.logger.WithField("Key", string(key)).Infof("Looking up state")
+		tm.logger.WithField("Key", string(key)).Debug("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err

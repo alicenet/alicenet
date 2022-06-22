@@ -93,7 +93,7 @@ func (f *FrontWatcher) Start() error {
 
 // Close the transaction watcher service
 func (f *FrontWatcher) Close() {
-	f.logger.Warning("Closing transaction watcher")
+	f.logger.Warn("Closing transaction watcher")
 	close(f.requestChannel)
 	f.closeMainContext()
 }

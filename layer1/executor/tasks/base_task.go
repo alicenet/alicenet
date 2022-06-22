@@ -16,30 +16,30 @@ type TaskResponse struct {
 }
 
 type BaseTask struct {
+	Name                string                        `json:"name"`
+	AllowMultiExecution bool                          `json:"allowMultiExecution"`
+	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
+	Id                  string                        `json:"id"`
+	Start               uint64                        `json:"start"`
+	End                 uint64                        `json:"end"`
 	isInitialized       bool                          `json:"-"`
-	id                  string                        `json:"-"`
-	name                string                        `json:"-"`
-	start               uint64                        `json:"-"`
-	end                 uint64                        `json:"-"`
-	allowMultiExecution bool                          `json:"-"`
 	ctx                 context.Context               `json:"-"`
 	cancelFunc          context.CancelFunc            `json:"-"`
 	database            *db.Database                  `json:"-"`
 	logger              *logrus.Entry                 `json:"-"`
 	client              layer1.Client                 `json:"-"`
 	taskResponseChan    TaskResponseChan              `json:"-"`
-	subscribeOptions    *transaction.SubscribeOptions `json:"-"`
 }
 
 func NewBaseTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &BaseTask{
-		name:                name,
-		start:               start,
-		end:                 end,
-		allowMultiExecution: allowMultiExecution,
-		subscribeOptions:    subscribeOptions,
+		Name:                name,
+		Start:               start,
+		End:                 end,
+		AllowMultiExecution: allowMultiExecution,
+		SubscribeOptions:    subscribeOptions,
 		ctx:                 ctx,
 		cancelFunc:          cf,
 	}
@@ -48,7 +48,7 @@ func NewBaseTask(name string, start uint64, end uint64, allowMultiExecution bool
 // Initialize default implementation for the ITask interface
 func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, id string, taskResponseChan TaskResponseChan) error {
 	if !bt.isInitialized {
-		bt.id = id
+		bt.Id = id
 		bt.ctx = ctx
 		bt.cancelFunc = cancelFunc
 		bt.database = database
@@ -63,31 +63,31 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 
 // GetId default implementation for the ITask interface
 func (bt *BaseTask) GetId() string {
-	return bt.id
+	return bt.Id
 }
 
 // GetStart default implementation for the ITask interface
 func (bt *BaseTask) GetStart() uint64 {
-	return bt.start
+	return bt.Start
 }
 
 // GetEnd default implementation for the ITask interface
 func (bt *BaseTask) GetEnd() uint64 {
-	return bt.end
+	return bt.End
 }
 
 // GetName default implementation for the ITask interface
 func (bt *BaseTask) GetName() string {
-	return bt.name
+	return bt.Name
 }
 
 // GetAllowMultiExecution default implementation for the ITask interface
 func (bt *BaseTask) GetAllowMultiExecution() bool {
-	return bt.allowMultiExecution
+	return bt.AllowMultiExecution
 }
 
 func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
-	return bt.subscribeOptions
+	return bt.SubscribeOptions
 }
 
 // GetCtx default implementation for the ITask interface
@@ -115,12 +115,12 @@ func (bt *BaseTask) Close() {
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		bt.logger.WithError(err).Errorf("Id: %v, name: %s task is done", bt.id, bt.name)
+		bt.logger.WithError(err).Errorf("Id: %v, name: %s task is done", bt.Id, bt.Name)
 	} else {
-		bt.logger.Infof("Id: %v, name: %s task is done", bt.id, bt.name)
+		bt.logger.Infof("Id: %v, name: %s task is done", bt.Id, bt.Name)
 	}
 
-	bt.taskResponseChan.Add(TaskResponse{Id: bt.id, Err: err})
+	bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
 }
 
 func (bt *BaseTask) GetDB() *db.Database {

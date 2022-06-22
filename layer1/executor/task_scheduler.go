@@ -37,15 +37,14 @@ const (
 )
 
 type TaskRequestInfo struct {
-	Id        string        `json:"id"`
-	Start     uint64        `json:"start"`
-	End       uint64        `json:"end"`
-	isRunning bool          `json:"-"`
-	Task      tasks.Task    `json:"-"`
-	logger    *logrus.Entry `json:"-"`
+	Id        string     `json:"id"`
+	Start     uint64     `json:"start"`
+	End       uint64     `json:"end"`
+	Task      tasks.Task `json:"-"`
+	isRunning bool       `json:"-"`
 }
 
-type innerBlock struct {
+type taskRequestInner struct {
 	Id          string
 	Start       uint64
 	End         uint64
@@ -90,7 +89,19 @@ func (tr *taskResponseChan) Add(taskResponse tasks.TaskResponse) {
 var _ tasks.TaskResponseChan = &taskResponseChan{}
 
 type innerSequentialSchedule struct {
-	Schedule map[string]*innerBlock
+	Schedule map[string]*taskRequestInner
+}
+
+func GetTaskLogger(task tasks.Task) *logrus.Entry {
+	logger := logging.GetLogger("tasks")
+	logEntry := logger.WithFields(logrus.Fields{
+		"Component": "task",
+		"taskId":    task.GetId(),
+		"taskName":  task.GetName(),
+		"taskStart": task.GetStart(),
+		"taskEnd":   task.GetEnd(),
+	})
+	return logEntry
 }
 
 func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.Task, taskKillChan <-chan string, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
@@ -148,7 +159,7 @@ func (s *TasksScheduler) Start() error {
 	s.logger.Info(strings.Repeat("-", 80))
 	s.logger.Infof("Current Tasks: %d", len(s.Schedule))
 	for id, task := range s.Schedule {
-		task.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Task.GetName(), task.Start, task.End)
+		s.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Task.GetName(), task.Start, task.End)
 	}
 	s.logger.Info(strings.Repeat("-", 80))
 
@@ -176,7 +187,13 @@ func (s *TasksScheduler) eventLoop() {
 			s.logger.Trace("received request for a task")
 			err := s.schedule(ctx, taskRequest)
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+				// if we are not synchronized, don't log expired task as errors, since we will
+				// be replaying the events from far way in the past
+				if errors.Is(err, ErrTaskExpired) && !s.adminHandler.IsSynchronized() {
+					s.logger.WithError(err).Debugf("Failed to schedule task request %d", s.LastHeightSeen)
+				} else {
+					s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+				}
 			}
 			err = s.persistState()
 			if err != nil {
@@ -254,16 +271,8 @@ func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
 		}
 
 		id := uuid.New()
-		logger := logging.GetLogger("tasks")
-		logEntry := logger.WithFields(logrus.Fields{
-			"Component": "task",
-			"taskId":    id,
-			"taskName":  task.GetName(),
-			"taskStart": task.GetStart(),
-			"taskEnd":   task.GetEnd(),
-		})
-		s.Schedule[id.String()] = TaskRequestInfo{Id: id.String(), Start: start, End: end, Task: task, logger: logEntry}
-		logEntry.Debug("Received task request")
+		s.Schedule[id.String()] = TaskRequestInfo{Id: id.String(), Start: start, End: end, Task: task}
+		GetTaskLogger(task).Debug("Received task request")
 	}
 	return nil
 }
@@ -276,7 +285,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 		logger := s.logger
 		task, present := s.Schedule[taskResponse.Id]
 		if present {
-			logger = task.logger
+			logger = GetTaskLogger(task.Task)
 		}
 		if taskResponse.Err != nil {
 			logger.Errorf("Task id: %s executed with error: %v", taskResponse.Id, taskResponse.Err)
@@ -299,10 +308,10 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 		s.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			logEntry := task.logger
+			logEntry := GetTaskLogger(task.Task)
 			logEntry.Info("task is about to start")
 
-			go s.tasksManager.ManageTask(ctx, task.Task, s.database, logEntry, s.eth, s.taskResponseChan)
+			go s.tasksManager.ManageTask(ctx, task.Task, task.Id, s.database, logEntry, s.eth, s.taskResponseChan)
 
 			task.isRunning = true
 			s.Schedule[task.Id] = task
@@ -330,7 +339,7 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 	default:
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			task.logger.Info("Task is about to be killed")
+			GetTaskLogger(task.Task).Info("Task is about to be killed")
 			task.Task.Close()
 		}
 	}
@@ -347,7 +356,7 @@ func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []Ta
 
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			task.logger.Info("Task is about to be removed for being unresponsive")
+			GetTaskLogger(task.Task).Info("Task is about to be removed for being unresponsive or expired")
 
 			err := s.remove(task.Id)
 			if err != nil {
@@ -458,7 +467,7 @@ func (s *TasksScheduler) loadState() error {
 
 	if err := s.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskSchedulerState()
-		s.logger.WithField("Key", string(key)).Infof("Looking up state")
+		s.logger.WithField("Key", string(key)).Debug("Looking up state")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -486,14 +495,14 @@ func (s *TasksScheduler) loadState() error {
 
 func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
 
-	ws := &innerSequentialSchedule{Schedule: make(map[string]*innerBlock)}
+	ws := &innerSequentialSchedule{Schedule: make(map[string]*taskRequestInner)}
 
 	for k, v := range s.Schedule {
 		wt, err := s.marshaller.WrapInstance(v.Task)
 		if err != nil {
 			return []byte{}, err
 		}
-		ws.Schedule[k] = &innerBlock{Id: v.Id, Start: v.Start, End: v.End, WrappedTask: wt}
+		ws.Schedule[k] = &taskRequestInner{Id: v.Id, Start: v.Start, End: v.End, WrappedTask: wt}
 	}
 
 	raw, err := json.Marshal(&ws)
