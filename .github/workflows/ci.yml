@@ -110,7 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           go test -race -json -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.out
           verbose: true
