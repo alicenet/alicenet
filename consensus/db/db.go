@@ -1899,13 +1899,12 @@ func (db *Database) makeAccusationKey(uuid uuid.UUID) ([]byte, error) {
 	return key.MarshalBinary()
 }
 
-func (db *Database) SetAccusation(txn *badger.Txn, v *interfaces.Accusation) error {
-	// todo: refactor this
-	key, err := db.makeAccusationKey()
+func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
+	key, err := db.makeAccusationKey(a.GetUUID())
 	if err != nil {
 		return err
 	}
-	err = db.rawDB.SetRoundState(txn, key, v)
+	err = db.rawDB.SetAccusation(txn, key, a)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -1913,13 +1912,12 @@ func (db *Database) SetAccusation(txn *badger.Txn, v *interfaces.Accusation) err
 	return nil
 }
 
-func (db *Database) GetAccusation(txn *badger.Txn, vaddr []byte, height uint32, round uint32) (*objs.RoundState, error) {
-	// todo: refactor this
-	key, err := db.makeAccusationKey()
+func (db *Database) GetAccusation(txn *badger.Txn, uuid uuid.UUID) (objs.Accusation, error) {
+	key, err := db.makeAccusationKey(uuid)
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.rawDB.GetRoundState(txn, key)
+	result, err := db.rawDB.GetAccusation(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
@@ -1927,30 +1925,21 @@ func (db *Database) GetAccusation(txn *badger.Txn, vaddr []byte, height uint32, 
 	return result, nil
 }
 
-func (db *Database) DeleteAccusation(txn *badger.Txn, height uint32, maxnum int) error {
-	// todo: refactor this
-	prefix, err := db.makeAccusationKey()
+func (db *Database) DeleteAccusation(txn *badger.Txn, uuid uuid.UUID) error {
+	prefix, err := db.makeAccusationKey(uuid)
 	if err != nil {
 		return err
 	}
-	opts := badger.DefaultIteratorOptions
-	it := txn.NewIterator(opts)
-	defer it.Close()
-	keys := [][]byte{}
-	count := 0
-	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-		item := it.Item()
-		k := item.KeyCopy(nil)
-		keys = append(keys, k)
-		count++
-		if count >= maxnum {
-			break
+	exist := true
+	_, err = utils.GetValue(txn, prefix)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
 		}
+		exist = false
 	}
-	for i := 0; i < len(keys); i++ {
-		k := keys[i]
-		err := utils.DeleteValue(txn, utils.CopySlice(k))
-		if err != nil {
+	if exist {
+		if err := utils.DeleteValue(txn, prefix); err != nil {
 			return err
 		}
 	}

@@ -1,4 +1,4 @@
-package accusation
+package objs
 
 import "github.com/google/uuid"
 
@@ -7,7 +7,7 @@ type Accusation interface {
 	GetUUID() uuid.UUID
 	SetUUID(uuid uuid.UUID)
 	// IsProcessed() bool
-	// MarshallBinary() ([]byte, error)
+	// MarshalBinary() ([]byte, error)
 	// UnmarshalBinary([]byte) error
 	// hash evidence as ID
 }

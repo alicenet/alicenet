@@ -23,11 +23,11 @@ func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 
 	key := []byte{}
 	Prefix := utils.CopySlice(a.Prefix)
-	VAddr := make([]byte, hex.EncodedLen(len(a.UUID)))
-	_ = hex.Encode(VAddr, a.UUID)
+	uuid := make([]byte, hex.EncodedLen(len(a.UUID)))
+	_ = hex.Encode(uuid, a.UUID)
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
-	key = append(key, VAddr...)
+	key = append(key, uuid...)
 
 	return key, nil
 }

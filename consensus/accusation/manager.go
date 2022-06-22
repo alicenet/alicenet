@@ -14,7 +14,7 @@ import (
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detectorLogic = func(rs *objs.RoundState) (*Accusation, bool)
+type detectorLogic = func(rs *objs.RoundState) (*objs.Accusation, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking for accusations unless anything changes
 type rsCacheStruct struct {
@@ -47,7 +47,7 @@ type Manager struct {
 	// queue where new roundStates are pushed to be checked for malicious behavior by workers
 	workQ chan *lstate.RoundStates
 	// queue where identified accusations are pushed by workers to be further processed
-	accusationQ chan *Accusation
+	accusationQ chan *objs.Accusation
 	closeChan   chan struct{}
 }
 
@@ -58,7 +58,7 @@ func NewManager(database *db.Database, logger *logrus.Logger) *Manager {
 	detectorLogics = append(detectorLogics, detectDoubleSpend)
 
 	workQ := make(chan *lstate.RoundStates, 1)
-	accusationQ := make(chan *Accusation, 1)
+	accusationQ := make(chan *objs.Accusation, 1)
 	closeChan := make(chan struct{})
 
 	m := &Manager{}
@@ -75,7 +75,7 @@ func (m *Manager) Init(
 	logger *logrus.Logger,
 	detectorLogics []detectorLogic,
 	workQ chan *lstate.RoundStates,
-	accusationQ chan *Accusation,
+	accusationQ chan *objs.Accusation,
 	closeChan chan struct{}) error {
 
 	sstore := &lstate.Store{}

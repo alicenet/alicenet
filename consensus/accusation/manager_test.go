@@ -4,23 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"sync"
 	"testing"
 	"time"
 
-	aobjs "github.com/MadBase/MadNet/application/objs"
-	utxo "github.com/MadBase/MadNet/application/utxohandler"
-	trie "github.com/MadBase/MadNet/badgerTrie"
 	"github.com/MadBase/MadNet/blockchain/objects"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/consensus/admin"
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/ipc"
 	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -32,129 +22,10 @@ import (
 type managerTestProxy struct {
 	logger         *logrus.Logger
 	db             *db.Database
-	ah             *admin.Handlers
 	manager        *Manager
-	secretKey      []byte
 	rawConsensusDb *badger.DB
-	utxoHandler    *utxo.UTXOHandler
+	validatorSet   *objs.ValidatorSet
 }
-
-var _ interfaces.Application = &managerTestProxy{}
-
-const (
-	notImpl = "not implemented"
-)
-
-// SetNextValidValue is defined on the interface object
-func (p *managerTestProxy) SetNextValidValue(vv *objs.Proposal) {
-	panic(notImpl)
-}
-
-// ApplyState is defined on the interface object
-func (p *managerTestProxy) ApplyState(txn *badger.Txn, chainID, height uint32, txs []interfaces.Transaction) ([]byte, error) {
-	return p.utxoHandler.ApplyState(txn, aobjs.TxVec{}, 1)
-}
-
-//GetValidProposal is defined on the interface object
-func (p *managerTestProxy) GetValidProposal(txn *badger.Txn, chainID, height, maxBytes uint32) ([]interfaces.Transaction, []byte, error) {
-	return nil, nil, nil
-}
-
-// PendingTxAdd is defined on the interface object
-func (p *managerTestProxy) PendingTxAdd(txn *badger.Txn, chainID, height uint32, txs []interfaces.Transaction) error {
-	return nil
-}
-
-//IsValid is defined on the interface object
-func (p *managerTestProxy) IsValid(txn *badger.Txn, chainID uint32, height uint32, stateHash []byte, _ []interfaces.Transaction) (bool, error) {
-	return false, nil
-}
-
-// MinedTxGet is defined on the interface object
-func (p *managerTestProxy) MinedTxGet(*badger.Txn, [][]byte) ([]interfaces.Transaction, [][]byte, error) {
-	return nil, nil, nil
-}
-
-// PendingTxGet is defined on the interface object
-func (p *managerTestProxy) PendingTxGet(txn *badger.Txn, height uint32, txhashes [][]byte) ([]interfaces.Transaction, [][]byte, error) {
-	return nil, nil, nil
-}
-
-//PendingTxContains is defined on the interface object
-func (p *managerTestProxy) PendingTxContains(txn *badger.Txn, height uint32, txHashes [][]byte) ([][]byte, error) {
-	return nil, nil
-}
-
-// UnmarshalTx is defined on the interface object
-func (p *managerTestProxy) UnmarshalTx(v []byte) (interfaces.Transaction, error) {
-	tx := &aobjs.Tx{}
-	err := tx.UnmarshalBinary(v)
-	if err != nil {
-		utils.DebugTrace(p.logger, err)
-		return nil, err
-	}
-	return tx, nil
-}
-
-// StoreSnapShotNode is defined on the interface object
-func (p *managerTestProxy) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
-	panic(notImpl)
-}
-
-// GetSnapShotNode is defined on the interface object
-func (p *managerTestProxy) GetSnapShotNode(txn *badger.Txn, height uint32, key []byte) ([]byte, error) {
-	panic(notImpl)
-}
-
-// StoreSnapShotStateData is defined on the interface object
-func (p *managerTestProxy) StoreSnapShotStateData(txn *badger.Txn, key []byte, value []byte, data []byte) error {
-	panic(notImpl)
-}
-
-// GetSnapShotStateData is defined on the interface object
-func (p *managerTestProxy) GetSnapShotStateData(txn *badger.Txn, key []byte) ([]byte, error) {
-	panic(notImpl)
-}
-
-// FinalizeSnapShotRoot is defined on the interface object
-func (p *managerTestProxy) FinalizeSnapShotRoot(txn *badger.Txn, root []byte, height uint32) error {
-	panic(notImpl)
-}
-
-// BeginSnapShotSync is defined on the interface object
-func (p *managerTestProxy) BeginSnapShotSync(txn *badger.Txn) error {
-	panic(notImpl)
-}
-
-// FinalizeSync is defined on the interface object
-func (p *managerTestProxy) FinalizeSync(txn *badger.Txn) error {
-	panic(notImpl)
-}
-
-// MockTransaction is defined on the interface object
-type MockTransaction struct {
-	V []byte
-}
-
-// TxHash is defined on the interface object
-func (m *MockTransaction) TxHash() ([]byte, error) {
-	return crypto.Hasher(m.V), nil
-}
-
-//MarshalBinary is defined on the interface object
-func (m *MockTransaction) MarshalBinary() ([]byte, error) {
-	return m.V, nil
-}
-
-//XXXIsTx is defined on the interface object
-func (m *MockTransaction) XXXIsTx() {}
-
-type synchronizerMock struct {
-	sync.Mutex
-}
-
-// assert Synchronizer struct implements interfaces.Lockable interface
-var _ interfaces.Lockable = &synchronizerMock{}
 
 func generateValidatorSet(t *testing.T) *objs.ValidatorSet {
 	gpkj1, ok := big.NewInt(0).SetString("14395602319113363333690669395961581081803242358678131578916981232954633806960", 10)
@@ -276,7 +147,6 @@ func setupManagerTests(t *testing.T) (testProxy *managerTestProxy, closeFn func(
 		}
 	}
 
-	var chainID uint32 = 1337
 	ctx := context.Background()
 	nodeCtx, cf := context.WithCancel(ctx)
 	deferables = append(deferables, cf)
@@ -295,66 +165,38 @@ func setupManagerTests(t *testing.T) (testProxy *managerTestProxy, closeFn func(
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	secretKey := crypto.Hasher([]byte("someSuperFancySecretThatWillBeHashed"))
-	ethPubKey := []byte("b904C0A2d203Ceb2B518055f116064666C028240")
-	storage := &dynamics.Storage{}
-
-	ipcServer := ipc.NewServer(config.Configuration.Firewalld.SocketFile)
-	deferables = append(deferables, ipcServer.Close)
-
-	testProxy = &managerTestProxy{
-		logger: logger,
-		//ah:      ah,
-		//manager: manager,
-	}
-
-	testProxy.ah = &admin.Handlers{}
-	testProxy.ah.Init(chainID, db, secretKey, testProxy, ethPubKey, storage, ipcServer)
-	deferables = append(deferables, testProxy.ah.Close)
-
-	assert.False(t, testProxy.ah.IsInitialized())
 	vs := generateValidatorSet(t)
 
-	err = testProxy.ah.AddValidatorSet(vs)
-	assert.Nil(t, err)
-	testProxy.ah.SetSynchronized(true)
-	assert.True(t, testProxy.ah.IsSynchronized())
+	testProxy = &managerTestProxy{
+		logger:         logger,
+		db:             db,
+		rawConsensusDb: rawConsensusDb,
+		validatorSet:   vs,
+	}
 
-	testProxy.manager = NewManager(testProxy.ah, db, logger)
-	deferables = append(deferables, testProxy.manager.Stop)
-
-	// start goroutine to emulate Synchronizer.adminInteruptLoop()
-	closeCh := make(chan struct{})
-	deferables = append(deferables, func() { close(closeCh) })
-	synchronizer := &synchronizerMock{}
-
-	go func(closeChan chan struct{}) {
-		defer func() { fmt.Println("Stopping AdminInterupt loop") }()
-		fmt.Println("Starting AdminInterupt loop")
-		for {
-			select {
-			case testProxy.ah.ReceiveLock <- synchronizer:
-				continue
-			case <-closeChan:
-				return
-			}
-		}
-	}(closeCh)
-
-	// start goroutine to emulate Handler.InitializationMonitor()
-	closeChInitializationMonitor := make(chan struct{})
-	deferables = append(deferables, func() { close(closeChInitializationMonitor) })
-	go testProxy.ah.InitializationMonitor(closeChInitializationMonitor)
+	testProxy.manager = NewManager(db, logger)
+	deferables = append(deferables, testProxy.manager.StopWorkers)
 
 	return
 }
 
-func TestManager(t *testing.T) {
+func TestManagerStartStop(t *testing.T) {
 	testProxy, closeFn := setupManagerTests(t)
 	defer closeFn()
 
-	//testProxy.manager.Start()
-	testProxy.manager.run()
+	testProxy.manager.StartWorkers()
+
+	time.Sleep(5 * time.Second)
+}
+
+func TestManagerPollKeyNotFound(t *testing.T) {
+	testProxy, closeFn := setupManagerTests(t)
+	defer closeFn()
+
+	testProxy.manager.StartWorkers()
+
+	err := testProxy.manager.Poll()
+	assert.NotNil(t, err)
 
 	time.Sleep(5 * time.Second)
 }
