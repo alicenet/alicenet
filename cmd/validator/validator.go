@@ -278,6 +278,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Setup tasks scheduler
 	taskRequestChan := make(chan tasks.Task, constants.TaskSchedulerBufferSize)
 	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
+	defer close(taskRequestChan)
+	defer close(taskKillChan)
 
 	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
 	if err != nil {
@@ -306,9 +308,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
-
-	defer close(taskRequestChan)
-	defer close(taskKillChan)
 
 	go storage.Start()
 
