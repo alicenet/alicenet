@@ -364,7 +364,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 }
 
 // countSignals will cause a forced exit on repeated Ctrl+C commands
-// this is a convient escape from a deadlock during shutdown
+// this is a convenient escape from a deadlock during shutdown
 func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	<-c
 	for count := 0; count < num; count++ {

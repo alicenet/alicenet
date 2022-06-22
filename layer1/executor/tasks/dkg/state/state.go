@@ -37,6 +37,19 @@ const (
 	Completion
 )
 
+func (phase EthDKGPhase) String() string {
+	return [...]string{
+		"RegistrationOpen",
+		"ShareDistribution",
+		"DisputeShareDistribution",
+		"KeyShareSubmission",
+		"MPKSubmission",
+		"GPKJSubmission",
+		"DisputeGPKJSubmission",
+		"Completion",
+	}[phase]
+}
+
 // DkgState is used to track the state of the ETHDKG
 type DkgState struct {
 	IsValidator        bool        `json:"isValidator"`

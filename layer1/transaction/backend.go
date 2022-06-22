@@ -324,6 +324,10 @@ func (wb *WatcherBackend) LoadState() error {
 		if err != nil {
 			return err
 		}
+		for groupHash, group := range wb.RetryGroups {
+			group.receiptResponse = newSharesReceipt()
+			wb.RetryGroups[groupHash] = group
+		}
 		return nil
 	}); err != nil {
 		return err

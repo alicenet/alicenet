@@ -90,15 +90,15 @@ func (w *WorkerPool) worker() {
 					// worker context timed out or parent was cancelled, should return
 					return
 				default:
-					rcpt, err := w.getReceipt(ctx, monitoredTx, currentHeight, txnHash)
-					finalResp, retry := w.handleResponse(ctx, monitoredTx, txnHash, rcpt, err, i)
-					if retry {
-						continue
-					}
+				}
+				rcpt, err := w.getReceipt(ctx, monitoredTx, currentHeight, txnHash)
+				finalResp, retry := w.handleResponse(ctx, monitoredTx, txnHash, rcpt, err, i)
+				if !retry {
 					select {
 					case w.responseWorkChannel <- finalResp:
 					default:
 					}
+					break
 				}
 			}
 		}
