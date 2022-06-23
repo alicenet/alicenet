@@ -1,3 +1,4 @@
+import toml from "@iarna/toml";
 import {
   BigNumber,
   BytesLike,
@@ -15,6 +16,9 @@ import {
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
   DEPLOYED_STATIC,
+  DEPLOYMENT_ARGS_TEMPLATE_FPATH,
+  DEPLOYMENT_ARG_PATH,
+  DEPLOYMENT_LIST_FPATH,
   DEPLOY_CREATE,
   DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
@@ -48,9 +52,12 @@ import {
   DeployProxyMCArgs,
   extractName,
   getAllContracts,
+  getDeployGroup,
+  getDeployGroupIndex,
   getDeployMetaArgs,
   getDeployType,
   getDeployUpgradeableProxyArgs,
+  getMulticallArgs,
   isInitializable,
 } from "./deployment/deploymentUtil";
 import {
@@ -1027,6 +1034,153 @@ task(
     return proxyData;
   });
 
+//Generate a json file with all deployment information
+task(
+  "generateContractsDescriptor",
+  "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
+)
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save deployment arg template and list"
+  )
+  .setAction(async (taskArgs, hre) => {
+    await checkUserDirPath(taskArgs.outputFolder);
+    const configDirPath =
+      taskArgs.outputFolder === undefined
+        ? DEFAULT_CONFIG_OUTPUT_DIR
+        : taskArgs.outputFolder;
+    const path =
+      configDirPath === undefined
+        ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH + ".json"
+        : configDirPath + DEPLOYMENT_LIST_FPATH + ".json";
+    const deploymentArgsPath =
+      configDirPath === undefined
+        ? DEPLOYMENT_ARG_PATH + DEPLOYMENT_ARGS_TEMPLATE_FPATH
+        : configDirPath + DEPLOYMENT_ARGS_TEMPLATE_FPATH;
+    var json = { contracts: Array<Object>() };
+    const contracts = await getDeploymentList(taskArgs.inputFolder);
+    const deploymentArgsFile = fs.readFileSync(deploymentArgsPath);
+    const tomlFile: any = toml.parse(deploymentArgsFile.toLocaleString());
+    for (let i = 0; i < contracts.length; i++) {
+      const contract = contracts[i];
+      const contractName = contract.split(":")[1];
+      const tomlConstructorArgs = tomlFile.constructor[
+        contract
+      ] as toml.JsonArray;
+      let cArgs = new Array();
+      if (tomlConstructorArgs !== undefined) {
+        tomlConstructorArgs.map((jsonObject) => {
+          cArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        });
+      }
+      const tomlInitializerArgs = tomlFile.initializer[
+        contract
+      ] as toml.JsonArray;
+      let iArgs = new Array();
+      if (tomlInitializerArgs !== undefined) {
+        tomlInitializerArgs.map((jsonObject) => {
+          iArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        });
+      }
+      const deployType = await getDeployType(contract, hre.artifacts);
+      const deployGroup = await getDeployGroup(contract, hre.artifacts);
+      const deployGroupIndex = await getDeployGroupIndex(
+        contract,
+        hre.artifacts
+      );
+      if (deployType !== undefined) {
+        var object = {
+          name: contractName,
+          fullyQualifiedName: contract,
+          deployGroup:
+            deployGroup !== undefined && deployGroup ? deployGroup : "general",
+          deployGroupIndex:
+            deployGroupIndex !== undefined && deployGroupIndex
+              ? deployGroupIndex
+              : "0",
+          deployType: deployType,
+          constructorArgs: cArgs,
+          initializerArgs: iArgs,
+        };
+        json.contracts.push(object);
+      }
+    }
+    fs.writeFileSync(path, JSON.stringify(json, null, 4));
+  });
+
+task(
+  "deployContractsFromDescriptor",
+  "Deploys ALL AliceNet contracts reading deploymentList.json"
+)
+  .addOptionalParam(
+    "factoryAddress",
+    "specify if a factory is already deployed, if not specified a new factory will be deployed"
+  )
+  .addOptionalParam(
+    "inputFolder",
+    "path to location containing deploymentArgsTemplate, and deploymentList"
+  )
+  .addOptionalParam("outputFolder", "output folder path to save factory state")
+  .setAction(async (taskArgs, hre) => {
+    let cumulativeGasUsed = BigNumber.from("0");
+    await checkUserDirPath(taskArgs.outputFolder);
+    const configDirPath =
+      taskArgs.outputFolder === undefined
+        ? DEFAULT_CONFIG_OUTPUT_DIR
+        : taskArgs.outputFolder;
+    const path =
+      configDirPath === undefined
+        ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH + ".json"
+        : configDirPath + DEPLOYMENT_LIST_FPATH + ".json";
+    if (!fs.existsSync(path)) {
+      const error =
+        "Could not find " +
+        DEFAULT_CONFIG_OUTPUT_DIR +
+        DEPLOYMENT_LIST_FPATH +
+        ".json file. It must be generated first with generateContractsDescriptor task";
+      throw new Error(error);
+    }
+    const rawdata = fs.readFileSync(path);
+    let json = JSON.parse(rawdata.toLocaleString());
+    if (hre.network.name === "hardhat") {
+      // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+      // being sent as input to the function (the contract bytecode), so we need to increase the block
+      // gas limit temporally in order to deploy the template
+      await hre.network.provider.send("evm_setBlockGasLimit", [
+        "0x9000000000000000",
+      ]);
+    }
+    const artifacts = hre.artifacts;
+    // deploy the factory first
+    let factoryAddress = taskArgs.factoryAddress;
+    if (factoryAddress === undefined) {
+      const factoryData: FactoryData = await hre.run("deployFactory", {
+        outputFolder: taskArgs.outputFolder,
+      });
+      factoryAddress = factoryData.address;
+      cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
+    }
+    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
+    const factory = factoryBase.attach(factoryAddress);
+    let multiCallArgsArray: any[];
+    let txCount: number;
+    const staticAddresses = new Array();
+    const upgradeableAddresses = new Array();
+    const templateAddresses = new Array();
+    txCount = await hre.ethers.provider.getTransactionCount(factory.address);
+    let contracts = json.contracts;
+    multiCallArgsArray = await getMulticallArgs(
+      contracts,
+      hre,
+      factoryBase,
+      factory,
+      txCount,
+      taskArgs.inputFolder,
+      taskArgs.outputFolder
+    );
+    console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
+  });
+
 async function checkUserDirPath(path: string) {
   if (path !== undefined) {
     if (!fs.existsSync(path)) {
@@ -1076,7 +1230,7 @@ function extractPath(qualifiedName: string) {
  * @param varName
  * @returns
  */
-function getEventVar(
+export function getEventVar(
   receipt: ContractReceipt,
   eventName: string,
   varName: string
@@ -1173,3 +1327,41 @@ export const showState = async (message: string): Promise<void> => {
     console.log(message);
   }
 };
+
+/**
+ * @description goes through the receipt from the
+ * transaction and extract multiples values for event and variable specified
+ * @param receipt tx object returned from the tran
+ * @param eventName
+ * @param varName
+ * @returns array of values
+ */
+function getMultipleEventVar(
+  receipt: ContractReceipt,
+  eventName: string,
+  varName: string
+) {
+  let result = "0x";
+  let results = Array();
+  if (receipt.events !== undefined) {
+    const events = receipt.events;
+    for (let i = 0; i < events.length; i++) {
+      // look for the event
+      if (events[i].event === eventName) {
+        if (events[i].args !== undefined) {
+          const args = events[i].args;
+          // extract the deployed mock logic contract address from the event
+          result = args !== undefined ? args[varName] : undefined;
+          if (result !== undefined) {
+            results.push(result);
+          }
+        } else {
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
+        }
+      }
+    }
+  }
+  return results;
+}
