@@ -505,10 +505,17 @@ func (wb *WatcherBackend) collectReceipts() {
 	}
 
 	if wb.lastProcessedBlock.Equal(blockInfo) {
-		wb.logger.Tracef("already processed block: %v with hash: %v", blockInfo.Height, blockInfo.Hash.Hex())
+		wb.logger.WithFields(logrus.Fields{
+			"BlockHeight": blockInfo.Height,
+			"BlockHash":   blockInfo.Hash.Hex(),
+		}).Trace("already processed block")
 		return
 	}
-	wb.logger.Tracef("processing block: %v with hash: %v numTransactions: %d", blockInfo.Height, blockInfo.Hash.Hex(), lenMonitoredTxns)
+	wb.logger.WithFields(logrus.Fields{
+		"NumberOfTransactions": lenMonitoredTxns,
+		"BlockHeight":          blockInfo.Height,
+		"BlockHash":            blockInfo.Hash.Hex(),
+	}).Trace("processing a new block")
 
 	baseFee, tipCap, err := wb.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
 	if err != nil {

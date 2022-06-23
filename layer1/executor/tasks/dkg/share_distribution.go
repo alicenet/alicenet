@@ -136,10 +136,10 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 
 	var emptySharesHash [32]byte
 	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
-		logger.Debug("distributed shares")
+		logger.Debug("shares were distributed")
 		return false, nil
 	}
 
-	logger.Debugf("did not distribute shares")
+	logger.Debugf("could not confirm if shares were distributed")
 	return true, nil
 }

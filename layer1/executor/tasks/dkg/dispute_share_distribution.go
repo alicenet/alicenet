@@ -157,7 +157,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
-	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant already accused")
+	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant was not accused yet")
 
 	return isValidator, nil
 }

@@ -94,7 +94,8 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 		}
 	}
 
-	// address didn't shared it's gpkj another task will be responsible for accusing him
+	logger.Tracef("finishing accusation task, %v is not dishonest ", t.Address.Hex())
+	// address didn't shared it's gpkj, another task will be responsible for accusing him
 	return nil, nil
 }
 
@@ -117,7 +118,7 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
-	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant already accused")
+	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant was not accused yet")
 
 	return isValidator, nil
 }

@@ -385,7 +385,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, logger *logrus.Entry, 
 		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	if dkgState.IsValidator {
+	if !dkgState.IsValidator {
 		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
@@ -446,7 +446,7 @@ func ProcessMPKSet(eth layer1.Client, logger *logrus.Entry, log types.Log, admin
 		utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessMPKSet: %v", err)
 	}
 
-	if dkgState.IsValidator {
+	if !dkgState.IsValidator {
 		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
 	}
