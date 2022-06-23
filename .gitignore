@@ -26,3 +26,4 @@ local-geth/*
 # generated files
 scripts/generated
 node_modules/
+legacy/V1
