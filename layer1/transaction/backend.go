@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -362,6 +363,14 @@ func (wb *WatcherBackend) PersistState() error {
 
 // Main loop where do all the backend actions
 func (wb *WatcherBackend) Loop() {
+
+	wb.logger.Info(strings.Repeat("-", 80))
+	wb.logger.Infof("Current Monitored Txns: %d", len(wb.MonitoredTxns))
+	for txnHash, info := range wb.MonitoredTxns {
+		getTransactionLogger(info).Infof("hash: %v", txnHash)
+	}
+	wb.logger.Info(strings.Repeat("-", 80))
+
 	poolingTime := time.After(constants.TxPollingTime)
 	statusTime := time.After(constants.TxStatusTime)
 	for {
@@ -486,7 +495,7 @@ func (wb *WatcherBackend) collectReceipts() {
 		wb.logger.Tracef("already processed block: %v with hash: %v", blockInfo.Height, blockInfo.Hash.Hex())
 		return
 	}
-	wb.logger.Tracef("processing block: %v with hash: %v", blockInfo.Height, blockInfo.Hash.Hex())
+	wb.logger.Tracef("processing block: %v with hash: %v for %v transactions", blockInfo.Height, blockInfo.Hash.Hex(), lenMonitoredTxns)
 
 	baseFee, tipCap, err := wb.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
 	if err != nil {
@@ -689,5 +698,6 @@ func getTransactionLogger(txn info) *logrus.Entry {
 	logger := logging.GetLogger("transaction").WithField("Component", "TransactionWatcher")
 	return logger.WithField("Transaction", txn.Txn.Hash().Hex()).
 		WithField("Function", txn.FunctionSignature).
-		WithField("Selector", fmt.Sprintf("%x", txn.Selector))
+		WithField("Selector", fmt.Sprintf("%x", txn.Selector)).
+		WithField("FromAddress", txn.FromAddress.Hex())
 }

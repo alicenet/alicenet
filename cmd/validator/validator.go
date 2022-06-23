@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -199,6 +200,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
 	rawMonitorDb := initDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
 	defer rawMonitorDb.Close()
+
+	// giving some time to services finish their work on the databases to avoid
+	// panic when closing the databases
+	defer func() { <-time.After(3 * time.Second) }()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////

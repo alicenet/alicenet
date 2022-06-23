@@ -135,13 +135,12 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 		return false, tasks.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
 
-	logger.Debugf("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
 	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
-		logger.Debug("did distribute shares after all. needs no retry")
+		logger.Debug("did distribute shares after all. should not execute")
 		return false, nil
 	}
 
-	logger.Debugf("Did not distribute shares after all. needs retry")
+	logger.Debugf("Did not distribute shares after all, should execute")
 	return true, nil
 }

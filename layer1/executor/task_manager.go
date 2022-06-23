@@ -48,29 +48,30 @@ func NewTaskManager(txWatcher *transaction.FrontWatcher, database *db.Database, 
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
 func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
-	var err error
+	err := tm.processTask(mainCtx, task, taskId, database, logger, eth, taskResponseChan)
+	task.Finish(err)
+}
+
+func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 	defer task.Close()
-	defer task.Finish(err)
-
-	err = task.Initialize(taskCtx, cf, database, logger, eth, taskId, taskResponseChan)
+	err := task.Initialize(taskCtx, cf, database, logger, eth, taskId, taskResponseChan)
 	if err != nil {
-		return
+		return err
 	}
 	retryDelay := constants.MonitorRetryDelay
-
 	isComplete := false
 	if txn, present := tm.Transactions[task.GetId()]; present {
 		isComplete, err = tm.checkCompletion(taskCtx, task, txn)
 		if err != nil {
-			return
+			return err
 		}
 	} else {
 		err = prepareTask(taskCtx, task, retryDelay)
 		if err != nil {
 			// unrecoverable errors or ctx.done
-			return
+			return err
 		}
 	}
 
@@ -78,13 +79,17 @@ func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, tas
 		err = tm.executeTask(taskCtx, task, retryDelay)
 		if err != nil {
 			// unrecoverable errors, staleTx errors or ctx.done
-			return
+			return err
 		}
 	}
 
 	// We got a successful receipt, removing from state
 	delete(tm.Transactions, task.GetId())
 	err = tm.persistState()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // prepareTask executes task preparation. We keep retrying until the task is
@@ -197,7 +202,7 @@ func (tm *TasksManager) checkCompletion(ctx context.Context, task tasks.Task, tx
 				logger.Debug("got a successful receipt")
 				return true, nil
 			} else {
-				logger.Debug("got a reverted receipt")
+				logger.Warn("got a reverted receipt, retrying")
 				return false, nil
 			}
 		}

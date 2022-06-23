@@ -28,6 +28,15 @@ const (
 	BadRegistration
 )
 
+func (status RegistrationStatus) String() string {
+	return [...]string{
+		"Undefined",
+		"Registered",
+		"NoRegistration",
+		"BadRegistration",
+	}[status]
+}
+
 // KeyShareStatus is an enumeration indicated the current status of keyshare
 type KeyShareStatus int
 
@@ -128,13 +137,16 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 //		true/false if present/not present;
 // 		error if raised
 //
-// If an error is raised, then something unrecoverable has occured.
+// If an error is raised, then something unrecoverable has occurred.
 func VerifyDistributedShares(dkgState *DkgState, participant *Participant) (bool, bool, error) {
 	if dkgState == nil {
 		return false, false, errors.New("invalid dkgState")
 	}
 	if participant == nil {
 		return false, false, errors.New("invalid participant")
+	}
+	if dkgState.TransportPrivateKey == nil {
+		return false, false, errors.New("transport private key not set")
 	}
 
 	// Check participant is not self

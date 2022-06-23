@@ -246,7 +246,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
-		"Method":         "MonitorTick",
 		"EndpointInSync": monitorState.EndpointInSync,
 		"EthereumInSync": monitorState.EthereumInSync})
 
@@ -257,9 +256,10 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
 	ethInSyncBefore := monitorState.EthereumInSync
 	monitorState.EndpointInSync = inSync
+	isLoopInitialized := false
 	bmax := utils.Max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
 	bmin := utils.Min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
-	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync
+	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync && isLoopInitialized
 	if ethInSyncBefore != monitorState.EthereumInSync {
 		adminHandler.SetSynchronized(monitorState.EthereumInSync)
 	}
@@ -290,10 +290,12 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	monitorState.PeerCount = peerCount
 	monitorState.EndpointInSync = inSync
 	monitorState.HighestBlockFinalized = finalized
+	isLoopInitialized = true
 
 	// 3. Grab up to the next _batch size_ unprocessed block(s)
 	processed := monitorState.HighestBlockProcessed
 	if processed >= finalized {
+		logger.Debugf("Processed block %d is higher than finalized block %d", processed, finalized)
 		return nil
 	}
 

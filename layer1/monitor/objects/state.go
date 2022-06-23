@@ -194,13 +194,7 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 		// if we are syncing Ethereum blocks,
 		// only write intermittent state diffs on blocks
 		// with no other changes of concern
-		if !s.EthereumInSync {
-			if s.HighestBlockProcessed%256 == 0 {
-				shouldWrite = true
-			}
-		} else {
-			shouldWrite = true
-		}
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("HighestBlockProcessed: %v -> %v", s.HighestBlockProcessed, o.HighestBlockProcessed))
 	}
 

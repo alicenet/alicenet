@@ -115,9 +115,13 @@ func (bt *BaseTask) Close() {
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		bt.logger.WithError(err).Errorf("Id: %v, name: %s task is done", bt.Id, bt.Name)
+		if err != context.Canceled {
+			bt.logger.WithError(err).Error("got an error when executing task")
+		} else {
+			bt.logger.WithError(err).Debug("cancelling task execution")
+		}
 	} else {
-		bt.logger.Infof("Id: %v, name: %s task is done", bt.Id, bt.Name)
+		bt.logger.Info("task is done")
 	}
 
 	bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
