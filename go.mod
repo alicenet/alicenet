@@ -10,7 +10,7 @@ require (
 	github.com/emicklei/proto v1.9.0
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/golang/mock v1.4.4
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
