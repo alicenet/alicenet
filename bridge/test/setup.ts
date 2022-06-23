@@ -266,7 +266,8 @@ export const deployUpgradeableWithFactory = async (
   contractName: string,
   salt?: string,
   initCallData?: any[],
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode: BytesLike;
@@ -298,10 +299,25 @@ export const deployUpgradeableWithFactory = async (
 
   const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
   let saltBytes;
-  if (salt === undefined) {
-    saltBytes = getBytes32Salt(contractName);
+
+  if (saltType) {
+    saltBytes = ethers.utils.keccak256(
+      ethers.utils
+        .keccak256(getBytes32Salt(salt === undefined ? contractName : salt))
+        .concat(
+          ethers.utils
+            .keccak256(ethers.utils.formatBytes32String(saltType))
+            .slice(2)
+        )
+    );
   } else {
-    saltBytes = getBytes32Salt(salt);
+    if (salt === undefined) {
+      saltBytes = getBytes32Salt(contractName);
+    } else if (salt.startsWith("0x")) {
+      saltBytes = salt;
+    } else {
+      saltBytes = getBytes32Salt(salt);
+    }
   }
 
   const transaction2 = await factory.deployProxy(saltBytes);
@@ -578,13 +594,19 @@ export const getFixture = async (
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
-    "InvalidTxConsumptionAccusation"
+    "InvalidTxConsumptionAccusation",
+    undefined,
+    undefined,
+    "Accusation"
   )) as InvalidTxConsumptionAccusation;
 
   const multipleProposalAccusation = (await deployUpgradeableWithFactory(
     factory,
     "MultipleProposalAccusation",
-    "MultipleProposalAccusation"
+    "MultipleProposalAccusation",
+    undefined,
+    undefined,
+    "Accusation"
   )) as MultipleProposalAccusation;
 
   await posFixtureSetup(factory, aToken, legacyToken);

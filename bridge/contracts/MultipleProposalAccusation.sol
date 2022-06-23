@@ -7,15 +7,17 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
+import "contracts/libraries/accusations/Accusation.sol";
 
 /// @custom:salt MultipleProposalAccusation
-/// @custom:salt-type Accusation
 /// @custom:deploy-type deployUpgradeable
+/// @custom:salt-type Accusation
 contract MultipleProposalAccusation is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
-    ImmutableValidatorPool
+    ImmutableValidatorPool,
+    Accusation
 {
     mapping(bytes32 => bool) internal _accusations;
 
@@ -24,6 +26,7 @@ contract MultipleProposalAccusation is
         ImmutableSnapshots()
         ImmutableETHDKG()
         ImmutableValidatorPool()
+        Accusation("MultipleProposalAccusation")
     {}
 
     /// @notice This function validates an accusation of multiple proposals.
