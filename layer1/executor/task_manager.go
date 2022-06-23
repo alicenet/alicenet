@@ -47,16 +47,16 @@ func NewTaskManager(txWatcher *transaction.FrontWatcher, database *db.Database, 
 
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
-func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
-	err := tm.processTask(mainCtx, task, taskId, database, logger, eth, taskResponseChan)
+func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
+	err := tm.processTask(mainCtx, task, name, taskId, database, logger, eth, taskResponseChan)
 	task.Finish(err)
 }
 
-func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) error {
+func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 	defer task.Close()
-	err := task.Initialize(taskCtx, cf, database, logger, eth, taskId, taskResponseChan)
+	err := task.Initialize(taskCtx, cf, database, logger, eth, name, taskId, taskResponseChan)
 	if err != nil {
 		return err
 	}
@@ -129,14 +129,14 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 			txn, taskErr := task.Execute(ctx)
 			if taskErr != nil {
 				if taskErr.IsRecoverable() {
-					logger.Trace("got a recoverable error during task.execute: %v", taskErr.Error())
+					logger.Tracef("got a recoverable error during task.execute: %v", taskErr.Error())
 					err := sleepWithContext(ctx, retryDelay)
 					if err != nil {
 						return err
 					}
 					continue
 				}
-				logger.Debug("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
+				logger.Debugf("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
 				return taskErr
 			}
 			if txn != nil {
@@ -205,6 +205,8 @@ func (tm *TasksManager) checkCompletion(ctx context.Context, task tasks.Task, tx
 				logger.Warn("got a reverted receipt, retrying")
 				return false, nil
 			}
+		} else {
+			logger.Trace("receipt is not ready yet")
 		}
 
 		hasToExecute, err := shouldExecute(ctx, task)

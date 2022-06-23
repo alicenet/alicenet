@@ -8,10 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
+
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/transaction"
 )
 
 // KeyShareSubmissionTask is the task for submitting KeyShare information
@@ -25,7 +24,7 @@ var _ tasks.Task = &KeyShareSubmissionTask{}
 // NewKeyShareSubmissionTask creates a new task
 func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
-		BaseTask: tasks.NewBaseTask(constants.KeyShareSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -38,18 +37,17 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	defaultAddr := dkgState.Account.Address
 
 	isKeyShareNil := dkgState.Participants[defaultAddr].KeyShareG1s[0] == nil ||
 		dkgState.Participants[defaultAddr].KeyShareG1s[1] == nil
-	isKeyShareZero := (dkgState.Participants[defaultAddr].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
-		dkgState.Participants[defaultAddr].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0)
 
 	// check if task already defined key shares
-	if isKeyShareNil || isKeyShareZero {
+	if isKeyShareNil || (dkgState.Participants[defaultAddr].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.Participants[defaultAddr].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
 		// Generate the key shares. If this function fails it means that we don't have
 		// all the data or we have bad data stored in state. No way to recover
 		g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(dkgState.SecretValue)
@@ -63,7 +61,7 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 		err = state.SaveDkgState(t.GetDB(), dkgState)
 		if err != nil {
-			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
 	} else {
 		logger.Debugf("key shares already defined")
@@ -79,7 +77,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	// Setup
@@ -89,7 +87,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 	eth := t.GetClient()
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	// Submit KeyShares
@@ -118,14 +116,14 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *task
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	defaultAccount := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAccount)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
 	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)

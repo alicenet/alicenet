@@ -14,6 +14,9 @@ const (
 	TaskSchedulerNetworkTimeout time.Duration = 1 * time.Second
 	// Time in which the scheduler it's going to enter in the main loop to spawn tasks
 	TaskSchedulerProcessingTime time.Duration = 3 * time.Second
+	// how many blocks after we sent a kill sign to a task to consider it
+	// unresponsive and removing from the scheduler mapping
+	TaskSchedulerHeightToleranceBeforeRemoving uint64 = 50
 )
 
 // Monitor constants

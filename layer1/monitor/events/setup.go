@@ -69,7 +69,7 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) {
+func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
@@ -80,28 +80,28 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 		return ProcessAddressRegistered(eth, logger, log, monDB)
 	}
 	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationComplete(eth, logger, log, monDB, taskRequestChan, taskKillChan)
+		return ProcessRegistrationComplete(eth, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessShareDistribution(eth, logger, log, monDB)
 	}
 	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistributionComplete(eth, logger, log, monDB, taskRequestChan, taskKillChan)
+		return ProcessShareDistributionComplete(eth, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessKeyShareSubmitted(eth, logger, log, monDB)
 	}
 	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmissionComplete(eth, logger, log, monDB, taskRequestChan, taskKillChan)
+		return ProcessKeyShareSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["MPKSet"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessMPKSet(eth, logger, log, adminHandler, monDB, taskRequestChan, taskKillChan)
+		return ProcessMPKSet(eth, logger, log, adminHandler, monDB, taskRequestChan)
 	}
 	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorMemberAdded(eth, logger, state, log, monDB)
 	}
 	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessGPKJSubmissionComplete(eth, logger, log, monDB, taskRequestChan, taskKillChan)
+		return ProcessGPKJSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorSetCompleted(eth, logger, state, log, monDB, adminHandler)
@@ -121,9 +121,9 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.Task, taskKillChan chan<- string) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
-	RegisterETHDKGEvents(em, monDB, adminHandler, taskRequestChan, taskKillChan)
+	RegisterETHDKGEvents(em, monDB, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()

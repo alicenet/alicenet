@@ -8,11 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -27,7 +25,7 @@ var _ tasks.Task = &DisputeMissingRegistrationTask{}
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
 func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		BaseTask: tasks.NewBaseTask(constants.DisputeMissingRegistrationTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -45,13 +43,13 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) <= 0 {
@@ -64,7 +62,7 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
@@ -82,7 +80,7 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (boo
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.RegistrationOpen {
@@ -92,11 +90,11 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (boo
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		logger.Debug(constants.NobodyToAccuse)
+		logger.Debug(tasks.NobodyToAccuse)
 		return false, nil
 	}
 
@@ -110,7 +108,7 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 
 	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, fmt.Errorf(constants.ErrorGettingValidators, err)
+		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)

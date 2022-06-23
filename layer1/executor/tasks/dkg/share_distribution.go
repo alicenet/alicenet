@@ -6,10 +6,9 @@ import (
 	"fmt"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
+
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -24,7 +23,7 @@ var _ tasks.Task = &ShareDistributionTask{}
 // NewShareDistributionTask creates a new task
 func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		BaseTask: tasks.NewBaseTask(constants.ShareDistributionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -37,7 +36,7 @@ func (t *ShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf("error during the preparation: %v", err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	if dkgState.Phase != state.ShareDistribution {
@@ -66,7 +65,7 @@ func (t *ShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 		err = state.SaveDkgState(t.GetDB(), dkgState)
 		if err != nil {
-			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
 	} else {
 		logger.Debug("encrypted shares already defined")
@@ -82,7 +81,7 @@ func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("error loading dkgState: %v", err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
@@ -116,7 +115,7 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("could not get dkgState with error %v", err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	eth := t.GetClient()
@@ -137,10 +136,10 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 
 	var emptySharesHash [32]byte
 	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
-		logger.Debug("did distribute shares after all. should not execute")
+		logger.Debug("distributed shares")
 		return false, nil
 	}
 
-	logger.Debugf("Did not distribute shares after all, should execute")
+	logger.Debugf("did not distribute shares")
 	return true, nil
 }

@@ -9,12 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
-	dkgConstants "github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
@@ -30,7 +27,7 @@ var _ tasks.Task = &CompletionTask{}
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
 func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		BaseTask: tasks.NewBaseTask(dkgConstants.CompletionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -41,7 +38,7 @@ func (t *CompletionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(dkgConstants.ErrorLoadingDkgState, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeGPKJSubmission {
@@ -66,7 +63,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(dkgConstants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
@@ -78,7 +75,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 	c := ethereum.GetContracts()
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	// Complete ETHDKG
@@ -101,7 +98,7 @@ func (t *CompletionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskEr
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(dkgConstants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {

@@ -281,18 +281,16 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan tasks.Task, constants.TaskSchedulerBufferSize)
-	taskKillChan := make(chan string, constants.TaskSchedulerBufferSize)
+	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
-	defer close(taskKillChan)
 
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, taskKillChan, txWatcher)
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan, taskKillChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan)
 	if err != nil {
 		panic(err)
 	}

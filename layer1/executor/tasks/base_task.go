@@ -10,9 +10,41 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TaskAction is an enumeration indicating the actions that the scheduler
+// can do with a task during a request:
+type TaskAction int
+
+// The possible actions that the scheduler can do with a task during a request:
+// * Kill          - To kill/prune a task type immediately
+// * Schedule      - To schedule a new task
+const (
+	Kill TaskAction = iota
+	Schedule
+)
+
+func (action TaskAction) String() string {
+	return [...]string{
+		"Kill",
+		"Schedule",
+	}[action]
+}
+
 type TaskResponse struct {
 	Id  string
 	Err error
+}
+
+type TaskRequest struct {
+	Action TaskAction
+	Task   Task
+}
+
+func NewScheduleTaskRequest(task Task) TaskRequest {
+	return TaskRequest{Action: Schedule, Task: task}
+}
+
+func NewKillTaskRequest(task Task) TaskRequest {
+	return TaskRequest{Action: Kill, Task: task}
 }
 
 type BaseTask struct {
@@ -31,11 +63,10 @@ type BaseTask struct {
 	taskResponseChan    TaskResponseChan              `json:"-"`
 }
 
-func NewBaseTask(name string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
+func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &BaseTask{
-		Name:                name,
 		Start:               start,
 		End:                 end,
 		AllowMultiExecution: allowMultiExecution,
@@ -46,8 +77,9 @@ func NewBaseTask(name string, start uint64, end uint64, allowMultiExecution bool
 }
 
 // Initialize default implementation for the ITask interface
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, id string, taskResponseChan TaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
 	if !bt.isInitialized {
+		bt.Name = name
 		bt.Id = id
 		bt.ctx = ctx
 		bt.cancelFunc = cancelFunc

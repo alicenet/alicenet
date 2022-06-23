@@ -508,7 +508,7 @@ func (wb *WatcherBackend) collectReceipts() {
 		wb.logger.Tracef("already processed block: %v with hash: %v", blockInfo.Height, blockInfo.Hash.Hex())
 		return
 	}
-	wb.logger.Tracef("processing block: %v with hash: %v for %v transactions", blockInfo.Height, blockInfo.Hash.Hex(), lenMonitoredTxns)
+	wb.logger.Tracef("processing block: %v with hash: %v numTransactions: %d", blockInfo.Height, blockInfo.Hash.Hex(), lenMonitoredTxns)
 
 	baseFee, tipCap, err := wb.client.GetBlockBaseFeeAndSuggestedGasTip(networkCtx)
 	if err != nil {
@@ -697,7 +697,7 @@ func (wb *WatcherBackend) computeGasProfile(rcpt *types.Receipt, txnInfo info) P
 // Extract the selector for a layer1 smart contract call (the first 4 bytes in
 // the call data)
 func ExtractSelector(data []byte) (*FuncSelector, error) {
-	var selector *FuncSelector
+	selector := &FuncSelector{}
 	if len(data) < 4 {
 		return nil, fmt.Errorf("couldn't extract selector for data: %v", data)
 	}
@@ -711,6 +711,6 @@ func getTransactionLogger(txn info) *logrus.Entry {
 	logger := logging.GetLogger("transaction").WithField("Component", "TransactionWatcher")
 	return logger.WithField("Transaction", txn.Txn.Hash().Hex()).
 		WithField("Function", txn.FunctionSignature).
-		WithField("Selector", fmt.Sprintf("%x", txn.Selector)).
+		WithField("Selector", fmt.Sprintf("%x", *txn.Selector)).
 		WithField("FromAddress", txn.FromAddress.Hex())
 }

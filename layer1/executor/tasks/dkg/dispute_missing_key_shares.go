@@ -8,11 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -27,7 +25,7 @@ var _ tasks.Task = &DisputeMissingKeySharesTask{}
 // NewDisputeMissingKeySharesTask creates a new task
 func NewDisputeMissingKeySharesTask(start uint64, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
-		BaseTask: tasks.NewBaseTask(constants.DisputeMissingKeySharesTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -45,13 +43,13 @@ func (t *DisputeMissingKeySharesTask) Execute(ctx context.Context) (*types.Trans
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) <= 0 {
@@ -63,7 +61,7 @@ func (t *DisputeMissingKeySharesTask) Execute(ctx context.Context) (*types.Trans
 
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txnOpts, accusableParticipants)
@@ -81,7 +79,7 @@ func (t *DisputeMissingKeySharesTask) ShouldExecute(ctx context.Context) (bool, 
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.KeyShareSubmission {
@@ -91,11 +89,11 @@ func (t *DisputeMissingKeySharesTask) ShouldExecute(ctx context.Context) (bool, 
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		logger.Debug(constants.NobodyToAccuse)
+		logger.Debug(tasks.NobodyToAccuse)
 		return false, nil
 	}
 
@@ -108,7 +106,7 @@ func (t *DisputeMissingKeySharesTask) getAccusableParticipants(ctx context.Conte
 
 	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, fmt.Errorf(constants.ErrorGettingValidators, err)
+		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)

@@ -8,11 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
+
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 )
 
 // RegisterTask contains required state for safely performing a registration
@@ -26,7 +25,7 @@ var _ tasks.Task = &RegisterTask{}
 // NewRegisterTask creates a background task that attempts to register with ETHDKG
 func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
-		BaseTask: tasks.NewBaseTask(constants.RegisterTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -42,7 +41,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	if dkgState.TransportPrivateKey == nil ||
@@ -60,7 +59,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 		err = state.SaveDkgState(t.GetDB(), dkgState)
 		if err != nil {
-			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
 	} else {
 		logger.Debug("private-public transport keys already defined")
@@ -82,13 +81,13 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	// Setup
 	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	// Register
@@ -109,7 +108,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.RegistrationOpen {
@@ -120,7 +119,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	client := t.GetClient()
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
 	status, err := state.CheckRegistration(ethereum.GetContracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)

@@ -10,8 +10,6 @@ import (
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots/state"
 	"github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/MadBase/MadNet/layer1/executor/constants"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum
@@ -24,7 +22,7 @@ var _ tasks.Task = &SnapshotTask{}
 
 func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
-		BaseTask: tasks.NewBaseTask(constants.SnapshotTaskName, start, end, false, nil),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 	return snapshotTask
 }
@@ -36,7 +34,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
@@ -49,7 +47,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	err = state.SaveSnapshotState(t.GetDB(), snapshotState)
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	return nil
@@ -62,7 +60,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
@@ -82,7 +80,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	if err != nil {
 		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
 		// failed to retrieve tx fee data from the ethereum node
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 	logger.Info("trying to commit snapshot")
 	txn, err := ethereum.GetContracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
@@ -100,13 +98,13 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	opts, err := client.GetCallOpts(ctx, snapshotState.Account)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
 	height, err := ethereum.GetContracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)

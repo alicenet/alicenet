@@ -9,11 +9,9 @@ import (
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -32,7 +30,7 @@ var _ tasks.Task = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Address) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		BaseTask: tasks.NewBaseTask(constants.DisputeShareDistributionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 		Address:  address,
 	}
 }
@@ -53,7 +51,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
@@ -62,7 +60,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 
 	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
 
 	if !isValidator {
@@ -129,7 +127,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 	client := t.GetClient()
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 	// Accuse participant
 	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
@@ -147,7 +145,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.DisputeShareDistribution {
@@ -157,7 +155,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 
 	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingIsValidator, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
 	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant already accused")
 

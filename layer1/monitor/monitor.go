@@ -54,8 +54,7 @@ type monitor struct {
 	batchSize      uint64
 
 	//for communication with the TasksScheduler
-	taskRequestChan chan<- tasks.Task
-	taskKillChan    chan<- string
+	taskRequestChan chan<- tasks.TaskRequest
 }
 
 // NewMonitor creates a new Monitor
@@ -66,8 +65,8 @@ func NewMonitor(cdb *db.Database,
 	eth layer1.Client,
 	tickInterval time.Duration,
 	batchSize uint64,
-	taskRequestChan chan<- tasks.Task,
-	taskKillChan chan<- string) (*monitor, error) {
+	taskRequestChan chan<- tasks.TaskRequest,
+) (*monitor, error) {
 
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -75,7 +74,7 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan, taskKillChan)
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +103,6 @@ func NewMonitor(cdb *db.Database,
 		wg:              wg,
 		batchSize:       batchSize,
 		taskRequestChan: taskRequestChan,
-		taskKillChan:    taskKillChan,
 	}, nil
 
 }
@@ -370,7 +368,7 @@ func ProcessEvents(eth layer1.Client, monitorState *objects.MonitorState, logs [
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan chan<- tasks.Task, monDB *db.Database) error {
+func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -385,9 +383,8 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 		return err
 	}
 
-	snapshotTask := snapshots.NewSnapshotTask(0, 0)
 	//todo: ask Hunter
-	taskRequestChan <- snapshotTask
+	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0))
 
 	return nil
 }

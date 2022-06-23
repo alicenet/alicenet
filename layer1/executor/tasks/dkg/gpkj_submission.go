@@ -9,11 +9,9 @@ import (
 
 	"github.com/MadBase/MadNet/constants"
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	exConstants "github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
-	"github.com/MadBase/MadNet/layer1/transaction"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission
@@ -28,7 +26,7 @@ var _ tasks.Task = &GPKjSubmissionTask{}
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
 func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
-		BaseTask:     tasks.NewBaseTask(exConstants.GPKjSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, exConstants.ETHDKGMaxStaleBlocks)),
+		BaseTask:     tasks.NewBaseTask(start, end, false, nil),
 		adminHandler: adminHandler,
 	}
 }
@@ -40,7 +38,7 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	if dkgState.GroupPrivateKey == nil ||
@@ -80,7 +78,7 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 		err = state.SaveDkgState(t.GetDB(), dkgState)
 		if err != nil {
-			return tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorDuringPreparation, err), false)
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
 	} else {
 		logger.Debugf("group private-public key already defined")
@@ -96,14 +94,14 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	logger.Infof("submitting gpkj: %v", dkgState.Participants[dkgState.Account.Address].GPKj)
@@ -122,7 +120,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(exConstants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
@@ -135,7 +133,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 	defaultAddr := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAddr)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(exConstants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 	participantState, err := ethereum.GetContracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
 	if err != nil {

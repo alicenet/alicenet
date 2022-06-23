@@ -12,12 +12,9 @@ import (
 	"github.com/MadBase/MadNet/crypto"
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
-	exConstants "github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
@@ -33,7 +30,7 @@ var _ tasks.Task = &MPKSubmissionTask{}
 // NewMPKSubmissionTask creates a new task
 func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
-		BaseTask: tasks.NewBaseTask(exConstants.MPKSubmissionTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -46,7 +43,7 @@ func (t *MPKSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
 	if dkgState.Phase != state.MPKSubmission {
@@ -108,7 +105,7 @@ func (t *MPKSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 		err = state.SaveDkgState(t.GetDB(), dkgState)
 		if err != nil {
-			return tasks.NewTaskErr(fmt.Sprintf(constants.ErrorDuringPreparation, err), false)
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
 	} else {
 		logger.Debugf("mpk already defined")
@@ -124,7 +121,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	// submit if I'm a leader for this task
@@ -136,7 +133,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 	// Setup
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	// Submit MPK
@@ -156,7 +153,7 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.MPKSubmission {
@@ -174,7 +171,7 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 	client := t.GetClient()
 	callOpts, err := client.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
 	mpkHash, err := ethereum.GetContracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
@@ -206,10 +203,8 @@ func isMasterPublicKeyEmpty(masterPublicKey [4]*big.Int) bool {
 			masterPublicKey[2] == nil ||
 			masterPublicKey[3] == nil)
 
-	isAllZero := (masterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
+	return isNil || (masterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 		masterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&
 		masterPublicKey[2].Cmp(big.NewInt(0)) == 0 &&
 		masterPublicKey[3].Cmp(big.NewInt(0)) == 0)
-
-	return isNil || isAllZero
 }

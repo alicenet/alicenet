@@ -8,11 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/constants"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	"github.com/MadBase/MadNet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -27,7 +25,7 @@ var _ tasks.Task = &DisputeMissingGPKjTask{}
 // NewDisputeMissingGPKjTask creates a new task
 func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
-		BaseTask: tasks.NewBaseTask(constants.DisputeMissingGPKjTaskName, start, end, false, transaction.NewSubscribeOptions(true, constants.ETHDKGMaxStaleBlocks)),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
@@ -45,13 +43,13 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	client := t.GetClient()
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) <= 0 {
@@ -61,7 +59,7 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 	// accuse missing validators
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf(constants.FailedGettingTxnOpts, err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
 	logger.Warnf("accusing missing gpkj: %v", accusableParticipants)
@@ -79,7 +77,7 @@ func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *task
 
 	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorLoadingDkgState, err), false)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
 	if dkgState.Phase != state.GPKJSubmission {
@@ -89,11 +87,11 @@ func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *task
 
 	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(constants.ErrorGettingAccusableParticipants, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
 
 	if len(accusableParticipants) == 0 {
-		logger.Debug(constants.NobodyToAccuse)
+		logger.Debug(tasks.NobodyToAccuse)
 		return false, nil
 	}
 
@@ -107,7 +105,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, d
 
 	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, fmt.Errorf(constants.ErrorGettingValidators, err)
+		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)
