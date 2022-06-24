@@ -148,7 +148,7 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(eth, logger, log, adminHandler)
+			return ProcessSnapshotTaken(eth, logger, log, adminHandler, taskRequestChan)
 		}); err != nil {
 		return err
 	}

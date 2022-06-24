@@ -874,6 +874,20 @@ task(
     }
   });
 
+task("setHardhatBaseFee", "sets the hardhat node base fee for the next block")
+  .addParam("baseFee", "base fee value in GWEIs", "500", types.int)
+  .setAction(async (taskArgs, hre) => {
+    const network = await hre.ethers.provider.getNetwork();
+    const baseFee = BigInt(taskArgs.baseFee) * 10n ** 9n;
+    if (network.chainId === 1337) {
+      try {
+        await hre.network.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x" + baseFee.toString(16),
+        ]);
+      } catch (error) {}
+    }
+  });
+
 async function mintATokenTo(
   hre: HardhatRuntimeEnvironment,
   factoryAddress: string,

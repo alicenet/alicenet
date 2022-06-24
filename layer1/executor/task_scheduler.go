@@ -204,8 +204,8 @@ func (s *TasksScheduler) eventLoop() {
 		case taskRequest := <-s.taskRequestChan:
 			switch taskRequest.Action {
 			case tasks.Kill:
-				s.logger.Trace("received request to kill a task")
 				taskName, _ := marshaller.GetNameType(taskRequest.Task)
+				s.logger.Tracef("received request to kill all tasks type: %v", taskName)
 				err := s.killTaskByName(s.mainCtx, taskName)
 				if err != nil {
 					s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskName)

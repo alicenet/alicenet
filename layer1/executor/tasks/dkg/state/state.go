@@ -274,7 +274,7 @@ func (state *DkgState) PersistState(txn *badger.Txn) error {
 		return err
 	}
 
-	key := dbprefix.PrefixEthDKGState()
+	key := dbprefix.PrefixEthereumDKGState()
 	logger.WithField("Key", string(key)).Debug("Saving state in the database")
 	if err = utils.SetValue(txn, key, rawData); err != nil {
 		return err
@@ -285,7 +285,7 @@ func (state *DkgState) PersistState(txn *badger.Txn) error {
 
 func (state *DkgState) LoadState(txn *badger.Txn) error {
 	logger := logging.GetLogger("staterecover").WithField("State", "dkgState")
-	key := dbprefix.PrefixEthDKGState()
+	key := dbprefix.PrefixEthereumDKGState()
 	logger.WithField("Key", string(key)).Debug("Loading state from database")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {

@@ -382,8 +382,11 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 		return err
 	}
 
-	//todo: ask Hunter
-	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0))
+	// kill any snapshot task that might be running
+	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
+
+	//todo: ask Hunter, is blocking ok?
+	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0, uint64(bh.BClaims.Height)))
 
 	return nil
 }

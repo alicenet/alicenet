@@ -31,7 +31,7 @@ func (state *SnapshotState) PersistState(txn *badger.Txn) error {
 		return err
 	}
 
-	key := dbprefix.PrefixSnapshotState()
+	key := dbprefix.PrefixEthereumSnapshotState()
 	logger.WithField("Key", string(key)).Debug("Saving state in the database")
 	if err = utils.SetValue(txn, key, rawData); err != nil {
 		return err
@@ -42,7 +42,7 @@ func (state *SnapshotState) PersistState(txn *badger.Txn) error {
 
 func (state *SnapshotState) LoadState(txn *badger.Txn) error {
 	logger := logging.GetLogger("staterecover").WithField("State", "snapshotState")
-	key := dbprefix.PrefixSnapshotState()
+	key := dbprefix.PrefixEthereumSnapshotState()
 	logger.WithField("Key", string(key)).Debug("Loading state from database")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {

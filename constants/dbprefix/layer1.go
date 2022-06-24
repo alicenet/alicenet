@@ -28,10 +28,10 @@ func PrefixTaskManagerState() []byte {
 // All prefixes should use two character length identifiers and should start
 // at `t` as the first character allowed at index zero of an identifier.
 // The identifiers should increase alpha-numeric from that point forward.
-func PrefixEthDKGState() []byte {
+func PrefixEthereumDKGState() []byte {
 	return []byte("ta")
 }
 
-func PrefixSnapshotState() []byte {
+func PrefixEthereumSnapshotState() []byte {
 	return []byte("tb")
 }

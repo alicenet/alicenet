@@ -15,21 +15,23 @@ import (
 // SnapshotTask pushes a snapshot to Ethereum
 type SnapshotTask struct {
 	*tasks.BaseTask
+	Height uint64
 }
 
 // asserting that SnapshotTask struct implements interface tasks.Task
 var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(start uint64, end uint64) *SnapshotTask {
+func NewSnapshotTask(start uint64, end uint64, height uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
+		Height:   height,
 	}
 	return snapshotTask
 }
 
 // Prepare prepares for work to be done in the SnapshotTask
 func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
-	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger := t.GetLogger().WithField("method", "Prepare()").WithField("AliceNetHeight", t.Height)
 	logger.Debugf("preparing task")
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
@@ -55,7 +57,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 // Execute executes the task business logic
 func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "Execute()")
+	logger := t.GetLogger().WithField("method", "Execute()").WithField("AliceNetHeight", t.Height)
 	logger.Debug("initiate execution")
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
@@ -93,7 +95,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 
 // ShouldExecute checks if it makes sense to execute the task
 func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
-	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("AliceNetHeight", t.Height)
 	logger.Debug("should execute task")
 
 	snapshotState, err := state.GetSnapshotState(t.GetDB())
@@ -113,7 +115,7 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
+	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height <= uint32(height.Uint64()) {
 		logger.Debugf(
 			"block height we want to snapshot height:%v is older than (or same as) what's already been snapshotted height:%v",
 			snapshotState.BlockHeader.BClaims.Height,

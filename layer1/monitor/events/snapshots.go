@@ -4,14 +4,15 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/ethereum"
+	"github.com/MadBase/MadNet/layer1/executor/tasks"
+	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots"
 	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log,
-	adminHandler monInterfaces.AdminHandler) error {
+func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
 
@@ -68,6 +69,9 @@ func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log
 	if err != nil {
 		return err
 	}
+
+	// kill any task that might still be trying to do this snapshot
+	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
 
 	return nil
 }
