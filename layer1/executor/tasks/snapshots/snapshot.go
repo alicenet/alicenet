@@ -72,7 +72,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	n := dangerousRand.Intn(60) // n will be between 0 and 60
 	select {
 	case <-ctx.Done():
-		return nil, tasks.NewTaskErr(fmt.Sprintf("task killed by ctx: %v", ctx.Err()), false)
+		return nil, tasks.NewTaskErr(ctx.Err().Error(), false)
 	// wait some random time
 	case <-time.After(time.Duration(n) * time.Second):
 	}

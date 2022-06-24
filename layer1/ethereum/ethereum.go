@@ -758,3 +758,8 @@ func ComputeGasFeeCap(eth layer1.Client, baseFee *big.Int, tipCap *big.Int) (*bi
 	}
 	return feeCap, nil
 }
+
+// FUNCTION THAT SHOULD ONLY BE USED BY THE UNIT TESTS
+func (eth *Client) UnlockUnitTestAccounts(account accounts.Account) error {
+	return eth.unlockAccount(account)
+}
