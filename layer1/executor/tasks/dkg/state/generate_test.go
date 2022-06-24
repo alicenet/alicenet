@@ -4,10 +4,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
 
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )

@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"

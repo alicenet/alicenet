@@ -7,10 +7,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
 
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
 )
 

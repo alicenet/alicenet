@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/layer1/transaction"
+	"github.com/alicenet/alicenet/layer1/transaction"
 
-	"github.com/MadBase/MadNet/layer1/executor/interfaces"
-	"github.com/MadBase/MadNet/layer1/executor/objects"
-	dkgtasks "github.com/MadBase/MadNet/layer1/executor/tasks/dkg"
-	"github.com/MadBase/MadNet/test/mocks"
+	"github.com/alicenet/alicenet/layer1/executor/interfaces"
+	"github.com/alicenet/alicenet/layer1/executor/objects"
+	dkgtasks "github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/test/mocks"
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/stretchr/testify/assert"
 )

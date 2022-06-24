@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/tests"
 
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
