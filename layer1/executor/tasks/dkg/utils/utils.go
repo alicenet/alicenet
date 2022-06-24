@@ -82,7 +82,7 @@ func FormatBigIntSlice(slice []*big.Int) string {
 
 // GetValidatorAddresses retrieves validator addresses from the last monitor State saved on disk
 func GetValidatorAddresses(monitorDB *db.Database, logger *logrus.Entry) ([]common.Address, error) {
-	monState, err := objects.GetMonitorState(monitorDB, logger)
+	monState, err := objects.GetMonitorState(monitorDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitor state: %v", err)
 	}
@@ -97,7 +97,7 @@ func GetValidatorAddresses(monitorDB *db.Database, logger *logrus.Entry) ([]comm
 // State saved on disk and check if a address sent is a potential validator
 // address
 func IsValidator(monitorDB *db.Database, logger *logrus.Entry, address common.Address) (bool, error) {
-	monState, err := objects.GetMonitorState(monitorDB, logger)
+	monState, err := objects.GetMonitorState(monitorDB)
 	if err != nil {
 		return false, fmt.Errorf("failed to get monitor state: %v", err)
 	}

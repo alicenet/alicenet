@@ -327,9 +327,10 @@ func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeR
 
 // Load the watcher backend state from the database.
 func (wb *WatcherBackend) LoadState() error {
+	logger := logging.GetLogger("staterecover").WithField("State", "txWatcherBackend")
 	if err := wb.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTransactionWatcherState()
-		wb.logger.WithField("Key", string(key)).Debug("Looking up state")
+		logger.WithField("Key", string(key)).Debug("Loading state from database")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -351,13 +352,14 @@ func (wb *WatcherBackend) LoadState() error {
 
 // Persist the watcher backend state into the database.
 func (wb *WatcherBackend) PersistState() error {
+	logger := logging.GetLogger("staterecover").WithField("State", "txWatcherBackend")
 	rawData, err := json.Marshal(wb)
 	if err != nil {
 		return fmt.Errorf("failed to marshal %v", err)
 	}
 	err = wb.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTransactionWatcherState()
-		wb.logger.WithField("Key", string(key)).Debug("Saving state")
+		logger.WithField("Key", string(key)).Debug("Saving state in the database")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			return fmt.Errorf("failed to set Value %v", err)
 		}

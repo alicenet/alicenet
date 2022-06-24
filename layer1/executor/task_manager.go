@@ -12,6 +12,7 @@ import (
 	"github.com/MadBase/MadNet/layer1"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
 	"github.com/MadBase/MadNet/layer1/transaction"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -254,6 +255,7 @@ func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 
 // persist task manager state to disk
 func (tm *TasksManager) persistState() error {
+	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	rawData, err := json.Marshal(tm)
 	if err != nil {
 		return err
@@ -261,9 +263,9 @@ func (tm *TasksManager) persistState() error {
 
 	err = tm.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		tm.logger.WithField("Key", string(key)).Debug("Saving state")
+		logger.WithField("Key", string(key)).Debug("Saving state in the database")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
-			tm.logger.Error("Failed to set Value")
+			logger.Error("Failed to set Value")
 			return err
 		}
 		return nil
@@ -273,7 +275,7 @@ func (tm *TasksManager) persistState() error {
 	}
 
 	if err := tm.database.Sync(); err != nil {
-		tm.logger.Error("Failed to set sync")
+		logger.Error("Failed to set sync")
 		return err
 	}
 
@@ -282,10 +284,10 @@ func (tm *TasksManager) persistState() error {
 
 // load task's manager state from database
 func (tm *TasksManager) loadState() error {
-
+	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	if err := tm.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		tm.logger.WithField("Key", string(key)).Debug("Looking up state")
+		logger.WithField("Key", string(key)).Debug("Loading state from database")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -303,7 +305,7 @@ func (tm *TasksManager) loadState() error {
 
 	// synchronizing db state to disk
 	if err := tm.database.Sync(); err != nil {
-		tm.logger.Error("Failed to set sync")
+		logger.Error("Failed to set sync")
 		return err
 	}
 

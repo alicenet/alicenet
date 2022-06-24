@@ -8,6 +8,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -24,12 +25,14 @@ type SnapshotState struct {
 }
 
 func (state *SnapshotState) PersistState(txn *badger.Txn) error {
+	logger := logging.GetLogger("staterecover").WithField("State", "snapshotState")
 	rawData, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
 
 	key := dbprefix.PrefixSnapshotState()
+	logger.WithField("Key", string(key)).Debug("Saving state in the database")
 	if err = utils.SetValue(txn, key, rawData); err != nil {
 		return err
 	}
@@ -38,7 +41,9 @@ func (state *SnapshotState) PersistState(txn *badger.Txn) error {
 }
 
 func (state *SnapshotState) LoadState(txn *badger.Txn) error {
+	logger := logging.GetLogger("staterecover").WithField("State", "snapshotState")
 	key := dbprefix.PrefixSnapshotState()
+	logger.WithField("Key", string(key)).Debug("Loading state from database")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {
 		return err

@@ -482,6 +482,7 @@ func (s *TasksScheduler) remove(id string) error {
 }
 
 func (s *TasksScheduler) persistState() error {
+	logger := logging.GetLogger("staterecover").WithField("State", "taskScheduler")
 	rawData, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -489,9 +490,9 @@ func (s *TasksScheduler) persistState() error {
 
 	err = s.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskSchedulerState()
-		s.logger.WithField("Key", string(key)).Debug("Saving state")
+		logger.WithField("Key", string(key)).Debug("Saving state in the database")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
-			s.logger.Error("Failed to set Value")
+			logger.Error("Failed to set Value")
 			return err
 		}
 		return nil
@@ -501,7 +502,7 @@ func (s *TasksScheduler) persistState() error {
 	}
 
 	if err := s.database.Sync(); err != nil {
-		s.logger.Error("Failed to set sync")
+		logger.Error("Failed to set sync")
 		return err
 	}
 
@@ -509,10 +510,10 @@ func (s *TasksScheduler) persistState() error {
 }
 
 func (s *TasksScheduler) loadState() error {
-
+	logger := logging.GetLogger("staterecover").WithField("State", "taskScheduler")
 	if err := s.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskSchedulerState()
-		s.logger.WithField("Key", string(key)).Debug("Looking up state")
+		logger.WithField("Key", string(key)).Debug("Loading state from database")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -530,7 +531,7 @@ func (s *TasksScheduler) loadState() error {
 
 	// synchronizing db state to disk
 	if err := s.database.Sync(); err != nil {
-		s.logger.Error("Failed to set sync")
+		logger.Error("Failed to set sync")
 		return err
 	}
 

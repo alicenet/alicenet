@@ -123,7 +123,7 @@ func (mon *monitor) Start() error {
 	// Load or create initial State
 	logger.Info(strings.Repeat("-", 80))
 	startingBlock := config.Configuration.Ethereum.StartingBlock
-	err := mon.State.LoadState(mon.db, mon.logger)
+	err := mon.State.LoadState(mon.db)
 	if err != nil {
 		logger.Warnf("could not find previous State: %v", err)
 		if err != badger.ErrKeyNotFound {
@@ -195,7 +195,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 			oldMonitorState := mon.State.Clone()
 
 			persistMonitorCB := func() {
-				err := mon.State.PersistState(mon.db, mon.logger)
+				err := mon.State.PersistState(mon.db)
 				if err != nil {
 					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
 				}
@@ -208,7 +208,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 			diff, shouldWrite := oldMonitorState.Diff(mon.State)
 
 			if shouldWrite {
-				if err := mon.State.PersistState(mon.db, mon.logger); err != nil {
+				if err := mon.State.PersistState(mon.db); err != nil {
 					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
 				}
 			}
@@ -254,10 +254,9 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
 	ethInSyncBefore := monitorState.EthereumInSync
 	monitorState.EndpointInSync = inSync
-	isLoopInitialized := false
 	bmax := utils.Max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
 	bmin := utils.Min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
-	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync && isLoopInitialized
+	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync && monitorState.IsInitialized
 	if ethInSyncBefore != monitorState.EthereumInSync {
 		adminHandler.SetSynchronized(monitorState.EthereumInSync)
 	}
@@ -288,7 +287,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup,
 	monitorState.PeerCount = peerCount
 	monitorState.EndpointInSync = inSync
 	monitorState.HighestBlockFinalized = finalized
-	isLoopInitialized = true
+	monitorState.IsInitialized = true
 
 	// 3. Grab up to the next _batch size_ unprocessed block(s)
 	processed := monitorState.HighestBlockProcessed

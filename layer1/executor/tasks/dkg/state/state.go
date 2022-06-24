@@ -7,6 +7,7 @@ import (
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/MadBase/MadNet/layer1/executor/tasks"
+	"github.com/MadBase/MadNet/logging"
 
 	"github.com/MadBase/MadNet/crypto/bn256"
 	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
@@ -267,12 +268,14 @@ func SaveDkgState(monDB *db.Database, dkgState *DkgState) error {
 }
 
 func (state *DkgState) PersistState(txn *badger.Txn) error {
+	logger := logging.GetLogger("staterecover").WithField("State", "dkgState")
 	rawData, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
 
 	key := dbprefix.PrefixEthDKGState()
+	logger.WithField("Key", string(key)).Debug("Saving state in the database")
 	if err = utils.SetValue(txn, key, rawData); err != nil {
 		return err
 	}
@@ -281,7 +284,9 @@ func (state *DkgState) PersistState(txn *badger.Txn) error {
 }
 
 func (state *DkgState) LoadState(txn *badger.Txn) error {
+	logger := logging.GetLogger("staterecover").WithField("State", "dkgState")
 	key := dbprefix.PrefixEthDKGState()
+	logger.WithField("Key", string(key)).Debug("Loading state from database")
 	rawData, err := utils.GetValue(txn, key)
 	if err != nil {
 		return err

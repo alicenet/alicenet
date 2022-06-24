@@ -9,10 +9,10 @@ import (
 
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/constants/dbprefix"
+	"github.com/MadBase/MadNet/logging"
 	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 // todo: ask Hunter
@@ -35,6 +35,7 @@ type MonitorState struct {
 	LatestDepositProcessed uint32                                `json:"latestDepositProcessed"`
 	LatestDepositSeen      uint32                                `json:"latestDepositSeen"`
 	PeerCount              uint32                                `json:"peerCount"`
+	IsInitialized          bool                                  `json:"-"`
 	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
 	Validators             map[uint32][]Validator                `json:"validators"`
 	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
@@ -70,9 +71,9 @@ func NewMonitorState() *MonitorState {
 }
 
 // Get a copy of the monitor state that is saved on disk
-func GetMonitorState(db *db.Database, logger *logrus.Entry) (*MonitorState, error) {
+func GetMonitorState(db *db.Database) (*MonitorState, error) {
 	monState := NewMonitorState()
-	err := monState.LoadState(db, logger)
+	err := monState.LoadState(db)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +111,16 @@ func (s *MonitorState) Clone() *MonitorState {
 	return ns
 }
 
-func (s *MonitorState) LoadState(db *db.Database, logger *logrus.Entry) error {
+func (s *MonitorState) LoadState(db *db.Database) error {
+
+	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
 
 	s.Lock()
 	defer s.Unlock()
 
 	if err := db.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixMonitorState()
-		logger.WithField("Key", string(key)).Debug("Looking up state")
+		logger.WithField("Key", string(key)).Debug("Loading state from database")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -137,7 +140,9 @@ func (s *MonitorState) LoadState(db *db.Database, logger *logrus.Entry) error {
 
 }
 
-func (mon *MonitorState) PersistState(db *db.Database, logger *logrus.Entry) error {
+func (mon *MonitorState) PersistState(db *db.Database) error {
+
+	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
 
 	mon.Lock()
 	defer mon.Unlock()
@@ -149,7 +154,7 @@ func (mon *MonitorState) PersistState(db *db.Database, logger *logrus.Entry) err
 
 	err = db.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixMonitorState()
-		logger.WithField("Key", string(key)).Debug("Saving state")
+		logger.WithField("Key", string(key)).Debug("Saving state in the database")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
 			return err
