@@ -1,12 +1,12 @@
 package events
 
 import (
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots"
-	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )

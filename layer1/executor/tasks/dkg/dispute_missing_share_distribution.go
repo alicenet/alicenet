@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )

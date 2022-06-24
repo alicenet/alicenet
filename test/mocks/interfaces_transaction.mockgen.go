@@ -6,12 +6,12 @@ import (
 	"context"
 	"sync"
 
-	transaction "github.com/MadBase/MadNet/layer1/transaction"
+	transaction "github.com/alicenet/alicenet/layer1/transaction"
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
 // MockWatcher is a mock implementation of the Watcher interface (from the
-// package github.com/MadBase/MadNet/layer1/transaction) used for unit
+// package github.com/alicenet/alicenet/layer1/transaction) used for unit
 // testing.
 type MockWatcher struct {
 	// CloseFunc is an instance of a mock function object controlling the

@@ -6,9 +6,9 @@ import (
 	dangerousRand "math/rand"
 	"time"
 
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

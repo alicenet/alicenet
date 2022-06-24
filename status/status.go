@@ -5,7 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alicenet/alicenet/blockchain/monitor"
+	"github.com/alicenet/alicenet/layer1/monitor"
+
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/constants"

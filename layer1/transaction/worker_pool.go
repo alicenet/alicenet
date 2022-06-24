@@ -8,8 +8,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/layer1"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1"
 	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

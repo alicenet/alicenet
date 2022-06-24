@@ -22,14 +22,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 
-	"github.com/MadBase/MadNet/blockchain/ethereum"
-	"github.com/MadBase/MadNet/layer1/transaction"
+	"github.com/alicenet/alicenet/blockchain/ethereum"
+	"github.com/alicenet/alicenet/layer1/transaction"
 
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -77,7 +77,7 @@ func GetMadnetRootPath() []string {
 
 	rootPath := []string{string(os.PathSeparator)}
 
-	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/MadBase/MadNet")
+	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/alicenet/alicenet")
 	stdout, err := cmd.Output()
 	if err != nil {
 		log.Printf("Error getting project root path: %v", err)

@@ -7,10 +7,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/ethereum"
 
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 )
 
 // KeyShareSubmissionTask is the task for submitting KeyShare information

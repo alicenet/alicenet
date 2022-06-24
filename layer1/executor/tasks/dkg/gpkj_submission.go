@@ -7,11 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission

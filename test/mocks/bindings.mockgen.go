@@ -14,7 +14,8 @@ import (
 )
 
 // MockIAToken is a mock implementation of the IAToken interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit
+// testing.
 type MockIAToken struct {
 	// AllowMigrationFunc is an instance of a mock function object
 	// controlling the behavior of the method AllowMigration.
@@ -7587,7 +7588,8 @@ func (c IAliceNetFactoryWatchDeployedTemplateFuncCall) Results() []interface{} {
 }
 
 // MockIBToken is a mock implementation of the IBToken interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit
+// testing.
 type MockIBToken struct {
 	// AllowanceFunc is an instance of a mock function object controlling
 	// the behavior of the method Allowance.
@@ -12387,7 +12389,8 @@ func (c IBTokenWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockIETHDKG is a mock implementation of the IETHDKG interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit
+// testing.
 type MockIETHDKG struct {
 	// AccuseParticipantDidNotDistributeSharesFunc is an instance of a mock
 	// function object controlling the behavior of the method

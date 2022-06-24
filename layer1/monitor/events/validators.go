@@ -7,15 +7,15 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils"
-	monInterfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
-	"github.com/MadBase/MadNet/layer1/monitor/objects"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -52,7 +52,7 @@ func ProcessValidatorSetCompleted(eth layer1.Client, logger *logrus.Entry, monit
 	epoch := uint32(event.Epoch.Int64())
 
 	vs := monitorState.ValidatorSets[epoch]
-	vs.NotBeforeMadNetHeight = uint32(event.AliceNetHeight.Uint64())
+	vs.NotBeforeAliceNetHeight = uint32(event.AliceNetHeight.Uint64())
 	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
 	vs.GroupKey[1] = event.GroupKey1
@@ -290,9 +290,9 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 
 	// Log validator set status
 	logger.WithFields(logrus.Fields{
-		"NotBeforeMadNetHeight": validatorSet.NotBeforeMadNetHeight,
-		"ValidatorsReceived":    receivedCount,
-		"ValidatorsExpected":    expectedCount,
+		"NotBeforeAliceNetHeight": validatorSet.NotBeforeAliceNetHeight,
+		"ValidatorsReceived":      receivedCount,
+		"ValidatorsExpected":      expectedCount,
 	}).Infof("Building ValidatorSet...")
 
 	if receivedCount == expectedCount || receivedCount == 0 {
@@ -306,7 +306,7 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 		vs := &objs.ValidatorSet{
 			GroupKey:   groupKey,
 			Validators: make([]*objs.Validator, validatorSet.ValidatorCount),
-			NotBefore:  validatorSet.NotBeforeMadNetHeight}
+			NotBefore:  validatorSet.NotBeforeAliceNetHeight}
 		// Loop over the Validators
 		if receivedCount != 0 {
 			for _, validator := range validators {

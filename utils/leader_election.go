@@ -3,7 +3,7 @@ package utils
 import (
 	"math/big"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/sirupsen/logrus"
 )
 

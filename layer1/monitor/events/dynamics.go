@@ -3,10 +3,10 @@ package events
 import (
 	"fmt"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/layer1/ethereum"
-	"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )

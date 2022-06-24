@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/layer1"
-	"github.com/MadBase/MadNet/layer1/transaction"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/sirupsen/logrus"
 )
 

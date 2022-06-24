@@ -6,16 +6,17 @@ import (
 	"context"
 	"sync"
 
-	db "github.com/MadBase/MadNet/consensus/db"
-	layer1 "github.com/MadBase/MadNet/layer1"
-	tasks "github.com/MadBase/MadNet/layer1/executor/tasks"
-	transaction "github.com/MadBase/MadNet/layer1/transaction"
+	db "github.com/alicenet/alicenet/consensus/db"
+	layer1 "github.com/alicenet/alicenet/layer1"
+	tasks "github.com/alicenet/alicenet/layer1/executor/tasks"
+	transaction "github.com/alicenet/alicenet/layer1/transaction"
 	types "github.com/ethereum/go-ethereum/core/types"
 	logrus "github.com/sirupsen/logrus"
 )
 
 // MockTask is a mock implementation of the Task interface (from the package
-// github.com/MadBase/MadNet/layer1/executor/tasks) used for unit testing.
+// github.com/alicenet/alicenet/layer1/executor/tasks) used for unit
+// testing.
 type MockTask struct {
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.

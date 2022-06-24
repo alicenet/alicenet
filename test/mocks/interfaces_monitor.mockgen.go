@@ -5,13 +5,13 @@ package mocks
 import (
 	"sync"
 
-	objs "github.com/MadBase/MadNet/consensus/objs"
-	constants "github.com/MadBase/MadNet/constants"
-	interfaces "github.com/MadBase/MadNet/layer1/monitor/interfaces"
+	objs "github.com/alicenet/alicenet/consensus/objs"
+	constants "github.com/alicenet/alicenet/constants"
+	interfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 )
 
 // MockAdminHandler is a mock implementation of the AdminHandler interface
-// (from the package github.com/MadBase/MadNet/layer1/monitor/interfaces)
+// (from the package github.com/alicenet/alicenet/layer1/monitor/interfaces)
 // used for unit testing.
 type MockAdminHandler struct {
 	// AddPrivateKeyFunc is an instance of a mock function object

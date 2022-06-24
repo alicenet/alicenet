@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"sync"
 
-	layer1 "github.com/MadBase/MadNet/layer1"
+	layer1 "github.com/alicenet/alicenet/layer1"
 	accounts "github.com/ethereum/go-ethereum/accounts"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	common "github.com/ethereum/go-ethereum/common"
@@ -15,7 +15,7 @@ import (
 )
 
 // MockClient is a mock implementation of the Client interface (from the
-// package github.com/MadBase/MadNet/layer1) used for unit testing.
+// package github.com/alicenet/alicenet/layer1) used for unit testing.
 type MockClient struct {
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.
