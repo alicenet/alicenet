@@ -20,7 +20,7 @@ type UPnPMapper struct {
 	mux sync.Mutex
 }
 
-func NewUPnPMapper(logger *logrus.Logger, port int) (*UPnPMapper, error) {
+func NewUPnPMapper(logger *logrus.Logger, port uint32) (*UPnPMapper, error) {
 	manager := &UPnPMapper{
 		logger: logger,
 		port:   uint16(port),

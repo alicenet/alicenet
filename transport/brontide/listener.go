@@ -57,14 +57,14 @@ type Listener struct {
 
 	// handshaking
 	chainID      types.ChainIdentifier
-	port         int
+	port         uint32
 	protoVersion types.ProtoVersion
 }
 
 // NewListener returns a new net.Listener which enforces the Brontide scheme
 // during both initial connection establishment and state transfer.
-func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit int, pubkeyLimit int, originLimit int) (*Listener, error) {
-	listenAddr := net.JoinHostPort(host, strconv.Itoa(port))
+func NewListener(localStatic *secp256k1.PrivateKey, host string, port uint32, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit int, pubkeyLimit int, originLimit int) (*Listener, error) {
+	listenAddr := net.JoinHostPort(host, strconv.FormatUint(uint64(port), 32))
 
 	addr, err := net.ResolveTCPAddr("tcp", listenAddr)
 	if err != nil {

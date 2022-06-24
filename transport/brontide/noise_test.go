@@ -19,7 +19,7 @@ const (
 	testChainID      types.ChainIdentifier = 1
 	testProtocol     types.Protocol        = 2
 	testProtoVer     types.ProtoVersion    = 3
-	testPortListener int                   = 9000
+	testPortListener uint32                = 9000
 )
 
 type maybeNetConn struct {

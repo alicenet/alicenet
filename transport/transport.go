@@ -163,7 +163,7 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 
 // NewP2PTransport returns a transport object. This object is both a server
 // and a client.
-func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKeyHex string, port int, host string) (interfaces.P2PTransport, error) {
+func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKeyHex string, port uint32, host string) (interfaces.P2PTransport, error) {
 	localPrivateKey, err := deserializeTransportPrivateKey(privateKeyHex)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKe
 	localPublicKey := publicKeyFromPrivateKey(localPrivateKey)
 	localNodeAddr := &NodeAddr{
 		host:     host,
-		port:     port,
+		port:     int(port),
 		identity: localPublicKey,
 		chainID:  cid,
 	}

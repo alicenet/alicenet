@@ -31,7 +31,7 @@ func extractPort(addr string) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	port, err := strconv.Atoi(portStr)
+	port, err := strconv.ParseUint(portStr, 10, 32)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func bootNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 	// Establish P2P listener
-	xport, err := transport.NewP2PTransport(logger, cid, privateKeyHex, int(p2pPort), host)
+	xport, err := transport.NewP2PTransport(logger, cid, privateKeyHex, p2pPort, host)
 	if err != nil {
 		logger.Panic(err)
 	}

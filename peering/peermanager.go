@@ -62,13 +62,13 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 		cf()
 		return nil, err
 	}
-	port, err := strconv.Atoi(portstr)
+	port, err := strconv.ParseUint(portstr, 10, 32)
 	if err != nil {
 		utils.DebugTrace(logger, err)
 		cf()
 		return nil, err
 	}
-	p2ptransport, err := transport.NewP2PTransport(logging.GetLogger(constants.LoggerTransport), types.ChainIdentifier(chainID), tprivk, port, host) // config.Configuration.Chain.ID, config.Configuration.Transport.PrivateKey
+	p2ptransport, err := transport.NewP2PTransport(logging.GetLogger(constants.LoggerTransport), types.ChainIdentifier(chainID), tprivk, uint32(port), host) // config.Configuration.Chain.ID, config.Configuration.Transport.PrivateKey
 	if err != nil {
 		utils.DebugTrace(logger, err)
 		cf()
@@ -76,7 +76,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 	}
 	var upnpMapper *transport.UPnPMapper
 	if upnp {
-		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), port)
+		upnpMapper, err = transport.NewUPnPMapper(logging.GetLogger(constants.LoggerUPnP), uint32(port))
 		if err != nil {
 			utils.DebugTrace(logger, err)
 			cf()

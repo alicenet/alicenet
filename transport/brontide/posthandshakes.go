@@ -59,7 +59,7 @@ func selfInitiatedPortHandshake(conn net.Conn, port int) (int, error) {
 	return int(remotePort), nil
 }
 
-func peerInitiatedPortHandshake(conn net.Conn, port int) (int, error) {
+func peerInitiatedPortHandshake(conn net.Conn, port uint32) (int, error) {
 	remotePort, err := readUint32(conn)
 	if err != nil {
 		return 0, err

@@ -16,9 +16,9 @@ const (
 	testCID     types.ChainIdentifier = 13
 	testCIDFail types.ChainIdentifier = 31
 	t1Host      string                = "127.0.0.1"
-	t1Port      int                   = 3000
+	t1Port      uint32                = 3000
 	t2Host      string                = "127.0.0.1"
-	t2Port      int                   = 4000
+	t2Port      uint32                = 4000
 )
 
 func TestTransportsuccess(t *testing.T) {
@@ -50,7 +50,7 @@ func TestTransportsuccess(t *testing.T) {
 	defer transport2.Close()
 
 	t1addrtest := transport1.NodeAddr().String()
-	assert.Equal(t, net.JoinHostPort(t1Host, strconv.Itoa(t1Port)), t1addrtest, "Transport Addr method does not return address as expected.")
+	assert.Equal(t, net.JoinHostPort(t1Host, strconv.FormatUint(uint64(t1Port), 10)), t1addrtest, "Transport Addr method does not return address as expected.")
 
 	complete1 := make(chan struct{})
 	complete2 := make(chan struct{})
