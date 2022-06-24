@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 type mockKeyResolver struct {

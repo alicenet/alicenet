@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

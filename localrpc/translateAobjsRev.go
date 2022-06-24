@@ -3,9 +3,9 @@ package localrpc
 import (
 	"errors"
 
-	to "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	from "github.com/MadBase/MadNet/proto"
+	to "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	from "github.com/alicenet/alicenet/proto"
 )
 
 func ReverseTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {

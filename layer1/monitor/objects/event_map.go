@@ -3,7 +3,7 @@ package objects
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/layer1"
+	"github.com/alicenet/alicenet/layer1"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )

@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/types"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/types"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
 )

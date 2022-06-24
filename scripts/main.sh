@@ -5,9 +5,9 @@ BUILD() {
     make build
 }
 
-PRE_CHECK() {
-    # Check if madnet binary exists
-    if [ ! -f "./madnet" ]; then
+PRE_CHECK () {
+    # Check if alicenet binary exists
+    if [ ! -f "./alicenet" ]; then
         BUILD
     fi
     # Check that the generated directory exists
@@ -161,7 +161,7 @@ CHECK_EXISTING() {
 RUN_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./madnet --config ./scripts/generated/config/validator$1.toml validator
+    ./alicenet --config ./scripts/generated/config/validator$1.toml validator
 }
 
 RUN_NODE() {
@@ -179,7 +179,7 @@ RACE_VALIDATOR() {
 STATUS() {
     # Check validator status
     CHECK_EXISTING $1
-    ./madnet --config ./assets/config/validator$1.toml utils
+    ./alicenet --config ./assets/config/validator$1.toml utils
 }
 
 # init # - initalize validators directory files

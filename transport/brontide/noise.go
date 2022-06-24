@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/hkdf"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
 )
 
 const (

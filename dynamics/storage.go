@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

@@ -1,9 +1,9 @@
 package wrapper
 
 import (
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Storage wraps the dynamics.StorageGetter interface to make

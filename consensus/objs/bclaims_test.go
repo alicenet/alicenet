@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func generateChain(length int) ([]*BClaims, [][][]byte, error) {

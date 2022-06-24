@@ -1,7 +1,7 @@
 package peering
 
 import (
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/interfaces"
 	"github.com/sirupsen/logrus"
 )
 

@@ -3,7 +3,7 @@ package peering
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/interfaces"
 )
 
 // activePeerStore stores active peers

@@ -3,7 +3,7 @@ package constants
 import "time"
 
 const (
-	// EpochLength is the number of blocks in an epoch for MadNet
+	// EpochLength is the number of blocks in an epoch for AliceNet
 	EpochLength uint32 = 1024
 
 	// HashLen specifies the length of a hash in bytes
@@ -96,7 +96,7 @@ const (
 
 // TODO Find a way to store this list that feels right
 var ValidLoggers []string = []string{
-	"madnet",
+	"alicenet",
 	"consensus",
 	"transport",
 	"app",

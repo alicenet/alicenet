@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"sync"
 
-	bindings "github.com/MadBase/MadNet/bridge/bindings"
+	bindings "github.com/alicenet/alicenet/bridge/bindings"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -14,7 +14,7 @@ import (
 )
 
 // MockIAToken is a mock implementation of the IAToken interface (from the
-// package github.com/MadBase/MadNet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
 type MockIAToken struct {
 	// AllowMigrationFunc is an instance of a mock function object
 	// controlling the behavior of the method AllowMigration.
@@ -3034,7 +3034,7 @@ func (c IATokenWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockIAliceNetFactory is a mock implementation of the IAliceNetFactory
-// interface (from the package github.com/MadBase/MadNet/bridge/bindings)
+// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
 // used for unit testing.
 type MockIAliceNetFactory struct {
 	// CallAnyFunc is an instance of a mock function object controlling the
@@ -7587,7 +7587,7 @@ func (c IAliceNetFactoryWatchDeployedTemplateFuncCall) Results() []interface{} {
 }
 
 // MockIBToken is a mock implementation of the IBToken interface (from the
-// package github.com/MadBase/MadNet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
 type MockIBToken struct {
 	// AllowanceFunc is an instance of a mock function object controlling
 	// the behavior of the method Allowance.
@@ -12387,7 +12387,7 @@ func (c IBTokenWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockIETHDKG is a mock implementation of the IETHDKG interface (from the
-// package github.com/MadBase/MadNet/bridge/bindings) used for unit testing.
+// package github.com/alicenet/alicenet/bridge/bindings) used for unit testing.
 type MockIETHDKG struct {
 	// AccuseParticipantDidNotDistributeSharesFunc is an instance of a mock
 	// function object controlling the behavior of the method
@@ -21069,7 +21069,7 @@ func (c IETHDKGWatchValidatorSetCompletedFuncCall) Results() []interface{} {
 }
 
 // MockIGovernance is a mock implementation of the IGovernance interface
-// (from the package github.com/MadBase/MadNet/bridge/bindings) used for
+// (from the package github.com/alicenet/alicenet/bridge/bindings) used for
 // unit testing.
 type MockIGovernance struct {
 	// FilterValueUpdatedFunc is an instance of a mock function object
@@ -21615,7 +21615,7 @@ func (c IGovernanceWatchValueUpdatedFuncCall) Results() []interface{} {
 }
 
 // MockIPublicStaking is a mock implementation of the IPublicStaking
-// interface (from the package github.com/MadBase/MadNet/bridge/bindings)
+// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
 // used for unit testing.
 type MockIPublicStaking struct {
 	// ApproveFunc is an instance of a mock function object controlling the
@@ -28508,7 +28508,7 @@ func (c IPublicStakingWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockISnapshots is a mock implementation of the ISnapshots interface (from
-// the package github.com/MadBase/MadNet/bridge/bindings) used for unit
+// the package github.com/alicenet/alicenet/bridge/bindings) used for unit
 // testing.
 type MockISnapshots struct {
 	// FilterSnapshotTakenFunc is an instance of a mock function object
@@ -32087,7 +32087,7 @@ func (c ISnapshotsWatchSnapshotTakenFuncCall) Results() []interface{} {
 }
 
 // MockIValidatorPool is a mock implementation of the IValidatorPool
-// interface (from the package github.com/MadBase/MadNet/bridge/bindings)
+// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
 // used for unit testing.
 type MockIValidatorPool struct {
 	// CLAIMPERIODFunc is an instance of a mock function object controlling
@@ -39049,7 +39049,7 @@ func (c IValidatorPoolWatchValidatorMinorSlashedFuncCall) Results() []interface{
 }
 
 // MockIValidatorStaking is a mock implementation of the IValidatorStaking
-// interface (from the package github.com/MadBase/MadNet/bridge/bindings)
+// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
 // used for unit testing.
 type MockIValidatorStaking struct {
 	// ApproveFunc is an instance of a mock function object controlling the

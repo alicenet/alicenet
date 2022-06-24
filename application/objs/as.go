@@ -1,15 +1,15 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/application/objs/atomicswap"
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/wrapper"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+	"github.com/alicenet/alicenet/application/objs/atomicswap"
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // AtomicSwap is an atomic swap object based on a time lock hash

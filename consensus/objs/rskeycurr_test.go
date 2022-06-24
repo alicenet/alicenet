@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func rsckEqual(t *testing.T, rsck, rsck2 *RoundStateCurrentKey) {

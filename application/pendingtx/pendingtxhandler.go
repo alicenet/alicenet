@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
 
-	"github.com/MadBase/MadNet/application/db"
-	"github.com/MadBase/MadNet/application/objs"
-	index "github.com/MadBase/MadNet/application/pendingtx/pendingindex"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/db"
+	"github.com/alicenet/alicenet/application/objs"
+	index "github.com/alicenet/alicenet/application/pendingtx/pendingindex"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )

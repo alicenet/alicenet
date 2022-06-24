@@ -3,8 +3,8 @@ package dman
 import (
 	"sync"
 
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type txCache struct {

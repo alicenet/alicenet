@@ -1,5 +1,5 @@
 {
-    "name": "MadNet",
+    "name": "alicenet",
     "build": {
         "dockerfile": "Dockerfile",
         "args": {

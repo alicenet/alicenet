@@ -3,21 +3,16 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/layer1/executor/tasks"
-	"github.com/MadBase/MadNet/logging"
-
-	"github.com/MadBase/MadNet/crypto/bn256"
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
-
-	//"github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state"
 	"math/big"
 
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
-
-	"github.com/MadBase/MadNet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"

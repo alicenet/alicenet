@@ -58,4 +58,4 @@ symmetricKey = "someSuperFancySecretThatWillBeHashed"
 
 [firewalld]
 enabled = false
-socketFile = "/tmp/madnet_firewalld"
+socketFile = "/tmp/alicenet_firewalld"

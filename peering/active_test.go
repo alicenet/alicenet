@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/MadBase/MadNet/interfaces"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/transport"
+	"github.com/alicenet/alicenet/interfaces"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/transport"
 	"github.com/golang/mock/gomock"
 	"google.golang.org/grpc"
 )

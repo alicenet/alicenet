@@ -2,7 +2,7 @@ version: v1
 managed:
   enabled: true
   go_package_prefix:
-    default: github.com/MadBase/MadNet/proto
+    default: github.com/alicenet/alicenet/proto
     except:
       - buf.build/googleapis/googleapis
 plugins:
@@ -24,4 +24,4 @@ plugins:
     opt:
       - logtostderr=true
       - allow_merge=true
-      - merge_file_name=madnet
+      - merge_file_name=alicenet

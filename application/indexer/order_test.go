@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/internal/testing/environment"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/dgraph-io/badger/v2"
 )
 

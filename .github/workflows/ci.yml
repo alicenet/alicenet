@@ -3,9 +3,9 @@ name: Alicenet CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main, candidate ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, candidate ]
+    branches: [ main ]
 
 env:
   NODE_VERSION: 16.x
@@ -110,7 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           go test -race -json -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.out
           verbose: true
@@ -124,38 +124,36 @@ jobs:
   #     matrix:
   #       os: [ ubuntu-20.04 ]
   #       test-cmd: [
-  #         github.com/MadBase/MadNet/layer1/monitor/testing,
-  #         github.com/MadBase/MadNet/layer1/executor,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestShareDistribution_Group_3,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestRegisterTask_Group_3,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestMPKSubmission_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestMPKSubmission_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestKeyShareSubmission,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjSubmission_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjSubmission_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeShareDistributionTask_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingShareDistributionTask_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingRegistrationTask_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingKeySharesTask,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestDisputeMissingGPKjTask_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestGPKjDispute,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_1,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_2,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg -run TestCompletion_Group_3,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg/state,
-  #         github.com/MadBase/MadNet/layer1/executor/tasks/dkg/utils,
-  #         github.com/MadBase/MadNet/layer1/monitor,
-  #         github.com/MadBase/MadNet/layer1/monitor/events,
-  #         github.com/MadBase/MadNet/layer1/monitor/objects,
-  #         github.com/MadBase/MadNet/layer1/transaction
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
+  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
+  #         github.com/alicenet/alicenet/blockchain,
+  #         github.com/alicenet/alicenet/blockchain/dkg,
+  #         github.com/alicenet/alicenet/blockchain/dkg/math,
+  #         github.com/alicenet/alicenet/blockchain/monitor,
+  #         github.com/alicenet/alicenet/blockchain/objects,
+  #         github.com/alicenet/alicenet/blockchain/tasks
   #       ]
   #   steps:
   #     - uses: actions/checkout@v3
@@ -163,7 +161,7 @@ jobs:
   #     - name: Set up gotestfmt
   #       run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
   #     - name: Run tests ${{ matrix.test-cmd }}
-  #       timeout-minutes: 20
+  #       timeout-minutes: 45
   #       run: |
   #         set -euo pipefail
   #         ./scripts/main.sh init 5

@@ -5,12 +5,12 @@ services:
   bootnode:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: base
     command: scripts/bootnode.sh
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
 
   geth:
     build:
@@ -18,92 +18,92 @@ services:
       dockerfile: ./docker/geth/Dockerfile
     command: geth --miner.threads 1 --miner.gasprice 1 --miner.gaslimit 10000000 --miner.etherbase 546f99f244b7b58b855330ae0e2bc1b30b41302f --nodiscover --mine --txpool.nolocals --maxpeers 0 --ws --ws.addr=0.0.0.0 --ws.port=8546 --ws.api="eth,net,web3" --http --http.addr=0.0.0.0 --http.port=8545 --http.vhosts='*' --http.api="admin,eth,net,web3,personal,miner" --datadir=/root/local-geth
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     depends_on:
-    - bootnode
+      - bootnode
 
   validator0:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: devel
     command: >
       /bin/sh -c "sleep 5 &&
                   scripts/wait-for.sh geth:8545 -- scripts/validator.sh assets/config/validator0.compose.toml"
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     ports:
-    - "4343:4343"
+      - "4343:4343"
     depends_on:
-    - bootnode
-    - geth
+      - bootnode
+      - geth
 
   validator1:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: devel
     command: >
       /bin/sh -c "sleep 5 &&
                   scripts/wait-for.sh geth:8545 -- scripts/validator.sh assets/config/validator1.compose.toml"
     ports:
-    - "4344:4344"
+      - "4344:4344"
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     depends_on:
-    - bootnode
-    - geth
+      - bootnode
+      - geth
 
   validator2:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: devel
     command: >
       /bin/sh -c "sleep 5 &&
                   scripts/wait-for.sh geth:8545 -- scripts/validator.sh assets/config/validator2.compose.toml"
     ports:
-    - "4345:4345"
+      - "4345:4345"
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     depends_on:
-    - bootnode
-    - geth
+      - bootnode
+      - geth
 
   validator3:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: devel
     command: >
       /bin/sh -c "sleep 5 &&
                   scripts/wait-for.sh geth:8545 -- scripts/validator.sh assets/config/validator3.compose.toml"
     ports:
-    - "4346:4346"
+      - "4346:4346"
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     depends_on:
-    - bootnode
-    - geth
+      - bootnode
+      - geth
 
   validator4:
     build:
       context: ./
-      dockerfile: ./docker/madnet/Dockerfile
+      dockerfile: ./docker/alicenet/Dockerfile
       target: devel
     command: >
       /bin/sh -c "sleep 5 &&
                   scripts/wait-for.sh geth:8545 -- scripts/validator.sh assets/config/validator4.compose.toml"
     ports:
-    - "5343:5343"
+      - "5343:5343"
     volumes:
-    - ./assets:/madnet/assets
-    - ./scripts:/madnet/scripts
+      - ./assets:/alicenet/assets
+      - ./scripts:/alicenet/scripts
     depends_on:
-    - bootnode
-    - geth
+      - bootnode
+      - geth

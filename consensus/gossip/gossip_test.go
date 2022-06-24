@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/interfaces"
 	"github.com/dgraph-io/badger/v2"
 )
 

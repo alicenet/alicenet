@@ -18,7 +18,7 @@ To simplify local (or remote via [CodeSpaces](https://github.com/features/codesp
 
 ## Build AliceNet
 
-The following command will build the madnet binary:
+The following command will build the alicenet binary:
 
 ```shell
 make build
@@ -36,7 +36,7 @@ This command:
 * (re)compiles the Go bindings for the solidity contracts
 * (re)generates the ABI definitions for the solidity contracts
 
-Rerun this every time you made changes to the solidity contracts and want these to be used by the madnet binary
+Rerun this every time you made changes to the solidity contracts and want these to be used by the alicenet binary
 
 Under the hood, this commend runs the `bridge` module's `compile` script to compile the contracts, and then the `bridge` module's `generate` script to generate the bindings and ABI definitions.
 
@@ -180,7 +180,7 @@ with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 To show all the scripts logs in the console during tests you must set the env variable `ENABLE_SCRIPT_LOG` to `true`. 
 For instance to run blockchain tests you will execute
 ```shell
-ENABLE_SCRIPT_LOG=true go test -v github.com/MadBase/MadNet/blockchain
+ENABLE_SCRIPT_LOG=true go test -v github.com/alicenet/alicenet/blockchain
 ```
 
 ### Random Kill and Restart

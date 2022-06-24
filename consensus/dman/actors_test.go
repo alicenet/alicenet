@@ -10,11 +10,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"google.golang.org/grpc"
 )

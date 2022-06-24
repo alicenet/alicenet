@@ -3,8 +3,8 @@ package localrpc
 import (
 	"errors"
 
-	from "github.com/MadBase/MadNet/application/objs"
-	to "github.com/MadBase/MadNet/proto"
+	from "github.com/alicenet/alicenet/application/objs"
+	to "github.com/alicenet/alicenet/proto"
 )
 
 func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {

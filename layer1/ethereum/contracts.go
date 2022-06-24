@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MadBase/MadNet/bridge/bindings"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/sirupsen/logrus"
 )
 

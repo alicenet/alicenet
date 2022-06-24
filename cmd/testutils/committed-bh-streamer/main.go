@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
 
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

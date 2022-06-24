@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 func TestGroupSignerSetPrivK(t *testing.T) {

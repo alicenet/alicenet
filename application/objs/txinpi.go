@@ -1,13 +1,13 @@
 package objs
 
 import (
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/txinpreimage"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/txinpreimage"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // TXInPreImage is the tx input preimage

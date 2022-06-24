@@ -1,8 +1,8 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/application/wrapper"
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/application/wrapper"
+	"github.com/alicenet/alicenet/constants"
 )
 
 // TxVec is a vector of transactions Tx

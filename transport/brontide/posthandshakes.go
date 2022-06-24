@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/types"
 )
 
 // ErrWrongChainID occurs in (peer|self)ChainIdentifierHandshake

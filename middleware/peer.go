@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/interfaces"
 	"google.golang.org/grpc"
 )
 

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/internal/testing/environment"
-	"github.com/MadBase/MadNet/utils"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/internal/testing/environment"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 

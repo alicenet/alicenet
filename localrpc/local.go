@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	pb "github.com/MadBase/MadNet/proto"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	pb "github.com/alicenet/alicenet/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
@@ -130,5 +130,5 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 }
 
 func serveSwagger(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "swagger/madnet.swagger.json", http.StatusMovedPermanently)
+	http.Redirect(w, r, "swagger/alicenet.swagger.json", http.StatusMovedPermanently)
 }

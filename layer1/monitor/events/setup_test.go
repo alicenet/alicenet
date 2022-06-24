@@ -4,11 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MadBase/MadNet/bridge/bindings"
-	"github.com/MadBase/MadNet/layer1/executor/interfaces"
-	interfaces2 "github.com/MadBase/MadNet/layer1/monitor/interfaces"
-	"github.com/MadBase/MadNet/layer1/monitor/objects"
-	"github.com/MadBase/MadNet/test/mocks"
+	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"
 )

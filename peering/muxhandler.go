@@ -4,12 +4,12 @@ import (
 	"net"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/types"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/types"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/sirupsen/logrus"
 )
 

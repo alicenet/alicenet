@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/binary"
 
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // MarshalUint16 will marshal an uint16 object.

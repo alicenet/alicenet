@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 // numBytes specifies the number of bytes in a GFp object

@@ -1,6 +1,6 @@
 //go:build tools
 
-package MadNet
+package alicenet
 
 // This file tracks tool dependencies.
 // This is so that "go mod tidy" doesnt remove deps that we actually use for generate commands.

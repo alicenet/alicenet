@@ -3,8 +3,8 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestDSOwnerMarshalBinary(t *testing.T) {

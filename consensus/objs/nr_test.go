@@ -1,10 +1,10 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestNextRound(t *testing.T) {

@@ -1,6 +1,6 @@
-# Madnet/Bridge
+# AliceNet/Bridge
 
-This repository contains all solidity smart contracts used by the MadNet.
+This repository contains all solidity smart contracts used by the AliceNet.
 
 ## Requirements
 

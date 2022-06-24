@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	consensusObjs "github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
+	consensusObjs "github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestClient_GetBlockHeader(t *testing.T) {

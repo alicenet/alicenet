@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
-BINARY_NAME=madnet
-RACE_DETECTOR=madrace
+BINARY_NAME=alicenet
+RACE_DETECTOR=alicerace
 
 .PHONY: init
 init:
@@ -19,7 +19,7 @@ race:
 lint:
 	golangci-lint run
 	buf lint
-	buf breaking --against '.git#branch=candidate'
+	buf breaking --against '.git#branch=main'
 
 .PHONY: format
 format:

@@ -10,11 +10,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/types"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/types"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ErrReject is an error raised if a connection is rejected
