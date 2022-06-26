@@ -160,7 +160,6 @@ func main() {
 		&utils.Command: {
 			{"utils.status", "", "", &config.Configuration.Utils.Status}},
 
-		&utils.EthdkgCommand:  {},
 		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
@@ -180,7 +179,6 @@ func main() {
 		&bootnode.Command:     &rootCommand,
 		&validator.Command:    &rootCommand,
 		&utils.Command:        &rootCommand,
-		&utils.EthdkgCommand:  &utils.Command,
 		&utils.SendWeiCommand: &utils.Command,
 	}
 

@@ -219,7 +219,7 @@ func (eth *Client) loadPassCodes(filePath string) error {
 					eth.accounts[address] = accountInfo
 				} else {
 					logger.Warnf(
-						"Couldn't find a valid account for address %v",
+						"Couldn't attach passCode! Could not find a valid account for address %v",
 						address.Hex(),
 					)
 				}
@@ -297,10 +297,11 @@ func (eth *Client) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
 
 // Get the private key for an account
 func (eth *Client) getAccountKeys(addr common.Address) (*keystore.Key, error) {
-	if accountInfo, ok := eth.accounts[addr]; ok {
-		return accountInfo.key, nil
+	accountInfo, ok := eth.accounts[addr]
+	if !ok || accountInfo.key == nil {
+		return nil, ErrKeysNotFound
 	}
-	return nil, ErrKeysNotFound
+	return accountInfo.key, nil
 }
 
 //ChainID returns the ID used to build ethereum client
