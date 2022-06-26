@@ -71,16 +71,20 @@ func (err *jsonError) Error() string {
 	return err.Message
 }
 
+type accountInfo struct {
+	account  accounts.Account
+	index    int
+	key      *keystore.Key
+	passCode string
+}
+
 type Client struct {
 	logger               *logrus.Logger
 	endpoint             string
 	keystore             *keystore.KeyStore
 	finalityDelay        uint64
-	accounts             map[common.Address]accounts.Account
-	accountIndex         map[common.Address]int
+	accounts             map[common.Address]accountInfo
 	defaultAccount       accounts.Account
-	keys                 map[common.Address]*keystore.Key
-	passCodes            map[common.Address]string
 	rpcClient            *rpc.Client
 	internalClient       *ethclient.Client
 	chainID              *big.Int
@@ -94,6 +98,7 @@ func NewClient(
 	pathKeystore string,
 	pathPassCodes string,
 	defaultAccount string,
+	unlockAdditionalAccounts bool,
 	finalityDelay uint64,
 	txMaxGasFeeAllowedInGwei uint64,
 	endpointMinimumPeers uint64) (*Client, error) {
@@ -109,9 +114,7 @@ func NewClient(
 	eth := &Client{
 		endpoint:           endpoint,
 		logger:             logger,
-		accounts:           make(map[common.Address]accounts.Account),
-		keys:               make(map[common.Address]*keystore.Key),
-		passCodes:          make(map[common.Address]string),
+		accounts:           make(map[common.Address]accountInfo),
 		finalityDelay:      finalityDelay,
 		txMaxGasFeeAllowed: txMaxGasFeeAllowedInWei,
 	}
@@ -132,6 +135,18 @@ func NewClient(
 	eth.setDefaultAccount(acct)
 	if err := eth.unlockAccount(acct); err != nil {
 		return nil, fmt.Errorf("Could not unlock account: %v", err)
+	}
+
+	// if this flag is set, unlock all known accounts (in the pathKeystore). This
+	// should allow performing transactions with accounts that are not the default
+	// account.
+	if unlockAdditionalAccounts {
+		accountList := eth.GetKnownAccounts()
+		for _, acct := range accountList {
+			if err := eth.unlockAccount(acct); err != nil {
+				return nil, fmt.Errorf("Could not unlock additional account: %v", err)
+			}
+		}
 	}
 
 	// Low level rpc client
@@ -161,21 +176,18 @@ func (eth *Client) loadAccounts(directoryPath string) {
 
 	logger.Infof("LoadAccounts(\"%v\")...", directoryPath)
 	ks := keystore.NewKeyStore(directoryPath, keystore.StandardScryptN, keystore.StandardScryptP)
-	accts := make(map[common.Address]accounts.Account, 10)
-	acctIndex := make(map[common.Address]int, 10)
+	accts := make(map[common.Address]accountInfo, 10)
 
 	var index int
 	for _, wallet := range ks.Wallets() {
 		for _, account := range wallet.Accounts() {
 			logger.Infof("... found account %v", account.Address.Hex())
-			accts[account.Address] = account
-			acctIndex[account.Address] = index
+			accts[account.Address] = accountInfo{account: account, index: index}
 			index++
 		}
 	}
 
 	eth.accounts = accts
-	eth.accountIndex = acctIndex
 	eth.keystore = ks
 }
 
@@ -184,7 +196,6 @@ func (eth *Client) loadPassCodes(filePath string) error {
 	logger := eth.logger
 
 	logger.Infof("loadPassCodes(\"%v\")...", filePath)
-	passcodes := make(map[common.Address]string)
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -200,15 +211,21 @@ func (eth *Client) loadPassCodes(filePath string) error {
 		if !strings.HasPrefix(line, "#") {
 			components := strings.Split(line, "=")
 			if len(components) == 2 {
-				address := strings.TrimSpace(components[0])
-				passcode := strings.TrimSpace(components[1])
-
-				passcodes[common.HexToAddress(address)] = passcode
+				address := common.HexToAddress(strings.TrimSpace(components[0]))
+				passCode := strings.TrimSpace(components[1])
+				accountInfo, present := eth.accounts[address]
+				if present {
+					accountInfo.passCode = passCode
+					eth.accounts[address] = accountInfo
+				} else {
+					logger.Warnf(
+						"Couldn't find a valid account for address %v",
+						address.Hex(),
+					)
+				}
 			}
 		}
 	}
-
-	eth.passCodes = passcodes
 
 	return nil
 }
@@ -218,10 +235,11 @@ func (eth *Client) unlockAccount(acct accounts.Account) error {
 
 	eth.logger.Infof("Unlocking account address:%v", acct.Address.String())
 
-	passCode, passCodeFound := eth.passCodes[acct.Address]
-	if !passCodeFound {
+	accountInfo, accountNotFound := eth.accounts[acct.Address]
+	if !accountNotFound || accountInfo.passCode == "" {
 		return ErrPassCodeNotFound
 	}
+	passCode := accountInfo.passCode
 
 	err := eth.keystore.Unlock(acct, passCode)
 	if err != nil {
@@ -240,7 +258,8 @@ func (eth *Client) unlockAccount(acct accounts.Account) error {
 		return err
 	}
 
-	eth.keys[acct.Address] = key
+	accountInfo.key = key
+	eth.accounts[acct.Address] = accountInfo
 
 	return nil
 }
@@ -278,8 +297,8 @@ func (eth *Client) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
 
 // Get the private key for an account
 func (eth *Client) getAccountKeys(addr common.Address) (*keystore.Key, error) {
-	if key, ok := eth.keys[addr]; ok {
-		return key, nil
+	if accountInfo, ok := eth.accounts[addr]; ok {
+		return accountInfo.key, nil
 	}
 	return nil, ErrKeysNotFound
 }
@@ -373,12 +392,12 @@ func (eth *Client) IsAccessible() bool {
 
 // GetAccount returns the account specified
 func (eth *Client) GetAccount(addr common.Address) (accounts.Account, error) {
-	acct, accountFound := eth.accounts[addr]
+	accountInfo, accountFound := eth.accounts[addr]
 	if !accountFound {
-		return acct, ErrAccountNotFound
+		return accounts.Account{}, ErrAccountNotFound
 	}
 
-	return acct, nil
+	return accountInfo.account, nil
 }
 
 // GetDefaultAccount returns the default account
@@ -406,8 +425,8 @@ func (eth *Client) GetEndpoint() string {
 func (eth *Client) GetKnownAccounts() []accounts.Account {
 	accounts := make([]accounts.Account, len(eth.accounts))
 
-	for address, accountIndex := range eth.accountIndex {
-		accounts[accountIndex] = eth.accounts[address]
+	for _, accountInfo := range eth.accounts {
+		accounts[accountInfo.index] = accountInfo.account
 	}
 
 	return accounts
@@ -757,9 +776,4 @@ func ComputeGasFeeCap(eth layer1.Client, baseFee *big.Int, tipCap *big.Int) (*bi
 		return nil, &ErrTxTooExpensive{fmt.Sprintf("max tx fee computed: %v is greater than limit: %v", feeCap.String(), eth.GetTxMaxGasFeeAllowed().String())}
 	}
 	return feeCap, nil
-}
-
-// FUNCTION THAT SHOULD ONLY BE USED BY THE UNIT TESTS
-func (eth *Client) UnlockUnitTestAccounts(account accounts.Account) error {
-	return eth.unlockAccount(account)
 }

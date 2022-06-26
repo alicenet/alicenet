@@ -23,13 +23,6 @@ var Command = cobra.Command{
 	Long:  "utils is a misc. collection of tools. Ranges from initial config to automating Ethereum setup",
 	Run:   utilsNode}
 
-// EthdkgCommand is the command that triggers a fresh start of the ETHDKG process
-var EthdkgCommand = cobra.Command{
-	Use:   "ethdkg",
-	Short: "",
-	Long:  "",
-	Run:   utilsNode}
-
 // SendWeiCommand is the command that sends wei from one account to another
 var SendWeiCommand = cobra.Command{
 	Use:   "sendwei",
@@ -44,6 +37,7 @@ func setupEthereum(logger *logrus.Entry) (layer1.Client, error) {
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
+		true,
 		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers,

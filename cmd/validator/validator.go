@@ -58,6 +58,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Sec
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
+		false,
 		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers)
