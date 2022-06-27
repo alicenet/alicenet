@@ -9,25 +9,24 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.Log,
-	cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
+func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.Log, cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	dkgState, err := state.GetDkgState(monDB)
+	monState, err := objects.GetMonitorState(monDB)
 	if err != nil {
 		return err
 	}
 
 	//todo: ask Hunter only validators allowed
-	if !dkgState.IsValidator {
+	if !isValidator(eth.GetDefaultAccount(), monState) {
 		return nil
 	}
 
@@ -37,7 +36,6 @@ func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.L
 	}
 
 	bigChainID := eth.GetChainID()
-	//TODO check to make sure chainID fits into a uint32
 	chainID := uint32(bigChainID.Uint64())
 
 	logger.WithFields(logrus.Fields{
