@@ -11,7 +11,6 @@ import "contracts/libraries/parsers/TXInPreImageParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
-import "contracts/libraries/accusations/Accusation.sol";
 
 /// @custom:salt-type Accusation
 /// @custom:salt InvalidTxConsumptionAccusation
@@ -20,8 +19,7 @@ contract InvalidTxConsumptionAccusation is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
-    ImmutableValidatorPool,
-    Accusation
+    ImmutableValidatorPool
 {
     mapping(bytes32 => bool) internal _accusations;
 
@@ -30,7 +28,6 @@ contract InvalidTxConsumptionAccusation is
         ImmutableSnapshots()
         ImmutableETHDKG()
         ImmutableValidatorPool()
-        Accusation("InvalidTxConsumptionAccusation")
     {}
 
     /// @notice This function verifies the signature group of a BClaims.
