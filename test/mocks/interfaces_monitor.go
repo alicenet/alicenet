@@ -10,6 +10,7 @@ import (
 	interfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 )
 
+var _ interfaces.AdminHandler = &MockAdminHandler{}
 // MockAdminHandler is a mock implementation of the AdminHandler interface
 // (from the package github.com/alicenet/alicenet/layer1/monitor/interfaces)
 // used for unit testing.
