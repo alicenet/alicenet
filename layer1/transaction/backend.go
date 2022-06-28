@@ -306,10 +306,11 @@ type WatcherBackend struct {
 	requestChannel     <-chan SubscribeRequest  `json:"-"`             // Channel used to send request to this backend service
 	database           *db.Database             `json:"-"`             // database where we are going to persist and load state
 	metricsDisplay     bool                     `json:"-"`             // flag to display the metrics in the logs. The metrics are still collect even if this flag is false.
+	TxPollingTime      time.Duration            `json:"-"`             // time in seconds which will be polling for transactions receipts
 }
 
 // Creates a new watcher backend
-func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeRequest, client layer1.Client, logger *logrus.Logger, database *db.Database, metricsDisplay bool) *WatcherBackend {
+func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeRequest, client layer1.Client, logger *logrus.Logger, database *db.Database, metricsDisplay bool, txPollingTime time.Duration) *WatcherBackend {
 	return &WatcherBackend{
 		mainCtx:            mainCtx,
 		requestChannel:     requestChannel,
@@ -322,6 +323,7 @@ func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeR
 		RetryGroups:        make(map[common.Hash]group),
 		lastProcessedBlock: &block{0, common.HexToHash("")},
 		metricsDisplay:     metricsDisplay,
+		TxPollingTime:      txPollingTime,
 	}
 }
 
@@ -386,7 +388,7 @@ func (wb *WatcherBackend) Loop() {
 	}
 	wb.logger.Info(strings.Repeat("-", 80))
 
-	poolingTime := time.After(constants.TxPollingTime)
+	poolingTime := time.After(wb.TxPollingTime)
 	statusTime := time.After(constants.TxStatusTime)
 	for {
 		select {
@@ -450,12 +452,7 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 		} else if _, ok = wb.RetryGroups[txnHash]; ok {
 			txGroupHash = txnHash
 		} else {
-			selector, err := ExtractSelector(req.txn.Data())
-			if err != nil {
-				return nil, &ErrInvalidTransactionRequest{
-					fmt.Sprintf("invalid request, transaction data is not present %v, err %v!", txnHash.Hex(), err),
-				}
-			}
+			selector := ExtractSelector(req.txn.Data())
 			sig := bindings.FunctionMapping[*selector]
 
 			var enableAutoRetry bool
@@ -705,15 +702,14 @@ func (wb *WatcherBackend) computeGasProfile(rcpt *types.Receipt, txnInfo info) P
 
 // Extract the selector for a layer1 smart contract call (the first 4 bytes in
 // the call data)
-func ExtractSelector(data []byte) (*FuncSelector, error) {
-	selector := &FuncSelector{}
-	if len(data) < 4 {
-		return nil, fmt.Errorf("couldn't extract selector for data: %v", data)
+func ExtractSelector(data []byte) *FuncSelector {
+	selector := &FuncSelector{0, 0, 0, 0}
+	if len(data) >= 4 {
+		for idx := 0; idx < 4; idx++ {
+			selector[idx] = data[idx]
+		}
 	}
-	for idx := 0; idx < 4; idx++ {
-		selector[idx] = data[idx]
-	}
-	return selector, nil
+	return selector
 }
 
 func getTransactionLogger(txn info) *logrus.Entry {
