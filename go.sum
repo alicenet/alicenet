@@ -43,8 +43,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1 h1:YCuKcZkLlOe+EQ7SlqZ273pORzuHZR8zpGdKyee8AJg=
-github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1/go.mod h1:mTxxPnU7YuHt2XP7FdWK2rsmARPIlHPMxzKmSrYwbPQ=
+github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1 h1:t0LWbSWyuWq1cmkJqh3UQWjBY47mQvXgtQFwFAbVq18=
+github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1/go.mod h1:mTxxPnU7YuHt2XP7FdWK2rsmARPIlHPMxzKmSrYwbPQ=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 h1:fLjPD/aNc3UIOA6tDi6QXUemppXK3P9BI7mr2hd6gx8=
