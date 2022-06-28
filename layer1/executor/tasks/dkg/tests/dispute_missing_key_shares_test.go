@@ -1,6 +1,6 @@
 //go:build integration
 
-package dkg_test
+package tests
 
 import (
 	"context"

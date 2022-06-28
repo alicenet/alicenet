@@ -22,20 +22,13 @@ import (
 
 // Test admin private key. DONT USE THIS ON MAINNET!!!!
 const (
-	TestAdminPrivateKey          string = "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"
+	TestAdminPrivateKey          string = "6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"
 	SmartContractsRelativeFolder string = "bridge"
 )
 
-func GetProjectRootPath() string {
+func sanitizePathFromOutput(output []byte) string {
 	rootPath := []string{string(os.PathSeparator)}
-
-	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/alicenet/alicenet")
-	stdout, err := cmd.Output()
-	if err != nil {
-		panic(fmt.Errorf("Error getting project root path: %v", err))
-	}
-
-	path := string(stdout)
+	path := string(output)
 	path = strings.ReplaceAll(path, "'", "")
 	path = strings.ReplaceAll(path, "\n", "")
 
@@ -46,33 +39,51 @@ func GetProjectRootPath() string {
 
 	return filepath.Join(rootPath...)
 }
+func GetProjectRootPath() string {
 
-// GetNodePath return the bridge folder path
-func GetNodePath() string {
+	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/alicenet/alicenet")
+	stdout, err := cmd.Output()
+	if err != nil {
+		panic(fmt.Errorf("Error getting project root path: %v", err))
+	}
+	return sanitizePathFromOutput(stdout)
+}
+
+// GetHardhatPackagePath return the bridge folder path
+func GetHardhatPackagePath() string {
 	rootPath := GetProjectRootPath()
 	bridgePath := filepath.Join(rootPath, SmartContractsRelativeFolder)
 
 	return bridgePath
 }
 
-func GenerateHardhatConfig(tempDir string, endPoint string) string {
+func GetNPXPath() string {
+	cmd := exec.Command("which", "npx")
+	stdout, err := cmd.Output()
+	if err != nil {
+		panic(fmt.Errorf("Error getting npx path: %v", err))
+	}
+	return sanitizePathFromOutput(stdout)
+}
+
+func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) string {
 	configTemplate := `
-	import "@nomiclabs/hardhat-ethers";
-	import "@nomiclabs/hardhat-truffle5";
-	import "@nomiclabs/hardhat-waffle";
-	import "@typechain/hardhat";
-	import { HardhatUserConfig} from "hardhat/config";
-	import "./scripts/generateImmutableAuth";
-	import "./scripts/lib/alicenetFactoryTasks";
-	import "./scripts/lib/alicenetTasks";
-	import "./scripts/lib/gogogen";
+	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
+	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
+	import "%[1]s/node_modules/@nomiclabs/hardhat-waffle";
+	import "%[1]s/node_modules/@typechain/hardhat";
+	import { HardhatUserConfig} from "%[1]s/node_modules/hardhat/config";
+	import "%[1]s/scripts/generateImmutableAuth";
+	import "%[1]s/scripts/lib/alicenetFactoryTasks";
+	import "%[1]s/scripts/lib/alicenetTasks";
+	import "%[1]s/scripts/lib/gogogen";
 
 	const config: HardhatUserConfig = {
 		networks: {
 			dev: {
-			url: "%v",
+			url: "%[2]v",
 			accounts: [
-				"%v",
+				"0x%[3]v",
 			],
 			},
 			hardhat: {
@@ -80,20 +91,32 @@ func GenerateHardhatConfig(tempDir string, endPoint string) string {
 				allowUnlimitedContractSize: true,
 				accounts: [
 					{
-						privateKey: "%v",
+						privateKey: "0x%[3]v",
 						balance: "1500000000000000000000000000000",
 					},
 				],
 			},
 		},
+		paths: {
+			sources: "%[1]s/contracts",
+			tests: "%[1]s/test",
+			cache: "%[1]s/cache",
+			artifacts: "%[1]s/artifacts",
+		  },
 	};
+	export default config;
 	`
 	hardhatConfigPath := filepath.Join(tempDir, "hardhat.config.ts")
 	hardhatConfig, err := os.OpenFile(hardhatConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(fmt.Errorf("failed to open/create hardhat config file: %v", err))
 	}
-	data := fmt.Sprintf(configTemplate, endPoint, TestAdminPrivateKey, TestAdminPrivateKey)
+	data := fmt.Sprintf(
+		configTemplate,
+		hardhatPath,
+		endPoint,
+		TestAdminPrivateKey,
+	)
 	if _, err := hardhatConfig.WriteString(data); err != nil {
 		panic(fmt.Errorf("failed to save hardhat config in file: %v", err))
 	}
@@ -101,8 +124,8 @@ func GenerateHardhatConfig(tempDir string, endPoint string) string {
 	return hardhatConfigPath
 }
 
-// setCommandStdOut If ENABLE_SCRIPT_LOG env variable is set as 'true' the command will show scripts logs
-func setCommandStdOut(cmd *exec.Cmd) {
+// SetCommandStdOut If ENABLE_SCRIPT_LOG env variable is set as 'true' the command will show scripts logs
+func SetCommandStdOut(cmd *exec.Cmd) {
 
 	flagValue, found := os.LookupEnv("ENABLE_SCRIPT_LOG")
 	enabled, err := strconv.ParseBool(flagValue)
@@ -122,7 +145,6 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = dir
-	setCommandStdOut(cmd)
 	output, err := cmd.Output()
 
 	if err != nil {
@@ -136,7 +158,7 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 
 type Hardhat struct {
 	url        string
-	cmd        exec.Cmd
+	cmd        *exec.Cmd
 	configPath string
 }
 
@@ -145,6 +167,12 @@ func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
 }
 
 func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
+	logger := logging.GetLogger("test")
+	// Clean any running hardhat node before starting a new one
+	err := KillAllRunningHardhat()
+	if err != nil {
+		logger.Warnf("Failed to KillAllRunningHardhat %v", err)
+	}
 	sanitizedHostname := ""
 	sanitizedPort := ""
 	if strings.Contains(hostname, "http://") || strings.Contains(hostname, "https://") {
@@ -168,45 +196,89 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 		panic(fmt.Errorf("failed to create tmp dir for hardhat: %v", err))
 	}
 
-	configPath := GenerateHardhatConfig(hardhatTempDir, fullUrl)
+	hardhatPath := GetHardhatPackagePath()
+	configPath := GenerateHardhatConfig(hardhatTempDir, hardhatPath, fullUrl)
+	hardBinPath := filepath.Join(hardhatPath, "node_modules", ".bin", "hardhat")
 
-	bridgePath := GetNodePath()
-	cmd := exec.Cmd{
-		Path: "npx",
-		Args: []string{
-			"hardhat",
-			"node",
-			"--show-stack-traces",
-			"--hostname",
-			sanitizedHostname,
-			"--port",
-			sanitizedPort,
-			"--config",
-			configPath,
-		},
-		Dir: bridgePath,
-	}
+	// if you change the order of this command, remember to change the regex string
+	// in the scripts/base-scripts/kill_hardhat.sh
+	cmd := exec.Command(
+		"node",
+		hardBinPath,
+		"--show-stack-traces",
+		"--config",
+		configPath,
+		"node",
+		"--hostname",
+		sanitizedHostname,
+		"--port",
+		sanitizedPort,
+	)
+	cmd.Dir = GetHardhatPackagePath()
 
-	setCommandStdOut(&cmd)
+	// setCommandStdOut(cmd)
 	err = cmd.Start()
 	// if there is an error with our execution handle it here
 	if err != nil {
 		return nil, fmt.Errorf("could not run hardhat node: %s", err)
 	}
+	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath}
+	ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
+	defer cf()
+	err = hardhat.WaitForHardHatNode(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could wait for hardhat node: %s", err)
+	}
+	return hardhat, nil
+}
 
-	return &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath}, nil
+func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
+	logger := logging.GetLogger("test")
+	c := http.Client{}
+	msg := &ethereum.JsonRPCMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  "eth_chainId",
+		Params:  make([]byte, 0),
+	}
+
+	params, err := json.Marshal(make([]string, 0))
+	if err != nil {
+		return fmt.Errorf("could not run hardhat node: %v", err)
+	}
+	msg.Params = params
+
+	var buff bytes.Buffer
+	err = json.NewEncoder(&buff).Encode(msg)
+	if err != nil {
+		return fmt.Errorf("Error creating a buffer json encoder: %v", err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Second):
+			body := bytes.NewReader(buff.Bytes())
+			_, err := c.Post(
+				h.url,
+				"application/json",
+				body,
+			)
+			if err != nil {
+				continue
+			}
+			logger.Infof("HardHat node started correctly")
+			return nil
+		}
+	}
 }
 
 func (h *Hardhat) Close() error {
 	defer os.RemoveAll(h.configPath)
 
 	logger := logging.GetLogger("test")
-	logger.Debug("Stopping HardHat running instance ...")
-	isRunning, _ := h.IsHardHatRunning()
-	if !isRunning {
-		logger.Debug("HardHat is not running, returning immediately")
-		return nil
-	}
+	logger.Debug("Stopping HardHat running instance")
 
 	process, err := os.FindProcess(h.cmd.Process.Pid)
 	if err != nil {
@@ -214,15 +286,22 @@ func (h *Hardhat) Close() error {
 		return err
 	}
 
+	logger.Debugf("Found hardhat process via pid %d", process.Pid)
 	err = process.Signal(syscall.SIGTERM)
 	if err != nil {
 		logger.Errorf("Error waiting sending SIGTERM signal to HardHat process: %v", err)
 		return err
 	}
-
+	logger.Debug("Sent sigterm signal to HardHat process, waiting for it to terminate")
 	_, err = process.Wait()
 	if err != nil {
 		logger.Errorf("Error waiting HardHat process to stop: %v", err)
+		return err
+	}
+
+	logger.Debug("Killing any other leftover of HardHat process")
+	err = KillAllRunningHardhat()
+	if err != nil {
 		return err
 	}
 
@@ -231,7 +310,7 @@ func (h *Hardhat) Close() error {
 }
 
 func (h *Hardhat) IsHardHatRunning() (bool, error) {
-	var client = http.Client{Timeout: 2 * time.Second}
+	var client = http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Head(h.url)
 	if err != nil {
 		return false, err
@@ -246,10 +325,11 @@ func (h *Hardhat) IsHardHatRunning() (bool, error) {
 }
 
 func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error) {
-	nodeDir := GetNodePath()
+	modulesDir := GetHardhatPackagePath()
+	npxPath := GetNPXPath()
 	output, err := executeCommand(
-		nodeDir,
-		"npx",
+		modulesDir,
+		npxPath,
 		"hardhat",
 		"--network",
 		"dev",
@@ -279,11 +359,12 @@ func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error)
 }
 
 func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string) error {
-	nodeDir := GetNodePath()
+	nodeDir := GetHardhatPackagePath()
+	npxPath := GetNPXPath()
 	// Register validator
 	_, err := executeCommand(
 		nodeDir,
-		"npx",
+		npxPath,
 		"hardhat",
 		"--network",
 		"dev",
@@ -298,6 +379,15 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 	)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func KillAllRunningHardhat() error {
+	script := filepath.Join(GetProjectRootPath(), "scripts", "base-scripts", "kill_hardhat.sh")
+	err := exec.Command(script).Run()
+	if err != nil {
+		return fmt.Errorf("Error killing all hardhat process: %v", err)
 	}
 	return nil
 }
@@ -355,6 +445,11 @@ func MineBlocks(endPoint string, blocksToMine uint64) {
 	}
 }
 
+// Mine finality delay blocks + 1
+func MineFinalityDelayBlocks(client layer1.Client) {
+	MineBlocks(client.GetEndpoint(), client.GetFinalityDelay()+1)
+}
+
 // AdvanceTo advances to a certain block number
 func AdvanceTo(eth layer1.Client, target uint64) {
 	logger := logging.GetLogger("test")
@@ -397,6 +492,17 @@ func SetAutoMine(endPoint string, autoMine bool) {
 	}
 }
 
+// ResetHardhatNode resets hardhat node from scratch
+func ResetHardhatNode(endPoint string) {
+	logger := logging.GetLogger("test")
+	logger.Trace("Resetting hardhat node from scratch")
+
+	err := SendCommandViaRPC(endPoint, "hardhat_reset")
+	if err != nil {
+		panic(err)
+	}
+}
+
 // SetBlockInterval sets the interval between hardhat blocks. In case interval is 0, we enter in
 // manual mode and blocks can only be mined explicitly by calling `MineBlocks`.
 // This function disables autoMine.
@@ -412,6 +518,7 @@ func SetBlockInterval(endPoint string, intervalInMilliSeconds uint64) {
 
 // ResetHardhatConfigs resets the hardhat configs to automine true and basefee 100GWei
 func ResetHardhatConfigs(endPoint string) {
+	ResetHardhatNode(endPoint)
 	SetAutoMine(endPoint, true)
 	SetNextBlockBaseFee(endPoint, 100_000_000_000)
 }

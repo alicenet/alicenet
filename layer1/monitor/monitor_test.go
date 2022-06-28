@@ -3,29 +3,17 @@
 package monitor
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/interfaces"
-	exObjects "github.com/alicenet/alicenet/layer1/executor/objects"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
-
 	aobjs "github.com/alicenet/alicenet/application/objs"
-	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/test/mocks"
-
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,9 +41,10 @@ func createValidator(addrHex string, idx uint8) objects.Validator {
 func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 	monitorState.ValidatorSets[EPOCH] = objects.ValidatorSet{
-		ValidatorCount:        4,
-		NotBeforeMadNetHeight: 321,
-		GroupKey:              [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)}}
+		ValidatorCount:          4,
+		NotBeforeAliceNetHeight: 321,
+		GroupKey:                [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)},
+	}
 
 	monitorState.Validators[EPOCH] = []objects.Validator{
 		createValidator("0x546F99F244b7B58B855330AE0E2BC1b30b41302F", 1),
@@ -63,41 +52,6 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 		createValidator("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", 3),
 		createValidator("0x615695C4a4D6a60830e5fca4901FbA099DF26271", 4)}
 
-}
-
-//
-// Mock implementation of interfaces.Task
-//
-type mockTask struct {
-	DoneCalled bool
-	State      *state.DkgState
-	DkgTask    *exObjects.BaseTask
-}
-
-var _ interfaces.Task = &mockTask{}
-
-func (mt *mockTask) DoDone(logger *logrus.Entry) {
-	mt.DoneCalled = true
-}
-
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) Initialize(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, layer1.Client) bool {
-	return false
-}
-
-func (mt *mockTask) GetExecutionData() interfaces.ITaskExecutionData {
-	return mt.DkgTask
 }
 
 //
@@ -114,14 +68,10 @@ func (dh *mockDepositHandler) Add(*badger.Txn, uint32, []byte, *big.Int, *aobjs.
 // Actual tests
 //
 func TestMonitorPersist(t *testing.T) {
-	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
-	assert.Nil(t, err)
+	database := mocks.NewTestDB()
 
-	database := &db.Database{}
-	database.Init(rawDb)
-
-	eth := mocks.NewMockNetwork()
-	mon, err := NewMonitor(database, database, mocks.NewMockIAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.Task, 10), make(chan string, 10))
+	eth := mocks.NewMockClient()
+	mon, err := NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, 1, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
 	EPOCH := uint32(1)
@@ -130,14 +80,14 @@ func TestMonitorPersist(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
 
-	err = mon.PersistState()
+	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
 	//
-	newMon, err := NewMonitor(database, database, mocks.NewMockIAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.Task, 10), make(chan string, 10))
+	newMon, err := NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, 1, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
-	err = newMon.LoadState()
+	err = newMon.State.LoadState(mon.db)
 	assert.Nil(t, err)
 
 	newRaw, err := json.Marshal(mon)
@@ -150,7 +100,7 @@ func TestMonitorPersist(t *testing.T) {
 //func TestBidirectionalMarshaling(t *testing.T) {
 //
 //	// setup
-//	adminHandler := mocks.NewMockIAdminHandler()
+//	adminHandler := mocks.NewMockAdminHandler()
 //	depositHandler := &mockDepositHandler{}
 //
 //	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(5)
@@ -239,16 +189,6 @@ func TestMonitorPersist(t *testing.T) {
 //
 //	assert.True(t, taskStruct.DoneCalled)
 //}
-
-func TestWrapDoNotContinue(t *testing.T) {
-	genErr := exObjects.ErrCanNotContinue
-	specErr := errors.New("neutrinos")
-
-	niceErr := fmt.Errorf("%w because %v", genErr, specErr)
-	assert.True(t, errors.Is(niceErr, genErr))
-
-	t.Logf("%v", niceErr)
-}
 
 // func TestTaskPersistance(t *testing.T) {
 // 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)

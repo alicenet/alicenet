@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/blockchain/testutils"
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
@@ -17,6 +16,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -65,10 +65,9 @@ func InitializeNewNonDetDkgStateInfo(n int) ([]*state.DkgState, []*ecdsa.Private
 	return InitializeNewDkgStateInfo(n, false)
 }
 
-func InitializeNewDkgStateInfo(n int, deterministicShares bool) ([]*state.DkgState, []*ecdsa.PrivateKey) {
+func InitializeNewDkgStateInfo(tempDir string, n int, deterministicShares bool) ([]*state.DkgState, []*ecdsa.PrivateKey) {
 	// Get private keys for validators
-	privKeys := testutils.SetupPrivateKeys(n)
-	accountsArray := testutils.SetupAccounts(privKeys)
+	_, _, accountsArray := tests.CreateAccounts(tempDir, n)
 	dkgStates := []*state.DkgState{}
 	threshold := crypto.CalcThreshold(n)
 

@@ -1,6 +1,6 @@
 //go:build integration
 
-package dkg_test
+package tests
 
 import (
 	"context"
@@ -9,13 +9,14 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/blockchain/testutils"
+	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	dkgUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
-
 	"github.com/alicenet/alicenet/logging"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -23,23 +24,14 @@ import (
 
 func TestRegisterTask_Group_1_Task(t *testing.T) {
 	n := 5
-	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
-
-	//This shouldn't be needed
-	//tr := &objects.TypeRegistry{}
-	//tr.RegisterInstanceType(&RegisterTask{})
-
-	logger := logging.GetLogger("ethereum")
-	logger.SetLevel(logrus.DebugLevel)
-	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 500*time.Millisecond)
-	defer eth.Close()
-
+	fixture := setupEthereum(t, n)
+	eth := fixture.Client
 	acct := eth.GetKnownAccounts()[0]
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := eth.Contracts()
+	c := ethereum.GetContracts()
 
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -59,19 +51,19 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 	)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err = dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err = SetETHDKGPhaseLength(4, fixture, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
-	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = InitializeETHDKG(fixture, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -79,13 +71,14 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cf()
 
-	//logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	// callOpts := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
-	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
-	assert.Nil(t, err)
+	var validatorAddresses []common.Address
+	// all known addresses must be validators at this point
+	for _, acc := range eth.GetKnownAccounts() {
+		validatorAddresses = append(validatorAddresses, acc.Address)
+	}
 
 	// Create a task to register and make sure it succeeds
-	_, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
+	dkgState, registrationTask, _ := events.UpdateStateOnRegistrationOpened(
 		acct,
 		openEvent.StartBlock.Uint64(),
 		openEvent.PhaseLength.Uint64(),
@@ -94,13 +87,13 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 		true,
 		validatorAddresses,
 	)
-
-	log := logger.WithField("TaskID", "foo")
-
-	err = registrationTask.Initialize(ctx, log, eth)
+	dkgDb := GetDKGDb(t)
+	state.SaveDkgState(dkgDb, dkgState)
+	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 
-	err = registrationTask.DoWork(ctx, log, eth)
+	_, err = registrationTask.Execute(ctx)
 	assert.Nil(t, err)
 }
 
@@ -108,14 +101,10 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 // This test calls Initialize and Execute.
 func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	n := 6
-	ecdsaPrivateKeys, accounts := testutils.InitializePrivateKeysAndAccounts(n)
-
-	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
-	assert.NotNil(t, eth)
-	defer eth.Close()
-
+	fixture := setupEthereum(t, n)
+	eth := fixture.Client
 	ctx := context.Background()
-
+	accounts := eth.GetKnownAccounts()
 	owner := accounts[0]
 
 	// Start EthDKG
@@ -123,29 +112,28 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err := dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	txn, rcpt, err := SetETHDKGPhaseLength(100, fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Kick off ethdkg
-	txn, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
+	txn, rcpt, err = InitializeETHDKG(fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
-	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
 	// get validator addresses
-	//ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)
-	//defer cf()
-	logger := logging.GetLogger("test").WithField("action", "GetValidatorAddressesFromPool")
-	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	validatorAddresses, err := dkgUtils.GetValidatorAddresses(callOpts, eth, logger.WithField("action", "GetValidatorAddressesFromPool"))
-	assert.Nil(t, err)
+	var validatorAddresses []common.Address
+	// all known addresses must be validators at this point
+	for _, acc := range eth.GetKnownAccounts() {
+		validatorAddresses = append(validatorAddresses, acc.Address)
+	}
 
 	// Do Register task
 	tasksVec := make([]*dkg.RegisterTask, n)
@@ -210,14 +198,14 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -269,14 +257,14 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -332,11 +320,11 @@ func TestRegisterTask_Group_2_Bad4(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, _, err = dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, _, err = InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.NotNil(t, err)
 }
 
@@ -357,14 +345,14 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Shorten ethdkg phase for testing purposes
-	_, _, err = dkgTestUtils.SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
+	_, _, err = SetETHDKGPhaseLength(100, eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
 	// Start EthDKG
-	_, rcpt, err := dkgTestUtils.InitializeETHDKG(eth, ownerOpts, ctx)
+	_, rcpt, err := InitializeETHDKG(eth, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -439,20 +427,20 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	// )
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err := dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err := SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Start EthDKG
-	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, rcpt)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -527,19 +515,19 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	)
 
 	// Shorten ethdkg phase for testing purposes
-	txn, rcpt, err = dkgTestUtils.SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
+	txn, rcpt, err = SetETHDKGPhaseLength(4, eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Cost())
 
 	// Start EthDKG
-	_, rcpt, err = dkgTestUtils.InitializeETHDKG(eth, txnOpts, ctx)
+	_, rcpt, err = InitializeETHDKG(eth, txnOpts, ctx)
 	assert.Nil(t, err)
 
 	t.Logf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	t.Logf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := dkgTestUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 

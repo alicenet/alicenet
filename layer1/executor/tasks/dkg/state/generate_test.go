@@ -4,10 +4,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -71,13 +70,10 @@ func TestMath_GenerateShares(t *testing.T) {
 	n := 4
 	threshold := state.ThresholdForUserCount(n)
 	assert.Equal(t, 2, threshold)
-
 	// Make n participants
 	participants := []*state.Participant{}
 	for idx := 0; idx < n; idx++ {
-
-		address, _, publicKey := testutils.GenerateTestAddress(t)
-
+		address, _, publicKey := utils.GenerateTestAddress(t)
 		participant := &state.Participant{
 			Address:   address,
 			Index:     idx + 1,
@@ -127,7 +123,7 @@ func TestMath_GenerateKeyShare(t *testing.T) {
 	participants := []*state.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
-		address, _, publicKey := testutils.GenerateTestAddress(t)
+		address, _, publicKey := utils.GenerateTestAddress(t)
 
 		participant := &state.Participant{
 			Address:   address,
@@ -180,7 +176,7 @@ func TestMath_GenerateMasterPublicKey(t *testing.T) {
 	participants := []*state.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
 
-		address, privateKey, publicKey := testutils.GenerateTestAddress(t)
+		address, privateKey, publicKey := utils.GenerateTestAddress(t)
 
 		privateKeys[address] = privateKey
 		participant := &state.Participant{
@@ -252,7 +248,7 @@ func TestMath_GenerateGroupKeys(t *testing.T) {
 	privateKeys := make(map[common.Address]*big.Int)
 	participants := []*state.Participant{{Index: 1}}
 	for idx := 0; idx < n; idx++ {
-		address, privateKey, publicKey := testutils.GenerateTestAddress(t)
+		address, privateKey, publicKey := utils.GenerateTestAddress(t)
 		privateKeys[address] = privateKey
 		participant := &state.Participant{
 			Address:   address,
@@ -304,8 +300,8 @@ func TestMath_GenerateGroupKeysBad1(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := testutils.InitializeNewDkgStateInfo(n, deterministicShares)
-	participants := testutils.GenerateParticipantList(dkgStates)
+	dkgStates, _ := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	participants := utils.GenerateParticipantList(dkgStates)
 
 	// Start raising errors
 	// Raise error for nil transportPrivateKey
@@ -342,8 +338,8 @@ func TestMath_GenerateGroupKeysBad2(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := testutils.InitializeNewDkgStateInfo(n, deterministicShares)
-	participants := testutils.GenerateParticipantList(dkgStates)
+	dkgStates, _ := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	participants := utils.GenerateParticipantList(dkgStates)
 
 	transportPrivateKey := big.NewInt(123456789)
 	index := 1
@@ -359,7 +355,7 @@ func TestMath_GenerateGroupKeysBad2(t *testing.T) {
 	}
 
 	// Reset participant list
-	participants = testutils.GenerateParticipantList(dkgStates)
+	participants = utils.GenerateParticipantList(dkgStates)
 	// Raise an error for condensing commitments
 	_, _, err = state.GenerateGroupKeys(transportPrivateKey, privCoefs, encryptedShares, index, participants)
 	if err == nil {
