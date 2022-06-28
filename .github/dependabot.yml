@@ -4,9 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "main"
+
+  - package-ecosystem: "npm"
+    directory: "/bridge"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "main"
