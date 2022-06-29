@@ -14,6 +14,8 @@ import (
 	logrus "github.com/sirupsen/logrus"
 )
 
+var _ tasks.Task = &MockTask{}
+
 // MockTask is a mock implementation of the Task interface (from the package
 // github.com/alicenet/alicenet/layer1/executor/tasks) used for unit
 // testing.

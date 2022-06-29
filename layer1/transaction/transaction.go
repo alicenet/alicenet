@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
@@ -47,7 +48,7 @@ type FrontWatcher struct {
 var _ Watcher = &FrontWatcher{}
 
 // Creates a new transaction watcher struct
-func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.Database, statusDisplay bool) *FrontWatcher {
+func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.Database, statusDisplay bool, txPollingTime time.Duration) *FrontWatcher {
 	requestChannel := make(chan SubscribeRequest, 100)
 	// main context that will cancel all workers and go routine
 	mainCtx, cf := context.WithCancel(context.Background())
@@ -56,7 +57,7 @@ func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.
 
 	logger.Info("Creating transaction watcher")
 
-	backend := newWatcherBackend(mainCtx, requestChannel, client, logger, database, statusDisplay)
+	backend := newWatcherBackend(mainCtx, requestChannel, client, logger, database, statusDisplay, txPollingTime)
 
 	transactionWatcher := &FrontWatcher{
 		requestChannel:   requestChannel,
@@ -68,8 +69,8 @@ func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.
 }
 
 // WatcherFromNetwork creates a transaction Watcher from a given ethereum network.
-func WatcherFromNetwork(network layer1.Client, database *db.Database, statusDisplay bool) *FrontWatcher {
-	watcher := NewWatcher(network, network.GetFinalityDelay(), database, statusDisplay)
+func WatcherFromNetwork(network layer1.Client, database *db.Database, statusDisplay bool, txPollingTime time.Duration) *FrontWatcher {
+	watcher := NewWatcher(network, network.GetFinalityDelay(), database, statusDisplay, txPollingTime)
 	err := watcher.Start()
 	if err != nil {
 		panic(fmt.Sprintf("couldn't start transaction watcher: %v", err))

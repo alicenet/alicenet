@@ -14,6 +14,7 @@ import (
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
+var _ layer1.Client = &MockClient{}
 // MockClient is a mock implementation of the Client interface (from the
 // package github.com/alicenet/alicenet/layer1) used for unit testing.
 type MockClient struct {

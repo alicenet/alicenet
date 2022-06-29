@@ -276,7 +276,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	monDB.Init(rawMonitorDb)
 
 	// Layer 1 transaction watcher
-	txWatcher := transaction.WatcherFromNetwork(eth, monDB, config.Configuration.Ethereum.TxMetricsDisplay)
+	txWatcher := transaction.WatcherFromNetwork(eth, monDB, config.Configuration.Ethereum.TxMetricsDisplay, constants.TxPollingTime)
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler

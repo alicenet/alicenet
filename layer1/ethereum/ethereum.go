@@ -159,7 +159,6 @@ func NewClient(
 	eth.rpcClient = rpcClient
 	ethClient := ethclient.NewClient(rpcClient)
 	eth.internalClient = ethClient
-	// instantiate but don't initiate the new transaction with default finality Delay.
 	eth.chainID, err = ethClient.ChainID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Error in NewEndpoint at ethClient.ChainID: %v", err)

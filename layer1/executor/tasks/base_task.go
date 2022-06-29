@@ -155,8 +155,9 @@ func (bt *BaseTask) Finish(err error) {
 	} else {
 		bt.logger.Info("task is done")
 	}
-
-	bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
+	if bt.taskResponseChan != nil {
+		bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
+	}
 }
 
 func (bt *BaseTask) GetDB() *db.Database {
