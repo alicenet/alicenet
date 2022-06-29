@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
@@ -58,17 +59,22 @@ func GetContracts() *Contracts {
 /// to this functions are no-op.
 func NewContracts(eth *Client, contractFactoryAddress common.Address) {
 	once.Do(func() {
-		contracts = &Contracts{
-			allAddresses:           make(map[common.Address]bool),
-			eth:                    eth,
-			contractFactoryAddress: contractFactoryAddress,
-		}
-		err := contracts.lookupContracts()
-		if err != nil {
-			panic(err)
-		}
-		contracts.isInitialized = true
+		contracts = getNewContractInstance(eth, contractFactoryAddress)
 	})
+}
+
+func getNewContractInstance(eth *Client, contractFactoryAddress common.Address) *Contracts {
+	tempContracts := &Contracts{
+		allAddresses:           make(map[common.Address]bool),
+		eth:                    eth,
+		contractFactoryAddress: contractFactoryAddress,
+	}
+	err := tempContracts.lookupContracts()
+	if err != nil {
+		panic(err)
+	}
+	tempContracts.isInitialized = true
+	return tempContracts
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
@@ -286,4 +292,12 @@ func logAndEat(logger *logrus.Logger, err error) {
 	if err != nil {
 		logger.Error(err)
 	}
+}
+
+// Auxiliary function to clean the global variables that will allow the
+// deployment and bindings of multiple contracts during other unit tests running
+// in sequence. DON'T USE THIS FUNCTION OUTSIDE THE UNIT TESTS
+func CleanGlobalVariables(t *testing.T) {
+	contracts = nil
+	once = sync.Once{}
 }

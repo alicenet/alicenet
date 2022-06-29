@@ -57,15 +57,6 @@ func GetHardhatPackagePath() string {
 	return bridgePath
 }
 
-func GetNPXPath() string {
-	cmd := exec.Command("which", "npx")
-	stdout, err := cmd.Output()
-	if err != nil {
-		panic(fmt.Errorf("Error getting npx path: %v", err))
-	}
-	return sanitizePathFromOutput(stdout)
-}
-
 func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) string {
 	configTemplate := `
 	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
@@ -157,6 +148,8 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 }
 
 type Hardhat struct {
+	hostname   string
+	port       string
 	url        string
 	cmd        *exec.Cmd
 	configPath string
@@ -169,7 +162,7 @@ func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
 func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	logger := logging.GetLogger("test")
 	// Clean any running hardhat node before starting a new one
-	err := KillAllRunningHardhat()
+	err := KillAllRunningHardhat(hostname, port)
 	if err != nil {
 		logger.Warnf("Failed to KillAllRunningHardhat %v", err)
 	}
@@ -222,7 +215,7 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not run hardhat node: %s", err)
 	}
-	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath}
+	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath, port: port, hostname: hostname}
 	ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
 	defer cf()
 	err = hardhat.WaitForHardHatNode(ctx)
@@ -300,9 +293,9 @@ func (h *Hardhat) Close() error {
 	}
 
 	logger.Debug("Killing any other leftover of HardHat process")
-	err = KillAllRunningHardhat()
+	err = KillAllRunningHardhat(h.hostname, h.port)
 	if err != nil {
-		return err
+		logger.Warnf("Failed to kill all HardHat process: %v", err)
 	}
 
 	logger.Debug("HardHat node has been stopped")
@@ -326,10 +319,9 @@ func (h *Hardhat) IsHardHatRunning() (bool, error) {
 
 func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error) {
 	modulesDir := GetHardhatPackagePath()
-	npxPath := GetNPXPath()
 	output, err := executeCommand(
 		modulesDir,
-		npxPath,
+		"npx",
 		"hardhat",
 		"--network",
 		"dev",
@@ -360,11 +352,10 @@ func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error)
 
 func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string) error {
 	nodeDir := GetHardhatPackagePath()
-	npxPath := GetNPXPath()
 	// Register validator
 	_, err := executeCommand(
 		nodeDir,
-		npxPath,
+		"npx",
 		"hardhat",
 		"--network",
 		"dev",
@@ -383,9 +374,10 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 	return nil
 }
 
-func KillAllRunningHardhat() error {
+func KillAllRunningHardhat(hostname string, port string) error {
 	script := filepath.Join(GetProjectRootPath(), "scripts", "base-scripts", "kill_hardhat.sh")
-	err := exec.Command(script).Run()
+	killString := fmt.Sprintf("--hostname %s --port %s", hostname, port)
+	err := exec.Command(script, killString).Run()
 	if err != nil {
 		return fmt.Errorf("Error killing all hardhat process: %v", err)
 	}

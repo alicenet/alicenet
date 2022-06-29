@@ -4,7 +4,6 @@ package tests
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
@@ -59,16 +58,15 @@ func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 
 	t.Cleanup(func() {
 		fixture.Close()
+		ethereum.CleanGlobalVariables(t)
 	})
 
 	return fixture
 }
 
 type TestSuite struct {
-	Eth              layer1.Client
-	DKGStatesDbs     []*db.Database
-	ecdsaPrivateKeys []*ecdsa.PrivateKey
-
+	Eth                          layer1.Client
+	DKGStatesDbs                 []*db.Database
 	regTasks                     []*dkg.RegisterTask
 	DispMissingRegTasks          []*dkg.DisputeMissingRegistrationTask
 	ShareDistTasks               []*dkg.ShareDistributionTask
@@ -255,8 +253,10 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		}
 
 		for j := 0; j < n; j++ {
-			dkgState.OnAddressRegistered(dkgState.Account.Address, i+1, dkgState.Nonce, dkgState.TransportPublicKey)
-			state.SaveDkgState(dkgStatesDbs[i], dkgState)
+			otherDkgState, err := state.GetDkgState(dkgStatesDbs[j])
+			assert.Nil(t, err)
+			otherDkgState.OnAddressRegistered(dkgState.Account.Address, i+1, dkgState.Nonce, dkgState.TransportPublicKey)
+			state.SaveDkgState(dkgStatesDbs[j], otherDkgState)
 		}
 	}
 
@@ -272,10 +272,10 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 			dkgState, err := state.GetDkgState(dkgStatesDbs[idx])
 			assert.Nil(t, err)
 			shareDistributionTask, disputeMissingShareDistributionTask, disputeShareDistTask := events.UpdateStateOnRegistrationComplete(dkgState, height)
-
 			shareDistributionTasks[idx] = shareDistributionTask
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
 			disputeShareDistTasks[idx] = disputeShareDistTask
+			state.SaveDkgState(dkgStatesDbs[idx], dkgState)
 		}
 
 		// skip all the way to ShareDistribution phase
@@ -391,6 +391,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 			disputeShareDistributionTasks[i] = disputeShareDistributionTask
 			keyshareSubmissionTasks[i] = keyshareSubmissionTask
 			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
+			state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
 		}
 
 		suite.DisputeShareDistTasks = disputeShareDistributionTasks
@@ -532,6 +533,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
 		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
 		disputeGPKjTasks[idx] = disputeGPKjTask
+		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
 	}
 
 	suite.GpkjSubmissionTasks = gpkjSubmissionTasks
@@ -626,6 +628,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 			disputeGPKjTasks[i] = disputeGPKjTask
 			completionTasks[i] = completionTask
+			state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
 		}
 
 		suite.DisputeGPKjTasks = disputeGPKjTasks

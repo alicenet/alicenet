@@ -132,7 +132,7 @@ func fundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus
 	for _, account := range knownAccounts {
 		txn, err := ethereum.TransferEther(
 			eth,
-			logger.WithField("account", account),
+			logger.WithField("account", account.Address.Hex()),
 			eth.GetDefaultAccount().Address,
 			account.Address,
 			amount,
@@ -175,6 +175,7 @@ type ClientFixture struct {
 }
 
 func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, logger *logrus.Entry, unlockAllAccounts bool, deployContracts bool, registerValidators bool) *ClientFixture {
+	logger.Logger.SetLevel(logrus.TraceLevel)
 	tempDir, err := os.MkdirTemp("", "unittestdir")
 	if err != nil {
 		panic(fmt.Errorf("failed to create tmp dir: %v", err))
@@ -220,6 +221,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		for _, account := range eth.GetKnownAccounts() {
 			validatorsAddresses = append(validatorsAddresses, account.Address.Hex())
 		}
+		ethereum.NewContracts(eth, common.HexToAddress(factoryAddress))
 		if registerValidators {
 			hardhat.RegisterValidators(factoryAddress, validatorsAddresses)
 		}
@@ -233,6 +235,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		FactoryAddress: factoryAddress,
 		PassCodePath:   passCodePath,
 		KeyStorePath:   keyStorePath,
+		Logger:         logger,
 	}
 }
 

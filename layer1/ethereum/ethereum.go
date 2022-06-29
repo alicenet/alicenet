@@ -745,16 +745,15 @@ func TransferEther(eth layer1.Client, logger *logrus.Entry, from common.Address,
 		Value:     wei,
 	}
 
-	logger.Debugf(
-		"TransferEther => chainID:%v from:%v nonce:%v, to:%v, wei:%v, gasLimit:%v, gasPrice:%v",
-		chainID,
-		from.Hex(),
-		nonce,
-		to.Hex(),
-		wei,
-		gasLimit,
-		feeCap,
-	)
+	logger.WithFields(logrus.Fields{
+		"chainID":  chainID,
+		"from":     from.Hex(),
+		"nonce":    nonce,
+		"to":       to.Hex(),
+		"wei":      wei,
+		"gasLimit": gasLimit,
+		"gasPrice": feeCap,
+	}).Debug("Transferring ether")
 	signedTx, err := eth.SignTransaction(txRough, from)
 	if err != nil {
 		logger.Errorf("signing transaction failed: %v", err)

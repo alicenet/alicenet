@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"testing"
@@ -57,15 +56,15 @@ func (ah *adminHandlerMock) SetSynchronized(v bool) {
 	ah.setSynchronized = true
 }
 
-func InitializeNewDetDkgStateInfo(n int) ([]*state.DkgState, []*ecdsa.PrivateKey) {
-	return InitializeNewDkgStateInfo(n, true)
+func InitializeNewDetDkgStateInfo(tempDir string, n int) []*state.DkgState {
+	return InitializeNewDkgStateInfo(tempDir, n, true)
 }
 
-func InitializeNewNonDetDkgStateInfo(n int) ([]*state.DkgState, []*ecdsa.PrivateKey) {
-	return InitializeNewDkgStateInfo(n, false)
+func InitializeNewNonDetDkgStateInfo(tempDir string, n int) []*state.DkgState {
+	return InitializeNewDkgStateInfo(tempDir, n, false)
 }
 
-func InitializeNewDkgStateInfo(tempDir string, n int, deterministicShares bool) ([]*state.DkgState, []*ecdsa.PrivateKey) {
+func InitializeNewDkgStateInfo(tempDir string, n int, deterministicShares bool) []*state.DkgState {
 	// Get private keys for validators
 	_, _, accountsArray := tests.CreateAccounts(tempDir, n)
 	dkgStates := []*state.DkgState{}
@@ -140,7 +139,7 @@ func InitializeNewDkgStateInfo(tempDir string, n int, deterministicShares bool) 
 		}
 	}
 
-	return dkgStates, privKeys
+	return dkgStates
 }
 
 func GenerateParticipantList(dkgStates []*state.DkgState) state.ParticipantList {
