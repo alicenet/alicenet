@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { ethers } from "hardhat";
 
 export async function assertErrorMessage(
   p: Promise<any>,
@@ -8,7 +9,15 @@ export async function assertErrorMessage(
     (value) => {
       expect.fail(`Found value instead of error: ${value}`);
     },
-    (reason) => {
+    async (reason) => {
+      const tx = await ethers.provider.getTransaction(reason.transactionHash);
+      console.log("tx", tx);
+
+      const receipt = await ethers.provider.getTransactionReceipt(
+        reason.transactionHash
+      );
+      console.log("receipt", receipt);
+
       expect(reason.message).to.contain(message);
     }
   );
