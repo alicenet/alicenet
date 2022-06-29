@@ -415,7 +415,7 @@ export async function getDeployUpgradeableMultiCallArgs(
   return multiCallArgs;
 }
 
-export async function getMulticallArgs(
+export async function deployContractsMulticall(
   contracts: ContractDescriptor[],
   hre: HardhatRuntimeEnvironment,
   factoryAddr: string,
