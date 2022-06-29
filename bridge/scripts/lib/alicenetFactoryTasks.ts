@@ -1172,8 +1172,7 @@ task(
     multiCallArgsArray = await getMulticallArgs(
       contracts,
       hre,
-      factoryBase,
-      factory,
+      factory.address,
       txCount,
       taskArgs.inputFolder,
       taskArgs.outputFolder
