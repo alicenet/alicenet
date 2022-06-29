@@ -210,7 +210,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 	factoryAddress := ""
 	if deployContracts {
 		baseFilesDir := filepath.Join(GetProjectRootPath(), "scripts", "base-files")
-		factoryAddress, err = hardhat.DeployFactoryAndContracts(baseFilesDir)
+		factoryAddress, err = hardhat.DeployFactoryAndContracts(tempDir, baseFilesDir)
 		if err != nil {
 			panic(fmt.Errorf("failed to deploy factory: %v", err))
 		}

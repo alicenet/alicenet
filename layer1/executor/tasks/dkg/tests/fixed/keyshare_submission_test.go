@@ -1,6 +1,6 @@
 //go:build integration
 
-package tests
+package fixed
 
 import (
 	"context"

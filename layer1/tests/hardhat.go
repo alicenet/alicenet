@@ -160,12 +160,6 @@ func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
 }
 
 func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
-	logger := logging.GetLogger("test")
-	// Clean any running hardhat node before starting a new one
-	err := KillAllRunningHardhat(hostname, port)
-	if err != nil {
-		logger.Warnf("Failed to KillAllRunningHardhat %v", err)
-	}
 	sanitizedHostname := ""
 	sanitizedPort := ""
 	if strings.Contains(hostname, "http://") || strings.Contains(hostname, "https://") {
@@ -216,7 +210,7 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 		return nil, fmt.Errorf("could not run hardhat node: %s", err)
 	}
 	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath, port: port, hostname: hostname}
-	ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cf := context.WithTimeout(context.Background(), time.Second*100)
 	defer cf()
 	err = hardhat.WaitForHardHatNode(ctx)
 	if err != nil {
@@ -317,7 +311,7 @@ func (h *Hardhat) IsHardHatRunning() (bool, error) {
 	return false, nil
 }
 
-func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error) {
+func (h *Hardhat) DeployFactoryAndContracts(tmpDir string, baseFilesDir string) (string, error) {
 	modulesDir := GetHardhatPackagePath()
 	output, err := executeCommand(
 		modulesDir,
@@ -331,6 +325,8 @@ func (h *Hardhat) DeployFactoryAndContracts(baseFilesDir string) (string, error)
 		"deployContracts",
 		"--input-folder",
 		filepath.Join(baseFilesDir),
+		"--output-folder",
+		tmpDir,
 	)
 	if err != nil {
 		return "", err
