@@ -62,10 +62,12 @@ func TestKeyShareSubmission_Bad3(t *testing.T) {
 		assert.Nil(t, err)
 		// Mess up SecretValue
 		dkgState.SecretValue = nil
-		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "3333", nil)
+		err = keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "3333", nil)
+		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.NotNil(t, err)
 	}
@@ -84,17 +86,19 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
-		assert.Nil(t, err)
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-
-		keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "3333", nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "3333", nil)
+		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
+		assert.Nil(t, err)
+
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		// mess uo here
 		dkgState.Participants[dkgState.Account.Address].KeyShareG1s = [2]*big.Int{big.NewInt(0), big.NewInt(1)}
-		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 
 		_, err = keyshareSubmissionTask.Execute(ctx)
 		assert.NotNil(t, err)

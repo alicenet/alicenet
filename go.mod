@@ -127,4 +127,5 @@ require (
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0 // indirect
+	zombiezen.com/go/capnproto2 v2.18.2+incompatible // indirect
 )

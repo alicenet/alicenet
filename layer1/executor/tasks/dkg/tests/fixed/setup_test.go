@@ -225,7 +225,8 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		regTasks[idx] = regTask
 		dispMissingRegTasks[idx] = dispMissingRegTask
 
-		regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, "RegistrationTask", fmt.Sprintf("%v", idx), nil)
+		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, "RegistrationTask", fmt.Sprintf("%v", idx), nil)
+		assert.Nil(t, err)
 		err = regTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
 
@@ -256,7 +257,8 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 			otherDkgState, err := state.GetDkgState(dkgStatesDbs[j])
 			assert.Nil(t, err)
 			otherDkgState.OnAddressRegistered(dkgState.Account.Address, i+1, dkgState.Nonce, dkgState.TransportPublicKey)
-			state.SaveDkgState(dkgStatesDbs[j], otherDkgState)
+			err = state.SaveDkgState(dkgStatesDbs[j], otherDkgState)
+			assert.Nil(t, err)
 		}
 	}
 
@@ -275,7 +277,8 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 			shareDistributionTasks[idx] = shareDistributionTask
 			disputeMissingShareDistributionTasks[idx] = disputeMissingShareDistributionTask
 			disputeShareDistTasks[idx] = disputeShareDistTask
-			state.SaveDkgState(dkgStatesDbs[idx], dkgState)
+			err = state.SaveDkgState(dkgStatesDbs[idx], dkgState)
+			assert.Nil(t, err)
 		}
 
 		// skip all the way to ShareDistribution phase
@@ -316,9 +319,6 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 	var receiptResponses []transaction.ReceiptResponse
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
-		assert.Nil(t, err)
-
 		var skipLoop = false
 
 		for _, undistIdx := range undistributedSharesIdx {
@@ -333,17 +333,25 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 		shareDistTask := suite.ShareDistTasks[idx]
 
-		shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "ShareDistributionTask", fmt.Sprintf("%v", idx), nil)
+		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "ShareDistributionTask", fmt.Sprintf("%v", idx), nil)
+		assert.Nil(t, err)
 		err = shareDistTask.Prepare(ctx)
 		assert.Nil(t, err)
 
-		for _, badIdx := range badSharesIdx {
-			if idx == badIdx {
-				// inject bad shares
-				for _, s := range dkgState.Participants[dkgState.Account.Address].EncryptedShares {
-					s.Set(big.NewInt(0))
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+
+		if len(badSharesIdx) > 0 {
+			for _, badIdx := range badSharesIdx {
+				if idx == badIdx {
+					// inject bad shares
+					for _, s := range dkgState.Participants[dkgState.Account.Address].EncryptedShares {
+						s.Set(big.NewInt(0))
+					}
 				}
 			}
+			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			assert.Nil(t, err)
 		}
 
 		txn, err := shareDistTask.Execute(ctx)
@@ -363,7 +371,8 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 				dkgState.Participants[dkgState.Account.Address].Commitments,
 			)
 			assert.Nil(t, err)
-			state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			assert.Nil(t, err)
 		}
 
 	}
@@ -391,7 +400,8 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 			disputeShareDistributionTasks[i] = disputeShareDistributionTask
 			keyshareSubmissionTasks[i] = keyshareSubmissionTask
 			disputeMissingKeySharesTasks[i] = disputeMissingKeySharesTask
-			state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			assert.Nil(t, err)
 		}
 
 		suite.DisputeShareDistTasks = disputeShareDistributionTasks
@@ -421,20 +431,21 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 	var receiptResponses []transaction.ReceiptResponse
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
-		assert.Nil(t, err)
-
 		if idx >= n-undistributedShares {
 			continue
 		}
 
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
 
 		txn, err := keyshareSubmissionTask.Execute(ctx)
+		assert.Nil(t, err)
+
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
@@ -450,7 +461,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 				dkgState.Participants[dkgState.Account.Address].KeyShareG1CorrectnessProofs,
 				dkgState.Participants[dkgState.Account.Address].KeyShareG2s,
 			)
-			state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			assert.Nil(t, err)
 		}
 	}
 
@@ -473,7 +485,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 			mpkSubmissionTaskStart = mpkSubmissionTask.GetStart()
 
 			mpkSubmissionTasks[i] = mpkSubmissionTask
-			state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			assert.Nil(t, err)
 		}
 
 		// skip all the way to MPKSubmission phase
@@ -503,7 +516,8 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 		task := suite.MpkSubmissionTasks[idx]
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 		if utils.AmILeading(eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
@@ -533,7 +547,8 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 		gpkjSubmissionTasks[idx] = gpkjSubmissionTask
 		disputeMissingGPKjTasks[idx] = disputeMissingGPKjTask
 		disputeGPKjTasks[idx] = disputeGPKjTask
-		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 	}
 
 	suite.GpkjSubmissionTasks = gpkjSubmissionTasks
@@ -568,7 +583,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err = gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		assert.Nil(t, err)
 		err = gpkjSubTask.Prepare(ctx)
 		assert.Nil(t, err)
 
@@ -603,7 +619,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 				dkgState.Account.Address,
 				dkgState.Participants[dkgState.Account.Address].GPKj,
 			)
-			state.SaveDkgState(suite.DKGStatesDbs[j], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[j], dkgState)
+			assert.Nil(t, err)
 		}
 
 	}
@@ -628,7 +645,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 			disputeGPKjTasks[i] = disputeGPKjTask
 			completionTasks[i] = completionTask
-			state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[i], dkgState)
+			assert.Nil(t, err)
 		}
 
 		suite.DisputeGPKjTasks = disputeGPKjTasks
