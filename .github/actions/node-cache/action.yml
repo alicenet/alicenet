@@ -4,9 +4,8 @@ runs:
   using: "composite"
   steps:
   - uses: actions/setup-node@v3
-    working-directory: ./bridge
     with:
-      node-version-file: '.nvmrc'
+      node-version-file: './bridge.nvmrc'
       cache: 'npm'
   - shell: bash
     working-directory: ./bridge
