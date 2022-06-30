@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  NODE_VERSION: 16.x
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
