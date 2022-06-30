@@ -3,9 +3,9 @@ name: Alicenet CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   NODE_VERSION: 16.x
@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
-    
+
   solidity-unit-tests:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -58,7 +58,7 @@ jobs:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-    
+
   solidity-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node-cache
       - run: npm run lint-solidity
-    
+
   typescript-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -84,7 +84,7 @@ jobs:
       - uses: ./.github/actions/node-cache
       - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
-    
+
   golang-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
@@ -93,12 +93,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - uses: golangci/golangci-lint-action@v3
-  
+
   golang-unit-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04 ]
+        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
@@ -122,39 +122,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-20.04 ]
-        test-cmd: [
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
-          github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
-          github.com/alicenet/alicenet/blockchain,
-          github.com/alicenet/alicenet/blockchain/dkg,
-          github.com/alicenet/alicenet/blockchain/dkg/math,
-          github.com/alicenet/alicenet/blockchain/monitor,
-          github.com/alicenet/alicenet/blockchain/objects,
-          github.com/alicenet/alicenet/blockchain/tasks
-        ]
+        os: [ubuntu-20.04]
+        test-cmd:
+          [
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
+            github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
+            github.com/alicenet/alicenet/blockchain,
+            github.com/alicenet/alicenet/blockchain/dkg,
+            github.com/alicenet/alicenet/blockchain/dkg/math,
+            github.com/alicenet/alicenet/blockchain/monitor,
+            github.com/alicenet/alicenet/blockchain/objects,
+            github.com/alicenet/alicenet/blockchain/tasks,
+          ]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
