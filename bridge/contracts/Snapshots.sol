@@ -11,6 +11,7 @@ import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
+import "hardhat/console.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
@@ -60,13 +61,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
-
+        //get the last snapshot
+        Snapshot memory lastSnapshot = getLatestSnapshot();
         require(
-            block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
+            block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
-
-        uint32 epoch = _epoch + 1;
+        uint32 epoch = _epoch._value + 1;
 
         // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
         // {
@@ -116,7 +117,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
             bClaims_
         );
-
         require(
             epoch * _epochLength == blockClaims.height,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
@@ -133,8 +133,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
 
-        _snapshots[epoch] = Snapshot(block.number, blockClaims);
-        _epoch = epoch;
+        _setSnapshot(Snapshot(block.number, blockClaims));
+        _setEpoch(epoch);
 
         emit SnapshotTaken(
             _chainId,
@@ -158,7 +158,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         {
             require(
-                _epoch == 0,
+                _epoch._value == 0,
                 string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
             );
             require(
@@ -177,7 +177,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
             );
             epoch = getEpochFromHeight(blockClaims.height);
-            _snapshots[epoch] = Snapshot(block.number, blockClaims);
+            _setSnapshot(Snapshot(block.number, blockClaims));
             emit SnapshotTaken(
                 _chainId,
                 epoch,
@@ -187,7 +187,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 groupSignature_[i]
             );
         }
-        _epoch = uint32(epoch);
+        _setEpoch(uint32(epoch));
         return true;
     }
 
@@ -208,7 +208,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getEpoch() public view returns (uint256) {
-        return _epoch;
+        return _epoch._value;
     }
 
     function getEpochLength() public view returns (uint256) {
@@ -216,11 +216,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.chainId;
+        return getSnapshot(epoch_).blockClaims.chainId;
     }
 
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.chainId;
+        return getLatestSnapshot().blockClaims.chainId;
     }
 
     function getBlockClaimsFromSnapshot(uint256 epoch_)
@@ -228,7 +228,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return _snapshots[epoch_].blockClaims;
+        return getSnapshot(epoch_).blockClaims;
     }
 
     function getBlockClaimsFromLatestSnapshot()
@@ -236,31 +236,31 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return _snapshots[_epoch].blockClaims;
+        return getLatestSnapshot().blockClaims;
     }
 
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].committedAt;
+        return getSnapshot(epoch_).committedAt;
     }
 
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].committedAt;
+        return getLatestSnapshot().committedAt;
     }
 
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.height;
+        return getSnapshot(epoch_).blockClaims.height;
     }
 
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.height;
+        return getLatestSnapshot().blockClaims.height;
     }
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
-        return _snapshots[epoch_];
+        return _snapshots._array[epoch_ % _snapshots._array.length];
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
-        return _snapshots[_epoch];
+        return _snapshots._array[getEpoch() % _snapshots._array.length];
     }
 
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
