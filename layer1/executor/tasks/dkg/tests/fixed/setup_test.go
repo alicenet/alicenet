@@ -6,11 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
-	"os"
-	"strings"
-	"testing"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -31,6 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"math/big"
+	"os"
+	"strings"
+	"testing"
 )
 
 var HardHat *tests.Hardhat
@@ -364,14 +363,17 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			err = dkgState.OnSharesDistributed(
+			participantDkgState, err := state.GetDkgState(suite.DKGStatesDbs[j])
+			assert.Nil(t, err)
+
+			err = participantDkgState.OnSharesDistributed(
 				logger,
 				dkgState.Account.Address,
 				dkgState.Participants[dkgState.Account.Address].EncryptedShares,
 				dkgState.Participants[dkgState.Account.Address].Commitments,
 			)
 			assert.Nil(t, err)
-			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
 
@@ -454,14 +456,16 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 
 		// event
 		for j := 0; j < n; j++ {
+			participantDkgState, err := state.GetDkgState(suite.DKGStatesDbs[j])
+			assert.Nil(t, err)
 			// simulate receiving event for all participants
-			dkgState.OnKeyShareSubmitted(
+			participantDkgState.OnKeyShareSubmitted(
 				dkgState.Account.Address,
 				dkgState.Participants[dkgState.Account.Address].KeyShareG1s,
 				dkgState.Participants[dkgState.Account.Address].KeyShareG1CorrectnessProofs,
 				dkgState.Participants[dkgState.Account.Address].KeyShareG2s,
 			)
-			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
 	}
@@ -507,8 +511,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	eth := suite.Eth
-	n := len(eth.GetKnownAccounts())
+	n := len(suite.Eth.GetKnownAccounts())
 
 	// Do MPK Submission task (once is enough)
 	var receiptResponses []transaction.ReceiptResponse
@@ -516,11 +519,11 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 		task := suite.MpkSubmissionTasks[idx]
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
-		if utils.AmILeading(eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
+		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
 			txn, err := task.Execute(ctx)
 			assert.Nil(t, err)
 
