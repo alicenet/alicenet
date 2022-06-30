@@ -517,11 +517,12 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
 		task := suite.MpkSubmissionTasks[idx]
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
-		assert.Nil(t, err)
-		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
+		assert.Nil(t, err)
+
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
 			txn, err := task.Execute(ctx)
@@ -569,9 +570,6 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	var receiptResponses []transaction.ReceiptResponse
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
-		assert.Nil(t, err)
-
 		var skipLoop = false
 
 		for _, undistIdx := range undistributedGPKjIdx {
@@ -586,9 +584,12 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		err = gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = gpkjSubTask.Prepare(ctx)
+		assert.Nil(t, err)
+
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		for _, badIdx := range badGPKjIdx {
@@ -603,6 +604,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 				dkgState.GroupPrivateKey = gskjBad
 				dkgState.Participants[dkgState.Account.Address].GPKj = gpkjBad
+				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+				assert.Nil(t, err)
 			}
 		}
 
@@ -615,14 +618,14 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		// event
 		for j := 0; j < n; j++ {
-			dkgState, err := state.GetDkgState(suite.DKGStatesDbs[j])
+			participantDkgState, err := state.GetDkgState(suite.DKGStatesDbs[j])
 			assert.Nil(t, err)
 			// simulate receiving event for all participants
-			dkgState.OnGPKjSubmitted(
+			participantDkgState.OnGPKjSubmitted(
 				dkgState.Account.Address,
 				dkgState.Participants[dkgState.Account.Address].GPKj,
 			)
-			err = state.SaveDkgState(suite.DKGStatesDbs[j], dkgState)
+			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
 
