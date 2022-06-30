@@ -10,13 +10,18 @@ export async function assertErrorMessage(
       expect.fail(`Found value instead of error: ${value}`);
     },
     async (reason) => {
-      const tx = await ethers.provider.getTransaction(reason.transactionHash);
-      console.log("tx", tx);
+      try {
+        const tx = await ethers.provider.getTransaction(reason.transactionHash);
+        console.log("tx", tx);
 
-      const receipt = await ethers.provider.getTransactionReceipt(
-        reason.transactionHash
-      );
-      console.log("receipt", receipt);
+        const receipt = await ethers.provider.getTransactionReceipt(
+          reason.transactionHash
+        );
+        console.log("receipt", receipt);
+      } catch (error) {
+        console.error(error);
+      }
+      console.log("checking...", reason.message, message);
 
       expect(reason.message).to.contain(message);
     }
