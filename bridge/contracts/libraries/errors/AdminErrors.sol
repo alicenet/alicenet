@@ -2,6 +2,6 @@
 pragma solidity ^0.8.11;
 
 library AdminErrors {
-    // AdminErrors
+    // Admin errors
     error SenderNotAdmin(address sender);
 }

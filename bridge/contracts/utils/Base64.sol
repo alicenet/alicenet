@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import {Base64ErrorCodes} from "contracts/libraries/errorCodes/Base64ErrorCodes.sol";
+import {Base64Errors} from "contracts/libraries/errors/Base64Errors.sol";
 
 /* solhint-disable */
 
@@ -81,10 +81,10 @@ library Base64 {
         bytes memory data = bytes(_data);
 
         if (data.length == 0) return new bytes(0);
-        require(
-            data.length % 4 == 0,
-            string(abi.encodePacked(Base64ErrorCodes.BASE64_INVALID_INPUT))
-        );
+
+        if (data.length % 4 != 0) {
+            revert Base64Errors.InvalidDecoderInput(data.length % 4);
+        }
 
         // load the table into memory
         bytes memory table = TABLE_DECODE;
