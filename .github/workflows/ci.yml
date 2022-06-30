@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  NODE_VERSION: 16.x
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -19,16 +16,6 @@ defaults:
     shell: bash
 
 jobs:
-  solidity-build:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-    
   solidity-unit-tests:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -46,52 +33,47 @@ jobs:
           - test-group: "[f-qF-Q]"
           - test-group: "[r-sR-S]"
           - test-group: "[t-zT-Z]"
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - uses: ./.github/actions/solidity-tests
         with:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-    
-  solidity-linter:
+
+  node-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    needs: solidity-build
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run lint-solidity
-    
-  typescript-linter:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
         shell: bash
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run clean && npm run compile && npm run typechain
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm run lint
-    
+      - run: npm run lint-solidity
+
   golang-linter:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ./go.mod
+          cache: true
       - uses: golangci/golangci-lint-action@v3
   
   golang-unit-tests:
@@ -101,7 +83,10 @@ jobs:
         os: [ ubuntu-20.04 ]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ./go.mod
+          cache: true
       - run: go build ./...
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
@@ -157,7 +142,10 @@ jobs:
         ]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ./go.mod
+          cache: true
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-cmd }}
