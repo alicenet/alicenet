@@ -25,7 +25,7 @@ format_bridge() {
 	if [[ ! -z $changed_bridge ]]
 	then
 		cd bridge
-		# npm run format-staged || (echo '' && echo 'Did you run "npm install" in the "bridge" folder?' && exit 1)
+		npm run format-staged || (echo '' && echo 'Did you run "npm install" in the "bridge" folder?' && exit 1)
 	fi
 }
 
