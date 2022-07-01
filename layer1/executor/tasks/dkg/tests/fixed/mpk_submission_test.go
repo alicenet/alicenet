@@ -5,11 +5,13 @@ package fixed
 import (
 	"context"
 	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -95,11 +97,10 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
 	ctx := context.Background()
 
-	//dkgState := suite.DKGStatesDbs[0]
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
 	task := suite.MpkSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "ShareDistributionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -114,134 +115,68 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	assert.Nil(t, txn)
 }
 
-//// We force an error.
-//// This is caused by submitting invalid state information (state is nil).
-//func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
-//	n := 4
-//	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
-//	logger := logging.GetLogger("ethereum")
-//	logger.SetLevel(logrus.DebugLevel)
-//	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
-//	defer eth.Close()
-//
-//	acct := eth.GetKnownAccounts()[0]
-//
-//	ctx, cancel := context.WithCancel(context.Background())
-//	defer cancel()
-//
-//	// Create a task to share distribution and make sure it succeeds
-//	state := dkgState.NewDkgState(acct)
-//	task := dkg.NewMPKSubmissionTask(state, 1, 100)
-//	log := logger.WithField("TaskID", "foo")
-//
-//	err := task.Initialize(ctx, log, eth)
-//	assert.NotNil(t, err)
-//}
+// We force an error.
+// This is caused by submitting invalid state information (state is nil).
+func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
+	task := dkg.NewMPKSubmissionTask(1, 100)
+	db := mocks.NewTestDB()
+	log := logging.GetLogger("test").WithField("test", "test")
 
-//
-//// We force an error.
-//// This is caused by submitting invalid state information by not successfully
-//// completing KeyShareSubmission phase.
-//func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
-//	n := 4
-//	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
-//	logger := logging.GetLogger("ethereum")
-//	logger.SetLevel(logrus.DebugLevel)
-//	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
-//	defer eth.Close()
-//
-//	acct := eth.GetKnownAccounts()[0]
-//
-//	ctx, cancel := context.WithCancel(context.Background())
-//	defer cancel()
-//
-//	// Do MPK Submission task
-//	state := state.NewDkgState(acct)
-//	log := logger.WithField("TaskID", "foo")
-//	task := dkg.NewMPKSubmissionTask(state, 1, 100)
-//
-//	err := task.Initialize(ctx, log, eth)
-//	assert.NotNil(t, err)
-//}
-//
-//func TestMPKSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
-//	n := 4
-//	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 40)
-//	defer suite.Eth.Close()
-//	ctx := context.Background()
-//	eth := suite.Eth
-//	dkgStates := suite.DKGStates
-//	logger := logging.GetLogger("test").WithField("Validator", "")
-//
-//	// Do MPK Submission task
-//	tasksVec := suite.MpkSubmissionTasks
-//	var hadLeaders bool
-//	for idx := 0; idx < n; idx++ {
-//		state := dkgStates[idx]
-//
-//		err := mpkSubmissionTask.Initialize(ctx, logger, eth)
-//		assert.Nil(t, err)
-//		amILeading := mpkSubmissionTask.AmILeading(ctx, eth, logger, state)
-//
-//		if amILeading {
-//			hadLeaders = true
-//			// only perform MPK submission if validator is leading
-//			assert.True(t, mpkSubmissionTask.ShouldRetry(ctx, logger, eth))
-//			err = mpkSubmissionTask.DoWork(ctx, logger, eth)
-//			assert.Nil(t, err)
-//			assert.False(t, mpkSubmissionTask.ShouldRetry(ctx, logger, eth))
-//		}
-//	}
-//
-//	// make sure there were elected leaders
-//	assert.True(t, hadLeaders)
-//
-//	// any task is able to tell if MPK still needs submission.
-//	// if for any reason no validator lead the submission,
-//	// then all tasks will have ShouldExecute() returning true
-//	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
-//}
-//
-//func TestMPKSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
-//	n := 4
-//	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-//	defer suite.Eth.Close()
-//	ctx := context.Background()
-//	eth := suite.Eth
-//	logger := logging.GetLogger("test").WithField("Validator", "")
-//
-//	// Do MPK Submission task
-//	tasks := suite.MpkSubmissionTasks
-//	for idx := 0; idx < n; idx++ {
-//		taskState := tasks[idx].State.(*state.DkgState)
-//		taskState.MasterPublicKey[0] = big.NewInt(1)
-//
-//		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
-//		assert.True(t, shouldRetry)
-//	}
-//}
-//
-//func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
-//	n := 4
-//	suite := dkgTestUtils.StartFromKeyShareSubmissionPhase(t, n, 0, 100)
-//	defer suite.Eth.Close()
-//	ctx := context.Background()
-//	eth := suite.Eth
-//	logger := logging.GetLogger("test").WithField("Validator", "")
-//	leaders := 0
-//	// Do MPK Submission task
-//	tasksVec := suite.MpkSubmissionTasks
-//	for idx := 0; idx < n; idx++ {
-//		state := suite.DKGStates[idx]
-//
-//		err := mpkSubmissionTask.Initialize(ctx, logger, eth)
-//		assert.Nil(t, err)
-//		//tasks[idx].State.MasterPublicKey[0] = big.NewInt(1)
-//
-//		if mpkSubmissionTask.AmILeading(ctx, eth, logger, state) {
-//			leaders++
-//		}
-//	}
-//
-//	assert.Greater(t, leaders, 0)
-//}
+	err := task.Initialize(context.Background(), nil, db, log, nil, "", "", nil)
+	assert.Nil(t, err)
+
+	taskErr := task.Prepare(context.Background())
+	assert.NotNil(t, taskErr)
+	assert.False(t, taskErr.IsRecoverable())
+
+}
+
+// We force an error.
+// This is caused by submitting invalid state information by not successfully
+// completing KeyShareSubmission phase.
+func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
+	n := 4
+	fixture := setupEthereum(t, n)
+	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
+	ctx := context.Background()
+
+	// Do MPK Submission task
+	dkgState := state.NewDkgState(suite.Eth.GetDefaultAccount())
+	err := state.SaveDkgState(suite.DKGStatesDbs[0], dkgState)
+	assert.Nil(t, err)
+
+	task := suite.MpkSubmissionTasks[0]
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
+	assert.Nil(t, err)
+
+	taskErr := task.Prepare(ctx)
+	assert.NotNil(t, taskErr)
+	assert.False(t, taskErr.IsRecoverable())
+}
+
+func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
+	n := 4
+	fixture := setupEthereum(t, n)
+	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
+	ctx := context.Background()
+	leaders := 0
+
+	for idx := 0; idx < n; idx++ {
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+
+		task := suite.MpkSubmissionTasks[idx]
+		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
+		assert.Nil(t, err)
+
+		err = task.Prepare(ctx)
+		assert.Nil(t, err)
+
+		amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index)
+		if amILeading {
+			leaders++
+		}
+	}
+
+	assert.Equal(t, leaders, 1)
+}
