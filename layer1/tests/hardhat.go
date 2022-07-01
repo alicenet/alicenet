@@ -187,8 +187,6 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	configPath := GenerateHardhatConfig(hardhatTempDir, hardhatPath, fullUrl)
 	hardBinPath := filepath.Join(hardhatPath, "node_modules", ".bin", "hardhat")
 
-	// if you change the order of this command, remember to change the regex string
-	// in the scripts/base-scripts/kill_hardhat.sh
 	cmd := exec.Command(
 		"node",
 		hardBinPath,
@@ -286,12 +284,6 @@ func (h *Hardhat) Close() error {
 		return err
 	}
 
-	logger.Debug("Killing any other leftover of HardHat process")
-	err = KillAllRunningHardhat(h.hostname, h.port)
-	if err != nil {
-		logger.Warnf("Failed to kill all HardHat process: %v", err)
-	}
-
 	logger.Debug("HardHat node has been stopped")
 	return nil
 }
@@ -366,16 +358,6 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 	)
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-func KillAllRunningHardhat(hostname string, port string) error {
-	script := filepath.Join(GetProjectRootPath(), "scripts", "base-scripts", "kill_hardhat.sh")
-	killString := fmt.Sprintf("--hostname %s --port %s", hostname, port)
-	err := exec.Command(script, killString).Run()
-	if err != nil {
-		return fmt.Errorf("Error killing all hardhat process: %v", err)
 	}
 	return nil
 }

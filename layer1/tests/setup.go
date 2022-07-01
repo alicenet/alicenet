@@ -122,7 +122,7 @@ func WaitGroupReceipts(t *testing.T, client layer1.Client, receiptResponses []tr
 	}
 }
 
-func fundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus.Entry) error {
+func FundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus.Entry) error {
 	MineBlocks(eth.GetEndpoint(), 1)
 	knownAccounts := eth.GetKnownAccounts()
 	var receiptResponses []transaction.ReceiptResponse
@@ -202,7 +202,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 
 	watcher := transaction.WatcherFromNetwork(eth, MonitorDb, false, 100*time.Millisecond)
 
-	err = fundAccounts(eth, watcher, logger)
+	err = FundAccounts(eth, watcher, logger)
 	if err != nil {
 		panic(fmt.Errorf("failed to fund validators: %v", err))
 	}
