@@ -88,7 +88,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     ).to.be.revertedWith(`401`);
   });
 
-  it("getLatestSnapshot returns correct snapshot state", async function () {
+  it("getLatestSnapshot returns correct snapshot data", async function () {
     const expectedChainId = BigNumber.from(1);
     const expectedHeight = BigNumber.from(1024);
     const expectedTxCount = BigNumber.from(0);

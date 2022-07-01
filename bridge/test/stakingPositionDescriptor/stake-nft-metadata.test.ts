@@ -92,12 +92,12 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
       );
 
       const parsedJson = JSON.parse(
-        atob(tokenUri.replace("state:application/json;base64,", ""))
+        atob(tokenUri.replace("data:application/json;base64,", ""))
       );
 
       await expect(tokenUri).to.be.equal(expectedTokenUriData);
       await expect(
-        atob(parsedJson.image.replace("state:image/svg+xml;base64,", ""))
+        atob(parsedJson.image.replace("data:image/svg+xml;base64,", ""))
       ).to.be.equal(svg);
     });
 
@@ -105,12 +105,12 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
       const tokenUri = await publicStaking.tokenURI(tokenId);
 
       const parsedJson = JSON.parse(
-        atob(tokenUri.replace("state:application/json;base64,", ""))
+        atob(tokenUri.replace("data:application/json;base64,", ""))
       );
 
       await expect(tokenUri).to.be.equal(expectedTokenUriData);
       await expect(
-        atob(parsedJson.image.replace("state:image/svg+xml;base64,", ""))
+        atob(parsedJson.image.replace("data:image/svg+xml;base64,", ""))
       ).to.be.equal(svg);
     });
   });

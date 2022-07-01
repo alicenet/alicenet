@@ -21,13 +21,13 @@ import (
 
 type TasksManager struct {
 	Transactions map[string]*types.Transaction `json:"transactions"`
-	txWatcher    *transaction.FrontWatcher     `json:"-"`
+	txWatcher    transaction.Watcher           `json:"-"`
 	database     *db.Database                  `json:"-"`
 	logger       *logrus.Entry                 `json:"-"`
 }
 
 // Creates a new TasksManager instance
-func NewTaskManager(txWatcher *transaction.FrontWatcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
+func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
 		Transactions: map[string]*types.Transaction{},
 		txWatcher:    txWatcher,
@@ -206,10 +206,9 @@ func (tm *TasksManager) checkCompletion(ctx context.Context, task tasks.Task, tx
 				logger.Warn("got a reverted receipt, retrying")
 				return false, nil
 			}
-		} else {
-			logger.Trace("receipt is not ready yet")
 		}
 
+		logger.Trace("receipt is not ready yet")
 		hasToExecute, err := shouldExecute(ctx, task)
 		if err != nil {
 			return false, err

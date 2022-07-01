@@ -228,9 +228,6 @@ deploy)
 validator)
     RUN_VALIDATOR $2
     ;;
-node)
-    RUN_NODE $2
-    ;;
 race)
     RACE_VALIDATOR $2
     ;;

@@ -19,7 +19,7 @@ func getTaskScheduler(t *testing.T) (*TasksScheduler, chan tasks.TaskRequest, *m
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	adminHandlers := mocks.NewMockAdminHandler()
-	txWatcher := transaction.NewWatcher(client, 12, db, false)
+	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
 	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
 	tasksScheduler, err := NewTasksScheduler(db, client, adminHandlers, taskRequestChan, txWatcher)
 	assert.Nil(t, err)
@@ -209,7 +209,7 @@ func TestTasksScheduler_Recovery_Success(t *testing.T) {
 
 	client := mocks.NewMockClient()
 	adminHandlers := mocks.NewMockAdminHandler()
-	txWatcher := transaction.NewWatcher(client, 12, db, false)
+	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
 	tasksChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
 	scheduler, err := NewTasksScheduler(db, client, adminHandlers, tasksChan, txWatcher)
 	assert.Nil(t, err)
@@ -239,9 +239,11 @@ func TestTasksScheduler_Recovery_Success(t *testing.T) {
 	assert.Nil(t, err)
 	err = scheduler.Start()
 	assert.Nil(t, err)
+	assert.Equalf(t, 3, len(scheduler.Schedule), "Expected to have 3 tasks")
 
 	scheduler.Close()
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
 	close(tasksChan)
-
-	assert.Equalf(t, 3, len(scheduler.Schedule), "Expected to have 3 tasks")
 }
