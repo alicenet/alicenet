@@ -5,7 +5,7 @@ BUILD() {
     make build
 }
 
-PRE_CHECK () {
+PRE_CHECK() {
     # Check if alicenet binary exists
     if [ ! -f "./alicenet" ]; then
         BUILD
@@ -28,6 +28,9 @@ PRE_CHECK () {
 CLEAN_UP() {
     # Reset Folder
     rm -rf ./scripts/generated
+    if [[ "$1" == "all" ]]; then
+        exit 0
+    fi
     # Init
     mkdir ./scripts/generated
     mkdir ./scripts/generated/stateDBs
@@ -39,19 +42,6 @@ CLEAN_UP() {
     cp ./scripts/base-files/genesis.json ./scripts/generated/genesis.json
     cp ./scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f ./scripts/generated/keystores/keys
     echo -e "0x546F99F244b7B58B855330AE0E2BC1b30b41302F=abc123" >./scripts/generated/keystores/passcodes.txt
-}
-
-CLEAN_UP_NODES() {
-    # Reset Folder
-    rm -rf ./scripts/generated/normalNodes
-    # Init
-    mkdir ./scripts/generated/normalNodes
-    mkdir ./scripts/generated/normalNodes/config
-    mkdir ./scripts/generated/normalNodes/stateDBs
-    mkdir ./scripts/generated/normalNodes/monitorDBs
-    mkdir ./scripts/generated/normalNodes/keystores
-    mkdir ./scripts/generated/normalNodes/keystores/keys
-    touch ./scripts/generated/normalNodes/keystores/passcodes.txt
 }
 
 CREATE_CONFIGS() {
@@ -95,48 +85,6 @@ CREATE_CONFIGS() {
     done
 }
 
-CREATE_NORMAL_NODES_CONFIGS() {
-    # Vars
-    LA=5242
-    PA=5343
-    DA=5444
-    LSA=9884
-    # Check that number of validators is valid
-    if ! [[ $1 =~ $re ]] || [[ $1 -lt 1 ]] || [[ $1 -gt 32 ]]; then
-        echo -e "Invalid number of non validators nodes [1-32]"
-        exit 1
-    fi
-    folder="./scripts/generated/normalNodes"
-    if [ -f "$folder/created.txt" ]; then
-        echo -e "Generated files already exist, run clean or remove the '$folder' folder"
-        exit 1
-    fi
-    CLEAN_UP_NODES
-    # Loop through and create all essentail validator files
-    for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
-        PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
-        sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
-            sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
-            sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
-            sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
-            sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
-            sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/normalNodes\/keystores\/passcodes.txt\"/' |
-            sed -e 's/keystore = .*/keystore = \"scripts\/generated\/normalNodes\/keystores\/keys\"/' |
-            sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/normalNodes\/stateDBs\/node'"$l"'\/\"/' |
-            sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/normalNodes\/monitorDBs\/node'"$l"'\/\"/' |
-            sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' >$folder/config/node$l.toml
-        echo "$ADDRESS=abc123" >>$folder/keystores/passcodes.txt
-        mv ./keyfile.json $folder/keystores/keys/$ADDRESS
-        touch $folder/created.txt
-        ((LA = LA + 1))
-        ((PA = PA + 1))
-        ((DA = DA + 1))
-        ((LSA = LSA + 1))
-    done
-}
-
 LIST() {
     # List each of the validators
     COUNTER=1
@@ -162,12 +110,6 @@ RUN_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
     ./alicenet --config ./scripts/generated/config/validator$1.toml validator
-}
-
-RUN_NODE() {
-    # Run a normal node (non validator)
-    CHECK_EXISTING $1
-    ./madnet --config ./scripts/generated/normalNodes/config/node$1.toml validator
 }
 
 RACE_VALIDATOR() {
@@ -205,9 +147,6 @@ init)
         ./scripts/base-scripts/init-githooks.sh
     CREATE_CONFIGS $2
     ;;
-init_normal_nodes)
-    CREATE_NORMAL_NODES_CONFIGS $2
-    ;;
 geth)
     ./scripts/base-scripts/geth-local.sh
     ;;
@@ -219,9 +158,6 @@ deploy)
     ;;
 validator)
     RUN_VALIDATOR $2
-    ;;
-node)
-    RUN_NODE $2
     ;;
 race)
     RACE_VALIDATOR $2
@@ -262,7 +198,7 @@ status)
     STATUS $2
     ;;
 clean)
-    "all"
+    CLEAN_UP "all"
     ;;
 *)
     echo -e "Unknown argument!"
