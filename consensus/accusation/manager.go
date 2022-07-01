@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/MadBase/MadNet/consensus/db"
 	"github.com/MadBase/MadNet/consensus/lstate"
 	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detectorLogic = func(rs *objs.RoundState) (*objs.Accusation, bool)
+type detector = func(rs *objs.RoundState) (objs.Accusation, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking for accusations unless anything changes
 type rsCacheStruct struct {
@@ -37,8 +39,9 @@ func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 
 // Manager polls validators' roundStates and checks for possible accusation conditions
 type Manager struct {
+	// this is currently being used by workers when interacting with rsCache
 	sync.Mutex
-	processingPipeline []detectorLogic
+	processingPipeline []detector
 	database           *db.Database
 	sstore             *lstate.Store
 	logger             *logrus.Logger
@@ -47,22 +50,26 @@ type Manager struct {
 	// queue where new roundStates are pushed to be checked for malicious behavior by workers
 	workQ chan *lstate.RoundStates
 	// queue where identified accusations are pushed by workers to be further processed
-	accusationQ chan *objs.Accusation
-	closeChan   chan struct{}
+	accusationQ chan objs.Accusation
+	// newly found accusations that where not persisted into DB
+	unpersistedCreatedAccusations []objs.Accusation
+	// accusations that scheduled for execution and not yet persisted as such
+	unpersistedScheduledAccusations []objs.Accusation
+	closeChan                       chan struct{}
 }
 
 // NewManager creates a new *Manager
-func NewManager(database *db.Database, logger *logrus.Logger) *Manager {
-	detectorLogics := make([]detectorLogic, 0)
+func NewManager(database *db.Database, sstore *lstate.Store, logger *logrus.Logger) *Manager {
+	detectorLogics := make([]detector, 0)
 	detectorLogics = append(detectorLogics, detectMultipleProposal)
 	detectorLogics = append(detectorLogics, detectDoubleSpend)
 
 	workQ := make(chan *lstate.RoundStates, 1)
-	accusationQ := make(chan *objs.Accusation, 1)
-	closeChan := make(chan struct{})
+	accusationQ := make(chan objs.Accusation, 1)
+	closeChan := make(chan struct{}, 1)
 
 	m := &Manager{}
-	err := m.Init(database, logger, detectorLogics, workQ, accusationQ, closeChan)
+	err := m.Init(database, sstore, logger, detectorLogics, workQ, accusationQ, closeChan)
 	if err != nil {
 		panic(fmt.Errorf("failed to initialize Accusation.Manager: %v", err))
 	}
@@ -72,14 +79,12 @@ func NewManager(database *db.Database, logger *logrus.Logger) *Manager {
 
 func (m *Manager) Init(
 	database *db.Database,
+	sstore *lstate.Store,
 	logger *logrus.Logger,
-	detectorLogics []detectorLogic,
+	detectorLogics []detector,
 	workQ chan *lstate.RoundStates,
-	accusationQ chan *objs.Accusation,
+	accusationQ chan objs.Accusation,
 	closeChan chan struct{}) error {
-
-	sstore := &lstate.Store{}
-	sstore.Init(database)
 
 	m.processingPipeline = detectorLogics
 	m.database = database
@@ -89,6 +94,8 @@ func (m *Manager) Init(
 	m.workQ = workQ
 	m.accusationQ = accusationQ
 	m.closeChan = closeChan
+	m.unpersistedCreatedAccusations = make([]objs.Accusation, 0)
+	m.unpersistedScheduledAccusations = make([]objs.Accusation, 0)
 
 	return nil
 }
@@ -110,7 +117,7 @@ func (m *Manager) runWorker() {
 		case <-m.closeChan:
 			return
 		case lrs := <-m.workQ:
-			err := m.processLRS(lrs)
+			_, err := m.processLRS(lrs)
 			if err != nil {
 				m.logger.Errorf("failed to process LRS: %v", err)
 			}
@@ -119,6 +126,7 @@ func (m *Manager) runWorker() {
 }
 
 func (m *Manager) Poll() error {
+	// load local RoundStates
 	var lrs *lstate.RoundStates
 	err := m.database.View(func(txn *badger.Txn) error {
 		rss, err := m.sstore.LoadLocalState(txn)
@@ -132,6 +140,7 @@ func (m *Manager) Poll() error {
 		return err
 	}
 
+	// should only look into blocks after height 2 because height 1 is the genesis block
 	if lrs.Height() < 2 {
 		return nil
 	}
@@ -139,41 +148,117 @@ func (m *Manager) Poll() error {
 	// send this lstate.RoundStates to be processed by workers
 	m.workQ <- lrs
 
-	// get accusations from workers and send them to the Scheduler/TaskManager to be processed further
+	// receive accusations from workers and send them to the Scheduler/TaskManager to be processed further.
+	// this could be done in a separate goroutine
 	select {
 	case <-m.closeChan:
-		m.logger.Debug("AccusationManager is now closing because of <-m.closeChan")
+		m.logger.Debug("AccusationManager is now closing")
 		return nil
 	case acc := <-m.accusationQ:
-		// an accusation has been formed and now needs to be send to the smart contracts
-		m.logger.Debugf("Got an accusation from a worker: %v", acc)
-
-		m.database.Update(func(txn *badger.Txn) error {
-			// todo: save accusation into DB
-			// todo: send this accusation to Scheduler
-			// todo: could this cause a deadlock bc Task manager will also read/write to DB?
-			// todo: make sure it returns OK if everything goes well
-
-			return nil
-		})
-		if err != nil {
-			// if this is a retryable error, then retry the accusation later on
-			//   save accusation into memory to retry later
-
-			// otherwise return the error which will stop the Synchronizer loop,
-			// causing the node to exit
-			return err
-		}
+		// an accusation has been formed and it needs to be sent to the smart contracts
+		acc.SetUUID(uuid.New())
+		m.logger.Debugf("Got an accusation from a worker: %#v", acc)
+		m.unpersistedCreatedAccusations = append(m.unpersistedCreatedAccusations, acc)
 	default:
 		//m.logger.Debug("AccusationManager did not find an accusation")
+	}
+
+	m.persistCreatedAccusations()
+	return m.scheduleAccusations()
+}
+
+func (m *Manager) persistCreatedAccusations() {
+	if len(m.unpersistedCreatedAccusations) > 0 {
+		persistedIdx := make([]int, 0)
+		for i, acc := range m.unpersistedCreatedAccusations {
+			// persist the accusation into the database
+			acc.SetState(objs.Persisted)
+			acc.SetPersistenceTimestamp(uint64(time.Now().Unix()))
+			err := m.database.Update(func(txn *badger.Txn) error {
+				return m.database.SetAccusation(txn, acc)
+			})
+			if err != nil {
+				m.logger.Errorf("AccusationManager failed to save accusation into DB: %v", err)
+				continue
+			}
+
+			persistedIdx = append(persistedIdx, i)
+		}
+
+		// delete persistedIdx from m.unpersistedAccusations, iterating from the end
+		for i := len(persistedIdx) - 1; i >= 0; i-- {
+			idx := persistedIdx[i]
+			m.unpersistedCreatedAccusations = append(m.unpersistedCreatedAccusations[:idx], m.unpersistedCreatedAccusations[idx+1:]...)
+		}
+	}
+}
+
+func (m *Manager) scheduleAccusations() error {
+	// schedule Persisted but not ScheduledForExecution accusations
+	var unscheduledAccusations []objs.Accusation
+	var err error
+
+	err = m.database.View(func(txn *badger.Txn) error {
+		unscheduledAccusations, err = m.database.GetPersistedButUnscheduledAccusations(txn)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, acc := range unscheduledAccusations {
+		m.logger.Debugf("Scheduling accusation %#v", acc)
+		/*
+			// boilerplate code until we have the real scheduler from Egor, Gabriele and Leonardo
+			if err := m.scheduler.AddTask(acc); err != nil {
+				m.logger.Errorf("AccusationManager failed to add accusation to scheduler: %v", err)
+				// if this is a retryable error, then retry the accusation later on
+				// continue
+
+				// otherwise return the error which will stop the Synchronizer loop, causing the node to exit
+				// return err
+			} else {
+				m.logger.Debugf("AccusationManager successfully scheduled accusation for execution: %#v", acc)
+				acc.SetState(objs.ScheduledForExecution)
+				m.unpersistedScheduledAccusations = append(m.unpersistedScheduledAccusations, acc)
+			}
+		*/
+
+		// todo: delete this placeholder code down here after the real scheduler is implemented
+		acc.SetState(objs.ScheduledForExecution)
+		m.unpersistedScheduledAccusations = append(m.unpersistedScheduledAccusations, acc)
+	}
+
+	if len(m.unpersistedScheduledAccusations) > 0 {
+		// persist scheduled accusations
+		persistedIdx := make([]int, 0)
+		for i, acc := range m.unpersistedScheduledAccusations {
+			err := m.database.Update(func(txn *badger.Txn) error {
+				return m.database.SetAccusation(txn, acc)
+			})
+
+			if err != nil {
+				m.logger.Errorf("AccusationManager failed to save scheduled accusation into DB: %v", err)
+				continue
+			}
+
+			persistedIdx = append(persistedIdx, i)
+		}
+
+		// delete persistedIdx from m.unpersistedScheduledAccusations, iterating from the end
+		for i := len(persistedIdx) - 1; i >= 0; i-- {
+			idx := persistedIdx[i]
+			m.unpersistedScheduledAccusations = append(m.unpersistedScheduledAccusations[:idx], m.unpersistedScheduledAccusations[idx+1:]...)
+		}
 	}
 
 	return nil
 }
 
-func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
+func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	// keep track of new validators to clear the cache from old validators
 	currentValidators := make(map[string]bool)
+	hadUpdates := false
 
 	for _, v := range lrs.ValidatorSet.Validators {
 		rs := lrs.GetRoundState(v.VAddr)
@@ -195,7 +280,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 			var err error
 			updated, err = rsCacheEntry.DidChange(rs)
 			if err != nil {
-				return err
+				return hadUpdates, err
 			}
 		} else {
 			updated = true
@@ -205,6 +290,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 		}
 
 		if updated {
+			hadUpdates = true
 
 			// m.logger.WithFields(logrus.Fields{
 			// 	"lrs.height":              lrs.Height(),
@@ -221,7 +307,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 			rsCacheEntry.round = rs.RCert.RClaims.Round
 			rsHash, err := rs.Hash()
 			if err != nil {
-				return err
+				return hadUpdates, err
 			}
 			rsCacheEntry.rsHash = rsHash
 			m.Lock()
@@ -247,21 +333,16 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) error {
 	}
 	m.Unlock()
 
-	return nil
+	return hadUpdates, nil
 }
 
-// processRoundState checks if there is an accusation for a certain roundState and if so,
-// creates an accusation task and executes it, not blocking the Synchonizer loop and consensus.
+// processRoundState checks if there is an accusation for a certain roundState and if so, sends it for further processing
 func (m *Manager) processRoundState(rs *objs.RoundState) {
 	for _, detector := range m.processingPipeline {
 		accusation, found := detector(rs)
 		if found {
-			m.logger.Warnf("Accusation found: %#v", accusation)
-			// todo: spawn an Accusation task and schedule it on the task scheduler
-			// todo: don't block while waiting for a response from the accusation task
-			// todo: store this accusation in DB, and send this accusation to the Scheduler system
-			// todo: make sure it's restart/crash resillient
 			m.accusationQ <- accusation
+			break
 		}
 	}
 }

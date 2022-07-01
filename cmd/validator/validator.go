@@ -317,7 +317,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// setup Accusation Manager
-	accusationManager := accusation.NewManager(consDB, logging.GetLogger("accusations"))
+	sstore := &lstate.Store{}
+	sstore.Init(consDB)
+	accusationManager := accusation.NewManager(consDB, sstore, logging.GetLogger("accusations"))
 
 	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, accusationManager, storage)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)

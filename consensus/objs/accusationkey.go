@@ -8,7 +8,7 @@ import (
 	"github.com/MadBase/MadNet/utils"
 )
 
-// AccusationKey ...
+// AccusationKey stores DB metadata about an accusation
 type AccusationKey struct {
 	Prefix []byte
 	UUID   []byte
@@ -51,4 +51,18 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 	a.UUID = UUID
 
 	return nil
+}
+
+// MakeIterKey takes the AccusationKey object and returns
+// the canonical byte slice without the UUID
+func (a *AccusationKey) MakeIterKey() ([]byte, error) {
+	if a == nil {
+		return nil, errorz.ErrInvalid{}.New("AccusationKey.MakeIterKey; accusation not initialized")
+	}
+
+	key := []byte{}
+	Prefix := utils.CopySlice(a.Prefix)
+	key = append(key, Prefix...)
+
+	return key, nil
 }

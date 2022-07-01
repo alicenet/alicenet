@@ -1,7 +1,9 @@
 package db
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"sync"
 
 	trie "github.com/alicenet/alicenet/badgerTrie"
@@ -31,6 +33,9 @@ func (db *Database) Init(DB *badger.DB) {
 	hdrTrie := &headerTrie{}
 	hdrTrie.init()
 	db.trie = hdrTrie
+
+	// register BaseAccusation as a known implementation of Accusation into gob
+	gob.Register(&objs.BaseAccusation{})
 }
 
 func (db *Database) DB() *badger.DB {
@@ -1893,10 +1898,17 @@ func (db *Database) makeAccusationKey(uuid uuid.UUID) ([]byte, error) {
 		return nil, err
 	}
 	key := &objs.AccusationKey{
-		Prefix: dbprefix.PrefixHistoricRoundState(),
+		Prefix: dbprefix.PrefixAccusation(),
 		UUID:   uuidBinary,
 	}
 	return key.MarshalBinary()
+}
+
+func (db *Database) makeAccusationIterKey() ([]byte, error) {
+	key := &objs.AccusationKey{
+		Prefix: dbprefix.PrefixAccusation(),
+	}
+	return key.MakeIterKey()
 }
 
 func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
@@ -1944,6 +1956,67 @@ func (db *Database) DeleteAccusation(txn *badger.Txn, uuid uuid.UUID) error {
 		}
 	}
 	return nil
+}
+
+func (db *Database) GetAccusations(txn *badger.Txn, filter *func(objs.Accusation) bool) ([]objs.Accusation, error) {
+	// keys := [][]byte{}
+	prefix, err := db.makeAccusationIterKey()
+	if err != nil {
+		return nil, err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	accusations := make([]objs.Accusation, 0)
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		accBytes, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		buf := &bytes.Buffer{}
+		buf.Write(accBytes)
+		dec := gob.NewDecoder(buf)
+		var acc objs.Accusation
+		err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
+		if err != nil {
+			return nil, err
+		}
+
+		// filter if there's a filter
+		if filter == nil || (*filter)(acc) {
+			accusations = append(accusations, acc)
+		}
+	}
+
+	return accusations, nil
+}
+
+// GetPersistedButUnscheduledAccusations retrieves accusations that are persisted but not yet scheduled in the Task manager
+func (db *Database) GetPersistedButUnscheduledAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
+	filter := func(acc objs.Accusation) bool {
+		return acc.GetState() == objs.Persisted
+	}
+	return db.GetAccusations(txn, &filter)
+}
+
+// GetScheduledButIncompleteAccusations retrieves accusations that are scheduled in the Task manager but not yet completed
+func (db *Database) GetScheduledButIncompleteAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
+	filter := func(acc objs.Accusation) bool {
+		return acc.GetState() == objs.ScheduledForExecution
+	}
+	return db.GetAccusations(txn, &filter)
+}
+
+// GetCompletedAccusations retrieves accusations that are completed
+func (db *Database) GetCompletedAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
+	filter := func(acc objs.Accusation) bool {
+		return acc.GetState() == objs.Completed
+	}
+	return db.GetAccusations(txn, &filter)
 }
 
 // PendingHdrLeafIter
