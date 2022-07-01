@@ -31,9 +31,10 @@ import (
 )
 
 const (
-	numTestAccounts int           = 10
-	spammerTxTime   time.Duration = 2 * time.Second
-	networkTimeout  time.Duration = 10 * time.Second
+	numTestAccounts    int           = 10
+	spammerTxTime      time.Duration = 2 * time.Second
+	networkTimeout     time.Duration = 10 * time.Second
+	maxExecutionBlocks uint64        = 8
 )
 
 func setupClient(endpoint string, keyStorePath string, passCodePath string, defaultAccount string, finalityDelay uint64) (layer1.Client, *ethclient.Client) {
@@ -147,30 +148,78 @@ func sendEther(eth layer1.Client, logger *logrus.Entry, watcher transaction.Watc
 	return nil
 }
 
-func worker(mainCtx context.Context, eth layer1.Client, internalClient *ethclient.Client, watcher transaction.Watcher, account accounts.Account) {
+type WorkerStatus int
+
+const (
+	Resting WorkerStatus = iota
+	Executing
+)
+
+func (status WorkerStatus) String() string {
+	return [...]string{
+		"Resting",
+		"Executing",
+	}[status]
+}
+
+type WorkScheduler struct {
+	CurrentHeight uint64
+	Status        WorkerStatus
+}
+
+func worker(mainCtx context.Context, eth layer1.Client, internalClient *ethclient.Client, watcher transaction.Watcher, account accounts.Account, maxRestBlocks uint64) {
 	logger := logging.GetLogger("test").WithFields(logrus.Fields{
 		"component": "worker",
 		"account":   account.Address.Hex(),
 	})
+	workScheduler := &WorkScheduler{Status: Executing}
+	blockCounter := uint64(0)
+	logEntry := logger.WithField("height", workScheduler.CurrentHeight)
 	for {
 		select {
 		case <-mainCtx.Done():
 			return
 		case <-time.After(spammerTxTime):
 		}
+		logEntry.Debug("sending ether around")
 		err := sendEther(eth, logger, watcher, account.Address)
 		if err != nil {
 			logger.Error(err)
 		}
 		networkCtx, cf := context.WithTimeout(context.Background(), networkTimeout)
 		defer cf()
-		txnOpts, err := getCustomTransactionOptions(networkCtx, eth, account)
+		height, err := eth.GetCurrentHeight(networkCtx)
 		if err != nil {
 			logger.Error(err)
+		}
+		if height > workScheduler.CurrentHeight {
+			logEntry.Debug("got a new block")
+			workScheduler.CurrentHeight = height
+			blockCounter++
+		}
+		if workScheduler.Status == Resting {
+			if blockCounter >= maxRestBlocks {
+				logEntry.Debug("worker will execute in the next block")
+				workScheduler.Status = Executing
+				blockCounter = 0
+			}
 		} else {
-			err := deployDummyContract(internalClient, watcher, txnOpts)
+			if blockCounter > maxExecutionBlocks {
+				logEntry.Debug("worker will rest in the next block")
+				workScheduler.Status = Resting
+				blockCounter = 0
+			}
+		}
+		if workScheduler.Status == Executing {
+			txnOpts, err := getCustomTransactionOptions(networkCtx, eth, account)
 			if err != nil {
 				logger.Error(err)
+			} else {
+				logEntry.Debug("deploying dummy heavy contract")
+				err := deployDummyContract(internalClient, watcher, txnOpts)
+				if err != nil {
+					logger.Error(err)
+				}
 			}
 		}
 	}
@@ -183,6 +232,7 @@ func main() {
 	endPointPtr := flag.String("endPoint", "http://127.0.0.1:8545", "Endpoint to connect with the layer 1 server. If not provided, defaults to 127.0.0.1:8545 ")
 	finalityDelayPtr := flag.Int64("finalityDelay", 12, "Number of blocks to wait to consider a transaction final")
 	saveStatePtr := flag.Bool("saveState", false, "If the tracked transaction should be saved to database. The db will be saved on the local folder")
+	maxRestBlocksPtr := flag.Int64("maxRestBlocks", 4, "Number of blocks that the workers will not send heavy transactions to let the baseFee decrease. If set to 0, heavy transactions will always be sent.")
 	flag.Parse()
 
 	if !strings.Contains(*endPointPtr, "https://") && !strings.Contains(*endPointPtr, "http://") {
@@ -196,9 +246,10 @@ func main() {
 		"finalityDelay":  *finalityDelayPtr,
 		"endPoint":       *endPointPtr,
 		"saveState":      *saveStatePtr,
+		"maxRestBlocks":  *maxRestBlocksPtr,
 	})
 
-	logger.Logger.SetLevel(logrus.InfoLevel)
+	logger.Logger.SetLevel(logrus.DebugLevel)
 
 	logger.Info("Starting the spammer...")
 
@@ -238,7 +289,7 @@ func main() {
 
 	// spawn num of Workers
 	for _, account := range eth.GetKnownAccounts() {
-		go worker(mainCtx, eth, internalClient, watcher, account)
+		go worker(mainCtx, eth, internalClient, watcher, account, uint64(*maxRestBlocksPtr))
 	}
 
 	signals := make(chan os.Signal, 1)
