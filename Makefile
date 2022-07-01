@@ -32,7 +32,6 @@ generate: generate-bridge generate-go
 .PHONY: generate-bridge
 generate-bridge: init
 	find . -iname \*.capnp.go \
-	       -o -iname bridge/bindings \
 		   -exec rm -rf {} \;
 	cd bridge && npm run build
 

@@ -38,11 +38,6 @@ func (fs *FuncSelector) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("FuncSelector", input, fs[:])
 }
 
-//// MarshalJSON returns the hex representation of a.
-//func (fs FuncSelector) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(fmt.Sprintf("%s", fs[:]))
-//}
-
 // UnmarshalJSON parses a hash in hex syntax.
 func (fs *FuncSelector) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(FuncSelectorT, input, fs[:])
