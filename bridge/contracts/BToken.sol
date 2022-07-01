@@ -501,7 +501,8 @@ contract BToken is
         if (totalSupply_ < numBTK_) {
             revert BTokenErrors.BurnAmountExceedsSupply(numBTK_, totalSupply_);
         }
-        return _min(poolBalance_, _pInverse(totalSupply_) - _pInverse(totalSupply_ - numBTK_));
+
+        return _min(poolBalance_, _fp(totalSupply_) - _fp(totalSupply_ - numBTK_));
     }
 
     function _newDeposit(
