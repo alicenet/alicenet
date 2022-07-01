@@ -1,8 +1,33 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
-import { BytesLike } from "ethers";
-import { Artifacts, RunTaskFunction } from "hardhat/types";
-import { DEFAULT_CONFIG_OUTPUT_DIR, INITIALIZER } from "../constants";
+import { BytesLike, ContractFactory } from "ethers";
+import {
+  Artifacts,
+  HardhatRuntimeEnvironment,
+  RunTaskFunction,
+} from "hardhat/types";
+// import {
+//   AliceNetFactory,
+//   AliceNetFactory__factory,
+// } from "../../../typechain-types";
+import { getEventVar } from "../alicenetFactoryTasks";
+import {
+  ALICENET_FACTORY,
+  CONTRACT_ADDR,
+  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEPLOYED_PROXY,
+  DEPLOYED_STATIC,
+  DEPLOY_CREATE,
+  DEPLOY_PROXY,
+  DEPLOY_STATIC,
+  DEPLOY_TEMPLATE,
+  INITIALIZER,
+  ONLY_PROXY,
+  STATIC_DEPLOYMENT,
+  UPGRADEABLE_DEPLOYMENT,
+  UPGRADE_PROXY,
+} from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
+import { ProxyData } from "./factoryStateUtil";
 
 type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
@@ -45,6 +70,16 @@ export type Args = {
 export interface InitData {
   constructorArgs: { [key: string]: any };
   initializerArgs: { [key: string]: any };
+}
+
+export interface ContractDescriptor {
+  name: string;
+  fullyQualifiedName: string;
+  deployGroup: string;
+  deployGroupIndex: number;
+  deployType: string;
+  constructorArgs: [];
+  initializerArgs: [];
 }
 
 // function to deploy the factory
@@ -291,4 +326,167 @@ export async function getDeployGroupIndex(
   artifacts: Artifacts
 ) {
   return await getCustomNSTag(fullName, "deploy-group-index", artifacts);
+}
+
+export async function getDeployStaticMultiCallArgs(
+  contractDescriptor: ContractDescriptor,
+  hre: HardhatRuntimeEnvironment,
+  factoryAddr: string,
+  txCount: number
+) {
+  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
+  const factory = factoryBase.attach(factoryAddr);
+  const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    contractDescriptor.name
+  );
+  const logicFactory = await hre.ethers.getContractFactory(
+    contractDescriptor.name
+  );
+  const deployTxReq = logicContract.getDeployTransaction(
+    ...contractDescriptor.constructorArgs
+  );
+  let initCallData = "0x";
+  if (contractDescriptor.initializerArgs.length > 0)
+    initCallData = logicFactory.interface.encodeFunctionData(
+      INITIALIZER,
+      contractDescriptor.initializerArgs
+    );
+  const salt = hre.ethers.utils.formatBytes32String(contractDescriptor.name);
+  const deployTemplate: BytesLike = factoryBase.interface.encodeFunctionData(
+    DEPLOY_TEMPLATE,
+    [deployTxReq.data]
+  );
+  const deployStatic: BytesLike = factoryBase.interface.encodeFunctionData(
+    DEPLOY_STATIC,
+    [salt, initCallData]
+  );
+  return [deployTemplate, deployStatic];
+}
+
+export async function getDeployUpgradeableMultiCallArgs(
+  contractDescriptor: ContractDescriptor,
+  hre: HardhatRuntimeEnvironment,
+  factoryAddr: string,
+  txCount: number
+) {
+  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
+  const factory = factoryBase.attach(factoryAddr);
+  const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    contractDescriptor.name
+  );
+  const logicFactory = await hre.ethers.getContractFactory(
+    contractDescriptor.name
+  );
+  const deployTxReq = logicContract.getDeployTransaction(
+    ...contractDescriptor.constructorArgs
+  );
+  const functions = JSON.parse(
+    JSON.stringify(logicFactory.interface.functions)
+  );
+  let initCallData = "0x";
+  if (contractDescriptor.initializerArgs.length > 0)
+    initCallData = logicFactory.interface.encodeFunctionData(
+      INITIALIZER,
+      contractDescriptor.initializerArgs
+    );
+  const salt = hre.ethers.utils.formatBytes32String(contractDescriptor.name);
+  const nonce = await hre.ethers.provider.getTransactionCount(factory.address);
+  const logicAddress = hre.ethers.utils.getContractAddress({
+    from: factory.address,
+    nonce: nonce,
+  });
+
+  // encode deploy create
+  const deployCreate: BytesLike = factoryBase.interface.encodeFunctionData(
+    DEPLOY_CREATE,
+    [deployTxReq.data]
+  );
+  // encode the deployProxy function call with Salt as arg
+  const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
+    DEPLOY_PROXY,
+    [salt]
+  );
+  // encode upgrade proxy multicall
+  const upgradeProxy: BytesLike = factoryBase.interface.encodeFunctionData(
+    UPGRADE_PROXY,
+    [salt, logicAddress, initCallData]
+  );
+  const multiCallArgs = [deployCreate, deployProxy, upgradeProxy];
+  return multiCallArgs;
+}
+
+export async function deployContractsMulticall(
+  contracts: ContractDescriptor[],
+  hre: HardhatRuntimeEnvironment,
+  factoryAddr: string,
+  txCount: number,
+  inputFolder?: string,
+  outputFolder?: string
+) {
+  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
+  const factory = factoryBase.attach(factoryAddr);
+  let proxyData: ProxyData;
+  let multiCallArgsArray = Array();
+
+  for (let i = 0; i < contracts.length; i++) {
+    const contract = contracts[i];
+    if (true) {
+      const deployType = contract.deployType;
+      switch (deployType) {
+        case STATIC_DEPLOYMENT: {
+          let multiCallArgsArray = Array();
+          let [deployTemplate, deployStatic] =
+            await getDeployStaticMultiCallArgs(
+              contract,
+              hre,
+              factory.address,
+              txCount
+            );
+          multiCallArgsArray.push(deployTemplate);
+          multiCallArgsArray.push(deployStatic);
+          const txResponse = await factory.multiCall(multiCallArgsArray);
+          const receipt = await txResponse.wait();
+          const address = getEventVar(receipt, DEPLOYED_STATIC, CONTRACT_ADDR);
+          console.log(contract.name, "deployed at:", address);
+          break;
+        }
+        case UPGRADEABLE_DEPLOYMENT: {
+          let multiCallArgsArray = Array();
+          let [deployCreate, deployProxy, upgradeProxy] =
+            await getDeployUpgradeableMultiCallArgs(
+              contract,
+              hre,
+              factory.address,
+              txCount
+            );
+          multiCallArgsArray.push(deployCreate);
+          multiCallArgsArray.push(deployProxy);
+          multiCallArgsArray.push(upgradeProxy);
+          const txResponse = await factory.multiCall(multiCallArgsArray);
+          const receipt = await txResponse.wait();
+          const address = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+          console.log(contract.name, "deployed at:", address);
+          break;
+        }
+        case ONLY_PROXY: {
+          const name = extractName(contract.fullyQualifiedName);
+          const salt: BytesLike = await getBytes32Salt(
+            name,
+            hre.artifacts,
+            hre.ethers
+          );
+          const factoryAddress = factory.address;
+          proxyData = await hre.run("deployProxy", {
+            factoryAddress,
+            salt,
+          });
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
+  }
+  return multiCallArgsArray;
 }
