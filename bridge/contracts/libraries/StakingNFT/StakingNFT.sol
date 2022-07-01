@@ -13,9 +13,7 @@ import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
 import {StakingNFTErrorCodes} from "contracts/libraries/errorCodes/StakingNFTErrorCodes.sol";
-import {
-    CircuitBreakerErrorCodes
-} from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import {CircuitBreakerErrors} from "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -36,10 +34,9 @@ abstract contract StakingNFT is
     // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
     modifier withCircuitBreaker() {
-        require(
-            _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED))
-        );
+        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
+            revert CircuitBreakerErrors.CircuitBreakerOpened();
+        }
         _;
     }
 
@@ -599,18 +596,18 @@ abstract contract StakingNFT is
     }
 
     function _tripCB() internal {
-        require(
-            _circuitBreaker == _CIRCUIT_BREAKER_CLOSED,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED))
-        );
+        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
+            revert CircuitBreakerErrors.CircuitBreakerOpened();
+        }
+
         _circuitBreaker = _CIRCUIT_BREAKER_OPENED;
     }
 
     function _resetCB() internal {
-        require(
-            _circuitBreaker == _CIRCUIT_BREAKER_OPENED,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_CLOSED))
-        );
+        if (_circuitBreaker == _CIRCUIT_BREAKER_CLOSED) {
+            revert CircuitBreakerErrors.CircuitBreakerClosed();
+        }
+
         _circuitBreaker = _CIRCUIT_BREAKER_CLOSED;
     }
 
