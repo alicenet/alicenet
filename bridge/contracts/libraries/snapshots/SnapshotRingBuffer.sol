@@ -91,18 +91,10 @@ abstract contract SnapshotRingBuffer {
     function _getEpochFromHeight(uint32) internal view virtual returns (uint32);
 
     // Must be defined in storage contract
-    function _getSnapshots() internal virtual returns (SnapshotBuffer storage);
+    function _getSnapshots() internal view virtual returns (SnapshotBuffer storage);
 
     // Must be defined in storage contract
-    function _epochReg() internal virtual returns (Epoch storage);
-
-    function _setEpoch(uint32 epoch_) internal {
-        _epochReg().set(epoch_);
-    }
-
-    function _getEpoch() internal returns (uint32) {
-        return _epochReg().get();
-    }
+    function _epochReg() internal view virtual returns (Epoch storage);
 
     /**
      * @notice Assigns the snapshot to correct index and updates __epoch
@@ -120,7 +112,7 @@ abstract contract SnapshotRingBuffer {
      * @param epoch_ of the snapshot
      * @return ok if the struct is valid and the snapshot struct itself
      */
-    function _getSnapshot(uint32 epoch_) internal returns (bool ok, Snapshot memory snapshot) {
+    function _getSnapshot(uint32 epoch_) internal view returns (bool ok, Snapshot memory snapshot) {
         //get the pointer to the specified epoch snapshot
         Snapshot memory temp = _getSnapshots().get(epoch_);
         if (_getEpochFromHeight(temp.blockClaims.height) == epoch_) {
@@ -137,6 +129,7 @@ abstract contract SnapshotRingBuffer {
      */
     function _getSnapshotForHeight(uint32 height_)
         internal
+        view
         returns (bool ok, Snapshot memory snapshot)
     {
         return _getSnapshot(_getEpochFromHeight(height_));
@@ -145,7 +138,7 @@ abstract contract SnapshotRingBuffer {
     /**
      * @return ok if the struct is valid and the snapshot struct itself
      */
-    function _getLatestSnapshot() internal returns (bool ok, Snapshot memory snapshot) {
+    function _getLatestSnapshot() internal view returns (bool ok, Snapshot memory snapshot) {
         return _getSnapshot(_epochReg().get());
     }
 }

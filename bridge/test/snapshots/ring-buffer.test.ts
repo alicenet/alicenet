@@ -84,8 +84,7 @@ contract("SnapshotRingBuffer 0state", async () => {
           signedSnapshots[i - 1].BClaims,
           { gasLimit: 30000000 }
         );
-        const receipt = await contractTx.wait();
-        console.log(`epoch: ${i}, gas: ${receipt.gasUsed}`);
+        await contractTx.wait();
       }
       epochs = (await snapshotsG1.getEpoch()).toNumber();
       const lastSnapshot = await snapshotsG1.getLatestSnapshot();
@@ -135,9 +134,68 @@ contract("SnapshotRingBuffer 0state", async () => {
           signedData2[i - 1].BClaims,
           { gasLimit: 30000000 }
         );
-        const receipt = await contractTx.wait();
-        console.log(`epoch: ${i}, gas: ${receipt.gasUsed}`);
+        await contractTx.wait();
       }
+    });
+
+    it("gets the last snapshot in the buffer", async () => {
+      let epochs = (await fixture.snapshots.getEpoch()).toNumber();
+      const signedSnapshots = signedData1;
+      const validators: Array<string> = [];
+      for (const validator of validatorsSnapshotsG1) {
+        validators.push(validator.address);
+      }
+      const snapshotsG1 = fixture.snapshots.connect(
+        await getValidatorEthAccount(validatorsSnapshotsG1[0])
+      );
+      // take 6 snapshots
+      for (let i = epochs + 1; i <= 12; i++) {
+        await mineBlocks(
+          (await snapshotsG1.getMinimumIntervalBetweenSnapshots()).toBigInt()
+        );
+        const contractTx = await snapshotsG1.snapshot(
+          signedSnapshots[i - 1].GroupSignature,
+          signedSnapshots[i - 1].BClaims,
+          { gasLimit: 30000000 }
+        );
+        await contractTx.wait();
+        // console.log(`epoch: ${i}, gas: ${receipt.gasUsed}`);
+      }
+      epochs = (await snapshotsG1.getEpoch()).toNumber();
+      const lastSnapshot = await snapshotsG1.getLatestSnapshot();
+      expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
+      const endBuffShot = await snapshots.getSnapshot(epochs - 5);
+      expect(endBuffShot.blockClaims.chainId).to.eq(1);
+      expect(endBuffShot.blockClaims.height).to.eq((epochs - 5) * epochLength);
+    });
+
+    it("attempts to get a snapshot that is no longer in the buffer", async () => {
+      let epochs = (await fixture.snapshots.getEpoch()).toNumber();
+      const signedSnapshots = signedData1;
+      const validators: Array<string> = [];
+      for (const validator of validatorsSnapshotsG1) {
+        validators.push(validator.address);
+      }
+      const snapshotsG1 = fixture.snapshots.connect(
+        await getValidatorEthAccount(validatorsSnapshotsG1[0])
+      );
+      // take 6 snapshots
+      for (let i = epochs + 1; i <= 12; i++) {
+        await mineBlocks(
+          (await snapshotsG1.getMinimumIntervalBetweenSnapshots()).toBigInt()
+        );
+        const contractTx = await snapshotsG1.snapshot(
+          signedSnapshots[i - 1].GroupSignature,
+          signedSnapshots[i - 1].BClaims,
+          { gasLimit: 30000000 }
+        );
+        await contractTx.wait();
+        // console.log(`epoch: ${i}, gas: ${receipt.gasUsed}`);
+      }
+      epochs = (await snapshotsG1.getEpoch()).toNumber();
+      const lastSnapshot = await snapshotsG1.getLatestSnapshot();
+      expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
+      expect(snapshots.getSnapshot(epochs - 6)).to.be.revertedWith("410");
     });
   });
 });

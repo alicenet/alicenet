@@ -10,12 +10,13 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
 import "hardhat/console.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
 contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
+    using EpochLib for Epoch;
+
     constructor(uint256 chainID_, uint256 epochLength_) SnapshotsStorage(chainID_, epochLength_) {}
 
     function initialize(uint32 desperationDelay_, uint32 desperationFactor_)
@@ -55,19 +56,25 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
+            string(abi.encodePacked(SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
         );
         require(
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
+            string(abi.encodePacked(SNAPSHOT_CONSENSUS_RUNNING))
         );
         //get the last snapshot
         Snapshot memory lastSnapshot = getLatestSnapshot();
         require(
             block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
+            string(abi.encodePacked(SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
+        Epoch storage epochReg = _epochReg();
         uint32 epoch = _epoch._value + 1;
+        if (epochReg.isZero()) {
+            epoch = epochReg.get();
+        } else {
+            epoch = epochReg.get() + 1;
+        }
 
         // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
         // {
@@ -101,7 +108,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
                     IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
+                string(abi.encodePacked(SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
             );
 
             require(
@@ -110,7 +117,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     signature,
                     masterPublicKey
                 ),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
+                string(abi.encodePacked(SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
             );
         }
 
@@ -119,12 +126,12 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         );
         require(
             epoch * _epochLength == blockClaims.height,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
+            string(abi.encodePacked(SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
         );
 
         require(
             blockClaims.chainId == _chainId,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
+            string(abi.encodePacked(SNAPSHOT_INCORRECT_CHAIN_ID))
         );
 
         bool isSafeToProceedConsensus = true;
@@ -134,7 +141,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
 
         _setSnapshot(Snapshot(block.number, blockClaims));
-        _setEpoch(epoch);
+        epochReg.set(epoch);
 
         emit SnapshotTaken(
             _chainId,
@@ -156,14 +163,12 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         onlyFactory
         returns (bool)
     {
+        Epoch storage epochReg = _epochReg();
         {
-            require(
-                _epoch._value == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
-            );
+            require(epochReg.isZero(), string(abi.encodePacked(SNAPSHOT_MIGRATION_NOT_ALLOWED)));
             require(
                 groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
+                string(abi.encodePacked(SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
             );
         }
 
@@ -174,7 +179,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             );
             require(
                 blockClaims.height % _epochLength == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
+                string(abi.encodePacked(SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
             );
             epoch = getEpochFromHeight(blockClaims.height);
             _setSnapshot(Snapshot(block.number, blockClaims));
@@ -187,7 +192,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 groupSignature_[i]
             );
         }
-        _setEpoch(uint32(epoch));
+        epochReg.set(uint32(epoch));
         return true;
     }
 
@@ -256,21 +261,20 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
-        return _snapshots._array[epoch_ % _snapshots._array.length];
+        (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
+
+        require(ok, string(abi.encodePacked(SNAPSHOT_NOT_IN_BUFFER)));
+        return data;
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
-        return _snapshots._array[getEpoch() % _snapshots._array.length];
+        (bool ok, Snapshot memory data) = _getLatestSnapshot();
+        require(ok, string(abi.encodePacked(SNAPSHOT_NOT_IN_BUFFER)));
+        return data;
     }
 
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
-        if (height <= _epochLength) {
-            return 1;
-        }
-        if (height % _epochLength == 0) {
-            return height / _epochLength;
-        }
-        return (height / _epochLength) + 1;
+        return _getEpochFromHeight(uint32(height));
     }
 
     function mayValidatorSnapshot(
