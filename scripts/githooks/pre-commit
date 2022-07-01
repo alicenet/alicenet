@@ -11,7 +11,7 @@ format_go() {
 		blobid=$(git show :$File | gofmt | git hash-object -w --stdin) # get contents of the staged version of the file, format it, and create a new git object with those contents
 		git update-index --cacheinfo $perms $blobid $File # set the currently staged file to the new git object that was just created
 	done
-
+	
 	if [[ ! -z $changed_go ]]
 	then
 		echo "Formatting working tree versions of staged go files..."
@@ -21,7 +21,7 @@ format_go() {
 
 format_bridge() {
 	changed_bridge=$(git diff --cached --name-only --diff-filter=ACM | grep '^bridge/') || true
-
+	
 	if [[ ! -z $changed_bridge ]]
 	then
 		cd bridge
