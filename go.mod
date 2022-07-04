@@ -7,7 +7,7 @@ require (
 	github.com/bufbuild/buf v1.6.0
 	github.com/derision-test/go-mockgen v1.3.3
 	github.com/dgraph-io/badger/v2 v2.2007.4
-	github.com/emicklei/proto v1.10.0
+	github.com/emicklei/proto v1.11.0
 	github.com/ethereum/go-ethereum v1.10.20
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
@@ -135,7 +135,6 @@ require (
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
