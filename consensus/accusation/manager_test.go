@@ -2,7 +2,6 @@ package accusation
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strconv"
 	"testing"
@@ -33,20 +32,9 @@ type managerTestProxy struct {
 
 func setupManagerTests(t *testing.T) *managerTestProxy {
 	logger := logging.GetLogger("Test")
-	deferables := make([]func(), 0)
-
-	closeFn := func() {
-		// iterate in reverse order because deferables behave like a stack:
-		// the last added deferable should be the first executed
-		totalDeferables := len(deferables)
-		for i := totalDeferables - 1; i >= 0; i-- {
-			deferables[i]()
-		}
-	}
-
 	ctx := context.Background()
 	nodeCtx, cf := context.WithCancel(ctx)
-	deferables = append(deferables, cf)
+	t.Cleanup(cf)
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
 	rawConsensusDb, err := utils.OpenBadger(nodeCtx.Done(), "", true)
@@ -54,10 +42,10 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	var closeDB func() = func() {
 		err := rawConsensusDb.Close()
 		if err != nil {
-			panic(fmt.Errorf("error closing rawConsensusDb: %v", err))
+			t.Errorf("error closing rawConsensusDb: %v", err)
 		}
 	}
-	deferables = append(deferables, closeDB)
+	t.Cleanup(closeDB)
 
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
@@ -72,20 +60,23 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	}
 
 	testProxy.manager = NewManager(db, sstore, logger)
-	deferables = append(deferables, testProxy.manager.StopWorkers)
+	t.Cleanup(testProxy.manager.StopWorkers)
 
-	t.Cleanup(closeFn)
 	return testProxy
 }
 
+// TestManagerStartStop tests the accusation system basic start and stop
 func TestManagerStartStop(t *testing.T) {
 	testProxy := setupManagerTests(t)
-
 	testProxy.manager.StartWorkers()
-
-	time.Sleep(5 * time.Second)
 }
 
+// TestManagerStopWithoutStart tests the accusation system stop without a start
+func TestManagerStopWithoutStart(t *testing.T) {
+	_ = setupManagerTests(t)
+}
+
+// TestManagerPollKeyNotFound tests the accusation system when there are no round states
 func TestManagerPollKeyNotFound(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
@@ -93,10 +84,9 @@ func TestManagerPollKeyNotFound(t *testing.T) {
 
 	err := testProxy.manager.Poll()
 	assert.NotNil(t, err)
-
-	time.Sleep(5 * time.Second)
 }
 
+// TestManagerPollCache tests the accusation system caching of round states
 func TestManagerPollCache(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
@@ -232,22 +222,16 @@ func TestManagerPollCache(t *testing.T) {
 	assert.True(t, hadUpdates)
 }
 
+// accuseAllRoundStates is a detector function that accuses all round states because it's a test
 func accuseAllRoundStates(rs *objs.RoundState) (objs.Accusation, bool) {
-	uid, err := uuid.NewUUID()
-	if err != nil {
-		panic(err)
-	}
-
-	acc := &objs.BaseAccusation{
-		UUID:  uid,
-		State: objs.Created,
-	}
+	acc := &objs.BaseAccusation{}
 	return acc, true
 }
 
 // assert accuseAllRoundStates is of type detector
 var _ detector = accuseAllRoundStates
 
+// TestManagerAccusable tests the accusation system when a malicious behaviour is detected and an accusation is formed
 func TestManagerAccusable(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
@@ -294,15 +278,19 @@ func TestManagerAccusable(t *testing.T) {
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
+	t.Log("a")
+
 	// wait for workers to process the accusation
 	time.Sleep(5 * time.Second)
 
+	t.Log("b")
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
 	done := false
 	var acc objs.Accusation
 	assert.Nil(t, acc)
 
+	t.Log("c")
 	for !done {
 		select {
 		case acc = <-testProxy.manager.accusationQ:
@@ -312,11 +300,14 @@ func TestManagerAccusable(t *testing.T) {
 		}
 	}
 
+	t.Log("d")
 	assert.NotNil(t, acc)
 	assert.Equal(t, acc.GetState(), objs.Created)
 	assert.Equal(t, acc.GetPersistenceTimestamp(), uint64(0))
+	t.Log("e")
 }
 
+// TestManagerPersistCreatedAccusations tests the persistence of created accusations
 func TestManagerPersistCreatedAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
@@ -356,6 +347,7 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// TestManagerPersistScheduledAccusations tests the persistence of scheduled accusations
 func TestManagerPersistScheduledAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 

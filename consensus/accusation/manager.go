@@ -18,7 +18,7 @@ import (
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
 type detector = func(rs *objs.RoundState) (objs.Accusation, bool)
 
-// rsCacheStruct caches a validator's roundState height, round and hash to avoid checking for accusations unless anything changes
+// rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
 	height uint32
 	round  uint32
@@ -37,25 +37,26 @@ func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 		nil
 }
 
-// Manager polls validators' roundStates and checks for possible accusation conditions
+// Manager is responsible for checking validators' roundStates for malicious behavior and accuse them for such.
+// It does so by processing each roundState through a pipeline of detetor functions until either an accusation is found or the pipeline is exhausted.
+// If an accusation is found, it is sent to the Scheduler/TaskManager to be processed further, e.g., invoke accusation smart contracts for these purposes.
+// The AccusationManager is responsible for persisting the accusations it creates, retrying persistence,
+// sending accusations to the Scheduler/TaskManager, and even retrying these actions if they fail.
+// The AccusationManager is executed by the Synchronizer through the Poll() function, which reads the local round states and sends it to a work queue so that
+// workers can process it, offloading the synchronizer loop.
 type Manager struct {
-	// this is currently being used by workers when interacting with rsCache
-	sync.Mutex
-	processingPipeline []detector
-	database           *db.Database
-	sstore             *lstate.Store
-	logger             *logrus.Logger
-	rsCache            map[string]*rsCacheStruct
-
-	// queue where new roundStates are pushed to be checked for malicious behavior by workers
-	workQ chan *lstate.RoundStates
-	// queue where identified accusations are pushed by workers to be further processed
-	accusationQ chan objs.Accusation
-	// newly found accusations that where not persisted into DB
-	unpersistedCreatedAccusations []objs.Accusation
-	// accusations that scheduled for execution and not yet persisted as such
-	unpersistedScheduledAccusations []objs.Accusation
-	closeChan                       chan struct{}
+	sync.Mutex                                    // this is currently being used by workers when interacting with rsCache
+	processingPipeline              []detector    // the pipeline of detector functions
+	database                        *db.Database  // the database to store detected accusations
+	sstore                          *lstate.Store // the state store to get round states from
+	logger                          *logrus.Logger
+	rsCache                         map[string]*rsCacheStruct // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
+	workQ                           chan *lstate.RoundStates  // queue where new roundStates are pushed to be checked for malicious behavior by workers
+	accusationQ                     chan objs.Accusation      // queue where identified accusations are pushed by workers to be further processed
+	unpersistedCreatedAccusations   []objs.Accusation         // newly found accusations that where not persisted into DB
+	unpersistedScheduledAccusations []objs.Accusation         // accusations that scheduled for execution and not yet persisted as such
+	closeChan                       chan struct{}             // channel to signal to workers to stop
+	wg                              *sync.WaitGroup           // wait group to wait for workers to stop
 }
 
 // NewManager creates a new *Manager
@@ -96,6 +97,7 @@ func (m *Manager) Init(
 	m.closeChan = closeChan
 	m.unpersistedCreatedAccusations = make([]objs.Accusation, 0)
 	m.unpersistedScheduledAccusations = make([]objs.Accusation, 0)
+	m.wg = &sync.WaitGroup{}
 
 	return nil
 }
@@ -103,12 +105,18 @@ func (m *Manager) Init(
 func (m *Manager) StartWorkers() {
 	cpuCores := runtime.NumCPU()
 	for i := 0; i < cpuCores; i++ {
-		go m.runWorker()
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			m.runWorker()
+		}()
 	}
 }
 
 func (m *Manager) StopWorkers() {
-	m.closeChan <- struct{}{}
+	close(m.closeChan)
+	m.wg.Wait()
+	m.logger.Warn("Accusation manager stopped")
 }
 
 func (m *Manager) runWorker() {

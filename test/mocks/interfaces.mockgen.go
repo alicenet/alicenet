@@ -30,6 +30,9 @@ type MockAdminHandler struct {
 	// AddValidatorSetFunc is an instance of a mock function object
 	// controlling the behavior of the method AddValidatorSet.
 	AddValidatorSetFunc *AdminHandlerAddValidatorSetFunc
+	// IsSynchronizedFunc is an instance of a mock function object
+	// controlling the behavior of the method IsSynchronized.
+	IsSynchronizedFunc *AdminHandlerIsSynchronizedFunc
 	// RegisterSnapshotCallbackFunc is an instance of a mock function object
 	// controlling the behavior of the method RegisterSnapshotCallback.
 	RegisterSnapshotCallbackFunc *AdminHandlerRegisterSnapshotCallbackFunc
@@ -54,6 +57,11 @@ func NewMockAdminHandler() *MockAdminHandler {
 		},
 		AddValidatorSetFunc: &AdminHandlerAddValidatorSetFunc{
 			defaultHook: func(*objs.ValidatorSet) (r0 error) {
+				return
+			},
+		},
+		IsSynchronizedFunc: &AdminHandlerIsSynchronizedFunc{
+			defaultHook: func() (r0 bool) {
 				return
 			},
 		},
@@ -89,6 +97,11 @@ func NewStrictMockAdminHandler() *MockAdminHandler {
 				panic("unexpected invocation of MockAdminHandler.AddValidatorSet")
 			},
 		},
+		IsSynchronizedFunc: &AdminHandlerIsSynchronizedFunc{
+			defaultHook: func() bool {
+				panic("unexpected invocation of MockAdminHandler.IsSynchronized")
+			},
+		},
 		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
 			defaultHook: func(func(*objs.BlockHeader) error) {
 				panic("unexpected invocation of MockAdminHandler.RegisterSnapshotCallback")
@@ -115,6 +128,9 @@ func NewMockAdminHandlerFrom(i interfaces.AdminHandler) *MockAdminHandler {
 		},
 		AddValidatorSetFunc: &AdminHandlerAddValidatorSetFunc{
 			defaultHook: i.AddValidatorSet,
+		},
+		IsSynchronizedFunc: &AdminHandlerIsSynchronizedFunc{
+			defaultHook: i.IsSynchronized,
 		},
 		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
 			defaultHook: i.RegisterSnapshotCallback,
@@ -435,6 +451,105 @@ func (c AdminHandlerAddValidatorSetFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c AdminHandlerAddValidatorSetFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// AdminHandlerIsSynchronizedFunc describes the behavior when the
+// IsSynchronized method of the parent MockAdminHandler instance is invoked.
+type AdminHandlerIsSynchronizedFunc struct {
+	defaultHook func() bool
+	hooks       []func() bool
+	history     []AdminHandlerIsSynchronizedFuncCall
+	mutex       sync.Mutex
+}
+
+// IsSynchronized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockAdminHandler) IsSynchronized() bool {
+	r0 := m.IsSynchronizedFunc.nextHook()()
+	m.IsSynchronizedFunc.appendCall(AdminHandlerIsSynchronizedFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the IsSynchronized
+// method of the parent MockAdminHandler instance is invoked and the hook
+// queue is empty.
+func (f *AdminHandlerIsSynchronizedFunc) SetDefaultHook(hook func() bool) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// IsSynchronized method of the parent MockAdminHandler instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *AdminHandlerIsSynchronizedFunc) PushHook(hook func() bool) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *AdminHandlerIsSynchronizedFunc) SetDefaultReturn(r0 bool) {
+	f.SetDefaultHook(func() bool {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *AdminHandlerIsSynchronizedFunc) PushReturn(r0 bool) {
+	f.PushHook(func() bool {
+		return r0
+	})
+}
+
+func (f *AdminHandlerIsSynchronizedFunc) nextHook() func() bool {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *AdminHandlerIsSynchronizedFunc) appendCall(r0 AdminHandlerIsSynchronizedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of AdminHandlerIsSynchronizedFuncCall objects
+// describing the invocations of this function.
+func (f *AdminHandlerIsSynchronizedFunc) History() []AdminHandlerIsSynchronizedFuncCall {
+	f.mutex.Lock()
+	history := make([]AdminHandlerIsSynchronizedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// AdminHandlerIsSynchronizedFuncCall is an object that describes an
+// invocation of method IsSynchronized on an instance of MockAdminHandler.
+type AdminHandlerIsSynchronizedFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bool
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c AdminHandlerIsSynchronizedFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c AdminHandlerIsSynchronizedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
