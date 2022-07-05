@@ -1,6 +1,6 @@
 package accusation
 
-import "github.com/MadBase/MadNet/consensus/objs"
+import "github.com/alicenet/alicenet/consensus/objs"
 
 func detectMultipleProposal(rs *objs.RoundState) (objs.Accusation, bool) {
 	// rs.Proposal and rs.ConflictingProposal should both not be nil

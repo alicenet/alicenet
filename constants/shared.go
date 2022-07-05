@@ -100,4 +100,4 @@ var ValidLoggers []string = []string{"alicenet", "consensus", "transport", "app"
 	"gossipbus", "badger", "peerman", "localrpc", "dman", "peer", "yamux",
 	"ethereum", "main", "deploy", "utils", "monitor", "dkg",
 	"services", "settings", "validator", "muxhandler", "bootnode", "p2pmux",
-	"status", "test", "ipc", "firewalld"}
+	"status", "test", "ipc", "firewalld", "accusations"}
