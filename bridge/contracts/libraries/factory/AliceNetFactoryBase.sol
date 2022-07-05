@@ -7,6 +7,7 @@ import "contracts/interfaces/IProxy.sol";
 import {
     AliceNetFactoryBaseErrorCodes
 } from "contracts/libraries/errorCodes/AliceNetFactoryBaseErrorCodes.sol";
+import "hardhat/console.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**

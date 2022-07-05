@@ -20,4 +20,11 @@ library ImmutableAuthErrorCodes {
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS = "2014"; // "onlyETHDKGAccusations"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKGPHASES = "2015"; // "onlyETHDKGPhases"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKG = "2016"; // "onlyETHDKG"
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_FACTORY_CHILDREN = "2017"; // "onlyFactoryChildren"
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOLFACTORY = "2018"; //onlyBridgePoolFactory
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOL = "2019"; //onlyBridgePool
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOLDEPOSITNOTIFIER = "2020"; //onlyBridgePoolDepositNotifier
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_CALLANY = "2021"; //onlyCallAny
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOLCLONEFACTORY = "2022";
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_CLONEFACTORY = "2023";
 }

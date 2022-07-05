@@ -15,6 +15,9 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
+  BridgePoolDepositNotifier,
+  BridgePoolFactory,
+  BridgePoolV1,
   BToken,
   ETHDKG,
   Foundation,
@@ -148,7 +151,7 @@ export const createUsers = async (
   return users;
 };
 
-async function getContractAddressFromDeployedStaticEvent(
+export async function getContractAddressFromDeployedStaticEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedStatic(address contractAddr)";
@@ -156,7 +159,7 @@ async function getContractAddressFromDeployedStaticEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedProxyEvent(
+export async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedProxy(address contractAddr)";
@@ -164,7 +167,7 @@ async function getContractAddressFromDeployedProxyEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedRawEvent(
+export async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedRaw(address contractAddr)";
@@ -172,7 +175,7 @@ async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromEventLog(
+export async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
   eventName: string
@@ -224,27 +227,64 @@ export const deployStaticWithFactory = async (
     );
   }
 
-  let initCallDataBin;
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    console.log(
-      `Warning couldnt get init call data for contract: ${contractName}`
-    );
-    console.log(error);
-    initCallDataBin = "0x";
-  }
+  // let initCallDataBin = "0x";
+  // if (initCallData !== undefined) {
+  //   console.log("undefined false", initCallData);
+  //   try {
+  //     initCallDataBin = _Contract.interface.encodeFunctionData(
+  //       "initialize",
+  //       initCallData
+  //     );
+  //   } catch (error) {
+  //     console.warn(
+  //       `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+  //     );
+  //   }
+  // }
+  // console.log("initCallData", contractName, initCallData, initCallDataBin);
+
   let saltBytes;
   if (salt === undefined) {
     saltBytes = getBytes32Salt(contractName);
   } else {
     saltBytes = getBytes32Salt(salt);
   }
-  const tx = await factory.deployStatic(saltBytes, initCallDataBin);
+
+  let tx;
+  if (contractName != "BridgePoolV1") {
+    let initCallDataBin;
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
+      );
+    } catch (error) {
+      console.log(
+        `Warning couldnt get init call data for contract: ${contractName}`
+      );
+      console.log(error);
+      initCallDataBin = "0x";
+    }
+    tx = await factory.deployStatic(saltBytes, initCallDataBin);
+  } else {
+    tx = await factory.deployStatic(saltBytes, []);
+  }
+  // let initCallDataBin;
+  // try {
+  //   initCallDataBin = _Contract.interface.encodeFunctionData(
+  //     "initialize",
+  //     initCallData
+  //   );
+  // } catch (error) {
+  //   console.log(
+  //     `Warning couldnt get init call data for contract: ${contractName}`
+  //   );
+  //   console.log(error);
+  //   initCallDataBin = "0x";
+  // }
+
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+
   if (
     receipt.gasUsed.gt(10_000_000) &&
     hre.__SOLIDITY_COVERAGE_RUNNING !== true
@@ -333,7 +373,6 @@ export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
   const factory = await deployAliceNetFactory(admin);
-
   // LegacyToken
   const legacyToken = (await deployStaticWithFactory(
     factory,
@@ -375,7 +414,6 @@ export const deployAliceNetFactory = async (
     from: admin.address,
     nonce: txCount,
   });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
   const factory = await Factory.deploy(futureFactoryAddress);
   await factory.deployed();
@@ -571,6 +609,39 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
+  // BridgePoolV1
+  const bridgePoolV1 = (await deployStaticWithFactory(
+    factory,
+    "BridgePoolV1",
+    "BridgePoolV1"
+  )) as BridgePoolV1;
+
+  // BridgePoolFactory
+  const bridgePoolFactory = (await deployUpgradeableWithFactory(
+    factory,
+    "BridgePoolFactory",
+    "BridgePoolFactory",
+    [bridgePoolV1.address],
+    [1337]
+  )) as BridgePoolFactory;
+
+  //BridgePoolDepositNotifier
+  const bridgePoolDepositNotifier = (await deployUpgradeableWithFactory(
+    factory,
+    "BridgePoolDepositNotifier",
+    "BridgePoolDepositNotifier",
+    undefined,
+    [1337]
+  )) as BridgePoolDepositNotifier;
+
+  const immutableAuthErrorCodesContract = await (
+    await (await ethers.getContractFactory("ImmutableAuthErrorCodes")).deploy()
+  ).deployed();
+
+  const bridgePoolErrorCodesContract = await (
+    await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
+  ).deployed();
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -588,12 +659,17 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
+    bridgePoolV1,
+    bridgePoolFactory,
+    bridgePoolDepositNotifier,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
+    bridgePoolErrorCodesContract,
+    immutableAuthErrorCodesContract,
   };
 };
 

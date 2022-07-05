@@ -27,3 +27,6 @@ local-geth/*
 scripts/generated
 node_modules/
 legacy/V1
+bridge/dist
+bridge/bindings 
+.deps
