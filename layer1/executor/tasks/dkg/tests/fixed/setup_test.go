@@ -1,5 +1,3 @@
-//go:build integration
-
 package fixed
 
 import (
@@ -80,6 +78,7 @@ type TestSuite struct {
 	DisputeMissingGPKjTasks      []*dkg.DisputeMissingGPKjTask
 	DisputeGPKjTasks             [][]*dkg.DisputeGPKjTask
 	CompletionTasks              []*dkg.CompletionTask
+	BadAddresses                 map[common.Address]bool
 }
 
 func GetDKGDb(t *testing.T) *db.Database {
@@ -343,6 +342,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 		assert.Nil(t, err)
 
 		if len(badSharesIdx) > 0 {
+			suite.BadAddresses = make(map[common.Address]bool)
 			for _, badIdx := range badSharesIdx {
 				accounts := suite.Eth.GetKnownAccounts()
 				// inject bad shares
@@ -351,6 +351,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 				}
 				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
 				assert.Nil(t, err)
+				suite.BadAddresses[accounts[badIdx].Address] = true
 			}
 		}
 
