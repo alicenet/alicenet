@@ -14,17 +14,17 @@ runs:
   using: "composite"
 
   steps:
-  - shell: bash
-    working-directory: ./bridge
-    run: |
-      SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
-      # if inputs.sub-filter-include is empty we have to remove '/' if not
-      # the find command bellow will fail
-      if [[ "$SUB_FILTER_INCLUDE" == "/" ]];  then
-        SUB_FILTER_INCLUDE=""
-      fi
-      ls ./test | \
-      grep "^${{ inputs.test-group }}" | \
-      xargs -n 1 -I {} echo ./test/{}$SUB_FILTER_INCLUDE | \
-      xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | \
-      xargs npm run test-parallel --
+    - shell: bash
+      working-directory: ./bridge
+      run: |
+        SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
+        # if inputs.sub-filter-include is empty we have to remove '/' if not
+        # the find command bellow will fail
+        if [[ "$SUB_FILTER_INCLUDE" == "/" ]];  then
+          SUB_FILTER_INCLUDE=""
+        fi
+        ls ./test | \
+        grep "^${{ inputs.test-group }}" | \
+        xargs -n 1 -I {} echo ./test/{}$SUB_FILTER_INCLUDE | \
+        xargs -n 1 -I {} find -P {} -type f -iname '*.ts' -not -path "*/${{ inputs.sub-filter-exclude }}/*" | \
+        xargs npm run test-parallel --
