@@ -206,10 +206,13 @@ case $1 in
 init)
     WD=$PWD
     BRIDGE=./bridge
-    cd $BRIDGE &&
-        npm ci &&
-        cd $WD &&
-        ./scripts/base-scripts/init-githooks.sh
+    cd $BRIDGE
+    if ! eval $(npm list -s | grep " hardhat@") 2>/dev/null; then
+        echo "Hardhat not found, installing npm"
+        npm ci
+    fi
+    cd $WD
+    ./scripts/base-scripts/init-githooks.sh
     cd $WD && ./scripts/base-scripts/init-githooks.sh
     CREATE_CONFIGS $2
     ;;
