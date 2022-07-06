@@ -1,6 +1,11 @@
 package executor
 
 import (
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -9,10 +14,6 @@ import (
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"os"
-	"testing"
-	"time"
 )
 
 func getTaskScheduler(t *testing.T) (*TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
@@ -156,7 +157,7 @@ func TestTasksScheduler_ScheduleDuplicatedTask_Success(t *testing.T) {
 
 	assert.Equalf(t, 1, len(scheduler.Schedule), "Expected to have 1 task")
 	for _, task := range scheduler.Schedule {
-		assert.Falsef(t, task.isRunning, "this task shouldn't be running due to duplication")
+		assert.NotEqualf(t, task.InternalState, Running, "this task shouldn't be running due to duplication")
 	}
 }
 

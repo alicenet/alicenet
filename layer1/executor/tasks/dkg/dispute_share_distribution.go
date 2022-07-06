@@ -30,7 +30,7 @@ var _ tasks.Task = &DisputeShareDistributionTask{}
 // NewDisputeShareDistributionTask creates a new task
 func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Address) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		BaseTask: tasks.NewBaseTask(start, end, false, nil),
+		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,
 	}
 }

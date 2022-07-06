@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -34,26 +33,45 @@ var (
 	ErrTaskIsNil    = errors.New("the task we're trying to schedule is nil")
 )
 
+// InternalTaskState is an enumeration indicating the possible states of a task
+type InternalTaskState int
+
+const (
+	NotStarted InternalTaskState = iota
+	Running
+	Killed
+)
+
+func (state InternalTaskState) String() string {
+	return [...]string{
+		"NotStarted",
+		"Running",
+		"Killed",
+	}[state]
+}
+
+type BaseRequest struct {
+	Id            string            `json:"id"`
+	Name          string            `json:"name"`
+	Start         uint64            `json:"start"`
+	End           uint64            `json:"end"`
+	InternalState InternalTaskState `json:"internalState"`
+}
+
 type TaskRequestInfo struct {
-	Id        string
-	Name      string
-	Start     uint64
-	End       uint64
-	Task      tasks.Task
-	isRunning bool
+	BaseRequest
+	Task     tasks.Task
+	killedAt uint64
 }
 
 type taskRequestInner struct {
-	Id          string                      `json:"id"`
-	Name        string                      `json:"name"`
-	Start       uint64                      `json:"start"`
-	End         uint64                      `json:"end"`
+	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
 }
 
 type TasksScheduler struct {
 	Schedule         map[string]TaskRequestInfo     `json:"schedule"`
-	LastHeightSeen   uint64                         `json:"last_height_seen"`
+	LastHeightSeen   uint64                         `json:"lastHeightSeen"`
 	mainCtx          context.Context                `json:"-"`
 	mainCtxCf        context.CancelFunc             `json:"-"`
 	eth              layer1.Client                  `json:"-"`
@@ -111,7 +129,7 @@ func GetTaskLoggerComplete(taskReq TaskRequestInfo) *logrus.Entry {
 		"taskStart": taskReq.Task.GetStart(),
 		"taskEnd":   taskReq.Task.GetEnd(),
 		"taskId":    taskReq.Id,
-		"isRunning": taskReq.isRunning,
+		"state":     taskReq.InternalState,
 	})
 	return logEntry
 }
@@ -252,28 +270,23 @@ func (s *TasksScheduler) eventLoop() {
 			}
 			s.LastHeightSeen = height
 
-			toStart, expired, unresponsive := s.findTasks()
+			toStart, expired := s.findTasks()
 			err = s.startTasks(s.mainCtx, toStart)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to startTasks %d", s.LastHeightSeen)
 			}
 			err = s.persistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist state after start tasks %d", s.LastHeightSeen)
 			}
 
 			err = s.killTasks(s.mainCtx, expired)
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", s.LastHeightSeen)
 			}
-
-			err = s.removeUnresponsiveTasks(s.mainCtx, unresponsive)
-			if err != nil {
-				panic(fmt.Errorf("Failed to removeUnresponsiveTasks height %d err: %v", s.LastHeightSeen, err))
-			}
 			err = s.persistState()
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to persist state %d", s.LastHeightSeen)
+				s.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", s.LastHeightSeen)
 			}
 			processingTime = time.After(constants.TaskSchedulerProcessingTime)
 		}
@@ -302,7 +315,7 @@ func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
 
 		id := uuid.New()
 		taskName, _ := marshaller.GetNameType(task)
-		taskReq := TaskRequestInfo{Id: id.String(), Name: taskName, Start: start, End: end, Task: task}
+		taskReq := TaskRequestInfo{BaseRequest: BaseRequest{Id: id.String(), Name: taskName, Start: start, End: end}, Task: task}
 		s.Schedule[id.String()] = taskReq
 		GetTaskLoggerComplete(taskReq).Debug("Received task request")
 	}
@@ -320,7 +333,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 			logger = GetTaskLoggerComplete(task)
 		}
 		if taskResponse.Err != nil {
-			if taskResponse.Err != context.Canceled {
+			if !errors.Is(taskResponse.Err, context.Canceled) {
 				logger.Errorf("Task executed with error: %v", taskResponse.Err)
 			} else {
 				logger.Debug("Task got killed")
@@ -350,7 +363,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 
 			go s.tasksManager.ManageTask(ctx, task.Task, task.Name, task.Id, s.database, logEntry, s.eth, s.taskResponseChan)
 
-			task.isRunning = true
+			task.InternalState = Running
 			s.Schedule[task.Id] = task
 		}
 
@@ -377,8 +390,12 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
 			GetTaskLoggerComplete(task).Info("Task is about to be killed")
-			if task.isRunning {
+			if task.InternalState == Running {
 				task.Task.Close()
+				task.InternalState = Killed
+				task.killedAt = s.LastHeightSeen
+			} else if task.InternalState == Killed {
+				GetTaskLoggerComplete(task).Error("Task already killed")
 			} else {
 				GetTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
 				err := s.remove(task.Id)
@@ -392,36 +409,14 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 	return nil
 }
 
-func (s *TasksScheduler) removeUnresponsiveTasks(ctx context.Context, tasks []TaskRequestInfo) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		s.logger.Debug("Looking for removing unresponsive tasks")
-
-		for i := 0; i < len(tasks); i++ {
-			task := tasks[i]
-			GetTaskLoggerComplete(task).Info("Task is about to be removed for being unresponsive or expired")
-
-			err := s.remove(task.Id)
-			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to remove unresponsive task id: %s", task.Id)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []TaskRequestInfo) {
+func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 	toStart := make([]TaskRequestInfo, 0)
 	expired := make([]TaskRequestInfo, 0)
 	unresponsive := make([]TaskRequestInfo, 0)
-	multiExecutionCheck := make(map[string]bool)
 
 	for _, taskRequest := range s.Schedule {
-		if taskRequest.End != 0 && taskRequest.End+constants.TaskSchedulerHeightToleranceBeforeRemoving <= s.LastHeightSeen {
-			s.logger.Tracef("marking task as unresponsive %s", taskRequest.Task.GetId())
+		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskSchedulerHeightToleranceBeforeRemoving <= s.LastHeightSeen {
+			s.logger.Errorf("marking task as unresponsive %s", taskRequest.Task.GetId())
 			unresponsive = append(unresponsive, taskRequest)
 			continue
 		}
@@ -434,23 +429,24 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo, []Ta
 
 		if ((taskRequest.Start == 0 && taskRequest.End == 0) ||
 			(taskRequest.Start != 0 && taskRequest.Start <= s.LastHeightSeen && taskRequest.End == 0) ||
-			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && !taskRequest.isRunning {
+			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && taskRequest.InternalState == NotStarted {
 
 			if taskRequest.Task.GetAllowMultiExecution() {
-				multiExecutionCheck[taskRequest.Name] = true
 				toStart = append(toStart, taskRequest)
 			} else {
-				if alreadyPicked := multiExecutionCheck[taskRequest.Name]; !alreadyPicked && len(s.findRunningTasksByName(taskRequest.Name)) == 0 {
-					multiExecutionCheck[taskRequest.Name] = true
+				if len(s.findRunningTasksByName(taskRequest.Name)) == 0 {
 					toStart = append(toStart, taskRequest)
 				} else {
-					s.logger.Debugf("trying to start more than 1 task instance when this is not allowed id: %s, name: %s", taskRequest.Id, taskRequest.Name)
+					s.logger.Errorf("trying to start more than 1 task instance when this is not allowed id: %s, name: %s", taskRequest.Id, taskRequest.Name)
 				}
 			}
 			continue
 		}
 	}
-	return toStart, expired, unresponsive
+	if len(unresponsive) > 0 {
+		panic("found unresponsive tasks")
+	}
+	return toStart, expired
 }
 
 func (s *TasksScheduler) findTasksByName(taskName string) []TaskRequestInfo {
@@ -471,7 +467,7 @@ func (s *TasksScheduler) findRunningTasksByName(taskName string) []TaskRequestIn
 	tasks := make([]TaskRequestInfo, 0)
 
 	for _, taskRequest := range s.Schedule {
-		if taskRequest.Name == taskName && taskRequest.isRunning {
+		if taskRequest.Name == taskName && taskRequest.InternalState == Running {
 			tasks = append(tasks, taskRequest)
 		}
 	}
@@ -539,6 +535,17 @@ func (s *TasksScheduler) loadState() error {
 		return err
 	}
 
+	// If the tasks were running, we mark them as not started so the scheduled can
+	// start them again
+	for _, task := range s.Schedule {
+		if task.InternalState == Running {
+			task.InternalState = NotStarted
+			s.Schedule[task.Id] = task
+		} else if task.InternalState == Killed {
+			s.remove(task.Id)
+		}
+	}
+
 	// synchronizing db state to disk
 	if err := s.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
@@ -558,7 +565,7 @@ func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		ws.Schedule[k] = &taskRequestInner{Id: v.Id, Name: v.Name, Start: v.Start, End: v.End, WrappedTask: wt}
+		ws.Schedule[k] = &taskRequestInner{BaseRequest: v.BaseRequest, WrappedTask: wt}
 	}
 
 	raw, err := json.Marshal(&ws)
@@ -593,7 +600,7 @@ func (s *TasksScheduler) UnmarshalJSON(raw []byte) error {
 			adminClient.SetAdminHandler(s.adminHandler)
 		}
 
-		s.Schedule[k] = TaskRequestInfo{Id: v.Id, Name: v.Name, Start: v.Start, End: v.End, Task: t.(tasks.Task)}
+		s.Schedule[k] = TaskRequestInfo{BaseRequest: v.BaseRequest, Task: t.(tasks.Task)}
 	}
 
 	return nil

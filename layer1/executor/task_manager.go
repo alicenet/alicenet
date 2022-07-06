@@ -73,6 +73,11 @@ func (tm *TasksManager) GetTxBackup(uuid string) (*types.Transaction, bool) {
 // task execution in a separate process.
 func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
 	err := tm.processTask(mainCtx, task, name, taskId, database, logger, eth, taskResponseChan)
+	// Clean up in case the task was killed
+	if task.WasKilled() {
+		task.GetLogger().Trace("task was externally killed, removing tx backup")
+		tm.RemoveTxBackup(task.GetId())
+	}
 	task.Finish(err)
 }
 

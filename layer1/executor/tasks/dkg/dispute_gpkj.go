@@ -32,7 +32,7 @@ var _ tasks.Task = &DisputeGPKjTask{}
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
 func NewDisputeGPKjTask(start uint64, end uint64, address common.Address) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
-		BaseTask: tasks.NewBaseTask(start, end, false, nil),
+		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,
 	}
 }
