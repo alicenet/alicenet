@@ -232,22 +232,29 @@ export const deployStaticWithFactory = async (
     saltBytes = getBytes32Salt(contractName);
   } else {
     if (ethers.utils.isHexString(salt) && salt.length == 66) {
+      //check if it is a salt already
       saltBytes = salt;
     } else saltBytes = getBytes32Salt(salt);
   }
 
-  let initCallDataBin;
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    console.log(
-      `Warning couldnt get init call data for contract: ${contractName}`
-    );
-    console.log(error);
-    initCallDataBin = "0x";
+  let tx;
+  if (contractName != "BridgePoolV1") {
+    let initCallDataBin;
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
+      );
+    } catch (error) {
+      console.log(
+        `Warning couldnt get init call data for contract: ${contractName}`
+      );
+      console.log(error);
+      initCallDataBin = "0x";
+    }
+    tx = await factory.deployStatic(saltBytes, initCallDataBin);
+  } else {
+    tx = await factory.deployStatic(saltBytes, []);
   }
 
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
