@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -268,7 +269,7 @@ func (s *TasksScheduler) eventLoop() {
 
 			err = s.removeUnresponsiveTasks(s.mainCtx, unresponsive)
 			if err != nil {
-				s.logger.WithError(err).Errorf("Failed to removeUnresponsiveTasks %d", s.LastHeightSeen)
+				panic(fmt.Errorf("Failed to removeUnresponsiveTasks height %d err: %v", s.LastHeightSeen, err))
 			}
 			err = s.persistState()
 			if err != nil {

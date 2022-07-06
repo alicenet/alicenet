@@ -10,7 +10,6 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -19,16 +18,6 @@ import (
 func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.Log, cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
-
-	monState, err := objects.GetMonitorState(monDB)
-	if err != nil {
-		return err
-	}
-
-	//todo: ask Hunter only validators allowed
-	if !isValidator(eth.GetDefaultAccount(), monState) {
-		return nil
-	}
 
 	event, err := ethereum.GetContracts().BToken().ParseDepositReceived(log)
 	if err != nil {

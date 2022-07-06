@@ -182,7 +182,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 		case <-gcTimer:
 			err := mon.db.DB().RunValueLogGC(constants.BadgerDiscardRatio)
 			if err != nil {
-				logger.Errorf("Failed to run value log GC: %v", err)
+				logger.Debugf("Failed to reclaim any space during garbage collection: %v", err)
 			}
 			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
 		case <-cancelChan:
@@ -385,7 +385,6 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 	// kill any snapshot task that might be running
 	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
 
-	//todo: ask Hunter, is blocking ok?
 	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0, uint64(bh.BClaims.Height)))
 
 	return nil

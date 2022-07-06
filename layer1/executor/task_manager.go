@@ -20,48 +20,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type TransactionsBackup struct {
-	sync.RWMutex
-	Transactions map[string]*types.Transaction `json:"transactions"`
-}
-
-func NewTransactionsBackup() *TransactionsBackup {
-	return &TransactionsBackup{
-		Transactions: map[string]*types.Transaction{},
-	}
-}
-
-func (tb *TransactionsBackup) Add(uuid string, tx *types.Transaction) {
-	tb.Lock()
-	defer tb.Unlock()
-	tb.Transactions[uuid] = tx
-}
-
-func (tb *TransactionsBackup) Remove(uuid string) {
-	tb.Lock()
-	defer tb.Unlock()
-	delete(tb.Transactions, uuid)
-}
-
-func (tb *TransactionsBackup) GetTransaction(uuid string) (*types.Transaction, bool) {
-	tb.RLock()
-	defer tb.RUnlock()
-	txn, present := tb.Transactions[uuid]
-	return txn, present
-}
-
 type TasksManager struct {
 	sync.RWMutex
-	TxsBackup TransactionsBackup  `json:"transactions_backup"`
-	txWatcher transaction.Watcher `json:"-"`
-	database  *db.Database        `json:"-"`
-	logger    *logrus.Entry       `json:"-"`
+	TxsBackup map[string]*types.Transaction `json:"transactions_backup"`
+	txWatcher transaction.Watcher           `json:"-"`
+	database  *db.Database                  `json:"-"`
+	logger    *logrus.Entry                 `json:"-"`
 }
 
 // Creates a new TasksManager instance
 func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
-		TxsBackup: *NewTransactionsBackup(),
+		TxsBackup: make(map[string]*types.Transaction),
 		txWatcher: txWatcher,
 		database:  database,
 		logger:    logger,
@@ -76,6 +46,27 @@ func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger
 	}
 
 	return taskManager, nil
+}
+
+func (tm *TasksManager) AddTxBackup(uuid string, tx *types.Transaction) error {
+	tm.Lock()
+	defer tm.Unlock()
+	tm.TxsBackup[uuid] = tx
+	return tm.persistState()
+}
+
+func (tm *TasksManager) RemoveTxBackup(uuid string) error {
+	tm.Lock()
+	defer tm.Unlock()
+	delete(tm.TxsBackup, uuid)
+	return tm.persistState()
+}
+
+func (tm *TasksManager) GetTxBackup(uuid string) (*types.Transaction, bool) {
+	tm.RLock()
+	defer tm.RUnlock()
+	txn, present := tm.TxsBackup[uuid]
+	return txn, present
 }
 
 // main function to manage a task. It basically an abstraction to handle the
@@ -95,7 +86,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 	}
 	retryDelay := constants.MonitorRetryDelay
 	isComplete := false
-	if txn, present := tm.TxsBackup.GetTransaction(task.GetId()); present {
+	if txn, present := tm.GetTxBackup(task.GetId()); present {
 		isComplete, err = tm.checkCompletion(taskCtx, task, txn)
 		if err != nil {
 			return err
@@ -117,8 +108,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 	}
 
 	// We got a successful receipt, removing from state
-	tm.TxsBackup.Remove(task.GetId())
-	err = tm.persistState()
+	err = tm.RemoveTxBackup(task.GetId())
 	if err != nil {
 		return err
 	}
@@ -158,41 +148,39 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 		if err != nil {
 			return err
 		}
-		if hasToExecute {
-			txn, taskErr := task.Execute(ctx)
-			if taskErr != nil {
-				if taskErr.IsRecoverable() {
-					logger.Tracef("got a recoverable error during task.execute: %v", taskErr.Error())
-					err := sleepWithContext(ctx, retryDelay)
-					if err != nil {
-						return err
-					}
-					continue
-				}
-				logger.Debugf("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
-				return taskErr
-			}
-			if txn != nil {
-				logger.Debugf("got a successful txn: %v", txn.Hash().Hex())
-				tm.TxsBackup.Add(task.GetId(), txn)
-				err := tm.persistState()
+		if !hasToExecute {
+			return nil
+		}
+		txn, taskErr := task.Execute(ctx)
+		if taskErr != nil {
+			if taskErr.IsRecoverable() {
+				logger.Tracef("got a recoverable error during task.execute: %v", taskErr.Error())
+				err := sleepWithContext(ctx, retryDelay)
 				if err != nil {
 					return err
-				}
-
-				isComplete, err := tm.checkCompletion(ctx, task, txn)
-				if err != nil {
-					return err
-				}
-				if isComplete {
-					return nil
 				}
 				continue
-			} else {
-				logger.Debug("Task returned no transaction, finishing")
+			}
+			logger.Debugf("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
+			return taskErr
+		}
+		if txn != nil {
+			logger.Debugf("got a successful txn: %v", txn.Hash().Hex())
+			err := tm.AddTxBackup(task.GetId(), txn)
+			if err != nil {
+				return err
+			}
+
+			isComplete, err := tm.checkCompletion(ctx, task, txn)
+			if err != nil {
+				return err
+			}
+			if isComplete {
 				return nil
 			}
+			continue
 		}
+		logger.Debug("Task returned no transaction, finishing")
 		return nil
 	}
 }
