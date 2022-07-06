@@ -85,7 +85,7 @@ contract BridgePoolFactory is
         // bytes32 metamorphicContractBytecodeHash_ = 0xcd77112ba3315c30f6863dae90cb281bf2f644ef3fd9d21e53d1968182daa472;
 
         // works: 58808182335afa3d36363e3d36f3
-        bytes32 metamorphicContractBytecodeHash_ = 0x5c35e636ecf5784ab1da24a38f5b75eea14c262dbddb6fbe0470dcfc99b8232f;
+        bytes32 metamorphicContractBytecodeHash_ = 0xf231e946a2f88d89eafa7b43271c54f58277304b93ac77d138d9b0bb3a989b6d;
         return
             address(
                 uint160(
@@ -103,6 +103,14 @@ contract BridgePoolFactory is
             );
     }
 
+    function codeCopy(address addr) public returns (bytes memory) {
+        assembly {
+            let ptr := mload(0x40)
+            extcodecopy(addr, ptr, 0, extcodesize(addr))
+            return(ptr, extcodesize(addr))
+        }
+    }
+
     function _deployStaticPool(bytes32 salt_, bytes memory initCallData_)
         internal
         returns (address contractAddr)
@@ -112,9 +120,9 @@ contract BridgePoolFactory is
         uint256 contractsize;
         assembly {
             let ptr := mload(0x40)
-            mstore(ptr, shl(144, 0x58808182335afa3d36363e3d36f3))
+            mstore(ptr, shl(144, 0x5880818283335afa3d82833e3d82f3))
             //mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d91f3))
-            contractAddr := create2(0, ptr, 14, salt_)
+            contractAddr := create2(0, ptr, 15, salt_)
             response := returndatasize()
             contractsize := extcodesize(contractAddr)
             //if the returndatasize is not 0 revert with the error message
@@ -128,6 +136,8 @@ contract BridgePoolFactory is
                 revert(0, 0x20)
             }
         }
+        console.log("bytecode");
+        console.logBytes(codeCopy(contractAddr));
         if (initCallData_.length > 0) {
             AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
         }
