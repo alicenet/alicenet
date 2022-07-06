@@ -32,7 +32,6 @@ generate: generate-bridge generate-go
 .PHONY: generate-bridge
 generate-bridge: init
 	find . -iname \*.capnp.go \
-	       -o -iname bridge/bindings \
 		   -exec rm -rf {} \;
 	cd bridge && npm run build
 
@@ -45,13 +44,13 @@ generate-go: init
 		-o -iname \*.swagger.json \
 		-o -iname \*.mockgen.go \
 		-exec rm -rf {} \;
-	go generate ./...
+	go generate -tags tools ./...
 
 .PHONY: clean
 clean:
 	go clean
 	rm -f $(BINARY_NAME) $(RACE_DETECTOR)
-  
+
 .PHONY: setup
 setup:
 	go mod download
