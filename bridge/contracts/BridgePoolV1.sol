@@ -8,6 +8,7 @@ import "contracts/BToken.sol";
 import {BridgePoolErrorCodes} from "contracts/libraries/errorCodes/BridgePoolErrorCodes.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/MerkleProofLibrary.sol";
+import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
@@ -15,9 +16,10 @@ import "contracts/BridgePoolDepositNotifier.sol";
 import "contracts/BridgePoolFactory.sol";
 import "hardhat/console.sol";
 
-/// @custom:salt BridgePool
+/// @custom:salt BridgePoolV1
 /// @custom:deploy-type deployStatic
 contract BridgePoolV1 is
+    IBridgePool,
     Initializable,
     ImmutableSnapshots,
     ERC20SafeTransfer,
@@ -101,8 +103,8 @@ contract BridgePoolV1 is
             _bridgePoolFactoryAddress(),
             _bridgePoolDepositNotifierAddress(),
             _ercTokenContract
-        );
-        bytes32 salt = BridgePoolFactory(_bridgePoolFactoryAddress()).getSaltFromERC20Address(
+        ); */
+        bytes32 salt = BridgePoolFactory(_bridgePoolFactoryAddress()).getLocalBridgePoolSalt(
             _ercTokenContract
         );
         BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
@@ -110,7 +112,7 @@ contract BridgePoolV1 is
             _ercTokenContract,
             ercAmount_,
             msg.sender
-        ); */
+        );
     }
 
     /// @notice Transfer funds to sender upon a verificable proof of burn in sidechain

@@ -20,15 +20,13 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFacto
 
     /**
      * @notice onlyBridgePool verifies that the call is done by one BridgePools intanciated by BridgePoolFactory
-     * @param informedSalt informed salt
-     * @param erc20Contract_ ERC contract address
+     * @param bridgePoolSalt informed salt
      */
-    modifier onlyBridgePool(bytes32 informedSalt, address erc20Contract_) {
-        // msg.sender == calculatedAddress
-        bytes32 calculatedSalt = BridgePoolFactory(_bridgePoolFactoryAddress())
-            .getSaltFromERC20Address(erc20Contract_);
+    modifier onlyBridgePool(bytes32 bridgePoolSalt) {
+        address allowedAddress = BridgePoolFactory(_bridgePoolFactoryAddress())
+            .getStaticPoolContractAddress(bridgePoolSalt, _bridgePoolFactoryAddress());
         require(
-            informedSalt == calculatedSalt,
+            msg.sender == allowedAddress,
             string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BRIDGEPOOL))
         );
         _;
@@ -50,7 +48,7 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFacto
         address ercContract,
         uint256 number,
         address owner
-    ) public onlyBridgePool(salt, ercContract) {
+    ) public onlyBridgePool(salt) {
         uint256 n = _nonce + 1;
         emit Deposited(n, ercContract, owner, number, _networkId);
         _nonce = n;

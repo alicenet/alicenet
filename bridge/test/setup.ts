@@ -17,10 +17,10 @@ import {
   ATokenMinter,
   BridgePoolDepositNotifier,
   BridgePoolFactory,
-  BridgePoolV1,
   BToken,
   ETHDKG,
   Foundation,
+  IBridgePool,
   LegacyToken,
   LiquidityProviderStaking,
   PublicStaking,
@@ -227,61 +227,28 @@ export const deployStaticWithFactory = async (
     );
   }
 
-  // let initCallDataBin = "0x";
-  // if (initCallData !== undefined) {
-  //   console.log("undefined false", initCallData);
-  //   try {
-  //     initCallDataBin = _Contract.interface.encodeFunctionData(
-  //       "initialize",
-  //       initCallData
-  //     );
-  //   } catch (error) {
-  //     console.warn(
-  //       `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
-  //     );
-  //   }
-  // }
-  // console.log("initCallData", contractName, initCallData, initCallDataBin);
-
   let saltBytes;
   if (salt === undefined) {
     saltBytes = getBytes32Salt(contractName);
   } else {
-    saltBytes = getBytes32Salt(salt);
+    if (ethers.utils.isHexString(salt) && salt.length == 66) {
+      saltBytes = salt;
+    } else saltBytes = getBytes32Salt(salt);
   }
 
-  let tx;
-  if (contractName != "BridgePoolV1") {
-    let initCallDataBin;
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
-      );
-    } catch (error) {
-      console.log(
-        `Warning couldnt get init call data for contract: ${contractName}`
-      );
-      console.log(error);
-      initCallDataBin = "0x";
-    }
-    tx = await factory.deployStatic(saltBytes, initCallDataBin);
-  } else {
-    tx = await factory.deployStatic(saltBytes, []);
+  let initCallDataBin;
+  try {
+    initCallDataBin = _Contract.interface.encodeFunctionData(
+      "initialize",
+      initCallData
+    );
+  } catch (error) {
+    console.log(
+      `Warning couldnt get init call data for contract: ${contractName}`
+    );
+    console.log(error);
+    initCallDataBin = "0x";
   }
-  // let initCallDataBin;
-  // try {
-  //   initCallDataBin = _Contract.interface.encodeFunctionData(
-  //     "initialize",
-  //     initCallData
-  //   );
-  // } catch (error) {
-  //   console.log(
-  //     `Warning couldnt get init call data for contract: ${contractName}`
-  //   );
-  //   console.log(error);
-  //   initCallDataBin = "0x";
-  // }
 
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
 
@@ -613,15 +580,21 @@ export const getFixture = async (
   const bridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "BridgePoolV1",
-    "BridgePoolV1"
-  )) as BridgePoolV1;
+    getLocalBridgePoolSalt(1)
+  )) as IBridgePool;
+
+  // const bridgePoolV2 = (await deployStaticWithFactory(
+  //   factory,
+  //   "BridgePoolV2",
+  //   salt
+  // )) as BridgePool;
 
   // BridgePoolFactory
   const bridgePoolFactory = (await deployUpgradeableWithFactory(
     factory,
     "BridgePoolFactory",
     "BridgePoolFactory",
-    [bridgePoolV1.address],
+    undefined,
     [1337]
   )) as BridgePoolFactory;
 
@@ -771,5 +744,17 @@ export const getMetamorphicAddress = (
     factoryAddress,
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
+  );
+};
+
+export const getLocalBridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC20"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
   );
 };

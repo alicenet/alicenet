@@ -1,13 +1,13 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { BridgePool } from "../../typechain-types";
+import { BridgePoolV1 } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
   factoryCallAny,
   Fixture,
-  getContractAddressFromDeployedProxyEvent,
+  getContractAddressFromEventLog,
   getFixture,
 } from "../setup";
 import {
@@ -22,7 +22,7 @@ let expectedState: state;
 let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
-let bridgePool: BridgePool;
+let bridgePool: BridgePoolV1;
 let ethsReceived = BigNumber.from(0);
 
 const bTokenFeeInETH = 10;
@@ -52,22 +52,29 @@ const networkId = 1337;
 
 describe("Testing BridgePool Contract methods", async () => {
   beforeEach(async function () {
-    fixture = await getFixture(true, true, false);
     [firstOwner, user, user2] = await ethers.getSigners();
+    fixture = await getFixture(true, true, false);
     await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+    const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
+    // Deploy a new pool
     const deployNewPoolTransaction =
       await fixture.bridgePoolFactory.deployNewPool(
         fixture.aToken.address,
-        fixture.bToken.address
+        fixture.bToken.address,
+        1
       );
-    const bridgePoolAddress = await getContractAddressFromDeployedProxyEvent(
-      deployNewPoolTransaction
+    const eventSignature = "event BridgePoolCreated(address contractAddr)";
+    const eventName = "BridgePoolCreated";
+    const bridgePoolAddress = await getContractAddressFromEventLog(
+      deployNewPoolTransaction,
+      eventSignature,
+      eventName
     );
-    bridgePool = (await ethers.getContractFactory("BridgePool")).attach(
+    // Final bridgePool address
+    bridgePool = (await ethers.getContractFactory("BridgePoolV1")).attach(
       bridgePoolAddress
     );
-    const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
-    // mint and approve some ERC20 tokens to deposit
+    // Mint and approve some ERC20 tokens to deposit
     await factoryCallAny(fixture.factory, fixture.aTokenMinter, "mint", [
       user.address,
       totalErc20Amount,
@@ -75,7 +82,7 @@ describe("Testing BridgePool Contract methods", async () => {
     await fixture.aToken
       .connect(user)
       .approve(bridgePool.address, totalErc20Amount);
-    // mint and approve some bTokens to deposit (and burn)
+    // Mint and approve some bTokens to deposit (and burn)
     await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mintTo",
