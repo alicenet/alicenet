@@ -52,10 +52,9 @@ jobs:
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
           
-  solidity-coverage:
+  node-coverage:
     runs-on: ubuntu-20.04
     timeout-minutes: 30
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
