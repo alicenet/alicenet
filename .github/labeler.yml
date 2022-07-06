@@ -30,6 +30,8 @@ actions:
 - '.github/actions/**'
 - '.github/workflows/**'
 
+docs:
+- '**/*.md'
+
 repo:
-- '*'
-- '.github/*'
+- any: ['*', '.github/*', '!go.*', '!package*.json']
