@@ -60,7 +60,14 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
       - run: npx hardhat coverage --solcoverjs ./.solcover.ts
 
   node-lint:
