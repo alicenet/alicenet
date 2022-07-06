@@ -1,6 +1,6 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"bytes"
@@ -93,6 +93,8 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
+
+	CheckBadValidators(t, b, suite)
 }
 
 // We force an error.
@@ -186,6 +188,8 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
+
+	CheckBadValidators(t, b, suite)
 }
 
 func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCredentials(t *testing.T) {

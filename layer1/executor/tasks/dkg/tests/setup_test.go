@@ -1,4 +1,4 @@
-package fixed
+package tests
 
 import (
 	"context"
@@ -568,6 +568,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	n := len(suite.Eth.GetKnownAccounts())
 	var receiptResponses []transaction.ReceiptResponse
+	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
 		var skipLoop = false
@@ -606,6 +607,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 				dkgState.Participants[dkgState.Account.Address].GPKj = gpkjBad
 				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
 				assert.Nil(t, err)
+				suite.BadAddresses[dkgState.Account.Address] = true
 			}
 		}
 
@@ -661,10 +663,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 		// skip all the way to DisputeGPKj phase
 		tests.AdvanceTo(suite.Eth, dispGPKjStartBlock)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingGPKjTasks[0].Start)
 	}
 
 	return suite
@@ -691,5 +691,19 @@ func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, account
 	for idx := 0; idx < len(accounts); idx++ {
 		err := monState.PersistState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
+	}
+}
+
+func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite) {
+	for _, badId := range badValidators {
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
+		assert.Nil(t, err)
+
+		callOpts, err := suite.Eth.GetCallOpts(context.Background(), dkgState.Account)
+		assert.Nil(t, err)
+
+		isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
+		assert.Nil(t, err)
+		assert.Equal(t, false, isValidator)
 	}
 }

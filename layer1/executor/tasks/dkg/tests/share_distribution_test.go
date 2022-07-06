@@ -1,6 +1,6 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
@@ -30,8 +30,9 @@ func TestShareDistribution_Group_1_Good(t *testing.T) {
 
 		shareDistributionTask := suite.ShareDistTasks[idx]
 
-		shareDistributionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err := shareDistributionTask.Prepare(ctx)
+		err := shareDistributionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = shareDistributionTask.Prepare(ctx)
 		assert.Nil(t, err)
 		_, err = shareDistributionTask.Execute(ctx)
 		assert.Nil(t, err)
@@ -67,12 +68,13 @@ func TestShareDistribution_Group_1_Bad1(t *testing.T) {
 
 	badIdx := n - 2
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		task := suite.ShareDistTasks[idx]
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err = task.Prepare(ctx)
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		com := dkgState.Participants[accounts[idx].Address].Commitments
@@ -82,7 +84,8 @@ func TestShareDistribution_Group_1_Bad1(t *testing.T) {
 			com[0][1].Add(com[0][1], big.NewInt(1))
 		}
 		dkgState.Participants[accounts[idx].Address].Commitments = com
-		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 		_, err = task.Execute(ctx)
 		if idx == badIdx {
 			assert.NotNil(t, err)
@@ -121,12 +124,13 @@ func TestShareDistribution_Group_1_Bad2(t *testing.T) {
 
 	badIdx := n - 1
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		task := suite.ShareDistTasks[idx]
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err = task.Prepare(ctx)
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		com := dkgState.Participants[accounts[idx].Address].Commitments
@@ -137,7 +141,8 @@ func TestShareDistribution_Group_1_Bad2(t *testing.T) {
 			com[0][1].Set(common.Big0)
 		}
 		dkgState.Participants[accounts[idx].Address].Commitments = com
-		state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 		_, err = task.Execute(ctx)
 		// The last task should have failed
 		if idx == badIdx {
@@ -178,12 +183,13 @@ func TestShareDistribution_Group_2_Bad4(t *testing.T) {
 
 	badCommitmentIdx := n - 3
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		task := suite.ShareDistTasks[idx]
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err = task.Prepare(ctx)
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		// if we're on the last account, we just add 1 to the first commitment (y component)
@@ -194,6 +200,8 @@ func TestShareDistribution_Group_2_Bad4(t *testing.T) {
 			dkgState.Participants[accounts[idx].Address].Commitments = com
 		}
 
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 		_, err = task.Execute(ctx)
 		// The last task should have failed
 		if idx == badCommitmentIdx {
@@ -217,12 +225,13 @@ func TestShareDistribution_Group_2_Bad5(t *testing.T) {
 
 	badShareIdx := n - 2
 	for idx := 0; idx < n; idx++ {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		task := suite.ShareDistTasks[idx]
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err = task.Prepare(ctx)
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
 		encryptedShares := dkgState.Participants[accounts[idx].Address].EncryptedShares
@@ -232,6 +241,8 @@ func TestShareDistribution_Group_2_Bad5(t *testing.T) {
 			dkgState.Participants[accounts[idx].Address].EncryptedShares = encryptedShares
 		}
 
+		err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+		assert.Nil(t, err)
 		_, err = task.Execute(ctx)
 		// The last task should have failed
 		if idx == badShareIdx {
@@ -259,7 +270,8 @@ func TestShareDistribution_Group_2_Bad6(t *testing.T) {
 	err := state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
 	task := dkg.NewShareDistributionTask(dkgState.PhaseStart, dkgState.PhaseStart+dkgState.PhaseLength)
-	task.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "ShareDistributionTask", "2222", nil)
+	err = task.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "ShareDistributionTask", "2222", nil)
+	assert.Nil(t, err)
 	err = task.Prepare(ctx)
 	assert.NotNil(t, err)
 }
@@ -273,8 +285,9 @@ func TestShareDistribution_Group_3_ShouldRetryTrue(t *testing.T) {
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err := task.Prepare(ctx)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
 		shouldRetry, _ := task.ShouldExecute(ctx)
@@ -292,8 +305,9 @@ func TestShareDistribution_Group_3_ShouldRetryFalse(t *testing.T) {
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
-		err := task.Prepare(ctx)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "ShareDistributionTask", "2222", nil)
+		assert.Nil(t, err)
+		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 		_, err = task.Execute(ctx)
 		assert.Nil(t, err)
