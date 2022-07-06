@@ -498,10 +498,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 		// skip all the way to MPKSubmission phase
 		tests.AdvanceTo(suite.Eth, mpkSubmissionTaskStart)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingKeyshareTasks[0].Start)
 	}
 
 	suite.MpkSubmissionTasks = mpkSubmissionTasks

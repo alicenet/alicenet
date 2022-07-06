@@ -219,13 +219,12 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 
 			badAddress := false
 			if suite.BadAddresses[task.Address] {
-				isValidator, err := utils.IsValidator(suite.DKGStatesDbs[idx], task.GetLogger(), task.Address)
-				assert.Nil(t, err)
 				var participantsList = dkgState.GetSortedParticipants()
 				if bytes.Equal(task.Address.Bytes(), participantsList[idx].Address.Bytes()) {
 					assert.Nil(t, taskErr)
 					assert.Nil(t, txn)
 				} else {
+					// During the first run the validator will accuse the rest of the participants but not himself
 					if idx == 0 {
 						assert.Nil(t, taskErr)
 						assert.NotNil(t, txn)
@@ -233,6 +232,8 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 						assert.Nil(t, subsErr)
 						receiptResponses = append(receiptResponses, rcptResponse)
 					} else {
+						isValidator, err := utils.IsValidator(suite.DKGStatesDbs[idx], task.GetLogger(), task.Address)
+						assert.Nil(t, err)
 						if isValidator {
 							assert.NotNil(t, taskErr)
 							assert.Nil(t, txn)
@@ -260,5 +261,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 	// assert no bad participants on the ETHDKG contract
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
-	assert.Equal(t, len(b), int(badParticipants.Uint64()))
+	// The -1 is because during the first run the validator will accuse all the participants but himself
+	// the second the rest of participants are not longer validators so they cannot accuse the first one
+	assert.Equal(t, len(b)-1, int(badParticipants.Uint64()))
 }
