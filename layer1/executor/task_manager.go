@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -19,20 +20,51 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type TasksManager struct {
+type TransactionsBackup struct {
+	sync.RWMutex
 	Transactions map[string]*types.Transaction `json:"transactions"`
-	txWatcher    transaction.Watcher           `json:"-"`
-	database     *db.Database                  `json:"-"`
-	logger       *logrus.Entry                 `json:"-"`
+}
+
+func NewTransactionsBackup() *TransactionsBackup {
+	return &TransactionsBackup{
+		Transactions: map[string]*types.Transaction{},
+	}
+}
+
+func (tb *TransactionsBackup) Add(uuid string, tx *types.Transaction) {
+	tb.Lock()
+	defer tb.Unlock()
+	tb.Transactions[uuid] = tx
+}
+
+func (tb *TransactionsBackup) Remove(uuid string) {
+	tb.Lock()
+	defer tb.Unlock()
+	delete(tb.Transactions, uuid)
+}
+
+func (tb *TransactionsBackup) GetTransaction(uuid string) (*types.Transaction, bool) {
+	tb.RLock()
+	defer tb.RUnlock()
+	txn, present := tb.Transactions[uuid]
+	return txn, present
+}
+
+type TasksManager struct {
+	sync.RWMutex
+	TxsBackup TransactionsBackup  `json:"transactions_backup"`
+	txWatcher transaction.Watcher `json:"-"`
+	database  *db.Database        `json:"-"`
+	logger    *logrus.Entry       `json:"-"`
 }
 
 // Creates a new TasksManager instance
 func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
-		Transactions: map[string]*types.Transaction{},
-		txWatcher:    txWatcher,
-		database:     database,
-		logger:       logger,
+		TxsBackup: *NewTransactionsBackup(),
+		txWatcher: txWatcher,
+		database:  database,
+		logger:    logger,
 	}
 
 	err := taskManager.loadState()
@@ -63,7 +95,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 	}
 	retryDelay := constants.MonitorRetryDelay
 	isComplete := false
-	if txn, present := tm.Transactions[task.GetId()]; present {
+	if txn, present := tm.TxsBackup.GetTransaction(task.GetId()); present {
 		isComplete, err = tm.checkCompletion(taskCtx, task, txn)
 		if err != nil {
 			return err
@@ -85,7 +117,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 	}
 
 	// We got a successful receipt, removing from state
-	delete(tm.Transactions, task.GetId())
+	tm.TxsBackup.Remove(task.GetId())
 	err = tm.persistState()
 	if err != nil {
 		return err
@@ -142,7 +174,7 @@ func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryD
 			}
 			if txn != nil {
 				logger.Debugf("got a successful txn: %v", txn.Hash().Hex())
-				tm.Transactions[task.GetId()] = txn
+				tm.TxsBackup.Add(task.GetId(), txn)
 				err := tm.persistState()
 				if err != nil {
 					return err
