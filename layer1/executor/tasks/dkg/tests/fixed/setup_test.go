@@ -1,5 +1,3 @@
-//go:build integration
-
 package fixed
 
 import (
@@ -17,10 +15,12 @@ import (
 	testUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -78,6 +78,7 @@ type TestSuite struct {
 	DisputeMissingGPKjTasks      []*dkg.DisputeMissingGPKjTask
 	DisputeGPKjTasks             [][]*dkg.DisputeGPKjTask
 	CompletionTasks              []*dkg.CompletionTask
+	BadAddresses                 map[common.Address]bool
 }
 
 func GetDKGDb(t *testing.T) *db.Database {
@@ -341,16 +342,17 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 		assert.Nil(t, err)
 
 		if len(badSharesIdx) > 0 {
+			suite.BadAddresses = make(map[common.Address]bool)
 			for _, badIdx := range badSharesIdx {
-				if idx == badIdx {
-					// inject bad shares
-					for _, s := range dkgState.Participants[dkgState.Account.Address].EncryptedShares {
-						s.Set(big.NewInt(0))
-					}
+				accounts := suite.Eth.GetKnownAccounts()
+				// inject bad shares
+				for _, s := range dkgState.Participants[accounts[badIdx].Address].EncryptedShares {
+					s.Set(big.NewInt(0))
 				}
+				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+				assert.Nil(t, err)
+				suite.BadAddresses[accounts[badIdx].Address] = true
 			}
-			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
-			assert.Nil(t, err)
 		}
 
 		txn, err := shareDistTask.Execute(ctx)
@@ -678,4 +680,18 @@ func StartFromCompletion(t *testing.T, fixture *tests.ClientFixture, phaseLength
 	tests.AdvanceTo(suite.Eth, suite.CompletionTasks[0].Start+dkgState.ConfirmationLength)
 
 	return suite
+}
+
+func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, accounts []accounts.Account) {
+	monState := objects.NewMonitorState()
+	for idx := 0; idx < len(accounts); idx++ {
+		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
+			Account: accounts[idx].Address,
+		}
+	}
+
+	for idx := 0; idx < len(accounts); idx++ {
+		err := monState.PersistState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+	}
 }
