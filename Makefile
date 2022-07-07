@@ -44,7 +44,7 @@ generate-go: init
 		-o -iname \*.swagger.json \
 		-o -iname \*.mockgen.go \
 		-exec rm -rf {} \;
-	go generate ./...
+	go generate -tags tools ./...
 
 .PHONY: clean
 clean:
