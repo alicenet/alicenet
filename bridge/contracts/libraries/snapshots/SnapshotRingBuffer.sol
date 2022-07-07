@@ -123,19 +123,6 @@ abstract contract SnapshotRingBuffer {
     }
 
     /**
-     * @notice Returns the snapshot for the passed height and safety flag
-     * @param height_ of the snapshot
-     * @return ok if the struct is valid and the snapshot struct itself
-     */
-    function _getSnapshotForHeight(uint32 height_)
-        internal
-        view
-        returns (bool ok, Snapshot memory snapshot)
-    {
-        return _getSnapshot(_getEpochFromHeight(height_));
-    }
-
-    /**
      * @return ok if the struct is valid and the snapshot struct itself
      */
     function _getLatestSnapshot() internal view returns (bool ok, Snapshot memory snapshot) {
