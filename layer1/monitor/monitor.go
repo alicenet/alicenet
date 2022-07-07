@@ -14,7 +14,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
@@ -41,6 +40,7 @@ type monitor struct {
 	adminHandler   interfaces.AdminHandler
 	depositHandler interfaces.DepositHandler
 	eth            layer1.Client
+	contracts      layer1.Contracts
 	eventMap       *objects.EventMap
 	db             *db.Database
 	cdb            *db.Database
@@ -50,7 +50,6 @@ type monitor struct {
 	cancelChan     chan bool
 	statusChan     chan string
 	State          *objects.MonitorState
-	wg             *sync.WaitGroup
 	batchSize      uint64
 
 	//for communication with the TasksScheduler
@@ -63,6 +62,7 @@ func NewMonitor(cdb *db.Database,
 	adminHandler interfaces.AdminHandler,
 	depositHandler interfaces.DepositHandler,
 	eth layer1.Client,
+	contracts layer1.Contracts,
 	tickInterval time.Duration,
 	batchSize uint64,
 	taskRequestChan chan<- tasks.TaskRequest,
@@ -79,7 +79,6 @@ func NewMonitor(cdb *db.Database,
 		return nil, err
 	}
 
-	wg := new(sync.WaitGroup)
 	State := objects.NewMonitorState()
 
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
@@ -91,6 +90,7 @@ func NewMonitor(cdb *db.Database,
 		adminHandler:    adminHandler,
 		depositHandler:  depositHandler,
 		eth:             eth,
+		contracts:       contracts,
 		eventMap:        eventMap,
 		cdb:             cdb,
 		db:              monDB,
@@ -100,7 +100,6 @@ func NewMonitor(cdb *db.Database,
 		cancelChan:      make(chan bool, 1),
 		statusChan:      make(chan string, 1),
 		State:           State,
-		wg:              wg,
 		batchSize:       batchSize,
 		taskRequestChan: taskRequestChan,
 	}, nil
@@ -161,14 +160,12 @@ func (mon *monitor) Start() error {
 	logger.Info(strings.Repeat("-", 80))
 
 	mon.cancelChan = make(chan bool)
-	mon.wg.Add(1)
-	go mon.eventLoop(mon.wg, logger, mon.cancelChan)
+	go mon.eventLoop(logger, mon.cancelChan)
 	return nil
 }
 
-func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelChan <-chan bool) {
+func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 
-	defer wg.Done()
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
@@ -194,14 +191,7 @@ func (mon *monitor) eventLoop(wg *sync.WaitGroup, logger *logrus.Entry, cancelCh
 
 			oldMonitorState := mon.State.Clone()
 
-			persistMonitorCB := func() {
-				err := mon.State.PersistState(mon.db)
-				if err != nil {
-					logger.Errorf("Failed to persist State after MonitorTick(...): %v", err)
-				}
-			}
-
-			if err := MonitorTick(ctx, cf, wg, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, persistMonitorCB); err != nil {
+			if err := MonitorTick(ctx, cf, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, mon.contracts); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
@@ -239,16 +229,15 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
-func MonitorTick(ctx context.Context, cf context.CancelFunc, wg *sync.WaitGroup, eth layer1.Client, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, persistMonitorCB func()) error {
+func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, monitorState *objects.MonitorState, logger *logrus.Entry,
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, contracts layer1.Contracts) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
 		"EndpointInSync": monitorState.EndpointInSync,
 		"EthereumInSync": monitorState.EthereumInSync})
 
-	c := ethereum.GetContracts()
-	addresses := c.GetAllAddresses()
+	addresses := contracts.GetAllAddresses()
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
