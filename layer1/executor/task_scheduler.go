@@ -413,6 +413,7 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 	toStart := make([]TaskRequestInfo, 0)
 	expired := make([]TaskRequestInfo, 0)
 	unresponsive := make([]TaskRequestInfo, 0)
+	multiExecutionCheck := make(map[string]bool)
 
 	for _, taskRequest := range s.Schedule {
 		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskSchedulerHeightToleranceBeforeRemoving <= s.LastHeightSeen {
@@ -432,12 +433,14 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && taskRequest.InternalState == NotStarted {
 
 			if taskRequest.Task.GetAllowMultiExecution() {
+				multiExecutionCheck[taskRequest.Name] = true
 				toStart = append(toStart, taskRequest)
 			} else {
-				if len(s.findRunningTasksByName(taskRequest.Name)) == 0 {
+				if alreadyPicked := multiExecutionCheck[taskRequest.Name]; !alreadyPicked && len(s.findRunningTasksByName(taskRequest.Name)) == 0 {
+					multiExecutionCheck[taskRequest.Name] = true
 					toStart = append(toStart, taskRequest)
 				} else {
-					s.logger.Errorf("trying to start more than 1 task instance when this is not allowed id: %s, name: %s", taskRequest.Id, taskRequest.Name)
+					s.logger.Debugf("trying to start more than 1 task instance when this is not allowed id: %s, name: %s", taskRequest.Id, taskRequest.Name)
 				}
 			}
 			continue
