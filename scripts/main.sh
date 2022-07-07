@@ -207,7 +207,7 @@ init)
     WD=$PWD
     BRIDGE=./bridge
     cd $BRIDGE
-    if ! eval $(npm list -s | grep " hardhat@") 2>/dev/null; then
+    if [[ "$(npm list -s hardhat)" =~ "empty" ]]; then
         echo "Hardhat not found, installing npm"
         npm ci
     fi
