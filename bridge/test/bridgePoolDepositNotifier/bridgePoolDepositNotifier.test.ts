@@ -15,8 +15,6 @@ let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 const networkId = 1337;
 const ercContractAddress = ethers.constants.AddressZero;
-const bridgePoolTag = ethers.utils.toUtf8Bytes("ERC");
-const nonce = 1;
 const ercAmount = 10000;
 let bridgePool: any;
 const bTokenFeeInETH = 10;

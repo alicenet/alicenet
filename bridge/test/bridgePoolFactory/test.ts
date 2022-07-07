@@ -42,9 +42,7 @@ describe("BridgePool Contract Factory", () => {
           fixture.bToken.address,
           1
         )
-      ).to.be.revertedWith(
-        "VM Exception while processing transaction: reverted with an unrecognized custom error" //need to be BRIDGEPOOLFACTORY_CODE_SIZE_ZERO
-      );
+      ).to.be.revertedWith(reason);
     });
 
     it("should not deploy new BridgePool with inexistent version", async () => {
