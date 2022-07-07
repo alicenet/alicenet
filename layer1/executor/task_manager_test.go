@@ -3,6 +3,11 @@ package executor
 import (
 	"context"
 	"errors"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/transaction"
@@ -14,10 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"math/big"
-	"os"
-	"testing"
 )
 
 func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Database, *taskResponseChan, *mocks.MockWatcher) {
@@ -80,7 +81,7 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
@@ -121,7 +122,7 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 	mockrequire.CalledN(t, task.PrepareFunc, 2)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_UnrecoverableError(t *testing.T) {
@@ -151,7 +152,7 @@ func Test_TaskManager_UnrecoverableError(t *testing.T) {
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(taskErr))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
@@ -186,12 +187,12 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 	task.GetIdFunc.SetDefaultReturn(taskId)
 
 	mainCtx := context.Background()
-	manager.Transactions[task.GetId()] = txn
+	manager.TxsBackup[task.GetId()] = txn
 	manager.ManageTask(mainCtx, task, "", taskId, db, manager.logger, client, taskRespChan)
 
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
@@ -225,7 +226,7 @@ func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(unrecoverableError))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
@@ -279,7 +280,7 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 	mockrequire.CalledN(t, task.ShouldExecuteFunc, 5)
 
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 }
 
 func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
@@ -353,7 +354,7 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	mainCtx := context.Background()
 	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
 
-	assert.Equalf(t, 1, len(manager.Transactions), "Expected one transaction (stale status)")
+	assert.Equalf(t, 1, len(manager.TxsBackup), "Expected one transaction (stale status)")
 	manager, err = NewTaskManager(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
@@ -361,6 +362,6 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.Transactions, "Expected transactions to be empty")
+	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
 
 }

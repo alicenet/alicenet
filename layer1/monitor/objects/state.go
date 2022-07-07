@@ -15,12 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// todo: ask Hunter
-// CRITICAL TODO: MONITOR STATE MUST BE SPLIT UP INTO DIFFERENT OBJECTS OR
-// MAPPINGS MUST BE PRUNED AFTER SOME DELAY. THIS DELAY MAY BE ON THE SCALE OF
-// 5 EPOCHS AS A VERY CONSERVATIVE NUMBER AFTER WHICH DATA MUST HAVE BEEN FLUSHED
-// TO STATE DATABASE FOR VALIDATORS AND SNAPSHOTS AFTER THIS INTERVAL.
-
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`

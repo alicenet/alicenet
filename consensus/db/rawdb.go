@@ -82,7 +82,7 @@ func (db *rawDataBase) subscribeToPrefix(ctx context.Context, prefix []byte, cb 
 	fn2 := func() {
 		err := db.db.Subscribe(ctx, fn, prefix)
 		if err != nil && err != context.Canceled {
-			db.logger.Errorf("terminating db subscription for prefix: %v", prefix)
+			db.logger.Warnf("terminating db subscription for prefix: %v", prefix)
 		}
 	}
 	go fn2()

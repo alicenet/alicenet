@@ -1,4 +1,4 @@
-package fixed
+package tests
 
 import (
 	"context"
@@ -47,12 +47,11 @@ func TestMain(m *testing.M) {
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 	logger := logging.GetLogger("test").WithField("test", t.Name())
-
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)
+
 	eth := fixture.Client
 	assert.NotNil(t, eth)
-
 	assert.Equal(t, n, len(eth.GetKnownAccounts()))
 
 	t.Cleanup(func() {
@@ -94,7 +93,9 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if err != nil {
 		return nil, err
 	}
+
 	tests.MineFinalityDelayBlocks(fixture.Client)
+
 	rcpt, err := rcptResponse.GetReceiptBlocking(ctx)
 	if err != nil {
 		return nil, err
@@ -102,6 +103,7 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if rcpt.Status != types.ReceiptStatusSuccessful {
 		return nil, fmt.Errorf("receipt status indicate failure: %v", rcpt.Status)
 	}
+
 	return rcpt, nil
 }
 
@@ -124,6 +126,7 @@ func SetETHDKGPhaseLength(length uint16, fixture *tests.ClientFixture, callOpts 
 	if txn == nil {
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
 	}
+
 	rcpt, err := SubscribeAndWaitReceipt(ctx, fixture, txn)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting receipt for ContractFactory.CallAny(ethdkg, setPhaseLength(...)) err: %v", err)
@@ -498,10 +501,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 		// skip all the way to MPKSubmission phase
 		tests.AdvanceTo(suite.Eth, mpkSubmissionTaskStart)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingKeyshareTasks[0].Start)
 	}
 
 	suite.MpkSubmissionTasks = mpkSubmissionTasks
@@ -570,6 +571,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	n := len(suite.Eth.GetKnownAccounts())
 	var receiptResponses []transaction.ReceiptResponse
+	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
 		var skipLoop = false
@@ -608,6 +610,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 				dkgState.Participants[dkgState.Account.Address].GPKj = gpkjBad
 				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
 				assert.Nil(t, err)
+				suite.BadAddresses[dkgState.Account.Address] = true
 			}
 		}
 
@@ -663,10 +666,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 		// skip all the way to DisputeGPKj phase
 		tests.AdvanceTo(suite.Eth, dispGPKjStartBlock)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingGPKjTasks[0].Start)
 	}
 
 	return suite
@@ -693,5 +694,19 @@ func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, account
 	for idx := 0; idx < len(accounts); idx++ {
 		err := monState.PersistState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
+	}
+}
+
+func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite) {
+	for _, badId := range badValidators {
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
+		assert.Nil(t, err)
+
+		callOpts, err := suite.Eth.GetCallOpts(context.Background(), dkgState.Account)
+		assert.Nil(t, err)
+
+		isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
+		assert.Nil(t, err)
+		assert.Equal(t, false, isValidator)
 	}
 }

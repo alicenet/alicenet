@@ -1,6 +1,6 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
@@ -58,6 +58,8 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
+
+	CheckBadValidators(t, u, suite)
 }
 
 func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
@@ -106,6 +108,8 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
+
+	CheckBadValidators(t, u, suite)
 }
 
 func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
@@ -136,4 +140,6 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWh
 	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
+
+	CheckBadValidators(t, u, suite)
 }

@@ -14,8 +14,6 @@ import (
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
-var _ layer1.Client = &MockClient{}
-
 // MockClient is a mock implementation of the Client interface (from the
 // package github.com/alicenet/alicenet/layer1) used for unit testing.
 type MockClient struct {
@@ -3777,4 +3775,145 @@ func (c ClientSignTransactionFuncCall) Args() []interface{} {
 // invocation.
 func (c ClientSignTransactionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
+}
+
+// MockContracts is a mock implementation of the Contracts interface (from
+// the package github.com/alicenet/alicenet/layer1) used for unit testing.
+type MockContracts struct {
+	// GetAllAddressesFunc is an instance of a mock function object
+	// controlling the behavior of the method GetAllAddresses.
+	GetAllAddressesFunc *ContractsGetAllAddressesFunc
+}
+
+// NewMockContracts creates a new mock of the Contracts interface. All
+// methods return zero values for all results, unless overwritten.
+func NewMockContracts() *MockContracts {
+	return &MockContracts{
+		GetAllAddressesFunc: &ContractsGetAllAddressesFunc{
+			defaultHook: func() (r0 []common.Address) {
+				return
+			},
+		},
+	}
+}
+
+// NewStrictMockContracts creates a new mock of the Contracts interface. All
+// methods panic on invocation, unless overwritten.
+func NewStrictMockContracts() *MockContracts {
+	return &MockContracts{
+		GetAllAddressesFunc: &ContractsGetAllAddressesFunc{
+			defaultHook: func() []common.Address {
+				panic("unexpected invocation of MockContracts.GetAllAddresses")
+			},
+		},
+	}
+}
+
+// NewMockContractsFrom creates a new mock of the MockContracts interface.
+// All methods delegate to the given implementation, unless overwritten.
+func NewMockContractsFrom(i layer1.Contracts) *MockContracts {
+	return &MockContracts{
+		GetAllAddressesFunc: &ContractsGetAllAddressesFunc{
+			defaultHook: i.GetAllAddresses,
+		},
+	}
+}
+
+// ContractsGetAllAddressesFunc describes the behavior when the
+// GetAllAddresses method of the parent MockContracts instance is invoked.
+type ContractsGetAllAddressesFunc struct {
+	defaultHook func() []common.Address
+	hooks       []func() []common.Address
+	history     []ContractsGetAllAddressesFuncCall
+	mutex       sync.Mutex
+}
+
+// GetAllAddresses delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockContracts) GetAllAddresses() []common.Address {
+	r0 := m.GetAllAddressesFunc.nextHook()()
+	m.GetAllAddressesFunc.appendCall(ContractsGetAllAddressesFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetAllAddresses
+// method of the parent MockContracts instance is invoked and the hook queue
+// is empty.
+func (f *ContractsGetAllAddressesFunc) SetDefaultHook(hook func() []common.Address) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetAllAddresses method of the parent MockContracts instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *ContractsGetAllAddressesFunc) PushHook(hook func() []common.Address) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ContractsGetAllAddressesFunc) SetDefaultReturn(r0 []common.Address) {
+	f.SetDefaultHook(func() []common.Address {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ContractsGetAllAddressesFunc) PushReturn(r0 []common.Address) {
+	f.PushHook(func() []common.Address {
+		return r0
+	})
+}
+
+func (f *ContractsGetAllAddressesFunc) nextHook() func() []common.Address {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ContractsGetAllAddressesFunc) appendCall(r0 ContractsGetAllAddressesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ContractsGetAllAddressesFuncCall objects
+// describing the invocations of this function.
+func (f *ContractsGetAllAddressesFunc) History() []ContractsGetAllAddressesFuncCall {
+	f.mutex.Lock()
+	history := make([]ContractsGetAllAddressesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ContractsGetAllAddressesFuncCall is an object that describes an
+// invocation of method GetAllAddresses on an instance of MockContracts.
+type ContractsGetAllAddressesFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 []common.Address
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ContractsGetAllAddressesFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ContractsGetAllAddressesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
 }

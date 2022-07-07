@@ -44,7 +44,7 @@ generate-go: init
 		-o -iname \*.swagger.json \
 		-o -iname \*.mockgen.go \
 		-exec rm -rf {} \;
-	go generate ./...
+	go generate -tags tools ./...
 
 .PHONY: clean
 clean:
@@ -55,4 +55,4 @@ clean:
 setup:
 	go mod download
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
-	cd bridge && npm ci
+	cd bridge && npm install
