@@ -300,7 +300,7 @@ func TestMath_GenerateGroupKeysBad1(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	participants := utils.GenerateParticipantList(dkgStates)
 
 	// Start raising errors
@@ -338,7 +338,7 @@ func TestMath_GenerateGroupKeysBad2(t *testing.T) {
 	// Initial Setup
 	n := 4
 	deterministicShares := true
-	dkgStates, _ := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := utils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	participants := utils.GenerateParticipantList(dkgStates)
 
 	transportPrivateKey := big.NewInt(123456789)

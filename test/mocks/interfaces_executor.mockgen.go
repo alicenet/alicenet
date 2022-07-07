@@ -63,6 +63,9 @@ type MockTask struct {
 	// ShouldExecuteFunc is an instance of a mock function object
 	// controlling the behavior of the method ShouldExecute.
 	ShouldExecuteFunc *TaskShouldExecuteFunc
+	// WasKilledFunc is an instance of a mock function object controlling
+	// the behavior of the method WasKilled.
+	WasKilledFunc *TaskWasKilledFunc
 }
 
 // NewMockTask creates a new mock of the Task interface. All methods return
@@ -141,6 +144,11 @@ func NewMockTask() *MockTask {
 		},
 		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: func(context.Context) (r0 bool, r1 *tasks.TaskErr) {
+				return
+			},
+		},
+		WasKilledFunc: &TaskWasKilledFunc{
+			defaultHook: func() (r0 bool) {
 				return
 			},
 		},
@@ -226,6 +234,11 @@ func NewStrictMockTask() *MockTask {
 				panic("unexpected invocation of MockTask.ShouldExecute")
 			},
 		},
+		WasKilledFunc: &TaskWasKilledFunc{
+			defaultHook: func() bool {
+				panic("unexpected invocation of MockTask.WasKilled")
+			},
+		},
 	}
 }
 
@@ -277,6 +290,9 @@ func NewMockTaskFrom(i tasks.Task) *MockTask {
 		},
 		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: i.ShouldExecute,
+		},
+		WasKilledFunc: &TaskWasKilledFunc{
+			defaultHook: i.WasKilled,
 		},
 	}
 }
@@ -1786,4 +1802,102 @@ func (c TaskShouldExecuteFuncCall) Args() []interface{} {
 // invocation.
 func (c TaskShouldExecuteFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
+}
+
+// TaskWasKilledFunc describes the behavior when the WasKilled method of the
+// parent MockTask instance is invoked.
+type TaskWasKilledFunc struct {
+	defaultHook func() bool
+	hooks       []func() bool
+	history     []TaskWasKilledFuncCall
+	mutex       sync.Mutex
+}
+
+// WasKilled delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockTask) WasKilled() bool {
+	r0 := m.WasKilledFunc.nextHook()()
+	m.WasKilledFunc.appendCall(TaskWasKilledFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the WasKilled method of
+// the parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskWasKilledFunc) SetDefaultHook(hook func() bool) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WasKilled method of the parent MockTask instance invokes the hook at the
+// front of the queue and discards it. After the queue is empty, the default
+// hook function is invoked for any future action.
+func (f *TaskWasKilledFunc) PushHook(hook func() bool) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *TaskWasKilledFunc) SetDefaultReturn(r0 bool) {
+	f.SetDefaultHook(func() bool {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *TaskWasKilledFunc) PushReturn(r0 bool) {
+	f.PushHook(func() bool {
+		return r0
+	})
+}
+
+func (f *TaskWasKilledFunc) nextHook() func() bool {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *TaskWasKilledFunc) appendCall(r0 TaskWasKilledFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of TaskWasKilledFuncCall objects describing
+// the invocations of this function.
+func (f *TaskWasKilledFunc) History() []TaskWasKilledFuncCall {
+	f.mutex.Lock()
+	history := make([]TaskWasKilledFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// TaskWasKilledFuncCall is an object that describes an invocation of method
+// WasKilled on an instance of MockTask.
+type TaskWasKilledFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bool
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c TaskWasKilledFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c TaskWasKilledFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
 }
