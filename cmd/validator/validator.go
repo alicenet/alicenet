@@ -289,7 +289,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, monitorInterval, uint64(batchSize), taskRequestChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), taskRequestChan)
 	if err != nil {
 		panic(err)
 	}

@@ -3,29 +3,23 @@
 package monitor
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/interfaces"
-	exObjects "github.com/alicenet/alicenet/layer1/executor/objects"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 
-	aobjs "github.com/alicenet/alicenet/application/objs"
-	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/test/mocks"
 
-	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,9 +47,9 @@ func createValidator(addrHex string, idx uint8) objects.Validator {
 func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 	monitorState.ValidatorSets[EPOCH] = objects.ValidatorSet{
-		ValidatorCount:        4,
-		NotBeforeMadNetHeight: 321,
-		GroupKey:              [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)}}
+		ValidatorCount:          4,
+		NotBeforeAliceNetHeight: 321,
+		GroupKey:                [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)}}
 
 	monitorState.Validators[EPOCH] = []objects.Validator{
 		createValidator("0x546F99F244b7B58B855330AE0E2BC1b30b41302F", 1),
@@ -65,79 +59,40 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 }
 
-//
-// Mock implementation of interfaces.Task
-//
-type mockTask struct {
-	DoneCalled bool
-	State      *state.DkgState
-	DkgTask    *exObjects.BaseTask
-}
+func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
+	monDB := mocks.NewTestDB()
+	adminHandler := mocks.NewMockAdminHandler()
+	depositHandler := mocks.NewMockDepositHandler()
+	eth := mocks.NewMockClient()
+	tasksReqChan := make(chan tasks.TaskRequest, 10)
+	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, adminHandler, tasksReqChan, txWatcher)
 
-var _ interfaces.Task = &mockTask{}
+	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, mocks.NewMockContracts(), 2*time.Second, 100, tasksReqChan)
+	assert.Nil(t, err)
+	EPOCH := uint32(1)
+	populateMonitor(mon.State, EPOCH)
 
-func (mt *mockTask) DoDone(logger *logrus.Entry) {
-	mt.DoneCalled = true
-}
-
-func (mt *mockTask) DoRetry(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) DoWork(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) Initialize(context.Context, *logrus.Entry, layer1.Client) error {
-	return nil
-}
-
-func (mt *mockTask) ShouldRetry(context.Context, *logrus.Entry, layer1.Client) bool {
-	return false
-}
-
-func (mt *mockTask) GetExecutionData() interfaces.ITaskExecutionData {
-	return mt.DkgTask
-}
-
-//
-// Mock implementation of interfaces.DepositHandler
-//
-type mockDepositHandler struct {
-}
-
-func (dh *mockDepositHandler) Add(*badger.Txn, uint32, []byte, *big.Int, *aobjs.Owner) error {
-	return nil
+	return mon, tasksScheduler, tasksReqChan, eth
 }
 
 //
 // Actual tests
 //
 func TestMonitorPersist(t *testing.T) {
-	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
-	assert.Nil(t, err)
-
-	database := &db.Database{}
-	database.Init(rawDb)
-
-	eth := mocks.NewMockNetwork()
-	mon, err := NewMonitor(database, database, mocks.NewMockIAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.Task, 10), make(chan string, 10))
-	assert.Nil(t, err)
-
-	EPOCH := uint32(1)
-	populateMonitor(mon.State, EPOCH)
+	mon, _, tasksReqChan, eth := getMonitor(t)
+	defer close(tasksReqChan)
 	raw, err := json.Marshal(mon)
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
 
-	err = mon.PersistState()
+	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	//
-	newMon, err := NewMonitor(database, database, mocks.NewMockIAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1, make(chan interfaces.Task, 10), make(chan string, 10))
+	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockContracts(), 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
-	err = newMon.LoadState()
+	err = newMon.State.LoadState(mon.db)
 	assert.Nil(t, err)
 
 	newRaw, err := json.Marshal(mon)
@@ -145,159 +100,38 @@ func TestMonitorPersist(t *testing.T) {
 	t.Logf("NewRaw: %v", string(newRaw))
 }
 
-// TODO - fix this tes with new scheduler
-//
-//func TestBidirectionalMarshaling(t *testing.T) {
-//
-//	// setup
-//	adminHandler := mocks.NewMockIAdminHandler()
-//	depositHandler := &mockDepositHandler{}
-//
-//	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(5)
-//	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
-//	defer eth.Close()
-//	logger := logging.GetLogger("test")
-//
-//	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
-//
-//	EPOCH := uint32(1)
-//
-//	// Setup monitor state
-//	mon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
-//	assert.Nil(t, err)
-//	populateMonitor(mon.State, EPOCH)
-//
-//	acct := eth.GetKnownAccounts()[0]
-//	dkgState := state.NewDkgState(acct)
-//	mockTsk := &mockTask{
-//		DkgBaseTask: objects2.NewTask(nil, "name", 1, 40),
-//	}
-//	// Schedule some tasks
-//	mon.State.Schedule.Schedule(1, 2, mockTsk)
-//	mon.State.Schedule.Schedule(3, 4, mockTsk)
-//	mon.State.Schedule.Schedule(5, 6, mockTsk)
-//	mon.State.Schedule.Schedule(7, 8, mockTsk)
-//
-//	// Marshal
-//	mon.TypeRegistry.RegisterInstanceType(mockTsk)
-//	raw, err := json.Marshal(mon)
-//	assert.Nil(t, err)
-//	t.Logf("RawData:%v", string(raw))
-//
-//	// Unmarshal
-//	newMon, err := monitor.NewMonitor(&db.Database{}, &db.Database{}, adminHandler, depositHandler, eth, 2*time.Second, time.Minute, 1, make(chan interfaces.ITask, 10), make(chan string, 10))
-//	assert.Nil(t, err)
-//
-//	tr := &marshaller.TypeRegistry{}
-//	tr.RegisterInstanceType(mockTsk)
-//	err = json.Unmarshal(raw, newMon)
-//	assert.Nil(t, err)
-//
-//	// Compare raw data for mon and newMon
-//	newRaw, err := json.Marshal(newMon)
-//	assert.Nil(t, err)
-//	assert.Equal(t, len(raw), len(newRaw))
-//	t.Logf("Len(RawData): %v", len(raw))
-//
-//	// Do comparisons
-//	validator0 := createValidator("0x546F99F244b7B58B855330AE0E2BC1b30b41302F", 1)
-//
-//	assert.Equal(t, 0, validator0.SharedKey[0].Cmp(newMon.State.Validators[EPOCH][0].SharedKey[0]))
-//	assert.Equal(t, 0, big.NewInt(44).Cmp(newMon.State.EthDKG.Participants[addr0].GPKj[0]))
-//
-//	// Compare the schedules
-//	_, err = newMon.State.Schedule.Find(9)
-//	assert.Equal(t, tasks.ErrNothingScheduled, err)
-//
-//	//
-//	taskID, err := newMon.State.Schedule.Find(1)
-//	assert.Nil(t, err)
-//
-//	task, err := newMon.State.Schedule.Retrieve(taskID)
-//	assert.Nil(t, err)
-//
-//	//
-//	taskID2, err := newMon.State.Schedule.Find(3)
-//	assert.Nil(t, err)
-//
-//	task2, err := newMon.State.Schedule.Retrieve(taskID2)
-//	assert.Nil(t, err)
-//
-//	taskStruct := task.(*mockTask)
-//	assert.False(t, taskStruct.DoneCalled)
-//
-//	taskStruct2 := task2.(*mockTask)
-//	assert.False(t, taskStruct2.DoneCalled)
-//
-//	t.Logf("State:%p State2:%p", taskStruct.State, taskStruct2.State)
-//	assert.Equal(t, taskStruct.State, taskStruct2.State)
-//
-//	wg := &sync.WaitGroup{}
-//	err = tasks.StartTask(logger.WithField("Task", "Mocked"), wg, eth, task, nil, nil)
-//	assert.Nil(t, err)
-//	wg.Wait()
-//
-//	assert.True(t, taskStruct.DoneCalled)
-//}
+func TestProcessEvents(t *testing.T) {
+	mon, tasksScheduler, tasksReqChan, eth := getMonitor(t)
 
-func TestWrapDoNotContinue(t *testing.T) {
-	genErr := exObjects.ErrCanNotContinue
-	specErr := errors.New("neutrinos")
+	account := accounts.Account{Address: common.Address{1, 2, 3, 4}}
+	mon.State.PotentialValidators[account.Address] = objects.PotentialValidator{
+		Account: account.Address,
+	}
+	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(100, nil)
+	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
 
-	niceErr := fmt.Errorf("%w because %v", genErr, specErr)
-	assert.True(t, errors.Is(niceErr, genErr))
+	logHash := common.BytesToHash([]byte("RegistrationOpened"))
+	logs := []types.Log{
+		{Topics: []common.Hash{logHash}},
+	}
 
-	t.Logf("%v", niceErr)
+	eth.GetEventsFunc.SetDefaultReturn(logs, nil)
+
+	defer close(tasksReqChan)
+	err := tasksScheduler.Start()
+	assert.Nil(t, err)
+	defer tasksScheduler.Close()
+
+	err = mon.Start()
+	assert.Nil(t, err)
+	defer mon.Close()
+
+	<-time.After(100 * time.Millisecond)
+
+	assert.Equal(t, 2, len(tasksScheduler.Schedule))
+
+	dkgState, err := state.GetDkgState(mon.db)
+	assert.Nil(t, err)
+	assert.NotNil(t, dkgState)
 }
-
-// func TestTaskPersistance(t *testing.T) {
-// 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
-// 	assert.Nil(t, err)
-
-// 	database := &db.Database{}
-// 	database.Init(rawDb)
-
-// 	eth := mocks.NewMockBaseEthereum()
-// 	mon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
-// 	assert.Nil(t, err)
-
-// 	addr0 := common.HexToAddress("0x546F99F244b7B58B855330AE0E2BC1b30b41302F")
-// 	EPOCH := uint32(1)
-// 	populateMonitor(mon.State, addr0, EPOCH)
-
-// 	snapshotTask := &tasks.SnapshotTask{
-// 		BaseTask: tasks.NewTask(&tasks.SnapshotState{
-// 			account:     addr0,
-// 			blockHeader: bh,
-// 			consensusDb: db,
-// 		}, start, end),
-// 	}
-// 	// Schedule some tasks
-// 	_, err = mon.State.Schedule.Schedule(1, 2, mockTsk)
-// 	assert.Nil(t, err)
-
-// 	_, err = mon.State.Schedule.Schedule(3, 4, mockTsk)
-// 	assert.Nil(t, err)
-
-// 	_, err = mon.State.Schedule.Schedule(5, 6, mockTsk)
-// 	assert.Nil(t, err)
-
-// 	_, err = mon.State.Schedule.Schedule(7, 8, mockTsk)
-// 	assert.Nil(t, err)
-
-// 	raw, err := json.Marshal(mon)
-// 	assert.Nil(t, err)
-// 	t.Logf("Raw: %v", string(raw))
-
-// 	mon.PersistState()
-
-// 	//
-// 	newMon, err := monitor.NewMonitor(database, database, mocks.NewMockAdminHandler(), &mockDepositHandler{}, eth, 1*time.Second, time.Minute, 1)
-// 	assert.Nil(t, err)
-
-// 	newMon.LoadState()
-
-// 	newRaw, err := json.Marshal(mon)
-// 	assert.Nil(t, err)
-// 	t.Logf("NewRaw: %v", string(newRaw))
-// }

@@ -10,9 +10,6 @@ import (
 	types "github.com/ethereum/go-ethereum/core/types"
 )
 
-var _ transaction.Watcher = &MockWatcher{}
-var _ transaction.ReceiptResponse = &MockReceiptResponse{}
-
 // MockReceiptResponse is a mock implementation of the ReceiptResponse
 // interface (from the package
 // github.com/alicenet/alicenet/layer1/transaction) used for unit testing.
