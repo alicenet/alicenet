@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  NODE_VERSION: 16.x
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -19,17 +16,7 @@ defaults:
     shell: bash
 
 jobs:
-  solidity-build:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-
-  solidity-unit-tests:
+  node-unit-tests:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     strategy:
@@ -46,46 +33,46 @@ jobs:
           - test-group: "[f-qF-Q]"
           - test-group: "[r-sR-S]"
           - test-group: "[t-zT-Z]"
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
       - uses: ./.github/actions/solidity-tests
         with:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  solidity-linter:
+  node-lint:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
+      - run: npm run typechain
       - run: npm run lint-solidity
-
-  typescript-linter:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    needs: solidity-build
-    defaults:
-      run:
-        working-directory: ./bridge
-        shell: bash
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run clean && npm run compile && npm run typechain
       - run: npm run lint
 
-  golang-linter:
+  go-lint:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     continue-on-error: true
@@ -93,7 +80,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: golangci/golangci-lint-action@v3
 
-  golang-unit-tests:
+  go-unit-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -114,54 +101,54 @@ jobs:
           files: ./coverage.out
           verbose: true
 
-  # golang-blockchain-tests:
-  #   runs-on: ${{ matrix.os }}
-  #   needs: golang-unit-tests
-  #   timeout-minutes: 60
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: [ ubuntu-20.04 ]
-  #       test-cmd: [
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
-  #         github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
-  #         github.com/alicenet/alicenet/blockchain,
-  #         github.com/alicenet/alicenet/blockchain/dkg,
-  #         github.com/alicenet/alicenet/blockchain/dkg/math,
-  #         github.com/alicenet/alicenet/blockchain/monitor,
-  #         github.com/alicenet/alicenet/blockchain/objects,
-  #         github.com/alicenet/alicenet/blockchain/tasks
-  #       ]
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: ./.github/actions/alicenet-config
-  #     - name: Set up gotestfmt
-  #       run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-  #     - name: Run tests ${{ matrix.test-cmd }}
-  #       timeout-minutes: 45
-  #       run: |
-  #         set -euo pipefail
-  #         ./scripts/main.sh init 5
-  #         go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+  go-integration-tests:
+    runs-on: ${{ matrix.os }}
+    needs: go-unit-tests
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-20.04 ]
+        test-cmd: [
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestShareDistribution_Group_3,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestRegisterTask_Group_3,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestMPKSubmission_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestKeyShareSubmission,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjSubmission_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeShareDistributionTask_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingShareDistributionTask_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingRegistrationTask_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingKeySharesTask,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestDisputeMissingGPKjTask_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestGPKjDispute,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_1,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_2,
+          # github.com/alicenet/alicenet/blockchain/dkg/dkgtasks -run TestCompletion_Group_3,
+          # github.com/alicenet/alicenet/blockchain,
+          # github.com/alicenet/alicenet/blockchain/dkg,
+          # github.com/alicenet/alicenet/blockchain/dkg/math,
+          # github.com/alicenet/alicenet/blockchain/monitor,
+          # github.com/alicenet/alicenet/blockchain/objects,
+          # github.com/alicenet/alicenet/blockchain/tasks
+        ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Run tests ${{ matrix.test-cmd }}
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          ./scripts/main.sh init 5
+          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
