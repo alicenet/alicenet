@@ -15,29 +15,48 @@ describe("BridgePool Contract Factory", () => {
   describe("Testing Access control", () => {
     it("should not deploy new BridgePool with BridgePoolFactory not being delegator", async () => {
       const reason = ethers.utils.parseBytes32String(
-        await fixture.aliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_UNAUTHORIZED()
+        await fixture.aliceNetFactoryBaseErrorCodesContract.ALICENETFACTORYBASE_UNAUTHORIZED()
       );
       await expect(
         fixture.bridgePoolFactory.deployNewPool(
           fixture.aToken.address,
-          fixture.bToken.address
+          fixture.bToken.address,
+          1
         )
       ).to.be.revertedWith(reason);
     });
 
     it("should not deploy two BridgePools with same ERC20 contract", async () => {
       const reason = ethers.utils.parseBytes32String(
-        await fixture.aliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_CODE_SIZE_ZERO()
+        await fixture.aliceNetFactoryBaseErrorCodesContract.ALICENETFACTORYBASE_CODE_SIZE_ZERO()
       );
       await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
       await fixture.bridgePoolFactory.deployNewPool(
         fixture.aToken.address,
-        fixture.bToken.address
+        fixture.bToken.address,
+        1
       );
       await expect(
         fixture.bridgePoolFactory.deployNewPool(
           fixture.aToken.address,
-          fixture.bToken.address
+          fixture.bToken.address,
+          1
+        )
+      ).to.be.revertedWith(
+        "VM Exception while processing transaction: reverted with an unrecognized custom error"
+      );
+    });
+
+    it("should not deploy new BridgePool with inexistent version", async () => {
+      const reason = ethers.utils.parseBytes32String(
+        await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION()
+      );
+      await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+      await expect(
+        fixture.bridgePoolFactory.deployNewPool(
+          fixture.aToken.address,
+          fixture.bToken.address,
+          11
         )
       ).to.be.revertedWith(reason);
     });

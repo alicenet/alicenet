@@ -23,7 +23,6 @@ let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
 let bridgePool: BridgePoolV1;
-let ethsReceived = BigNumber.from(0);
 
 const bTokenFeeInETH = 10;
 const totalErc20Amount = BigNumber.from(20000).toBigInt();
@@ -93,12 +92,6 @@ describe("Testing BridgePool Contract methods", async () => {
     await fixture.bToken
       .connect(user)
       .approve(bridgePool.address, BigNumber.from(bTokenAmount));
-    // Calculate eths to be received by burning bTokens
-    ethsReceived = await fixture.bToken.bTokensToEth(
-      await fixture.bToken.getPoolBalance(),
-      await fixture.bToken.totalSupply(),
-      bTokenAmount
-    );
     const encodedMockBlockClaims = getMockBlockClaimsForStateRoot(stateRoot);
     // Take a mock snapshot
     await fixture.snapshots.snapshot(
@@ -109,7 +102,7 @@ describe("Testing BridgePool Contract methods", async () => {
   });
 
   describe("Testing business logic", async () => {
-    it("Should make a deposit with parameters and emit correspondent event", async () => {
+    it.only("Should make a deposit with parameters and emit correspondent event", async () => {
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.aToken.user -= erc20Amount;
       expectedState.Balances.aToken.bridgePool += erc20Amount;

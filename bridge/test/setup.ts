@@ -622,6 +622,18 @@ export const getFixture = async (
     await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
   ).deployed();
 
+  const bridgePoolFactoryErrorCodesContract = await (
+    await (
+      await ethers.getContractFactory("BridgePoolFactoryErrorCodes")
+    ).deploy()
+  ).deployed();
+
+  const aliceNetFactoryBaseErrorCodesContract = await (
+    await (
+      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
+    ).deploy()
+  ).deployed();
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -650,6 +662,8 @@ export const getFixture = async (
     stakingPositionDescriptor,
     bridgePoolErrorCodesContract,
     immutableAuthErrorCodesContract,
+    aliceNetFactoryBaseErrorCodesContract,
+    bridgePoolFactoryErrorCodesContract,
   };
 };
 
