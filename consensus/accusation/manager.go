@@ -25,6 +25,7 @@ type rsCacheStruct struct {
 	rsHash []byte
 }
 
+// DidChange returns true if the local round state has changed since the last time it was checked
 func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 	rsHash, err := rs.Hash()
 	if err != nil {
@@ -102,6 +103,7 @@ func (m *Manager) Init(
 	return nil
 }
 
+// StartWorkers starts the workers that process the work queue
 func (m *Manager) StartWorkers() {
 	cpuCores := runtime.NumCPU()
 	for i := 0; i < cpuCores; i++ {
@@ -113,12 +115,14 @@ func (m *Manager) StartWorkers() {
 	}
 }
 
+// StopWorkers stops the workers that process the work queue
 func (m *Manager) StopWorkers() {
 	close(m.closeChan)
 	m.wg.Wait()
 	m.logger.Warn("Accusation manager stopped")
 }
 
+// runWorker is the worker function that processes the work queue
 func (m *Manager) runWorker() {
 	for {
 		select {
@@ -133,6 +137,8 @@ func (m *Manager) runWorker() {
 	}
 }
 
+// Poll reads the local round states and sends it to a work queue so that
+// workers can process it, offloading the Synchronizer loop.
 func (m *Manager) Poll() error {
 	// load local RoundStates
 	var lrs *lstate.RoundStates
@@ -175,6 +181,8 @@ func (m *Manager) Poll() error {
 	return m.scheduleAccusations()
 }
 
+// persistCreatedAccusations persists the newly created accusations. If it
+// fails to persist into the DB, it will retry persisting again later.
 func (m *Manager) persistCreatedAccusations() {
 	if len(m.unpersistedCreatedAccusations) > 0 {
 		persistedIdx := make([]int, 0)
@@ -201,6 +209,7 @@ func (m *Manager) persistCreatedAccusations() {
 	}
 }
 
+// scheduleAccusations schedules the accusations that are not yet scheduled in the Task Manager.
 func (m *Manager) scheduleAccusations() error {
 	// schedule Persisted but not ScheduledForExecution accusations
 	var unscheduledAccusations []objs.Accusation
@@ -263,6 +272,9 @@ func (m *Manager) scheduleAccusations() error {
 	return nil
 }
 
+// processLRS processes the local state of the blockchain. This function
+// is called by a worker. It returns a boolean indicating whether the
+// local round state had updates or not, as well as an error.
 func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	// keep track of new validators to clear the cache from old validators
 	currentValidators := make(map[string]bool)
@@ -299,7 +311,6 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 
 		if updated {
 			hadUpdates = true
-
 			// m.logger.WithFields(logrus.Fields{
 			// 	"lrs.height":              lrs.Height(),
 			// 	"lrs.round":               lrs.Round(),
@@ -308,7 +319,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 			// 	"vAddr":                   valAddress,
 			// }).Debug("AccusationManager: processing roundState")
 
-			m.processRoundState(rs)
+			m.findAccusation(rs)
 
 			// update rsCache
 			rsCacheEntry.height = rs.RCert.RClaims.Height
@@ -344,8 +355,8 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	return hadUpdates, nil
 }
 
-// processRoundState checks if there is an accusation for a certain roundState and if so, sends it for further processing
-func (m *Manager) processRoundState(rs *objs.RoundState) {
+// findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
+func (m *Manager) findAccusation(rs *objs.RoundState) {
 	for _, detector := range m.processingPipeline {
 		accusation, found := detector(rs)
 		if found {

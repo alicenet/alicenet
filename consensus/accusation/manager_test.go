@@ -130,17 +130,17 @@ func TestManagerPollCache(t *testing.T) {
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
-	// checking roundstates are in the workQueue
+	// check if roundstates are in the workQueue
 	receivedRS := 0
-	done := false
+	//done := false
 	var lrs *lstate.RoundStates
 
-	for !done {
+	for receivedRS < 1 {
 		select {
 		case lrs = <-testProxy.manager.workQ:
 			receivedRS += 1
 		default:
-			done = true
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
@@ -160,13 +160,13 @@ func TestManagerPollCache(t *testing.T) {
 
 	// checking roundstates are in the workQueue
 	receivedRS = 0
-	done = false
-	for !done {
+
+	for receivedRS < 1 {
 		select {
 		case <-testProxy.manager.workQ:
 			receivedRS += 1
 		default:
-			done = true
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
@@ -204,13 +204,13 @@ func TestManagerPollCache(t *testing.T) {
 
 	// checking roundstates are in the workQueue
 	receivedRS = 0
-	done = false
-	for !done {
+
+	for receivedRS < 1 {
 		select {
 		case <-testProxy.manager.workQ:
 			receivedRS += 1
 		default:
-			done = true
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
@@ -278,33 +278,28 @@ func TestManagerAccusable(t *testing.T) {
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
-	t.Log("a")
-
 	// wait for workers to process the accusation
 	time.Sleep(5 * time.Second)
 
-	t.Log("b")
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
-	done := false
-	var acc objs.Accusation
-	assert.Nil(t, acc)
+	var accusation objs.Accusation
+	assert.Nil(t, accusation)
 
-	t.Log("c")
-	for !done {
+	for receivedAcc < len(vs.Validators) { // all validators are being accused here
 		select {
-		case acc = <-testProxy.manager.accusationQ:
+		case acc := <-testProxy.manager.accusationQ:
+			t.Logf("received acc: %#v", acc)
+			accusation = acc
 			receivedAcc += 1
+
+			assert.NotNil(t, accusation)
+			assert.Equal(t, accusation.GetState(), objs.Created)
+			assert.Equal(t, accusation.GetPersistenceTimestamp(), uint64(0))
 		default:
-			done = true
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
-
-	t.Log("d")
-	assert.NotNil(t, acc)
-	assert.Equal(t, acc.GetState(), objs.Created)
-	assert.Equal(t, acc.GetPersistenceTimestamp(), uint64(0))
-	t.Log("e")
 }
 
 // TestManagerPersistCreatedAccusations tests the persistence of created accusations
