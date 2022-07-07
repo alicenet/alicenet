@@ -6,7 +6,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
@@ -15,16 +14,6 @@ import (
 func ProcessValueUpdated(eth layer1.Client, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 
 	logger.Info("ProcessValueUpdated() ...")
-
-	monState, err := objects.GetMonitorState(monDB)
-	if err != nil {
-		return err
-	}
-
-	//todo: ask Hunter only validators allowed
-	if !isValidator(eth.GetDefaultAccount(), monState) {
-		return nil
-	}
 
 	event, err := ethereum.GetContracts().Governance().ParseValueUpdated(log)
 	if err != nil {

@@ -1,0 +1,37 @@
+go:
+- '**/*.go'
+- 'go.mod'
+- 'go.sum'
+
+proto:
+- '**/*.proto'
+- 'buf.*'
+
+javascript:
+- '**/*.js'
+- '**/*.ts'
+- '**/package.json'
+- '**/package-lock.json'
+
+solidity:
+- '**/*.sol'
+
+dependencies:
+- 'go.mod'
+- 'go.sum'
+- '**/package.json'
+- '**/package-lock.json'
+
+docker:
+- '**/Dockerfile'
+- '**/docker-compose.yml'
+
+actions:
+- '.github/actions/**'
+- '.github/workflows/**'
+
+docs:
+- '**/*.md'
+
+repo:
+- any: ['*', '.github/*', '!go.*', '!package*.json']

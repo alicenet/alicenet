@@ -44,3 +44,7 @@ type Client interface {
 	ExtractTransactionSender(tx *types.Transaction) (common.Address, error)
 	RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error)
 }
+
+type Contracts interface {
+	GetAllAddresses() []common.Address
+}

@@ -55,6 +55,7 @@ type BaseTask struct {
 	Start               uint64                        `json:"start"`
 	End                 uint64                        `json:"end"`
 	isInitialized       bool                          `json:"-"`
+	wasKilled           bool                          `json:"-"`
 	ctx                 context.Context               `json:"-"`
 	cancelFunc          context.CancelFunc            `json:"-"`
 	database            *db.Database                  `json:"-"`
@@ -127,6 +128,11 @@ func (bt *BaseTask) GetCtx() context.Context {
 	return bt.ctx
 }
 
+// GetCtx default implementation for the ITask interface
+func (bt *BaseTask) WasKilled() bool {
+	return bt.wasKilled
+}
+
 // GetEth default implementation for the ITask interface
 func (bt *BaseTask) GetClient() layer1.Client {
 	return bt.client
@@ -142,12 +148,13 @@ func (bt *BaseTask) Close() {
 	if bt.cancelFunc != nil {
 		bt.cancelFunc()
 	}
+	bt.wasKilled = true
 }
 
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			bt.logger.WithError(err).Error("got an error when executing task")
 		} else {
 			bt.logger.WithError(err).Debug("cancelling task execution")

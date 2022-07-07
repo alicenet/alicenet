@@ -3,6 +3,5 @@ description: 'Configure the environment for alicenet'
 runs:
   using: "composite"
   steps:
-    - uses: ./.github/actions/node-cache
     - uses: ./.github/actions/golang-cache
     - uses: ./.github/actions/geth-eth-cache
