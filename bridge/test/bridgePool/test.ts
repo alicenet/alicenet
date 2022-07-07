@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { BridgePoolV1 } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
@@ -22,7 +21,7 @@ let expectedState: state;
 let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
-let bridgePool: BridgePoolV1;
+let bridgePool: any;
 
 const bTokenFeeInETH = 10;
 const totalErc20Amount = BigNumber.from(20000).toBigInt();
@@ -102,7 +101,7 @@ describe("Testing BridgePool Contract methods", async () => {
   });
 
   describe("Testing business logic", async () => {
-    it.only("Should make a deposit with parameters and emit correspondent event", async () => {
+    it("Should make a deposit with parameters and emit correspondent event", async () => {
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.aToken.user -= erc20Amount;
       expectedState.Balances.aToken.bridgePool += erc20Amount;

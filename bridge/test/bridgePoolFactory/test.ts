@@ -43,7 +43,7 @@ describe("BridgePool Contract Factory", () => {
           1
         )
       ).to.be.revertedWith(
-        "VM Exception while processing transaction: reverted with an unrecognized custom error"
+        "VM Exception while processing transaction: reverted with an unrecognized custom error" //need to be BRIDGEPOOLFACTORY_CODE_SIZE_ZERO
       );
     });
 
