@@ -47,12 +47,11 @@ func TestMain(m *testing.M) {
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 	logger := logging.GetLogger("test").WithField("test", t.Name())
-
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)
+
 	eth := fixture.Client
 	assert.NotNil(t, eth)
-
 	assert.Equal(t, n, len(eth.GetKnownAccounts()))
 
 	t.Cleanup(func() {
@@ -94,7 +93,9 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if err != nil {
 		return nil, err
 	}
+
 	tests.MineFinalityDelayBlocks(fixture.Client)
+
 	rcpt, err := rcptResponse.GetReceiptBlocking(ctx)
 	if err != nil {
 		return nil, err
@@ -102,6 +103,7 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if rcpt.Status != types.ReceiptStatusSuccessful {
 		return nil, fmt.Errorf("receipt status indicate failure: %v", rcpt.Status)
 	}
+
 	return rcpt, nil
 }
 
@@ -124,6 +126,7 @@ func SetETHDKGPhaseLength(length uint16, fixture *tests.ClientFixture, callOpts 
 	if txn == nil {
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
 	}
+
 	rcpt, err := SubscribeAndWaitReceipt(ctx, fixture, txn)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting receipt for ContractFactory.CallAny(ethdkg, setPhaseLength(...)) err: %v", err)
