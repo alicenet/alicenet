@@ -479,7 +479,7 @@ func (s *TasksScheduler) findRunningTasksByName(taskName string) []TaskRequestIn
 }
 
 func (s *TasksScheduler) remove(id string) error {
-	s.logger.Tracef("trying to remove task with id %s", id)
+	s.logger.Tracef("removing task with id %s", id)
 	_, present := s.Schedule[id]
 	if !present {
 		return ErrNotScheduled
