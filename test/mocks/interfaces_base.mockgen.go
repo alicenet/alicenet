@@ -18,8 +18,8 @@ import (
 )
 
 // MockBaseEthereum is a mock implementation of the Ethereum interface (from
-// the package github.com/alicenet/alicenet/layer1/interfaces) used for
-// unit testing.
+// the package github.com/alicenet/alicenet/layer1/interfaces) used for unit
+// testing.
 type MockBaseEthereum struct {
 	// ChainIDFunc is an instance of a mock function object controlling the
 	// behavior of the method ChainID.

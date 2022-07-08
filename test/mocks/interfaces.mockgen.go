@@ -18,8 +18,8 @@ import (
 )
 
 // MockAdminHandler is a mock implementation of the AdminHandler interface
-// (from the package github.com/alicenet/alicenet/layer1/interfaces)
-// used for unit testing.
+// (from the package github.com/alicenet/alicenet/layer1/interfaces) used
+// for unit testing.
 type MockAdminHandler struct {
 	// AddPrivateKeyFunc is an instance of a mock function object
 	// controlling the behavior of the method AddPrivateKey.
@@ -642,8 +642,8 @@ func (c AdminHandlerSetSynchronizedFuncCall) Results() []interface{} {
 }
 
 // MockContracts is a mock implementation of the Contracts interface (from
-// the package github.com/alicenet/alicenet/layer1/interfaces) used for
-// unit testing.
+// the package github.com/alicenet/alicenet/layer1/interfaces) used for unit
+// testing.
 type MockContracts struct {
 	// ATokenFunc is an instance of a mock function object controlling the
 	// behavior of the method AToken.
@@ -2865,8 +2865,8 @@ func (c ContractsValidatorStakingAddressFuncCall) Results() []interface{} {
 }
 
 // MockGethClient is a mock implementation of the GethClient interface (from
-// the package github.com/alicenet/alicenet/layer1/interfaces) used for
-// unit testing.
+// the package github.com/alicenet/alicenet/layer1/interfaces) used for unit
+// testing.
 type MockGethClient struct {
 	// BalanceAtFunc is an instance of a mock function object controlling
 	// the behavior of the method BalanceAt.
@@ -5642,8 +5642,7 @@ func (c GethClientTransactionReceiptFuncCall) Results() []interface{} {
 }
 
 // MockTask is a mock implementation of the Task interface (from the package
-// github.com/alicenet/alicenet/layer1/interfaces) used for unit
-// testing.
+// github.com/alicenet/alicenet/layer1/interfaces) used for unit testing.
 type MockTask struct {
 	// DoDoneFunc is an instance of a mock function object controlling the
 	// behavior of the method DoDone.
