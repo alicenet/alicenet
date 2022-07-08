@@ -133,7 +133,7 @@ export const createUsers = async (
   const users: SignerWithAddress[] = [];
   const admin = (await ethers.getSigners())[0];
   for (let i = 0; i < numberOfUsers; i++) {
-    const user = new Wallet(ethers.utils.randomBytes(64), ethers.provider);
+    const user = new Wallet(Wallet.createRandom(), ethers.provider);
     if (!createWithNoFunds) {
       const balance = await ethers.provider.getBalance(user.address);
       if (balance.eq(0)) {
