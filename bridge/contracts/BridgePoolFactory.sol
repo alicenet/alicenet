@@ -120,24 +120,22 @@ contract BridgePoolFactory is
         returns (address contractAddr)
     {
         address contractAddr;
-        uint256 response;
         uint256 contractSize;
+
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
-            //mstore(ptr, shl(144, 0x58808182335afa3d36363e3d36f3)) //also works
             contractAddr := create2(0, ptr, 15, salt_)
-            //if the returndatasize is not 0 revert with the error message
-            if iszero(iszero(returndatasize())) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0, returndatasize())
-            }
-            //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
-            if or(iszero(contractAddr), iszero(extcodesize(contractAddr))) {
-                mstore(0, "static pool deploy failed")
-                revert(0, 0x20)
-            }
+            contractSize := extcodesize(contractAddr)
         }
+        require(
+            contractSize > 0,
+            string(
+                abi.encodePacked(
+                    BridgePoolFactoryErrorCodes.BRIDGEPOOLFACTORY_UNABLE_TO_DEPLOY_BRIDGEPOOL
+                )
+            )
+        );
         if (initCallData_.length > 0) {
             AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
         }

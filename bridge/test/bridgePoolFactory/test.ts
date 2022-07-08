@@ -28,7 +28,7 @@ describe("BridgePool Contract Factory", () => {
 
     it("should not deploy two BridgePools with same ERC20 contract", async () => {
       const reason = ethers.utils.parseBytes32String(
-        await fixture.aliceNetFactoryBaseErrorCodesContract.ALICENETFACTORYBASE_CODE_SIZE_ZERO()
+        await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNABLE_TO_DEPLOY_BRIDGEPOOL()
       );
       await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
       await fixture.bridgePoolFactory.deployNewPool(
