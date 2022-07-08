@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -26,10 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"os"
-	"strings"
-	"testing"
 )
 
 var HardHat *tests.Hardhat
@@ -40,8 +41,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	HardHat = hardhat
-	code := m.Run()
-	hardhat.Close()
+	code := 1
+	func() {
+		defer hardhat.Close()
+		code = m.Run()
+	}()
 	os.Exit(code)
 }
 
