@@ -170,7 +170,7 @@ RUN_VALIDATOR() {
 RUN_NODE() {
     # Run a normal node (non validator)
     CHECK_EXISTING $1
-    ./madnet --config ./scripts/generated/extra-nodes/config/node$1.toml validator
+    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml validator
 }
 
 RACE_VALIDATOR() {
@@ -231,6 +231,9 @@ deploy)
 validator)
     RUN_VALIDATOR $2
     ;;
+node)
+    RUN_NODE $2
+    ;;
 race)
     RACE_VALIDATOR $2
     ;;
@@ -270,7 +273,7 @@ clean)
     ;;
 *)
     echo -e "Unknown argument!"
-    echo -e "init # | init-addiional-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
+    echo -e "init # | init-extra-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
     exit 1
     ;;
 esac
