@@ -8,7 +8,7 @@ import {
 } from "ethers";
 import { ethers } from "hardhat";
 import { ALICENET_FACTORY, END_POINT, MOCK } from "../../scripts/lib/constants";
-import { AliceNetFactory } from "../../typechain-types/AliceNetFactory";
+import { AliceNetFactory } from "../../typechain-types/contracts/AliceNetFactory";
 
 export async function getAccounts() {
   const signers = await ethers.getSigners();
