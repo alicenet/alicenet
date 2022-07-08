@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/alicenet/alicenet/blockchain"
-	"github.com/alicenet/alicenet/blockchain/interfaces"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/interfaces"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/MadBase/bridge/bindings"
