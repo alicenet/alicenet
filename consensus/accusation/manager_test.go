@@ -223,7 +223,7 @@ func TestManagerPollCache(t *testing.T) {
 }
 
 // accuseAllRoundStates is a detector function that accuses all round states because it's a test
-func accuseAllRoundStates(rs *objs.RoundState) (objs.Accusation, bool) {
+func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool) {
 	acc := &objs.BaseAccusation{}
 	return acc, true
 }

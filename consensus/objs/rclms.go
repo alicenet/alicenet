@@ -1,6 +1,8 @@
 package objs
 
 import (
+	"bytes"
+
 	capnp "github.com/MadBase/go-capnproto2/v2"
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/rclaims"
@@ -116,4 +118,12 @@ func (b *RClaims) MarshalCapn(seg *capnp.Segment) (mdefs.RClaims, error) {
 		return mdefs.RClaims{}, err
 	}
 	return bh, nil
+}
+
+// Equals compares two RClaims objects and returns true if they are equal
+func (b *RClaims) Equals(rc *RClaims) bool {
+	return b.ChainID == rc.ChainID &&
+		b.Height == rc.Height &&
+		b.Round == rc.Round &&
+		bytes.Equal(b.PrevBlock, rc.PrevBlock)
 }

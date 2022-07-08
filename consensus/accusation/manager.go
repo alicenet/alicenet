@@ -16,7 +16,7 @@ import (
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detector = func(rs *objs.RoundState) (objs.Accusation, bool)
+type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
@@ -274,7 +274,9 @@ func (m *Manager) scheduleAccusations() error {
 
 // processLRS processes the local state of the blockchain. This function
 // is called by a worker. It returns a boolean indicating whether the
-// local round state had updates or not, as well as an error.
+// local round state had updates or not, as well as an error. To avoid
+// processing the same round states over and over again, it keeps a cache
+// of the last processed round states.
 func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	// keep track of new validators to clear the cache from old validators
 	currentValidators := make(map[string]bool)
@@ -319,7 +321,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 			// 	"vAddr":                   valAddress,
 			// }).Debug("AccusationManager: processing roundState")
 
-			m.findAccusation(rs)
+			m.findAccusation(rs, lrs)
 
 			// update rsCache
 			rsCacheEntry.height = rs.RCert.RClaims.Height
@@ -355,10 +357,10 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	return hadUpdates, nil
 }
 
-// findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
-func (m *Manager) findAccusation(rs *objs.RoundState) {
+// findAccusation checks if there is an accusation for a certain roundState and if so, sends it backfor further processing in the Poll() function.
+func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	for _, detector := range m.processingPipeline {
-		accusation, found := detector(rs)
+		accusation, found := detector(rs, lrs)
 		if found {
 			m.accusationQ <- accusation
 			break
