@@ -16,9 +16,6 @@ runs:
   steps:
   - shell: bash
     working-directory: ./bridge
-    run: npm run clean && npm run compile
-  - shell: bash
-    working-directory: ./bridge
     run: |
       SUB_FILTER_INCLUDE=/${{ inputs.sub-filter-include }}
       # if inputs.sub-filter-include is empty we have to remove '/' if not
