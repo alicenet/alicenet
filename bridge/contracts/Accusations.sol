@@ -155,6 +155,14 @@ contract Accusations is
         bytes calldata _signature1,
         bytes calldata _pClaims1
     ) internal view returns (address) {
+        /*
+        convert sig0 and sig1 to uint
+        sort ASC and then determine ID. for example, if sig0 < sig1 then
+        id = keccak(sig0, pclaims0, sig1, pclaims1)
+        
+        require this ID has NOT been submitted already
+        otherwise store this ID in some storage variable like _accusations
+        */
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
         address signerAccount0 = recoverMadNetSigner(_signature0, _pClaims0);
         address signerAccount1 = recoverMadNetSigner(_signature1, _pClaims1);
