@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alicenet/alicenet/blockchain"
+	blockchain "github.com/alicenet/alicenet/layer1"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 

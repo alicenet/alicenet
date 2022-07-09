@@ -4,9 +4,9 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/alicenet/alicenet/blockchain/dkg/dkgtasks"
-	"github.com/alicenet/alicenet/blockchain/interfaces"
-	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/alicenet/alicenet/layer1/dkg/dkgtasks"
+	"github.com/alicenet/alicenet/layer1/interfaces"
+	"github.com/alicenet/alicenet/layer1/objects"
 	"github.com/ethereum/go-ethereum/accounts"
 	common "github.com/ethereum/go-ethereum/common"
 	logrus "github.com/sirupsen/logrus"
