@@ -1,7 +1,7 @@
 import { BigNumber } from "ethers";
 import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { BridgePoolV1 } from "../../typechain-types";
+import { IBridgePool } from "../../typechain-types";
 import { Fixture } from "../setup";
 
 export interface state {
@@ -29,10 +29,16 @@ export interface state {
       aToken: bigint;
       bToken: bigint;
     };
+    nft: {
+      address: string;
+      admin: bigint;
+      user: bigint;
+      bridgePool: bigint;
+    };
   };
 }
 
-export async function getState(fixture: Fixture, bridgePool: BridgePoolV1) {
+export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
   const [admin, user] = await ethers.getSigners();
   const state: state = {
     Balances: {
@@ -66,6 +72,14 @@ export async function getState(fixture: Fixture, bridgePool: BridgePoolV1) {
         ).toBigInt(),
         bToken: (
           await ethers.provider.getBalance(fixture.bToken.address)
+        ).toBigInt(),
+      },
+      nft: {
+        address: fixture.aToken.address.slice(-4),
+        admin: (await fixture.erc721Mock.balanceOf(admin.address)).toBigInt(),
+        user: (await fixture.erc721Mock.balanceOf(user.address)).toBigInt(),
+        bridgePool: (
+          await fixture.erc721Mock.balanceOf(bridgePool.address)
         ).toBigInt(),
       },
     },

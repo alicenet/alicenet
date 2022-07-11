@@ -238,7 +238,11 @@ export const deployStaticWithFactory = async (
   }
 
   let tx;
-  if (contractName != "BridgePoolV1") {
+  if (
+    contractName != "BridgePoolV1" &&
+    contractName != "LocalERC721BridgePoolV1"
+  ) {
+    // TODO gus: Add a proper management of initializers
     let initCallDataBin;
     try {
       initCallDataBin = _Contract.interface.encodeFunctionData(
@@ -584,17 +588,18 @@ export const getFixture = async (
   )) as ATokenBurner;
 
   // BridgePoolV1
-  const bridgePoolV1 = (await deployStaticWithFactory(
+  // const bridgePoolV1 = (await deployStaticWithFactory(
+  //   factory,
+  //   "BridgePoolV1",
+  //   getLocalBridgePoolSalt(1)
+  // )) as IBridgePool;
+
+  // BridgePoolV1
+  const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
-    "BridgePoolV1",
+    "LocalERC721BridgePoolV1",
     getLocalBridgePoolSalt(1)
   )) as IBridgePool;
-
-  // const bridgePoolV2 = (await deployStaticWithFactory(
-  //   factory,
-  //   "BridgePoolV2",
-  //   salt
-  // )) as BridgePool;
 
   // BridgePoolFactory
   const bridgePoolFactory = (await deployUpgradeableWithFactory(
@@ -614,12 +619,28 @@ export const getFixture = async (
     [1337]
   )) as BridgePoolDepositNotifier;
 
+  const erc721Mock = await (
+    await (await ethers.getContractFactory("ERC721Mock")).deploy()
+  ).deployed();
+
   const immutableAuthErrorCodesContract = await (
     await (await ethers.getContractFactory("ImmutableAuthErrorCodes")).deploy()
   ).deployed();
 
   const bridgePoolErrorCodesContract = await (
     await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
+  ).deployed();
+
+  const bridgePoolFactoryErrorCodesContract = await (
+    await (
+      await ethers.getContractFactory("BridgePoolFactoryErrorCodes")
+    ).deploy()
+  ).deployed();
+
+  const aliceNetFactoryBaseErrorCodesContract = await (
+    await (
+      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
+    ).deploy()
   ).deployed();
 
   await posFixtureSetup(factory, aToken, legacyToken);
@@ -639,7 +660,8 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
-    bridgePoolV1,
+    localERC721BridgePoolV1,
+    erc721Mock,
     bridgePoolFactory,
     bridgePoolDepositNotifier,
     namedSigners,
@@ -650,6 +672,8 @@ export const getFixture = async (
     stakingPositionDescriptor,
     bridgePoolErrorCodesContract,
     immutableAuthErrorCodesContract,
+    aliceNetFactoryBaseErrorCodesContract,
+    bridgePoolFactoryErrorCodesContract,
   };
 };
 

@@ -1,7 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect } from "../chai-setup";
-import { Fixture, getContractAddressFromEventLog, getFixture } from "../setup";
+import { expect } from "../../chai-setup";
+import {
+  Fixture,
+  getContractAddressFromEventLog,
+  getFixture,
+} from "../../setup";
 
 describe("BridgePool Contract Factory", () => {
   let firstOwner: SignerWithAddress;
@@ -15,29 +19,46 @@ describe("BridgePool Contract Factory", () => {
   describe("Testing Access control", () => {
     it("should not deploy new BridgePool with BridgePoolFactory not being delegator", async () => {
       const reason = ethers.utils.parseBytes32String(
-        await fixture.aliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_UNAUTHORIZED()
+        await fixture.aliceNetFactoryBaseErrorCodesContract.ALICENETFACTORYBASE_UNAUTHORIZED()
       );
       await expect(
         fixture.bridgePoolFactory.deployNewPool(
           fixture.aToken.address,
-          fixture.bToken.address
+          fixture.bToken.address,
+          1
         )
       ).to.be.revertedWith(reason);
     });
 
     it("should not deploy two BridgePools with same ERC20 contract", async () => {
       const reason = ethers.utils.parseBytes32String(
-        await fixture.aliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_CODE_SIZE_ZERO()
+        await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNABLE_TO_DEPLOY_BRIDGEPOOL()
       );
       await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
       await fixture.bridgePoolFactory.deployNewPool(
         fixture.aToken.address,
-        fixture.bToken.address
+        fixture.bToken.address,
+        1
       );
       await expect(
         fixture.bridgePoolFactory.deployNewPool(
           fixture.aToken.address,
-          fixture.bToken.address
+          fixture.bToken.address,
+          1
+        )
+      ).to.be.revertedWith(reason);
+    });
+
+    it("should not deploy new BridgePool with inexistent version", async () => {
+      const reason = ethers.utils.parseBytes32String(
+        await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION()
+      );
+      await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+      await expect(
+        fixture.bridgePoolFactory.deployNewPool(
+          fixture.aToken.address,
+          fixture.bToken.address,
+          11
         )
       ).to.be.revertedWith(reason);
     });
@@ -59,7 +80,7 @@ describe("BridgePool Contract Factory", () => {
       );
       // Final bridgePool address
       const bridgePool = (
-        await ethers.getContractFactory("BridgePoolV1")
+        await ethers.getContractFactory("LocalERC20BridgePoolV1")
       ).attach(bridgePoolAddress);
       await expect(
         bridgePool.deposit(1, firstOwner.address, 1, 1)

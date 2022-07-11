@@ -5,6 +5,7 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
+import "contracts/libraries/errorCodes/BridgePoolFactoryErrorCodes.sol";
 
 /// @custom:salt BridgePoolFactory
 /// @custom:deploy-type deployUpgradeable
@@ -24,25 +25,32 @@ contract BridgePoolFactory is
 
     /**
      * @notice deployNewPool
-     * @param erc20Contract_ address of ERC20 token contract
-     * @param token address of bridge token contract
+     * @param ERContract_ address of ERC20 token contract
+     * @param implementationVersion_ version of the BridgePool Implementation
      */
-    function deployNewPool(
-        address erc20Contract_,
-        address token,
-        uint16 implementationVersion_
-    ) public {
-        bytes memory initCallData = abi.encodeWithSignature(
-            "initialize(address,address)",
-            erc20Contract_,
-            token
-        );
-        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(erc20Contract_);
+    function deployNewPool(address ERContract_, uint16 implementationVersion_) public {
+        bytes memory initCallData = abi.encodeWithSignature("initialize(address)", ERContract_);
         _implementation = getMetamorphicContractAddress(
             getImplementationSalt(implementationVersion_),
             _factoryAddress()
         );
+        uint256 implementationSize;
+        address implementation = _implementation;
+        assembly {
+            implementationSize := extcodesize(implementation)
+        }
+        require(
+            implementationSize > 0,
+            string(
+                abi.encodePacked(
+                    BridgePoolFactoryErrorCodes
+                        .BRIDGEPOOLFACTORY_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION
+                )
+            )
+        );
+        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(ERContract_);
         address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
+        IBridgePool(contractAddr).initialize(ERContract_);
         emit BridgePoolCreated(contractAddr);
     }
 
@@ -62,15 +70,15 @@ contract BridgePoolFactory is
     }
 
     /**
-     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC20 contract's address
-     * @param erc20Contract_ address of ERC20 contract of BridgePool
+     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC contract's address
+     * @param ERCContract_ address of ERC contract of BridgePool
      * @return calculated salt
      */
-    function getLocalBridgePoolSalt(address erc20Contract_) public view returns (bytes32) {
+    function getLocalBridgePoolSalt(address ERCContract_) public view returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
-                    keccak256(abi.encodePacked(erc20Contract_)),
+                    keccak256(abi.encodePacked(ERCContract_)),
                     keccak256(abi.encodePacked(_networkId))
                 )
             );
@@ -81,10 +89,7 @@ contract BridgePoolFactory is
         pure
         returns (address)
     {
-        // does not work: 5880818283335afa3d82833e3d91f3
-        // bytes32 metamorphicContractBytecodeHash_ = 0xcd77112ba3315c30f6863dae90cb281bf2f644ef3fd9d21e53d1968182daa472;
-
-        // works: 58808182335afa3d36363e3d36f3
+        //0x5880818283335afa3d82833e3d82f3
         bytes32 metamorphicContractBytecodeHash_ = 0xf231e946a2f88d89eafa7b43271c54f58277304b93ac77d138d9b0bb3a989b6d;
         return
             address(
@@ -103,44 +108,30 @@ contract BridgePoolFactory is
             );
     }
 
-    function codeCopy(address addr) public returns (bytes memory) {
-        assembly {
-            let ptr := mload(0x40)
-            extcodecopy(addr, ptr, 0, extcodesize(addr))
-            return(ptr, extcodesize(addr))
-        }
-    }
-
     function _deployStaticPool(bytes32 salt_, bytes memory initCallData_)
         internal
         returns (address contractAddr)
     {
         address contractAddr;
-        uint256 response;
-        uint256 contractsize;
+        uint256 contractSize;
+
         assembly {
             let ptr := mload(0x40)
-            mstore(ptr, shl(144, 0x5880818283335afa3d82833e3d82f3))
-            //mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d91f3))
+            mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
             contractAddr := create2(0, ptr, 15, salt_)
-            response := returndatasize()
-            contractsize := extcodesize(contractAddr)
-            //if the returndatasize is not 0 revert with the error message
-            if iszero(iszero(returndatasize())) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0, returndatasize())
-            }
-            //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
-            if or(iszero(contractAddr), iszero(extcodesize(contractAddr))) {
-                mstore(0, "static pool deploy failed")
-                revert(0, 0x20)
-            }
+            contractSize := extcodesize(contractAddr)
         }
-        console.log("bytecode");
-        console.logBytes(codeCopy(contractAddr));
-        if (initCallData_.length > 0) {
-            AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
-        }
+        require(
+            contractSize > 0,
+            string(
+                abi.encodePacked(
+                    BridgePoolFactoryErrorCodes.BRIDGEPOOLFACTORY_UNABLE_TO_DEPLOY_BRIDGEPOOL
+                )
+            )
+        );
+        // if (initCallData_.length > 0) {
+        //     AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
+        // }
         return contractAddr;
     }
 

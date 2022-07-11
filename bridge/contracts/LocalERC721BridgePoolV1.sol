@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "contracts/BToken.sol";
 import {BridgePoolErrorCodes} from "contracts/libraries/errorCodes/BridgePoolErrorCodes.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
@@ -16,22 +18,23 @@ import "contracts/BridgePoolDepositNotifier.sol";
 import "contracts/BridgePoolFactory.sol";
 import "hardhat/console.sol";
 
-/// @custom:salt LocalERC20BridgePoolV1
+/// @custom:salt LocalERC721BridgePoolV1
 /// @custom:deploy-type deployStatic
-contract LocalERC20BridgePoolV1 is
+
+contract LocalERC721BridgePoolV1 is
+    ERC721Holder,
     IBridgePool,
     Initializable,
-    ERC20SafeTransfer,
     ImmutableSnapshots,
     ImmutableBridgePool,
+    ImmutableBToken,
     ImmutableBridgePoolDepositNotifier,
-    ImmutableBridgePoolFactory,
-    ImmutableBToken
+    ImmutableBridgePoolFactory
 {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
-    address internal _ercTokenContract;
+    address internal _erc721SourceContract;
 
     struct UTXO {
         uint32 chainID;
@@ -43,28 +46,25 @@ contract LocalERC20BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc20TokenContract_) public onlyBridgePoolFactory initializer {
-        _ercTokenContract = erc20TokenContract_;
+    function initialize(address erc721SourceContract_) public onlyBridgePoolFactory initializer {
+        _erc721SourceContract = erc721SourceContract_;
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param accountType_ The type of account
     /// @param aliceNetAddress_ The address on the sidechain where to mint the tokens
-    /// @param ercValue ercAmount if ERC20 or tokenId if ERC721 or ERC1155
+    /// @param tokenId_ The token ID of the NFT to be deposited
     /// @param bTokenAmount_ The fee for deposit in bTokens
     function deposit(
         uint8 accountType_,
         address aliceNetAddress_,
-        uint256 ercValue,
+        uint256 tokenId_,
         uint256 bTokenAmount_
     ) public {
-        require(
-            ERC20(_ercTokenContract).transferFrom(msg.sender, address(this), ercValue),
-            string(
-                abi.encodePacked(
-                    BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_TRANSFER_DEPOSIT_AMOUNT_FROM_SENDER
-                )
-            )
+        IERC721Transferable(_erc721SourceContract).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenId_
         );
         require(
             ERC20(_bTokenAddress()).transferFrom(msg.sender, address(this), bTokenAmount_),
@@ -91,12 +91,12 @@ contract LocalERC20BridgePoolV1 is
             }
         }
         bytes32 salt = BridgePoolFactory(_bridgePoolFactoryAddress()).getLocalBridgePoolSalt(
-            _ercTokenContract
+            _erc721SourceContract
         );
         BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
             salt,
-            _ercTokenContract,
-            ercValue,
+            _erc721SourceContract,
+            tokenId_,
             msg.sender
         );
     }
@@ -122,7 +122,11 @@ contract LocalERC20BridgePoolV1 is
             merkleProof.checkProof(bClaims.stateRoot, merkleProof.computeLeafHash()),
             string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN))
         );
-        _safeTransferERC20(IERC20Transferable(_ercTokenContract), msg.sender, burnedUTXO.value);
+        IERC721Transferable(_erc721SourceContract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            burnedUTXO.value // tokenId
+        );
     }
 
     receive() external payable {}

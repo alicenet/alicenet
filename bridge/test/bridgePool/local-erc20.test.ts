@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { BridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
@@ -22,8 +21,7 @@ let expectedState: state;
 let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
-let bridgePool: BridgePool;
-let ethsReceived = BigNumber.from(0);
+let bridgePool: any;
 
 const bTokenFeeInETH = 10;
 const totalErc20Amount = BigNumber.from(20000).toBigInt();
@@ -52,21 +50,16 @@ const networkId = 1337;
 
 describe("Testing BridgePool Contract methods", async () => {
   beforeEach(async function () {
-    fixture = await getFixture(true, true, false);
     [firstOwner, user, user2] = await ethers.getSigners();
+    fixture = await getFixture(true, true, false);
     await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
-    const bridgePoolImplementation = await (
-      await (await ethers.getContractFactory("BridgePool")).deploy()
-    ).deployed();
-    const bridgePoolCloneFactory = await (
-      await (
-        await ethers.getContractFactory("BridgePoolCloneFactory")
-      ).deploy(bridgePoolImplementation.address)
-    ).deployed();
+    const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
+    // Deploy a new pool
     const deployNewPoolTransaction =
-      await bridgePoolCloneFactory.cloneBridgePool(
+      await fixture.bridgePoolFactory.deployNewPool(
         fixture.aToken.address,
-        fixture.bToken.address
+        fixture.bToken.address,
+        1
       );
     const eventSignature = "event BridgePoolCreated(address contractAddr)";
     const eventName = "BridgePoolCreated";
@@ -75,11 +68,11 @@ describe("Testing BridgePool Contract methods", async () => {
       eventSignature,
       eventName
     );
-    bridgePool = (await ethers.getContractFactory("BridgePool")).attach(
-      bridgePoolAddress
-    );
-    const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
-    // mint and approve some ERC20 tokens to deposit
+    // Final bridgePool address
+    bridgePool = (
+      await ethers.getContractFactory("LocalERC20BridgePoolV1")
+    ).attach(bridgePoolAddress);
+    // Mint and approve some ERC20 tokens to deposit
     await factoryCallAny(fixture.factory, fixture.aTokenMinter, "mint", [
       user.address,
       totalErc20Amount,
@@ -87,7 +80,7 @@ describe("Testing BridgePool Contract methods", async () => {
     await fixture.aToken
       .connect(user)
       .approve(bridgePool.address, totalErc20Amount);
-    // mint and approve some bTokens to deposit (and burn)
+    // Mint and approve some bTokens to deposit (and burn)
     await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mintTo",
@@ -98,12 +91,6 @@ describe("Testing BridgePool Contract methods", async () => {
     await fixture.bToken
       .connect(user)
       .approve(bridgePool.address, BigNumber.from(bTokenAmount));
-    // Calculate eths to be received by burning bTokens
-    ethsReceived = await fixture.bToken.bTokensToEth(
-      await fixture.bToken.getPoolBalance(),
-      await fixture.bToken.totalSupply(),
-      bTokenAmount
-    );
     const encodedMockBlockClaims = getMockBlockClaimsForStateRoot(stateRoot);
     // Take a mock snapshot
     await fixture.snapshots.snapshot(
@@ -114,30 +101,26 @@ describe("Testing BridgePool Contract methods", async () => {
   });
 
   describe("Testing business logic", async () => {
-    it.only("Should make a deposit with parameters and emit correspondent event", async () => {
+    it("Should make a deposit with parameters and emit correspondent event", async () => {
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.aToken.user -= erc20Amount;
       expectedState.Balances.aToken.bridgePool += erc20Amount;
       expectedState.Balances.bToken.user -= bTokenAmount;
       expectedState.Balances.bToken.totalSupply -= bTokenAmount;
       const nonce = 1;
-      await bridgePool
-        .connect(user)
-        .deposit(1, user.address, erc20Amount, bTokenAmount);
-
-      // await expect(
-      //   bridgePool
-      //     .connect(user)
-      //     .deposit(1, user.address, erc20Amount, bTokenAmount)
-      // )
-      //   .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
-      //   .withArgs(
-      //     BigNumber.from(nonce),
-      //     fixture.aToken.address,
-      //     user.address,
-      //     BigNumber.from(erc20Amount),
-      //     BigNumber.from(networkId)
-      //   );
+      await expect(
+        bridgePool
+          .connect(user)
+          .deposit(1, user.address, erc20Amount, bTokenAmount)
+      )
+        .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
+        .withArgs(
+          BigNumber.from(nonce),
+          fixture.aToken.address,
+          user.address,
+          BigNumber.from(erc20Amount),
+          BigNumber.from(networkId)
+        );
       showState("After Deposit", await getState(fixture, bridgePool));
       expect(await getState(fixture, bridgePool)).to.be.deep.equal(
         expectedState
