@@ -2,8 +2,8 @@
 pragma solidity ^0.8.11;
 
 import {
-    CustomEnumerableMapsErrorCodes
-} from "contracts/libraries/errorCodes/CustomEnumerableMapsErrorCodes.sol";
+    CustomEnumerableMapsErrors
+} from "contracts/libraries/errors/CustomEnumerableMapsErrors.sol";
 
 struct ValidatorData {
     address _address;
@@ -142,10 +142,9 @@ library CustomEnumerableMaps {
         returns (ValidatorData memory)
     {
         (bool success, ValidatorData memory value) = tryGet(map, key);
-        require(
-            success,
-            string(abi.encodePacked(CustomEnumerableMapsErrorCodes.CUSTOMENUMMAP_KEY_NOT_IN_MAP))
-        );
+        if (!success) {
+            revert CustomEnumerableMapsErrors.KeyNotInMap(key);
+        }
         return value;
     }
 
