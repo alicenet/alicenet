@@ -1,3 +1,4 @@
+import { assertErrorMessage } from "../../chai-helpers";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -22,12 +23,12 @@ describe("ETHDKG: GPKj submission", () => {
     const [ethdkg] = await startAtGPKJ(validators4);
 
     const validator11 = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
-
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
-        .submitGPKJ(validators4[0].gpkj)
-    ).to.be.revertedWith("100");
+        .submitGPKJ(validators4[0].gpkj),
+      `OnlyValidatorsAllowed("${validator11}")`
+    );
   });
 
   it("should not allow submission of GPKj more than once from a validator", async () => {

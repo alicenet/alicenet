@@ -1,3 +1,4 @@
+import { assertErrorMessage } from "../../chai-helpers";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -75,16 +76,12 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
+    const validatorAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
     // non-validator tries to complete ethdkg
-    await expect(
-      ethdkg
-        .connect(
-          await getValidatorEthAccount(
-            "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac"
-          )
-        )
-        .complete()
-    ).to.be.revertedWith("100");
+    await assertErrorMessage(
+      ethdkg.connect(await getValidatorEthAccount(validatorAddress)).complete(),
+      `OnlyValidatorsAllowed("${validatorAddress}")`
+    );
   });
 
   it("should not allow double completion of ETHDKG", async () => {
@@ -178,11 +175,12 @@ describe("ETHDKG: ETHDKG Completion", () => {
         .register(validators4[0].aliceNetPublicKey)
     ).to.be.revertedWith("128");
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantNotRegistered([])
-    ).to.be.revertedWith("103");
+        .accuseParticipantNotRegistered([]),
+      `ETHDKGNotInPostRegistrationAccusationPhase(7)`
+    );
 
     await expect(
       ethdkg
@@ -193,11 +191,12 @@ describe("ETHDKG: ETHDKG Completion", () => {
         )
     ).to.be.revertedWith("133");
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantDidNotDistributeShares([])
-    ).to.be.revertedWith("106");
+        .accuseParticipantDidNotDistributeShares([]),
+      `NotInPostSharedDistributionPhase(7)`
+    );
 
     await expect(
       ethdkg

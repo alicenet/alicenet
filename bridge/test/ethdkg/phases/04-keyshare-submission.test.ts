@@ -1,4 +1,5 @@
 import { BigNumberish } from "ethers";
+import { assertErrorMessage } from "../../chai-helpers";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -71,15 +72,16 @@ describe("ETHDKG: Submit Key share", () => {
       "8743598319810782186450993867080805497457018022200839730580834926549940363993",
       "19522351501097379178289251110843345007238019509263663307388430690023301219325",
     ];
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
         .submitKeyShare(
           val11KeyShareG1,
           val11KeyShareG1CorrectnessProof,
           val11KeyShareG2
-        )
-    ).to.be.rejectedWith("100");
+        ),
+      `OnlyValidatorsAllowed("${validator11}")`
+    );
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {

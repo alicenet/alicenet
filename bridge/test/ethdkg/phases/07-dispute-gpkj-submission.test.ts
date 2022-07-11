@@ -1,5 +1,6 @@
 import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
+import { assertErrorMessage } from "../../chai-helpers";
 import { getValidatorEthAccount, mineBlocks } from "../../setup";
 import { validators10BadGPKJSubmission } from "../assets/10-validators-1-bad-gpkj-submission";
 import { validators10BadGPKJSubmission2 } from "../assets/10-validators-2-bad-gpkj-submission";
@@ -762,7 +763,7 @@ describe("ETHDKG: Dispute GPKj", () => {
       false
     );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators[0]))
         .accuseParticipantSubmittedBadGPKJ(
@@ -772,7 +773,8 @@ describe("ETHDKG: Dispute GPKj", () => {
           ),
           validators[0].groupCommitments as [BigNumberish, BigNumberish][][],
           validators[3].address
-        )
-    ).to.be.rejectedWith("104");
+        ),
+      `AccusedNotValidator("${ethers.utils.getAddress(validators[3].address)}")`
+    );
   });
 });

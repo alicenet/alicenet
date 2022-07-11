@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+import { assertErrorMessage } from "../../../chai-helpers";
 import { getValidatorEthAccount } from "../../../setup";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
@@ -137,9 +139,10 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    ).to.be.revertedWith("106");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address]),
+      `NotInPostSharedDistributionPhase(1)`
+    );
   });
 
   it("should not allow validators who did not distributed shares in time to distribute on the accusation phase", async function () {
@@ -226,9 +229,12 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     // now we can accuse the validator2 and 3 who did not participate.
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[0].address])
-    ).to.be.revertedWith("108");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotDistributeShares([validators4[0].address]),
+      `AccusedDistributedSharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -251,11 +257,11 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     // now we can accuse the validator2 and 3 who did not participate.
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-      ])
-    ).to.be.revertedWith("104");
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotDistributeShares([accusedAddress]),
+      `AccusedNotValidator("${ethers.utils.getAddress(accusedAddress)}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -280,9 +286,10 @@ describe("ETHDKG: Missing distribute share accusation", () => {
 
     await endCurrentAccusationPhase(ethdkg);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    ).to.be.revertedWith("106");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address]),
+      `NotInPostSharedDistributionPhase(1)`
+    );
   });
 
   it("should not allow accusing a user that distributed the shares in the middle of the ones that did not", async function () {
@@ -302,13 +309,16 @@ describe("ETHDKG: Missing distribute share accusation", () => {
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg.accuseParticipantDidNotDistributeShares([
         validators4[2].address,
         validators4[3].address,
         validators4[0].address,
-      ])
-    ).to.be.revertedWith("108");
+      ]),
+      `AccusedDistributedSharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -334,9 +344,12 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
     );
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    ).to.be.revertedWith("104");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address]),
+      `AccusedNotValidator("${ethers.utils.getAddress(
+        validators4[2].address
+      )}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(1);
   });
