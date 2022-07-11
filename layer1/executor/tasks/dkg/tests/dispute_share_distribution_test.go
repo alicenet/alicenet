@@ -13,7 +13,6 @@ import (
 	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
-
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
