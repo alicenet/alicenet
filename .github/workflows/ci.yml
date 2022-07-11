@@ -133,7 +133,9 @@ jobs:
           github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
           github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
           github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_2,
-          github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_3
+          github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_3,
+          github.com/alicenet/alicenet/layer1/ethereum/tests
+          github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state
         ]
     steps:
       - uses: actions/checkout@v3
