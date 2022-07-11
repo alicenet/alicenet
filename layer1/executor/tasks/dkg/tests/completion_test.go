@@ -1,17 +1,19 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,24 +24,59 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 	fixture := setupEthereum(t, n)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
-	eth := suite.Eth
+
+	monState := objects.NewMonitorState()
+	accounts := suite.Eth.GetKnownAccounts()
+	for idx := 0; idx < n; idx++ {
+		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
+			Account: accounts[idx].Address,
+		}
+	}
 
 	for idx := 0; idx < n; idx++ {
-		task := suite.CompletionTasks[idx]
-
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "CompletionTask", "task-id", nil)
+		err := monState.PersistState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		err = task.Prepare(ctx)
+	}
+
+	for idx := 0; idx < n; idx++ {
+		for j := 0; j < n; j++ {
+			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
+
+			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "disputeGPKjTask", "task-id", nil)
+			assert.Nil(t, err)
+			err = disputeGPKjTask.Prepare(ctx)
+			assert.Nil(t, err)
+
+			shouldExecute, err := disputeGPKjTask.ShouldExecute(ctx)
+			assert.Nil(t, err)
+			assert.True(t, shouldExecute)
+
+			txn, taskError := disputeGPKjTask.Execute(ctx)
+			assert.Nil(t, taskError)
+			assert.Nil(t, txn)
+		}
+	}
+
+	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
+	assert.Nil(t, err)
+	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+
+	for idx := 0; idx < n; idx++ {
+		completionTask := suite.CompletionTasks[idx]
+
+		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "CompletionTask", "task-id", nil)
+		assert.Nil(t, err)
+		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
-		shouldExecute, err := task.ShouldExecute(ctx)
+		shouldExecute, err := completionTask.ShouldExecute(ctx)
 		assert.Nil(t, err)
 		if shouldExecute {
-			txn, taskError := task.Execute(ctx)
-			amILeading := utils.AmILeading(eth, ctx, fixture.Logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index)
+			txn, taskError := completionTask.Execute(ctx)
+			amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(completionTask.GetStart()), completionTask.StartBlockHash[:], n, dkgState.Index)
 			if amILeading {
 				assert.Nil(t, taskError)
 				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
@@ -64,6 +101,8 @@ func TestCompletion_Group_1_Bad1(t *testing.T) {
 
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
+	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+
 	task := suite.CompletionTasks[0]
 	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "CompletionTask", "task-id", nil)
 	assert.Nil(t, err)

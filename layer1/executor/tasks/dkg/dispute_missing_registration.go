@@ -47,7 +47,7 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 	}
 
 	client := t.GetClient()
-	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
+	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
@@ -88,7 +88,7 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (boo
 		return false, nil
 	}
 
-	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
+	accusableParticipants, err := t.getAccusableParticipants(dkgState)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
 	}
@@ -101,7 +101,7 @@ func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (boo
 	return true, nil
 }
 
-func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, dkgState *state.DkgState) ([]common.Address, error) {
+func (t *DisputeMissingRegistrationTask) getAccusableParticipants(dkgState *state.DkgState) ([]common.Address, error) {
 	logger := t.GetLogger()
 
 	var accusableParticipants []common.Address

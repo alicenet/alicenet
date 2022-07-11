@@ -1,6 +1,6 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +80,6 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 	var phaseLength uint16 = 100
 	fixture := setupEthereum(t, n)
 	suite := StartFromShareDistributionPhase(t, fixture, []int{}, []int{}, phaseLength)
-	defer suite.Eth.Close()
 	ctx := context.Background()
 
 	// Do key share submission task

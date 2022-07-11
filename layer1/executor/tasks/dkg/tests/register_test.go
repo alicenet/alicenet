@@ -1,6 +1,6 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
@@ -86,8 +86,10 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 		validatorAddresses,
 	)
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 
@@ -148,11 +150,13 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 		)
 
 		dkgDb := GetDKGDb(t)
-		state.SaveDkgState(dkgDb, dkgState)
+		err = state.SaveDkgState(dkgDb, dkgState)
+		assert.Nil(t, err)
 		dkgStatesDbs[idx] = dkgDb
 		tasksVec[idx] = registrationTask
 
-		tasksVec[idx].Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+		err = tasksVec[idx].Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+		assert.Nil(t, err)
 		err = tasksVec[idx].Prepare(ctx)
 		assert.Nil(t, err)
 		_, err := tasksVec[idx].Execute(ctx)
@@ -226,8 +230,10 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	)
 
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -284,8 +290,10 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	)
 
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 	// Mess up private key
@@ -370,8 +378,10 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	)
 
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 	_, err = registrationTask.Execute(ctx)
@@ -443,8 +453,10 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	)
 
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
 
@@ -527,8 +539,10 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	)
 
 	dkgDb := GetDKGDb(t)
-	state.SaveDkgState(dkgDb, dkgState)
-	registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "111", nil)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.Nil(t, err)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 
 	expiredCtx, cf := context.WithCancel(context.Background())

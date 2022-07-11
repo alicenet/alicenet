@@ -1,3 +1,5 @@
+//go:build integration
+
 package tests
 
 import (
@@ -39,7 +41,10 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	HardHat = hardhat
-	code := m.Run()
-	hardhat.Close()
+	code := 1
+	func() {
+		defer hardhat.Close()
+		code = m.Run()
+	}()
 	os.Exit(code)
 }

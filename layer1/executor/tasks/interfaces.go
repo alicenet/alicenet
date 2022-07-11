@@ -17,6 +17,7 @@ type Task interface {
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
+	WasKilled() bool
 	Finish(err error)
 	Close()
 	GetId() string

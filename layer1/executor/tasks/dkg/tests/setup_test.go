@@ -1,11 +1,16 @@
 //go:build integration
 
-package fixed
+package tests
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -17,19 +22,17 @@ import (
 	testUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"os"
-	"strings"
-	"testing"
 )
 
 var HardHat *tests.Hardhat
@@ -40,19 +43,21 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	HardHat = hardhat
-	code := m.Run()
-	hardhat.Close()
+	code := 1
+	func() {
+		defer hardhat.Close()
+		code = m.Run()
+	}()
 	os.Exit(code)
 }
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 	logger := logging.GetLogger("test").WithField("test", t.Name())
-
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)
+
 	eth := fixture.Client
 	assert.NotNil(t, eth)
-
 	assert.Equal(t, n, len(eth.GetKnownAccounts()))
 
 	t.Cleanup(func() {
@@ -78,6 +83,7 @@ type TestSuite struct {
 	DisputeMissingGPKjTasks      []*dkg.DisputeMissingGPKjTask
 	DisputeGPKjTasks             [][]*dkg.DisputeGPKjTask
 	CompletionTasks              []*dkg.CompletionTask
+	BadAddresses                 map[common.Address]bool
 }
 
 func GetDKGDb(t *testing.T) *db.Database {
@@ -93,7 +99,9 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if err != nil {
 		return nil, err
 	}
+
 	tests.MineFinalityDelayBlocks(fixture.Client)
+
 	rcpt, err := rcptResponse.GetReceiptBlocking(ctx)
 	if err != nil {
 		return nil, err
@@ -101,6 +109,7 @@ func SubscribeAndWaitReceipt(ctx context.Context, fixture *tests.ClientFixture, 
 	if rcpt.Status != types.ReceiptStatusSuccessful {
 		return nil, fmt.Errorf("receipt status indicate failure: %v", rcpt.Status)
 	}
+
 	return rcpt, nil
 }
 
@@ -123,6 +132,7 @@ func SetETHDKGPhaseLength(length uint16, fixture *tests.ClientFixture, callOpts 
 	if txn == nil {
 		return nil, nil, errors.New("non existent transaction ContractFactory.CallAny(ethdkg, setPhaseLength(...))")
 	}
+
 	rcpt, err := SubscribeAndWaitReceipt(ctx, fixture, txn)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting receipt for ContractFactory.CallAny(ethdkg, setPhaseLength(...)) err: %v", err)
@@ -341,16 +351,17 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 		assert.Nil(t, err)
 
 		if len(badSharesIdx) > 0 {
+			suite.BadAddresses = make(map[common.Address]bool)
 			for _, badIdx := range badSharesIdx {
-				if idx == badIdx {
-					// inject bad shares
-					for _, s := range dkgState.Participants[dkgState.Account.Address].EncryptedShares {
-						s.Set(big.NewInt(0))
-					}
+				accounts := suite.Eth.GetKnownAccounts()
+				// inject bad shares
+				for _, s := range dkgState.Participants[accounts[badIdx].Address].EncryptedShares {
+					s.Set(big.NewInt(0))
 				}
+				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
+				assert.Nil(t, err)
+				suite.BadAddresses[accounts[badIdx].Address] = true
 			}
-			err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
-			assert.Nil(t, err)
 		}
 
 		txn, err := shareDistTask.Execute(ctx)
@@ -496,10 +507,8 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 		// skip all the way to MPKSubmission phase
 		tests.AdvanceTo(suite.Eth, mpkSubmissionTaskStart)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit key shares, and the next phase is DisputeMissingKeyShares
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingKeyshareTasks[0].Start)
 	}
 
 	suite.MpkSubmissionTasks = mpkSubmissionTasks
@@ -568,6 +577,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	logger := logging.GetLogger("test").WithField("Validator", "")
 	n := len(suite.Eth.GetKnownAccounts())
 	var receiptResponses []transaction.ReceiptResponse
+	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
 		var skipLoop = false
@@ -606,6 +616,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 				dkgState.Participants[dkgState.Account.Address].GPKj = gpkjBad
 				err = state.SaveDkgState(suite.DKGStatesDbs[idx], dkgState)
 				assert.Nil(t, err)
+				suite.BadAddresses[dkgState.Account.Address] = true
 			}
 		}
 
@@ -661,10 +672,8 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 		// skip all the way to DisputeGPKj phase
 		tests.AdvanceTo(suite.Eth, dispGPKjStartBlock)
 	} else {
-		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
-		assert.Nil(t, err)
 		// this means some validators did not submit their GPKjs, and the next phase is DisputeMissingGPKj
-		tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
+		tests.AdvanceTo(suite.Eth, suite.DisputeMissingGPKjTasks[0].Start)
 	}
 
 	return suite
@@ -678,4 +687,32 @@ func StartFromCompletion(t *testing.T, fixture *tests.ClientFixture, phaseLength
 	tests.AdvanceTo(suite.Eth, suite.CompletionTasks[0].Start+dkgState.ConfirmationLength)
 
 	return suite
+}
+
+func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, accounts []accounts.Account) {
+	monState := objects.NewMonitorState()
+	for idx := 0; idx < len(accounts); idx++ {
+		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
+			Account: accounts[idx].Address,
+		}
+	}
+
+	for idx := 0; idx < len(accounts); idx++ {
+		err := monState.PersistState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+	}
+}
+
+func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite) {
+	for _, badId := range badValidators {
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
+		assert.Nil(t, err)
+
+		callOpts, err := suite.Eth.GetCallOpts(context.Background(), dkgState.Account)
+		assert.Nil(t, err)
+
+		isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
+		assert.Nil(t, err)
+		assert.Equal(t, false, isValidator)
+	}
 }

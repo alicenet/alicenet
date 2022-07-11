@@ -18,7 +18,7 @@ func TestMath_VerifyDistributedSharesGood1(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
@@ -43,7 +43,7 @@ func TestMath_VerifyDistributedSharesGood2(t *testing.T) {
 	n := 5
 	// Test with random private coefficients
 	deterministicShares := false
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
@@ -68,7 +68,7 @@ func TestMath_VerifyDistributedSharesGood3(t *testing.T) {
 	n := 7
 	// Test with deterministic private coefficients
 	deterministicShares := false
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
@@ -107,7 +107,7 @@ func TestMath_VerifyDistributedSharesGood4(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.

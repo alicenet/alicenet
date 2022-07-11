@@ -142,7 +142,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 
 // AddValidatorSetEdgecase adds a validator set to the db if we have the
 // expected block at the height 'v.NotBefore-1' (e.g syncing from the ethereum
-// state). Otherwise, it will mark the change to happen in the future once we
+// data). Otherwise, it will mark the change to happen in the future once we
 // have the required block
 func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
 	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
@@ -181,7 +181,7 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 
 // AddSnapshot stores a snapshot to the database
 func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
-	ah.logger.Debug("inside adminHandler.AddSnapshot")
+	ah.logger.Debugf("inside adminHandler.AddSnapshot")
 	mutex, ok := ah.getLock()
 	if !ok {
 		return errors.New("could not get adminHandler lock")
@@ -195,12 +195,7 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 			return err
 		}
 		if !safeToProceed {
-			ah.logger.WithFields(
-				logrus.Fields{
-					"aliceNetHeight": bh.BClaims.Height + 1,
-					"safeToProceed":  safeToProceedConsensus,
-				},
-			).Debugf("Did validators change in the previous epoch:%v", !safeToProceedConsensus)
+			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", !safeToProceedConsensus, bh.BClaims.Height+1, safeToProceedConsensus)
 			// set that it's safe to proceed to the next block
 			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, safeToProceedConsensus); err != nil {
 				utils.DebugTrace(ah.logger, err)

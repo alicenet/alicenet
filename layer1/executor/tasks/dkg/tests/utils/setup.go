@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/alicenet/alicenet/consensus/objs"
-	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
@@ -24,37 +22,6 @@ import (
 )
 
 const SETUP_GROUP int = 13
-
-type adminHandlerMock struct {
-	snapshotCalled     bool
-	privateKeyCalled   bool
-	validatorSetCalled bool
-	registerSnapshot   bool
-	setSynchronized    bool
-}
-
-func (ah *adminHandlerMock) AddPrivateKey([]byte, constants.CurveSpec) error {
-	ah.privateKeyCalled = true
-	return nil
-}
-
-func (ah *adminHandlerMock) AddSnapshot(*objs.BlockHeader, bool) error {
-	ah.snapshotCalled = true
-	return nil
-}
-
-func (ah *adminHandlerMock) AddValidatorSet(*objs.ValidatorSet) error {
-	ah.validatorSetCalled = true
-	return nil
-}
-
-func (ah *adminHandlerMock) RegisterSnapshotCallback(func(*objs.BlockHeader) error) {
-	ah.registerSnapshot = true
-}
-
-func (ah *adminHandlerMock) SetSynchronized(v bool) {
-	ah.setSynchronized = true
-}
 
 func InitializeNewDetDkgStateInfo(tempDir string, n int) []*state.DkgState {
 	return InitializeNewDkgStateInfo(tempDir, n, true)

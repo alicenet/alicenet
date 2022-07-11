@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
@@ -48,6 +49,7 @@ func NewKillTaskRequest(task Task) TaskRequest {
 }
 
 type BaseTask struct {
+	sync.Once
 	Name                string                        `json:"name"`
 	AllowMultiExecution bool                          `json:"allowMultiExecution"`
 	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
@@ -55,6 +57,7 @@ type BaseTask struct {
 	Start               uint64                        `json:"start"`
 	End                 uint64                        `json:"end"`
 	isInitialized       bool                          `json:"-"`
+	wasKilled           bool                          `json:"-"`
 	ctx                 context.Context               `json:"-"`
 	cancelFunc          context.CancelFunc            `json:"-"`
 	database            *db.Database                  `json:"-"`
@@ -78,7 +81,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 
 // Initialize default implementation for the ITask interface
 func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
-	if !bt.isInitialized {
+	bt.Once.Do(func() {
 		bt.Name = name
 		bt.Id = id
 		bt.ctx = ctx
@@ -88,9 +91,11 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 		bt.client = eth
 		bt.taskResponseChan = taskResponseChan
 		bt.isInitialized = true
-		return nil
+	})
+	if bt.isInitialized {
+		return errors.New("trying to initialize task twice!")
 	}
-	return errors.New("trying to initialize task twice!")
+	return nil
 }
 
 // GetId default implementation for the ITask interface
@@ -127,6 +132,11 @@ func (bt *BaseTask) GetCtx() context.Context {
 	return bt.ctx
 }
 
+// GetCtx default implementation for the ITask interface
+func (bt *BaseTask) WasKilled() bool {
+	return bt.wasKilled
+}
+
 // GetEth default implementation for the ITask interface
 func (bt *BaseTask) GetClient() layer1.Client {
 	return bt.client
@@ -142,12 +152,13 @@ func (bt *BaseTask) Close() {
 	if bt.cancelFunc != nil {
 		bt.cancelFunc()
 	}
+	bt.wasKilled = true
 }
 
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			bt.logger.WithError(err).Error("got an error when executing task")
 		} else {
 			bt.logger.WithError(err).Debug("cancelling task execution")

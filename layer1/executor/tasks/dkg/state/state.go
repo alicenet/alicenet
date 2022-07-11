@@ -101,11 +101,6 @@ type DkgState struct {
 	// Participants is the list of Validators
 	Participants map[common.Address]*Participant `json:"participants"`
 
-	// Share Dispute Phase
-	//////////////////////////////////////////////////
-	// These are the participants with bad shares
-	BadShares map[common.Address]*Participant `json:"badShares"`
-
 	// Group Public Key (GPKj) Accusation Phase
 	//////////////////////////////////////////////////
 	// DishonestValidatorsIndices stores the list indices of dishonest
@@ -233,7 +228,6 @@ func (state *DkgState) OnCompletion() {
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
 		Account:      account,
-		BadShares:    make(map[common.Address]*Participant),
 		Participants: make(map[common.Address]*Participant),
 	}
 }
