@@ -5,6 +5,8 @@ package tests
 import (
 	"bytes"
 	"context"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -15,7 +17,6 @@ import (
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // We test to ensure that everything behaves correctly.

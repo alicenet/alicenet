@@ -4,10 +4,11 @@ package tests
 
 import (
 	"context"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
