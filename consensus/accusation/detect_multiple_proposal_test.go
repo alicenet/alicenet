@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestMultipleProposalAccusation tests detection of multiple proposals
-func TestMultipleProposalAccusation(t *testing.T) {
+// TestNoMultipleProposalBehavior tests no bad behavior detected
+func TestNoMultipleProposalBehavior(t *testing.T) {
 	lrs := &lstate.RoundStates{}
 	lrs.OwnState = &objs.OwnState{
 		MaxBHSeen: &objs.BlockHeader{},
@@ -74,4 +74,118 @@ func TestMultipleProposalAccusation(t *testing.T) {
 	acc, found := detectMultipleProposal(rs, lrs)
 	assert.False(t, found)
 	assert.Nil(t, acc)
+}
+
+// TestDetectMultipleProposalBehavior tests malicious behavior detection
+func TestDetectMultipleProposalBehavior(t *testing.T) {
+	bnVal := &crypto.BNGroupValidator{}
+	secpVal := &crypto.Secp256k1Validator{}
+	bclaimsList, txHashListList, err := generateChain(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bclaims := bclaimsList[0]
+	bhsh, err := bclaims.BlockHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gk := &crypto.BNGroupSigner{}
+	err = gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sig, err := gk.Sign(bhsh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secpSigner := &crypto.Secp256k1Signer{}
+	err = secpSigner.SetPrivk(crypto.Hasher([]byte("secret")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	secpSigner2 := &crypto.Secp256k1Signer{}
+	err = secpSigner2.SetPrivk(crypto.Hasher([]byte("secret2")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bh := &objs.BlockHeader{
+		BClaims:  bclaims,
+		SigGroup: sig,
+		TxHshLst: txHashListList[0],
+	}
+	err = bh.ValidateSignatures(bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rcert, err := bh.GetRCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = rcert.ValidateSignature(bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pclms := &objs.PClaims{
+		BClaims: bclaimsList[1],
+		RCert:   rcert,
+	}
+	prop := &objs.Proposal{
+		PClaims:  pclms,
+		TxHshLst: txHashListList[1],
+	}
+	err = prop.Sign(secpSigner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = prop.ValidateSignatures(secpVal, bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	propBytes, err := prop.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	prop2 := &objs.Proposal{}
+	err = prop2.UnmarshalBinary(propBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// ensure prop.PClaims != prop2.PClaims
+	prop2.PClaims.RCert.SigGroup = crypto.Hasher([]byte("blah"))
+	assert.NotEqual(t, prop.PClaims.RCert.SigGroup, prop2.PClaims.RCert.SigGroup)
+	// sign proposal2
+	err = prop2.Sign(secpSigner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = prop2.ValidateSignatures(secpVal, bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rs := &objs.RoundState{}
+	prop.Proposer = []byte("aaaaa")
+	prop2.Proposer = []byte("aaaaa")
+	rs.Proposal = prop
+	rs.ConflictingProposal = prop2
+
+	lrs := &lstate.RoundStates{}
+	lrs.OwnState = &objs.OwnState{
+		MaxBHSeen: &objs.BlockHeader{},
+	}
+	lrs.OwnState.MaxBHSeen.BClaims = bclaims
+	vSetMap := make(map[string]bool)
+	vSetMap["aaaaa"] = true
+	lrs.ValidatorSet = &objs.ValidatorSet{
+		Validators: []*objs.Validator{
+			{
+				VAddr: []byte("aaaaa"),
+			},
+		},
+		ValidatorVAddrSet: vSetMap,
+	}
+
+	acc, found := detectMultipleProposal(rs, lrs)
+	assert.True(t, found)
+	assert.NotNil(t, acc)
 }
