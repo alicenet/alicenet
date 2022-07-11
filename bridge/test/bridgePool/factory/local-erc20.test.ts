@@ -1,7 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect } from "../chai-setup";
-import { Fixture, getContractAddressFromEventLog, getFixture } from "../setup";
+import { expect } from "../../chai-setup";
+import {
+  Fixture,
+  getContractAddressFromEventLog,
+  getFixture,
+} from "../../setup";
 
 describe("BridgePool Contract Factory", () => {
   let firstOwner: SignerWithAddress;
@@ -76,7 +80,7 @@ describe("BridgePool Contract Factory", () => {
       );
       // Final bridgePool address
       const bridgePool = (
-        await ethers.getContractFactory("BridgePoolV1")
+        await ethers.getContractFactory("LocalERC20BridgePoolV1")
       ).attach(bridgePoolAddress);
       await expect(
         bridgePool.deposit(1, firstOwner.address, 1, 1)

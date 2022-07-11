@@ -25,19 +25,11 @@ contract BridgePoolFactory is
 
     /**
      * @notice deployNewPool
-     * @param erc20Contract_ address of ERC20 token contract
-     * @param token address of bridge token contract
+     * @param ERContract_ address of ERC20 token contract
+     * @param implementationVersion_ version of the BridgePool Implementation
      */
-    function deployNewPool(
-        address erc20Contract_,
-        address token,
-        uint16 implementationVersion_
-    ) public {
-        bytes memory initCallData = abi.encodeWithSignature(
-            "initialize(address,address)",
-            erc20Contract_,
-            token
-        );
+    function deployNewPool(address ERContract_, uint16 implementationVersion_) public {
+        bytes memory initCallData = abi.encodeWithSignature("initialize(address)", ERContract_);
         _implementation = getMetamorphicContractAddress(
             getImplementationSalt(implementationVersion_),
             _factoryAddress()
@@ -56,8 +48,9 @@ contract BridgePoolFactory is
                 )
             )
         );
-        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(erc20Contract_);
+        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(ERContract_);
         address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
+        IBridgePool(contractAddr).initialize(ERContract_);
         emit BridgePoolCreated(contractAddr);
     }
 
@@ -77,15 +70,15 @@ contract BridgePoolFactory is
     }
 
     /**
-     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC20 contract's address
-     * @param erc20Contract_ address of ERC20 contract of BridgePool
+     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC contract's address
+     * @param ERCContract_ address of ERC contract of BridgePool
      * @return calculated salt
      */
-    function getLocalBridgePoolSalt(address erc20Contract_) public view returns (bytes32) {
+    function getLocalBridgePoolSalt(address ERCContract_) public view returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
-                    keccak256(abi.encodePacked(erc20Contract_)),
+                    keccak256(abi.encodePacked(ERCContract_)),
                     keccak256(abi.encodePacked(_networkId))
                 )
             );
@@ -136,9 +129,9 @@ contract BridgePoolFactory is
                 )
             )
         );
-        if (initCallData_.length > 0) {
-            AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
-        }
+        // if (initCallData_.length > 0) {
+        //     AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
+        // }
         return contractAddr;
     }
 
