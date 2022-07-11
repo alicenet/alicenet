@@ -86,7 +86,7 @@ contract BridgeRouter is
      * @param version_ address of ERC20 contract of BridgePool
      * @return calculated salt
      */
-    function getLocalERC20ImplementationSalt(uint16 version_) public view returns (bytes32) {
+    function getLocalERC20ImplementationSalt(uint16 version_) public pure returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
@@ -96,7 +96,7 @@ contract BridgeRouter is
             );
     }
 
-    function getLocalERC721ImplementationSalt(uint16 version_) public view returns (bytes32) {
+    function getLocalERC721ImplementationSalt(uint16 version_) public pure returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
@@ -116,7 +116,7 @@ contract BridgeRouter is
         uint256 chainID_,
         uint8 type_,
         uint16 version_
-    ) public view returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
@@ -155,7 +155,7 @@ contract BridgeRouter is
             );
     }
 
-    function codeCopy(address addr) public returns (bytes memory) {
+    function codeCopy(address addr) public view returns (bytes memory) {
         assembly {
             let ptr := mload(0x40)
             extcodecopy(addr, ptr, 0, extcodesize(addr))
