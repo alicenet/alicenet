@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
@@ -48,6 +49,7 @@ func NewKillTaskRequest(task Task) TaskRequest {
 }
 
 type BaseTask struct {
+	sync.Once
 	Name                string                        `json:"name"`
 	AllowMultiExecution bool                          `json:"allowMultiExecution"`
 	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
@@ -79,7 +81,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 
 // Initialize default implementation for the ITask interface
 func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
-	if !bt.isInitialized {
+	bt.Once.Do(func() {
 		bt.Name = name
 		bt.Id = id
 		bt.ctx = ctx
@@ -89,9 +91,11 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 		bt.client = eth
 		bt.taskResponseChan = taskResponseChan
 		bt.isInitialized = true
-		return nil
+	})
+	if bt.isInitialized {
+		return errors.New("trying to initialize task twice!")
 	}
-	return errors.New("trying to initialize task twice!")
+	return nil
 }
 
 // GetId default implementation for the ITask interface
