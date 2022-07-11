@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+import { assertErrorMessage } from "../../../chai-helpers";
 import { getFixture, getValidatorEthAccount } from "../../../setup";
 import { validators10 } from "../../assets/10-validators-successful-case";
 import { validators4 } from "../../assets/4-validators-successful-case";
@@ -112,9 +114,10 @@ describe("ETHDKG: Missing registration Accusation", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.revertedWith("103");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantNotRegistered([validators4[2].address]),
+      `ETHDKGNotInPostRegistrationAccusationPhase(0)`
+    );
     expect(await ethdkg.getBadParticipants()).to.equal(0);
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -240,9 +243,12 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse a participant validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[0].address])
-    ).to.be.rejectedWith("105");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantNotRegistered([validators4[0].address]),
+      `AccusedParticipatingInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -270,11 +276,11 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse a non-existent validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-      ])
-    ).to.be.rejectedWith("104");
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
+    await assertErrorMessage(
+      ethdkg.accuseParticipantNotRegistered([accusedAddress]),
+      `AccusedNotValidator("${ethers.utils.getAddress(accusedAddress)}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -305,9 +311,10 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentAccusationPhase(ethdkg);
 
     // accuse a non-participant validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.rejectedWith("103");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantNotRegistered([validators4[2].address]),
+      `ETHDKGNotInPostRegistrationAccusationPhase(0)`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -335,13 +342,15 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse a participant validator
-    await expect(
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
+    await assertErrorMessage(
       ethdkg.accuseParticipantNotRegistered([
         validators4[2].address,
         validators4[3].address,
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-      ])
-    ).to.be.rejectedWith("104");
+        accusedAddress,
+      ]),
+      `AccusedNotValidator("${ethers.utils.getAddress(accusedAddress)}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -466,12 +475,15 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse non-participant validator 2, twice
-    await expect(
+    await assertErrorMessage(
       ethdkg.accuseParticipantNotRegistered([
         validators4[2].address,
         validators4[2].address,
-      ])
-    ).to.be.rejectedWith("104");
+      ]),
+      `AccusedNotValidator("${ethers.utils.getAddress(
+        validators4[2].address
+      )}")`
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });

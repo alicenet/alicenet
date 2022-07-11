@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-library ETHDKGErrorCodes {
-    // ETHDKG error codes
-    bytes32 public constant ETHDKG_ONLY_VALIDATORS_ALLOWED = "100"; //"ETHDKG: Only validators allowed!"
-    bytes32 public constant ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING = "101"; //"ETHDKG: This variable cannot be set if an ETHDKG round is running!"
-    bytes32 public constant ETHDKG_MIN_VALIDATORS_NOT_MET = "102"; //"ETHDKG: Minimum number of validators staked not met!"
-    bytes32 public constant ETHDKG_NOT_IN_POST_REGISTRATION_PHASE = "103"; //"ETHDKG: should be in post-registration accusation phase!"
-    bytes32 public constant ETHDKG_ACCUSED_NOT_VALIDATOR = "104"; //"ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
-    bytes32 public constant ETHDKG_ACCUSED_PARTICIPATING_IN_ROUND = "105"; //"ETHDKG: Dispute failed! dishonestParticipant is participating in this ETHDKG round!"
-    bytes32 public constant ETHDKG_NOT_IN_POST_SHARED_DISTRIBUTION_PHASE = "106"; // "ETHDKG: should be in post-ShareDistribution accusation phase!"
-    bytes32 public constant ETHDKG_ACCUSED_NOT_PARTICIPATING_IN_ROUND = "107"; //"ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
+
+library ETHDKGErrors {
+    // ETHDKG errors
+    error OnlyValidatorsAllowed(address sender); //"ETHDKG: Only validators allowed!"
+    error VariableNotSettableWhileETHDKGRunning(); //"ETHDKG: This variable cannot be set if an ETHDKG round is running!"
+    error MinimumValidatorsNotMet(uint256 currentValidatorsLength); //"ETHDKG: Minimum number of validators staked not met!"
+    error ETHDKGNotInPostRegistrationAccusationPhase(Phase currentPhase); //"ETHDKG: should be in post-registration accusation phase!"
+    error AccusedNotValidator(address accused); //"ETHDKG: Dispute Failed! Dishonest Address is not a validator at the moment!"
+    error AccusedParticipatingInRound(address accused); //"ETHDKG: Dispute failed! dishonestParticipant is participating in this ETHDKG round!"
+    error NotInPostSharedDistributionPhase(Phase currentPhase); // "ETHDKG: should be in post-ShareDistribution accusation phase!"
+    error AccusedNotParticipatingInRound(address accused); //"ETHDKG: Dispute failed! Dishonest Participant is not participating in this ETHDKG round!"
+    error AccusedDistributedSharesInRound(address accused); //"ETHDKG: Dispute failed! Supposed dishonest participant distributed its share in this ETHDKG round!"
+
     bytes32 public constant ETHDKG_ACCUSED_DISTRIBUTED_SHARES_IN_ROUND = "108"; //"ETHDKG: Dispute failed! Supposed dishonest participant distributed its share in this ETHDKG round!"
     bytes32 public constant ETHDKG_ACCUSED_HAS_COMMITMENTS = "109"; //"ETHDKG: Dispute failed! It looks like the supposed dishonest participant had commitments! "
     bytes32 public constant ETHDKG_NOT_IN_DISPUTE_PHASE = "110"; // "ETHDKG: Dispute failed! Contract is not in dispute phase!"

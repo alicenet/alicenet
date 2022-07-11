@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+import { assertErrorMessage } from "../../../chai-helpers";
 import { getValidatorEthAccount } from "../../../setup";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
@@ -197,11 +199,11 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
 
     // try to accuse a non validator
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitKeyShares([
-        "0x23EA3Bad9115d436190851cF4C49C1032fA7579A",
-      ])
-    ).to.be.revertedWith("104");
+    const accusedAddress = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitKeyShares([accusedAddress]),
+      `AccusedNotValidator("${ethers.utils.getAddress(accusedAddress)}")`
+    );
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -280,9 +282,12 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(await ethdkg.getBadParticipants()).to.equal(1);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith("104");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address]),
+      `AccusedNotValidator("${ethers.utils.getAddress(
+        validators4[2].address
+      )}")`
+    );
 
     await expect(await ethdkg.getBadParticipants()).to.equal(1);
   });

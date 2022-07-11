@@ -10,7 +10,7 @@ import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import {ETHDKGErrors} from "contracts/libraries/errorCodes/ETHDKGErrors.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,
@@ -24,10 +24,9 @@ contract ETHDKGMock is
     address internal immutable _ethdkgPhases;
 
     modifier onlyValidator() {
-        require(
-            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED))
-        );
+        if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
+            revert ETHDKGErrors.OnlyValidatorsAllowed(msg.sender);
+        }
         _;
     }
 
@@ -70,18 +69,16 @@ contract ETHDKGMock is
     }
 
     function setPhaseLength(uint16 phaseLength_) public {
-        require(
-            !_isETHDKGRunning(),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
-        );
+        if (_isETHDKGRunning()) {
+            revert ETHDKGErrors.VariableNotSettableWhileETHDKGRunning();
+        }
         _phaseLength = phaseLength_;
     }
 
     function setConfirmationLength(uint16 confirmationLength_) public {
-        require(
-            !_isETHDKGRunning(),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
-        );
+        if (_isETHDKGRunning()) {
+            revert ETHDKGErrors.VariableNotSettableWhileETHDKGRunning();
+        }
         _confirmationLength = confirmationLength_;
     }
 
@@ -362,10 +359,9 @@ contract ETHDKGMock is
     function _initializeETHDKG() internal {
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        require(
-            numberValidators >= _MIN_VALIDATORS,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET))
-        );
+        if (numberValidators < _MIN_VALIDATORS) {
+            revert ETHDKGErrors.MinimumValidatorsNotMet(numberValidators);
+        }
 
         _phaseStartBlock = uint64(block.number);
         _nonce++;

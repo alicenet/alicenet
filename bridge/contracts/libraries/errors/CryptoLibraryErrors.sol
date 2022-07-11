@@ -9,5 +9,5 @@ library CryptoLibraryErrors {
     error PointNotOnCurve();
     error SignatureIndicesLengthMismatch(uint256 signaturesLength, uint256 indicesLength);
     error SignaturesLengthThresholdNotMet(uint256 signaturesLength, uint256 threshold);
-    error InverseArrayIncorrect(uint256 signaturesLength, uint256 threshold);
+    error InverseArrayIncorrect();
 }

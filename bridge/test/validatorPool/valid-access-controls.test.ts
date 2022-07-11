@@ -1,3 +1,4 @@
+import { assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { commitSnapshots } from "./setup";
@@ -50,9 +51,10 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   });
 
   it("Initialize ETHDKG", async function () {
-    await expect(
-      factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("102");
+    await assertErrorMessage(
+      factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG"),
+      `MinimumValidatorsNotMet(1)`
+    );
   });
 
   it("Unregister validators", async function () {
