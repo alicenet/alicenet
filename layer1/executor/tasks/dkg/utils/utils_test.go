@@ -1,10 +1,9 @@
-package dkg_test
+package utils
 
 import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/dkg"
 	"github.com/holiman/uint256"
 )
 
@@ -39,7 +38,7 @@ func TestUtilities_IntsToBigInts(t *testing.T) {
 	bigIntsTrue = append(bigIntsTrue, big8)
 	bigIntsTrue = append(bigIntsTrue, big13)
 
-	bigInts := dkg.IntsToBigInts(ints)
+	bigInts := IntsToBigInts(ints)
 	if len(bigInts) != len(bigIntsTrue) {
 		t.Fatal("Invalid return length")
 	}

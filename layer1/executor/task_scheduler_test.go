@@ -1,278 +1,250 @@
-package objects_test
+package executor
 
 import (
-	"context"
-	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
+	"time"
 
-	"github.com/alicenet/alicenet/consensus/admin"
-	"github.com/alicenet/alicenet/layer1/dkg/dkgtasks"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestScheduler_Schedule(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.Task
-
-	s.Schedule(1, 2, task)
-
-	s.Schedule(3, 4, task)
-
-	s.Schedule(5, 6, task)
-
-	s.Schedule(7, 8, task)
-
-	assert.Equal(t, 4, s.Length())
-}
-
-func TestScheduler_Purge(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.Task
-
-	s.Schedule(1, 2, task)
-
-	s.Schedule(3, 4, task)
-
-	s.Schedule(5, 6, task)
-
-	s.Schedule(7, 8, task)
-
-	assert.Equal(t, 4, s.Length())
-
-	s.Purge()
-
-	assert.Equal(t, 0, s.Length())
-}
-
-func TestScheduler_PurgePrior(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.Task
-
-	s.Schedule(1, 2, task)
-
-	s.Schedule(3, 4, task)
-
-	s.Schedule(5, 6, task)
-
-	s.Schedule(7, 8, task)
-
-	assert.Equal(t, 4, s.Length())
-
-	s.PurgePrior(7)
-
-	assert.Equal(t, 1, s.Length())
-}
-
-func TestScheduler_FailSchedule2(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var err error
-	var task interfaces.Task
-
-	s.Schedule(1, 2, task)
-
-	s.Schedule(2, 3, task)
+func getTaskScheduler(t *testing.T) (*TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
+	db := mocks.NewTestDB()
+	client := mocks.NewMockClient()
+	adminHandlers := mocks.NewMockAdminHandler()
+	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
+	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
+	tasksScheduler, err := NewTasksScheduler(db, client, adminHandlers, taskRequestChan, txWatcher)
 	assert.Nil(t, err)
+	return tasksScheduler, taskRequestChan, client
 }
 
-func TestScheduler_Find(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.Task
-
-	id := s.Schedule(5, 15, task)
-
-	taskID, err := s.Find(10)
+func TestTasksScheduler_Schedule_NilTask(t *testing.T) {
+	scheduler, tasksChan, _ := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
-	assert.Equal(t, id, taskID)
+	defer scheduler.Close()
 
-	taskID, err = s.Find(14)
+	request := tasks.NewScheduleTaskRequest(nil)
+	tasksChan <- request
+
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	assert.Emptyf(t, scheduler.Schedule, "Expected zero tasks scheduled")
+}
+
+func TestTasksScheduler_Schedule_WrongExecutionData(t *testing.T) {
+
+	scheduler, tasksChan, _ := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
-	assert.Equal(t, id, taskID)
+	defer scheduler.Close()
 
-	taskID, err = s.Find(5)
+	task := dkg.NewCompletionTask(2, 1)
+	request := tasks.NewScheduleTaskRequest(task)
+	tasksChan <- request
+
+	scheduler.LastHeightSeen = 12
+	task = dkg.NewCompletionTask(2, 3)
+	request = tasks.NewScheduleTaskRequest(task)
+	tasksChan <- request
+
+	select {
+	case <-time.After(20 * time.Millisecond):
+	}
+	assert.Emptyf(t, scheduler.Schedule, "Expected zero tasks scheduled")
+}
+
+func TestTasksScheduler_ScheduleAndKillTasks_Success(t *testing.T) {
+
+	scheduler, tasksChan, _ := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
-	assert.Equal(t, id, taskID)
+	defer scheduler.Close()
 
-	_, err = s.Find(15)
-	assert.NotNil(t, err)
+	completionTask := dkg.NewCompletionTask(2, 3)
+	request := tasks.NewScheduleTaskRequest(completionTask)
+	tasksChan <- request
 
-	_, err = s.Find(4)
-	assert.NotNil(t, err)
+	completionTask2 := dkg.NewCompletionTask(3, 4)
+	request = tasks.NewScheduleTaskRequest(completionTask2)
+	tasksChan <- request
 
+	registerTask := dkg.NewRegisterTask(2, 5)
+	request = tasks.NewScheduleTaskRequest(registerTask)
+	tasksChan <- request
+
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	assert.Equalf(t, 3, len(scheduler.Schedule), "Expected 3 task scheduled")
+
+	request = tasks.NewKillTaskRequest(&dkg.CompletionTask{})
+	tasksChan <- request
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	assert.Equalf(t, 1, len(scheduler.Schedule), "Expected 1 task after Completion tasks have been killed")
+
+	request = tasks.NewKillTaskRequest(&dkg.DisputeMissingGPKjTask{})
+	tasksChan <- request
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	assert.Equalf(t, 1, len(scheduler.Schedule), "There should be 1 tasks left still, due there were no DisputeMissing task scheduled")
+
+	request = tasks.NewKillTaskRequest(&dkg.RegisterTask{})
+	tasksChan <- request
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	assert.Equalf(t, 0, len(scheduler.Schedule), "All the tasks should have been removed")
 }
 
-func TestScheduler_FailFind(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
+func TestTasksScheduler_ScheduleRunAndKillTask_Success(t *testing.T) {
 
-	var task interfaces.Task
-
-	s.Schedule(5, 15, task)
-
-	_, err := s.Find(4)
-	assert.Equal(t, objects.ErrNothingScheduled, err)
-}
-
-func TestScheduler_FailFind2(t *testing.T) {
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-	assert.NotNil(t, s, "Scheduler should not be nil")
-
-	var task interfaces.Task
-
-	s.Schedule(5, 15, task)
-
-	_, err := s.Find(15)
-	assert.Equal(t, objects.ErrNothingScheduled, err)
-}
-
-func TestScheduler_Remove(t *testing.T) {
-	acct := accounts.Account{}
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewPlaceHolder(state)
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-
-	taskID := s.Schedule(5, 15, task)
-
-	assert.Equal(t, 1, s.Length())
-
-	err := s.Remove(taskID)
+	scheduler, tasksChan, client := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
+	defer scheduler.Close()
 
-	assert.Equal(t, 0, s.Length())
+	completionTask := dkg.NewCompletionTask(1, 40)
+	request := tasks.NewScheduleTaskRequest(completionTask)
+	tasksChan <- request
+
+	client.GetFinalizedHeightFunc.SetDefaultReturn(10, nil)
+
+	select {
+	case <-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond):
+	}
+
+	assert.Equalf(t, 0, len(scheduler.Schedule), "All the tasks should have been removed")
 }
 
-func TestScheduler_FailRemove(t *testing.T) {
-	acct := accounts.Account{}
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewPlaceHolder(state)
+func TestTasksScheduler_ScheduleDuplicatedTask_Success(t *testing.T) {
 
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-
-	// Schedule something but don't bother saving the id
-	s.Schedule(5, 15, task)
-	assert.Equal(t, 1, s.Length())
-
-	// Make up a random id
-	taskID := uuid.New()
-	err := s.Remove(taskID)
-	assert.Equal(t, objects.ErrNotScheduled, err)
-
-	// Nothing should have been removed
-	assert.Equal(t, 1, s.Length())
-}
-
-func TestScheduler_Retreive(t *testing.T) {
-	acct := accounts.Account{}
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewPlaceHolder(state)
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
-
-	// tasks.RegisterTask(task)
-
-	// Schedule something
-	taskID := s.Schedule(5, 15, task)
-
-	_, err := s.Retrieve(taskID)
+	scheduler, tasksChan, client := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
+	defer scheduler.Close()
+
+	completionTask := dkg.NewCompletionTask(1, 40)
+	request := tasks.NewScheduleTaskRequest(completionTask)
+	tasksChan <- request
+	completionTask2 := dkg.NewCompletionTask(1, 40)
+	request = tasks.NewScheduleTaskRequest(completionTask2)
+	tasksChan <- request
+
+	client.GetFinalizedHeightFunc.SetDefaultReturn(10, nil)
+
+	select {
+	case <-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond):
+	}
+
+	assert.Equalf(t, 1, len(scheduler.Schedule), "Expected to have 1 task")
+	for _, task := range scheduler.Schedule {
+		assert.NotEqualf(t, task.InternalState, Running, "this task shouldn't be running due to duplication")
+	}
 }
 
-func TestScheduler_FailRetrieve(t *testing.T) {
-	acct := accounts.Account{}
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewPlaceHolder(state)
-	m := &objects.TypeRegistry{}
-	s := objects.NewSequentialSchedule(m, nil)
+func TestTasksScheduler_ScheduleAndKillExpiredAndUnresponsiveTasks_Success(t *testing.T) {
 
-	// tasks.RegisterTask(task)
-
-	// Schedule something
-	s.Schedule(5, 15, task)
-
-	_, err := s.Retrieve(uuid.New())
-	assert.Equal(t, objects.ErrNotScheduled, err)
-}
-
-func TestScheduler_Marshal(t *testing.T) {
-	task := &adminTaskMock{}
-	m := &objects.TypeRegistry{}
-	m.RegisterInstanceType(&objects.Block{})
-	m.RegisterInstanceType(task)
-	s := objects.NewSequentialSchedule(m, nil)
-
-	// Schedule something
-	taskID := s.Schedule(5, 15, task)
-	assert.NotNil(t, taskID)
-	assert.Equal(t, 1, s.Length())
-
-	// Marshal the schedule
-	raw, err := json.Marshal(s)
+	scheduler, tasksChan, client := getTaskScheduler(t)
+	defer close(tasksChan)
+	err := scheduler.Start()
 	assert.Nil(t, err)
+	defer scheduler.Close()
 
-	// Unmarshal the schedule
-	ns := objects.NewSequentialSchedule(m, nil)
-	err = json.Unmarshal(raw, &ns)
+	completionTask := dkg.NewCompletionTask(50, 90)
+	request := tasks.NewScheduleTaskRequest(completionTask)
+	tasksChan <- request
+	completionTask2 := dkg.NewCompletionTask(1, 10)
+	request = tasks.NewScheduleTaskRequest(completionTask2)
+	tasksChan <- request
+	completionTask3 := dkg.NewCompletionTask(110, 150)
+	request = tasks.NewScheduleTaskRequest(completionTask3)
+	tasksChan <- request
+
+	client.GetFinalizedHeightFunc.SetDefaultReturn(100, nil)
+
+	select {
+	case <-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond):
+	}
+
+	assert.Equalf(t, 1, len(scheduler.Schedule), "Expected to have 1 task")
+}
+
+func TestTasksScheduler_Recovery_Success(t *testing.T) {
+	dir, err := ioutil.TempDir("", "db-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	opts := badger.DefaultOptions(dir)
+	rawDB, err := badger.Open(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rawDB.Close()
+
+	db := &db.Database{}
+	db.Init(rawDB)
+
+	client := mocks.NewMockClient()
+	adminHandlers := mocks.NewMockAdminHandler()
+	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
+	tasksChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
+	scheduler, err := NewTasksScheduler(db, client, adminHandlers, tasksChan, txWatcher)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, ns.Length())
+	err = scheduler.Start()
 
-	// Make sure the schedule and task  are correct
-	block, present := ns.Ranges[taskID.String()]
-	assert.True(t, present)
-	assert.Equal(t, uint64(5), block.Start)
-	assert.Equal(t, uint64(15), block.End)
+	completionTask := dkg.NewCompletionTask(50, 90)
+	request := tasks.NewScheduleTaskRequest(completionTask)
+	tasksChan <- request
+	completionTask2 := dkg.NewCompletionTask(1, 10)
+	request2 := tasks.NewScheduleTaskRequest(completionTask2)
+	tasksChan <- request2
+	completionTask3 := dkg.NewCompletionTask(110, 150)
+	request3 := tasks.NewScheduleTaskRequest(completionTask3)
+	tasksChan <- request3
 
-	// Confirm task survived marshalling
-	_, err = s.Retrieve(taskID)
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+
+	assert.Equalf(t, 3, len(scheduler.Schedule), "Expected to have 3 tasks")
+
+	scheduler.Close()
+	close(tasksChan)
+
+	tasksChan = make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
+	scheduler, err = NewTasksScheduler(db, client, adminHandlers, tasksChan, txWatcher)
 	assert.Nil(t, err)
-}
+	err = scheduler.Start()
+	assert.Nil(t, err)
+	assert.Equalf(t, 3, len(scheduler.Schedule), "Expected to have 3 tasks")
 
-type adminTaskMock struct {
-}
-
-func (ph *adminTaskMock) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	return nil
-}
-func (ph *adminTaskMock) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return nil
-}
-
-func (ph *adminTaskMock) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return nil
-}
-
-func (ph *adminTaskMock) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-	return false
-}
-
-func (ph *adminTaskMock) DoDone(logger *logrus.Entry) {
-}
-
-func (ph *adminTaskMock) SetAdminHandler(adminHandler *admin.Handlers) {
-}
-
-func (ph *adminTaskMock) GetExecutionData() interface{} {
-	return nil
+	scheduler.Close()
+	select {
+	case <-time.After(10 * time.Millisecond):
+	}
+	close(tasksChan)
 }

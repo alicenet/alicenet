@@ -1,224 +1,128 @@
-package tasks
+package snapshots
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	dangerousRand "math/rand"
-	"sync"
 	"time"
 
-	"github.com/alicenet/alicenet/consensus/objs"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/sirupsen/logrus"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum
 type SnapshotTask struct {
-	sync.RWMutex
-	acct        accounts.Account
-	BlockHeader *objs.BlockHeader
-	rawBclaims  []byte
-	rawSigGroup []byte
+	*tasks.BaseTask
+	Height uint64
 }
 
-// asserting that SnapshotTask struct implements interface interfaces.Task
-var _ interfaces.Task = &SnapshotTask{}
+// asserting that SnapshotTask struct implements interface tasks.Task
+var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(account accounts.Account) *SnapshotTask {
-	return &SnapshotTask{
-		acct: account,
+func NewSnapshotTask(start uint64, end uint64, height uint64) *SnapshotTask {
+	snapshotTask := &SnapshotTask{
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
+		Height:   height,
 	}
+	return snapshotTask
 }
 
-func (t *SnapshotTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, _ interface{}) error {
+// Prepare prepares for work to be done in the SnapshotTask
+func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()").WithField("AliceNetHeight", t.Height)
+	logger.Debugf("preparing task")
 
-	if t.BlockHeader == nil {
-		return errors.New("BlockHeader must be assigned before initializing")
-	}
-
-	rawBClaims, err := t.BlockHeader.BClaims.MarshalBinary()
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		logger.Errorf("Unable to marshal block header: %v", err)
-		return err
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
-	t.Lock()
-	defer t.Unlock()
+	rawBClaims, err := snapshotState.BlockHeader.BClaims.MarshalBinary()
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf("unable to marshal block header for snapshot: %v", err), false)
+	}
 
-	t.rawBclaims = rawBClaims
-	t.rawSigGroup = t.BlockHeader.SigGroup
+	snapshotState.RawBClaims = rawBClaims
+	snapshotState.RawSigGroup = snapshotState.BlockHeader.SigGroup
+
+	err = state.SaveSnapshotState(t.GetDB(), snapshotState)
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
+	}
 
 	return nil
 }
-func (t *SnapshotTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
 
-func (t *SnapshotTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()").WithField("AliceNetHeight", t.Height)
+	logger.Debug("initiate execution")
 
-func (t *SnapshotTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
-	t.RLock()
-	defer t.RUnlock()
-
-	for {
-		dangerousRand.Seed(time.Now().UnixNano())
-		n := dangerousRand.Intn(60) // n will be between 0 and 60
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(time.Duration(n) * time.Second):
-		}
-
-		if !t.ShouldRetry(ctx, logger, eth) {
-			// no need for snapshot
-			return nil
-		}
-
-		// do the actual snapshot
-		err := func() error {
-			txnOpts, err := eth.GetTransactionOpts(ctx, t.acct)
-			if err != nil {
-				logger.Warnf("Failed to generate transaction options: %v", err)
-				return nil
-			}
-
-			txn, err := eth.Contracts().Snapshots().Snapshot(txnOpts, t.rawSigGroup, t.rawBclaims)
-			if err != nil {
-				logger.Warnf("Snapshot failed: %v", err)
-				return nil
-			} else {
-				rcpt, err := eth.Queue().QueueAndWait(ctx, txn)
-				if err != nil {
-					logger.Warnf("Snapshot failed to retreive receipt: %v", err)
-					return nil
-				}
-
-				if rcpt.Status != 1 {
-					logger.Warnf("Snapshot receipt status != 1")
-					return context.DeadlineExceeded
-				}
-
-				logger.Info("Snapshot succeeded")
-			}
-
-			return nil
-		}()
-
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				select {
-				case <-ctx.Done():
-					return err
-				default:
-				}
-				continue
-			}
-		}
-
-		// check/wait for finality delay
-		err = func() error {
-			subctx, cf := context.WithTimeout(ctx, 5*time.Second)
-			defer cf()
-			initialHeight, err := eth.GetCurrentHeight(subctx)
-			if err != nil {
-				return err
-			}
-
-			currentHeight := initialHeight
-			for {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(time.Second * 5):
-				}
-
-				err := func() error {
-					subctx, cf := context.WithTimeout(ctx, 5*time.Second)
-					defer cf()
-					testHeight, err := eth.GetCurrentHeight(subctx)
-					if err != nil {
-						return err
-					}
-
-					if testHeight > initialHeight+eth.GetFinalityDelay() {
-						return context.DeadlineExceeded
-					}
-
-					if testHeight > currentHeight {
-						if !t.ShouldRetry(ctx, logger, eth) {
-							// no need for snapshot
-							currentHeight = testHeight
-							if currentHeight >= initialHeight+eth.GetFinalityDelay() {
-								// todo: figure how to get the doTask() func to return nil
-								return nil
-							}
-						}
-					}
-
-					return nil
-				}()
-
-				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						select {
-						case <-ctx.Done():
-							return err
-						default:
-						}
-						continue
-					}
-				}
-			}
-		}()
-
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				select {
-				case <-ctx.Done():
-					return err
-				default:
-				}
-				continue
-			}
-		}
-
-	}
-}
-
-func (t *SnapshotTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-
-	t.RLock()
-	defer t.RUnlock()
-
-	opts := eth.GetCallOpts(ctx, t.acct)
-
-	epoch, err := eth.Contracts().Snapshots().GetEpoch(opts)
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
 	if err != nil {
-		logger.Errorf("Failed to determine current epoch: %v", err)
-		return true
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	height, err := eth.Contracts().Snapshots().GetAliceNetHeightFromSnapshot(opts, epoch)
+	client := t.GetClient()
+
+	// todo: remove this after leader election
+	dangerousRand.Seed(time.Now().UnixNano())
+	n := dangerousRand.Intn(60) // n will be between 0 and 60
+	select {
+	case <-ctx.Done():
+		return nil, tasks.NewTaskErr(ctx.Err().Error(), false)
+	// wait some random time
+	case <-time.After(time.Duration(n) * time.Second):
+	}
+	/////////////////////////////////////////////
+
+	txnOpts, err := client.GetTransactionOpts(ctx, snapshotState.Account)
 	if err != nil {
-		logger.Errorf("Failed to determine height: %v", err)
-		return true
+		// if it failed here, it means that we are not willing to pay the tx costs based on config or we
+		// failed to retrieve tx fee data from the ethereum node
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
+	}
+	logger.Info("trying to commit snapshot")
+	txn, err := ethereum.GetContracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
+	}
+
+	return txn, nil
+}
+
+// ShouldExecute checks if it makes sense to execute the task
+func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("AliceNetHeight", t.Height)
+	logger.Debug("should execute task")
+
+	snapshotState, err := state.GetSnapshotState(t.GetDB())
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
+	}
+
+	client := t.GetClient()
+	opts, err := client.GetCallOpts(ctx, snapshotState.Account)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
+	}
+
+	height, err := ethereum.GetContracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
 	}
 
 	// This means the block height we want to snapshot is older than (or same as) what's already been snapshotted
-	if t.BlockHeader.BClaims.Height != 0 && t.BlockHeader.BClaims.Height < uint32(height.Uint64()) {
-		return false
+	if snapshotState.BlockHeader.BClaims.Height != 0 && snapshotState.BlockHeader.BClaims.Height <= uint32(height.Uint64()) {
+		logger.Debugf(
+			"block height we want to snapshot height:%v is older than (or same as) what's already been snapshotted height:%v",
+			snapshotState.BlockHeader.BClaims.Height,
+			uint32(height.Uint64()),
+		)
+		return false, nil
 	}
 
-	return true
-}
-
-func (*SnapshotTask) DoDone(logger *logrus.Entry) {
-}
-
-func (*SnapshotTask) GetExecutionData() interface{} {
-	return nil
+	return true, nil
 }

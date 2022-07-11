@@ -1,204 +1,114 @@
-package dkgtasks
+package dkg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
-	"github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 )
 
-// CompletionTask contains required state for safely performing a registration
+// CompletionTask contains required state for safely complete ETHDKG
 type CompletionTask struct {
-	*ExecutionData
+	*tasks.BaseTask
+	// variables that are unique only for this task
+	StartBlockHash common.Hash `json:"startBlockHash"`
 }
 
-// asserting that CompletionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &CompletionTask{}
+// asserting that CompletionTask struct implements interface tasks.Task
+var _ tasks.Task = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg
-func NewCompletionTask(state *objects.DkgState, start uint64, end uint64) *CompletionTask {
+func NewCompletionTask(start uint64, end uint64) *CompletionTask {
 	return &CompletionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
-// Initialize prepares for work to be done in the Completion phase
-func (t *CompletionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+// Prepare prepares for work to be done in the CompletionTask
+func (t *CompletionTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Debug("preparing task")
 
-	logger.Info("CompletionTask Initialize()...")
-
-	dkgData, ok := state.(objects.ETHDKGTaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != t.State {
-		t.State = dkgData.State
-	}
-
-	if t.State.Phase != objects.DisputeGPKJSubmission {
-		return fmt.Errorf("%w because it's not in DisputeGPKJSubmission phase", objects.ErrCanNotContinue)
+	if dkgState.Phase != state.DisputeGPKJSubmission {
+		return tasks.NewTaskErr("it's not in DisputeGPKJSubmission phase", false)
 	}
 
 	// setup leader election
-	block, err := eth.GetGethClient().BlockByNumber(ctx, big.NewInt(int64(t.Start)))
+	block, err := t.GetClient().GetBlockByNumber(ctx, big.NewInt(int64(t.GetStart())))
 	if err != nil {
-		return fmt.Errorf("CompletionTask.Initialize(): error getting block by number: %v", err)
+		return tasks.NewTaskErr(fmt.Sprintf("CompletionTask.Prepare(): error getting block by number: %v", err), true)
 	}
 
-	logger.Infof("block hash: %v\n", block.Hash())
-	t.StartBlockHash.SetBytes(block.Hash().Bytes())
+	t.StartBlockHash = block.Hash()
 
 	return nil
 }
 
-// DoWork is the first attempt
-func (t *CompletionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
-// DoRetry is all subsequent attempts
-func (t *CompletionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *CompletionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("CompletionTask doTask()")
-
-	if t.isTaskCompleted(ctx, eth) {
-		t.Success = true
-		return nil
-	}
-
-	// submit if I'm a leader for this task
-	if !t.AmILeading(ctx, eth, logger) {
-		return errors.New("not leading Completion yet")
-	}
-
-	// Setup
-	c := eth.Contracts()
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-	// we increase the Gas to have priority for the next blocks
-	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxOpts.Nonce
-		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+	client := t.GetClient()
+	// submit if I'm a leader for this task
+	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
+		return nil, tasks.NewTaskErr("not leading Completion yet", true)
 	}
 
-	// Register
+	c := ethereum.GetContracts()
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
+	}
+
+	// Complete ETHDKG
+	logger.Info("Trying to complete ETHDKG")
 	txn, err := c.Ethdkg().Complete(txnOpts)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "completion failed: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("completion failed: %v", err), true)
 	}
 
-	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
-
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-	}).Info("complete fees")
-
-	logger.Info("CompletionTask sent completed call")
-
-	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
-
-	logger.Info("CompletionTask complete!")
-	t.Success = true
-
-	return nil
+	return txn, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
-// Predicates:
-// -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-func (t *CompletionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
+// ShouldExecute checks if it makes sense to execute the task
+func (t *CompletionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Debug("should execute task")
 
-	t.State.Lock()
-	defer t.State.Unlock()
+	eth := t.GetClient()
+	c := ethereum.GetContracts()
 
-	logger.Info("CompletionTask ShouldRetry()")
-
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
-	if !generalRetry {
-		return false
-	}
-
-	if t.isTaskCompleted(ctx, eth) {
-		logger.WithFields(logrus.Fields{
-			"t.State.Phase":      t.State.Phase,
-			"t.State.PhaseStart": t.State.PhaseStart,
-		}).Info("CompletionTask ShouldRetry - will not retry because it's done")
-		return false
-	}
-
-	logger.Info("CompletionTask ShouldRetry() will retry")
-
-	return true
-}
-
-// DoDone creates a log entry saying task is complete
-func (t *CompletionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.WithField("Success", t.Success).Infof("CompletionTask done")
-}
-
-func (t *CompletionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
-}
-
-func (t *CompletionTask) isTaskCompleted(ctx context.Context, eth interfaces.Ethereum) bool {
-	c := eth.Contracts()
-	phase, err := c.Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, t.State.Account))
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
-		return false
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
-
-	return phase == uint8(objects.Completion)
-}
-
-func (t *CompletionTask) AmILeading(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) bool {
-	// check if I'm a leader for this task
-	currentHeight, err := eth.GetCurrentHeight(ctx)
+	phase, err := c.Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
-		return false
+		return false, tasks.NewTaskErr(fmt.Sprintf("error getting ethdkg phases in completion BaseTask: %v", err), true)
 	}
 
-	blocksSinceDesperation := int(currentHeight) - int(t.Start) - constants.ETHDKGDesperationDelay
-	amILeading := dkg.AmILeading(t.State.NumberOfValidators, t.State.Index-1, blocksSinceDesperation, t.StartBlockHash.Bytes(), logger)
+	if phase == uint8(state.Completion) {
+		logger.Debugf("completion already ocurred: %v", phase)
+		return false, nil
+	}
 
-	logger.WithFields(logrus.Fields{
-		"currentHeight":                    currentHeight,
-		"t.Start":                          t.Start,
-		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
-		"blocksSinceDesperation":           blocksSinceDesperation,
-		"amILeading":                       amILeading,
-	}).Infof("dkg.AmILeading")
-
-	return amILeading
+	return true, nil
 }

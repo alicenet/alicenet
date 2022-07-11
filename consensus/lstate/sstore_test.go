@@ -11,7 +11,7 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"

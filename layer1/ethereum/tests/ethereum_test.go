@@ -1,6 +1,6 @@
 //go:build integration
 
-package blockchain_test
+package tests
 
 import (
 	"context"
@@ -13,19 +13,19 @@ import (
 	"testing"
 	"time"
 
-	blockchain "github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/dkg/dtest"
-	"github.com/alicenet/alicenet/layer1/interfaces"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupEthereum(t *testing.T, n int) interfaces.Ethereum {
+func setupEthereum(t *testing.T, n int) layer1.Client {
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
+	ecdsaPrivateKeys, _ := tests.InitializePrivateKeysAndAccounts(n)
+	eth := tests.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 1000*time.Millisecond)
 	assert.NotNil(t, eth)
 
 	acct := eth.GetDefaultAccount()
@@ -52,9 +52,9 @@ func TestEthereum_AccountsFound(t *testing.T) {
 }
 
 func TestEthereum_HardhatNode(t *testing.T) {
-	privateKeys, _ := dtest.InitializePrivateKeysAndAccounts(4)
+	privateKeys, _ := tests.InitializePrivateKeysAndAccounts(4)
 
-	eth, err := blockchain.NewEthereumSimulator(
+	eth, err := ethereum.NewSimulator(
 		privateKeys,
 		6,
 		10*time.Second,
@@ -62,9 +62,7 @@ func TestEthereum_HardhatNode(t *testing.T) {
 		0,
 		big.NewInt(math.MaxInt64),
 		50,
-		math.MaxInt64,
-		5*time.Second,
-		30*time.Second)
+		math.MaxInt64)
 	defer func() {
 		err := eth.Close()
 		if err != nil {
@@ -84,14 +82,14 @@ func TestEthereum_HardhatNode(t *testing.T) {
 
 	t.Logf("deploy account: %v", deployAccount.Address.String())
 
-	err = dtest.StartHardHatNode(eth)
+	err = tests.StartHardHatNode(eth)
 	if err != nil {
 		t.Fatalf("error starting hardhat node: %v", err)
 	}
 
 	t.Logf("waiting on hardhat node to start...")
 
-	err = dtest.WaitForHardHatNode(ctx)
+	err = tests.WaitForHardHatNode(ctx)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
@@ -105,18 +103,16 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	defer eth.Close()
 
 	type args struct {
-		endpoint                  string
-		pathKeystore              string
-		pathPasscodes             string
-		defaultAccount            string
-		timeout                   time.Duration
-		retryCount                int
-		retryDelay                time.Duration
-		finalityDelay             int
-		txFeePercentageToIncrease int
-		txMaxFeeThresholdInGwei   uint64
-		txCheckFrequency          time.Duration
-		txTimeoutForReplacement   time.Duration
+		endpoint                    string
+		pathKeystore                string
+		pathPasscodes               string
+		defaultAccount              string
+		timeout                     time.Duration
+		retryCount                  int
+		retryDelay                  time.Duration
+		finalityDelay               int
+		txFeePercentageToIncrease   int
+		getTxMaxGasFeeAllowedInGwei uint64
 	}
 	tests := []struct {
 		name    string
@@ -127,7 +123,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 
 		{
 			name: "Create new ethereum endpoint failing with passcode file not found",
-			args: args{"", "", "", "", 0, 0, 0, 0, 0, 0, 0, 0},
+			args: args{"", "", "", "", 0, 0, 0, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				_, ok := err.(*fs.PathError)
@@ -139,10 +135,10 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 		},
 		{
 			name: "Create new ethereum endpoint failing with specified account not found",
-			args: args{"", "", "../assets/test/passcodes.txt", "", 0, 0, 0, 0, 0, 0, 0, 0},
+			args: args{"", "", "../assets/test/passcodes.txt", "", 0, 0, 0, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				if !errors.Is(err, blockchain.ErrAccountNotFound) {
+				if !errors.Is(err, ethereum.ErrAccountNotFound) {
 					t.Errorf("Failing test with an unexpected error")
 				}
 				return true
@@ -160,9 +156,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 				eth.RetryDelay(),
 				int(eth.GetFinalityDelay()),
 				eth.GetTxFeePercentageToIncrease(),
-				eth.GetTxMaxFeeThresholdInGwei(),
-				eth.GetTxCheckFrequency(),
-				eth.GetTxTimeoutForReplacement(),
+				eth.GetTxMaxGasFeeAllowedInGwei(),
 			},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -185,9 +179,7 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 				eth.RetryDelay(),
 				int(eth.GetFinalityDelay()),
 				eth.GetTxFeePercentageToIncrease(),
-				eth.GetTxMaxFeeThresholdInGwei(),
-				eth.GetTxCheckFrequency(),
-				eth.GetTxTimeoutForReplacement(),
+				eth.GetTxMaxGasFeeAllowedInGwei(),
 			},
 			want: true,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -197,8 +189,8 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := blockchain.NewEthereumEndpoint(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.finalityDelay, tt.args.txFeePercentageToIncrease, tt.args.txMaxFeeThresholdInGwei, tt.args.txCheckFrequency, tt.args.txTimeoutForReplacement)
-			if !tt.wantErr(t, err, fmt.Sprintf("NewEthereumEndpoint(%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v)", tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.finalityDelay, tt.args.txFeePercentageToIncrease, tt.args.txMaxFeeThresholdInGwei, tt.args.txCheckFrequency, tt.args.txTimeoutForReplacement)) {
+			got, err := ethereum.NewClient(tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)
+			if !tt.wantErr(t, err, fmt.Sprintf("NewEthereumEndpoint(%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v)", tt.args.endpoint, tt.args.pathKeystore, tt.args.pathPasscodes, tt.args.defaultAccount, tt.args.timeout, tt.args.retryCount, tt.args.retryDelay, tt.args.txFeePercentageToIncrease, tt.args.getTxMaxGasFeeAllowedInGwei)) {
 				return
 			}
 			if tt.want {

@@ -1,166 +1,114 @@
-package dkgtasks
+package dkg
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations
 type DisputeMissingRegistrationTask struct {
-	*ExecutionData
+	*tasks.BaseTask
 }
 
-// asserting that DisputeMissingRegistrationTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeMissingRegistrationTask{}
+// asserting that DisputeMissingRegistrationTask struct implements interface tasks.Task
+var _ tasks.Task = &DisputeMissingRegistrationTask{}
 
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG
-func NewDisputeMissingRegistrationTask(state *objects.DkgState, start uint64, end uint64) *DisputeMissingRegistrationTask {
+func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
-// Initialize begins the setup phase for Dispute Registration.
-func (t *DisputeMissingRegistrationTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-
-	logger.Info("DisputeMissingRegistrationTask Initializing...")
-
-	dkgData, ok := state.(objects.ETHDKGTaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
-	}
-
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != t.State {
-		t.State = dkgData.State
-	}
-
+// Prepare prepares for work to be done in the DisputeMissingRegistrationTask
+func (t *DisputeMissingRegistrationTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Debug("preparing task")
 	return nil
 }
 
-// DoWork is the first attempt at Disputing Missing Registrations with ethdkg
-func (t *DisputeMissingRegistrationTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
-// DoRetry is all subsequent attempts at registering with ethdkg
-func (t *DisputeMissingRegistrationTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *DisputeMissingRegistrationTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("DisputeMissingRegistrationTask doTask()")
-
-	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting accusable participants: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
+	}
+
+	client := t.GetClient()
+	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
+	}
+
+	if len(accusableParticipants) <= 0 {
+		logger.Debug("No accusations for missing registrations")
+		return nil, nil
 	}
 
 	// accuse missing validators
-	if len(accusableParticipants) > 0 {
-		logger.Warnf("Accusing missing registrations: %v", accusableParticipants)
+	logger.Warnf("Accusing missing registrations: %v", accusableParticipants)
 
-		txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error getting txnOpts: %v", err)
-		}
-
-		// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-		// we increase the Gas to have priority for the next blocks
-		if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-			logger.Info("txnOpts Replaced")
-			txnOpts.Nonce = t.TxOpts.Nonce
-			txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-			txnOpts.GasTipCap = t.TxOpts.GasTipCap
-		}
-
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask doTask() error accusing missing registration: %v", err)
-		}
-		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-		t.TxOpts.GasFeeCap = txn.GasFeeCap()
-		t.TxOpts.GasTipCap = txn.GasTipCap()
-		t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
-
-		logger.WithFields(logrus.Fields{
-			"GasFeeCap": t.TxOpts.GasFeeCap,
-			"GasTipCap": t.TxOpts.GasTipCap,
-			"Nonce":     t.TxOpts.Nonce,
-		}).Info("missing registration dispute fees")
-
-		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
-	} else {
-		logger.Info("No accusations for missing registrations")
-	}
-
-	t.Success = true
-	return nil
-}
-
-// ShouldRetry checks if it makes sense to try again
-// Predicates:
-// -- we haven't passed the last block
-// -- the registration open hasn't moved, i.e. ETHDKG has not restarted
-// -- We have unregistered participants
-func (t *DisputeMissingRegistrationTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("DisputeMissingRegistrationTask ShouldRetry()")
-
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
-	if !generalRetry {
-		return false
-	}
-
-	if t.State.Phase != objects.RegistrationOpen {
-		return false
-	}
-
-	accusableParticipants, err := t.getAccusableParticipants(ctx, eth, logger)
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		logger.Errorf("DisputeMissingRegistrationTask ShouldRetry() error getting accusable participants: %v", err)
-		return true
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	if len(accusableParticipants) > 0 {
-		return true
+	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing registration: %v", err), true)
 	}
 
-	return false
+	return txn, nil
 }
 
-// DoDone just creates a log entry saying task is complete
-func (t *DisputeMissingRegistrationTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
+// ShouldExecute checks if it makes sense to execute the task
+func (t *DisputeMissingRegistrationTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Debug("should execute task")
 
-	logger.WithField("Success", t.Success).Infof("DisputeMissingRegistrationTask done")
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
+	}
+
+	if dkgState.Phase != state.RegistrationOpen {
+		logger.Debugf("phase %v different from RegistrationOpen", dkgState.Phase)
+		return false, nil
+	}
+
+	accusableParticipants, err := t.getAccusableParticipants(ctx, dkgState)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorGettingAccusableParticipants, err), true)
+	}
+
+	if len(accusableParticipants) == 0 {
+		logger.Debug(tasks.NobodyToAccuse)
+		return false, nil
+	}
+
+	return true, nil
 }
 
-func (t *DisputeMissingRegistrationTask) GetExecutionData() interface{} {
-	return t.ExecutionData
-}
+func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, dkgState *state.DkgState) ([]common.Address, error) {
+	logger := t.GetLogger()
 
-func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Context, eth interfaces.Ethereum, logger *logrus.Entry) ([]common.Address, error) {
 	var accusableParticipants []common.Address
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
 
-	validators, err := dkg.GetValidatorAddressesFromPool(callOpts, eth, logger)
+	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
 	if err != nil {
-		return nil, dkg.LogReturnErrorf(logger, "DisputeMissingRegistrationTask getAccusableParticipants() error getting validators: %v", err)
+		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}
 
 	validatorsMap := make(map[common.Address]bool)
@@ -169,14 +117,14 @@ func (t *DisputeMissingRegistrationTask) getAccusableParticipants(ctx context.Co
 	}
 
 	// find participants who did not register
-	for _, addr := range t.State.ValidatorAddresses {
+	for _, addr := range dkgState.ValidatorAddresses {
 
-		participant, ok := t.State.Participants[addr]
+		participant, ok := dkgState.Participants[addr]
 		_, isValidator := validatorsMap[addr]
 
 		if isValidator && (!ok ||
-			participant.Nonce != t.State.Nonce ||
-			participant.Phase != objects.RegistrationOpen ||
+			participant.Nonce != dkgState.Nonce ||
+			participant.Phase != state.RegistrationOpen ||
 			(participant.PublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 				participant.PublicKey[1].Cmp(big.NewInt(0)) == 0)) {
 

@@ -1,4 +1,4 @@
-package blockchain
+package ethereum
 
 import (
 	"bytes"
@@ -6,16 +6,27 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
-// ContractDetails contains bindings to smart contract system
-type ContractDetails struct {
-	eth                     *EthereumDetails
+var (
+	once      sync.Once
+	contracts *Contracts
+)
+
+// Contracts contains bindings to smart contract system
+type Contracts struct {
+	isInitialized           bool
+	allAddresses            map[common.Address]bool
+	eth                     *Client
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
 	aToken                  bindings.IAToken
@@ -36,8 +47,40 @@ type ContractDetails struct {
 	governanceAddress       common.Address
 }
 
+func GetContracts() *Contracts {
+	if contracts == nil || !contracts.isInitialized {
+		panic("Ethereum smart contracts not initialized or not found")
+	}
+	return contracts
+}
+
+/// Set the contractFactoryAddress and looks up for all the contracts that we
+/// need that were deployed via the factory. It's only executed once. Other call
+/// to this functions are no-op.
+func NewContracts(eth *Client, contractFactoryAddress common.Address) {
+	once.Do(func() {
+		contracts = getNewContractInstance(eth, contractFactoryAddress)
+	})
+}
+
+func getNewContractInstance(eth *Client, contractFactoryAddress common.Address) *Contracts {
+	tempContracts := &Contracts{
+		allAddresses:           make(map[common.Address]bool),
+		eth:                    eth,
+		contractFactoryAddress: contractFactoryAddress,
+	}
+	err := tempContracts.lookupContracts()
+	if err != nil {
+		panic(err)
+	}
+	tempContracts.isInitialized = true
+	return tempContracts
+}
+
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
-func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAddress common.Address) error {
+func (c *Contracts) lookupContracts() error {
+	networkCtx, cf := context.WithCancel(context.Background())
+	defer cf()
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	for {
@@ -51,24 +94,29 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 		logger := eth.logger
 
 		// Load the contractFactory first
-		contractFactory, err := bindings.NewAliceNetFactory(contractFactoryAddress, eth.client)
+		contractFactory, err := bindings.NewAliceNetFactory(c.contractFactoryAddress, eth.internalClient)
 		if err != nil {
 			return err
 		}
 		c.contractFactory = contractFactory
-		c.contractFactoryAddress = contractFactoryAddress
 
 		// todo: replace lookup with deterministic address compute
 
+		callOpts, err := eth.GetCallOpts(networkCtx, eth.defaultAccount)
+		if err != nil {
+			logger.Errorf("Failed to generate call options for lookup %v", err)
+		}
+
 		// Just a help for looking up other contracts
 		lookup := func(name string) (common.Address, error) {
-			salt := StringToBytes32(name)
-			addr, err := contractFactory.Lookup(eth.GetCallOpts(ctx, eth.defaultAccount), salt)
+			salt := utils.StringToBytes32(name)
+			addr, err := contractFactory.Lookup(callOpts, salt)
 			if err != nil {
 				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
 			} else {
 				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
 			}
+			c.allAddresses[addr] = true
 			return addr, err
 		}
 
@@ -79,7 +127,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.client)
+		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// ValidatorPool
@@ -89,7 +137,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.client)
+		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// BToken
@@ -99,7 +147,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.bToken, err = bindings.NewBToken(c.bTokenAddress, eth.client)
+		c.bToken, err = bindings.NewBToken(c.bTokenAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// AToken
@@ -109,7 +157,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.aToken, err = bindings.NewAToken(c.aTokenAddress, eth.client)
+		c.aToken, err = bindings.NewAToken(c.aTokenAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// PublicStaking
@@ -119,7 +167,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.publicStaking, err = bindings.NewPublicStaking(c.publicStakingAddress, eth.client)
+		c.publicStaking, err = bindings.NewPublicStaking(c.publicStakingAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// ValidatorStaking
@@ -129,7 +177,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.validatorStaking, err = bindings.NewValidatorStaking(c.validatorStakingAddress, eth.client)
+		c.validatorStaking, err = bindings.NewValidatorStaking(c.validatorStakingAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// Governance
@@ -139,7 +187,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.client)
+		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// Snapshots
@@ -149,7 +197,7 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 			continue
 		}
 
-		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.client)
+		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		break
@@ -158,74 +206,98 @@ func (c *ContractDetails) LookupContracts(ctx context.Context, contractFactoryAd
 	return nil
 }
 
-func (c *ContractDetails) Ethdkg() bindings.IETHDKG {
+// return all addresses from all contracts in the contract struct
+func (c *Contracts) GetAllAddresses() []common.Address {
+	var allAddresses []common.Address
+	for addr := range c.allAddresses {
+		allAddresses = append(allAddresses, addr)
+	}
+	return allAddresses
+}
+
+func (c *Contracts) Ethdkg() bindings.IETHDKG {
 	return c.ethdkg
 }
 
-func (c *ContractDetails) EthdkgAddress() common.Address {
+func (c *Contracts) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *ContractDetails) AToken() bindings.IAToken {
+func (c *Contracts) AToken() bindings.IAToken {
 	return c.aToken
 }
 
-func (c *ContractDetails) ATokenAddress() common.Address {
+func (c *Contracts) ATokenAddress() common.Address {
 	return c.aTokenAddress
 }
 
-func (c *ContractDetails) BToken() bindings.IBToken {
+func (c *Contracts) BToken() bindings.IBToken {
 	return c.bToken
 }
 
-func (c *ContractDetails) BTokenAddress() common.Address {
+func (c *Contracts) BTokenAddress() common.Address {
 	return c.bTokenAddress
 }
 
-func (c *ContractDetails) PublicStaking() bindings.IPublicStaking {
+func (c *Contracts) PublicStaking() bindings.IPublicStaking {
 	return c.publicStaking
 }
 
-func (c *ContractDetails) PublicStakingAddress() common.Address {
+func (c *Contracts) PublicStakingAddress() common.Address {
 	return c.publicStakingAddress
 }
 
-func (c *ContractDetails) ValidatorStaking() bindings.IValidatorStaking {
+func (c *Contracts) ValidatorStaking() bindings.IValidatorStaking {
 	return c.validatorStaking
 }
 
-func (c *ContractDetails) ValidatorStakingAddress() common.Address {
+func (c *Contracts) ValidatorStakingAddress() common.Address {
 	return c.validatorStakingAddress
 }
 
-func (c *ContractDetails) ContractFactory() bindings.IAliceNetFactory {
+func (c *Contracts) ContractFactory() bindings.IAliceNetFactory {
 	return c.contractFactory
 }
 
-func (c *ContractDetails) ContractFactoryAddress() common.Address {
+func (c *Contracts) ContractFactoryAddress() common.Address {
 	return c.contractFactoryAddress
 }
 
-func (c *ContractDetails) Snapshots() bindings.ISnapshots {
+func (c *Contracts) Snapshots() bindings.ISnapshots {
 	return c.snapshots
 }
 
-func (c *ContractDetails) SnapshotsAddress() common.Address {
+func (c *Contracts) SnapshotsAddress() common.Address {
 	return c.snapshotsAddress
 }
 
-func (c *ContractDetails) ValidatorPool() bindings.IValidatorPool {
+func (c *Contracts) ValidatorPool() bindings.IValidatorPool {
 	return c.validatorPool
 }
 
-func (c *ContractDetails) ValidatorPoolAddress() common.Address {
+func (c *Contracts) ValidatorPoolAddress() common.Address {
 	return c.validatorPoolAddress
 }
 
-func (c *ContractDetails) Governance() bindings.IGovernance {
+func (c *Contracts) Governance() bindings.IGovernance {
 	return c.governance
 }
 
-func (c *ContractDetails) GovernanceAddress() common.Address {
+func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
+}
+
+// utils function to log an error
+func logAndEat(logger *logrus.Logger, err error) {
+	if err != nil {
+		logger.Error(err)
+	}
+}
+
+// Auxiliary function to clean the global variables that will allow the
+// deployment and bindings of multiple contracts during other unit tests running
+// in sequence. DON'T USE THIS FUNCTION OUTSIDE THE UNIT TESTS
+func CleanGlobalVariables(t *testing.T) {
+	contracts = nil
+	once = sync.Once{}
 }

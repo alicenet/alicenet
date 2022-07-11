@@ -1,194 +1,152 @@
-package dkgtasks
+package dkg
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/dkg/math"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
-	"github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/alicenet/alicenet/layer1/ethereum"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 )
 
-// KeyshareSubmissionTask is the task for submitting Keyshare information
-type KeyshareSubmissionTask struct {
-	*ExecutionData
+// KeyShareSubmissionTask is the task for submitting KeyShare information
+type KeyShareSubmissionTask struct {
+	*tasks.BaseTask
 }
 
-// asserting that KeyshareSubmissionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &KeyshareSubmissionTask{}
+// asserting that KeyShareSubmissionTask struct implements interface tasks.Task
+var _ tasks.Task = &KeyShareSubmissionTask{}
 
-// NewKeyshareSubmissionTask creates a new task
-func NewKeyshareSubmissionTask(state *objects.DkgState, start uint64, end uint64) *KeyshareSubmissionTask {
-	return &KeyshareSubmissionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+// NewKeyShareSubmissionTask creates a new task
+func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
+	return &KeyShareSubmissionTask{
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
-// Initialize prepares for work to be done in KeyShareSubmission phase.
+// Prepare prepares for work to be done in the KeyShareSubmissionTask.
 // Here, the G1 key share, G1 proof, and G2 key share are constructed
 // and stored for submission.
-func (t *KeyshareSubmissionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
-	logger.Info("KeyshareSubmissionTask Initialize()")
+func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Debug("preparing task")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != t.State {
-		t.State = dkgData.State
-	}
+	defaultAddr := dkgState.Account.Address
 
-	me := t.State.Account.Address
+	isKeyShareNil := dkgState.Participants[defaultAddr].KeyShareG1s[0] == nil ||
+		dkgState.Participants[defaultAddr].KeyShareG1s[1] == nil
 
 	// check if task already defined key shares
-	if t.State.Participants[me].KeyShareG1s[0] == nil ||
-		t.State.Participants[me].KeyShareG1s[1] == nil ||
-		(t.State.Participants[me].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
-			t.State.Participants[me].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
-
-		// Generate the key shares
-		g1KeyShare, g1Proof, g2KeyShare, err := math.GenerateKeyShare(t.State.SecretValue)
+	if isKeyShareNil || (dkgState.Participants[defaultAddr].KeyShareG1s[0].Cmp(big.NewInt(0)) == 0 &&
+		dkgState.Participants[defaultAddr].KeyShareG1s[1].Cmp(big.NewInt(0)) == 0) {
+		// Generate the key shares. If this function fails it means that we don't have
+		// all the data or we have bad data stored in state. No way to recover
+		g1KeyShare, g1Proof, g2KeyShare, err := state.GenerateKeyShare(dkgState.SecretValue)
 		if err != nil {
-			return err
+			return tasks.NewTaskErr(fmt.Sprintf("failed to generate key share: %v", err), false)
 		}
 
-		t.State.Participants[me].KeyShareG1s = g1KeyShare
-		t.State.Participants[me].KeyShareG1CorrectnessProofs = g1Proof
-		t.State.Participants[me].KeyShareG2s = g2KeyShare
+		dkgState.Participants[defaultAddr].KeyShareG1s = g1KeyShare
+		dkgState.Participants[defaultAddr].KeyShareG1CorrectnessProofs = g1Proof
+		dkgState.Participants[defaultAddr].KeyShareG2s = g2KeyShare
 
-		unlock()
-		dkgData.PersistStateCB()
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
+		}
 	} else {
-		logger.Infof("KeyshareSubmissionTask Initialize(): key shares already defined")
+		logger.Debugf("key shares already defined")
 	}
 
 	return nil
 }
 
-// DoWork is the first attempt at the performing the KeyShareSubmission phase
-func (t *KeyshareSubmissionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoWork() ...")
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
-// DoRetry is all subsequent attempts at the performing the KeyShareSubmission phase
-func (t *KeyshareSubmissionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	logger.Info("DoRetry() ...")
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *KeyshareSubmissionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("KeyshareSubmissionTask doTask()")
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
+	}
 
 	// Setup
-	me := t.State.Account
+	defaultAddr := dkgState.Account
 
 	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	eth := t.GetClient()
+	txnOpts, err := eth.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-	// we increase the Gas to have priority for the next blocks
-	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxOpts.Nonce
-		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxOpts.GasTipCap
-	}
-
-	// Submit Keyshares
-	logger.Infof("submitting key shares: %v %v %v %v",
-		me.Address,
-		t.State.Participants[me.Address].KeyShareG1s,
-		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
-		t.State.Participants[me.Address].KeyShareG2s)
-	txn, err := eth.Contracts().Ethdkg().SubmitKeyShare(txnOpts,
-		t.State.Participants[me.Address].KeyShareG1s,
-		t.State.Participants[me.Address].KeyShareG1CorrectnessProofs,
-		t.State.Participants[me.Address].KeyShareG2s)
+	// Submit KeyShares
+	logger.Infof(
+		"submitting key shares with account: %v g1s: %v correctnessProofs: %v keyShareG2s: %v",
+		defaultAddr.Address,
+		dkgState.Participants[defaultAddr.Address].KeyShareG1s,
+		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
+		dkgState.Participants[defaultAddr.Address].KeyShareG2s,
+	)
+	txn, err := ethereum.GetContracts().Ethdkg().SubmitKeyShare(txnOpts,
+		dkgState.Participants[defaultAddr.Address].KeyShareG1s,
+		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
+		dkgState.Participants[defaultAddr.Address].KeyShareG2s)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "submitting keyshare failed: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("registering failed: %v", err), true)
 	}
-	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-	}).Info("key share submission fees")
-
-	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
-	t.Success = true
-
-	return nil
+	return txn, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
-// Predicates:
-// -- we haven't passed the last block
-func (t *KeyshareSubmissionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-	t.State.Lock()
-	defer t.State.Unlock()
+// ShouldExecute checks if it makes sense to execute the task
+func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Debug("should execute task")
 
-	logger.Info("KeyshareSubmissionTask ShouldRetry()")
-
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
-	if !generalRetry {
-		return false
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	state := t.State
-
-	me := state.Account
-	callOpts := eth.GetCallOpts(ctx, me)
-
-	phase, err := eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	client := t.GetClient()
+	defaultAccount := dkgState.Account
+	callOpts, err := client.GetCallOpts(ctx, defaultAccount)
 	if err != nil {
-		logger.Infof("KeyshareSubmissionTask ShouldRetry GetETHDKGPhase error: %v", err)
-		return true
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
+	}
+
+	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("error getting ETHDKGPhase: %v", err), true)
 	}
 
 	// DisputeShareDistribution || KeyShareSubmission
-	if phase != uint8(objects.DisputeShareDistribution) && phase != uint8(objects.KeyShareSubmission) {
-		return false
+	if phase != uint8(state.DisputeShareDistribution) && phase != uint8(state.KeyShareSubmission) {
+		logger.Debugf("on dispute ShareDistribution phase should not submit keyShare")
+		return false, nil
 	}
 
 	// Check the key share submission status
-	status, err := CheckKeyShare(ctx, eth.Contracts().Ethdkg(), logger, callOpts, me.Address, state.Participants[me.Address].KeyShareG1s)
+	status, err := state.CheckKeyShare(ctx, ethereum.GetContracts().Ethdkg(), logger, callOpts, defaultAccount.Address, dkgState.Participants[defaultAccount.Address].KeyShareG1s)
 	if err != nil {
-		logger.Errorf("KeyshareSubmissionTask ShouldRetry CheckKeyShare error: %v", err)
-		return true
+		return false, tasks.NewTaskErr(fmt.Sprintf("error checkingKeyShare: %v", err), true)
 	}
 
-	if status == KeyShared || status == BadKeyShared {
-		return false
+	if status == state.KeyShared || status == state.BadKeyShared {
+		logger.Debug("already shared keyShare")
+		return false, nil
 	}
 
-	return true
-}
-
-// DoDone creates a log entry saying task is complete
-func (t *KeyshareSubmissionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.WithField("Success", t.Success).Infof("KeyshareSubmissionTask done")
-}
-
-func (t *KeyshareSubmissionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+	return true, nil
 }

@@ -7,13 +7,11 @@ import (
 	"strings"
 
 	"github.com/alicenet/alicenet/config"
-	blockchain "github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/dkg/dtest"
-	"github.com/alicenet/alicenet/layer1/interfaces"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -25,13 +23,6 @@ var Command = cobra.Command{
 	Long:  "utils is a misc. collection of tools. Ranges from initial config to automating Ethereum setup",
 	Run:   utilsNode}
 
-// EthdkgCommand is the command that triggers a fresh start of the ETHDKG process
-var EthdkgCommand = cobra.Command{
-	Use:   "ethdkg",
-	Short: "",
-	Long:  "",
-	Run:   utilsNode}
-
 // SendWeiCommand is the command that sends wei from one account to another
 var SendWeiCommand = cobra.Command{
 	Use:   "sendwei",
@@ -39,51 +30,34 @@ var SendWeiCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Entry) (interfaces.Ethereum, error) {
+func setupEthereum(logger *logrus.Entry) (layer1.Client, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
-	eth, err := blockchain.NewEthereumEndpoint(
+	eth, err := ethereum.NewClient(
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
-		config.Configuration.Ethereum.Passcodes,
+		config.Configuration.Ethereum.PassCodes,
 		config.Configuration.Ethereum.DefaultAccount,
-		config.Configuration.Ethereum.Timeout,
-		config.Configuration.Ethereum.RetryCount,
-		config.Configuration.Ethereum.RetryDelay,
-		config.Configuration.Ethereum.FinalityDelay,
-		config.Configuration.Ethereum.TxFeePercentageToIncrease,
-		config.Configuration.Ethereum.TxMaxFeeThresholdInGwei,
-		config.Configuration.Ethereum.TxCheckFrequency,
-		config.Configuration.Ethereum.TxTimeoutForReplacement)
+		true,
+		constants.EthereumFinalityDelay,
+		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
+		config.Configuration.Ethereum.EndpointMinimumPeers,
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	registryAddress := common.HexToAddress(config.Configuration.Ethereum.RegistryAddress)
+	factoryAddress := common.HexToAddress(config.Configuration.Ethereum.FactoryAddress)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err = eth.Contracts().LookupContracts(ctx, registryAddress)
+	ethereum.NewContracts(eth, factoryAddress)
 
 	return eth, err
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
+func LogStatus(logger *logrus.Entry, eth layer1.Client) {
 
 	acct := eth.GetDefaultAccount()
-	err := eth.UnlockAccount(acct)
-	if err != nil {
-		logger.Warnf("Failed to unlock account %v: %v", acct.Address.Hex(), err)
-		return
-	}
-
-	keys, err := eth.GetAccountKeys(acct.Address)
-	if err != nil {
-		logger.Warnf("Failed to retrieve account %v keys: %v", acct.Address.Hex(), err)
-		return
-	}
 
 	weiBalance, err := eth.GetBalance(acct.Address)
 	if err != nil {
@@ -91,8 +65,12 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 		return
 	}
 
-	c := eth.Contracts()
-	callOpts := eth.GetCallOpts(context.Background(), acct)
+	c := ethereum.GetContracts()
+	callOpts, err := eth.GetCallOpts(context.Background(), acct)
+	if err != nil {
+		logger.Warnf("Failed to get call options: %v", err)
+		return
+	}
 
 	logger.Infof("ValidatorPool() address is %v", c.ValidatorPoolAddress().Hex())
 	isValidator, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
@@ -107,7 +85,6 @@ func LogStatus(logger *logrus.Entry, eth interfaces.Ethereum) {
 	logger.Infof("  ValidatorsPool contract: %v", c.ValidatorPoolAddress().Hex())
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof(" Default Account: %v", acct.Address.Hex())
-	logger.Infof("              Public key: 0x%x", crypto.FromECDSAPub(&keys.PrivateKey.PublicKey))
 	logger.Infof("             Wei balance: %v", weiBalance)
 	logger.Infof("            Is Validator: %v", isValidator)
 	logger.Info(strings.Repeat("-", 80))
@@ -128,20 +105,11 @@ func utilsNode(cmd *cobra.Command, args []string) {
 		LogStatus(logger, eth)
 	}
 
-	// Unlock the default account setup
-	acct := eth.GetDefaultAccount()
-	err = eth.UnlockAccount(acct)
-	if err != nil {
-		logger.Errorf("Can not unlock account %v: %v", acct.Address.Hex(), err)
-	}
-
 	// Route command
 	var exitCode int
 	switch cmd.Use {
-	case "ethdkg":
-		exitCode = ethdkg(logger, eth, cmd, args)
 	case "sendwei":
-		exitCode = sendwei(logger, eth, cmd, args)
+		exitCode = sendWei(logger, eth, cmd, args)
 	case "utils":
 		exitCode = 0
 	default:
@@ -152,7 +120,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	os.Exit(exitCode)
 }
 
-func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
+func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
@@ -167,42 +135,11 @@ func sendwei(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, 
 
 	from := eth.GetDefaultAccount()
 	for idx := 1; idx < len(args); idx++ {
-		_, err := eth.TransferEther(from.Address, common.HexToAddress(args[idx]), wei)
+		_, err := ethereum.TransferEther(eth, logger, from.Address, common.HexToAddress(args[idx]), wei)
 		if err != nil {
 			logger.Errorf("Transfer failed: %v", err)
 			return 1
 		}
-	}
-
-	return 0
-}
-
-func ethdkg(logger *logrus.Entry, eth interfaces.Ethereum, cmd *cobra.Command, args []string) int {
-
-	// Ethereum setup
-	acct := eth.GetDefaultAccount()
-	ctx := context.Background()
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, acct)
-	if err != nil {
-		logger.Errorf("Can not build transaction options: %v", err)
-		return 1
-	}
-
-	_, rcpt, err := dkg.InitializeETHDKG(eth, txnOpts, ctx)
-	if err != nil {
-		logger.Errorf("could not initialize ETHDKG: %v", err)
-		return 1
-	}
-
-	logs := rcpt.Logs
-
-	logger.Infof("Found %v log events after initializing ethdkg", len(logs))
-
-	_, err = dtest.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
-	if err != nil {
-		logger.Errorf("could not get ETHDKG RegistrationOpened event: %v", err)
-		return 1
 	}
 
 	return 0

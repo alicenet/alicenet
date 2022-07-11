@@ -7,77 +7,71 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-// CRITICAL TODO: MONITOR STATE MUST BE SPLIT UP INTO DIFFERENT OBJECTS OR
-// MAPPINGS MUST BE PRUNED AFTER SOME DELAY. THIS DELAY MAY BE ON THE SCALE OF
-// 5 EPOCHS AS A VERY CONSERVATIVE NUMBER AFTER WHICH DATA MUST HAVE BEEN FLUSHED
-// TO STATE DATABASE FOR VALIDATORS AND SNAPSHOTS AFTER THIS INTERVAL.
 
 // MonitorState contains info required to monitor Ethereum
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
-	Version                uint8                   `json:"version"`
-	CommunicationFailures  uint32                  `json:"communicationFailtures"`
-	EthereumInSync         bool                    `json:"-"`
-	HighestBlockProcessed  uint64                  `json:"highestBlockProcessed"`
-	HighestBlockFinalized  uint64                  `json:"highestBlockFinalized"`
-	HighestEpochProcessed  uint32                  `json:"highestEpochProcessed"`
-	HighestEpochSeen       uint32                  `json:"highestEpochSeen"`
-	EndpointInSync         bool                    `json:"-"`
-	LatestDepositProcessed uint32                  `json:"latestDepositProcessed"`
-	LatestDepositSeen      uint32                  `json:"latestDepositSeen"`
-	PeerCount              uint32                  `json:"peerCount"`
-	ValidatorSets          map[uint32]ValidatorSet `json:"validatorSets"`
-	Validators             map[uint32][]Validator  `json:"validators"`
-	Schedule               *SequentialSchedule     `json:"schedule"`
-	EthDKG                 *DkgState               `json:"ethDKG"`
+	Version                uint8                                 `json:"version"`
+	CommunicationFailures  uint32                                `json:"communicationFailures"`
+	EthereumInSync         bool                                  `json:"-"`
+	HighestBlockProcessed  uint64                                `json:"highestBlockProcessed"`
+	HighestBlockFinalized  uint64                                `json:"highestBlockFinalized"`
+	HighestEpochProcessed  uint32                                `json:"highestEpochProcessed"`
+	HighestEpochSeen       uint32                                `json:"highestEpochSeen"`
+	EndpointInSync         bool                                  `json:"-"`
+	LatestDepositProcessed uint32                                `json:"latestDepositProcessed"`
+	LatestDepositSeen      uint32                                `json:"latestDepositSeen"`
+	PeerCount              uint32                                `json:"peerCount"`
+	IsInitialized          bool                                  `json:"-"`
+	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
+	Validators             map[uint32][]Validator                `json:"validators"`
+	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
 }
 
-// EthDKGPhase is used to indicate what phase we are currently in
-type EthDKGPhase uint8
-
-// These are the valid phases of ETHDKG
-const (
-	RegistrationOpen EthDKGPhase = iota
-	ShareDistribution
-	DisputeShareDistribution
-	KeyShareSubmission
-	MPKSubmission
-	GPKJSubmission
-	DisputeGPKJSubmission
-	Completion
-)
-
-// ValidatorSet is summary information about a ValidatorSet
+// ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG
 type ValidatorSet struct {
 	ValidatorCount          uint8       `json:"validator_count"`
 	GroupKey                [4]*big.Int `json:"group_key"`
 	NotBeforeAliceNetHeight uint32      `json:"not_before_mad_net_height"`
 }
 
-// Validator contains information about a Validator
+// Validator contains information about a Validator that participated on ETHDKG
 type Validator struct {
 	Account   common.Address `json:"account"`
 	Index     uint8          `json:"index"`
 	SharedKey [4]*big.Int    `json:"shared_key"`
 }
 
-// Share is temporary storage of shares coming from validators
-type Share struct {
-	Issuer          common.Address
-	Commitments     [][2]*big.Int
-	EncryptedShares []*big.Int
+// Potential Validator contains information about a validators that entered the
+// pool, but might not participated on ETHDKG yet
+type PotentialValidator struct {
+	Account common.Address `json:"account"`
+	TokenID uint64         `json:"tokenID"`
 }
 
-func NewMonitorState(dkgState *DkgState, schedule *SequentialSchedule) *MonitorState {
+func NewMonitorState() *MonitorState {
 	return &MonitorState{
-		EthDKG:        dkgState,
-		Schedule:      schedule,
-		ValidatorSets: make(map[uint32]ValidatorSet),
-		Validators:    make(map[uint32][]Validator),
+		ValidatorSets:       make(map[uint32]ValidatorSet),
+		Validators:          make(map[uint32][]Validator),
+		PotentialValidators: make(map[common.Address]PotentialValidator),
 	}
+}
+
+// Get a copy of the monitor state that is saved on disk
+func GetMonitorState(db *db.Database) (*MonitorState, error) {
+	monState := NewMonitorState()
+	err := monState.LoadState(db)
+	if err != nil {
+		return nil, err
+	}
+	return monState, nil
 }
 
 func (s *MonitorState) String() string {
@@ -95,7 +89,7 @@ func (s *MonitorState) String() string {
 // Clone builds a deep copy of a small portion of state
 // TODO Make this create a complete clone of state
 func (s *MonitorState) Clone() *MonitorState {
-	ns := NewMonitorState(s.EthDKG, s.Schedule)
+	ns := NewMonitorState()
 
 	ns.CommunicationFailures = s.CommunicationFailures
 	ns.EthereumInSync = s.EthereumInSync
@@ -109,6 +103,68 @@ func (s *MonitorState) Clone() *MonitorState {
 	ns.PeerCount = s.PeerCount
 
 	return ns
+}
+
+func (s *MonitorState) LoadState(db *db.Database) error {
+
+	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
+
+	s.Lock()
+	defer s.Unlock()
+
+	if err := db.View(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixMonitorState()
+		logger.WithField("Key", string(key)).Debug("Loading state from database")
+		rawData, err := utils.GetValue(txn, key)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, s)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (mon *MonitorState) PersistState(db *db.Database) error {
+
+	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
+
+	mon.Lock()
+	defer mon.Unlock()
+
+	rawData, err := json.Marshal(mon)
+	if err != nil {
+		return err
+	}
+
+	err = db.Update(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixMonitorState()
+		logger.WithField("Key", string(key)).Debug("Saving state in the database")
+		if err := utils.SetValue(txn, key, rawData); err != nil {
+			logger.Error("Failed to set Value")
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := db.Sync(); err != nil {
+		logger.Error("Failed to set sync")
+		return err
+	}
+
+	return nil
 }
 
 // Diff builds a textual description between states
@@ -137,13 +193,7 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 		// if we are syncing Ethereum blocks,
 		// only write intermittent state diffs on blocks
 		// with no other changes of concern
-		if !s.EthereumInSync {
-			if s.HighestBlockProcessed%256 == 0 {
-				shouldWrite = true
-			}
-		} else {
-			shouldWrite = true
-		}
+		shouldWrite = true
 		d = append(d, fmt.Sprintf("HighestBlockProcessed: %v -> %v", s.HighestBlockProcessed, o.HighestBlockProcessed))
 	}
 

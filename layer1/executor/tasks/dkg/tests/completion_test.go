@@ -1,16 +1,18 @@
 //go:build integration
 
-package dkgtasks_test
+package dkg_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/dkg/dkgevents"
-	"github.com/alicenet/alicenet/layer1/dkg/dkgtasks"
-	"github.com/alicenet/alicenet/layer1/dkg/dtest"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/blockchain/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/monitor/events"
+
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -20,60 +22,57 @@ import (
 func TestCompletion_Group_1_AllGood(t *testing.T) {
 	n := 4
 
-	err := dtest.InitializeValidatorFiles(5)
+	err := testutils.InitializeValidatorFiles(5)
 	assert.Nil(t, err)
 
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := suite.GpkjSubmissionTasks[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
+		err = suite.GpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, suite.gpkjSubmissionTasks[idx].Success)
+		assert.True(t, suite.GpkjSubmissionTasks[idx].Success)
 	}
 
-	height, err := suite.eth.GetCurrentHeight(ctx)
+	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	disputeGPKjTasks := make([]*dkgtasks.DisputeGPKjTask, n)
-	completionTasks := make([]*dkgtasks.CompletionTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		disputeGPKjTask, _, _, completionTask, start, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		disputeGPKjTask, completionTask := events.UpdateStateOnGPKJSubmissionComplete(state, height)
 		disputeGPKjTasks[idx] = disputeGPKjTask
 		completionTasks[idx] = completionTask
-		completionStart = start
+		completionStart = completionTask.GetStart()
 	}
 
 	// Advance to Completion phase
-	advanceTo(t, eth, completionStart)
+	testutils.AdvanceTo(t, eth, completionStart)
 
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := completionTasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := completionTasks[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := completionTasks[idx].AmILeading(ctx, eth, logger, state)
 		err = completionTasks[idx].DoWork(ctx, logger, eth)
 		if amILeading {
 			assert.Nil(t, err)
 			assert.True(t, completionTasks[idx].Success)
 		} else {
-			if completionTasks[idx].ShouldRetry(ctx, logger, eth) {
+			if completionTasks[idx].ShouldExecute(ctx, logger, eth) {
 				assert.NotNil(t, err)
 				assert.False(t, completionTasks[idx].Success)
 			} else {
@@ -87,23 +86,22 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 
 func TestCompletion_Group_1_StartFromCompletion(t *testing.T) {
 	n := 4
-	suite := StartFromCompletion(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromCompletion(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "k")
 
 	// Do Completion task
 	var hasLeader bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		task := suite.completionTasks[idx]
+		task := suite.CompletionTasks[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := task.Initialize(ctx, logger, eth, dkgData)
+		err := task.Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		amILeading := task.AmILeading(ctx, eth, logger)
+		amILeading := task.AmILeading(ctx, eth, logger, state)
 
 		if amILeading {
 			hasLeader = true
@@ -116,17 +114,20 @@ func TestCompletion_Group_1_StartFromCompletion(t *testing.T) {
 	}
 
 	assert.True(t, hasLeader)
-	assert.False(t, suite.completionTasks[0].ShouldRetry(ctx, logger, eth))
+	assert.False(t, suite.CompletionTasks[0].ShouldRetry(ctx, logger, eth))
 
-	phase, err := suite.eth.Contracts().Ethdkg().GetETHDKGPhase(eth.GetCallOpts(ctx, suite.eth.GetDefaultAccount()))
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	assert.Equal(t, uint8(objects.Completion), phase)
+
+	phase, err := suite.Eth.Contracts().Ethdkg().GetETHDKGPhase(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, uint8(state.Completion), phase)
 
 	// event
 	for j := 0; j < n; j++ {
 		// simulate receiving ValidatorSetCompleted event for all participants
-		suite.dkgStates[j].OnCompletion()
-		assert.Equal(t, suite.dkgStates[j].Phase, objects.Completion)
+		suite.DKGStates[j].OnCompletion()
+		assert.Equal(t, suite.DKGStates[j].Phase, state.Completion)
 	}
 }
 
@@ -135,10 +136,10 @@ func TestCompletion_Group_1_StartFromCompletion(t *testing.T) {
 // for the Ethereum interface.
 func TestCompletion_Group_2_Bad1(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -147,22 +148,21 @@ func TestCompletion_Group_2_Bad1(t *testing.T) {
 	defer cancel()
 
 	// Create a task to share distribution and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewCompletionTask(state, 1, 100)
+	state := state.NewDkgState(acct)
+	task := dkg.NewCompletionTask(state, 1, 100)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
 // We test to ensure that everything behaves correctly.
 func TestCompletion_Group_2_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -171,11 +171,11 @@ func TestCompletion_Group_2_Bad2(t *testing.T) {
 	defer cancel()
 
 	// Do bad Completion task
-	state := objects.NewDkgState(acct)
+	state := state.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
-	task := dkgtasks.NewCompletionTask(state, 1, 100)
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	task := dkg.NewCompletionTask(state, 1, 100)
+
+	err := task.Initialize(ctx, log, eth)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -184,51 +184,46 @@ func TestCompletion_Group_2_Bad2(t *testing.T) {
 // We complete everything correctly, but we do not complete in time
 func TestCompletion_Group_2_Bad3(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, tasksVec[idx].Success)
 	}
 
-	height, err := suite.eth.GetCurrentHeight(ctx)
+	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	completionTasks := make([]*dkgtasks.CompletionTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart, completionEnd uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		_, _, _, completionTask, start, end := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		_, completionTask := events.UpdateStateOnGPKJSubmissionComplete(state, height)
 		completionTasks[idx] = completionTask
-		completionStart = start
-		completionEnd = end
+		completionStart = completionTask.GetStart()
+		completionEnd = completionTask.GetEnd()
 	}
 
 	// Advance to Completion phase
-	advanceTo(t, eth, completionStart)
+	testutils.AdvanceTo(t, eth, completionStart)
 
 	// Advance to end of Completion phase
-	advanceTo(t, eth, completionEnd)
+	testutils.AdvanceTo(t, eth, completionEnd)
 	eth.Commit()
 
-	// Do bad Completion task; this should fail because we are past
-	state := dkgStates[0]
-	dkgData := objects.NewETHDKGTaskData(state)
-	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
+	err = completionTasks[0].Initialize(ctx, logger, eth)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,31 +235,30 @@ func TestCompletion_Group_2_Bad3(t *testing.T) {
 
 func TestCompletion_Group_3_ShouldRetry_returnsFalse(t *testing.T) {
 	n := 4
-	suite := StartFromCompletion(t, n, 40)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromCompletion(t, n, 40)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do Completion task
-	tasks := suite.completionTasks
+	tasksVec := suite.CompletionTasks
 	var hadLeaders bool
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		amILeading := tasks[idx].AmILeading(ctx, eth, logger)
+		amILeading := tasksVec[idx].AmILeading(ctx, eth, logger, state)
 
 		if amILeading {
 			hadLeaders = true
 			// only perform ETHDKG completion if validator is leading
-			assert.True(t, tasks[idx].ShouldRetry(ctx, logger, eth))
-			err = tasks[idx].DoWork(ctx, logger, eth)
+			assert.True(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
+			err = tasksVec[idx].DoWork(ctx, logger, eth)
 			assert.Nil(t, err)
-			assert.False(t, tasks[idx].ShouldRetry(ctx, logger, eth))
+			assert.False(t, tasksVec[idx].ShouldRetry(ctx, logger, eth))
 		}
 	}
 
@@ -272,56 +266,51 @@ func TestCompletion_Group_3_ShouldRetry_returnsFalse(t *testing.T) {
 
 	// any task is able to tell if ETHDKG still needs completion
 	// if for any reason no validator lead the process,
-	// then all tasks will have ShouldRetry() returning true
-	assert.False(t, tasks[0].ShouldRetry(ctx, logger, eth))
+	// then all tasks will have ShouldExecute() returning true
+	assert.False(t, tasksVec[0].ShouldRetry(ctx, logger, eth))
 }
 
 func TestCompletion_Group_3_ShouldRetry_returnsTrue(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := suite.gpkjSubmissionTasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := suite.GpkjSubmissionTasks[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		err = suite.gpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
+		err = suite.GpkjSubmissionTasks[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, suite.gpkjSubmissionTasks[idx].Success)
+		assert.True(t, suite.GpkjSubmissionTasks[idx].Success)
 	}
 
-	height, err := suite.eth.GetCurrentHeight(ctx)
+	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	disputeGPKjTasks := make([]*dkgtasks.DisputeGPKjTask, n)
-	completionTasks := make([]*dkgtasks.CompletionTask, n)
+	disputeGPKjTasks := make([]*dkg.DisputeGPKjTask, n)
+	completionTasks := make([]*dkg.CompletionTask, n)
 	var completionStart uint64
 	for idx := 0; idx < n; idx++ {
 		state := dkgStates[idx]
-		disputeGPKjTask, _, _, completionTask, start, _ := dkgevents.UpdateStateOnGPKJSubmissionComplete(state, logger, height)
+		disputeGPKjTask, completionTask := events.UpdateStateOnGPKJSubmissionComplete(state, height)
 		disputeGPKjTasks[idx] = disputeGPKjTask
 		completionTasks[idx] = completionTask
-		completionStart = start
+		completionStart = completionTask.GetStart()
 	}
 
 	// Advance to Completion phase
-	advanceTo(t, eth, completionStart)
+	testutils.AdvanceTo(t, eth, completionStart)
 	eth.Commit()
 
-	// Do bad Completion task; this should fail because we are past
-	state := dkgStates[0]
-	dkgData := objects.NewETHDKGTaskData(state)
-	err = completionTasks[0].Initialize(ctx, logger, eth, dkgData)
+	err = completionTasks[0].Initialize(ctx, logger, eth)
 	assert.Nil(t, err)
 
-	shouldRetry := completionTasks[0].ShouldRetry(ctx, logger, eth)
+	shouldRetry := completionTasks[0].ShouldExecute(ctx, logger, eth)
 	assert.True(t, shouldRetry)
 }

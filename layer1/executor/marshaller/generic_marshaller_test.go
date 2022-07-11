@@ -1,9 +1,8 @@
-package objects_test
+package marshaller
 
 import (
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/objects"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +34,7 @@ func (s *S1) Do() int {
 }
 
 func TestRoundTrip(t *testing.T) {
-	tr := &objects.TypeRegistry{}
+	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}
 	s1 := &S1{Val: 4}
@@ -78,7 +77,7 @@ func TestNegativeType(t *testing.T) {
 		}
 	}()
 
-	tr := &objects.TypeRegistry{}
+	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}
 	s1 := &S1{Val: 4}
@@ -96,12 +95,12 @@ func TestNegativeType(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = tr.WrapInstance(s2)
-	assert.Equal(t, objects.ErrUnknownType, err)
+	assert.Equal(t, ErrUnknownType, err)
 }
 
 func TestNegativeName(t *testing.T) {
 
-	tr := &objects.TypeRegistry{}
+	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}
 
@@ -112,12 +111,12 @@ func TestNegativeName(t *testing.T) {
 
 	wi.NameType = "bob"
 	_, err = tr.UnwrapInstance(wi)
-	assert.Equal(t, objects.ErrUnknownName, err)
+	assert.Equal(t, ErrUnknownName, err)
 }
 
 func TestNegativeRaw(t *testing.T) {
 
-	tr := &objects.TypeRegistry{}
+	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}
 

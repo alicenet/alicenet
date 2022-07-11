@@ -1,30 +1,36 @@
-package monevents
+package events
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 
+	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	adminHandler interfaces.AdminHandler) error {
+func ProcessValidatorSetCompleted(eth layer1.Client, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
+	adminHandler monInterfaces.AdminHandler) error {
 
-	c := eth.Contracts()
+	c := ethereum.GetContracts()
 
-	state.Lock()
-	defer state.Unlock()
+	monitorState.Lock()
+	defer monitorState.Unlock()
 
-	updatedState := state
+	updatedState := monitorState
 
 	event, err := c.Ethdkg().ParseValidatorSetCompleted(log)
 	if err != nil {
@@ -45,7 +51,7 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 
 	epoch := uint32(event.Epoch.Int64())
 
-	vs := state.ValidatorSets[epoch]
+	vs := monitorState.ValidatorSets[epoch]
 	vs.NotBeforeAliceNetHeight = uint32(event.AliceNetHeight.Uint64())
 	vs.ValidatorCount = uint8(event.ValidatorCount.Uint64())
 	vs.GroupKey[0] = event.GroupKey0
@@ -63,29 +69,33 @@ func ProcessValidatorSetCompleted(eth interfaces.Ethereum, logger *logrus.Entry,
 	}
 	updatedState.ValidatorSets[epoch] = vs
 
-	err = checkValidatorSet(updatedState, epoch, logger, adminHandler)
+	err = checkValidatorSet(updatedState, epoch, logger, monDB, adminHandler)
 	if err != nil {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
-		"Phase": state.EthDKG.Phase,
-	}).Infof("Purging schedule")
-	state.Schedule.Purge()
+	dkgState, err := state.GetDkgState(monDB)
+	if err != nil {
+		return fmt.Errorf("failed to get DkgState on ProcessValidatorSetCompleted: %v", err)
+	}
 
-	state.EthDKG.OnCompletion()
+	dkgState.OnCompletion()
+
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return fmt.Errorf("failed to save DkgState on ProcessValidatorSetCompleted: %v", err)
+	}
 
 	return nil
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log,
-	adminHandler interfaces.AdminHandler) error {
+func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
 
-	state.Lock()
-	defer state.Unlock()
+	monitorState.Lock()
+	defer monitorState.Unlock()
 
-	c := eth.Contracts()
+	c := ethereum.GetContracts()
 
 	event, err := c.Ethdkg().ParseValidatorMemberAdded(log)
 	if err != nil {
@@ -103,29 +113,39 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 		SharedKey: [4]*big.Int{event.Share0, event.Share1, event.Share2, event.Share3},
 	}
 
-	// sanity check
-	if v.Account == state.EthDKG.Account.Address &&
-		state.EthDKG.Participants[event.Account].GPKj[0] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[1] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[2] != nil &&
-		state.EthDKG.Participants[event.Account].GPKj[3] != nil &&
-		(state.EthDKG.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
-			state.EthDKG.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+	dkgState, err := state.GetDkgState(monDB)
+	if err != nil {
+		return fmt.Errorf("failed to get DkgState on ProcessValidatorMemberAdded: %v", err)
+	}
 
-		return dkg.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", state.EthDKG.Participants[event.Account].GPKj, v.SharedKey)
+	// sanity check
+	if v.Account == dkgState.Account.Address &&
+		dkgState.Participants[event.Account].GPKj[0] != nil &&
+		dkgState.Participants[event.Account].GPKj[1] != nil &&
+		dkgState.Participants[event.Account].GPKj[2] != nil &&
+		dkgState.Participants[event.Account].GPKj[3] != nil &&
+		(dkgState.Participants[event.Account].GPKj[0].Cmp(v.SharedKey[0]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
+			dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
+
+		return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
 	}
 
 	// state update
-	state.EthDKG.OnGPKjSubmitted(event.Account, v.SharedKey)
+	dkgState.OnGPKjSubmitted(event.Account, v.SharedKey)
 
-	if len(state.Validators[epoch]) < int(participantIndex) {
-		newValList := make([]objects.Validator, int(participantIndex))
-		copy(newValList, state.Validators[epoch])
-		state.Validators[epoch] = newValList
+	err = state.SaveDkgState(monDB, dkgState)
+	if err != nil {
+		return fmt.Errorf("failed to save DkgState on ProcessValidatorMemberAdded: %v", err)
 	}
-	state.Validators[epoch][arrayIndex] = v
+
+	if len(monitorState.Validators[epoch]) < int(participantIndex) {
+		newValList := make([]objects.Validator, int(participantIndex))
+		copy(newValList, monitorState.Validators[epoch])
+		monitorState.Validators[epoch] = newValList
+	}
+	monitorState.Validators[epoch][arrayIndex] = v
 	ptrGroupShare := [4]*big.Int{
 		v.SharedKey[0], v.SharedKey[1],
 		v.SharedKey[2], v.SharedKey[3]}
@@ -144,25 +164,129 @@ func ProcessValidatorMemberAdded(eth interfaces.Ethereum, logger *logrus.Entry, 
 	return nil
 }
 
-func checkValidatorSet(state *objects.MonitorState, epoch uint32, logger *logrus.Entry, adminHandler interfaces.AdminHandler) error {
+// ProcessValidatorJoined handles the Minor Slash event
+func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorJoined(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.ValidatorStakingTokenID.Uint64(),
+	})
+
+	addPotentialValidator(state, event.Account, event.ValidatorStakingTokenID.Uint64())
+	logger.Info("ValidatorJoined")
+
+	return nil
+}
+
+// ProcessValidatorLeft handles the Minor Slash event
+func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorLeft(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
+	})
+
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
+	logger.Info("ValidatorLeft")
+
+	return nil
+}
+
+// ProcessValidatorMajorSlashed handles the Major Slash event
+func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account": event.Account.String(),
+	})
+
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
+	logger.Info("ValidatorMajorSlashed")
+
+	return nil
+}
+
+// ProcessValidatorMinorSlashed handles the Minor Slash event
+func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+
+	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"Account":               event.Account.String(),
+		"PublicStaking.TokenID": event.PublicStakingTokenID.Uint64(),
+	})
+
+	if err := deletePotentialValidator(state, event.Account); err != nil {
+		return err
+	}
+	logger.Infof("ValidatorMinorSlashed")
+
+	return nil
+}
+
+func addPotentialValidator(state *objects.MonitorState, account common.Address, tokenID uint64) {
+	state.Lock()
+	defer state.Unlock()
+
+	state.PotentialValidators[account] = objects.PotentialValidator{
+		Account: account,
+		TokenID: tokenID,
+	}
+}
+
+func deletePotentialValidator(state *objects.MonitorState, account common.Address) error {
+	state.Lock()
+	defer state.Unlock()
+
+	if _, present := state.PotentialValidators[account]; !present {
+		return errors.New("validator is not present in the potential validators")
+	}
+	delete(state.PotentialValidators, account)
+	return nil
+}
+
+func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, monDB *db.Database, adminHandler monInterfaces.AdminHandler) error {
 
 	logger = logger.WithField("Epoch", epoch)
 
 	// Make sure we've received a validator set event
-	validatorSet, present := state.ValidatorSets[epoch]
+	validatorSet, present := monitorState.ValidatorSets[epoch]
 	if !present {
 		logger.Warnf("No ValidatorSet received for epoch")
 	}
 
 	// Make sure we've received a validator member event
-	validators, present := state.Validators[epoch]
+	validators, present := monitorState.Validators[epoch]
 	if !present {
 		logger.Warnf("No ValidatorMember received for epoch")
 	}
 
+	dkgState, err := state.GetDkgState(monDB)
+	if err != nil {
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on checkValidatorSet: %v", err)
+	}
+
 	// See how many validator members we've seen and how many we expect
 	receivedCount := len(validators)
-	expectedCount := int(state.EthDKG.NumberOfValidators)
+	expectedCount := dkgState.NumberOfValidators
 
 	// Log validator set status
 	logger.WithFields(logrus.Fields{

@@ -1,176 +1,50 @@
-package interfaces
+package layer1
 
 import (
 	"context"
 	"math/big"
-	"time"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
-//Ethereum contains state information about a connection to Ethereum
-type Ethereum interface {
-
-	// Extensions for use with simulator
-	ChainID() *big.Int
-	Close() error
-	Commit()
-
-	IsEthereumAccessible() bool
-
-	GetCallOpts(context.Context, accounts.Account) *bind.CallOpts
-	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
-
-	UnlockAccount(accounts.Account) error
-	UnlockAccountWithPasscode(accounts.Account, string) error
-
-	TransferEther(common.Address, common.Address, *big.Int) (*types.Transaction, error)
-
-	GetAccount(common.Address) (accounts.Account, error)
-	GetAccountKeys(addr common.Address) (*keystore.Key, error)
-	GetBalance(common.Address) (*big.Int, error)
-	GetGethClient() GethClient
-	GetCoinbaseAddress() common.Address
-	GetCurrentHeight(context.Context) (uint64, error)
-	GetDefaultAccount() accounts.Account
-	GetEndpoint() string
-	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
-	GetFinalizedHeight(context.Context) (uint64, error)
-	GetKnownAccounts() []accounts.Account
-	GetPeerCount(context.Context) (uint64, error)
-	GetSnapshot() ([]byte, error)
-	GetSyncProgress() (bool, *ethereum.SyncProgress, error)
-	GetTimeoutContext() (context.Context, context.CancelFunc)
-	GetValidators(context.Context) ([]common.Address, error)
-	GetFinalityDelay() uint64
-
-	KnownSelectors() SelectorMap
-	Queue() TxnQueue
-
-	RetryCount() int
-	RetryDelay() time.Duration
-
-	Timeout() time.Duration
-
-	GetTxFeePercentageToIncrease() int
-	GetTxMaxFeeThresholdInGwei() uint64
-	GetTxCheckFrequency() time.Duration
-	GetTxTimeoutForReplacement() time.Duration
-
-	Contracts() Contracts
-}
-
-type GethClient interface {
-
-	// geth.ChainReader
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error)
-
-	// geth.TransactionReader
-	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// geth.ChainStateReader
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
-	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
-
-	// bind.ContractBackend
-	// -- bind.ContractCaller
-	// CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-
-	// -- bind.ContractTransactor
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
-	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-
-	// -- bind.ContractFilterer
-	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
-}
-
-type TxnQueue interface {
+// Client contains state information about a connection to the Ethereum node
+type Client interface {
 	Close()
-	QueueTransaction(ctx context.Context, txn *types.Transaction)
-	QueueGroupTransaction(ctx context.Context, grp int, txn *types.Transaction)
-	QueueAndWait(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
-	StartLoop()
-	Status(ctx context.Context) error
-	WaitTransaction(ctx context.Context, txn *types.Transaction) (*types.Receipt, error)
-	WaitGroupTransactions(ctx context.Context, grp int) ([]*types.Receipt, error)
+	IsAccessible() bool
+	EndpointInSync(ctx context.Context) (bool, uint32, error)
+	GetPeerCount(ctx context.Context) (uint64, error)
+	GetChainID() *big.Int
+	GetTxNotFoundMaxBlocks() uint64
+	GetTxMaxStaleBlocks() uint64
+	GetTransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	GetTransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+	GetHeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
+	GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+	GetBlockBaseFeeAndSuggestedGasTip(ctx context.Context) (*big.Int, *big.Int, error)
+	GetCallOpts(context.Context, accounts.Account) (*bind.CallOpts, error)
+	GetCallOptsLatestBlock(ctx context.Context, account accounts.Account) *bind.CallOpts
+	GetTransactionOpts(context.Context, accounts.Account) (*bind.TransactOpts, error)
+	GetAccount(common.Address) (accounts.Account, error)
+	GetBalance(common.Address) (*big.Int, error)
+	GetCurrentHeight(context.Context) (uint64, error)
+	GetFinalizedHeight(context.Context) (uint64, error)
+	GetEndpoint() string
+	GetDefaultAccount() accounts.Account
+	GetKnownAccounts() []accounts.Account
+	GetTimeoutContext() (context.Context, context.CancelFunc)
+	GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
+	GetFinalityDelay() uint64
+	GetTxMaxGasFeeAllowed() *big.Int
+	GetPendingNonce(ctx context.Context, account common.Address) (uint64, error)
+	SignTransaction(tx types.TxData, signerAddress common.Address) (*types.Transaction, error)
+	SendTransaction(ctx context.Context, tx *types.Transaction) error
+	ExtractTransactionSender(tx *types.Transaction) (common.Address, error)
+	RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error)
 }
 
-type FuncSelector [4]byte
-
-type SelectorMap interface {
-	Selector(signature string) FuncSelector
-	Signature(selector FuncSelector) string
-}
-
-// Contracts contains bindings to smart contract system
 type Contracts interface {
-	LookupContracts(ctx context.Context, registryAddress common.Address) error
-
-	Ethdkg() bindings.IETHDKG
-	EthdkgAddress() common.Address
-	AToken() bindings.IAToken
-	ATokenAddress() common.Address
-	BToken() bindings.IBToken
-	BTokenAddress() common.Address
-	PublicStaking() bindings.IPublicStaking
-	PublicStakingAddress() common.Address
-	ValidatorStaking() bindings.IValidatorStaking
-	ValidatorStakingAddress() common.Address
-	ContractFactory() bindings.IAliceNetFactory
-	ContractFactoryAddress() common.Address
-	SnapshotsAddress() common.Address
-	Snapshots() bindings.ISnapshots
-	ValidatorPool() bindings.IValidatorPool
-	ValidatorPoolAddress() common.Address
-	Governance() bindings.IGovernance
-	GovernanceAddress() common.Address
-}
-
-// Task the interface requirements of a task
-type Task interface {
-	DoDone(*logrus.Entry)
-	DoRetry(context.Context, *logrus.Entry, Ethereum) error
-	DoWork(context.Context, *logrus.Entry, Ethereum) error
-	Initialize(context.Context, *logrus.Entry, Ethereum, interface{}) error
-	ShouldRetry(context.Context, *logrus.Entry, Ethereum) bool
-	GetExecutionData() interface{}
-}
-
-type AdminClient interface {
-	SetAdminHandler(AdminHandler)
-}
-
-// Schedule simple interface to a block based schedule
-type Schedule interface {
-	Schedule(start uint64, end uint64, thing Task) (uuid.UUID, error)
-	Purge()
-	PurgePrior(now uint64)
-	Find(now uint64) (uuid.UUID, error)
-	Retrieve(taskId uuid.UUID) (Task, error)
-	Length() int
-	Remove(taskId uuid.UUID) error
-	Status(logger *logrus.Entry)
+	GetAllAddresses() []common.Address
 }

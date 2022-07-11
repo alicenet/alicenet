@@ -5,29 +5,27 @@ BUILD() {
     make build
 }
 
-PRE_CHECK () {
+PRE_CHECK() {
     # Check if alicenet binary exists
     if [ ! -f "./alicenet" ]; then
         BUILD
     fi
     # Check that the generated directory exists
     if [[ "$1" != "init" ]] && [ ! -d "./scripts/generated" ]; then
-        echo -e "Need to initialize before continuing";
-        exit 1;
+        echo -e "Need to initialize before continuing"
+        exit 1
     fi
     # Check all required non builtins exist
     COMMANDS=("ethkey" "jq" "hexdump")
     for c in ${COMMANDS[@]}; do
-        if ! command -v $c &> /dev/null;
-        then
+        if ! command -v $c &>/dev/null; then
             echo -e "$c is required, but not installed"
             exit 1
         fi
     done
 }
 
-
-CLEAN_UP () {
+CLEAN_UP() {
     # Reset Folder
     rm -rf ./scripts/generated
     if [[ "$1" == "all" ]]; then
@@ -43,10 +41,10 @@ CLEAN_UP () {
     touch ./scripts/generated/keystores/passcodes.txt
     cp ./scripts/base-files/genesis.json ./scripts/generated/genesis.json
     cp ./scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f ./scripts/generated/keystores/keys
-    echo -e "0x546F99F244b7B58B855330AE0E2BC1b30b41302F=abc123" > ./scripts/generated/keystores/passcodes.txt
+    echo -e "0x546F99F244b7B58B855330AE0E2BC1b30b41302F=abc123" >./scripts/generated/keystores/passcodes.txt
 }
 
-CREATE_CONFIGS () {
+CREATE_CONFIGS() {
     # Vars
     LA=4242
     PA=4343
@@ -63,36 +61,36 @@ CREATE_CONFIGS () {
     fi
     CLEAN_UP
     # Loop through and create all essentail validator files
-    for (( l = 1; l <= $1; l++ )) ; do
+    for ((l = 1; l <= $1; l++)); do
         ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
-        sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
-        sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
-        sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-        sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
-        sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
-        sed -e 's/passcodes = .*/passcodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
-        sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
-        sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/stateDBs\/validator'"$l"'\/\"/' |
-        sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/monitorDBs\/validator'"$l"'\/\"/' |
-        sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' > ./scripts/generated/config/validator$l.toml
-        echo "$ADDRESS=abc123" >> ./scripts/generated/keystores/passcodes.txt
+            sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
+            sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
+            sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
+            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
+            sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
+            sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
+            sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
+            sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/stateDBs\/validator'"$l"'\/\"/' |
+            sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/monitorDBs\/validator'"$l"'\/\"/' |
+            sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' >./scripts/generated/config/validator$l.toml
+        echo "$ADDRESS=abc123" >>./scripts/generated/keystores/passcodes.txt
         mv ./keyfile.json ./scripts/generated/keystores/keys/$ADDRESS
-        jq '.alloc += {"'"$(echo $ADDRESS | cut -c3-)"'": {balance:"10000000000000000000000"}}' ./scripts/generated/genesis.json > ./scripts/generated/genesis.json.tmp && mv ./scripts/generated/genesis.json.tmp ./scripts/generated/genesis.json
-        ((LA=LA+1))
-        ((PA=PA+1))
-        ((DA=DA+1))
-        ((LSA=LSA+1))
+        jq '.alloc += {"'"$(echo $ADDRESS | cut -c3-)"'": {balance:"10000000000000000000000"}}' ./scripts/generated/genesis.json >./scripts/generated/genesis.json.tmp && mv ./scripts/generated/genesis.json.tmp ./scripts/generated/genesis.json
+        ((LA = LA + 1))
+        ((PA = PA + 1))
+        ((DA = DA + 1))
+        ((LSA = LSA + 1))
     done
 }
 
-LIST () {
+LIST() {
     # List each of the validators
     COUNTER=1
     for f in $(ls ./scripts/generated/config | xargs); do
         echo -e "$COUNTER : $f"
-        COUNTER=$((COUNTER+1))
+        COUNTER=$((COUNTER + 1))
     done
 }
 
@@ -140,68 +138,72 @@ STATUS() {
 
 PRE_CHECK $1
 case $1 in
-    init)
-        WD=$PWD
-        BRIDGE=./bridge
-        cd $BRIDGE &&
+init)
+    WD=$PWD
+    BRIDGE=./bridge
+    cd $BRIDGE &&
         npm ci &&
         cd $WD &&
         ./scripts/base-scripts/init-githooks.sh
-        CREATE_CONFIGS $2
+    CREATE_CONFIGS $2
     ;;
-    geth)
-        ./scripts/base-scripts/geth-local.sh
+geth)
+    ./scripts/base-scripts/geth-local.sh
     ;;
-    bootnode)
-        ./scripts/base-scripts/bootnode.sh
+bootnode)
+    ./scripts/base-scripts/bootnode.sh
     ;;
-    deploy)
-        ./scripts/base-scripts/deploy.sh
+deploy)
+    ./scripts/base-scripts/deploy.sh
     ;;
-    validator)
-        RUN_VALIDATOR $2
+validator)
+    RUN_VALIDATOR $2
     ;;
-    race)
-        RACE_VALIDATOR $2
+race)
+    RACE_VALIDATOR $2
     ;;
-    ethdkg)
-        ./scripts/base-scripts/ethdkg.sh
+ethdkg)
+    ./scripts/base-scripts/ethdkg.sh
     ;;
-    deposit)
-        ./scripts/base-scripts/deposit.sh
+deposit)
+    ./scripts/base-scripts/deposit.sh
     ;;
-    register)
-        ./scripts/base-scripts/register.sh
+register)
+    ./scripts/base-scripts/register.sh
     ;;
-    register_test)
-        ./scripts/base-scripts/register_test.sh "${@:2}"
+register_test)
+    ./scripts/base-scripts/register_test.sh "${@:2}"
     ;;
-    unregister)
-        ./scripts/base-scripts/unregister.sh
+schedule_maintenance)
+    ./scripts/base-scripts/schedule_maintenance.sh
     ;;
-    hardhat_node)
-        ./scripts/base-scripts/hardhat_node.sh &
-        trap 'pkill -9 -f hardhat' SIGTERM
-        wait
+unregister)
+    ./scripts/base-scripts/unregister.sh
     ;;
-    hardhat_local_node)
-        ./scripts/base-scripts/hardhat_local_node.sh
+hardhat_node)
+    ./scripts/base-scripts/hardhat_node.sh &
+    trap 'pkill -9 -f hardhat' SIGTERM
+    wait
     ;;
-    load_test)
-        ./scripts/base-scripts/hardhatloadTest.sh
+hardhat_local_node)
+    ./scripts/base-scripts/hardhat_local_node.sh
     ;;
-    list)
-        LIST
+load_test)
+    ./scripts/base-scripts/hardhatloadTest.sh
     ;;
-    status)
-        STATUS $2
+list)
+    LIST
     ;;
-    clean)
-        CLEAN_UP "all"
+status)
+    STATUS $2
     ;;
-    *)
-        echo -e "Unknown argument!"
-        echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | hardhat_node | list | status | clean"
-        exit 1;
+clean)
+    CLEAN_UP "all"
+    ;;
+*)
+    echo -e "Unknown argument!"
+    echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | hardhat_node | list | status | clean"
+    exit 1
+    ;;
 esac
 exit 0

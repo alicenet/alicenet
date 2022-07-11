@@ -1,4 +1,4 @@
-package monitor
+package events
 
 import (
 	"fmt"
@@ -6,10 +6,10 @@ import (
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1/dkg/dkgevents"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/monitor/monevents"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -69,26 +69,42 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHandler) {
+func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) {
 	ethDkgEvents := GetETHDKGEvents()
 
-	var eventProcessorMap map[string]objects.EventProcessor = make(map[string]objects.EventProcessor)
-	eventProcessorMap["RegistrationOpened"] = dkgevents.ProcessRegistrationOpened
-	eventProcessorMap["AddressRegistered"] = dkgevents.ProcessAddressRegistered
-	eventProcessorMap["RegistrationComplete"] = dkgevents.ProcessRegistrationComplete
-	eventProcessorMap["SharesDistributed"] = dkgevents.ProcessShareDistribution
-	eventProcessorMap["ShareDistributionComplete"] = dkgevents.ProcessShareDistributionComplete
-	eventProcessorMap["KeyShareSubmitted"] = dkgevents.ProcessKeyShareSubmitted
-	eventProcessorMap["KeyShareSubmissionComplete"] = dkgevents.ProcessKeyShareSubmissionComplete
-	eventProcessorMap["MPKSet"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return dkgevents.ProcessMPKSet(eth, logger, state, log, adminHandler)
+	eventProcessorMap := make(map[string]objects.EventProcessor)
+	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationOpened(eth, logger, log, state, monDB, taskRequestChan)
 	}
-	eventProcessorMap["ValidatorMemberAdded"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return monevents.ProcessValidatorMemberAdded(eth, logger, state, log, adminHandler)
+	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessAddressRegistered(eth, logger, log, monDB)
 	}
-	eventProcessorMap["GPKJSubmissionComplete"] = dkgevents.ProcessGPKJSubmissionComplete
-	eventProcessorMap["ValidatorSetCompleted"] = func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return monevents.ProcessValidatorSetCompleted(eth, logger, state, log, adminHandler)
+	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationComplete(eth, logger, log, monDB, taskRequestChan)
+	}
+	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistribution(eth, logger, log, monDB)
+	}
+	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistributionComplete(eth, logger, log, monDB, taskRequestChan)
+	}
+	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmitted(eth, logger, log, monDB)
+	}
+	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
+	}
+	eventProcessorMap["MPKSet"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessMPKSet(eth, logger, log, adminHandler, monDB, taskRequestChan)
+	}
+	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMemberAdded(eth, logger, state, log, monDB)
+	}
+	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessGPKJSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
+	}
+	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorSetCompleted(eth, logger, state, log, monDB, adminHandler)
 	}
 
 	// actually register the events
@@ -99,15 +115,15 @@ func RegisterETHDKGEvents(em *objects.EventMap, adminHandler interfaces.AdminHan
 			panic(fmt.Errorf("%v event not found in ABI", eventName))
 		}
 		// register it
-		if err := em.RegisterLocked(event.ID.String(), eventName, processor); err != nil {
+		if err := em.Register(event.ID.String(), eventName, processor); err != nil {
 			panic(fmt.Errorf("could not register event %v", eventName))
 		}
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfaces.AdminHandler, depositHandler interfaces.DepositHandler) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
-	RegisterETHDKGEvents(em, adminHandler)
+	RegisterETHDKGEvents(em, monDB, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()
@@ -116,9 +132,9 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event MadByte.DepositReceived")
 	}
 
-	if err := em.RegisterLocked(depositReceived.ID.String(), depositReceived.Name,
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessDepositReceived(eth, logger, state, log, cdb, depositHandler)
+	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
+		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDepositReceived(eth, logger, log, cdb, monDB, depositHandler)
 		}); err != nil {
 		return err
 	}
@@ -130,9 +146,9 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event Snapshots.SnapshotTaken")
 	}
 
-	if err := em.RegisterLocked(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessSnapshotTaken(eth, logger, state, log, adminHandler)
+	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
+		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTaken(eth, logger, log, adminHandler, taskRequestChan)
 		}); err != nil {
 		return err
 	}
@@ -144,22 +160,52 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event Governance.ValueUpdated")
 	}
 
-	if err := em.RegisterLocked(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
-		func(eth interfaces.Ethereum, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return monevents.ProcessValueUpdated(eth, logger, state, log, adminHandler)
+	if err := em.Register(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
+		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessValueUpdated(eth, logger, log, monDB)
 		}); err != nil {
 		return err
 	}
 
 	// ValidatorPool.ValidatorMinorSlashed
 	vpEvents := GetValidatorPoolEvents()
+
+	// possible validator joined
+	validatorJoinedEvent, ok := vpEvents["ValidatorJoined"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorJoined")
+	}
+
+	processValidatorJoinedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorJoined(eth, logger, state, log)
+	}
+	if err := em.Register(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator joined event:%v", err))
+	}
+
+	// possible validator left
+	validatorLeftEvent, ok := vpEvents["ValidatorLeft"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorLeft")
+	}
+
+	processValidatorLeftFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorLeft(eth, logger, state, log)
+	}
+	if err := em.Register(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator left event:%v", err))
+	}
+
 	validatorMinorSlashedEvent, ok := vpEvents["ValidatorMinorSlashed"]
 	if !ok {
 		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
 	}
 
-	if err := em.RegisterLocked(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, monevents.ProcessValidatorMinorSlashed); err != nil {
-		panic(err)
+	processValidatorMinorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMinorSlashed(eth, logger, state, log)
+	}
+	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
 	}
 
 	// ValidatorPool.ValidatorMajorSlashed
@@ -168,7 +214,10 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, adminHandler interfac
 		panic("could not find event ValidatorPool.ValidatorMajorSlashed")
 	}
 
-	if err := em.RegisterLocked(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, monevents.ProcessValidatorMajorSlashed); err != nil {
+	processValidatorMajorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMajorSlashed(eth, logger, state, log)
+	}
+	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)
 	}
 
