@@ -14,7 +14,6 @@ import (
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
 	dkgUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
-
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"

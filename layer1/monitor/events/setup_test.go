@@ -7,6 +7,7 @@ import (
 	"github.com/alicenet/alicenet/blockchain/interfaces"
 	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/layer1/interfaces"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"

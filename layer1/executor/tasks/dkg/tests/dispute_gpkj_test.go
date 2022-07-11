@@ -8,12 +8,11 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/blockchain/testutils"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
-
-	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
 )

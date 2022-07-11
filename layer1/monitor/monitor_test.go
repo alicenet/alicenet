@@ -4,6 +4,10 @@ package monitor
 
 import (
 	"encoding/json"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -11,9 +15,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"testing"
-	"time"
 
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 

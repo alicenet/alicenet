@@ -8,7 +8,6 @@ import (
 
 	"github.com/alicenet/alicenet/blockchain/testutils"
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-
 	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
 )

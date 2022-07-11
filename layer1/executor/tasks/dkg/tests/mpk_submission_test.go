@@ -12,7 +12,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
