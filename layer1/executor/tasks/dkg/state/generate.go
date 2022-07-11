@@ -9,6 +9,7 @@ import (
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/objects"
 	"github.com/ethereum/go-ethereum/common"
 )
 
