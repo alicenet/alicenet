@@ -1,6 +1,6 @@
 //go:build integration
 
-package dkgtasks_test
+package dkg_test
 
 import (
 	"context"
@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/dkg/dkgevents"
-	"github.com/alicenet/alicenet/layer1/dkg/dkgtasks"
-	"github.com/alicenet/alicenet/layer1/dkg/dtest"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/blockchain/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -21,14 +22,14 @@ import (
 // We test to ensure that everything behaves correctly.
 func TestDisputeShareDistributionTask_Group_1_GoodAllValid(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
 
 	// Confirm number of BadShares is zero
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		if len(state.BadShares) != 0 {
 			t.Fatalf("Idx %v has incorrect number of BadShares", idx)
 		}
@@ -36,30 +37,31 @@ func TestDisputeShareDistributionTask_Group_1_GoodAllValid(t *testing.T) {
 
 	// Do Share Dispute task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+		task := suite.DisputeShareDistTasks[idx]
+
+		err := task.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
-		err = task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, task.Success)
 	}
 
 	// Check number of BadShares and confirm correct values
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		if len(state.BadShares) != 0 {
 			t.Fatalf("Idx %v has incorrect number of BadShares", idx)
 		}
 	}
 
+	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	badParticipants, err := suite.Eth.Contracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(0), badParticipants.Uint64())
 }
@@ -69,9 +71,9 @@ func TestDisputeShareDistributionTask_Group_1_GoodAllValid(t *testing.T) {
 // causing a stake-slashing event.
 func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 	n := 5
-	suite := StartFromRegistrationOpenPhase(t, n, 0, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromRegistrationOpenPhase(t, n, 0, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
 
 	badShares := 1
@@ -79,11 +81,11 @@ func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 
 	// Do Share Distribution task, with one of the validators distributing bad shares
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 
-		task := suite.shareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+		task := suite.ShareDistTasks[idx]
+
+		err := task.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
 		if idx >= n-badShares {
@@ -93,16 +95,16 @@ func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 			}
 		}
 
-		err = task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, task.Success)
 
 		// event
 		for j := 0; j < n; j++ {
 			// simulate receiving event for all participants
-			err = suite.dkgStates[j].OnSharesDistributed(
+			err = suite.DKGStates[j].OnSharesDistributed(
 				logger,
 				state.Account.Address,
 				state.Participants[state.Account.Address].EncryptedShares,
@@ -112,38 +114,37 @@ func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 		}
 	}
 
-	currentHeight, err := suite.eth.GetCurrentHeight(ctx)
+	currentHeight, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
-	nextPhaseAt := currentHeight + suite.dkgStates[0].ConfirmationLength
-	advanceTo(t, suite.eth, nextPhaseAt)
+	nextPhaseAt := currentHeight + suite.DKGStates[0].ConfirmationLength
+	testutils.AdvanceTo(t, suite.Eth, nextPhaseAt)
 
 	// Do Share Dispute task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		logger := logging.GetLogger("test").WithField("Validator", accounts[idx].Address.String())
 
-		disputeShareDistributionTask, _, _, _, _, _, _, _, _ := dkgevents.UpdateStateOnShareDistributionComplete(state, logger, nextPhaseAt)
+		disputeShareDistributionTask, _, _ := events.UpdateStateOnShareDistributionComplete(state, nextPhaseAt)
 
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.eth, dkgData)
+		err := disputeShareDistributionTask.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
-		err = disputeShareDistributionTask.DoWork(ctx, logger, suite.eth)
+		err = disputeShareDistributionTask.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, disputeShareDistributionTask.Success)
 	}
 
-	badParticipants, err := suite.eth.Contracts().Ethdkg().GetBadParticipants(suite.eth.GetCallOpts(ctx, accounts[0]))
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := suite.Eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(badShares), badParticipants.Uint64())
-
-	callOpts := suite.eth.GetCallOpts(ctx, accounts[0])
 
 	// assert bad participants are not validators anymore, i.e, they were fined and evicted
 	for i := 0; i < badShares; i++ {
 		idx := n - i - 1
-		isValidator, err := suite.eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.dkgStates[idx].Account.Address)
+		isValidator, err := suite.Eth.Contracts().ValidatorPool().IsValidator(callOpts, suite.DKGStates[idx].Account.Address)
 		assert.Nil(t, err)
 
 		assert.False(t, isValidator)
@@ -155,10 +156,10 @@ func TestDisputeShareDistributionTask_Group_1_GoodMaliciousShare(t *testing.T) {
 // for the Ethereum interface.
 func TestDisputeShareDistributionTask_Group_1_Bad1(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -167,12 +168,11 @@ func TestDisputeShareDistributionTask_Group_1_Bad1(t *testing.T) {
 	defer cancel()
 
 	// Create a task to share distribution and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	task := dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
+	state := dkgState.NewDkgState(acct)
+	task := dkg.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -183,10 +183,10 @@ func TestDisputeShareDistributionTask_Group_1_Bad1(t *testing.T) {
 // ShareDistribution phase.
 func TestDisputeShareDistributionTask_Group_2_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	accts := eth.GetKnownAccounts()
@@ -197,14 +197,14 @@ func TestDisputeShareDistributionTask_Group_2_Bad2(t *testing.T) {
 
 	// Do bad Share Dispute task
 	// Mess up participant information
-	state := objects.NewDkgState(acct)
+	state := dkgState.NewDkgState(acct)
 	log := logging.GetLogger("test").WithField("Validator", acct.Address.String())
-	task := dkgtasks.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
+	task := dkg.NewDisputeShareDistributionTask(state, state.PhaseStart, state.PhaseStart+state.PhaseLength)
 	for k := 0; k < len(state.Participants); k++ {
-		state.Participants[accts[k].Address] = &objects.Participant{}
+		state.Participants[accts[k].Address] = &dkgState.Participant{}
 	}
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+
+	err := task.Initialize(ctx, log, eth)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -212,14 +212,14 @@ func TestDisputeShareDistributionTask_Group_2_Bad2(t *testing.T) {
 
 func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsFalse(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Confirm number of BadShares is zero
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		if len(state.BadShares) != 0 {
 			t.Fatalf("Idx %v has incorrect number of BadShares", idx)
 		}
@@ -227,22 +227,20 @@ func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsFalse(t *testing.T)
 
 	// Do Share Dispute task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		task := suite.DisputeShareDistTasks[idx]
 
-		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+		err := task.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
-		err = task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, task.Success)
 	}
 
 	// Check number of BadShares and confirm correct values
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		if len(state.BadShares) != 0 {
 			t.Fatalf("Idx %v has incorrect number of BadShares", idx)
 		}
@@ -250,23 +248,23 @@ func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsFalse(t *testing.T)
 
 	// Do Should Retry
 	for idx := 0; idx < n; idx++ {
-		task := suite.disputeShareDistTasks[idx]
-		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
+		task := suite.DisputeShareDistTasks[idx]
+		shouldRetry := task.ShouldRetry(ctx, logger, suite.Eth)
 		assert.False(t, shouldRetry)
 	}
 }
 
 func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsTrue(t *testing.T) {
 	n := 5
-	suite := StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	accounts := suite.eth.GetKnownAccounts()
+	accounts := suite.Eth.GetKnownAccounts()
 
 	// Confirm number of BadShares is zero
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		state := suite.DKGStates[idx]
 		if len(state.BadShares) != 0 {
 			t.Fatalf("Idx %v has incorrect number of BadShares", idx)
 		}
@@ -274,29 +272,29 @@ func TestDisputeShareDistributionTask_Group_2_DoRetry_returnsTrue(t *testing.T) 
 
 	// Do Share Dispute task
 	for idx := 0; idx < n; idx++ {
-		state := suite.dkgStates[idx]
+		task := suite.DisputeShareDistTasks[idx]
 
-		task := suite.disputeShareDistTasks[idx]
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := task.Initialize(ctx, logger, suite.eth, dkgData)
+		err := task.Initialize(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
-		err = task.DoWork(ctx, logger, suite.eth)
+		err = task.DoWork(ctx, logger, suite.Eth)
 		assert.Nil(t, err)
 
-		suite.eth.Commit()
+		suite.Eth.Commit()
 		assert.True(t, task.Success)
 	}
 
-	suite.eth.Commit()
-	suite.eth.Commit()
-	suite.eth.Commit()
+	suite.Eth.Commit()
+	suite.Eth.Commit()
+	suite.Eth.Commit()
 
 	// Do Should Retry
 	for idx := 0; idx < n; idx++ {
-		task := suite.disputeShareDistTasks[idx]
-		task.State.BadShares = make(map[common.Address]*objects.Participant)
-		task.State.BadShares[accounts[idx].Address] = &objects.Participant{}
-		shouldRetry := task.ShouldRetry(ctx, logger, suite.eth)
+		task := suite.DisputeShareDistTasks[idx]
+		taskState, ok := task.State.(*dkgState.DkgState)
+		assert.True(t, ok)
+		taskState.BadShares = make(map[common.Address]*dkgState.Participant)
+		taskState.BadShares[accounts[idx].Address] = &dkgState.Participant{}
+		shouldRetry := task.ShouldRetry(ctx, logger, suite.Eth)
 		assert.True(t, shouldRetry)
 	}
 }

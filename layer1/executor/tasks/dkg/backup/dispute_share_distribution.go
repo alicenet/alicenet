@@ -1,222 +1,163 @@
-package dkgtasks
+package dkg
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"fmt"
-	"math/big"
 
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/dkg/math"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
 // DisputeShareDistributionTask stores the data required to dispute shares
 type DisputeShareDistributionTask struct {
-	*ExecutionData
+	*tasks.BaseTask
+	// additional fields that are not part of the default task
+	Address common.Address
 }
 
-// asserting that DisputeShareDistributionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &DisputeShareDistributionTask{}
+// asserting that DisputeShareDistributionTask struct implements interface tasks.Task
+var _ tasks.Task = &DisputeShareDistributionTask{}
 
 // NewDisputeShareDistributionTask creates a new task
-func NewDisputeShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *DisputeShareDistributionTask {
+func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Address) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		BaseTask: tasks.NewBaseTask(start, end, true, nil),
+		Address:  address,
 	}
 }
 
-// Initialize begins the setup phase for DisputeShareDistributionTask.
-// It determines if the shares previously distributed are valid.
-// If any are invalid, disputes will be issued.
-func (t *DisputeShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+// Prepare prepares for work to be done in the DisputeShareDistributionTask. It
+// determines if the shares previously distributed are valid. If any are
+// invalid, disputes will be issued.
+func (t *DisputeShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()").WithField("address", t.Address)
+	logger.Debug("preparing task")
+	return nil
+}
 
-	logger.Info("DisputeShareDistributionTask Initialize()")
+// Execute executes the task business logic
+func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
+	logger.Debug("initiate execution")
 
-	dkgData, ok := state.(objects.ETHDKGTaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != t.State {
-		t.State = dkgData.State
+	if dkgState.Phase != state.DisputeShareDistribution && dkgState.Phase != state.ShareDistribution {
+		return nil, tasks.NewTaskErr("it's not DisputeShareDistribution or ShareDistribution phase", false)
 	}
 
-	if t.State.Phase != objects.DisputeShareDistribution && t.State.Phase != objects.ShareDistribution {
-		return fmt.Errorf("%w because it's not DisputeShareDistribution phase", objects.ErrCanNotContinue)
+	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
 
-	var participantsList = t.State.GetSortedParticipants()
+	if !isValidator {
+		logger.Debugf("%v is not a validator anymore", t.Address.Hex())
+		return nil, nil
+	}
+
+	var participantsList = dkgState.GetSortedParticipants()
+	var participantState *state.Participant
 	// Loop through all participants and check to see if shares are valid
-	for idx := 0; idx < t.State.NumberOfValidators; idx++ {
+	for idx := 0; idx < dkgState.NumberOfValidators; idx++ {
 		participant := participantsList[idx]
-
-		var emptyHash [32]byte
-		if participant.DistributedSharesHash == emptyHash {
-			continue
-		}
-
-		logger.Infof("participant idx: %v:%v:%v\n", idx, participant.Index, t.State.Index)
-		valid, present, err := math.VerifyDistributedShares(t.State, participant)
-		if err != nil {
-			// A major error occured; we cannot continue
-			logger.Errorf("VerifyDistributedShares broke; Participant Address: %v", participant.Address.Hex())
-			return fmt.Errorf("VerifyDistributedShares broke: %v; %v", err.Error(), objects.ErrCanNotContinue)
-		}
-		if !present {
-			logger.Warningf("No share from %v", participant.Address.Hex())
-			continue
-		}
-		if !valid {
-			logger.Warningf("Invalid share from %v", participant.Address.Hex())
-			t.State.BadShares[participant.Address] = participant
+		if bytes.Equal(participant.Address.Bytes(), t.Address.Bytes()) {
+			participantState = participant
 		}
 	}
 
-	return nil
-}
+	if participantState == nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("couldn't find %v in the dkgState ParticipantList", t.Address.Hex()), false)
+	}
 
-// DoWork is the first attempt at disputing distributed shares
-func (t *DisputeShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-// DoRetry is subsequent attempts at disputing distributed shares
-func (t *DisputeShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *DisputeShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("DisputeShareDistributionTask doTask()")
-
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	valid, present, err := state.VerifyDistributedShares(dkgState, participantState)
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		// A major error occurred; we cannot continue
+		return nil, tasks.NewTaskErr(
+			fmt.Sprintf("VerifyDistributedShares broke: %v Participant Address: %v", err.Error(), participantState.Address.Hex()), false,
+		)
+	}
+	// another task will accuse the guy of not participating
+	if !present {
+		logger.Debugf("No share from %v", participantState.Address.Hex())
+		return nil, nil
+	}
+	if valid {
+		logger.Infof("honest participant %v", participantState.Address.Hex())
+		return nil, nil
 	}
 
-	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-	// we increase the Gas to have priority for the next blocks
-	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxOpts.Nonce
-		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxOpts.GasTipCap
-	}
+	dishonestAddress := t.Address
+	encryptedShares := dkgState.Participants[t.Address].EncryptedShares
+	commitments := dkgState.Participants[t.Address].Commitments
 
-	for _, participant := range t.State.BadShares {
-
-		isValidator, err := eth.Contracts().ValidatorPool().IsValidator(callOpts, participant.Address)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "getting isValidator failed: %v", err)
-		}
-
-		if !isValidator {
-			continue
-		}
-
-		dishonestAddress := participant.Address
-		encryptedShares := t.State.Participants[participant.Address].EncryptedShares
-		commitments := t.State.Participants[participant.Address].Commitments
-
-		// Construct shared key
-		disputePublicKeyG1, err := bn256.BigIntArrayToG1(participant.PublicKey)
-		if err != nil {
-			return err
-		}
-		sharedKeyG1 := cloudflare.GenerateSharedSecretG1(t.State.TransportPrivateKey, disputePublicKeyG1)
-		sharedKey, err := bn256.G1ToBigIntArray(sharedKeyG1)
-		if err != nil {
-			return err
-		}
-
-		// Construct shared key proof
-		g1Base := new(cloudflare.G1).ScalarBaseMult(common.Big1)
-		transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(t.State.TransportPrivateKey)
-		sharedKeyProof, err := cloudflare.GenerateDLEQProofG1(
-			g1Base, transportPublicKeyG1, disputePublicKeyG1, sharedKeyG1, t.State.TransportPrivateKey, rand.Reader)
-		if err != nil {
-			return err
-		}
-
-		// Accuse participant
-		txn, err := eth.Contracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
-		if err != nil {
-			return dkg.LogReturnErrorf(logger, "submit share dispute failed: %v", err)
-		}
-		t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-		t.TxOpts.GasFeeCap = txn.GasFeeCap()
-		t.TxOpts.GasTipCap = txn.GasTipCap()
-		t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
-
-		logger.WithFields(logrus.Fields{
-			"GasFeeCap": t.TxOpts.GasFeeCap,
-			"GasTipCap": t.TxOpts.GasTipCap,
-			"Nonce":     t.TxOpts.Nonce,
-		}).Info("bad share dispute fees")
-
-		// Queue transaction
-		eth.Queue().QueueTransaction(ctx, txn)
-	}
-
-	t.Success = true
-	return nil
-}
-
-// ShouldRetry checks if it makes sense to try again
-// if the DKG process is in the right phase and blocks
-// range and there still someone to accuse, the retry
-// is executed
-func (t *DisputeShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("DisputeShareDistributionTask ShouldRetry()")
-
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
-	if !generalRetry {
-		return false
-	}
-
-	if t.State.Phase != objects.DisputeShareDistribution {
-		return false
-	}
-
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	// Construct shared key
+	disputePublicKeyG1, err := bn256.BigIntArrayToG1(participantState.PublicKey)
 	if err != nil {
-		logger.Error("could not get BadParticipants")
+		return nil, tasks.NewTaskErr(fmt.Sprintf("failed generating disputePublicKeyG1: %v", err), false)
+	}
+	sharedKeyG1 := cloudflare.GenerateSharedSecretG1(dkgState.TransportPrivateKey, disputePublicKeyG1)
+	sharedKey, err := bn256.G1ToBigIntArray(sharedKeyG1)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("failed generating sharedKeyG1: %v", err), false)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"state.BadShares":     len(t.State.BadShares),
-		"eth.badParticipants": badParticipants,
-	}).Debug("DisputeShareDistributionTask ShouldRetry2()")
+	// Construct shared key proof
+	g1Base := new(cloudflare.G1).ScalarBaseMult(common.Big1)
+	transportPublicKeyG1 := new(cloudflare.G1).ScalarBaseMult(dkgState.TransportPrivateKey)
+	sharedKeyProof, err := cloudflare.GenerateDLEQProofG1(
+		g1Base, transportPublicKeyG1, disputePublicKeyG1, sharedKeyG1, dkgState.TransportPrivateKey, rand.Reader)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("failed generating sharedKeyProof: %v", err), false)
+	}
 
-	// if there is someone that wasn't accused we need to retry
-	return len(t.State.BadShares) != int(badParticipants.Int64())
+	logger.Warnf("accusing participant: %v of distributing bad shares", dishonestAddress)
+	client := t.GetClient()
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
+	}
+	// Accuse participant
+	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("submit share dispute failed: %v", err), true)
+	}
+
+	return txn, nil
 }
 
-// DoDone creates a log entry saying task is complete
-func (t *DisputeShareDistributionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
+// ShouldExecute checks if it makes sense to execute the task
+func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
+	logger.Debug("should execute task")
 
-	logger.WithField("Success", t.Success).Info("DisputeShareDistributionTask done")
-}
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
+	}
 
-func (t *DisputeShareDistributionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+	if dkgState.Phase != state.DisputeShareDistribution {
+		logger.Debugf("phase %v different from DisputeShareDistribution", dkgState.Phase)
+		return false, nil
+	}
+
+	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
+	}
+	logger.WithFields(logrus.Fields{"eth.badParticipant": t.Address.Hex()}).Debug("participant was not accused yet")
+
+	return isValidator, nil
 }

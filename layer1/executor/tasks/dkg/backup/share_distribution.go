@@ -1,192 +1,145 @@
-package dkgtasks
+package dkg
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 
-	"github.com/alicenet/alicenet/layer1/dkg"
-	"github.com/alicenet/alicenet/layer1/dkg/math"
-	"github.com/alicenet/alicenet/layer1/interfaces"
-	"github.com/alicenet/alicenet/layer1/objects"
-	"github.com/sirupsen/logrus"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// ShareDistributionTask stores the data required safely distribute shares
+// ShareDistributionTask stores the state required safely distribute shares
 type ShareDistributionTask struct {
-	*ExecutionData
+	*tasks.BaseTask
 }
 
-// asserting that ShareDistributionTask struct implements interface interfaces.Task
-var _ interfaces.Task = &ShareDistributionTask{}
+// asserting that ShareDistributionTask struct implements interface tasks.Task
+var _ tasks.Task = &ShareDistributionTask{}
 
 // NewShareDistributionTask creates a new task
-func NewShareDistributionTask(state *objects.DkgState, start uint64, end uint64) *ShareDistributionTask {
+func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
-		ExecutionData: NewExecutionData(state, start, end),
+		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
 }
 
-// Initialize begins the setup phase for ShareDistribution.
+// Prepare prepares for work to be done in the ShareDistributionTask.
 // We construct our commitments and encrypted shares before
 // submitting them to the associated smart contract.
-func (t *ShareDistributionTask) Initialize(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum, state interface{}) error {
+func (t *ShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	logger := t.GetLogger().WithField("method", "Prepare()")
+	logger.Debug("preparing task")
 
-	logger.Infof("ShareDistributionTask Initialize()")
-
-	dkgData, ok := state.(objects.ETHDKGTaskData)
-	if !ok {
-		return objects.ErrCanNotContinue
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
 
-	unlock := dkgData.LockState()
-	defer unlock()
-	if dkgData.State != t.State {
-		t.State = dkgData.State
+	if dkgState.Phase != state.ShareDistribution {
+		return tasks.NewTaskErr("not in ShareDistribution phase", false)
 	}
 
-	if t.State.Phase != objects.ShareDistribution {
-		return fmt.Errorf("%w because it's not in ShareDistribution phase", objects.ErrCanNotContinue)
-	}
-
-	if t.State.SecretValue == nil {
-
-		participants := t.State.GetSortedParticipants()
+	if dkgState.SecretValue == nil {
+		participants := dkgState.GetSortedParticipants()
 		numParticipants := len(participants)
-		threshold := math.ThresholdForUserCount(numParticipants)
+		threshold := state.ThresholdForUserCount(numParticipants)
 
 		// Generate shares
-		encryptedShares, privateCoefficients, commitments, err := math.GenerateShares(
-			t.State.TransportPrivateKey, participants)
+		encryptedShares, privateCoefficients, commitments, err := state.GenerateShares(
+			dkgState.TransportPrivateKey, participants)
 		if err != nil {
-			logger.Errorf("Failed to generate shares: %v %#v", err, participants)
-			return err
+			return tasks.NewTaskErr(fmt.Sprintf("Failed to generate shares: %v %#v", err, participants), true)
 		}
 
 		// Store calculated values
-		t.State.Participants[t.State.Account.Address].Commitments = commitments
-		t.State.Participants[t.State.Account.Address].EncryptedShares = encryptedShares
+		dkgState.Participants[dkgState.Account.Address].Commitments = commitments
+		dkgState.Participants[dkgState.Account.Address].EncryptedShares = encryptedShares
 
-		t.State.PrivateCoefficients = privateCoefficients
-		t.State.SecretValue = privateCoefficients[0]
-		t.State.ValidatorThreshold = threshold
+		dkgState.PrivateCoefficients = privateCoefficients
+		dkgState.SecretValue = privateCoefficients[0]
+		dkgState.ValidatorThreshold = threshold
 
-		unlock()
-		dkgData.PersistStateCB()
+		err = state.SaveDkgState(t.GetDB(), dkgState)
+		if err != nil {
+			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
+		}
 	} else {
-		logger.Infof("ShareDistributionTask Initialize(): encrypted shares already defined")
+		logger.Debug("encrypted shares already defined")
 	}
 
 	return nil
 }
 
-// DoWork is the first attempt at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoWork(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
+// Execute executes the task business logic
+func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "Execute()")
+	logger.Debug("initiate execution")
 
-// DoRetry is subsequent attempts at distributing shares via ethdkg
-func (t *ShareDistributionTask) DoRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	return t.doTask(ctx, logger, eth)
-}
-
-func (t *ShareDistributionTask) doTask(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) error {
-	// Setup
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.Info("ShareDistributionTask doTask()")
-
-	c := eth.Contracts()
-	me := t.State.Account.Address
-	logger.Debugf("me:%v", me.Hex())
-
-	// Setup
-	txnOpts, err := eth.GetTransactionOpts(ctx, t.State.Account)
+	dkgState, err := state.GetDkgState(t.GetDB())
 	if err != nil {
-		return dkg.LogReturnErrorf(logger, "getting txn opts failed: %v", err)
+		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	// If the TxOpts exists, meaning the Tx replacement timeout was reached,
-	// we increase the Gas to have priority for the next blocks
-	if t.TxOpts != nil && t.TxOpts.Nonce != nil {
-		logger.Info("txnOpts Replaced")
-		txnOpts.Nonce = t.TxOpts.Nonce
-		txnOpts.GasFeeCap = t.TxOpts.GasFeeCap
-		txnOpts.GasTipCap = t.TxOpts.GasTipCap
+	client := t.GetClient()
+	contracts := ethereum.GetContracts()
+	accountAddr := dkgState.Account.Address
+
+	// Setup
+	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("getting txn opts failed: %v", err), true)
 	}
 
+	logger.Info("distributing shares")
 	// Distribute shares
-	txn, err := c.Ethdkg().DistributeShares(txnOpts, t.State.Participants[me].EncryptedShares, t.State.Participants[me].Commitments)
+	txn, err := contracts.Ethdkg().DistributeShares(
+		txnOpts,
+		dkgState.Participants[accountAddr].EncryptedShares,
+		dkgState.Participants[accountAddr].Commitments,
+	)
 	if err != nil {
-		logger.Errorf("distributing shares failed: %v", err)
-		return err
+		return nil, tasks.NewTaskErr(fmt.Sprintf("distributing shares failed: %v", err), true)
 	}
-	t.TxOpts.TxHashes = append(t.TxOpts.TxHashes, txn.Hash())
-	t.TxOpts.GasFeeCap = txn.GasFeeCap()
-	t.TxOpts.GasTipCap = txn.GasTipCap()
-	t.TxOpts.Nonce = big.NewInt(int64(txn.Nonce()))
 
-	logger.WithFields(logrus.Fields{
-		"GasFeeCap": t.TxOpts.GasFeeCap,
-		"GasTipCap": t.TxOpts.GasTipCap,
-		"Nonce":     t.TxOpts.Nonce,
-	}).Info("share distribution fees")
-
-	// Queue transaction
-	eth.Queue().QueueTransaction(ctx, txn)
-	t.Success = true
-
-	return nil
+	return txn, nil
 }
 
 // ShouldRetry checks if it makes sense to try again
-// if the DKG process is in the right phase and blocks
-// range and the distributed share hash is empty, we retry
-func (t *ShareDistributionTask) ShouldRetry(ctx context.Context, logger *logrus.Entry, eth interfaces.Ethereum) bool {
-	t.State.Lock()
-	defer t.State.Unlock()
+func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	logger := t.GetLogger().WithField("method", "ShouldExecute()")
+	logger.Debug("should execute task")
 
-	logger.Info("ShareDistributionTask ShouldRetry()")
-
-	// This wraps the retry logic for the general case
-	generalRetry := GeneralTaskShouldRetry(ctx, logger, eth, t.Start, t.End)
-	if !generalRetry {
-		return false
+	dkgState, err := state.GetDkgState(t.GetDB())
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
 
-	if t.State.Phase != objects.ShareDistribution {
-		return false
+	eth := t.GetClient()
+	if dkgState.Phase != state.ShareDistribution {
+		logger.Debugf("phase %v different from ShareDistribution", dkgState.Phase)
+		return false, nil
 	}
 
 	// If it's generally good to retry, let's try to be more specific
-	callOpts := eth.GetCallOpts(ctx, t.State.Account)
-	participantState, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, t.State.Account.Address)
+	callOpts, err := eth.GetCallOpts(ctx, dkgState.Account)
 	if err != nil {
-		logger.Errorf("ShareDistributionTask.ShoudRetry() unable to GetParticipantInternalState(): %v", err)
-		return true
+		return false, tasks.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
+	}
+	participantState, err := ethereum.GetContracts().Ethdkg().GetParticipantInternalState(callOpts, dkgState.Account.Address)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
 
-	logger.Infof("DistributionHash: %x", participantState.DistributedSharesHash)
 	var emptySharesHash [32]byte
-	if participantState.DistributedSharesHash == emptySharesHash {
-		logger.Warn("Did not distribute shares after all. needs retry")
-		return true
+	if !bytes.Equal(participantState.DistributedSharesHash[:], emptySharesHash[:]) {
+		logger.Debug("shares were distributed")
+		return false, nil
 	}
 
-	logger.Info("Did distribute shares after all. needs no retry")
-
-	return false
-}
-
-// DoDone creates a log entry saying task is complete
-func (t *ShareDistributionTask) DoDone(logger *logrus.Entry) {
-	t.State.Lock()
-	defer t.State.Unlock()
-
-	logger.WithField("Success", t.Success).Infof("ShareDistributionTask done")
-}
-
-func (t *ShareDistributionTask) GetExecutionData() interface{} {
-	return t.ExecutionData
+	logger.Debugf("could not confirm if shares were distributed")
+	return true, nil
 }

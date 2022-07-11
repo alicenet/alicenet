@@ -1,6 +1,6 @@
 //go:build integration
 
-package dkgtasks_test
+package dkg_test
 
 import (
 	"context"
@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/dkg/dkgtasks"
-	"github.com/alicenet/alicenet/layer1/dkg/dtest"
-	"github.com/alicenet/alicenet/layer1/objects"
+	"github.com/alicenet/alicenet/blockchain/testutils"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
+	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -19,32 +21,30 @@ import (
 //We test to ensure that everything behaves correctly.
 func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
-	accounts := suite.eth.GetKnownAccounts()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
+	dkgStates := suite.DKGStates
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, tasksVec[idx].Success)
 	}
 
 	// Check gpkjs and signatures are present and valid
 	for idx, acct := range accounts {
-		callOpts := eth.GetCallOpts(context.Background(), acct)
+		callOpts, err := eth.GetCallOpts(context.Background(), acct)
+		assert.Nil(t, err)
 		p, err := eth.Contracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
@@ -61,10 +61,10 @@ func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 // this should raise an error.
 func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -73,13 +73,12 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	defer cancel()
 
 	// Create a task to share distribution and make sure it succeeds
-	state := objects.NewDkgState(acct)
-	adminHandler := new(adminHandlerMock)
-	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
+	state := dkgState.NewDkgState(acct)
+	adminHandler := new(interfaces.MockAdminHandler)
+	task := dkg.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
 	log := logger.WithField("TaskID", "foo")
 
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	err := task.Initialize(ctx, log, eth)
 	assert.NotNil(t, err)
 }
 
@@ -88,10 +87,10 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 // the key share submission phase.
 func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	n := 4
-	ecdsaPrivateKeys, _ := dtest.InitializePrivateKeysAndAccounts(n)
+	ecdsaPrivateKeys, _ := testutils.InitializePrivateKeysAndAccounts(n)
 	logger := logging.GetLogger("ethereum")
 	logger.SetLevel(logrus.DebugLevel)
-	eth := dtest.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
+	eth := testutils.ConnectSimulatorEndpoint(t, ecdsaPrivateKeys, 333*time.Millisecond)
 	defer eth.Close()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -100,12 +99,12 @@ func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	defer cancel()
 
 	// Do bad Share Dispute task
-	state := objects.NewDkgState(acct)
+	state := dkgState.NewDkgState(acct)
 	log := logger.WithField("TaskID", "foo")
-	adminHandler := new(adminHandlerMock)
-	task := dkgtasks.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
-	dkgData := objects.NewETHDKGTaskData(state)
-	err := task.Initialize(ctx, log, eth, dkgData)
+	adminHandler := new(interfaces.MockAdminHandler)
+	task := dkg.NewGPKjSubmissionTask(state, 1, 100, adminHandler)
+
+	err := task.Initialize(ctx, log, eth)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -129,20 +128,16 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 	// and public key should fail verification.
 	// This should raise an error, as this is not allowed by the protocol.
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Initialize GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
@@ -150,61 +145,56 @@ func TestGPKjSubmission_Group_2_Bad3(t *testing.T) {
 
 	// Do GPKj Submission task; this will fail because invalid submission;
 	// it does not pass the PairingCheck.
-	task := tasks[0]
+	task := tasksVec[0]
 
-	// Mess up GPKj; this will cause DoWork to fail
-	task.State.Participants[task.State.Account.Address].GPKj = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	taskState, ok := task.State.(*dkgState.DkgState)
+	assert.True(t, ok)
+
+	// Mess up GPKj; this will cause Execute to fail
+	taskState.Participants[taskState.Account.Address].GPKj = [4]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
 	err := task.DoWork(ctx, logger, eth)
 	assert.NotNil(t, err)
 }
 
 func TestGPKjSubmission_Group_2_ShouldRetry_returnsFalse(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
-		err = tasks[idx].DoWork(ctx, logger, eth)
+		err = tasksVec[idx].DoWork(ctx, logger, eth)
 		assert.Nil(t, err)
 
 		eth.Commit()
-		assert.True(t, tasks[idx].Success)
+		assert.True(t, tasksVec[idx].Success)
 
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
+		shouldRetry := tasksVec[idx].ShouldRetry(ctx, logger, eth)
 		assert.False(t, shouldRetry)
 	}
 }
 
 func TestGPKjSubmission_Group_2_ShouldRetry_returnsTrue(t *testing.T) {
 	n := 4
-	suite := StartFromMPKSubmissionPhase(t, n, 100)
-	defer suite.eth.Close()
+	suite := dkgTestUtils.StartFromMPKSubmissionPhase(t, n, 100)
+	defer suite.Eth.Close()
 	ctx := context.Background()
-	eth := suite.eth
-	dkgStates := suite.dkgStates
+	eth := suite.Eth
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do GPKj Submission task
-	tasks := suite.gpkjSubmissionTasks
+	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
-		state := dkgStates[idx]
-
-		dkgData := objects.NewETHDKGTaskData(state)
-		err := tasks[idx].Initialize(ctx, logger, eth, dkgData)
+		err := tasksVec[idx].Initialize(ctx, logger, eth)
 		assert.Nil(t, err)
 
-		shouldRetry := tasks[idx].ShouldRetry(ctx, logger, eth)
+		shouldRetry := tasksVec[idx].ShouldRetry(ctx, logger, eth)
 		assert.True(t, shouldRetry)
 	}
 }
