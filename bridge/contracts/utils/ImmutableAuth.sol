@@ -191,7 +191,7 @@ abstract contract ImmutableBridgePoolDepositNotifier is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
+abstract contract ImmutableBridgeRouter is ImmutableFactory {
     address private immutable _bridgePoolFactory;
 
     modifier onlyBridgePoolFactory() {
@@ -209,11 +209,11 @@ abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
         );
     }
 
-    function _bridgePoolFactoryAddress() internal view returns (address) {
+    function _bridgeRouterAddress() internal view returns (address) {
         return _bridgePoolFactory;
     }
 
-    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
+    function _saltForBridgeRouter() internal pure returns (bytes32) {
         return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
     }
 }
