@@ -49,7 +49,7 @@ func NewKillTaskRequest(task Task) TaskRequest {
 }
 
 type BaseTask struct {
-	sync.Once
+	sync.RWMutex
 	Name                string                        `json:"name"`
 	AllowMultiExecution bool                          `json:"allowMultiExecution"`
 	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
@@ -81,74 +81,104 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 
 // Initialize default implementation for the ITask interface
 func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
-	bt.Once.Do(func() {
-		bt.Name = name
-		bt.Id = id
-		bt.ctx = ctx
-		bt.cancelFunc = cancelFunc
-		bt.database = database
-		bt.logger = logger
-		bt.client = eth
-		bt.taskResponseChan = taskResponseChan
-		bt.isInitialized = true
-	})
+	bt.Lock()
+	defer bt.Unlock()
 	if bt.isInitialized {
 		return errors.New("trying to initialize task twice!")
 	}
+
+	bt.Name = name
+	bt.Id = id
+	bt.ctx = ctx
+	bt.cancelFunc = cancelFunc
+	bt.database = database
+	bt.logger = logger
+	bt.client = eth
+	bt.taskResponseChan = taskResponseChan
+	bt.isInitialized = true
+
 	return nil
 }
 
 // GetId default implementation for the ITask interface
 func (bt *BaseTask) GetId() string {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.Id
 }
 
 // GetStart default implementation for the ITask interface
 func (bt *BaseTask) GetStart() uint64 {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.Start
 }
 
 // GetEnd default implementation for the ITask interface
 func (bt *BaseTask) GetEnd() uint64 {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.End
 }
 
 // GetName default implementation for the ITask interface
 func (bt *BaseTask) GetName() string {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.Name
 }
 
 // GetAllowMultiExecution default implementation for the ITask interface
 func (bt *BaseTask) GetAllowMultiExecution() bool {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.AllowMultiExecution
 }
 
 func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.SubscribeOptions
 }
 
 // GetCtx default implementation for the ITask interface
 func (bt *BaseTask) GetCtx() context.Context {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.ctx
 }
 
 // GetCtx default implementation for the ITask interface
 func (bt *BaseTask) WasKilled() bool {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.wasKilled
 }
 
 // GetEth default implementation for the ITask interface
 func (bt *BaseTask) GetClient() layer1.Client {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.client
 }
 
 // GetLogger default implementation for the ITask interface
 func (bt *BaseTask) GetLogger() *logrus.Entry {
+	bt.RLock()
+	defer bt.RUnlock()
 	return bt.logger
+}
+
+func (bt *BaseTask) GetDB() *db.Database {
+	bt.RLock()
+	defer bt.RUnlock()
+	return bt.database
 }
 
 // Close default implementation for the ITask interface
 func (bt *BaseTask) Close() {
+	bt.Lock()
+	defer bt.Unlock()
 	if bt.cancelFunc != nil {
 		bt.cancelFunc()
 	}
@@ -169,8 +199,4 @@ func (bt *BaseTask) Finish(err error) {
 	if bt.taskResponseChan != nil {
 		bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
 	}
-}
-
-func (bt *BaseTask) GetDB() *db.Database {
-	return bt.database
 }
