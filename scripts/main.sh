@@ -44,6 +44,19 @@ CLEAN_UP() {
     echo -e "0x546F99F244b7B58B855330AE0E2BC1b30b41302F=abc123" >./scripts/generated/keystores/passcodes.txt
 }
 
+CLEAN_UP_NODES() {
+    # Reset Folder
+    rm -rf ./scripts/generated/extra-nodes
+    # Init
+    mkdir ./scripts/generated/extra-nodes
+    mkdir ./scripts/generated/extra-nodes/config
+    mkdir ./scripts/generated/extra-nodes/stateDBs
+    mkdir ./scripts/generated/extra-nodes/monitorDBs
+    mkdir ./scripts/generated/extra-nodes/keystores
+    mkdir ./scripts/generated/extra-nodes/keystores/keys
+    touch ./scripts/generated/extra-nodes/keystores/passcodes.txt
+}
+
 CREATE_CONFIGS() {
     # Vars
     LA=4242
@@ -85,6 +98,48 @@ CREATE_CONFIGS() {
     done
 }
 
+CREATE_EXTRA_NODES_CONFIGS() {
+    # Vars
+    LA=5242
+    PA=5343
+    DA=5444
+    LSA=9884
+    # Check that number of validators is valid
+    if ! [[ $1 =~ $re ]] || [[ $1 -lt 1 ]] || [[ $1 -gt 32 ]]; then
+        echo -e "Invalid number of non validators nodes [1-32]"
+        exit 1
+    fi
+    folder="./scripts/generated/extra-nodes"
+    if [ -f "$folder/created.txt" ]; then
+        echo -e "Generated files already exist, run clean or remove the '$folder' folder"
+        exit 1
+    fi
+    CLEAN_UP_NODES
+    # Loop through and create all essentail validator files
+    for ((l = 1; l <= $1; l++)); do
+        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
+        sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
+            sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
+            sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
+            sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
+            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
+            sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
+            sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/extra-nodes\/keystores\/passcodes.txt\"/' |
+            sed -e 's/keystore = .*/keystore = \"scripts\/generated\/extra-nodes\/keystores\/keys\"/' |
+            sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/extra-nodes\/stateDBs\/node'"$l"'\/\"/' |
+            sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/extra-nodes\/monitorDBs\/node'"$l"'\/\"/' |
+            sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' >$folder/config/node$l.toml
+        echo "$ADDRESS=abc123" >>$folder/keystores/passcodes.txt
+        mv ./keyfile.json $folder/keystores/keys/$ADDRESS
+        touch $folder/created.txt
+        ((LA = LA + 1))
+        ((PA = PA + 1))
+        ((DA = DA + 1))
+        ((LSA = LSA + 1))
+    done
+}
+
 LIST() {
     # List each of the validators
     COUNTER=1
@@ -112,6 +167,12 @@ RUN_VALIDATOR() {
     ./alicenet --config ./scripts/generated/config/validator$1.toml validator
 }
 
+RUN_NODE() {
+    # Run a normal node (non validator)
+    CHECK_EXISTING $1
+    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml validator
+}
+
 RACE_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
@@ -125,13 +186,17 @@ STATUS() {
 }
 
 # init # - initalize validators directory files
+# init-extra-nodes # - initialize additional nodes (non validators at start)
 # geth - start geth
+# hardhat - start hardhat
 # bootnode - start bootnode
 # deploy - deploy necessary contracts
 # validator # - run a validator by number
+# node # - run an additional node by number
 # ethdkg - launch ethdkg
 # deposit - run a deposit to the owner toml
-# unregister - unregister all the validators
+# schedule-maintenance - schedule a maintenance to change validators after the next snapshots (necessary to unregister validators)
+# unregister - unregister all the validators (after a scheduled maintenance)
 # list - list the validators
 # status # - get the status of a validator
 # clean - remove all generated files
@@ -141,11 +206,18 @@ case $1 in
 init)
     WD=$PWD
     BRIDGE=./bridge
-    cd $BRIDGE &&
-        npm ci &&
-        cd $WD &&
-        ./scripts/base-scripts/init-githooks.sh
+    cd $BRIDGE
+    if [[ "$(npm list -s hardhat)" =~ "empty" ]]; then
+        echo "Hardhat not found, installing npm"
+        npm ci
+    fi
+    cd $WD
+    ./scripts/base-scripts/init-githooks.sh
+    cd $WD && ./scripts/base-scripts/init-githooks.sh
     CREATE_CONFIGS $2
+    ;;
+init-extra-nodes)
+    CREATE_EXTRA_NODES_CONFIGS $2
     ;;
 geth)
     ./scripts/base-scripts/geth-local.sh
@@ -159,6 +231,9 @@ deploy)
 validator)
     RUN_VALIDATOR $2
     ;;
+node)
+    RUN_NODE $2
+    ;;
 race)
     RACE_VALIDATOR $2
     ;;
@@ -171,25 +246,21 @@ deposit)
 register)
     ./scripts/base-scripts/register.sh
     ;;
-register_test)
-    ./scripts/base-scripts/register_test.sh "${@:2}"
-    ;;
-schedule_maintenance)
-    ./scripts/base-scripts/schedule_maintenance.sh
+schedule-maintenance)
+    ./scripts/base-scripts/schedule-maintenance.sh
     ;;
 unregister)
     ./scripts/base-scripts/unregister.sh
     ;;
-hardhat_node)
-    ./scripts/base-scripts/hardhat_node.sh &
+hardhat)
+    ./scripts/base-scripts/hardhat-local-node.sh
     trap 'pkill -9 -f hardhat' SIGTERM
     wait
     ;;
-hardhat_local_node)
-    ./scripts/base-scripts/hardhat_local_node.sh
-    ;;
-load_test)
-    ./scripts/base-scripts/hardhatloadTest.sh
+stress-test)
+    # shift to remove first argument
+    shift
+    ./scripts/base-scripts/hardhat-load-test.sh "$@"
     ;;
 list)
     LIST
@@ -202,7 +273,7 @@ clean)
     ;;
 *)
     echo -e "Unknown argument!"
-    echo -e "init # | geth | bootnode | deploy | validator # | ethdkg | hardhat_node | list | status | clean"
+    echo -e "init # | init-extra-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
     exit 1
     ;;
 esac
