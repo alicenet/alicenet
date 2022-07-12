@@ -1,42 +1,60 @@
 //go:build integration
 
-package dkg_test
+package tests
 
 import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1/transaction"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccused(t *testing.T) {
 	n := 4
 	d := 1
-	suite := testutils.StartFromRegistrationOpenPhase(t, n, d, 100)
-	defer suite.Eth.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	fixture := setupEthereum(t, n)
+	suite := StartFromRegistrationOpenPhase(t, fixture, d, 100)
 	accounts := suite.Eth.GetKnownAccounts()
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
+	ctx := context.Background()
+	RegisterPotentialValidatorOnMonitor(t, suite, accounts)
 
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, logger, suite.Eth)
+	var receiptResponses []transaction.ReceiptResponse
+	for idx := 0; idx < n; idx++ {
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
-		err = suite.DispMissingRegTasks[idx].DoWork(ctx, logger, suite.Eth)
+		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
 
-		suite.Eth.Commit()
-		assert.True(t, suite.DispMissingRegTasks[idx].Success)
+		shouldExecute, err := suite.DispMissingRegTasks[idx].ShouldExecute(ctx)
+		assert.Nil(t, err)
+		assert.True(t, shouldExecute)
+
+		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
+		//after the first accusation the ethereum contracts will return that
+		//the validator is already accused
+		if idx == 0 {
+			assert.Nil(t, taskErr)
+			assert.NotNil(t, txn)
+			rcptResponse, subsErr := fixture.Watcher.Subscribe(ctx, txn, nil)
+			assert.Nil(t, subsErr)
+			receiptResponses = append(receiptResponses, rcptResponse)
+		} else {
+			assert.NotNil(t, taskErr)
+			assert.True(t, taskErr.IsRecoverable())
+			assert.Nil(t, txn)
+		}
 	}
+
+	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := suite.Eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -44,29 +62,45 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAccused(t *testing.T) {
 	n := 5
 	d := 3
-	suite := testutils.StartFromRegistrationOpenPhase(t, n, d, 100)
-	defer suite.Eth.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	fixture := setupEthereum(t, n)
+	suite := StartFromRegistrationOpenPhase(t, fixture, d, 100)
 	accounts := suite.Eth.GetKnownAccounts()
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
+	ctx := context.Background()
+	RegisterPotentialValidatorOnMonitor(t, suite, accounts)
 
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, logger, suite.Eth)
+	var receiptResponses []transaction.ReceiptResponse
+	for idx := 0; idx < n; idx++ {
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
-		err = suite.DispMissingRegTasks[idx].DoWork(ctx, logger, suite.Eth)
+		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
 
-		suite.Eth.Commit()
-		assert.True(t, suite.DispMissingRegTasks[idx].Success)
+		shouldExecute, err := suite.DispMissingRegTasks[idx].ShouldExecute(ctx)
+		assert.Nil(t, err)
+		assert.True(t, shouldExecute)
+
+		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
+		//after the first accusation the ethereum contracts will return that
+		//the validator is already accused
+		if idx == 0 {
+			assert.Nil(t, taskErr)
+			assert.NotNil(t, txn)
+			rcptResponse, subsErr := fixture.Watcher.Subscribe(ctx, txn, nil)
+			assert.Nil(t, subsErr)
+			receiptResponses = append(receiptResponses, rcptResponse)
+		} else {
+			assert.NotNil(t, taskErr)
+			assert.True(t, taskErr.IsRecoverable())
+			assert.Nil(t, txn)
+		}
 	}
+
+	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := suite.Eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -74,74 +108,45 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreBad(t *testing.T) {
 	n := 5
 	d := 5
-	suite := testutils.StartFromRegistrationOpenPhase(t, n, d, 100)
-	defer suite.Eth.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	fixture := setupEthereum(t, n)
+	suite := StartFromRegistrationOpenPhase(t, fixture, d, 100)
 	accounts := suite.Eth.GetKnownAccounts()
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
+	ctx := context.Background()
+	RegisterPotentialValidatorOnMonitor(t, suite, accounts)
 
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, logger, suite.Eth)
+	var receiptResponses []transaction.ReceiptResponse
+	for idx := 0; idx < n; idx++ {
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
-		err = suite.DispMissingRegTasks[idx].DoWork(ctx, logger, suite.Eth)
+		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
 
-		suite.Eth.Commit()
-		assert.True(t, suite.DispMissingRegTasks[idx].Success)
+		shouldExecute, err := suite.DispMissingRegTasks[idx].ShouldExecute(ctx)
+		assert.Nil(t, err)
+		assert.True(t, shouldExecute)
+
+		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
+		//after the first accusation the ethereum contracts will return that
+		//the validator is already accused
+		if idx == 0 {
+			assert.Nil(t, taskErr)
+			assert.NotNil(t, txn)
+			rcptResponse, subsErr := fixture.Watcher.Subscribe(ctx, txn, nil)
+			assert.Nil(t, subsErr)
+			receiptResponses = append(receiptResponses, rcptResponse)
+		} else {
+			assert.NotNil(t, taskErr)
+			assert.True(t, taskErr.IsRecoverable())
+			assert.Nil(t, txn)
+		}
 	}
+
+	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := suite.Eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
-}
-
-func TestDisputeMissingRegistrationTask_Group_2_ShouldRetryTrue(t *testing.T) {
-	suite := testutils.StartFromRegistrationOpenPhase(t, 5, 1, 100)
-	defer suite.Eth.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	accounts := suite.Eth.GetKnownAccounts()
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
-
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, logger, suite.Eth)
-		assert.Nil(t, err)
-
-		shouldRetry := suite.DispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.Eth)
-		assert.True(t, shouldRetry)
-	}
-}
-
-func TestDisputeMissingRegistrationTask_Group_2_ShouldNotRetryAfterSuccessfullyAccusingAllMissingParticipants(t *testing.T) {
-	suite := testutils.StartFromRegistrationOpenPhase(t, 5, 0, 100)
-	defer suite.Eth.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	accounts := suite.Eth.GetKnownAccounts()
-	logger := logging.GetLogger("test").WithField("Validator", accounts[0].Address.String())
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, logger, suite.Eth)
-		assert.Nil(t, err)
-
-		err = suite.DispMissingRegTasks[idx].DoWork(ctx, logger, suite.Eth)
-		assert.Nil(t, err)
-
-		suite.Eth.Commit()
-		assert.True(t, suite.DispMissingRegTasks[idx].Success)
-	}
-
-	for idx := 0; idx < len(suite.DKGStates); idx++ {
-		shouldRetry := suite.DispMissingRegTasks[idx].ShouldRetry(ctx, logger, suite.Eth)
-		assert.False(t, shouldRetry)
-	}
 }

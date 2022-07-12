@@ -1,13 +1,14 @@
+//go:build integration
+
 package state_test
 
 import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/blockchain/testutils"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-
+	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
+	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ func TestMath_VerifyDistributedSharesGood1(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
@@ -44,7 +45,7 @@ func TestMath_VerifyDistributedSharesGood2(t *testing.T) {
 	n := 5
 	// Test with random private coefficients
 	deterministicShares := false
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 	for idx := 0; idx < n; idx++ {
 		dkgState := dkgStates[idx]
@@ -69,7 +70,7 @@ func TestMath_VerifyDistributedSharesGood3(t *testing.T) {
 	n := 7
 	// Test with deterministic private coefficients
 	deterministicShares := false
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
@@ -108,7 +109,7 @@ func TestMath_VerifyDistributedSharesGood4(t *testing.T) {
 	n := 4
 	// Test with deterministic private coefficients
 	deterministicShares := true
-	dkgStates, _ := dkgTestUtils.InitializeNewDkgStateInfo(n, deterministicShares)
+	dkgStates := dkgTestUtils.InitializeNewDkgStateInfo(t.TempDir(), n, deterministicShares)
 	dkgTestUtils.GenerateEncryptedSharesAndCommitments(dkgStates)
 
 	// We now mess up the scheme, ensuring that we have an invalid share.
@@ -174,8 +175,7 @@ func TestMath_VerifyDistributedSharesBad3(t *testing.T) {
 	threshold := state.ThresholdForUserCount(n)
 
 	// Setup keys
-	ecdsaPrivKeys := testutils.SetupPrivateKeys(n)
-	accountsArray := testutils.SetupAccounts(ecdsaPrivKeys)
+	_, _, accountsArray := tests.CreateAccounts(t.TempDir(), n)
 
 	// Validator Setup
 	dkgIdx := 0

@@ -1,189 +1,90 @@
 //go:build integration
 
-package dkg_test
+package tests
 
 import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/blockchain/testutils"
-	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/testutils"
-	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1/transaction"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
 	n := 5
-	unsubmittedKeyShares := 4
-	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
-	defer suite.Eth.Close()
+	m := 4
+	fixture := setupEthereum(t, n)
+	suite := StartFromKeyShareSubmissionPhase(t, fixture, m, 100)
 	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.Eth
-	dkgStates := suite.DKGStates
-	logger := logging.GetLogger("test").WithField("Validator", "")
-
-	// skip DisputeShareDistribution and move to KeyShareSubmission phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].Start)
-
-	// Do key share submission task
-	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
-		state := dkgStates[idx]
-		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-
-		err := keyshareSubmissionTask.Initialize(ctx, logger, eth)
-		assert.Nil(t, err)
-		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		eth.Commit()
-		assert.True(t, keyshareSubmissionTask.Success)
-
-		// event
-		for j := 0; j < n; j++ {
-			// simulate receiving event for all participants
-			dkgStates[j].OnKeyShareSubmitted(
-				state.Account.Address,
-				state.Participants[state.Account.Address].KeyShareG1s,
-				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
-				state.Participants[state.Account.Address].KeyShareG2s,
-			)
-		}
-	}
-
-	// advance into the end of KeyShareSubmission phase,
-	// which is the start of DisputeMissingKeyShares phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].End)
+	RegisterPotentialValidatorOnMonitor(t, suite, accounts)
 
 	// Do dispute missing key share task
+	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
 
-		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth)
-		assert.Nil(t, err)
-		err = disputeMissingKeyshareTask.DoWork(ctx, logger, eth)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingKeyshareTask", "task-id", nil)
 		assert.Nil(t, err)
 
-		eth.Commit()
-		assert.True(t, disputeMissingKeyshareTask.Success)
+		err = disputeMissingKeyshareTask.Prepare(ctx)
+		assert.Nil(t, err)
+
+		shouldExecute, err := disputeMissingKeyshareTask.ShouldExecute(ctx)
+		assert.Nil(t, err)
+		assert.True(t, shouldExecute)
+
+		txn, taskErr := disputeMissingKeyshareTask.Execute(ctx)
+		if idx == 0 {
+			assert.Nil(t, taskErr)
+			assert.NotNil(t, txn)
+			rcptResponse, subsErr := fixture.Watcher.Subscribe(ctx, txn, nil)
+			assert.Nil(t, subsErr)
+			receiptResponses = append(receiptResponses, rcptResponse)
+		} else {
+			assert.NotNil(t, taskErr)
+			assert.True(t, taskErr.IsRecoverable())
+			assert.Nil(t, txn)
+		}
 	}
 
-	callOpts, err := eth.GetCallOpts(ctx, accounts[0])
+	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
+
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := eth.Contracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(unsubmittedKeyShares), badParticipants.Int64())
+	assert.Equal(t, int64(m), badParticipants.Int64())
 }
 
-func TestDisputeMissingKeySharesTask_ShouldRetry_False(t *testing.T) {
+func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 	n := 5
-	unsubmittedKeyShares := 1
-	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 40)
-	defer suite.Eth.Close()
+	m := 0
+	fixture := setupEthereum(t, n)
+	suite := StartFromKeyShareSubmissionPhase(t, fixture, m, 100)
+	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
-	eth := suite.Eth
-	dkgStates := suite.DKGStates
-	logger := logging.GetLogger("test").WithField("Validator", "")
-
-	// skip DisputeShareDistribution and move to KeyShareSubmission phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].Start)
-
-	// Do key share submission task
-	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
-		state := dkgStates[idx]
-		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-
-		err := keyshareSubmissionTask.Initialize(ctx, logger, eth)
-		assert.Nil(t, err)
-		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		eth.Commit()
-		assert.True(t, keyshareSubmissionTask.Success)
-
-		// event
-		for j := 0; j < n; j++ {
-			// simulate receiving event for all participants
-			dkgStates[j].OnKeyShareSubmitted(
-				state.Account.Address,
-				state.Participants[state.Account.Address].KeyShareG1s,
-				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
-				state.Participants[state.Account.Address].KeyShareG2s,
-			)
-		}
-	}
-
-	// advance into the end of KeyShareSubmission phase,
-	// which is the start of DisputeMissingKeyShares phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].End)
+	RegisterPotentialValidatorOnMonitor(t, suite, accounts)
 
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
-
-		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "disputeMissingKeyshareTask", "task-id", nil)
 		assert.Nil(t, err)
-		err = disputeMissingKeyshareTask.DoWork(ctx, logger, eth)
+		err = disputeMissingKeyshareTask.Prepare(ctx)
 		assert.Nil(t, err)
-
-		assert.True(t, disputeMissingKeyshareTask.Success)
-
-		eth.Commit()
-		shouldRetry := disputeMissingKeyshareTask.ShouldRetry(ctx, logger, eth)
-		assert.False(t, shouldRetry)
-	}
-}
-
-func TestDisputeMissingKeySharesTask_ShouldRetry_True(t *testing.T) {
-	n := 5
-	unsubmittedKeyShares := 1
-	suite := dkgTestUtils.StartFromShareDistributionPhase(t, n, []int{}, []int{}, 100)
-	defer suite.Eth.Close()
-	ctx := context.Background()
-	eth := suite.Eth
-	dkgStates := suite.DKGStates
-	logger := logging.GetLogger("test").WithField("Validator", "")
-
-	// skip DisputeShareDistribution and move to KeyShareSubmission phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].Start)
-
-	// Do key share submission task
-	for idx := 0; idx < n-unsubmittedKeyShares; idx++ {
-		state := dkgStates[idx]
-		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-
-		err := keyshareSubmissionTask.Initialize(ctx, logger, eth)
-		assert.Nil(t, err)
-		err = keyshareSubmissionTask.DoWork(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		eth.Commit()
-		assert.True(t, keyshareSubmissionTask.Success)
-
-		// event
-		for j := 0; j < n; j++ {
-			// simulate receiving event for all participants
-			dkgStates[j].OnKeyShareSubmitted(
-				state.Account.Address,
-				state.Participants[state.Account.Address].KeyShareG1s,
-				state.Participants[state.Account.Address].KeyShareG1CorrectnessProofs,
-				state.Participants[state.Account.Address].KeyShareG2s,
-			)
-		}
+		txn, taskErr := disputeMissingKeyshareTask.Execute(ctx)
+		// Will return error cause phase is in DisputeShareDistribution
+		assert.NotNil(t, taskErr)
+		assert.Nil(t, txn)
 	}
 
-	// advance into the end of KeyShareSubmission phase,
-	// which is the start of DisputeMissingKeyShares phase
-	testutils.AdvanceTo(t, eth, suite.KeyshareSubmissionTasks[0].End)
-
-	// Do dispute missing key share task
-	for idx := 0; idx < n; idx++ {
-		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
-
-		err := disputeMissingKeyshareTask.Initialize(ctx, logger, eth)
-		assert.Nil(t, err)
-
-		shouldRetry := disputeMissingKeyshareTask.ShouldRetry(ctx, logger, eth)
-		assert.True(t, shouldRetry)
-	}
+	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
+	assert.Nil(t, err)
+	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(m), badParticipants.Int64())
 }
