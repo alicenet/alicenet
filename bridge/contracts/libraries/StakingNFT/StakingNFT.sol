@@ -16,6 +16,7 @@ import {StakingNFTErrorCodes} from "contracts/libraries/errorCodes/StakingNFTErr
 import {
     CircuitBreakerErrorCodes
 } from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "hardhat/console.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -103,6 +104,10 @@ abstract contract StakingNFT is
         uint256 lockDuration_
     ) public override withCircuitBreaker onlyGovernance returns (uint256) {
         require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
+        require(
             caller_ == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
         );
@@ -126,6 +131,10 @@ abstract contract StakingNFT is
         returns (uint256)
     {
         require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
+        require(
             msg.sender == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
         );
@@ -147,6 +156,10 @@ abstract contract StakingNFT is
         withCircuitBreaker
         returns (uint256)
     {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         require(
             msg.sender == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
@@ -177,7 +190,7 @@ abstract contract StakingNFT is
         // collect tokens
         _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
         // update state
-        _tokenState = _deposit(_shares, amount_, _tokenState);
+        _tokenState = _deposit(amount_, _tokenState);
         _reserveToken += amount_;
     }
 
@@ -189,7 +202,7 @@ abstract contract StakingNFT is
     /// successfully interacting with this method without first reading the
     /// source code and hopefully this comment
     function depositEth(uint8 magic_) public payable withCircuitBreaker checkMagic(magic_) {
-        _ethState = _deposit(_shares, msg.value, _ethState);
+        _ethState = _deposit(msg.value, _ethState);
         _reserveEth += msg.value;
     }
 
@@ -248,6 +261,10 @@ abstract contract StakingNFT is
     /// collectEth returns all due Eth allocations to caller. The caller
     /// of this function must be the owner of the tokenID
     function collectEth(uint256 tokenID_) public returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -274,6 +291,10 @@ abstract contract StakingNFT is
     /// collectToken returns all due AToken allocations to caller. The
     /// caller of this function must be the owner of the tokenID
     function collectToken(uint256 tokenID_) public returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -300,6 +321,10 @@ abstract contract StakingNFT is
     /// collectEth returns all due Eth allocations to the to_ address. The caller
     /// of this function must be the owner of the tokenID
     function collectEthTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -326,6 +351,10 @@ abstract contract StakingNFT is
     /// collectTokenTo returns all due AToken allocations to the to_ address. The
     /// caller of this function must be the owner of the tokenID
     function collectTokenTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -375,7 +404,14 @@ abstract contract StakingNFT is
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
         );
         Position memory p = _positions[tokenID_];
-        (, , , payout) = _collect(_shares, _ethState, p, p.accumulatorEth);
+        Accumulator memory ethState = _ethState;
+        uint256 shares = _shares;
+        (ethState.accumulator, ethState.slush) = _slushSkim(
+            shares,
+            ethState.accumulator,
+            ethState.slush
+        );
+        (, , , payout) = _collect(shares, ethState, p, p.accumulatorEth);
         return payout;
     }
 
@@ -386,7 +422,14 @@ abstract contract StakingNFT is
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
         );
         Position memory p = _positions[tokenID_];
-        (, , , payout) = _collect(_shares, _tokenState, p, p.accumulatorToken);
+        Accumulator memory tokenState = _tokenState;
+        uint256 shares = _shares;
+        (tokenState.accumulator, tokenState.slush) = _slushSkim(
+            shares,
+            tokenState.accumulator,
+            tokenState.slush
+        );
+        (, , , payout) = _collect(shares, tokenState, p, p.accumulatorToken);
         return payout;
     }
 
@@ -451,9 +494,15 @@ abstract contract StakingNFT is
     }
 
     /// gets the _MAX_MINT_LOCK value. This value is the maximum duration of blocks that we allow a
-    /// position to be locked
+    /// position to be locked when minted
     function getMaxMintLock() public pure returns (uint256) {
         return _MAX_MINT_LOCK;
+    }
+
+    /// gets the _MAX_MINT_LOCK value. This value is the maximum duration of blocks that we allow a
+    /// position to be locked
+    function getMaxGovernanceLock() public pure returns (uint256) {
+        return _MAX_GOVERNANCE_LOCK;
     }
 
     function __stakingNFTInit(string memory name_, string memory symbol_)
@@ -467,11 +516,11 @@ abstract contract StakingNFT is
     // of blocks by setting the freeAfter field on the Position struct returns
     // the number of shares in the locked Position so that governance vote
     // counting may be performed when setting a lock
+    //
+    // Note well: This function *assumes* that tokenID position exists.
+    //            This is because the existance check is performed
+    //            at the higher level.
     function _lockPosition(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -482,11 +531,11 @@ abstract contract StakingNFT is
     // _lockWithdraw prevents a position from being collected and burned for duration_ number of blocks
     // by setting the withdrawFreeAfter field on the Position struct.
     // returns the number of shares in the locked Position so that
+    //
+    // Note well: This function *assumes* that tokenID position exists.
+    //            This is because the existance check is performed
+    //            at the higher level.
     function _lockWithdraw(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -498,6 +547,10 @@ abstract contract StakingNFT is
     function _mintNFT(address to_, uint256 amount_) internal returns (uint256 tokenID) {
         // this is to allow struct packing and is safe due to AToken having a
         // total distribution of 220M
+        require(
+            amount_ > 0,
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_STAKED_AMOUNT_IS_ZERO))
+        );
         require(
             amount_ <= 2**224 - 1,
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_MINT_AMOUNT_EXCEEDS_MAX_SUPPLY))
@@ -513,6 +566,23 @@ abstract contract StakingNFT is
 
         // get new tokenID from counter
         tokenID = _increment();
+
+        // Call _slushSkim on Eth and Token accumulator before minting staked position.
+        // This ensures that all stakers receive their appropriate rewards.
+        if (shares > 0) {
+            (ethState.accumulator, ethState.slush) = _slushSkim(
+                shares,
+                ethState.accumulator,
+                ethState.slush
+            );
+            _ethState = ethState;
+            (tokenState.accumulator, tokenState.slush) = _slushSkim(
+                shares,
+                tokenState.accumulator,
+                tokenState.slush
+            );
+            _tokenState = tokenState;
+        }
 
         // update storage
         shares += amount_;
@@ -536,6 +606,10 @@ abstract contract StakingNFT is
         address to_,
         uint256 tokenID_
     ) internal returns (uint256 payoutEth, uint256 payoutToken) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         require(
             from_ == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
@@ -581,7 +655,14 @@ abstract contract StakingNFT is
         returns (Position memory p, uint256 payout)
     {
         uint256 acc;
-        (_tokenState, p, acc, payout) = _collect(shares_, _tokenState, p_, p_.accumulatorToken);
+        Accumulator memory tokenState = _tokenState;
+        (tokenState.accumulator, tokenState.slush) = _slushSkim(
+            shares_,
+            tokenState.accumulator,
+            tokenState.slush
+        );
+        (tokenState, p, acc, payout) = _collect(shares_, tokenState, p_, p_.accumulatorToken);
+        _tokenState = tokenState;
         p.accumulatorToken = acc;
         return (p, payout);
     }
@@ -593,7 +674,14 @@ abstract contract StakingNFT is
         returns (Position memory p, uint256 payout)
     {
         uint256 acc;
-        (_ethState, p, acc, payout) = _collect(shares_, _ethState, p_, p_.accumulatorEth);
+        Accumulator memory ethState = _ethState;
+        (ethState.accumulator, ethState.slush) = _slushSkim(
+            shares_,
+            ethState.accumulator,
+            ethState.slush
+        );
+        (ethState, p, acc, payout) = _collect(shares_, ethState, p_, p_.accumulatorEth);
+        _ethState = ethState;
         p.accumulatorEth = acc;
         return (p, payout);
     }
@@ -675,9 +763,9 @@ abstract contract StakingNFT is
         )
     {
         // determine number of accumulator steps this Position needs distributions from
-        uint256 accumulatorDelta = 0;
+        uint256 accumulatorDelta;
         if (positionAccumulatorValue_ > state_.accumulator) {
-            accumulatorDelta = type(uint168).max - positionAccumulatorValue_;
+            accumulatorDelta = 2**168 - positionAccumulatorValue_;
             accumulatorDelta += state_.accumulator;
             positionAccumulatorValue_ = state_.accumulator;
         } else {
@@ -707,20 +795,13 @@ abstract contract StakingNFT is
 
     // _deposit allows an Accumulator to be updated with new value if there are
     // no currently staked positions, all value is stored in the slush
-    function _deposit(
-        uint256 shares_,
-        uint256 delta_,
-        Accumulator memory state_
-    ) internal pure returns (Accumulator memory) {
+    function _deposit(uint256 delta_, Accumulator memory state_)
+        internal
+        pure
+        returns (Accumulator memory)
+    {
         state_.slush += (delta_ * _ACCUMULATOR_SCALE_FACTOR);
 
-        if (shares_ > 0) {
-            (state_.accumulator, state_.slush) = _slushSkim(
-                shares_,
-                state_.accumulator,
-                state_.slush
-            );
-        }
         // Slush should be never be above 2**167 to protect against overflow in
         // the later code.
         require(
@@ -746,7 +827,7 @@ abstract contract StakingNFT is
                 // The maximum allowed value for the accumulator is 2**168-1.
                 // This hard limit was set to not overflow the operation
                 // `accumulator * shares` that happens later in the code.
-                accumulator_ = accumulator_ % type(uint168).max;
+                accumulator_ = accumulator_ % (2**168);
             }
         }
         return (accumulator_, slush_);
