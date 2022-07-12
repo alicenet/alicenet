@@ -141,7 +141,6 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = dir
 	output, err := cmd.Output()
-
 	if err != nil {
 		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, string(output))
 		return output, err
