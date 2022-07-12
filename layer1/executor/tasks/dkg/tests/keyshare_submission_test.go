@@ -9,7 +9,6 @@ import (
 
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,6 +4,9 @@ package tests
 
 import (
 	"context"
+	"math/big"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -12,8 +15,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
 )
 
 //We test to ensure that everything behaves correctly.

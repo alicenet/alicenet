@@ -4,6 +4,8 @@ package tests
 
 import (
 	"context"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -12,7 +14,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

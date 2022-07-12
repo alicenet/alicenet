@@ -57,6 +57,10 @@ func GetHardhatPackagePath() string {
 	return bridgePath
 }
 
+func GetHardhatBinPath() string {
+	return filepath.Join(GetHardhatPackagePath(), "node_modules", ".bin", "hardhat")
+}
+
 func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) string {
 	configTemplate := `
 	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
@@ -137,7 +141,6 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = dir
 	output, err := cmd.Output()
-
 	if err != nil {
 		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, string(output))
 		return output, err
@@ -185,11 +188,10 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 
 	hardhatPath := GetHardhatPackagePath()
 	configPath := GenerateHardhatConfig(hardhatTempDir, hardhatPath, fullUrl)
-	hardBinPath := filepath.Join(hardhatPath, "node_modules", ".bin", "hardhat")
 
 	cmd := exec.Command(
 		"node",
-		hardBinPath,
+		GetHardhatBinPath(),
 		"--show-stack-traces",
 		"--config",
 		configPath,
@@ -307,8 +309,8 @@ func (h *Hardhat) DeployFactoryAndContracts(tmpDir string, baseFilesDir string) 
 	modulesDir := GetHardhatPackagePath()
 	output, err := executeCommand(
 		modulesDir,
-		"npx",
-		"hardhat",
+		"node",
+		GetHardhatBinPath(),
 		"--network",
 		"dev",
 		"--show-stack-traces",
@@ -343,8 +345,8 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 	// Register validator
 	_, err := executeCommand(
 		nodeDir,
-		"npx",
-		"hardhat",
+		"node",
+		GetHardhatBinPath(),
 		"--network",
 		"dev",
 		"--show-stack-traces",

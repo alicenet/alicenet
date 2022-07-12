@@ -72,6 +72,7 @@ func (tm *TasksManager) GetTxBackup(uuid string) (*types.Transaction, bool) {
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
 func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) {
+	defer task.Close()
 	err := tm.processTask(mainCtx, task, name, taskId, database, logger, eth, taskResponseChan)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
@@ -84,7 +85,6 @@ func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, nam
 func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.TaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
-	defer task.Close()
 	err := task.Initialize(taskCtx, cf, database, logger, eth, name, taskId, taskResponseChan)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 		}
 	}
 
-	// We got a successful receipt, removing from state
+	task.GetLogger().Trace("Task finished successfully, removing tx backup")
 	err = tm.RemoveTxBackup(task.GetId())
 	if err != nil {
 		return err
