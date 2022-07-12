@@ -11,59 +11,81 @@ import "hardhat/console.sol";
 contract BridgeRouter is
     Initializable,
     ImmutableFactory,
-    ImmutableBridgePoolFactory,
-    ImmutableBridgePoolDepositNotifier
+    ImmutableBridgeRouter,
+    ImmutableBridgePoolDepositNotifier,
+    ImmutableBToken
 {
     event Deposited(
         uint256 nonce,
         address ercContract,
         address owner,
+        uint8 ERCType,
         uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
-        uint256 networkId
+        uint256 chainID
     );
 
     struct DepositCallData {
-        address ERC20Contract;
+        address ERCContract;
+        uint8 tokenType;
+        uint256 number;
         uint256 chainID;
         uint16 poolVersion;
     }
     uint256 internal immutable _networkId;
     event BridgePoolCreated(address contractAddr);
     address private _implementation;
+    uint256 nonce;
 
     constructor(uint256 networkId_) ImmutableFactory(msg.sender) {
         _networkId = networkId_;
     }
 
-    function getStorageCode() external view returns (bytes memory) {}
+    // function getStorageCode() external view returns (bytes memory) {}
 
-    /*
-    * @dev this function can only be called by the btoken contract, when called this function will 
-    * calculate the target pool address with the information in call data. 
-    * The fee will be passed in as a parameter by the user and btoken verify the deposit happened before 
-    * forwarding the call to this function. 
-    * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version 
-     
-    function routeCall(bytes memory data, uint256 btokenAmount) public onlyBToken() returns(uint256 refundAmount) {
+    /**
+     * @dev this function can only be called by the btoken contract, when called this function will
+     * calculate the target pool address with the information in call data.
+     * The fee will be passed in as a parameter by the user and btoken verify the deposit happened before
+     * forwarding the call to this function.
+     * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version
+     */
+    function routeDeposit(bytes memory data) public onlyBToken returns (uint256 btokenFeeAmount) {
         // use abi decode to extract the information out of data
-        DepositCallData memory depositCallData= abi.decode(data, (DepositCallData));
+        DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
+        //encode the salt with the information from
+        bytes32 poolSalt = getBridgePoolSalt(
+            depositCallData.ERCContract,
+            depositCallData.tokenType,
+            depositCallData.chainID,
+            depositCallData.poolVersion
+        );
         // calculate the address of the pool
-        address poolAddress = calculatePoolAddress();
-        // bytes32 salt 
+        address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
+
         //call the pool to initiate deposit
-        //need to decide what args to use for the different tokens 
-        //TokenContractAddress, 
-        uint256 refund = ILocalERC20Pool(poolAddress).deposit();
-        
+        BridgePool(poolAddress).deposit(depositCallData.depositAmount);
+        //get the fee to deposit a token into the bridge
+        btokenFeeAmount = 10;
+        emit Deposited(
+            nonce,
+            depositCallData.ERCContract,
+            msg.sender,
+            depositCallData.tokenType,
+            depositCallData.number
+        );
+        nonce++;
     }
+
+    /**
      @dev this function checks if the pool exists
-    function poolExists(address Pool) public view returns(bool){
-        if(extcodesize(pool) == 0){
+    */
+    function poolExists(address Pool) public view returns (bool) {
+        if (extcodesize(pool) == 0) {
             return false;
         }
         return true;
-    } 
-    */
+    }
+
     /**
      * @notice deployNewPool
      * @param erc20Contract_ address of ERC20 token contract
@@ -113,44 +135,17 @@ contract BridgeRouter is
      */
     function getBridgePoolSalt(
         address tokenContractAddr_,
-        uint256 chainID_,
         uint8 type_,
+        uint256 chainID_,
         uint16 version_
     ) public pure returns (bytes32) {
         return
             keccak256(
                 bytes.concat(
                     keccak256(abi.encodePacked(tokenContractAddr_)),
-                    keccak256(abi.encodePacked(chainID_)),
                     keccak256(abi.encodePacked(type_)),
+                    keccak256(abi.encodePacked(chainID_)),
                     keccak256(abi.encodePacked(version_))
-                )
-            );
-    }
-
-    function getStaticPoolContractAddress(bytes32 _salt, address _factory)
-        public
-        pure
-        returns (address)
-    {
-        // does not work: 5880818283335afa3d82833e3d91f3
-        // bytes32 metamorphicContractBytecodeHash_ = 0xcd77112ba3315c30f6863dae90cb281bf2f644ef3fd9d21e53d1968182daa472;
-
-        // works: 58808182335afa3d36363e3d36f3
-        bytes32 metamorphicContractBytecodeHash_ = 0xf231e946a2f88d89eafa7b43271c54f58277304b93ac77d138d9b0bb3a989b6d;
-        return
-            address(
-                uint160(
-                    uint256(
-                        keccak256(
-                            abi.encodePacked(
-                                hex"ff",
-                                _factory,
-                                _salt,
-                                metamorphicContractBytecodeHash_
-                            )
-                        )
-                    )
                 )
             );
     }
@@ -171,7 +166,7 @@ contract BridgeRouter is
         uint256 contractsize;
         assembly {
             let ptr := mload(0x40)
-            mstore(ptr, shl(144, 0x5880818283335afa3d82833e503df3))
+            mstore(ptr, shl(144, 0x5880818283335afa3d82833e3d82f3))
             //mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d91f3))
             contractAddr := create2(0, ptr, 15, salt_)
             response := returndatasize()
@@ -189,9 +184,6 @@ contract BridgeRouter is
         }
         console.log("bytecode");
         console.logBytes(codeCopy(contractAddr));
-        if (initCallData_.length > 0) {
-            AliceNetFactory(_factoryAddress()).initializeContract(contractAddr, initCallData_);
-        }
         return contractAddr;
     }
 
