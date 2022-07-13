@@ -401,7 +401,7 @@ func (wb *WatcherBackend) Loop() {
 
 		case <-poolingTime:
 			wb.collectReceipts()
-			poolingTime = time.After(constants.TxPollingTime)
+			poolingTime = time.After(wb.TxPollingTime)
 			err := wb.PersistState()
 			if err != nil {
 				wb.logger.Errorf("Failed to persist state on the database %v", err)
