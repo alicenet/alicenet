@@ -84,9 +84,17 @@ contract BToken is
         _setSplitsInternal(332, 332, 332, 4);
     }
 
-    function payAndDeposit(uint256 maxEth, bytes calldata data) public payable {
+    function payAndDeposit(
+        uint256 maxEth,
+        maxtokens,
+        bytes calldata data
+    ) public payable {
         //forward call to btoken
-        uint256 bTokenAmount = BridgePoolFactory(_bridgeRouterAddress()).routeDeposit(data);
+        uint256 bTokenAmount = BridgePoolFactory(_bridgeRouterAddress()).routeDeposit(
+            msg.sender,
+            maxToken,
+            data
+        );
         //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
             uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenAmount);

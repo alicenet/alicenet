@@ -15,7 +15,7 @@ contract BridgeRouter is
     ImmutableBridgePoolDepositNotifier,
     ImmutableBToken
 {
-    event Deposited(
+    event DepositedERCToken(
         uint256 nonce,
         address ercContract,
         address owner,
@@ -49,7 +49,14 @@ contract BridgeRouter is
      * forwarding the call to this function.
      * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version
      */
-    function routeDeposit(bytes memory data) public onlyBToken returns (uint256 btokenFeeAmount) {
+    function routeDeposit(
+        address msgSender,
+        uint256 maxTokens,
+        bytes memory data
+    ) public onlyBToken returns (uint256 btokenFeeAmount) {
+        //get the fee to deposit a token into the bridge
+        btokenFeeAmount = 10;
+        require(maxTokens >= btokenFeeAmount, "insufficient funds");
         // use abi decode to extract the information out of data
         DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
         //encode the salt with the information from
@@ -63,10 +70,9 @@ contract BridgeRouter is
         address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
 
         //call the pool to initiate deposit
-        BridgePool(poolAddress).deposit(depositCallData.depositAmount);
-        //get the fee to deposit a token into the bridge
-        btokenFeeAmount = 10;
-        emit Deposited(
+        IBridgePool(poolAddress).deposit(msgSender, depositCallData.depositAmount);
+
+        emit DepositedERCToken(
             nonce,
             depositCallData.ERCContract,
             msg.sender,
@@ -77,31 +83,18 @@ contract BridgeRouter is
     }
 
     /**
-     @dev this function checks if the pool exists
-    */
-    function poolExists(address Pool) public view returns (bool) {
-        if (extcodesize(pool) == 0) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * @notice deployNewPool
      * @param erc20Contract_ address of ERC20 token contract
      */
-    // function deployNewLocalPool(
-    //     address erc20Contract_,
-    //     uint16 implementationVersion_
-    // ) public {
-    //     bytes32 bridgePoolSalt = getLocalBridgePoolSalt(erc20Contract_);
-    //     _implementation = getMetamorphicContractAddress(
-    //         getImplementationSalt(implementationVersion_),
-    //         _factoryAddress()
-    //     );
-    //     address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
-    //     emit BridgePoolCreated(contractAddr);
-    // }
+    function deployNewLocalPool(address erc20Contract_, uint16 implementationVersion_) public {
+        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(erc20Contract_);
+        _implementation = getMetamorphicContractAddress(
+            getImplementationSalt(implementationVersion_),
+            _factoryAddress()
+        );
+        address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
+        emit BridgePoolCreated(contractAddr);
+    }
 
     /**
      * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC20 contract's address

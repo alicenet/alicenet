@@ -1284,7 +1284,7 @@ async function getSalt(
 }
 
 /**
- * @description converts
+ * @description gets the salt from the contract and returns the bytes32 version of the salt
  * @param contractName the name of the contract to get the salt for
  * @param hre hardhat runtime environment
  * @returns the string that represents the 32Bytes version
