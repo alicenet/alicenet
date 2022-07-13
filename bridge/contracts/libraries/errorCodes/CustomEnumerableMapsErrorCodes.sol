@@ -3,5 +3,5 @@ pragma solidity ^0.8.11;
 
 library CustomEnumerableMapsErrorCodes {
     // CustomEnumerableMaps error codes
-    bytes32 internal constant CUSTOMENUMMAP_KEY_NOT_IN_MAP = "1900"; //"Error: Key not in the map!"
+    bytes32 public constant CUSTOMENUMMAP_KEY_NOT_IN_MAP = "1900"; //"Error: Key not in the map!"
 }
