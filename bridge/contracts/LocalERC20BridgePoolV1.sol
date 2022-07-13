@@ -13,7 +13,7 @@ import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/BridgePoolDepositNotifier.sol";
-import "contracts/BridgePoolFactory.sol";
+import "contracts/BridgeRouter.sol";
 import "hardhat/console.sol";
 
 /// @custom:salt LocalERC20BridgePoolV1
@@ -23,9 +23,8 @@ contract LocalERC20BridgePoolV1 is
     Initializable,
     ERC20SafeTransfer,
     ImmutableSnapshots,
-    ImmutableBridgePool,
     ImmutableBridgePoolDepositNotifier,
-    ImmutableBridgePoolFactory,
+    ImmutableBridgeRouter,
     ImmutableBToken
 {
     using MerkleProofParserLibrary for bytes;
@@ -43,7 +42,7 @@ contract LocalERC20BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc20TokenContract_) public onlyBridgePoolFactory initializer {
+    function initialize(address erc20TokenContract_) public onlyBridgeRouter initializer {
         _ercTokenContract = erc20TokenContract_;
     }
 
@@ -90,14 +89,21 @@ contract LocalERC20BridgePoolV1 is
                 revert(0x00, returndatasize())
             }
         }
-        bytes32 salt = BridgePoolFactory(_bridgePoolFactoryAddress()).getLocalBridgePoolSalt(
-            _ercTokenContract
+        uint16 chainId = 1337;
+        uint8 bridgeType = 1;
+        uint8 bridgeImplVersion = 1;
+        bytes32 salt = BridgeRouter(_bridgeRouterAddress()).getBridgePoolSalt(
+            _ercTokenContract,
+            bridgeType,
+            chainId,
+            bridgeImplVersion
         );
         BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
             salt,
             _ercTokenContract,
-            ercValue,
-            msg.sender
+            msg.sender,
+            bridgeType,
+            ercValue
         );
     }
 

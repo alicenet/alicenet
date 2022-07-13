@@ -36,6 +36,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function distribute() returns(uint256 minerAmount, uint256 stakingAmount, uint256 lpStakingAmount, uint256 foundationAmount)
 	Distribute(opts *bind.TransactOpts) (*types.Transaction, error)
+	// Hello is a paid mutator transaction binding the contract method 0x19ff1d21.
+	//
+	// Solidity: function hello() returns()
+	Hello(opts *bind.TransactOpts) (*types.Transaction, error)
 	// IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
@@ -56,6 +60,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function mintTo(address to_, uint256 minBTK_) payable returns(uint256 numBTK)
 	MintTo(opts *bind.TransactOpts, to_ common.Address, minBTK_ *big.Int) (*types.Transaction, error)
+	// PayAndDeposit is a paid mutator transaction binding the contract method 0x0e30f5d3.
+	//
+	// Solidity: function payAndDeposit(uint256 maxEth, uint256 maxTokens, bytes data) payable returns()
+	PayAndDeposit(opts *bind.TransactOpts, maxEth *big.Int, maxTokens *big.Int, data []byte) (*types.Transaction, error)
 	// SetAdmin is a paid mutator transaction binding the contract method 0x704b6c02.
 	//
 	// Solidity: function setAdmin(address admin_) returns()

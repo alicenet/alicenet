@@ -11,49 +11,50 @@ describe("Local ERC721 BridgePool Contract Factory", () => {
   let firstOwner: SignerWithAddress;
   let user: SignerWithAddress;
   let fixture: Fixture;
+  const poolType = 2; //ERC721
 
   beforeEach(async () => {
     fixture = await getFixture(true, true, false);
     [firstOwner, user] = await ethers.getSigners();
   });
 
-  it.skip("Should not deploy new BridgePool with BridgePoolFactory not being delegator", async () => {
+  it("Should not deploy two BridgePools with same ERC721 contract and version", async () => {
     const reason = ethers.utils.parseBytes32String(
-      await fixture.aliceNetFactoryBaseErrorCodesContract.ALICENETFACTORYBASE_UNAUTHORIZED()
+      await fixture.bridgeRouterErrorCodesContract.BRIDGEROUTER_UNABLE_TO_DEPLOY_BRIDGEPOOL()
     );
-    await expect(
-      fixture.bridgePoolFactory.deployNewPool(fixture.erc721Mock.address, 1)
-    ).to.be.revertedWith(reason);
-  });
-
-  it("Should not deploy two BridgePools with same ERC20 contract", async () => {
-    const reason = ethers.utils.parseBytes32String(
-      await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNABLE_TO_DEPLOY_BRIDGEPOOL()
-    );
-    await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
-    await fixture.bridgePoolFactory.deployNewPool(
+    await fixture.factory.setDelegator(fixture.bridgeRouter.address);
+    await fixture.bridgeRouter.deployNewLocalPool(
+      poolType,
       fixture.erc721Mock.address,
       1
     );
     await expect(
-      fixture.bridgePoolFactory.deployNewPool(fixture.erc721Mock.address, 1)
+      fixture.bridgeRouter.deployNewLocalPool(
+        poolType,
+        fixture.erc721Mock.address,
+        1
+      )
     ).to.be.revertedWith(reason);
   });
 
   it("Should not deploy new BridgePool with inexistent version", async () => {
     const reason = ethers.utils.parseBytes32String(
-      await fixture.bridgePoolFactoryErrorCodesContract.BRIDGEPOOLFACTORY_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION()
+      await fixture.bridgeRouterErrorCodesContract.BRIDGEROUTER_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION()
     );
-    await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+    await fixture.factory.setDelegator(fixture.bridgeRouter.address);
     await expect(
-      fixture.bridgePoolFactory.deployNewPool(fixture.erc721Mock.address, 11)
+      fixture.bridgeRouter.deployNewLocalPool(
+        poolType,
+        fixture.erc721Mock.address,
+        11
+      )
     ).to.be.revertedWith(reason);
   });
 
-  it("Should deploy new BridgePool with BridgePoolFactory being delegator", async () => {
-    await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+  it("Should deploy new BridgePool", async () => {
     const deployNewPoolTransaction =
-      await fixture.bridgePoolFactory.deployNewPool(
+      await fixture.bridgeRouter.deployNewLocalPool(
+        poolType,
         fixture.erc721Mock.address,
         1
       );

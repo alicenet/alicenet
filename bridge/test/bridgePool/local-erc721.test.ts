@@ -46,16 +46,21 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
   ],
   [burnedUTXO]
 );
+let depositCallData;
+let encodedDepositCallData: string;
+const poolType = 2; //ERC721
+
 const networkId = 1337;
 describe("Testing BridgePool", () => {
   beforeEach(async function () {
     [firstOwner, user, user2] = await ethers.getSigners();
     fixture = await getFixture(true, true, false);
-    await fixture.factory.setDelegator(fixture.bridgePoolFactory.address);
+    await fixture.factory.setDelegator(fixture.bridgeRouter.address);
     const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
     // Deploy a new pool
     const deployNewPoolTransaction =
-      await fixture.bridgePoolFactory.deployNewPool(
+      await fixture.bridgeRouter.deployNewLocalPool(
+        poolType,
         fixture.erc721Mock.address,
         1
       );
@@ -89,10 +94,65 @@ describe("Testing BridgePool", () => {
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
+    depositCallData = {
+      ERCContract: fixture.erc721Mock.address,
+      tokenType: 2, // ERC721
+      number: tokenId,
+      chainID: 1337,
+      poolVersion: 1,
+    };
+    encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
+      [
+        "tuple(address ERCContract, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
+      ],
+      [depositCallData]
+    );
+    // encodedDepositCallData = ethers.utils.solidityPack(
+    //   ["address", "uint8", "uint256", "uint256", "uint16"],
+    //   [
+    //     fixture.erc721Mock.address,
+    //     2, // ERC721
+    //     tokenId,
+    //     1337,
+    //     1,
+    //   ]
+    // )
     showState("Initial", await getState(fixture, bridgePool));
   });
 
   describe("Testing BridgePool Router", async () => {
+    it.only("Should make a deposit with parameters and emit correspondent event", async () => {
+      expectedState = await getState(fixture, bridgePool);
+      expectedState.Balances.nft.user -= BigNumber.from(1).toBigInt();
+      expectedState.Balances.nft.bridgePool += BigNumber.from(1).toBigInt();
+      expectedState.Balances.bToken.user -= bTokenAmount;
+      expectedState.Balances.bToken.totalSupply -= bTokenAmount;
+      const nonce = 1;
+      let maxEth = 1;
+      let maxTokens = 11; // has to be > 10 for now
+      await expect(
+        fixture.bToken
+          .connect(user)
+          .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+            value: ethers.utils.parseEther("1.0"),
+          })
+      )
+        .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
+        .withArgs(
+          BigNumber.from(nonce),
+          fixture.erc721Mock.address,
+          user.address,
+          BigNumber.from(poolType),
+          BigNumber.from(tokenId),
+          BigNumber.from(networkId)
+        );
+
+      showState("After Deposit", await getState(fixture, bridgePool));
+      expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        expectedState
+      );
+    });
+
     it("Should make a deposit with parameters and emit correspondent event", async () => {
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.nft.user -= BigNumber.from(1).toBigInt();

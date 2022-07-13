@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/BridgePoolFactory.sol";
+import "contracts/BridgeRouter.sol";
 
 /// @custom:salt BridgePoolDepositNotifier
 /// @custom:deploy-type deployUpgradeable
-contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFactory {
+contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgeRouter {
     uint256 internal _nonce = 0;
     uint256 internal immutable _networkId;
 
@@ -14,6 +14,7 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFacto
         uint256 nonce,
         address ercContract,
         address owner,
+        uint8 tokenType,
         uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
         uint256 networkId
     );
@@ -23,8 +24,10 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFacto
      * @param bridgePoolSalt informed salt
      */
     modifier onlyBridgePool(bytes32 bridgePoolSalt) {
-        address allowedAddress = BridgePoolFactory(_bridgePoolFactoryAddress())
-            .getStaticPoolContractAddress(bridgePoolSalt, _bridgePoolFactoryAddress());
+        address allowedAddress = BridgeRouter(_bridgeRouterAddress()).getStaticPoolContractAddress(
+            bridgePoolSalt,
+            _bridgeRouterAddress()
+        );
         require(
             msg.sender == allowedAddress,
             string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BRIDGEPOOL))
@@ -46,11 +49,12 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgePoolFacto
     function doEmit(
         bytes32 salt,
         address ercContract,
-        uint256 number,
-        address owner
+        address owner,
+        uint8 tokenType,
+        uint256 number
     ) public onlyBridgePool(salt) {
         uint256 n = _nonce + 1;
-        emit Deposited(n, ercContract, owner, number, _networkId);
+        emit Deposited(n, ercContract, owner, tokenType, number, _networkId);
         _nonce = n;
     }
 }

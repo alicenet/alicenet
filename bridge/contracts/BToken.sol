@@ -8,7 +8,7 @@ import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/BridgePoolFactory.sol";
+import "contracts/BridgeRouter.sol";
 import "contracts/libraries/errorCodes/BTokenErrorCodes.sol";
 
 /// @custom:salt BToken
@@ -86,22 +86,22 @@ contract BToken is
 
     function payAndDeposit(
         uint256 maxEth,
-        maxtokens,
+        uint256 maxTokens,
         bytes calldata data
     ) public payable {
         //forward call to btoken
-        uint256 bTokenAmount = BridgePoolFactory(_bridgeRouterAddress()).routeDeposit(
+        uint256 bTokenAmount = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
             msg.sender,
-            maxToken,
+            maxTokens,
             data
         );
         //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
             uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenAmount);
-            require(maxEth <= ethFee && msg.value >= ethFee, "insufficient funds");
+            require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
-                msg.sender.transfer(refund);
+                payable(msg.sender).transfer(refund);
             }
         } else {
             _destroyTokens(bTokenAmount);

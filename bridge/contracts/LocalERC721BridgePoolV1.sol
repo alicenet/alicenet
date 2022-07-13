@@ -15,7 +15,7 @@ import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/BridgePoolDepositNotifier.sol";
-import "contracts/BridgePoolFactory.sol";
+import "contracts/BridgeRouter.sol";
 import "hardhat/console.sol";
 
 /// @custom:salt LocalERC721BridgePoolV1
@@ -26,15 +26,14 @@ contract LocalERC721BridgePoolV1 is
     IBridgePool,
     Initializable,
     ImmutableSnapshots,
-    ImmutableBridgePool,
     ImmutableBToken,
     ImmutableBridgePoolDepositNotifier,
-    ImmutableBridgePoolFactory
+    ImmutableBridgeRouter
 {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
-    address internal _erc721SourceContract;
+    address internal _erc721Contract;
 
     struct UTXO {
         uint32 chainID;
@@ -46,39 +45,36 @@ contract LocalERC721BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc721SourceContract_) public onlyBridgePoolFactory initializer {
-        _erc721SourceContract = erc721SourceContract_;
+    function initialize(address erc721Contract_) public onlyBridgeRouter initializer {
+        _erc721Contract = erc721Contract_;
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param accountType_ The type of account
-    /// @param aliceNetAddress_ The address on the sidechain where to mint the tokens
-    /// @param tokenId_ The token ID of the NFT to be deposited
+    /// @param msgSender The address of ERC sender
+    /// @param number The token ID of the NFT to be deposited
     /// @param bTokenAmount_ The fee for deposit in bTokens
     function deposit(
         uint8 accountType_,
-        address aliceNetAddress_,
-        uint256 tokenId_,
+        address msgSender,
+        uint256 number,
         uint256 bTokenAmount_
     ) public {
-        IERC721Transferable(_erc721SourceContract).safeTransferFrom(
-            msg.sender,
-            address(this),
-            tokenId_
-        );
-        require(
-            ERC20(_bTokenAddress()).transferFrom(msg.sender, address(this), bTokenAmount_),
-            string(
-                abi.encodePacked(
-                    BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_TRANSFER_DEPOSIT_FEE_FROM_SENDER
-                )
-            )
-        );
-        uint256 value = BToken(_bTokenAddress()).burnTo(address(this), bTokenAmount_, 1);
-        require(
-            value > 0,
-            string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_BURN_DEPOSIT_FEE))
-        );
+        IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
+        // require(
+        //     ERC20(_bTokenAddress()).transferFrom(msg.sender, address(this), bTokenAmount_),
+        //     string(
+        //         abi.encodePacked(
+        //             BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_TRANSFER_DEPOSIT_FEE_FROM_SENDER
+        //         )
+        //     )
+        // );
+        // uint256 value = BToken(_bTokenAddress()).burnTo(address(this), bTokenAmount_, 1);
+        // require(
+        //     value > 0,
+        //     string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_BURN_DEPOSIT_FEE))
+        // );
+        uint256 value = bTokenAmount_;
         address btoken = _bTokenAddress();
         assembly {
             mstore8(0x00, 0x73)
@@ -90,14 +86,21 @@ contract LocalERC721BridgePoolV1 is
                 revert(0x00, returndatasize())
             }
         }
-        bytes32 salt = BridgePoolFactory(_bridgePoolFactoryAddress()).getLocalBridgePoolSalt(
-            _erc721SourceContract
+        uint8 bridgeType = 2;
+        uint256 chainId = 1337;
+        uint16 bridgeImplVersion = 1;
+        bytes32 salt = BridgeRouter(_bridgeRouterAddress()).getBridgePoolSalt(
+            _erc721Contract,
+            bridgeType,
+            chainId,
+            bridgeImplVersion
         );
         BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
             salt,
-            _erc721SourceContract,
-            tokenId_,
-            msg.sender
+            _erc721Contract,
+            msgSender,
+            bridgeType,
+            number
         );
     }
 
@@ -122,7 +125,7 @@ contract LocalERC721BridgePoolV1 is
             merkleProof.checkProof(bClaims.stateRoot, merkleProof.computeLeafHash()),
             string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN))
         );
-        IERC721Transferable(_erc721SourceContract).safeTransferFrom(
+        IERC721Transferable(_erc721Contract).safeTransferFrom(
             address(this),
             msg.sender,
             burnedUTXO.value // tokenId

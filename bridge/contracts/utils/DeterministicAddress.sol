@@ -32,9 +32,6 @@ abstract contract DeterministicAddress {
         pure
         returns (address)
     {
-        // does not work: 5880818283335afa3d82833e3d91f3
-        // bytes32 metamorphicContractBytecodeHash_ = 0xcd77112ba3315c30f6863dae90cb281bf2f644ef3fd9d21e53d1968182daa472;
-
         // works: 5880818283335afa3d82833e3d82f3
         bytes32 metamorphicContractBytecodeHash_ = 0xf231e946a2f88d89eafa7b43271c54f58277304b93ac77d138d9b0bb3a989b6d;
         return

@@ -89,7 +89,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
 
 export function showState(title: string, state: state) {
   if (process.env.npm_config_detailed === "true") {
-    // execute "npm run --detailed=true test" to see this output
+    // execute "npm run --detailed=t--detailed=truerue test" to see this output
     console.log(title, state);
   }
 }

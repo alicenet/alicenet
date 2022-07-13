@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 interface IBridgePool {
-    function initialize(address erc20TokenContract_) external;
+    function initialize(address ercContract_) external;
 
     function deposit(
         uint8 accountType_,

@@ -83,6 +83,10 @@ type ISnapshotsCaller interface {
 	//
 	// Solidity: function getSnapshotDesperationFactor() view returns(uint256)
 	GetSnapshotDesperationFactor(opts *bind.CallOpts) (*big.Int, error)
+	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
+	//
+	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
+	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 	//
 	// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 blsig, uint256 desperationFactor) pure returns(bool)

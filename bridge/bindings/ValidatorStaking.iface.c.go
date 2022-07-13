@@ -68,6 +68,10 @@ type IValidatorStakingCaller interface {
 		AccumulatorEth    *big.Int
 		AccumulatorToken  *big.Int
 	}, error)
+	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
+	//
+	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
+	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// GetTokenAccumulator is a free data retrieval call binding the contract method 0xc47c6e14.
 	//
 	// Solidity: function getTokenAccumulator() view returns(uint256 accumulator, uint256 slush)

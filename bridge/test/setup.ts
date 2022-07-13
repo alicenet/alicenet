@@ -16,7 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BridgePoolDepositNotifier,
-  BridgePoolFactory,
+  BridgeRouter,
   BToken,
   ETHDKG,
   Foundation,
@@ -317,7 +317,6 @@ export const deployUpgradeableWithFactory = async (
   } else {
     saltBytes = getBytes32Salt(salt);
   }
-
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (
@@ -598,17 +597,17 @@ export const getFixture = async (
   const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC721BridgePoolV1",
-    getLocalBridgePoolSalt(1)
+    getLocalERC721BridgePoolSalt(1)
   )) as IBridgePool;
 
   // BridgePoolFactory
-  const bridgePoolFactory = (await deployUpgradeableWithFactory(
+  const bridgeRouter = (await deployUpgradeableWithFactory(
     factory,
-    "BridgePoolFactory",
-    "BridgePoolFactory",
+    "BridgeRouter",
+    "BridgeRouter",
     undefined,
     [1337]
-  )) as BridgePoolFactory;
+  )) as BridgeRouter;
 
   //BridgePoolDepositNotifier
   const bridgePoolDepositNotifier = (await deployUpgradeableWithFactory(
@@ -631,10 +630,8 @@ export const getFixture = async (
     await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
   ).deployed();
 
-  const bridgePoolFactoryErrorCodesContract = await (
-    await (
-      await ethers.getContractFactory("BridgePoolFactoryErrorCodes")
-    ).deploy()
+  const bridgeRouterErrorCodesContract = await (
+    await (await ethers.getContractFactory("BridgeRouterErrorCodes")).deploy()
   ).deployed();
 
   const aliceNetFactoryBaseErrorCodesContract = await (
@@ -662,7 +659,7 @@ export const getFixture = async (
     factory,
     localERC721BridgePoolV1,
     erc721Mock,
-    bridgePoolFactory,
+    bridgeRouter,
     bridgePoolDepositNotifier,
     namedSigners,
     aTokenMinter,
@@ -673,7 +670,7 @@ export const getFixture = async (
     bridgePoolErrorCodesContract,
     immutableAuthErrorCodesContract,
     aliceNetFactoryBaseErrorCodesContract,
-    bridgePoolFactoryErrorCodesContract,
+    bridgeRouterErrorCodesContract,
   };
 };
 
@@ -778,12 +775,24 @@ export const getMetamorphicAddress = (
   );
 };
 
-export const getLocalBridgePoolSalt = (version: number): string => {
+export const getLocalERC20BridgePoolSalt = (version: number): string => {
   return ethers.utils.keccak256(
     ethers.utils.solidityPack(
       ["bytes32", "bytes32"],
       [
         ethers.utils.solidityKeccak256(["string"], ["LocalERC20"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
+};
+
+export const getLocalERC721BridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC721"]),
         ethers.utils.solidityKeccak256(["uint16"], [version]),
       ]
     )

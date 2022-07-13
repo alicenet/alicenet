@@ -3,6 +3,7 @@ pragma solidity ^0.8.11;
 import "contracts/AliceNetFactory.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePool.sol";
+import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
 
@@ -56,7 +57,7 @@ contract BridgeRouter is
     ) public onlyBToken returns (uint256 btokenFeeAmount) {
         //get the fee to deposit a token into the bridge
         btokenFeeAmount = 10;
-        require(maxTokens >= btokenFeeAmount, "insufficient funds");
+        require(maxTokens >= btokenFeeAmount, "BridgeRouter: ERROR insufficient funds");
         // use abi decode to extract the information out of data
         DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
         //encode the salt with the information from
@@ -70,29 +71,55 @@ contract BridgeRouter is
         address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
 
         //call the pool to initiate deposit
-        IBridgePool(poolAddress).deposit(msgSender, depositCallData.depositAmount);
+        IBridgePool(poolAddress).deposit(1, msgSender, depositCallData.number, 0);
 
         emit DepositedERCToken(
             nonce,
             depositCallData.ERCContract,
             msg.sender,
             depositCallData.tokenType,
-            depositCallData.number
+            depositCallData.number,
+            _networkId
         );
         nonce++;
+        return btokenFeeAmount;
     }
 
     /**
-     * @notice deployNewPool
-     * @param erc20Contract_ address of ERC20 token contract
+     * @notice deployNewLocalPool
+     * @param ercContract_ address of ERC20 token contract
      */
-    function deployNewLocalPool(address erc20Contract_, uint16 implementationVersion_) public {
-        bytes32 bridgePoolSalt = getLocalBridgePoolSalt(erc20Contract_);
+    function deployNewLocalPool(
+        uint8 type_,
+        address ercContract_,
+        uint16 implementationVersion_
+    ) public {
+        bytes memory initCallData = abi.encodeWithSignature("inititalize(address)", ercContract_);
+        bytes32 bridgePoolSalt = getBridgePoolSalt(
+            ercContract_,
+            type_,
+            _networkId,
+            implementationVersion_
+        );
         _implementation = getMetamorphicContractAddress(
-            getImplementationSalt(implementationVersion_),
+            getLocalERC721ImplementationSalt(implementationVersion_),
             _factoryAddress()
         );
+        uint256 implementationSize;
+        address implementation = _implementation;
+        assembly {
+            implementationSize := extcodesize(implementation)
+        }
+        require(
+            implementationSize > 0,
+            string(
+                abi.encodePacked(
+                    BridgeRouterErrorCodes.BRIDGEROUTER_UNEXISTENT_BRIDGEPOOL_IMPLEMENTATION_VERSION
+                )
+            )
+        );
         address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
+        IBridgePool(contractAddr).initialize(ercContract_);
         emit BridgePoolCreated(contractAddr);
     }
 
@@ -143,40 +170,24 @@ contract BridgeRouter is
             );
     }
 
-    function codeCopy(address addr) public view returns (bytes memory) {
-        assembly {
-            let ptr := mload(0x40)
-            extcodecopy(addr, ptr, 0, extcodesize(addr))
-            return(ptr, extcodesize(addr))
-        }
-    }
-
     function _deployStaticPool(bytes32 salt_, bytes memory initCallData_)
         internal
         returns (address contractAddr)
     {
-        uint256 response;
-        uint256 contractsize;
+        address contractAddr;
+        uint256 contractSize;
         assembly {
             let ptr := mload(0x40)
-            mstore(ptr, shl(144, 0x5880818283335afa3d82833e3d82f3))
-            //mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d91f3))
+            mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
             contractAddr := create2(0, ptr, 15, salt_)
-            response := returndatasize()
-            contractsize := extcodesize(contractAddr)
-            //if the returndatasize is not 0 revert with the error message
-            if iszero(iszero(returndatasize())) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0, returndatasize())
-            }
-            //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
-            if or(iszero(contractAddr), iszero(extcodesize(contractAddr))) {
-                mstore(0, "static pool deploy failed")
-                revert(0, 0x20)
-            }
+            contractSize := extcodesize(contractAddr)
         }
-        console.log("bytecode");
-        console.logBytes(codeCopy(contractAddr));
+        require(
+            contractSize > 0,
+            string(
+                abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_UNABLE_TO_DEPLOY_BRIDGEPOOL)
+            )
+        );
         return contractAddr;
     }
 
