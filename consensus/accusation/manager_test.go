@@ -18,7 +18,6 @@ import (
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -310,9 +309,8 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	testProxy.manager.processingPipeline = append(testProxy.manager.processingPipeline, accuseAllRoundStates)
 
 	// create accusation
-	accusation := &objs.BaseAccusation{
-		UUID: uuid.New(),
-	}
+	accusation := &objs.BaseAccusation{}
+	copy(accusation.ID[:], crypto.Hasher([]byte("blah")))
 
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
@@ -326,10 +324,10 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
 	err := testProxy.manager.database.View(func(txn *badger.Txn) error {
-		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetUUID())
+		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetID())
 		assert.Nil(t, err)
 
-		assert.Equal(t, acc.GetUUID().String(), accusation.GetUUID().String())
+		assert.Equal(t, acc.GetID(), accusation.GetID())
 		assert.Equal(t, acc.GetState(), accusation.GetState())
 		assert.Equal(t, acc.GetPersistenceTimestamp(), accusation.GetPersistenceTimestamp())
 
@@ -351,10 +349,10 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 
 	// create a Persisted accusation and store in DB
 	accusation := &objs.BaseAccusation{
-		UUID:                 uuid.New(),
 		State:                objs.Persisted,
 		PersistenceTimestamp: uint64(time.Now().Unix()),
 	}
+	copy(accusation.ID[:], crypto.Hasher([]byte("blah")))
 
 	err := testProxy.manager.database.Update(func(txn *badger.Txn) error {
 		return testProxy.manager.database.SetAccusation(txn, accusation)
@@ -369,10 +367,10 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 	assert.Empty(t, testProxy.manager.unpersistedScheduledAccusations)
 
 	err = testProxy.manager.database.View(func(txn *badger.Txn) error {
-		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetUUID())
+		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetID())
 		assert.Nil(t, err)
 
-		assert.Equal(t, acc.GetUUID().String(), accusation.GetUUID().String())
+		assert.Equal(t, acc.GetID(), accusation.GetID())
 		assert.Equal(t, acc.GetState(), objs.ScheduledForExecution)
 		assert.Equal(t, acc.GetPersistenceTimestamp(), accusation.GetPersistenceTimestamp())
 

@@ -2,8 +2,10 @@ package accusation
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 
+	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
@@ -78,6 +80,44 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.
 		return nil, false
 	}
 
+	/*
+		to calculate the deterministic accusation ID based on signature sorting:
+
+		convert sig0 and sig1 to uints and sort ASC
+		if for example sig0 < sig1 then
+		  id = keccak(sig0, pclaims0, sig1, pclaims1)
+		no need to submit acc object with sig0 being the lowest sig and sig1 being the highest sig
+	*/
+	sig0 := uint256.Zero()
+	err = sig0.UnmarshalBinary(crypto.Hasher(rs.Proposal.Signature))
+	if err != nil {
+		return nil, false
+	}
+	sig1 := uint256.Zero()
+	err = sig1.UnmarshalBinary(crypto.Hasher(rs.ConflictingProposal.Signature))
+	if err != nil {
+		return nil, false
+	}
+
+	sig0Big, err := sig0.ToBigInt()
+	if err != nil {
+		return nil, false
+	}
+
+	sig1Big, err := sig1.ToBigInt()
+	if err != nil {
+		return nil, false
+	}
+
+	logging.GetLogger("accusations").WithFields(logrus.Fields{
+		"sig0":      sig0,
+		"sig0.3":    sig0Big.String(),
+		"prop0.sig": hex.EncodeToString(rs.Proposal.Signature),
+		"sig1":      sig1,
+		"sig1.3":    sig1Big.String(),
+		"prop1.sig": hex.EncodeToString(rs.ConflictingProposal.Signature),
+	}).Warn("sigs")
+
 	// submit both proposals and already validated that both RClaims are valid and sigs are different
 	acc := &objs.MultipleProposalAccusation{
 		Signature0: rs.Proposal.Signature,
@@ -86,13 +126,29 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.
 		Proposal1:  rs.ConflictingProposal.PClaims,
 	}
 
+	if sig0Big.Cmp(sig1Big) <= 0 {
+		copy(
+			acc.ID[:],
+			crypto.Hasher(
+				rs.Proposal.Signature,
+				proposalPClaimsBin,
+				rs.ConflictingProposal.Signature,
+				conflictingProposalPClaimsBin,
+			),
+		)
+	} else {
+		copy(
+			acc.ID[:],
+			crypto.Hasher(
+				rs.ConflictingProposal.Signature,
+				conflictingProposalPClaimsBin,
+				rs.Proposal.Signature,
+				proposalPClaimsBin,
+			),
+		)
+	}
+
 	// todo: form Accusation task here
-	/*
-		// convert sig0 and sig1 to uints and sort ASC
-		// if for example sig0 < sig1 then
-		//	 id = keccak(sig0, pclaims0, sig1, pclaims1)
-		// submit acc object with sig0 being the lowest sig and sig1 being the highest sig
-	*/
 
 	return acc, true
 }

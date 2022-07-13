@@ -11,6 +11,7 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  Accusations,
   AliceNetFactory,
   AToken,
   ATokenBurner,
@@ -65,6 +66,7 @@ export interface Fixture extends BaseTokensFixture {
   ethdkg: ETHDKG;
   stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
+  accusations: Accusations;
 }
 
 /**
@@ -571,6 +573,12 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
+  const accusations = (await deployUpgradeableWithFactory(
+    factory,
+    "Accusations",
+    "Accusations"
+  )) as Accusations;
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -594,6 +602,7 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
+    accusations,
   };
 };
 

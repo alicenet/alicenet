@@ -11,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -170,7 +169,6 @@ func (m *Manager) Poll() error {
 		return nil
 	case acc := <-m.accusationQ:
 		// an accusation has been formed and it needs to be sent to the smart contracts
-		acc.SetUUID(uuid.New())
 		m.logger.Debugf("Got an accusation from a worker: %#v", acc)
 		m.unpersistedCreatedAccusations = append(m.unpersistedCreatedAccusations, acc)
 	default:
