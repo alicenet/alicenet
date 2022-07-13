@@ -41,15 +41,16 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     // move to the end of Distribute Share Dispute phase
     await endCurrentPhase(ethdkg);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
   });
 
   it("allows accusation of some missing validators after distribute shares Phase", async function () {
@@ -84,15 +85,16 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // user tries to go to the next phase
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
   });
 
   it("do not allow validators to proceed to the next phase if not all validators distributed their shares", async function () {
@@ -114,15 +116,16 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // valid user tries to go to the next phase
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
   });
 
   // MISSING REGISTRATION ACCUSATION TESTS
@@ -160,14 +163,15 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     // move to the end of Distribute Share phase
     await endCurrentPhase(ethdkg);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[2].address))
         .distributeShares(
           validators4[2].encryptedShares,
           validators4[2].commitments
-        )
-    ).to.be.revertedWith("133");
+        ),
+      `ETHDKGNotInSharedDistributionPhase(1)`
+    );
   });
 
   it("should not allow validators who did not distributed shares in time to submit Key shares", async function () {
@@ -189,26 +193,28 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // valid user tries to go to the next phase
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
 
     // non-participant user tries to go to the next phase
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
   });
 
   it("should not allow accusation of not distributing shares of validators that distributed shares", async function () {

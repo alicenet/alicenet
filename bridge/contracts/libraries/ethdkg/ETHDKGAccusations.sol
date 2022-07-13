@@ -73,11 +73,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             if (dishonestParticipant.distributedSharesHash != 0x0) {
                 revert ETHDKGErrors.AccusedDistributedSharesInRound(dishonestAddresses[i]);
             }
-            require(
-                dishonestParticipant.commitmentsFirstCoefficient[0] == 0 &&
-                    dishonestParticipant.commitmentsFirstCoefficient[1] == 0,
-                string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_HAS_COMMITMENTS))
-            );
+            if (
+                !(dishonestParticipant.commitmentsFirstCoefficient[0] == 0 &&
+                    dishonestParticipant.commitmentsFirstCoefficient[1] == 0)
+            ) {
+                revert ETHDKGErrors.AccusedHasCommitments(dishonestAddresses[i]);
+            }
 
             IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
             badParticipants++;
@@ -94,15 +95,16 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         uint256[2] memory sharedKeyCorrectnessProof
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
-        require(
-            (_ethdkgPhase == Phase.DisputeShareDistribution &&
+        if (
+            !((_ethdkgPhase == Phase.DisputeShareDistribution &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength) ||
                 (_ethdkgPhase == Phase.ShareDistribution &&
                     (block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_DISPUTE_PHASE))
-        );
+                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInDisputePhase(_ethdkgPhase);
+        }
 
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddress)) {
             revert ETHDKGErrors.AccusedNotValidator(dishonestAddress);
@@ -111,48 +113,53 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         Participant memory dishonestParticipant = _participants[dishonestAddress];
         Participant memory disputer = _participants[msg.sender];
 
-        require(
-            disputer.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_DISPUTER_NOT_PARTICIPATING_IN_ROUND))
-        );
+        if (disputer.nonce != _nonce) {
+            revert ETHDKGErrors.DisputerNotParticipatingInRound(msg.sender);
+        }
 
         if (dishonestParticipant.nonce != _nonce) {
             revert ETHDKGErrors.AccusedNotParticipatingInRound(dishonestAddress);
         }
 
-        require(
-            dishonestParticipant.phase == Phase.ShareDistribution,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_DID_NOT_DISTRIBUTE_SHARES_IN_ROUND))
-        );
+        if (dishonestParticipant.phase != Phase.ShareDistribution) {
+            revert ETHDKGErrors.AccusedDidNotDistributeSharesInRound(dishonestAddress);
+        }
 
-        require(
-            disputer.phase == Phase.ShareDistribution,
-            string(
-                abi.encodePacked(ETHDKGErrors.ETHDKG_DISPUTER_DID_NOT_DISTRIBUTE_SHARES_IN_ROUND)
+        if (disputer.phase != Phase.ShareDistribution) {
+            revert ETHDKGErrors.DisputerDidNotDistributeSharesInRound(msg.sender);
+        }
+
+        if (
+            dishonestParticipant.distributedSharesHash !=
+            keccak256(
+                abi.encodePacked(
+                    keccak256(abi.encodePacked(encryptedShares)),
+                    keccak256(abi.encodePacked(commitments))
+                )
             )
-        );
-
-        require(
-            dishonestParticipant.distributedSharesHash ==
+        ) {
+            revert ETHDKGErrors.SharesAndCommitmentsMismatch(
+                dishonestParticipant.distributedSharesHash,
                 keccak256(
                     abi.encodePacked(
                         keccak256(abi.encodePacked(encryptedShares)),
                         keccak256(abi.encodePacked(commitments))
                     )
-                ),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_SHARES_AND_COMMITMENTS_MISMATCH))
-        );
+                )
+            );
+        }
 
-        require(
-            CryptoLibrary.discreteLogEquality(
+        if (
+            !CryptoLibrary.discreteLogEquality(
                 [CryptoLibrary.G1_X, CryptoLibrary.G1_Y],
                 disputer.publicKey,
                 dishonestParticipant.publicKey,
                 sharedKey,
                 sharedKeyCorrectnessProof
-            ),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_INVALID_KEY_OR_PROOF))
-        );
+            )
+        ) {
+            revert ETHDKGErrors.InvalidKeyOrProof();
+        }
 
         // Since all provided data is valid so far, we load the share and use the verified shared
         // key to decrypt the share for the disputer.
@@ -192,12 +199,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     }
 
     function accuseParticipantDidNotSubmitKeyShares(address[] memory dishonestAddresses) external {
-        require(
-            _ethdkgPhase == Phase.KeyShareSubmission &&
+        if (
+            !(_ethdkgPhase == Phase.KeyShareSubmission &&
                 (block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_POST_KEYSHARE_SUBMISSION_PHASE))
-        );
+                    block.number < _phaseStartBlock + 2 * _phaseLength))
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInPostKeyshareSubmissionPhase(_ethdkgPhase);
+        }
 
         uint16 badParticipants = _badParticipants;
 
@@ -212,15 +220,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedNotParticipatingInRound(dishonestAddresses[i]);
             }
 
-            require(
-                dishonestParticipant.phase != Phase.KeyShareSubmission,
-                string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_SUBMITTED_SHARES_IN_ROUND))
-            );
+            if (dishonestParticipant.phase == Phase.KeyShareSubmission) {
+                revert ETHDKGErrors.AccusedSubmittedSharesInRound(dishonestAddresses[i]);
+            }
 
-            require(
-                dishonestParticipant.keyShares[0] == 0 && dishonestParticipant.keyShares[1] == 0,
-                string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_SUBMITTED_SHARES_IN_ROUND))
-            );
+            if (dishonestParticipant.keyShares[0] != 0 || dishonestParticipant.keyShares[1] != 0) {
+                revert ETHDKGErrors.AccusedSubmittedSharesInRound(dishonestAddresses[i]);
+            }
 
             // evict the validator that didn't submit his shares
             IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
@@ -230,12 +236,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     }
 
     function accuseParticipantDidNotSubmitGPKJ(address[] memory dishonestAddresses) external {
-        require(
-            _ethdkgPhase == Phase.GPKJSubmission &&
+        if (
+            !(_ethdkgPhase == Phase.GPKJSubmission &&
                 (block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_POST_GPKJ_SUBMISSION_PHASE))
-        );
+                    block.number < _phaseStartBlock + 2 * _phaseLength))
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+        }
 
         uint16 badParticipants = _badParticipants;
 
@@ -249,23 +256,19 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedNotParticipatingInRound(dishonestAddresses[i]);
             }
 
-            require(
-                dishonestParticipant.phase != Phase.GPKJSubmission,
-                string(
-                    abi.encodePacked(
-                        ETHDKGErrors.ETHDKG_ACCUSED_DID_NOT_PARTICIPATE_IN_GPKJ_SUBMISSION
-                    )
-                )
-            );
+            if (dishonestParticipant.phase == Phase.GPKJSubmission) {
+                revert ETHDKGErrors.AccusedDidNotParticipateInGPKJSubmission(dishonestAddresses[i]);
+            }
 
             // todo: being paranoic, check if we need this or if it's expensive
-            require(
-                dishonestParticipant.gpkj[0] == 0 &&
+            if (
+                !(dishonestParticipant.gpkj[0] == 0 &&
                     dishonestParticipant.gpkj[1] == 0 &&
                     dishonestParticipant.gpkj[2] == 0 &&
-                    dishonestParticipant.gpkj[3] == 0,
-                string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_DISTRIBUTED_GPKJ))
-            );
+                    dishonestParticipant.gpkj[3] == 0)
+            ) {
+                revert ETHDKGErrors.AccusedDistributedGPKJ(dishonestAddresses[i]);
+            }
 
             IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
             badParticipants++;
@@ -281,15 +284,16 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         address dishonestAddress
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
-        require(
-            (_ethdkgPhase == Phase.DisputeGPKJSubmission &&
+        if (
+            !((_ethdkgPhase == Phase.DisputeGPKJSubmission &&
                 block.number >= _phaseStartBlock &&
                 block.number < _phaseStartBlock + _phaseLength) ||
                 (_ethdkgPhase == Phase.GPKJSubmission &&
                     (block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_POST_GPKJ_SUBMISSION_PHASE))
-        );
+                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+        }
 
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddress)) {
             revert ETHDKGErrors.AccusedNotValidator(dishonestAddress);
@@ -298,16 +302,16 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         Participant memory dishonestParticipant = _participants[dishonestAddress];
         Participant memory disputer = _participants[msg.sender];
 
-        require(
-            dishonestParticipant.nonce == _nonce &&
-                dishonestParticipant.phase == Phase.GPKJSubmission,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_ACCUSED_DID_NOT_SUBMIT_GPKJ_IN_ROUND))
-        );
+        if (
+            !(dishonestParticipant.nonce == _nonce &&
+                dishonestParticipant.phase == Phase.GPKJSubmission)
+        ) {
+            revert ETHDKGErrors.AccusedDidNotSubmitGPKJInRound(dishonestAddress);
+        }
 
-        require(
-            disputer.nonce == _nonce && disputer.phase == Phase.GPKJSubmission,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_DISPUTER_DID_NOT_SUBMIT_GPKJ_IN_ROUND))
-        );
+        if (!(disputer.nonce == _nonce && disputer.phase == Phase.GPKJSubmission)) {
+            revert ETHDKGErrors.DisputerDidNotSubmitGPKJInRound(msg.sender);
+        }
 
         uint16 badParticipants = _badParticipants;
         // n is total _participants;
@@ -319,36 +323,46 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // Begin initial check
         ////////////////////////////////////////////////////////////////////////
         // First, check length of things
-        require(
-            (validators.length == numParticipants) &&
-                (encryptedSharesHash.length == numParticipants) &&
-                (commitments.length == numParticipants),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_INVALID_ARGS))
-        );
+        if (
+            (validators.length != numParticipants) ||
+            (encryptedSharesHash.length != numParticipants) ||
+            (commitments.length != numParticipants)
+        ) {
+            revert ETHDKGErrors.ArgumentsLengthDoesNotEqualNumberOfParticipants(
+                validators.length,
+                encryptedSharesHash.length,
+                commitments.length,
+                numParticipants
+            );
+        }
         {
             uint256 bitMap = 0;
             uint256 nonce = _nonce;
             // Now, ensure sub-arrays are the correct length as well
             for (uint256 k = 0; k < numParticipants; k++) {
-                require(
-                    commitments[k].length == threshold + 1,
-                    string(abi.encodePacked(ETHDKGErrors.ETHDKG_INVALID_COMMITMENTS))
-                );
+                if (commitments[k].length != threshold + 1) {
+                    revert ETHDKGErrors.InvalidCommitments(commitments[k].length, threshold + 1);
+                }
 
                 bytes32 commitmentsHash = keccak256(abi.encodePacked(commitments[k]));
                 Participant memory participant = _participants[validators[k]];
-                require(
-                    participant.nonce == nonce &&
+                if (
+                    !(participant.nonce == nonce &&
                         participant.index <= type(uint8).max &&
-                        !_isBitSet(bitMap, uint8(participant.index)),
-                    string(abi.encodePacked(ETHDKGErrors.ETHDKG_INVALID_OR_DUPLICATED_PARTICIPANT))
-                );
+                        !_isBitSet(bitMap, uint8(participant.index)))
+                ) {
+                    revert ETHDKGErrors.InvalidOrDuplicatedParticipant(validators[k]);
+                }
 
-                require(
-                    participant.distributedSharesHash ==
-                        keccak256(abi.encodePacked(encryptedSharesHash[k], commitmentsHash)),
-                    string(abi.encodePacked(ETHDKGErrors.ETHDKG_INVALID_SHARES_OR_COMMITMENTS))
-                );
+                if (
+                    participant.distributedSharesHash !=
+                    keccak256(abi.encodePacked(encryptedSharesHash[k], commitmentsHash))
+                ) {
+                    revert ETHDKGErrors.InvalidSharesOrCommitments(
+                        participant.distributedSharesHash,
+                        keccak256(abi.encodePacked(encryptedSharesHash[k], commitmentsHash))
+                    );
+                }
                 bitMap = _setBit(bitMap, uint8(participant.index));
             }
         }

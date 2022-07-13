@@ -116,9 +116,10 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith("116");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address]),
+      `ETHDKGNotInPostKeyshareSubmissionPhase(3)`
+    );
   });
 
   it("should not allow validators who did not submit key shares in time to submit on the accusation phase", async function () {
@@ -137,15 +138,16 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     // move to the end of Key Share Accusation phase
     await endCurrentPhase(ethdkg);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[2].address))
         .submitKeyShare(
           validators4[2].keyShareG1,
           validators4[2].keyShareG1CorrectnessProof,
           validators4[2].keyShareG2
-        )
-    ).to.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(3)`
+    );
 
     // non-participant user tries to go to the next phase
     await expect(
@@ -173,9 +175,12 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[0].address])
-    ).to.be.revertedWith("117");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[0].address]),
+      `AccusedSubmittedSharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -227,9 +232,10 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     // move to the end of Key Share Accusation phase
     await endCurrentAccusationPhase(ethdkg);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address])
-    ).to.be.revertedWith("116");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitKeyShares([validators4[2].address]),
+      `ETHDKGNotInPostKeyshareSubmissionPhase(3)`
+    );
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -250,12 +256,15 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     // move to the end of Key Share phase
     await endCurrentPhase(ethdkg);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg.accuseParticipantDidNotSubmitKeyShares([
         validators4[2].address,
         validators4[0].address,
-      ])
-    ).to.be.revertedWith("117");
+      ]),
+      `AccusedSubmittedSharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
 
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });

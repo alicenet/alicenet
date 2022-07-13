@@ -1,3 +1,4 @@
+import { assertErrorMessage } from "../chai-helpers";
 import { validators10 } from "./assets/10-validators-successful-case";
 import { validators4 } from "./assets/4-validators-successful-case";
 import { completeETHDKGRound, expect, registerValidators } from "./setup";
@@ -21,8 +22,9 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
       validators10
     );
 
-    await expect(
-      registerValidators(ethdkg, validatorPool, validators10, expectedNonce)
-    ).to.be.revertedWith("128");
+    await assertErrorMessage(
+      registerValidators(ethdkg, validatorPool, validators10, expectedNonce),
+      `ETHDKGNotInRegistrationPhase(7)`
+    );
   });
 });

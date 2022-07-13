@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { assertErrorMessage } from "../../chai-helpers";
 import { getFixture, getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
@@ -6,7 +6,6 @@ import {
   addValidators,
   assertEventSharesDistributed,
   distributeValidatorsShares,
-  expect,
   initializeETHDKG,
   registerValidators,
   startAtDistributeShares,
@@ -33,14 +32,15 @@ describe("ETHDKG: Distribute Shares", () => {
     );
 
     // distribute shares before the time
-    await expect(
+    await assertErrorMessage(
       distributeValidatorsShares(
         ethdkg,
         validatorPool,
         validators4.slice(0, 1),
         expectedNonce
-      )
-    ).to.be.rejectedWith("133");
+      ),
+      `ETHDKGNotInSharedDistributionPhase(0)`
+    );
   });
 
   it("does not let non-validators to distribute shares", async function () {
@@ -70,14 +70,17 @@ describe("ETHDKG: Distribute Shares", () => {
     );
 
     // distribute shares before the time
-    await expect(
+    await assertErrorMessage(
       distributeValidatorsShares(
         ethdkg,
         validatorPool,
         validators4.slice(0, 1),
         expectedNonce
-      )
-    ).to.be.rejectedWith("135");
+      ),
+      `ParticipantDistributedSharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
   });
 
   it("does not let validator send empty commitments or encrypted shares", async function () {
@@ -86,29 +89,32 @@ describe("ETHDKG: Distribute Shares", () => {
     );
 
     // distribute shares with empty state
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .distributeShares([BigNumber.from("0")], validators4[0].commitments)
-    ).to.be.rejectedWith("136");
+        .distributeShares([BigNumber.from("0")], validators4[0].commitments),
+      `InvalidEncryptedSharesAmount(1, 3)`
+    );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .distributeShares(validators4[0].encryptedShares, [
           [BigNumber.from("0"), BigNumber.from("0")],
-        ])
-    ).to.be.rejectedWith("137");
+        ]),
+      `InvalidCommitmentsAmount(1, 3)`
+    );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .distributeShares(validators4[0].encryptedShares, [
           [BigNumber.from("0"), BigNumber.from("0")],
           [BigNumber.from("0"), BigNumber.from("0")],
           [BigNumber.from("0"), BigNumber.from("0")],
-        ])
-    ).to.be.rejectedWith("138");
+        ]),
+      `CommitmentNotOnCurve()`
+    );
 
     // the user can send empty encrypted shares on this phase, the accusation window will be
     // handling this!
