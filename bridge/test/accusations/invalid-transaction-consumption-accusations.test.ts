@@ -10,7 +10,7 @@ import {
   getValidAccusationDataForNonExistentUTXOWithInvalidHeight,
 } from "./accusations-test-helpers";
 
-describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", async () => {
+describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation methods", async () => {
   let fixture: Fixture;
 
   let accusation: InvalidTxConsumptionAccusation;

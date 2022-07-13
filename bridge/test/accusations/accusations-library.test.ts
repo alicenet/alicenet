@@ -7,7 +7,7 @@ import {
   generateSigAndPClaims1,
 } from "./accusations-test-helpers";
 
-describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", async () => {
+describe("AccusationsLibrary: Tests AccusationsLibrary methods", async () => {
   let accusation: AccusationsLibraryMock;
 
   beforeEach(async function () {

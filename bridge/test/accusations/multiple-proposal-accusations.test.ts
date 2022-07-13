@@ -10,7 +10,7 @@ import {
   generateSigAndPClaimsDifferentRound,
 } from "./accusations-test-helpers";
 
-describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", async () => {
+describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods", async () => {
   let fixture: Fixture;
 
   let accusation: MultipleProposalAccusation;
