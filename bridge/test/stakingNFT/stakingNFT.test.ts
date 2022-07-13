@@ -11,13 +11,11 @@ import {
   mineBlocks,
 } from "../setup";
 
-contract("StakingNFT", async (accounts) => {
+contract("StakingNFT", async () => {
   let stakingNFT: MockStakingNFT;
-  const owner = accounts[0];
   let fixture: BaseTokensFixture;
   let aTokenMinter: ATokenMinter;
   beforeEach(async () => {
-    const stakingNFTBase = await ethers.getContractFactory("MockStakingNFT");
     fixture = await getBaseTokensFixture();
     const hre = await require("hardhat");
     if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
@@ -172,7 +170,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(100);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // Check standard values: Accumulators and Reserves
       // Eth accumulator
@@ -205,7 +203,6 @@ contract("StakingNFT", async (accounts) => {
       expect(retShares).to.eq(expShares);
 
       // Burn staking position (static call)
-      const from = signers[0].address;
       const retValue4 = await stakingNFT.callStatic.burnMock(tokenID);
       const payoutEth = retValue4[0];
       const payoutToken = retValue4[1];
@@ -279,9 +276,6 @@ contract("StakingNFT", async (accounts) => {
     });
 
     it("burn Test 2: fail from tokenID not existing", async () => {
-      const signers = await ethers.getSigners();
-      //const from = signers[0].address;
-      const to = signers[0].address;
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.burnMock(tokenID);
       // Error Code 604 for NFT token does not exist
@@ -382,7 +376,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(100);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // Check standard values: Accumulators and Reserves
       // Eth accumulator
@@ -494,7 +488,6 @@ contract("StakingNFT", async (accounts) => {
 
     it("burnTo Test 2: fail from tokenID not existing", async () => {
       const signers = await ethers.getSigners();
-      //const from = signers[0].address;
       const to = signers[0].address;
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.burnToMock(to, tokenID);
@@ -596,7 +589,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(100);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // Check standard values: Accumulators and Reserves
       // Eth accumulator
@@ -800,7 +793,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(100);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // Check standard values: Accumulators and Reserves
       // Eth accumulator
@@ -983,8 +976,8 @@ contract("StakingNFT", async (accounts) => {
       const expFreeAfter = BigNumber.from(blockNumber).add(1);
 
       // get position info and confirm values
-      let retValue = await stakingNFT.getPositionMock(tokenID);
-      let freeAfter = retValue[1];
+      const retValue = await stakingNFT.getPositionMock(tokenID);
+      const freeAfter = retValue[1];
       expect(freeAfter).to.eq(expFreeAfter);
 
       // Lock position
@@ -1023,17 +1016,14 @@ contract("StakingNFT", async (accounts) => {
 
   describe("mint", async () => {
     it("mint Test 1: one staker, zero duration", async () => {
-      const duration = BigNumber.from("0");
-      const signers = await ethers.getSigners();
-      let to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintMock(amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // Get block number
@@ -1044,12 +1034,12 @@ contract("StakingNFT", async (accounts) => {
       const expAccumulatorToken = BigNumber.from(0);
 
       // get position info and confirm values
-      let retValue = await stakingNFT.getPositionMock(tokenID);
-      let shares = retValue[0];
-      let freeAfter = retValue[1];
-      let withdrawFreeAfter = retValue[2];
-      let accumulatorEth = retValue[3];
-      let accumulatorToken = retValue[4];
+      const retValue = await stakingNFT.getPositionMock(tokenID);
+      const shares = retValue[0];
+      const freeAfter = retValue[1];
+      const withdrawFreeAfter = retValue[2];
+      const accumulatorEth = retValue[3];
+      const accumulatorToken = retValue[4];
       expect(shares).to.eq(amount);
       expect(freeAfter).to.eq(expFreeAfter);
       expect(withdrawFreeAfter).to.eq(expWithdrawFreeAfter);
@@ -1059,9 +1049,6 @@ contract("StakingNFT", async (accounts) => {
 
     it("mint Test 2: fail, circuit breaker tripped", async () => {
       await stakingNFT.tripCBLowMock();
-      const duration = BigNumber.from("0");
-      const signers = await ethers.getSigners();
-      let to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintMock(amount);
       // Error Code 500 for tripped circuit breaker
@@ -1069,9 +1056,6 @@ contract("StakingNFT", async (accounts) => {
     });
 
     it("mint Test 3: fail, amount == 0", async () => {
-      const duration = BigNumber.from("0");
-      const signers = await ethers.getSigners();
-      let to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintMock(amount);
       // Error Code 609 for Invalid Staking Amount 0
@@ -1083,15 +1067,15 @@ contract("StakingNFT", async (accounts) => {
     it("mintTo Test 1: one staker, zero duration", async () => {
       const duration = BigNumber.from("0");
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintToMock(to, amount, duration);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // Get block number
@@ -1102,12 +1086,12 @@ contract("StakingNFT", async (accounts) => {
       const expAccumulatorToken = BigNumber.from(0);
 
       // get position info and confirm values
-      let retValue = await stakingNFT.getPositionMock(tokenID);
-      let shares = retValue[0];
-      let freeAfter = retValue[1];
-      let withdrawFreeAfter = retValue[2];
-      let accumulatorEth = retValue[3];
-      let accumulatorToken = retValue[4];
+      const retValue = await stakingNFT.getPositionMock(tokenID);
+      const shares = retValue[0];
+      const freeAfter = retValue[1];
+      const withdrawFreeAfter = retValue[2];
+      const accumulatorEth = retValue[3];
+      const accumulatorToken = retValue[4];
       expect(shares).to.eq(amount);
       expect(freeAfter).to.eq(expFreeAfter);
       expect(withdrawFreeAfter).to.eq(expWithdrawFreeAfter);
@@ -1118,15 +1102,15 @@ contract("StakingNFT", async (accounts) => {
     it("mintTo Test 2: one staker, long duration", async () => {
       const duration = await stakingNFT.getMaxMintLockMock();
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintToMock(to, amount, duration);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // Get block number
@@ -1137,12 +1121,12 @@ contract("StakingNFT", async (accounts) => {
       const expAccumulatorToken = BigNumber.from(0);
 
       // get position info and confirm values
-      let retValue = await stakingNFT.getPositionMock(tokenID);
-      let shares = retValue[0];
-      let freeAfter = retValue[1];
-      let withdrawFreeAfter = retValue[2];
-      let accumulatorEth = retValue[3];
-      let accumulatorToken = retValue[4];
+      const retValue = await stakingNFT.getPositionMock(tokenID);
+      const shares = retValue[0];
+      const freeAfter = retValue[1];
+      const withdrawFreeAfter = retValue[2];
+      const accumulatorEth = retValue[3];
+      const accumulatorToken = retValue[4];
       expect(shares).to.eq(amount);
       expect(freeAfter).to.eq(expFreeAfter);
       expect(withdrawFreeAfter).to.eq(expWithdrawFreeAfter);
@@ -1154,7 +1138,7 @@ contract("StakingNFT", async (accounts) => {
       await stakingNFT.tripCBLowMock();
       const duration = BigNumber.from("1");
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintToMock(to, amount, duration);
       // Error Code 500 for circuit breaker tripped
@@ -1164,7 +1148,7 @@ contract("StakingNFT", async (accounts) => {
     it("mintTo Test 4: fail, amount == 0", async () => {
       const duration = BigNumber.from("0");
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintToMock(to, amount, duration);
       // Error Code 609 for Invalid Staking Amount 0
@@ -1175,7 +1159,7 @@ contract("StakingNFT", async (accounts) => {
       const maxMintLock = await stakingNFT.getMaxMintLockMock();
       const duration = await maxMintLock.add(1);
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       const tx = stakingNFT.mintToMock(to, amount, duration);
       // Error Code 602 for lock duration larger than max
@@ -1186,15 +1170,15 @@ contract("StakingNFT", async (accounts) => {
   describe("mintNFT", async () => {
     it("mintNFT Test 1: one staker", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let retTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const retTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(retTokenID).to.eq(expTokenID);
     });
 
@@ -1357,7 +1341,7 @@ contract("StakingNFT", async (accounts) => {
 
     it("mintNFT Test 5: fail (amount == 0)", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintNFTMock(to, amount);
       // Error Code 609 for Invalid Staking Amount 0
@@ -1366,7 +1350,7 @@ contract("StakingNFT", async (accounts) => {
 
     it("mintNFT Test 6: fail (amount >= 2**224)", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       // 2**224
       const amount = BigNumber.from(
         "26959946667150639794667015087019630673637144422540572481103610249216"
@@ -1378,7 +1362,7 @@ contract("StakingNFT", async (accounts) => {
 
     it("mintNFT gas Test", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       let receipt = await txResponse.wait();
@@ -1389,7 +1373,6 @@ contract("StakingNFT", async (accounts) => {
   });
 
   describe("collectEth", async () => {
-    // TODO: looks like we may need to fix a potential off-by-one error here.
     it("collectEth Test 1: one staker", async () => {
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
 
@@ -1406,8 +1389,8 @@ contract("StakingNFT", async (accounts) => {
         BigNumber.from(etherScale)
       );
       const depositedEthScaled = depositedEth.mul(scaleFactor);
-      let expEthAccumulator = BigNumber.from("0");
-      let expEthSlush = depositedEthScaled;
+      const expEthAccumulator = BigNumber.from("0");
+      const expEthSlush = depositedEthScaled;
       let retValue = await stakingNFT.getEthAccumulator();
       let retEthAccumulator = retValue[0];
       let retEthSlush = retValue[1];
@@ -1416,18 +1399,18 @@ contract("StakingNFT", async (accounts) => {
 
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
-      let expTokenReserve = amount;
-      let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
+      const expTokenReserve = amount;
+      const retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Check Eth accumulator; there should be no changes
@@ -1439,7 +1422,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectEth
       const payoutEth = await stakingNFT.callStatic.collectEthMock(tokenID);
@@ -1454,7 +1437,7 @@ contract("StakingNFT", async (accounts) => {
 
       // Add Alice
       const signers = await ethers.getSigners();
-      let aliceAddress = signers[0].address;
+      const aliceAddress = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -1462,21 +1445,21 @@ contract("StakingNFT", async (accounts) => {
       txResponse = await stakingNFT.mintNFTMock(aliceAddress, amount);
       receipt = await txResponse.wait();
       let expTokenID = BigNumber.from("1");
-      let aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(aliceTokenID).to.eq(expTokenID);
       let expTokenReserve = amount;
       let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Add Bob
-      let bobAddress = signers[1].address;
+      const bobAddress = signers[1].address;
       txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      let bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(bobTokenID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
@@ -1495,8 +1478,8 @@ contract("StakingNFT", async (accounts) => {
         BigNumber.from(etherScale)
       );
       const depositedEthScaled = depositedEth.mul(scaleFactor);
-      let expEthAccumulator = BigNumber.from("0");
-      let expEthSlush = depositedEthScaled;
+      const expEthAccumulator = BigNumber.from("0");
+      const expEthSlush = depositedEthScaled;
       let retValue = await stakingNFT.getEthAccumulator();
       let retEthAccumulator = retValue[0];
       let retEthSlush = retValue[1];
@@ -1512,7 +1495,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectEth
       const alicePayoutEth = await stakingNFT.callStatic.collectEthMock(
@@ -1534,15 +1517,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectEth Test 4: fail because not owner", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[1].address;
+      const to = signers[1].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectEth
@@ -1554,15 +1537,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectEth Test 5: fail because not free to withdraw", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectEth
@@ -1573,7 +1556,6 @@ contract("StakingNFT", async (accounts) => {
   });
 
   describe("collectEthTo", async () => {
-    // TODO: looks like we may need to fix a potential off-by-one error here.
     it("collectEthTo Test 1: one staker", async () => {
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
 
@@ -1590,8 +1572,8 @@ contract("StakingNFT", async (accounts) => {
         BigNumber.from(etherScale)
       );
       const depositedEthScaled = depositedEth.mul(scaleFactor);
-      let expEthAccumulator = BigNumber.from("0");
-      let expEthSlush = depositedEthScaled;
+      const expEthAccumulator = BigNumber.from("0");
+      const expEthSlush = depositedEthScaled;
       let retValue = await stakingNFT.getEthAccumulator();
       let retEthAccumulator = retValue[0];
       let retEthSlush = retValue[1];
@@ -1600,18 +1582,18 @@ contract("StakingNFT", async (accounts) => {
 
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
-      let expTokenReserve = amount;
-      let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
+      const expTokenReserve = amount;
+      const retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Check Eth accumulator; there should be no changes
@@ -1623,7 +1605,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectEthTo
       const payoutEth = await stakingNFT.callStatic.collectEthToMock(
@@ -1641,7 +1623,7 @@ contract("StakingNFT", async (accounts) => {
 
       // Add Alice
       const signers = await ethers.getSigners();
-      let aliceAddress = signers[0].address;
+      const aliceAddress = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -1649,20 +1631,20 @@ contract("StakingNFT", async (accounts) => {
       txResponse = await stakingNFT.mintNFTMock(aliceAddress, amount);
       receipt = await txResponse.wait();
       let expTokenID = BigNumber.from("1");
-      let aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(aliceTokenID).to.eq(expTokenID);
       let expTokenReserve = amount;
       let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Add Bob
-      let bobAddress = signers[1].address;
+      const bobAddress = signers[1].address;
       txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      let bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(bobTokenID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
@@ -1681,8 +1663,8 @@ contract("StakingNFT", async (accounts) => {
         BigNumber.from(etherScale)
       );
       const depositedEthScaled = depositedEth.mul(scaleFactor);
-      let expEthAccumulator = BigNumber.from("0");
-      let expEthSlush = depositedEthScaled;
+      const expEthAccumulator = BigNumber.from("0");
+      const expEthSlush = depositedEthScaled;
       let retValue = await stakingNFT.getEthAccumulator();
       let retEthAccumulator = retValue[0];
       let retEthSlush = retValue[1];
@@ -1698,7 +1680,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectEthTo
       const alicePayoutEth = await stakingNFT.callStatic.collectEthToMock(
@@ -1723,16 +1705,16 @@ contract("StakingNFT", async (accounts) => {
     it("collectEthTo Test 4: fail because not owner", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let from = signers[0].address;
-      let to = signers[1].address;
+      const from = signers[0].address;
+      const to = signers[1].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectEthTo
@@ -1744,15 +1726,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectEthTo Test 5: fail because not free to withdraw", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectEthTo
@@ -1784,8 +1766,8 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
       let retValue = await stakingNFT.getTokenAccumulator();
       let retTokenAccumulator = retValue[0];
       let retTokenSlush = retValue[1];
@@ -1799,11 +1781,11 @@ contract("StakingNFT", async (accounts) => {
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
-      let expTokenReserve = amount.add(depositedToken);
-      let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
+      const expTokenReserve = amount.add(depositedToken);
+      const retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Check Eth accumulator; there should be no changes
@@ -1815,7 +1797,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectToken
       const payoutToken = await stakingNFT.callStatic.collectTokenMock(tokenID);
@@ -1830,7 +1812,7 @@ contract("StakingNFT", async (accounts) => {
 
       // Add Alice
       const signers = await ethers.getSigners();
-      let aliceAddress = signers[0].address;
+      const aliceAddress = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -1838,20 +1820,20 @@ contract("StakingNFT", async (accounts) => {
       txResponse = await stakingNFT.mintNFTMock(aliceAddress, amount);
       receipt = await txResponse.wait();
       let expTokenID = BigNumber.from("1");
-      let aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(aliceTokenID).to.eq(expTokenID);
       let expTokenReserve = amount;
       let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Add Bob
-      let bobAddress = signers[1].address;
+      const bobAddress = signers[1].address;
       txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      let bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(bobTokenID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
@@ -1874,8 +1856,8 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
       let retValue = await stakingNFT.getTokenAccumulator();
       let retTokenAccumulator = retValue[0];
       let retTokenSlush = retValue[1];
@@ -1891,7 +1873,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectEth
       const alicePayoutToken = await stakingNFT.callStatic.collectTokenMock(
@@ -1913,15 +1895,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectToken Test 4: fail because not owner", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[1].address;
+      const to = signers[1].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectToken
@@ -1933,15 +1915,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectToken Test 5: fail because not free to withdraw", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectToken
@@ -1973,8 +1955,8 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
       let retValue = await stakingNFT.getTokenAccumulator();
       let retTokenAccumulator = retValue[0];
       let retTokenSlush = retValue[1];
@@ -1988,11 +1970,11 @@ contract("StakingNFT", async (accounts) => {
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
-      let expTokenReserve = amount.add(depositedToken);
-      let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
+      const expTokenReserve = amount.add(depositedToken);
+      const retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Check Eth accumulator; there should be no changes
@@ -2004,7 +1986,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectTokenTo
       const payoutToken = await stakingNFT.callStatic.collectTokenToMock(
@@ -2022,7 +2004,7 @@ contract("StakingNFT", async (accounts) => {
 
       // Add Alice
       const signers = await ethers.getSigners();
-      let aliceAddress = signers[0].address;
+      const aliceAddress = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2030,20 +2012,20 @@ contract("StakingNFT", async (accounts) => {
       txResponse = await stakingNFT.mintNFTMock(aliceAddress, amount);
       receipt = await txResponse.wait();
       let expTokenID = BigNumber.from("1");
-      let aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const aliceTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(aliceTokenID).to.eq(expTokenID);
       let expTokenReserve = amount;
       let retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
 
       // Add Bob
-      let bobAddress = signers[1].address;
+      const bobAddress = signers[1].address;
       txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      let bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(bobTokenID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
@@ -2066,8 +2048,8 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
       let retValue = await stakingNFT.getTokenAccumulator();
       let retTokenAccumulator = retValue[0];
       let retTokenSlush = retValue[1];
@@ -2083,7 +2065,7 @@ contract("StakingNFT", async (accounts) => {
 
       // mine blocks
       const duration = BigNumber.from(2);
-      mineBlocks(duration.toBigInt());
+      await mineBlocks(duration.toBigInt());
 
       // collectTokenTo
       const alicePayoutToken = await stakingNFT.callStatic.collectTokenToMock(
@@ -2111,16 +2093,16 @@ contract("StakingNFT", async (accounts) => {
     it("collectTokenTo Test 4: fail because not owner", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let from = signers[0].address;
-      let to = signers[1].address;
+      const from = signers[0].address;
+      const to = signers[1].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectTokenTo
@@ -2132,15 +2114,15 @@ contract("StakingNFT", async (accounts) => {
     it("collectTokenTo Test 5: fail because not free to withdraw", async () => {
       // Add staker
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
       let receipt: any = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(to, amount);
       receipt = await txResponse.wait();
-      let expTokenID = BigNumber.from("1");
-      let tokenID = BigNumber.from(receipt.events[2].args.tokenId);
+      const expTokenID = BigNumber.from("1");
+      const tokenID = BigNumber.from(receipt.events[2].args.tokenId);
       expect(tokenID).to.eq(expTokenID);
 
       // collectTokenTo
@@ -2208,10 +2190,10 @@ contract("StakingNFT", async (accounts) => {
 
       // Lock position
       const duration = BigNumber.from("100");
-      const tx = stakingNFT
+      const tx = await stakingNFT
         .connect(govSigner)
         .lockPositionMock(to, tokenID, duration);
-      receipt = await txResponse.wait();
+      receipt = await tx.wait();
       expect(receipt.status).to.eq(1);
 
       // specifiy updated expected values
@@ -2289,10 +2271,10 @@ contract("StakingNFT", async (accounts) => {
       // Lock position
       const maxGovLock = await stakingNFT.getMaxGovernanceLock();
       const duration = maxGovLock;
-      const tx = stakingNFT
+      const tx = await stakingNFT
         .connect(govSigner)
         .lockPositionMock(to, tokenID, duration);
-      receipt = await txResponse.wait();
+      receipt = await tx.wait();
       expect(receipt.status).to.eq(1);
 
       // specifiy updated expected values
@@ -2460,7 +2442,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockOwnPosition Test 1: one staker, small lock", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2517,7 +2499,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockOwnPosition Test 2: one staker, long lock", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2635,7 +2617,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockPositionLow Test 1: one staker", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2706,7 +2688,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockWithdraw Test 1: one staker, short lock", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2763,7 +2745,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockWithdraw Test 2: one staker, long lock", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -2881,7 +2863,7 @@ contract("StakingNFT", async (accounts) => {
     it("lockWithdrawLow Test 1: one staker", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -3106,7 +3088,7 @@ contract("StakingNFT", async (accounts) => {
   describe("estimateCollection", async () => {
     it("estimateEthCollection Test 1; no Eth", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -3124,7 +3106,7 @@ contract("StakingNFT", async (accounts) => {
 
     it("estimateEthCollection Test 2; Eth", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -3268,7 +3250,7 @@ contract("StakingNFT", async (accounts) => {
 
     it("estimateTokenCollection Test 1: no Token", async () => {
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -3307,11 +3289,11 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
-      let retValue = await stakingNFT.getTokenAccumulator();
-      let retTokenAccumulator = retValue[0];
-      let retTokenSlush = retValue[1];
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
+      const retValue = await stakingNFT.getTokenAccumulator();
+      const retTokenAccumulator = retValue[0];
+      const retTokenSlush = retValue[1];
       expect(retTokenAccumulator).to.eq(expTokenAccumulator);
       expect(retTokenSlush).to.eq(expTokenSlush);
 
@@ -3366,11 +3348,11 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
-      let retValue = await stakingNFT.getTokenAccumulator();
-      let retTokenAccumulator = retValue[0];
-      let retTokenSlush = retValue[1];
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
+      const retValue = await stakingNFT.getTokenAccumulator();
+      const retTokenAccumulator = retValue[0];
+      const retTokenSlush = retValue[1];
       expect(retTokenAccumulator).to.eq(expTokenAccumulator);
       expect(retTokenSlush).to.eq(expTokenSlush);
 
@@ -3443,11 +3425,11 @@ contract("StakingNFT", async (accounts) => {
       const receipt3 = await tx3.wait();
       expect(receipt3.status).to.eq(1);
       const depositedTokenScaled = depositedToken.mul(scaleFactor);
-      let expTokenAccumulator = BigNumber.from("0");
-      let expTokenSlush = depositedTokenScaled;
-      let retValue = await stakingNFT.getTokenAccumulator();
-      let retTokenAccumulator = retValue[0];
-      let retTokenSlush = retValue[1];
+      const expTokenAccumulator = BigNumber.from("0");
+      const expTokenSlush = depositedTokenScaled;
+      const retValue = await stakingNFT.getTokenAccumulator();
+      const retTokenAccumulator = retValue[0];
+      const retTokenSlush = retValue[1];
       expect(retTokenAccumulator).to.eq(expTokenAccumulator);
       expect(retTokenSlush).to.eq(expTokenSlush);
 
@@ -3489,7 +3471,7 @@ contract("StakingNFT", async (accounts) => {
     it("getPosition Test 1", async () => {
       // Stake position
       const signers = await ethers.getSigners();
-      let to = signers[0].address;
+      const to = signers[0].address;
       const amount = BigNumber.from("1000000000000000000");
       let txResponse = await fixture.aToken.approve(stakingNFT.address, amount);
       // We use receipt:any *only* because of events which may not be present
@@ -3685,7 +3667,7 @@ contract("StakingNFT", async (accounts) => {
         accumulatorEth: positionAccumulatorEth,
         accumulatorToken: positionAccumulatorToken,
       };
-      let positionAccumulatorValue = BigNumber.from("0");
+      const positionAccumulatorValue = BigNumber.from("0");
 
       // Expected Values
       const expPayout = BigNumber.from("0");
@@ -3701,10 +3683,10 @@ contract("StakingNFT", async (accounts) => {
         position,
         positionAccumulatorValue
       );
-      let retUpdatedState = returned[0];
-      let retUpdatedPosition = returned[1];
-      let retUpdatedPositionAccumulatorValue = returned[2];
-      let retPayout = returned[3];
+      const retUpdatedState = returned[0];
+      const retUpdatedPosition = returned[1];
+      const retUpdatedPositionAccumulatorValue = returned[2];
+      const retPayout = returned[3];
 
       // Verify returned values
       expect(retPayout).to.eq(expPayout);
@@ -3738,14 +3720,14 @@ contract("StakingNFT", async (accounts) => {
         accumulatorEth: positionAccumulatorEth,
         accumulatorToken: positionAccumulatorToken,
       };
-      let positionAccumulatorValue = BigNumber.from("0");
+      const positionAccumulatorValue = BigNumber.from("0");
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       // Compute Expected Values
       let expStateSlush = stateSlush;
       const accumDelta = stateAccum.sub(positionAccumulatorValue);
       let tmp = accumDelta.mul(positionShares);
-      if (shares == positionShares) {
+      if (shares === positionShares) {
         tmp = tmp.add(stateSlush);
         expStateSlush = BigNumber.from("0");
       }
@@ -3763,10 +3745,10 @@ contract("StakingNFT", async (accounts) => {
         position,
         positionAccumulatorValue
       );
-      let retState = returned[0];
-      let retPosition = returned[1];
-      let retPositionAccumulatorValue = returned[2];
-      let retPayout = returned[3];
+      const retState = returned[0];
+      const retPosition = returned[1];
+      const retPositionAccumulatorValue = returned[2];
+      const retPayout = returned[3];
 
       // Verify returned values
       expect(retPositionAccumulatorValue).to.eq(expPositionAccumulatorValue);
@@ -3794,14 +3776,14 @@ contract("StakingNFT", async (accounts) => {
         accumulatorEth: positionAccumulatorEth,
         accumulatorToken: positionAccumulatorToken,
       };
-      let positionAccumulatorValue = BigNumber.from("0");
+      const positionAccumulatorValue = BigNumber.from("0");
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       // Compute Expected Values
       let expStateSlush = stateSlush;
       const accumDelta = stateAccum.sub(positionAccumulatorValue);
       let tmp = accumDelta.mul(positionShares);
-      if (shares == positionShares) {
+      if (shares === positionShares) {
         tmp = tmp.add(stateSlush);
         expStateSlush = BigNumber.from("0");
       }
@@ -3819,10 +3801,10 @@ contract("StakingNFT", async (accounts) => {
         position,
         positionAccumulatorValue
       );
-      let retState = returned[0];
-      let retPosition = returned[1];
-      let retPositionAccumulatorValue = returned[2];
-      let retPayout = returned[3];
+      const retState = returned[0];
+      const retPosition = returned[1];
+      const retPositionAccumulatorValue = returned[2];
+      const retPayout = returned[3];
 
       // Verify returned values
       expect(retPositionAccumulatorValue).to.eq(expPositionAccumulatorValue);
@@ -3853,7 +3835,7 @@ contract("StakingNFT", async (accounts) => {
         accumulatorEth: positionAccumulatorEth,
         accumulatorToken: positionAccumulatorToken,
       };
-      let positionAccumulatorValue = BigNumber.from(
+      const positionAccumulatorValue = BigNumber.from(
         "374144419156711147059143317175368453031918731001856"
       ); // 2**168 - 10**30
 
@@ -3864,7 +3846,7 @@ contract("StakingNFT", async (accounts) => {
         twoPower168.sub(positionAccumulatorValue)
       );
       let tmp = accumDelta.mul(positionShares);
-      if (shares == positionShares) {
+      if (shares === positionShares) {
         tmp = tmp.add(stateSlush);
         expStateSlush = BigNumber.from("0");
       }
@@ -3882,10 +3864,10 @@ contract("StakingNFT", async (accounts) => {
         position,
         positionAccumulatorValue
       );
-      let retState = returned[0];
-      let retPosition = returned[1];
-      let retPositionAccumulatorValue = returned[2];
-      let retPayout = returned[3];
+      const retState = returned[0];
+      const retPosition = returned[1];
+      const retPositionAccumulatorValue = returned[2];
+      const retPayout = returned[3];
 
       // Verify returned values
       expect(retPositionAccumulatorValue).to.eq(expPositionAccumulatorValue);
@@ -3913,7 +3895,7 @@ contract("StakingNFT", async (accounts) => {
         accumulatorEth: positionAccumulatorEth,
         accumulatorToken: positionAccumulatorToken,
       };
-      let positionAccumulatorValue = BigNumber.from("1");
+      const positionAccumulatorValue = BigNumber.from("1");
       // Run collect
       const txResponse = await stakingNFT.collectMock(
         shares,
@@ -3934,15 +3916,13 @@ contract("StakingNFT", async (accounts) => {
       const deltaAccum = slush.div(shares);
       const slushExp = slush.sub(deltaAccum.mul(shares));
       const accumulatorExp = accumulator.add(deltaAccum);
-      let accumulatorRet;
-      let slushRet;
       const returned = await stakingNFT.slushSkimPure(
         shares,
         accumulator,
         slush
       );
-      accumulatorRet = returned[0];
-      slushRet = returned[1];
+      const accumulatorRet = returned[0];
+      const slushRet = returned[1];
       expect(slushRet.toNumber()).to.eq(slushExp);
       expect(accumulatorRet.toNumber()).to.eq(accumulatorExp);
     });
@@ -3956,15 +3936,13 @@ contract("StakingNFT", async (accounts) => {
       const slush = BigNumber.from("1001");
       const slushExp = BigNumber.from("1");
       const accumulatorExp = BigNumber.from("0");
-      let accumulatorRet;
-      let slushRet;
       const returned = await stakingNFT.slushSkimPure(
         shares,
         accumulator,
         slush
       );
-      accumulatorRet = returned[0];
-      slushRet = returned[1];
+      const accumulatorRet = returned[0];
+      const slushRet = returned[1];
       expect(slushRet).to.eq(slushExp);
       expect(accumulatorRet).to.eq(accumulatorExp);
     });

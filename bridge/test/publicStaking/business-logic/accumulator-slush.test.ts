@@ -22,7 +22,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
       ethers.utils.parseUnits("100000", 18)
     );
     users = await createUsers(numberUsers);
-    const baseAmount = ethers.utils.parseUnits("10000", 1).toBigInt();
+    const baseAmount = ethers.utils.parseUnits("10000", 1);
     for (let i = 0; i < numberUsers; i++) {
       await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
       await fixture.aToken
