@@ -112,9 +112,10 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // accuse one validator only
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address])
-    ).to.be.revertedWith("118");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address]),
+      `ETHDKGNotInPostGPKJSubmissionPhase(5)`
+    );
   });
 
   it("should not allow GPKj submission after the GPKj submission phase", async () => {
@@ -189,9 +190,12 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // accuse
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[0].address])
-    ).to.be.revertedWith("120");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[0].address]),
+      `AccusedDidNotParticipateInGPKJSubmission("${ethers.utils.getAddress(
+        validators4[0].address
+      )}}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -243,9 +247,10 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // accuse
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address])
-    ).to.be.revertedWith("118");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address]),
+      `ETHDKGNotInPostGPKJSubmissionPhase(5)`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -272,9 +277,12 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     const addresses = validators4.map((v) => v.address);
     addresses.push("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac");
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ(addresses)
-    ).to.be.revertedWith("120");
+    await assertErrorMessage(
+      ethdkg.accuseParticipantDidNotSubmitGPKJ(addresses),
+      `AccusedDidNotParticipateInGPKJSubmission("${ethers.utils.getAddress(
+        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac"
+      )}}")`
+    );
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 

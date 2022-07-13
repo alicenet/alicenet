@@ -27,7 +27,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -36,8 +36,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(1)`
+    );
   });
 
   it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase", async function () {
@@ -47,7 +48,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -56,8 +57,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(1)`
+    );
 
     // distribute shares
     await distributeValidatorsShares(
@@ -81,7 +83,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -90,14 +92,15 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(4)`
+    );
 
     // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -106,8 +109,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(4)`
+    );
 
     // submit MPK
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
@@ -116,7 +120,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -125,8 +129,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(5)`
+    );
 
     // submit GPKj
     await submitValidatorsGPKJ(
@@ -140,7 +145,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -149,13 +154,13 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
-
+        ),
+      `ETHDKGNotInDisputePhase(6)`
+    );
     await endCurrentPhase(ethdkg);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -164,8 +169,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(6)`
+    );
 
     // complete ethdkg
     await completeETHDKG(ethdkg, validators4, expectedNonce, 0, 0);
@@ -173,7 +179,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.Completion);
 
     // try accusing bad shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await ethers.getSigner(validators4[0].address))
         .accuseParticipantDistributedBadShares(
@@ -182,8 +188,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(7)`
+    );
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
@@ -203,7 +210,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await endCurrentPhase(ethdkg);
 
     // try accusing the 4th validator of bad shares, when it did not even distribute them
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0]))
         .accuseParticipantDistributedBadShares(
@@ -212,8 +219,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("112");
+        ),
+      `AccusedDidNotDistributeSharesInRound("${validators4[3].address}")`
+    );
   });
 
   it("should not allow accusation from a non-participating validator", async function () {
@@ -233,7 +241,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await endCurrentPhase(ethdkg);
 
     // validator 4 will try accusing the 1st validator of bad shares, when it did not even distribute them itself
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3]))
         .accuseParticipantDistributedBadShares(
@@ -242,8 +250,11 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("113");
+        ),
+      `DisputerDidNotDistributeSharesInRound("${ethers.utils.getAddress(
+        validators4[3].address
+      )}")`
+    );
   });
 
   it("should not allow accusation with an incorrect index", async function () {
@@ -282,7 +293,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
 
     // try accusing the 1st validator of bad shares using incorrect encrypted shares and commitments
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3]))
         .accuseParticipantDistributedBadShares(
@@ -291,8 +302,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           [[0, 0]],
           [0, 0],
           [0, 0]
-        )
-    ).to.be.revertedWith("114");
+        ),
+      `SharesAndCommitmentsMismatch("0x054a84b56c856021fcc61c75be9db7be0847b2b851356b213666caf7799bacc2", "0x3335c5eb3a24a7ecf92ed63d6ff8617a657471874b65a3c842544037a7ff8c0f")`
+    );
   });
 
   it("should not allow double accusation of a validator on two separate calls", async function () {
@@ -477,7 +489,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.DisputeShareDistribution);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(
           await getValidatorEthAccount(validators4BadDistributeShares[3])
@@ -486,8 +498,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[3].keyShareG1,
           validators4BadDistributeShares[3].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[3].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(2)`
+    );
   });
 
   it("should not allow proceeding to next phase (KeyShareSubmission) after bad shares accusations take place, along with accusations of non-participant validators", async function () {
@@ -571,7 +584,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(
           await getValidatorEthAccount(validators4BadDistributeShares[2])
@@ -580,8 +593,9 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[2].keyShareG1,
           validators4BadDistributeShares[2].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[2].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
 
     // try accusing the 1st validator again of bad shares using valid encrypted shares and commitments
     await assertErrorMessage(
@@ -611,7 +625,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(
           await getValidatorEthAccount(validators4BadDistributeShares[2])
@@ -620,11 +634,12 @@ describe("ETHDKG: Dispute bad shares", () => {
           validators4BadDistributeShares[2].keyShareG1,
           validators4BadDistributeShares[2].keyShareG1CorrectnessProof,
           validators4BadDistributeShares[2].keyShareG2
-        )
-    ).to.be.revertedWith("140");
+        ),
+      `ETHDKGNotInKeyshareSubmissionPhase(1)`
+    );
 
     // try accusing the 1st validator again of bad shares using valid encrypted shares and commitments
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(
           await getValidatorEthAccount(validators4BadDistributeSharesLast[2])
@@ -641,7 +656,8 @@ describe("ETHDKG: Dispute bad shares", () => {
             BigNumberish,
             BigNumberish
           ]
-        )
-    ).to.be.revertedWith("110");
+        ),
+      `ETHDKGNotInDisputePhase(1)`
+    );
   });
 });

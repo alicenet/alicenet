@@ -147,14 +147,16 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     // validator0 should not be able to distribute shares
     const signer0 = await getValidatorEthAccount(validators4[0].address);
-    await expect(
+
+    await assertErrorMessage(
       ethdkg
         .connect(signer0)
         .distributeShares(
           validators4[0].encryptedShares,
           validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+        ),
+      `ETHDKGNotInSharedDistributionPhase(0)`
+    );
   });
 
   it("should not allow validators who did not register in time to register on the accusation phase", async function () {
@@ -181,9 +183,11 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     const signer2 = await getValidatorEthAccount(validators4[2].address);
-    await expect(
-      ethdkg.connect(signer2).register(validators4[2].aliceNetPublicKey)
-    ).to.be.revertedWith("128");
+
+    await assertErrorMessage(
+      ethdkg.connect(signer2).register(validators4[2].aliceNetPublicKey),
+      `ETHDKGNotInRegistrationPhase(0)`
+    );
   });
 
   it("should not allow validators who did not register in time to distribute shares", async function () {
@@ -210,14 +214,16 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     // validator2 should not be able to distribute shares
     const signer2 = await getValidatorEthAccount(validators4[2].address);
-    await expect(
+
+    await assertErrorMessage(
       ethdkg
         .connect(signer2)
         .distributeShares(
           validators4[0].encryptedShares,
           validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+        ),
+      `ETHDKGNotInSharedDistributionPhase(0)`
+    );
   });
 
   it("should not allow accusation of validators that registered in ETHDKG", async function () {
@@ -388,14 +394,15 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentAccusationPhase(ethdkg);
 
     // try to move into Distribute Shares phase
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .distributeShares(
           validators4[0].encryptedShares,
           validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+        ),
+      `ETHDKGNotInSharedDistributionPhase(0)`
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -440,14 +447,15 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
 
     // try distributing shares
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators10[0].address))
         .distributeShares(
           validators10[0].encryptedShares,
           validators10[0].commitments
-        )
-    ).to.be.revertedWith("133");
+        ),
+      `ETHDKGNotInSharedDistributionPhase(0)`
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });

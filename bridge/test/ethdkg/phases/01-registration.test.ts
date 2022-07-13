@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { assertErrorMessage } from "../../chai-helpers";
 import { getFixture, getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
@@ -13,11 +13,12 @@ describe("ETHDKG: Registration Open", () => {
 
     // for this test, ETHDKG is not started
     // register validator0
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].aliceNetPublicKey)
-    ).to.be.revertedWith("128");
+        .register(validators4[0].aliceNetPublicKey),
+      `ETHDKGNotInRegistrationPhase(0)`
+    );
   });
 
   it("does not let validators to register more than once", async function () {
@@ -35,11 +36,14 @@ describe("ETHDKG: Registration Open", () => {
     ).to.emit(ethdkg, "AddressRegistered");
 
     // register that same validator again
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].aliceNetPublicKey)
-    ).to.be.revertedWith("132");
+        .register(validators4[0].aliceNetPublicKey),
+      `ParticipantParticipatingInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
   });
 
   it("does not let validators to register with an incorrect key", async function () {
@@ -53,23 +57,27 @@ describe("ETHDKG: Registration Open", () => {
 
     // register validator0 with invalid pubkey
     const signer0 = await getValidatorEthAccount(validators4[0].address);
-    await expect(
-      ethdkg
-        .connect(signer0)
-        .register([BigNumber.from("0"), BigNumber.from("1")])
-    ).to.be.revertedWith("130");
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(signer0)
-        .register([BigNumber.from("1"), BigNumber.from("0")])
-    ).to.be.revertedWith("130");
+        .register([BigNumber.from("0"), BigNumber.from("1")]),
+      `PublicKeyZero()`
+    );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(signer0)
-        .register([BigNumber.from("1"), BigNumber.from("1")])
-    ).to.be.revertedWith("131");
+        .register([BigNumber.from("1"), BigNumber.from("0")]),
+      `PublicKeyZero()`
+    );
+
+    await assertErrorMessage(
+      ethdkg
+        .connect(signer0)
+        .register([BigNumber.from("1"), BigNumber.from("1")]),
+      `PublicKeyNotOnCurve()`
+    );
   });
 
   it("does not let non-validators to register", async function () {

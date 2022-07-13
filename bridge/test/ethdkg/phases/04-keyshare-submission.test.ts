@@ -1,10 +1,9 @@
-import { BigNumberish } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 import { assertErrorMessage } from "../../chai-helpers";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
-  expect,
   startAtDistributeShares,
   startAtSubmitKeyShares,
   submitValidatorsKeyShares,
@@ -23,14 +22,15 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
-    await expect(
+    await assertErrorMessage(
       submitValidatorsKeyShares(
         ethdkg,
         validatorPool,
         validators4,
         expectedNonce
-      )
-    ).to.be.rejectedWith("140");
+      ),
+      `ETHDKGNotInKeyshareSubmissionPhase(2)`
+    );
   });
 
   it("should allow submission of key shares", async function () {
@@ -96,44 +96,50 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
-    await expect(
+    await assertErrorMessage(
       submitValidatorsKeyShares(
         ethdkg,
         validatorPool,
         validators4.slice(0, 1),
         expectedNonce
-      )
-    ).to.be.revertedWith("141");
+      ),
+      `ParticipantSubmittedKeysharesInRound("${ethers.utils.getAddress(
+        validators4[0].address
+      )}")`
+    );
   });
 
   it("should not allow submission of key shares with empty input state", async function () {
     const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
 
     // Submit empty Key shares for all validators
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"])
-    ).to.be.rejectedWith("141");
+        .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"]),
+      `InvalidKeyshareG1()`
+    );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           ["0", "0"],
           ["0", "0", "0", "0"]
-        )
-    ).to.be.rejectedWith("141");
+        ),
+      `InvalidKeyshareG1()`
+    );
 
-    await expect(
+    await assertErrorMessage(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           ["0", "0", "0", "0"]
-        )
-    ).to.be.rejectedWith("142");
+        ),
+      `InvalidKeyshareG2()`
+    );
   });
 });
