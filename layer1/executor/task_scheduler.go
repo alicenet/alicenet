@@ -331,12 +331,14 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 		task, present := s.Schedule[taskResponse.Id]
 		if present {
 			logger = GetTaskLoggerComplete(task)
+			logger = logger.WithField("killedAt", task.killedAt)
 		}
 		if taskResponse.Err != nil {
-			if !errors.Is(taskResponse.Err, context.Canceled) {
-				logger.Errorf("Task executed with error: %v", taskResponse.Err)
+			// todo: forward the error to whatever is listen to the task after adding subscription to scheduler
+			if present && task.InternalState == Killed {
+				logger.WithError(taskResponse.Err).Debug("Task got killed")
 			} else {
-				logger.Debug("Task got killed")
+				logger.WithError(taskResponse.Err).Error("Task executed with error")
 			}
 		} else {
 			logger.Info("Task successfully executed")
@@ -391,16 +393,20 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 			task := tasks[i]
 			GetTaskLoggerComplete(task).Info("Task is about to be killed")
 			if task.InternalState == Running {
-				task.Task.Close()
 				task.InternalState = Killed
 				task.killedAt = s.LastHeightSeen
+				task.Task.Close()
+				err := s.updateTask(task)
+				if err != nil {
+					s.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
+				}
 			} else if task.InternalState == Killed {
 				GetTaskLoggerComplete(task).Error("Task already killed")
 			} else {
 				GetTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
 				err := s.remove(task.Id)
 				if err != nil {
-					s.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
+					s.logger.WithError(err).Errorf("Failed to prune task id: %s", task.Id)
 				}
 			}
 		}
@@ -486,6 +492,18 @@ func (s *TasksScheduler) remove(id string) error {
 	}
 
 	delete(s.Schedule, id)
+
+	return nil
+}
+
+func (s *TasksScheduler) updateTask(task TaskRequestInfo) error {
+	s.logger.Tracef("updating task with id %s", task.Id)
+	_, present := s.Schedule[task.Id]
+	if !present {
+		return ErrNotScheduled
+	}
+
+	s.Schedule[task.Id] = task
 
 	return nil
 }

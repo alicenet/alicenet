@@ -188,10 +188,10 @@ func (bt *BaseTask) Close() {
 // Finish default implementation for the ITask interface
 func (bt *BaseTask) Finish(err error) {
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			bt.logger.WithError(err).Error("got an error when executing task")
+		if bt.wasKilled {
+			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
 		} else {
-			bt.logger.WithError(err).Debug("cancelling task execution")
+			bt.logger.WithError(err).Error("got an error when executing task")
 		}
 	} else {
 		bt.logger.Info("task is done")
