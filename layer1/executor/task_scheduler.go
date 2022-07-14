@@ -15,22 +15,20 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	ErrNotScheduled = errors.New("scheduled task not found")
-	ErrWrongParams  = errors.New("wrong start/end height for the task")
-	ErrTaskExpired  = errors.New("the task is already expired")
-	ErrTaskIsNil    = errors.New("the task we're trying to schedule is nil")
+	ErrNotScheduled                   = errors.New("scheduled task not found")
+	ErrWrongParams                    = errors.New("wrong start/end height for the task")
+	ErrTaskExpired                    = errors.New("the task is already expired")
+	ErrTaskNotAllowMultipleExecutions = errors.New("a task of the same type is already scheduled and allowed multiple execution for this type is false")
+	ErrTaskIsNil                      = errors.New("the task we're trying to schedule is nil")
 )
 
 // InternalTaskState is an enumeration indicating the possible states of a task
@@ -60,7 +58,8 @@ type BaseRequest struct {
 
 type TaskRequestInfo struct {
 	BaseRequest
-	Task     tasks.Task
+	Task tasks.Task
+	// todo add the sharedTaskResponse
 	killedAt uint64
 }
 
@@ -79,7 +78,7 @@ type TasksScheduler struct {
 	adminHandler     monitorInterfaces.AdminHandler `json:"-"`
 	marshaller       *marshaller.TypeRegistry       `json:"-"`
 	cancelChan       chan bool                      `json:"-"`
-	taskRequestChan  <-chan tasks.TaskRequest       `json:"-"`
+	taskRequestChan  <-chan internalRequest         `json:"-"`
 	taskResponseChan *taskResponseChan              `json:"-"`
 	logger           *logrus.Entry                  `json:"-"`
 	tasksManager     *TasksManager                  `json:"-"`
@@ -88,7 +87,7 @@ type TasksScheduler struct {
 
 type taskResponseChan struct {
 	writeOnce sync.Once
-	trChan    chan tasks.TaskResponse
+	trChan    chan internalTaskResponse
 	isClosed  bool
 }
 
@@ -99,13 +98,13 @@ func (tr *taskResponseChan) close() {
 	})
 }
 
-func (tr *taskResponseChan) Add(taskResponse tasks.TaskResponse) {
+func (tr *taskResponseChan) Add(taskResponse internalTaskResponse) {
 	if !tr.isClosed {
 		tr.trChan <- taskResponse
 	}
 }
 
-var _ tasks.TaskResponseChan = &taskResponseChan{}
+var _ internalTaskResponseChan = &taskResponseChan{}
 
 type innerSequentialSchedule struct {
 	Schedule map[string]*taskRequestInner
@@ -132,57 +131,6 @@ func GetTaskLoggerComplete(taskReq TaskRequestInfo) *logrus.Entry {
 		"state":     taskReq.InternalState,
 	})
 	return logEntry
-}
-
-func GetTaskRegistry() *marshaller.TypeRegistry {
-	// registry the type here
-	tr := &marshaller.TypeRegistry{}
-	tr.RegisterInstanceType(&dkg.CompletionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkg.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkg.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.RegisterTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
-	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
-	return tr
-}
-
-func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.TaskRequest, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
-	tr := GetTaskRegistry()
-
-	// main context that will cancel all workers and go routine
-	mainCtx, cf := context.WithCancel(context.Background())
-
-	s := &TasksScheduler{
-		Schedule:         make(map[string]TaskRequestInfo),
-		mainCtx:          mainCtx,
-		mainCtxCf:        cf,
-		database:         database,
-		eth:              eth,
-		adminHandler:     adminHandler,
-		marshaller:       tr,
-		cancelChan:       make(chan bool, 1),
-		taskRequestChan:  taskRequestChan,
-		taskResponseChan: &taskResponseChan{trChan: make(chan tasks.TaskResponse, 100)},
-		txWatcher:        txWatcher,
-	}
-
-	logger := logging.GetLogger("tasks")
-	s.logger = logger.WithField("Component", "schedule")
-
-	tasksManager, err := NewTaskManager(txWatcher, database, logger.WithField("Component", "manager"))
-	if err != nil {
-		return nil, err
-	}
-	s.tasksManager = tasksManager
-
-	return s, nil
 }
 
 func (s *TasksScheduler) Start() error {
@@ -222,17 +170,29 @@ func (s *TasksScheduler) eventLoop() {
 			return
 
 		case taskRequest := <-s.taskRequestChan:
-			switch taskRequest.Action {
-			case tasks.Kill:
-				taskName, _ := marshaller.GetNameType(taskRequest.Task)
-				s.logger.Tracef("received request to kill all tasks type: %v", taskName)
-				err := s.killTaskByName(s.mainCtx, taskName)
-				if err != nil {
-					s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskName)
+			response := &SchedulerResponse{Err: nil}
+			switch taskRequest.action {
+			case Kill:
+				if taskRequest.task != nil {
+					taskName, _ := marshaller.GetNameType(taskRequest.task)
+					s.logger.Tracef("received request to kill all tasks type: %v", taskName)
+					err := s.killTaskByName(s.mainCtx, taskName)
+					if err != nil {
+						s.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskName)
+						response = &SchedulerResponse{Err: err}
+					}
+				} else {
+					s.logger.Tracef("received request to kill task with ID: %v", taskRequest.id)
+					// todo: check if Id is empty
+					err := s.remove(taskRequest.id)
+					if err != nil {
+						s.logger.WithError(err).Errorf("Failed to killTaskById %v", taskRequest.id)
+						response = &SchedulerResponse{Err: err}
+					}
 				}
-			case tasks.Schedule:
+			case Schedule:
 				s.logger.Trace("received request for a task")
-				err := s.schedule(s.mainCtx, taskRequest.Task)
+				err := s.schedule(s.mainCtx, taskRequest.task, taskRequest.id)
 				if err != nil {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
@@ -240,9 +200,11 @@ func (s *TasksScheduler) eventLoop() {
 						s.logger.WithError(err).Debugf("Failed to schedule task request %d", s.LastHeightSeen)
 					} else {
 						s.logger.WithError(err).Errorf("Failed to schedule task request %d", s.LastHeightSeen)
+						response = &SchedulerResponse{Err: err}
 					}
 				}
 			}
+			taskRequest.response.sendResponse(response)
 			err := s.persistState()
 			if err != nil {
 				s.logger.WithError(err).Errorf("Failed to persist state %d on task request", s.LastHeightSeen)
@@ -293,7 +255,7 @@ func (s *TasksScheduler) eventLoop() {
 	}
 }
 
-func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
+func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task, id string) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -313,16 +275,24 @@ func (s *TasksScheduler) schedule(ctx context.Context, task tasks.Task) error {
 			return ErrTaskExpired
 		}
 
-		id := uuid.New()
+		if _, present := s.Schedule[id]; present {
+			// todo: return the sharedTaskResponse here
+			return nil
+		}
+
 		taskName, _ := marshaller.GetNameType(task)
-		taskReq := TaskRequestInfo{BaseRequest: BaseRequest{Id: id.String(), Name: taskName, Start: start, End: end}, Task: task}
-		s.Schedule[id.String()] = taskReq
+		if len(s.findTasksByName(taskName)) > 0 && !task.GetAllowMultiExecution() {
+			return ErrTaskNotAllowMultipleExecutions
+		}
+
+		taskReq := TaskRequestInfo{BaseRequest: BaseRequest{Id: id, Name: taskName, Start: start, End: end}, Task: task}
+		s.Schedule[id] = taskReq
 		GetTaskLoggerComplete(taskReq).Debug("Received task request")
 	}
 	return nil
 }
 
-func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse tasks.TaskResponse) error {
+func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse internalTaskResponse) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -332,6 +302,7 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 		if present {
 			logger = GetTaskLoggerComplete(task)
 		}
+		// todo: send task response here
 		if taskResponse.Err != nil {
 			if !errors.Is(taskResponse.Err, context.Canceled) {
 				logger.Errorf("Task executed with error: %v", taskResponse.Err)
@@ -432,17 +403,7 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 			(taskRequest.Start != 0 && taskRequest.Start <= s.LastHeightSeen && taskRequest.End == 0) ||
 			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && taskRequest.InternalState == NotStarted {
 
-			if taskRequest.Task.GetAllowMultiExecution() {
-				multiExecutionCheck[taskRequest.Name] = true
-				toStart = append(toStart, taskRequest)
-			} else {
-				if alreadyPicked := multiExecutionCheck[taskRequest.Name]; !alreadyPicked && len(s.findRunningTasksByName(taskRequest.Name)) == 0 {
-					multiExecutionCheck[taskRequest.Name] = true
-					toStart = append(toStart, taskRequest)
-				} else {
-					s.logger.Debugf("trying to start more than 1 task instance when this is not allowed id: %s, name: %s", taskRequest.Id, taskRequest.Name)
-				}
-			}
+			toStart = append(toStart, taskRequest)
 			continue
 		}
 	}

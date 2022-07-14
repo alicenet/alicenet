@@ -11,43 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TaskAction is an enumeration indicating the actions that the scheduler
-// can do with a task during a request:
-type TaskAction int
-
-// The possible actions that the scheduler can do with a task during a request:
-// * Kill          - To kill/prune a task type immediately
-// * Schedule      - To schedule a new task
-const (
-	Kill TaskAction = iota
-	Schedule
-)
-
-func (action TaskAction) String() string {
-	return [...]string{
-		"Kill",
-		"Schedule",
-	}[action]
-}
-
-type TaskResponse struct {
-	Id  string
-	Err error
-}
-
-type TaskRequest struct {
-	Action TaskAction
-	Task   Task
-}
-
-func NewScheduleTaskRequest(task Task) TaskRequest {
-	return TaskRequest{Action: Schedule, Task: task}
-}
-
-func NewKillTaskRequest(task Task) TaskRequest {
-	return TaskRequest{Action: Kill, Task: task}
-}
-
 type BaseTask struct {
 	sync.RWMutex
 	Name                string                        `json:"name"`
