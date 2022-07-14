@@ -6,9 +6,8 @@ interface IBridgePool {
 
     function deposit(
         uint8 accountType_,
-        address aliceNetAddress_,
-        uint256 ercAmount_,
-        uint256 bTokenFee_
+        address owner,
+        uint256 number
     ) external;
 
     function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO) external;

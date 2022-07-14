@@ -36,10 +36,6 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function distribute() returns(uint256 minerAmount, uint256 stakingAmount, uint256 lpStakingAmount, uint256 foundationAmount)
 	Distribute(opts *bind.TransactOpts) (*types.Transaction, error)
-	// Hello is a paid mutator transaction binding the contract method 0x19ff1d21.
-	//
-	// Solidity: function hello() returns()
-	Hello(opts *bind.TransactOpts) (*types.Transaction, error)
 	// IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)

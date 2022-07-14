@@ -32,6 +32,7 @@ contract BridgeRouter is
         uint256 chainID;
         uint16 poolVersion;
     }
+
     uint256 internal immutable _networkId;
     event BridgePoolCreated(address contractAddr);
     address private _implementation;
@@ -40,8 +41,6 @@ contract BridgeRouter is
     constructor(uint256 networkId_) ImmutableFactory(msg.sender) {
         _networkId = networkId_;
     }
-
-    // function getStorageCode() external view returns (bytes memory) {}
 
     /**
      * @dev this function can only be called by the btoken contract, when called this function will
@@ -71,7 +70,7 @@ contract BridgeRouter is
         address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
 
         //call the pool to initiate deposit
-        IBridgePool(poolAddress).deposit(1, msgSender, depositCallData.number, 0);
+        IBridgePool(poolAddress).deposit(1, msgSender, depositCallData.number);
 
         emit DepositedERCToken(
             nonce,
@@ -102,7 +101,7 @@ contract BridgeRouter is
             implementationVersion_
         );
         _implementation = getMetamorphicContractAddress(
-            getLocalERC721ImplementationSalt(implementationVersion_),
+            getLocalERCImplementationSalt(type_, implementationVersion_),
             _factoryAddress()
         );
         uint256 implementationSize;
@@ -124,25 +123,22 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC20 contract's address
+     * @notice getLocalERCImplementationSalt calculates salt for a BridgePool Implementation contract based on tokenType and version
      * @param version_ address of ERC20 contract of BridgePool
      * @return calculated salt
      */
-    function getLocalERC20ImplementationSalt(uint16 version_) public pure returns (bytes32) {
+    function getLocalERCImplementationSalt(uint8 tokenType, uint16 version_)
+        public
+        pure
+        returns (bytes32)
+    {
+        string memory tag;
+        if (tokenType == 1) tag = "LocalERC20";
+        if (tokenType == 2) tag = "LocalERC721";
         return
             keccak256(
                 bytes.concat(
-                    keccak256(abi.encodePacked("LocalERC20")),
-                    keccak256(abi.encodePacked(version_))
-                )
-            );
-    }
-
-    function getLocalERC721ImplementationSalt(uint16 version_) public pure returns (bytes32) {
-        return
-            keccak256(
-                bytes.concat(
-                    keccak256(abi.encodePacked("LocalERC721")),
+                    keccak256(abi.encodePacked(tag)),
                     keccak256(abi.encodePacked(version_))
                 )
             );

@@ -66,7 +66,6 @@ var FunctionMapping = map[[4]byte]string{
 	{171, 215, 10, 162}:  "BToken.getPoolBalance()",
 	{15, 253, 122, 129}:  "BToken.getStaticPoolContractAddress(bytes32,address)",
 	{94, 206, 243, 175}:  "BToken.getTotalBTokensDeposited()",
-	{25, 255, 29, 33}:    "BToken.hello()",
 	{57, 80, 147, 81}:    "BToken.increaseAllowance(address,uint256)",
 	{129, 41, 252, 28}:   "BToken.initialize()",
 	{160, 113, 45, 104}:  "BToken.mint(uint256)",

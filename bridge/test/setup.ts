@@ -239,10 +239,8 @@ export const deployStaticWithFactory = async (
 
   let tx;
   if (
-    contractName != "BridgePoolV1" &&
-    contractName != "LocalERC721BridgePoolV1"
+    contractName.indexOf("BridgePool") == -1 // TODO gus: Add a proper management of BridgePool initializers
   ) {
-    // TODO gus: Add a proper management of initializers
     let initCallDataBin;
     try {
       initCallDataBin = _Contract.interface.encodeFunctionData(
@@ -587,17 +585,18 @@ export const getFixture = async (
   )) as ATokenBurner;
 
   // BridgePoolV1
-  // const bridgePoolV1 = (await deployStaticWithFactory(
-  //   factory,
-  //   "BridgePoolV1",
-  //   getLocalBridgePoolSalt(1)
-  // )) as IBridgePool;
+  const localERC20BridgePoolV1 = (await deployStaticWithFactory(
+    factory,
+    "LocalERC20BridgePoolV1",
+    getLocalERC20BridgePoolSalt(1),
+    [1337]
+  )) as IBridgePool;
 
-  // BridgePoolV1
   const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC721BridgePoolV1",
-    getLocalERC721BridgePoolSalt(1)
+    getLocalERC721BridgePoolSalt(1),
+    [1337]
   )) as IBridgePool;
 
   // BridgePoolFactory
@@ -620,6 +619,10 @@ export const getFixture = async (
 
   const erc721Mock = await (
     await (await ethers.getContractFactory("ERC721Mock")).deploy()
+  ).deployed();
+
+  const erc20Mock = await (
+    await (await ethers.getContractFactory("ERC20Mock")).deploy()
   ).deployed();
 
   const immutableAuthErrorCodesContract = await (
@@ -658,7 +661,9 @@ export const getFixture = async (
     ethdkg,
     factory,
     localERC721BridgePoolV1,
+    localERC20BridgePoolV1,
     erc721Mock,
+    erc20Mock,
     bridgeRouter,
     bridgePoolDepositNotifier,
     namedSigners,

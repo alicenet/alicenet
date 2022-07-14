@@ -16,13 +16,19 @@ export interface state {
     eth: {
       address: string;
       // We leave user balance as number to round values and avoid consumed gas comparison
-      admin: number;
-      user: number;
+      admin: bigint;
+      user: bigint;
       bridgePool: bigint;
       aToken: bigint;
       bToken: bigint;
     };
-    nft: {
+    ERC20: {
+      address: string;
+      admin: bigint;
+      user: bigint;
+      bridgePool: bigint;
+    };
+    ERC721: {
       address: string;
       admin: bigint;
       user: bigint;
@@ -46,8 +52,8 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
       },
       eth: {
         address: "0000",
-        admin: format(await ethers.provider.getBalance(admin.address)),
-        user: format(await ethers.provider.getBalance(user.address)),
+        admin: formatBigInt(await ethers.provider.getBalance(admin.address)),
+        user: formatBigInt(await ethers.provider.getBalance(user.address)),
         bridgePool: (
           await ethers.provider.getBalance(bridgePool.address)
         ).toBigInt(),
@@ -58,7 +64,15 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
           await ethers.provider.getBalance(fixture.bToken.address)
         ).toBigInt(),
       },
-      nft: {
+      ERC20: {
+        address: fixture.erc20Mock.address.slice(-4),
+        admin: (await fixture.erc20Mock.balanceOf(admin.address)).toBigInt(),
+        user: (await fixture.erc20Mock.balanceOf(user.address)).toBigInt(),
+        bridgePool: (
+          await fixture.erc20Mock.balanceOf(bridgePool.address)
+        ).toBigInt(),
+      },
+      ERC721: {
         address: fixture.erc721Mock.address.slice(-4),
         admin: (await fixture.erc721Mock.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.erc721Mock.balanceOf(user.address)).toBigInt(),

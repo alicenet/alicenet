@@ -53,39 +53,12 @@ contract LocalERC721BridgePoolV1 is
     /// @param accountType_ The type of account
     /// @param msgSender The address of ERC sender
     /// @param number The token ID of the NFT to be deposited
-    /// @param bTokenAmount_ The fee for deposit in bTokens
     function deposit(
         uint8 accountType_,
         address msgSender,
-        uint256 number,
-        uint256 bTokenAmount_
+        uint256 number
     ) public {
         IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
-        // require(
-        //     ERC20(_bTokenAddress()).transferFrom(msg.sender, address(this), bTokenAmount_),
-        //     string(
-        //         abi.encodePacked(
-        //             BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_TRANSFER_DEPOSIT_FEE_FROM_SENDER
-        //         )
-        //     )
-        // );
-        // uint256 value = BToken(_bTokenAddress()).burnTo(address(this), bTokenAmount_, 1);
-        // require(
-        //     value > 0,
-        //     string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_UNABLE_TO_BURN_DEPOSIT_FEE))
-        // );
-        uint256 value = bTokenAmount_;
-        address btoken = _bTokenAddress();
-        assembly {
-            mstore8(0x00, 0x73)
-            mstore(0x01, shl(96, btoken))
-            mstore8(0x15, 0xff)
-            let addr := create(value, 0x00, 0x16)
-            if iszero(addr) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0x00, returndatasize())
-            }
-        }
         uint8 bridgeType = 2;
         uint256 chainId = 1337;
         uint16 bridgeImplVersion = 1;
@@ -131,6 +104,4 @@ contract LocalERC721BridgePoolV1 is
             burnedUTXO.value // tokenId
         );
     }
-
-    receive() external payable {}
 }
