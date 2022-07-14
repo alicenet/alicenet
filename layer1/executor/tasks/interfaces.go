@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"github.com/alicenet/alicenet/layer1/executor"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
@@ -39,5 +40,5 @@ type TaskState interface {
 
 // TaskResponseChan the interface requirements of a task response chan
 type TaskResponseChan interface {
-	Add(TaskResponse)
+	Add(executor.InternalTaskResponse)
 }
