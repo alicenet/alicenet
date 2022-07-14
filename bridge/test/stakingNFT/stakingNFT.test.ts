@@ -17,7 +17,7 @@ contract("StakingNFT", async () => {
   let aTokenMinter: ATokenMinter;
   beforeEach(async () => {
     fixture = await getBaseTokensFixture();
-    const hre = await require("hardhat");
+    const hre = await require("hardhat"); // eslint-disable-line
     if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
       await network.provider.send("evm_setBlockGasLimit", [
         "0x6000000000000000000000",
@@ -2135,7 +2135,7 @@ contract("StakingNFT", async () => {
   describe("lockPosition", async () => {
     it("lockPosition Test 1: one staker, small lock", async () => {
       // Setup ability to perform call as Governance
-      const hre = await require("hardhat");
+      const hre = await require("hardhat"); // eslint-disable-line
       const govAddress = getMetamorphicAddress(
         fixture.factory.address,
         "0x476f7665726e616e636500000000000000000000000000000000000000000000"
@@ -2215,7 +2215,7 @@ contract("StakingNFT", async () => {
 
     it("lockPosition Test 2: one staker, long lock", async () => {
       // Setup ability to perform call as Governance
-      const hre = await require("hardhat");
+      const hre = await require("hardhat"); // eslint-disable-line
       const govAddress = getMetamorphicAddress(
         fixture.factory.address,
         "0x476f7665726e616e636500000000000000000000000000000000000000000000"
@@ -2317,7 +2317,7 @@ contract("StakingNFT", async () => {
 
     it("lockPosition Test 5: fail, does not exist", async () => {
       // Setup ability to perform call as Governance
-      const hre = await require("hardhat");
+      const hre = await require("hardhat"); // eslint-disable-line
       const govAddress = getMetamorphicAddress(
         fixture.factory.address,
         "0x476f7665726e616e636500000000000000000000000000000000000000000000"
@@ -2351,7 +2351,7 @@ contract("StakingNFT", async () => {
 
     it("lockPosition Test 6: fail, incorrect caller", async () => {
       // Setup ability to perform call as Governance
-      const hre = await require("hardhat");
+      const hre = await require("hardhat"); // eslint-disable-line
       const govAddress = getMetamorphicAddress(
         fixture.factory.address,
         "0x476f7665726e616e636500000000000000000000000000000000000000000000"
@@ -2395,7 +2395,7 @@ contract("StakingNFT", async () => {
 
     it("lockPosition Test 7: fail, above max lock period", async () => {
       // Setup ability to perform call as Governance
-      const hre = await require("hardhat");
+      const hre = await require("hardhat"); // eslint-disable-line
       const govAddress = getMetamorphicAddress(
         fixture.factory.address,
         "0x476f7665726e616e636500000000000000000000000000000000000000000000"

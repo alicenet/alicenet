@@ -106,7 +106,7 @@ describe("PublicStaking: Mint and Burn", async () => {
     await mineBlocks(2n);
     await expect(
       fixture.publicStaking.connect(adminSigner).burn(tokenID)
-    ).to.be.rejectedWith("ERC721: owner query for nonexistent token");
+    ).to.be.rejectedWith("604");
   });
 
   describe("Mint stakeNFT and", async () => {
