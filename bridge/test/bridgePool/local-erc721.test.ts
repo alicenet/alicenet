@@ -9,6 +9,7 @@ import {
   getFixture,
 } from "../setup";
 import {
+  format,
   getMockBlockClaimsForStateRoot,
   getState,
   showState,
@@ -49,6 +50,11 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
 let depositCallData;
 let encodedDepositCallData: string;
 const poolType = 2; //ERC721
+const maxEth = 1;
+const maxTokens = 11; // has to be > bTokenFee (10)
+const value = ethers.utils.parseEther("1.0");
+const ethFeeInWeis = 1;
+const refund = value.sub(ethFeeInWeis);
 
 const networkId = 1337;
 describe("Testing BridgePool", () => {
@@ -121,58 +127,20 @@ describe("Testing BridgePool", () => {
   });
 
   describe("Testing BridgePool Router", async () => {
-    it.only("Should make a deposit with parameters and emit correspondent event", async () => {
+    it("Should make a deposit with parameters", async () => {
+      const nonce = 1;
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.nft.user -= BigNumber.from(1).toBigInt();
       expectedState.Balances.nft.bridgePool += BigNumber.from(1).toBigInt();
-      expectedState.Balances.bToken.user -= bTokenAmount;
-      expectedState.Balances.bToken.totalSupply -= bTokenAmount;
-      const nonce = 1;
-      let maxEth = 1;
-      let maxTokens = 11; // has to be > 10 for now
-      await expect(
-        fixture.bToken
-          .connect(user)
-          .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-            value: ethers.utils.parseEther("1.0"),
-          })
-      )
-        .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
-        .withArgs(
-          BigNumber.from(nonce),
-          fixture.erc721Mock.address,
-          user.address,
-          BigNumber.from(poolType),
-          BigNumber.from(tokenId),
-          BigNumber.from(networkId)
-        );
-
-      showState("After Deposit", await getState(fixture, bridgePool));
-      expect(await getState(fixture, bridgePool)).to.be.deep.equal(
-        expectedState
-      );
-    });
-
-    it("Should make a deposit with parameters and emit correspondent event", async () => {
-      expectedState = await getState(fixture, bridgePool);
-      expectedState.Balances.nft.user -= BigNumber.from(1).toBigInt();
-      expectedState.Balances.nft.bridgePool += BigNumber.from(1).toBigInt();
-      expectedState.Balances.bToken.user -= bTokenAmount;
-      expectedState.Balances.bToken.totalSupply -= bTokenAmount;
-      const nonce = 1;
-      await expect(
-        bridgePool
-          .connect(user)
-          .deposit(1, user.address, erc20Amount, bTokenAmount)
-      )
-        .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
-        .withArgs(
-          BigNumber.from(nonce),
-          fixture.erc721Mock.address,
-          user.address,
-          BigNumber.from(tokenId),
-          BigNumber.from(networkId)
-        );
+      expectedState.Balances.eth.bToken +=
+        BigNumber.from(ethFeeInWeis).toBigInt();
+      expectedState.Balances.eth.user -= format(value);
+      expectedState.Balances.eth.user += format(refund);
+      fixture.bToken
+        .connect(user)
+        .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+          value: value,
+        });
       showState("After Deposit", await getState(fixture, bridgePool));
       expect(await getState(fixture, bridgePool)).to.be.deep.equal(
         expectedState
@@ -181,9 +149,11 @@ describe("Testing BridgePool", () => {
 
     it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
       // Make first a deposit to withdraw afterwards
-      await bridgePool
+      fixture.bToken
         .connect(user)
-        .deposit(1, user.address, erc20Amount, bTokenAmount);
+        .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+          value: value,
+        });
       showState("After Deposit", await getState(fixture, bridgePool));
       expectedState = await getState(fixture, bridgePool);
       expectedState.Balances.nft.user += BigNumber.from(1).toBigInt();
@@ -249,15 +219,18 @@ describe("Testing BridgePool", () => {
     it("Should emit an event if called from a BridgePool", async () => {
       const nonce = 1;
       await expect(
-        bridgePool
+        fixture.bToken
           .connect(user)
-          .deposit(1, user.address, erc20Amount, bTokenAmount)
+          .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+            value: value,
+          })
       )
         .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
         .withArgs(
           BigNumber.from(nonce),
           fixture.erc721Mock.address,
           user.address,
+          BigNumber.from(poolType),
           BigNumber.from(tokenId),
           BigNumber.from(networkId)
         );
@@ -272,8 +245,9 @@ describe("Testing BridgePool", () => {
         fixture.bridgePoolDepositNotifier.doEmit(
           salt,
           fixture.erc721Mock.address,
-          tokenId,
-          user.address
+          user.address,
+          poolType,
+          tokenId
         )
       ).to.be.rejectedWith(reason);
     });

@@ -6,13 +6,6 @@ import { Fixture } from "../setup";
 
 export interface state {
   Balances: {
-    aToken: {
-      address: string;
-      admin: bigint;
-      user: bigint;
-      bridgePool: bigint;
-      totalSupply: bigint;
-    };
     bToken: {
       address: string;
       admin: bigint;
@@ -42,15 +35,6 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
   const [admin, user] = await ethers.getSigners();
   const state: state = {
     Balances: {
-      aToken: {
-        address: fixture.aToken.address.slice(-4),
-        admin: (await fixture.aToken.balanceOf(admin.address)).toBigInt(),
-        user: (await fixture.aToken.balanceOf(user.address)).toBigInt(),
-        bridgePool: (
-          await fixture.aToken.balanceOf(bridgePool.address)
-        ).toBigInt(),
-        totalSupply: (await fixture.aToken.totalSupply()).toBigInt(),
-      },
       bToken: {
         address: fixture.bToken.address.slice(-4),
         admin: (await fixture.bToken.balanceOf(admin.address)).toBigInt(),
@@ -75,7 +59,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
         ).toBigInt(),
       },
       nft: {
-        address: fixture.aToken.address.slice(-4),
+        address: fixture.erc721Mock.address.slice(-4),
         admin: (await fixture.erc721Mock.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.erc721Mock.balanceOf(user.address)).toBigInt(),
         bridgePool: (

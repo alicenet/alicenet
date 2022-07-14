@@ -51,7 +51,7 @@ describe("Local ERC721 BridgePool Contract Factory", () => {
     ).to.be.revertedWith(reason);
   });
 
-  it("Should deploy new BridgePool", async () => {
+  it("Should deploy new BridgePool with correct parameters", async () => {
     const deployNewPoolTransaction =
       await fixture.bridgeRouter.deployNewLocalPool(
         poolType,

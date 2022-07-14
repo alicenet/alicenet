@@ -90,21 +90,21 @@ contract BToken is
         bytes calldata data
     ) public payable {
         //forward call to btoken
-        uint256 bTokenAmount = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
+        uint256 bTokenFee = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
             msg.sender,
             maxTokens,
             data
         );
         //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
-            uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenAmount);
+            uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenFee);
             require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
                 payable(msg.sender).transfer(refund);
             }
         } else {
-            _destroyTokens(bTokenAmount);
+            _destroyTokens(bTokenFee);
         }
     }
 
