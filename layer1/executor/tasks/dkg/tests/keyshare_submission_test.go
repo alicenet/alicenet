@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +27,7 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
-		p, err := ethereum.GetContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		// check points
@@ -39,7 +38,7 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 	}
 
 	// assert that ETHDKG is at MPKSubmission phase
-	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 
 	assert.Equal(t, uint8(state.MPKSubmission), phase)
@@ -65,7 +64,7 @@ func TestKeyShareSubmission_Bad3(t *testing.T) {
 		assert.Nil(t, err)
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err = keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "task-id", nil)
+		err = keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.NotNil(t, err)
@@ -85,7 +84,7 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "KeyShareSubmissionTask", "task-id", nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)

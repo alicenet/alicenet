@@ -8,7 +8,6 @@ import (
 
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -130,7 +129,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 	// Accuse participant
-	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
+	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantDistributedBadShares(txnOpts, dishonestAddress, encryptedShares, commitments, sharedKey, sharedKeyProof)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("submit share dispute failed: %v", err), true)
 	}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -64,7 +63,7 @@ func (t *DisputeMissingKeySharesTask) Execute(ctx context.Context) (*types.Trans
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantDidNotSubmitKeyShares(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
 	}

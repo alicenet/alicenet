@@ -11,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
@@ -22,10 +21,10 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes
-func ProcessValidatorSetCompleted(eth layer1.Client, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
+func ProcessValidatorSetCompleted(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
 	adminHandler monInterfaces.AdminHandler) error {
 
-	c := ethereum.GetContracts()
+	c := contracts.GetEthereumContracts()
 
 	monitorState.Lock()
 	defer monitorState.Unlock()
@@ -90,12 +89,12 @@ func ProcessValidatorSetCompleted(eth layer1.Client, logger *logrus.Entry, monit
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator
-func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
+func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
 
 	monitorState.Lock()
 	defer monitorState.Unlock()
 
-	c := ethereum.GetContracts()
+	c := contracts.GetEthereumContracts()
 
 	event, err := c.Ethdkg().ParseValidatorMemberAdded(log)
 	if err != nil {
@@ -165,8 +164,8 @@ func ProcessValidatorMemberAdded(eth layer1.Client, logger *logrus.Entry, monito
 }
 
 // ProcessValidatorJoined handles the Minor Slash event
-func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorJoined(log)
+func ProcessValidatorJoined(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := contracts.GetEthereumContracts().ValidatorPool().ParseValidatorJoined(log)
 	if err != nil {
 		return err
 	}
@@ -183,8 +182,8 @@ func ProcessValidatorJoined(eth layer1.Client, logger *logrus.Entry, state *obje
 }
 
 // ProcessValidatorLeft handles the Minor Slash event
-func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorLeft(log)
+func ProcessValidatorLeft(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := contracts.GetEthereumContracts().ValidatorPool().ParseValidatorLeft(log)
 	if err != nil {
 		return err
 	}
@@ -203,8 +202,8 @@ func ProcessValidatorLeft(eth layer1.Client, logger *logrus.Entry, state *object
 }
 
 // ProcessValidatorMajorSlashed handles the Major Slash event
-func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
+func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	event, err := contracts.GetEthereumContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
 	if err != nil {
 		return err
 	}
@@ -222,9 +221,9 @@ func ProcessValidatorMajorSlashed(eth layer1.Client, logger *logrus.Entry, state
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event
-func ProcessValidatorMinorSlashed(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 
-	event, err := ethereum.GetContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
+	event, err := contracts.GetEthereumContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
 	if err != nil {
 		return err
 	}

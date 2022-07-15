@@ -10,7 +10,6 @@ import (
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/tests"
@@ -265,7 +264,7 @@ func GenerateGPKJ(dkgStates []*state.DkgState) {
 	}
 }
 
-func GetETHDKGRegistrationOpened(logs []*types.Log, eth layer1.Client) (*bindings.ETHDKGRegistrationOpened, error) {
+func GetETHDKGRegistrationOpened(logs []*types.Log, eth layer1.Client, contracts layer1.AllSmartContracts) (*bindings.ETHDKGRegistrationOpened, error) {
 	eventMap := events.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {
@@ -277,7 +276,7 @@ func GetETHDKGRegistrationOpened(logs []*types.Log, eth layer1.Client) (*binding
 	for _, log := range logs {
 		for _, topic := range log.Topics {
 			if topic.String() == eventInfo.ID.String() {
-				event, err = ethereum.GetContracts().Ethdkg().ParseRegistrationOpened(*log)
+				event, err = contracts.GetEthereumContracts().Ethdkg().ParseRegistrationOpened(*log)
 				if err != nil {
 					continue
 				}

@@ -8,18 +8,17 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessDepositReceived(eth layer1.Client, logger *logrus.Entry, log types.Log, cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
+func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	event, err := ethereum.GetContracts().BToken().ParseDepositReceived(log)
+	event, err := contracts.GetEthereumContracts().BToken().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}

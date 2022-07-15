@@ -29,6 +29,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -50,7 +51,7 @@ var Command = cobra.Command{
 	Long:  "Runs a AliceNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Secp256k1Signer, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
 	eth, err := ethereum.NewClient(
@@ -72,11 +73,11 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Sec
 		logger.Fatal("Ethereum endpoint not accessible...")
 		panic(err)
 	}
-	logger.Infof("Looking up smart contracts on Ethereum...")
-	// Initialize and find all the contracts
-	ethereum.NewContracts(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
 
-	utils.LogStatus(logger.WithField("Component", "validator"), eth)
+	// Initialize and find all the contracts
+	contractsHandler := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
+
+	utils.LogStatus(logger.WithField("Component", "validator"), eth, contractsHandler)
 
 	secp256k1, err := eth.CreateSecp256k1Signer()
 	if err != nil {
@@ -88,7 +89,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Sec
 	}
 	logger.Infof("Account: %v Public Key: 0x%x", eth.GetDefaultAccount().Address.Hex(), pubKey)
 
-	return eth, secp256k1, pubKey
+	return eth, contractsHandler, secp256k1, pubKey
 }
 
 // Setup the peer manager:
@@ -185,7 +186,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	chainID := uint32(config.Configuration.Chain.ID)
 	batchSize := config.Configuration.Monitor.BatchSize
 
-	eth, secp256k1Signer, publicKey := initEthereumConnection(logger)
+	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
@@ -283,13 +284,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
 
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, consAdminHandlers, taskRequestChan, txWatcher)
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contractsHandler, consAdminHandlers, taskRequestChan, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), taskRequestChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.GetEthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), taskRequestChan)
 	if err != nil {
 		panic(err)
 	}

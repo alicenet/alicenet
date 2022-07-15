@@ -63,6 +63,7 @@ type BaseTask struct {
 	database            *db.Database                  `json:"-"`
 	logger              *logrus.Entry                 `json:"-"`
 	client              layer1.Client                 `json:"-"`
+	contracts           layer1.AllSmartContracts      `json:"-"`
 	taskResponseChan    TaskResponseChan              `json:"-"`
 }
 
@@ -80,7 +81,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 }
 
 // Initialize default implementation for the ITask interface
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error {
 	bt.Lock()
 	defer bt.Unlock()
 	if bt.isInitialized {
@@ -94,6 +95,7 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 	bt.database = database
 	bt.logger = logger
 	bt.client = eth
+	bt.contracts = contracts
 	bt.taskResponseChan = taskResponseChan
 	bt.isInitialized = true
 
@@ -160,6 +162,13 @@ func (bt *BaseTask) GetClient() layer1.Client {
 	bt.RLock()
 	defer bt.RUnlock()
 	return bt.client
+}
+
+// GetEth default implementation for the ITask interface
+func (bt *BaseTask) GetContractsHandler() layer1.AllSmartContracts {
+	bt.RLock()
+	defer bt.RUnlock()
+	return bt.contracts
 }
 
 // GetLogger default implementation for the ITask interface

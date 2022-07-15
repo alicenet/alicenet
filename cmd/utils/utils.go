@@ -10,6 +10,7 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ var SendWeiCommand = cobra.Command{
 	Long:  "",
 	Run:   utilsNode}
 
-func setupEthereum(logger *logrus.Entry) (layer1.Client, error) {
+func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContracts, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
 	eth, err := ethereum.NewClient(
 		config.Configuration.Ethereum.Endpoint,
@@ -44,18 +45,19 @@ func setupEthereum(logger *logrus.Entry) (layer1.Client, error) {
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	factoryAddress := common.HexToAddress(config.Configuration.Ethereum.FactoryAddress)
 
-	ethereum.NewContracts(eth, factoryAddress)
+	// Initialize and find all the contracts
+	contractsHandler := handlers.NewAllSmartContractsHandle(eth, factoryAddress)
 
-	return eth, err
+	return eth, contractsHandler, err
 }
 
 // LogStatus sends simple info about our Ethereum setup to the logger
-func LogStatus(logger *logrus.Entry, eth layer1.Client) {
+func LogStatus(logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts) {
 
 	acct := eth.GetDefaultAccount()
 
@@ -65,20 +67,21 @@ func LogStatus(logger *logrus.Entry, eth layer1.Client) {
 		return
 	}
 
-	c := ethereum.GetContracts()
+	c := contracts.GetEthereumContracts()
 	callOpts, err := eth.GetCallOpts(context.Background(), acct)
 	if err != nil {
 		logger.Warnf("Failed to get call options: %v", err)
 		return
 	}
 
-	logger.Infof("ValidatorPool() address is %v", c.ValidatorPoolAddress().Hex())
 	isValidator, err := c.ValidatorPool().IsValidator(callOpts, acct.Address)
 	if err != nil {
 		logger.Warnf("Failed checking whether %v is a validator: %v", acct.Address.Hex(), err)
 		return
 	}
 
+	logger.Info(strings.Repeat("-", 80))
+	logger.Info("        	ETHEREUM CONTRACTS")
 	logger.Info(strings.Repeat("-", 80))
 	logger.Infof("          EthDKG contract: %v", c.EthdkgAddress().Hex())
 	logger.Infof(" ContractFactory contract: %v", c.ContractFactoryAddress().Hex())
@@ -95,14 +98,14 @@ func utilsNode(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("utils").WithField("Component", cmd.Use)
 
 	// Utils wide setup
-	eth, err := setupEthereum(logger)
+	eth, contracts, err := setupEthereum(logger)
 	if err != nil {
 		logger.Errorf("Could not connect to Ethereum: %v", err)
 		return
 	}
 
 	if config.Configuration.Utils.Status {
-		LogStatus(logger, eth)
+		LogStatus(logger, eth, contracts)
 	}
 
 	// Route command

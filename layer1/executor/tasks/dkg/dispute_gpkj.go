@@ -11,7 +11,6 @@ import (
 
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -161,7 +160,7 @@ func (t *DisputeGPKjTask) accuseDishonestValidator(ctx context.Context, logger *
 	}
 
 	logger.Warnf("accusing participant: %v of distributing bad dpkj", t.Address.Hex())
-	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, t.Address)
+	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantSubmittedBadGPKJ(txnOpts, validatorAddresses, groupEncryptedSharesHash, groupCommitments, t.Address)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("bad dpkj accusation failed: %v", err), true)
 	}

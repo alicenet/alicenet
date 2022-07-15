@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 
@@ -26,7 +25,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingShareDistributionTask", "task-id", nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)
@@ -56,11 +55,11 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 
-	CheckBadValidators(t, u, suite)
+	CheckBadValidators(t, u, suite, fixture.Contracts)
 }
 
 func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
@@ -76,7 +75,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingShareDistributionTask", "task-id", nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)
@@ -106,11 +105,11 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 
-	CheckBadValidators(t, u, suite)
+	CheckBadValidators(t, u, suite, fixture.Contracts)
 }
 
 func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
@@ -125,7 +124,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWh
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingShareDistributionTask", "task-id", nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)
@@ -138,9 +137,9 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWh
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 
-	CheckBadValidators(t, u, suite)
+	CheckBadValidators(t, u, suite, fixture.Contracts)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -45,6 +46,32 @@ type Client interface {
 	RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error)
 }
 
-type Contracts interface {
+type BasicContracts interface {
 	GetAllAddresses() []common.Address
+}
+
+type EthereumContracts interface {
+	BasicContracts
+	Ethdkg() bindings.IETHDKG
+	EthdkgAddress() common.Address
+	AToken() bindings.IAToken
+	ATokenAddress() common.Address
+	BToken() bindings.IBToken
+	BTokenAddress() common.Address
+	PublicStaking() bindings.IPublicStaking
+	PublicStakingAddress() common.Address
+	ValidatorStaking() bindings.IValidatorStaking
+	ValidatorStakingAddress() common.Address
+	ContractFactory() bindings.IAliceNetFactory
+	ContractFactoryAddress() common.Address
+	SnapshotsAddress() common.Address
+	Snapshots() bindings.ISnapshots
+	ValidatorPool() bindings.IValidatorPool
+	ValidatorPoolAddress() common.Address
+	Governance() bindings.IGovernance
+	GovernanceAddress() common.Address
+}
+
+type AllSmartContracts interface {
+	GetEthereumContracts() EthereumContracts
 }

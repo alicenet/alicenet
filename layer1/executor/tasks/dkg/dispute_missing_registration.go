@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -65,7 +64,7 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing registration: %v", err), true)
 	}
