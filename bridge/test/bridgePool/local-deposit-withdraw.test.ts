@@ -57,7 +57,7 @@ const chainId = 1337;
 
 tokenTypes.forEach(function (run) {
   describe(
-    "Testing BridgePool Router Deposit/Withdraw for " + run.it,
+    "Testing BridgePool Router Deposit/Withdraw for tokenType " + run.it,
     async () => {
       beforeEach(async () => {
         [firstOwner, user, user2] = await ethers.getSigners();
