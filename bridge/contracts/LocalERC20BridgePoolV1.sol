@@ -96,10 +96,6 @@ contract LocalERC20BridgePoolV1 is
             string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN))
         );
 
-        IERC20Transferable(_erc20Contract).transferFrom(
-            address(this),
-            msg.sender,
-            burnedUTXO.value
-        );
+        IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
     }
 }
