@@ -24,8 +24,7 @@ let user2: SignerWithAddress;
 let bridgePool: any;
 
 const bTokenFeeInETH = 10;
-const bTokenAmount = BigNumber.from(100).toBigInt();
-const number = 100;
+const valueOrId = 100; // value if ERC20 , tokenId otherwise
 
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 const merkleProof =
@@ -36,7 +35,7 @@ const stateRoot =
 const burnedUTXO = {
   chainId: 0,
   owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-  value: number,
+  value: valueOrId,
   fee: 1,
   txHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
 };
@@ -50,11 +49,11 @@ let depositCallData;
 let encodedDepositCallData: string;
 const maxEth = 1;
 const maxTokens = 11; // has to be > bTokenFee (10)
-const value = ethers.utils.parseEther("1.0");
+const valueSent = ethers.utils.parseEther("1.0");
 const ethFee = 1;
-const refund = value.sub(ethFee);
+const refund = valueSent.sub(ethFee);
 const chainId = 1337;
-var runs = [
+const runs = [
   {
     it: "ERC721",
     options: {
@@ -70,7 +69,7 @@ var runs = [
       ercContractName: "erc20Mock",
       poolType: 1,
       bridgeImpl: "LocalERC20BridgePoolV1",
-      quantity: number,
+      quantity: valueOrId,
     },
   },
 ];
@@ -100,10 +99,10 @@ runs.forEach(function (run) {
         await ethers.getContractFactory(run.options.bridgeImpl)
       ).attach(bridgePoolAddress);
       // Mint and approve an ERC token to deposit
-      fixture[run.options.ercContractName].mint(user.address, number);
+      fixture[run.options.ercContractName].mint(user.address, valueOrId);
       fixture[run.options.ercContractName]
         .connect(user)
-        .approve(bridgePool.address, number);
+        .approve(bridgePool.address, valueOrId);
       // Mint and approve some bTokens to deposit as fee
       await callFunctionAndGetReturnValues(
         fixture.bToken,
@@ -121,7 +120,7 @@ runs.forEach(function (run) {
       depositCallData = {
         ERCContract: fixture[run.options.ercContractName].address,
         tokenType: run.options.poolType,
-        number: number,
+        number: valueOrId,
         chainID: 1337,
         poolVersion: 1,
       };
@@ -135,7 +134,6 @@ runs.forEach(function (run) {
     });
 
     it("Should make a deposit with parameters", async () => {
-      const nonce = 1;
       expectedState = await getState(fixture, bridgePool);
       const erc = run.it as keyof typeof expectedState.Balances;
       expectedState.Balances[erc].user -= BigNumber.from(
@@ -145,12 +143,12 @@ runs.forEach(function (run) {
         run.options.quantity
       ).toBigInt();
       expectedState.Balances.eth.bToken += BigNumber.from(ethFee).toBigInt();
-      expectedState.Balances.eth.user -= formatBigInt(value);
+      expectedState.Balances.eth.user -= formatBigInt(valueSent);
       expectedState.Balances.eth.user += formatBigInt(refund);
-      fixture.bToken
+      await fixture.bToken
         .connect(user)
         .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-          value: value,
+          value: valueSent,
         });
       showState("After Deposit", await getState(fixture, bridgePool));
       expect(await getState(fixture, bridgePool)).to.be.deep.equal(
@@ -160,10 +158,10 @@ runs.forEach(function (run) {
 
     it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
       // Make first a deposit to withdraw afterwards
-      fixture.bToken
+      await fixture.bToken
         .connect(user)
         .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-          value: value,
+          value: valueSent,
         });
       showState("After Deposit", await getState(fixture, bridgePool));
       expectedState = await getState(fixture, bridgePool);
@@ -236,7 +234,7 @@ runs.forEach(function (run) {
         fixture.bToken
           .connect(user)
           .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-            value: value,
+            value: valueSent,
           })
       )
         .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
@@ -245,7 +243,7 @@ runs.forEach(function (run) {
           fixture[run.options.ercContractName].address,
           user.address,
           BigNumber.from(run.options.poolType),
-          BigNumber.from(number),
+          BigNumber.from(valueOrId),
           BigNumber.from(chainId)
         );
     });
@@ -261,7 +259,7 @@ runs.forEach(function (run) {
           fixture[run.options.ercContractName].address,
           user.address,
           run.options.poolType,
-          number
+          valueOrId
         )
       ).to.be.rejectedWith(reason);
     });
