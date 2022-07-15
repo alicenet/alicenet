@@ -56,7 +56,7 @@ contract LocalERC721BridgePoolV1 is
         uint8 accountType_,
         address msgSender,
         uint256 number
-    ) public {
+    ) public onlyBridgeRouter {
         IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
         uint8 bridgeType = 2;
         uint256 chainId = 1337;

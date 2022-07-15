@@ -114,3 +114,30 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
     ]
   );
 }
+export const valueOrId = 100; // value if ERC20 , tokenId otherwise
+export const maxEth = 1;
+export const maxTokens = 11; // has to be > bTokenFee (10)
+export const valueSent = ethers.utils.parseEther("1.0");
+
+export const tokenTypes = [
+  {
+    it: "ERC20",
+    options: {
+      ercContractName: "erc20Mock",
+      poolType: 1,
+      bridgeImpl: "LocalERC20BridgePoolV1",
+      quantity: valueOrId,
+      errorReason: "ERC20: insufficient allowance",
+    },
+  },
+  {
+    it: "ERC721",
+    options: {
+      ercContractName: "erc721Mock",
+      poolType: 2,
+      bridgeImpl: "LocalERC721BridgePoolV1",
+      quantity: 1,
+      errorReason: "ERC721: operator query for nonexistent token",
+    },
+  },
+];
