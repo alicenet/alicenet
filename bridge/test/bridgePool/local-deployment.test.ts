@@ -32,7 +32,7 @@ tokenTypes.forEach(function (run) {
         );
       });
 
-      it("Should not deploy two BridgePools with same ERC721 contract and version", async () => {
+      it("Should not deploy two BridgePools with same ERC contract and version", async () => {
         const reason = ethers.utils.parseBytes32String(
           await fixture.bridgeRouterErrorCodesContract.BRIDGEROUTER_UNABLE_TO_DEPLOY_BRIDGEPOOL()
         );
