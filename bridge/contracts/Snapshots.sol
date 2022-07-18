@@ -29,6 +29,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
+    // todo: ask Hunter dynamic Desperation delay?
     function setSnapshotDesperationDelay(uint32 desperationDelay_) public onlyFactory {
         _snapshotDesperationDelay = desperationDelay_;
     }
@@ -68,30 +69,29 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
         uint32 epoch = _epoch + 1;
 
-        // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
-        // {
-        //     // Check if sender is the elected validator allowed to make the snapshot
-        //     (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
-        //         .tryGetParticipantIndex(msg.sender);
-        //     require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
+        {
+            // Check if sender is the elected validator allowed to make the snapshot
+            (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
+                .tryGetParticipantIndex(msg.sender);
+            require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
 
-        //     uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
+            uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
 
-        //     uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
-        //         ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
-        //         : 0;
+            uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
+                ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
+                : 0;
 
-        //     require(
-        //         _mayValidatorSnapshot(
-        //             IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
-        //             validatorIndex - 1,
-        //             blocksSinceDesperation,
-        //             keccak256(bClaims_),
-        //             uint256(_snapshotDesperationFactor)
-        //         ),
-        //         "Snapshots: Validator not elected to do snapshot!"
-        //     );
-        // }
+            require(
+                _mayValidatorSnapshot(
+                    IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
+                    validatorIndex - 1,
+                    blocksSinceDesperation,
+                    keccak256(bClaims_),
+                    uint256(_snapshotDesperationFactor)
+                ),
+                "Snapshots: Validator not elected to do snapshot!"
+            );
+        }
 
         {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
@@ -300,7 +300,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 numValidatorsAllowed = 1;
 
         uint256 desperation = 0;
-        while (desperation < blocksSinceDesperation && numValidatorsAllowed <= numValidators / 3) {
+        while (desperation < blocksSinceDesperation && numValidatorsAllowed <= numValidators) {
             desperation += desperationFactor / numValidatorsAllowed;
             numValidatorsAllowed++;
         }
