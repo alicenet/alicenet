@@ -187,6 +187,37 @@ abstract contract ImmutableGovernance is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableInvalidTxConsumptionAccusation is ImmutableFactory {
+    address private immutable _invalidTxConsumptionAccusation;
+
+    modifier onlyInvalidTxConsumptionAccusation() {
+        require(
+            msg.sender == _invalidTxConsumptionAccusation,
+            string(
+                abi.encodePacked(
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_INVALIDTXCONSUMPTIONACCUSATION
+                )
+            )
+        );
+        _;
+    }
+
+    constructor() {
+        _invalidTxConsumptionAccusation = getMetamorphicContractAddress(
+            0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848,
+            _factoryAddress()
+        );
+    }
+
+    function _invalidTxConsumptionAccusationAddress() internal view returns (address) {
+        return _invalidTxConsumptionAccusation;
+    }
+
+    function _saltForInvalidTxConsumptionAccusation() internal pure returns (bytes32) {
+        return 0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848;
+    }
+}
+
 abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     address private immutable _liquidityProviderStaking;
 
@@ -215,6 +246,37 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
 
     function _saltForLiquidityProviderStaking() internal pure returns (bytes32) {
         return 0x4c697175696469747950726f76696465725374616b696e670000000000000000;
+    }
+}
+
+abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
+    address private immutable _multipleProposalAccusation;
+
+    modifier onlyMultipleProposalAccusation() {
+        require(
+            msg.sender == _multipleProposalAccusation,
+            string(
+                abi.encodePacked(
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_MULTIPLEPROPOSALACCUSATION
+                )
+            )
+        );
+        _;
+    }
+
+    constructor() {
+        _multipleProposalAccusation = getMetamorphicContractAddress(
+            0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc,
+            _factoryAddress()
+        );
+    }
+
+    function _multipleProposalAccusationAddress() internal view returns (address) {
+        return _multipleProposalAccusation;
+    }
+
+    function _saltForMultipleProposalAccusation() internal pure returns (bytes32) {
+        return 0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc;
     }
 }
 
