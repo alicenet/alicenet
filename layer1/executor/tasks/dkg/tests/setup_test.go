@@ -13,6 +13,7 @@ import (
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1"
@@ -20,13 +21,13 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	testUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -533,7 +534,19 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
+		amILeading, err := gUtils.AmILeading(
+			suite.Eth,
+			ctx,
+			logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			n,
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
+		if amILeading {
 			txn, err := task.Execute(ctx)
 			assert.Nil(t, err)
 

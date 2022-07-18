@@ -4,14 +4,13 @@ package mocks
 
 import (
 	"context"
-	"math/big"
-	"sync"
-
 	layer1 "github.com/alicenet/alicenet/layer1"
 	accounts "github.com/ethereum/go-ethereum/accounts"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
+	"math/big"
+	"sync"
 )
 
 // MockClient is a mock implementation of the Client interface (from the

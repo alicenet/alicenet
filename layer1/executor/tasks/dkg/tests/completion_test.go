@@ -6,14 +6,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -76,7 +77,18 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := completionTask.Execute(ctx)
-			amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(completionTask.GetStart()), completionTask.StartBlockHash[:], n, dkgState.Index)
+			amILeading, err := gUtils.AmILeading(
+				suite.Eth,
+				ctx,
+				fixture.Logger,
+				int(completionTask.GetStart()),
+				completionTask.StartBlockHash[:],
+				n,
+				dkgState.Index-1,
+				constants.ETHDKGDesperationFactor,
+				constants.ETHDKGDesperationDelay,
+			)
+			assert.Nil(t, err)
 			if amILeading {
 				assert.Nil(t, taskError)
 				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)

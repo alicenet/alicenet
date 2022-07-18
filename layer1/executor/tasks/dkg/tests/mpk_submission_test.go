@@ -7,14 +7,15 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +45,18 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := mpkSubmissionTask.Execute(ctx)
-			amILeading := utils.AmILeading(eth, ctx, logger, int(mpkSubmissionTask.GetStart()), mpkSubmissionTask.StartBlockHash[:], n, dkgState.Index)
+			amILeading, err := gUtils.AmILeading(
+				eth,
+				ctx,
+				logger,
+				int(mpkSubmissionTask.GetStart()),
+				mpkSubmissionTask.StartBlockHash[:],
+				n,
+				dkgState.Index-1,
+				constants.ETHDKGDesperationFactor,
+				constants.ETHDKGDesperationDelay,
+			)
+			assert.Nil(t, err)
 			if amILeading {
 				assert.Nil(t, taskError)
 				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
@@ -173,7 +185,18 @@ func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index)
+		amILeading, err := gUtils.AmILeading(
+			suite.Eth,
+			ctx,
+			fixture.Logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			n,
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
 		if amILeading {
 			leaders++
 		}
