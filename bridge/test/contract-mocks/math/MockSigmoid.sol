@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 import "contracts/libraries/math/Sigmoid.sol";
 
 contract MockSigmoid is Sigmoid {
-    function fx(uint256 x) public pure returns (uint256) {
-        return Sigmoid._fx(x);
+    function p(uint256 x) public pure returns (uint256) {
+        return Sigmoid._p(x);
     }
 
-    function fp(uint256 x) public pure returns (uint256) {
-        return Sigmoid._fp(x);
+    function p_inverse(uint256 x) public pure returns (uint256) {
+        return Sigmoid._p_inverse(x);
     }
 
     function safeAbsSub(uint256 a, uint256 b) public pure returns (uint256) {
