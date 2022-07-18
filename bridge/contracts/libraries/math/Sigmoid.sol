@@ -3,18 +3,18 @@ pragma solidity ^0.8.0;
 
 abstract contract Sigmoid {
     // Constants for P function
-    uint256 internal constant _FUNC_P_A = 200;
-    uint256 internal constant _FUNC_P_B = 2500 * 10**18;
-    uint256 internal constant _FUNC_P_C = 5611050234958650739260304 + 125 * 10**39;
-    uint256 internal constant _FUNC_P_D = 1;
+    uint256 internal constant _P_A = 200;
+    uint256 internal constant _P_B = 2500 * 10**18;
+    uint256 internal constant _P_C = 5611050234958650739260304 + 125 * 10**39;
+    uint256 internal constant _P_D = 1;
 
     // Constants for P Inverse function
-    uint256 internal constant _FUNC_P_INV_SQRT = 1;
-    uint256 internal constant _FUNC_P_INV_C_1 = 1;
-    uint256 internal constant _FUNC_P_INV_C_2 = 2;
-    uint256 internal constant _FUNC_P_INV_C_3 = 3;
-    uint256 internal constant _FUNC_P_INV_D_0 = 0;
-    uint256 internal constant _FUNC_P_INV_D_1 = 1;
+    uint256 internal constant _P_INV_SQRT = 2524876234590519489452;
+    uint256 internal constant _P_INV_C_1 = 1;
+    uint256 internal constant _P_INV_C_2 = 2;
+    uint256 internal constant _P_INV_C_3 = 3;
+    uint256 internal constant _P_INV_D_0 = 0;
+    uint256 internal constant _P_INV_D_1 = 1;
 
     function _p(uint256 x) internal pure returns (uint256) {
         return

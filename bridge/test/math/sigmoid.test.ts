@@ -204,4 +204,37 @@ describe("Sigmoid unit tests", async () => {
       expect(retValue).to.be.equal(trueValue);
     });
   });
+
+  describe("P Constant Tests", async () => {
+    it("P Constant A", async function () {
+      const trueA = BigNumber.from(200);
+      const retA = await sigmoid.p_a();
+      expect(retA).to.be.equal(trueA);
+    });
+    it("P Constant B", async function () {
+      const trueB = BigNumber.from(2500).mul(BigNumber.from(10 ** 18));
+      const retB = await sigmoid.p_b();
+      expect(retB).to.be.equal(trueB);
+    });
+    it("P Constant C", async function () {
+      const trueC = BigNumber.from("5611050234958650739260304").add(
+        BigNumber.from(125).mul(BigNumber.from(10 ** 39))
+      );
+      const retC = await sigmoid.p_c();
+      expect(retC).to.be.equal(trueC);
+    });
+    it("P Constant D", async function () {
+      const trueD = 1;
+      const retD = await sigmoid.p_d();
+      expect(retD).to.be.equal(trueD);
+    });
+    it("P Constant B and C constraints", async function () {
+      const b = await sigmoid.p_b();
+      const c = await sigmoid.p_c();
+      const retSqrt = await sigmoid.p_inv_sqrt();
+      const trueSqrtSquared = c.add(b.mul(b));
+      const trueSqrt = await sigmoid.sqrt(trueSqrtSquared);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+  });
 });
