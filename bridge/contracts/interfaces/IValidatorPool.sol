@@ -63,6 +63,17 @@ interface IValidatorPool {
 
     function getDisputerReward() external view returns (uint256);
 
+    function getValidatorStakingPosition(uint256 tokenID)
+        external
+        view
+        returns (
+            uint256 shares,
+            uint256 freeAfter,
+            uint256 withdrawFreeAfter,
+            uint256 accumulatorEth,
+            uint256 accumulatorToken
+        );
+
     function tryGetTokenID(address account_)
         external
         view

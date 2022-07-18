@@ -27,6 +27,7 @@ import {
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
+  ValidatorVault,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
@@ -509,6 +510,11 @@ export const getFixture = async (
     )) as ValidatorPool;
   }
 
+  const validatorVault = (await deployUpgradeableWithFactory(
+    factory,
+    "ValidatorVault"
+  )) as ValidatorVault;
+
   // ETHDKG Accusations
   await deployUpgradeableWithFactory(factory, "ETHDKGAccusations");
 
@@ -594,6 +600,7 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
+    validatorVault,
   };
 };
 

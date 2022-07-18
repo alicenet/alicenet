@@ -25,4 +25,6 @@ library ValidatorPoolErrorCodes {
     bytes32 public constant VALIDATORPOOL_PAYOUT_TOO_LOW = "819"; // "ValidatorPool: Miner shares greater then the total payout in tokens!"
     bytes32 public constant VALIDATORPOOL_ADDRESS_NOT_ACCUSABLE = "820"; // "ValidatorPool: Address is not accusable!"
     bytes32 public constant VALIDATORPOOL_INSUFFICIENT_FUNDS_IN_STAKE_POSITION = "821"; // "ValidatorPool: Error, the Stake position doesn't have enough funds!"
+    bytes32 public constant VALIDATORPOOL_INVALID_STAKE_AMOUNT = "822"; // "ValidatorPool: Error, the validator stake amount should be greater than 0!"
+    bytes32 public constant VALIDATORPOOL_CALLER_NOT_FACTORY_NOR_VALIDATOR_VAULT = "823"; // "ValidatorPool: Error, only factory or validator vault allowed!"
 }

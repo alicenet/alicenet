@@ -36,6 +36,7 @@ interface State {
   Admin: Admin;
   PublicStaking: Contract;
   ValidatorStaking: Contract;
+  ValidatorVault: Contract;
   ValidatorPool: Contract;
   Factory: Contract;
   validators: Array<Validator>;
@@ -70,6 +71,13 @@ export const getCurrentState = async (
       Addr: "0x0",
     },
     ValidatorStaking: {
+      PublicStaking: BigInt(0),
+      ValNFT: BigInt(0),
+      ATK: BigInt(0),
+      ETH: BigInt(0),
+      Addr: "0x0",
+    },
+    ValidatorVault: {
       PublicStaking: BigInt(0),
       ValNFT: BigInt(0),
       ATK: BigInt(0),
@@ -127,6 +135,10 @@ export const getCurrentState = async (
     {
       contractState: state.ValidatorStaking,
       contractAddress: fixture.validatorStaking.address,
+    },
+    {
+      contractState: state.ValidatorVault,
+      contractAddress: fixture.validatorVault.address,
     },
     {
       contractState: state.ValidatorPool,

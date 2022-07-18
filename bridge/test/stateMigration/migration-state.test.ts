@@ -159,7 +159,16 @@ describe("State Migration: Migrate state", () => {
       ),
     ];
 
-    const ethLog = 45;
+    let ethLog = 0;
+    for (let i = 0; i < receipt.logs.length; i++) {
+      if (
+        receipt.logs[i].topics[0].toLowerCase() ===
+        "0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06"
+      ) {
+        ethLog = i;
+        break;
+      }
+    }
     for (let i = 0; i < validatorsAccounts.length; i++) {
       await assertEventValidatorMemberAdded(
         txResponse,
