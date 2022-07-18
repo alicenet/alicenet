@@ -21,15 +21,6 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
     accusation = fixture.multipleProposalAccusation;
   });
 
-  describe("Accusation", async () => {
-    const expectedAddress = "0xe17aB3698B3e93bCE3303Fd5b2E5dB8E376E1cb9";
-    it("deploys to expected address", async function () {
-      const address = accusation.address;
-
-      assert.equal(address, expectedAddress);
-    });
-  });
-
   describe("AccuseMultipleProposal:", async () => {
     it("returns signer when valid", async function () {
       const { sig: sig0, pClaims: pClaims0 } = generateSigAndPClaims0();

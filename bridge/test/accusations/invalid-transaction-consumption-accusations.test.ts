@@ -21,14 +21,6 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
     accusation = fixture.invalidTxConsumptionAccusation;
   });
 
-  describe("Accusation", async () => {
-    const expectedAddress = "0xCB734f084f21b77D09773Bc07F82A2C39144B952";
-    it("deploys to expected address", async function () {
-      const address = accusation.address;
-
-      assert.equal(address, expectedAddress);
-    });
-  });
   describe("AccuseInvalidTransactionConsumption:", async () => {
     const signerAccount0 = "0x38e959391dD8598aE80d5d6D114a7822A09d313A";
     it("returns signer account with non existant utxo", async function () {
