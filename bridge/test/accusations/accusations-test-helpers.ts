@@ -3,8 +3,6 @@ import { BytesLike } from "ethers";
 import { ethers } from "hardhat";
 import {
   AccusationsLibraryMock,
-  Snapshots,
-  SnapshotsMock,
   ValidatorPool,
   ValidatorPoolMock,
 } from "../../typechain-types";
@@ -496,14 +494,5 @@ export const addValidators = async (
       await validatorPool.registerValidators([validator], [0]);
       expect(await validatorPool.isValidator(validator)).to.equal(true);
     }
-  }
-};
-
-export const setChainId = async (
-  snapshots: SnapshotsMock | Snapshots,
-  newchainId: number
-) => {
-  if ((<SnapshotsMock>snapshots).isMock) {
-    // await (snapshots as SnapshotsMock).setChainId(newchainId);
   }
 };
