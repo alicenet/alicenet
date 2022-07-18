@@ -20,7 +20,7 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgeRouter {
     );
 
     /**
-     * @notice onlyBridgePool verifies that the call is done by one BridgePools intanciated by BridgePoolFactory
+     * @notice onlyBridgePool verifies that the call is done by one BridgePools intanciated by BridgeRouter
      * @param bridgePoolSalt informed salt
      */
     modifier onlyBridgePool(bytes32 bridgePoolSalt) {
@@ -43,8 +43,9 @@ contract BridgePoolDepositNotifier is ImmutableFactory, ImmutableBridgeRouter {
      * @notice doEmit emit a deposit event with params informed
      * @param salt calculated salt of the caller contract
      * @param ercContract ERC contract
-     * @param number amount of tokens
-     * @param owner msg.sender of deposit
+     * @param tokenType 1=ERC20, 2=ERC721
+     * @param owner address for deposit
+     * @param number amount of tokens or tokenId
      */
     function doEmit(
         bytes32 salt,

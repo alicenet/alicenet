@@ -49,14 +49,9 @@ contract LocalERC721BridgePoolV1 is
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
-    /// @param accountType_ The type of account
     /// @param msgSender The address of ERC sender
     /// @param number The token ID of the NFT to be deposited
-    function deposit(
-        uint8 accountType_,
-        address msgSender,
-        uint256 number
-    ) public onlyBridgeRouter {
+    function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
         IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
         uint8 bridgeType = 2;
         uint256 chainId = 1337;
@@ -76,7 +71,7 @@ contract LocalERC721BridgePoolV1 is
         );
     }
 
-    /// @notice Transfer funds to sender upon a verificable proof of burn in sidechain
+    /// @notice Transfer token to sender upon a verificable proof of burn in sidechain
     /// @param encodedMerkleProof The merkle proof
     /// @param encodedBurnedUTXO The burned UTXO
     function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO) public {

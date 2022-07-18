@@ -46,14 +46,9 @@ contract LocalERC20BridgePoolV1 is
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
-    /// @param accountType_ The type of account
     /// @param msgSender The address of ERC sender
     /// @param number The number of tokens to be deposited
-    function deposit(
-        uint8 accountType_,
-        address msgSender,
-        uint256 number
-    ) public {
+    function deposit(address msgSender, uint256 number) public {
         IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
         uint8 bridgeType = 1;
         uint256 chainId = 1337;
@@ -73,7 +68,7 @@ contract LocalERC20BridgePoolV1 is
         );
     }
 
-    /// @notice Transfer funds to sender upon a verificable proof of burn in sidechain
+    /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
     /// @param encodedMerkleProof The merkle proof
     /// @param encodedBurnedUTXO The burned UTXO
     function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO) public {

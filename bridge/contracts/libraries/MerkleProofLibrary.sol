@@ -62,7 +62,7 @@ library MerkleProofLibrary {
     /// @param root the root of the tree
     function verifyInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
         internal
-        view
+        pure
     {
         require(_proof.proofValue != 0, "MerkleProofLibrary: Invalid Inclusion Merkle proof!");
         bytes32 _keyHash = computeLeafHash(_proof);
@@ -75,7 +75,7 @@ library MerkleProofLibrary {
     /// @param root the root of the tree
     function verifyNonInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
         internal
-        view
+        pure
     {
         if (_proof.proofKey == 0 && _proof.proofValue == 0) {
             // Non-inclusion default value
@@ -107,7 +107,7 @@ library MerkleProofLibrary {
         MerkleProofParserLibrary.MerkleProof memory _proof,
         bytes32 root,
         bytes32 keyHash
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         bytes32 el;
         bytes32 h = keyHash;
         uint16 proofHeight = _proof.keyHeight;

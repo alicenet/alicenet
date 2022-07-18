@@ -46,6 +46,8 @@ contract BridgeRouter is
      * calculate the target pool address with the information in call data.
      * The fee will be passed in as a parameter by the user and btoken verify the deposit happened before
      * forwarding the call to this function.
+     * @param msgSender the original sender of the value
+     * @param maxTokens number of bTokens willing to pay for the deposit
      * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version
      */
     function routeDeposit(
@@ -69,7 +71,7 @@ contract BridgeRouter is
         address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
 
         //call the pool to initiate deposit
-        IBridgePool(poolAddress).deposit(1, msgSender, depositCallData.number);
+        IBridgePool(poolAddress).deposit(msgSender, depositCallData.number);
 
         emit DepositedERCToken(
             nonce,
@@ -84,23 +86,25 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice deployNewLocalPool
-     * @param ercContract_ address of ERC20 token contract
+     * @notice Deploys a new bridge to pass tokens to our chain from the specified ERC contract.
+     * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by correspondent salt.
+     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param ercContract_ address of ERC20 source token contract
+     * @param implementationVersion_ address of the desired version of implementation
      */
     function deployNewLocalPool(
-        uint8 type_,
+        uint8 tokenType_,
         address ercContract_,
         uint16 implementationVersion_
     ) public {
-        bytes memory initCallData = abi.encodeWithSignature("inititalize(address)", ercContract_);
         bytes32 bridgePoolSalt = getBridgePoolSalt(
             ercContract_,
-            type_,
+            tokenType_,
             _networkId,
             implementationVersion_
         );
         _implementation = getMetamorphicContractAddress(
-            getLocalERCImplementationSalt(type_, implementationVersion_),
+            getLocalERCImplementationSalt(tokenType_, implementationVersion_),
             _factoryAddress()
         );
         uint256 implementationSize;
@@ -116,24 +120,27 @@ contract BridgeRouter is
                 )
             )
         );
-        address contractAddr = _deployStaticPool(bridgePoolSalt, initCallData);
+        address contractAddr = _deployStaticPool(bridgePoolSalt);
         IBridgePool(contractAddr).initialize(ercContract_);
         emit BridgePoolCreated(contractAddr);
     }
 
     /**
-     * @notice getLocalERCImplementationSalt calculates salt for a BridgePool Implementation contract based on tokenType and version
-     * @param version_ address of ERC20 contract of BridgePool
-     * @return calculated salt
+     * @notice getLocalERCImplementationSalt calculates salt for a BridgePool implementation contract based on tokenType and version
+     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param version_ version of the implementation
+     * @return calculated calculated salt
      */
-    function getLocalERCImplementationSalt(uint8 tokenType, uint16 version_)
+    function getLocalERCImplementationSalt(uint8 tokenType_, uint16 version_)
         public
         pure
         returns (bytes32)
     {
         string memory tag;
-        if (tokenType == 1) tag = "LocalERC20";
-        if (tokenType == 2) tag = "LocalERC721";
+        if (tokenType_ == 1) {
+            tag = "LocalERC20";
+        } else if (tokenType_ == 2) tag = "LocalERC721";
+        else tag = "Unknown";
         return
             keccak256(
                 bytes.concat(
@@ -144,13 +151,16 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice getSaltFromAddress calculates salt for a BridgePool contract based on ERC20 contract's address
-     * @param tokenContractAddr_ address of ERC20 contract of BridgePool
-     * @return calculated salt
+     * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, version_ and chainID
+     * @param tokenContractAddr_ address of ERC contract of BridgePool
+     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param version_ version of the implementation
+     * @param chainID_ chain ID
+     * @return calculated calculated salt
      */
     function getBridgePoolSalt(
         address tokenContractAddr_,
-        uint8 type_,
+        uint8 tokenType_,
         uint256 chainID_,
         uint16 version_
     ) public pure returns (bytes32) {
@@ -158,18 +168,19 @@ contract BridgeRouter is
             keccak256(
                 bytes.concat(
                     keccak256(abi.encodePacked(tokenContractAddr_)),
-                    keccak256(abi.encodePacked(type_)),
+                    keccak256(abi.encodePacked(tokenType_)),
                     keccak256(abi.encodePacked(chainID_)),
                     keccak256(abi.encodePacked(version_))
                 )
             );
     }
 
-    function _deployStaticPool(bytes32 salt_, bytes memory initCallData_)
-        internal
-        returns (address contractAddr)
-    {
-        address contractAddr;
+    /**
+     * @notice deploys a thin proxy to the implementation identified by salt
+     * @param salt_ salt of the implementation contract
+     * @return contractAddr the address of the BridgePool
+     */
+    function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
         uint256 contractSize;
         assembly {
             let ptr := mload(0x40)
