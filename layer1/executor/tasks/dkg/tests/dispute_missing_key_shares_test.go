@@ -54,7 +54,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(m), badParticipants.Int64())
 }
@@ -83,7 +83,7 @@ func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(m), badParticipants.Int64())
 }

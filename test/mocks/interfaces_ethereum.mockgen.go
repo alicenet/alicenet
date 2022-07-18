@@ -19,9 +19,9 @@ import (
 // interface (from the package github.com/alicenet/alicenet/layer1) used for
 // unit testing.
 type MockAllSmartContracts struct {
-	// GetEthereumContractsFunc is an instance of a mock function object
-	// controlling the behavior of the method GetEthereumContracts.
-	GetEthereumContractsFunc *AllSmartContractsGetEthereumContractsFunc
+	// EthereumContractsFunc is an instance of a mock function object
+	// controlling the behavior of the method EthereumContracts.
+	EthereumContractsFunc *AllSmartContractsEthereumContractsFunc
 }
 
 // NewMockAllSmartContracts creates a new mock of the AllSmartContracts
@@ -29,7 +29,7 @@ type MockAllSmartContracts struct {
 // overwritten.
 func NewMockAllSmartContracts() *MockAllSmartContracts {
 	return &MockAllSmartContracts{
-		GetEthereumContractsFunc: &AllSmartContractsGetEthereumContractsFunc{
+		EthereumContractsFunc: &AllSmartContractsEthereumContractsFunc{
 			defaultHook: func() (r0 layer1.EthereumContracts) {
 				return
 			},
@@ -42,9 +42,9 @@ func NewMockAllSmartContracts() *MockAllSmartContracts {
 // overwritten.
 func NewStrictMockAllSmartContracts() *MockAllSmartContracts {
 	return &MockAllSmartContracts{
-		GetEthereumContractsFunc: &AllSmartContractsGetEthereumContractsFunc{
+		EthereumContractsFunc: &AllSmartContractsEthereumContractsFunc{
 			defaultHook: func() layer1.EthereumContracts {
-				panic("unexpected invocation of MockAllSmartContracts.GetEthereumContracts")
+				panic("unexpected invocation of MockAllSmartContracts.EthereumContracts")
 			},
 		},
 	}
@@ -55,43 +55,43 @@ func NewStrictMockAllSmartContracts() *MockAllSmartContracts {
 // implementation, unless overwritten.
 func NewMockAllSmartContractsFrom(i layer1.AllSmartContracts) *MockAllSmartContracts {
 	return &MockAllSmartContracts{
-		GetEthereumContractsFunc: &AllSmartContractsGetEthereumContractsFunc{
-			defaultHook: i.GetEthereumContracts,
+		EthereumContractsFunc: &AllSmartContractsEthereumContractsFunc{
+			defaultHook: i.EthereumContracts,
 		},
 	}
 }
 
-// AllSmartContractsGetEthereumContractsFunc describes the behavior when the
-// GetEthereumContracts method of the parent MockAllSmartContracts instance
-// is invoked.
-type AllSmartContractsGetEthereumContractsFunc struct {
+// AllSmartContractsEthereumContractsFunc describes the behavior when the
+// EthereumContracts method of the parent MockAllSmartContracts instance is
+// invoked.
+type AllSmartContractsEthereumContractsFunc struct {
 	defaultHook func() layer1.EthereumContracts
 	hooks       []func() layer1.EthereumContracts
-	history     []AllSmartContractsGetEthereumContractsFuncCall
+	history     []AllSmartContractsEthereumContractsFuncCall
 	mutex       sync.Mutex
 }
 
-// GetEthereumContracts delegates to the next hook function in the queue and
+// EthereumContracts delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockAllSmartContracts) GetEthereumContracts() layer1.EthereumContracts {
-	r0 := m.GetEthereumContractsFunc.nextHook()()
-	m.GetEthereumContractsFunc.appendCall(AllSmartContractsGetEthereumContractsFuncCall{r0})
+func (m *MockAllSmartContracts) EthereumContracts() layer1.EthereumContracts {
+	r0 := m.EthereumContractsFunc.nextHook()()
+	m.EthereumContractsFunc.appendCall(AllSmartContractsEthereumContractsFuncCall{r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetEthereumContracts
+// SetDefaultHook sets function that is called when the EthereumContracts
 // method of the parent MockAllSmartContracts instance is invoked and the
 // hook queue is empty.
-func (f *AllSmartContractsGetEthereumContractsFunc) SetDefaultHook(hook func() layer1.EthereumContracts) {
+func (f *AllSmartContractsEthereumContractsFunc) SetDefaultHook(hook func() layer1.EthereumContracts) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetEthereumContracts method of the parent MockAllSmartContracts instance
+// EthereumContracts method of the parent MockAllSmartContracts instance
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *AllSmartContractsGetEthereumContractsFunc) PushHook(hook func() layer1.EthereumContracts) {
+func (f *AllSmartContractsEthereumContractsFunc) PushHook(hook func() layer1.EthereumContracts) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -99,20 +99,20 @@ func (f *AllSmartContractsGetEthereumContractsFunc) PushHook(hook func() layer1.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *AllSmartContractsGetEthereumContractsFunc) SetDefaultReturn(r0 layer1.EthereumContracts) {
+func (f *AllSmartContractsEthereumContractsFunc) SetDefaultReturn(r0 layer1.EthereumContracts) {
 	f.SetDefaultHook(func() layer1.EthereumContracts {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *AllSmartContractsGetEthereumContractsFunc) PushReturn(r0 layer1.EthereumContracts) {
+func (f *AllSmartContractsEthereumContractsFunc) PushReturn(r0 layer1.EthereumContracts) {
 	f.PushHook(func() layer1.EthereumContracts {
 		return r0
 	})
 }
 
-func (f *AllSmartContractsGetEthereumContractsFunc) nextHook() func() layer1.EthereumContracts {
+func (f *AllSmartContractsEthereumContractsFunc) nextHook() func() layer1.EthereumContracts {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -125,28 +125,27 @@ func (f *AllSmartContractsGetEthereumContractsFunc) nextHook() func() layer1.Eth
 	return hook
 }
 
-func (f *AllSmartContractsGetEthereumContractsFunc) appendCall(r0 AllSmartContractsGetEthereumContractsFuncCall) {
+func (f *AllSmartContractsEthereumContractsFunc) appendCall(r0 AllSmartContractsEthereumContractsFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of
-// AllSmartContractsGetEthereumContractsFuncCall objects describing the
-// invocations of this function.
-func (f *AllSmartContractsGetEthereumContractsFunc) History() []AllSmartContractsGetEthereumContractsFuncCall {
+// History returns a sequence of AllSmartContractsEthereumContractsFuncCall
+// objects describing the invocations of this function.
+func (f *AllSmartContractsEthereumContractsFunc) History() []AllSmartContractsEthereumContractsFuncCall {
 	f.mutex.Lock()
-	history := make([]AllSmartContractsGetEthereumContractsFuncCall, len(f.history))
+	history := make([]AllSmartContractsEthereumContractsFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// AllSmartContractsGetEthereumContractsFuncCall is an object that describes
-// an invocation of method GetEthereumContracts on an instance of
+// AllSmartContractsEthereumContractsFuncCall is an object that describes an
+// invocation of method EthereumContracts on an instance of
 // MockAllSmartContracts.
-type AllSmartContractsGetEthereumContractsFuncCall struct {
+type AllSmartContractsEthereumContractsFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 layer1.EthereumContracts
@@ -154,13 +153,13 @@ type AllSmartContractsGetEthereumContractsFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c AllSmartContractsGetEthereumContractsFuncCall) Args() []interface{} {
+func (c AllSmartContractsEthereumContractsFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c AllSmartContractsGetEthereumContractsFuncCall) Results() []interface{} {
+func (c AllSmartContractsEthereumContractsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 

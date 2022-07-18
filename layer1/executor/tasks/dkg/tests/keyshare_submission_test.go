@@ -27,7 +27,7 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		// check points
@@ -38,7 +38,7 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 	}
 
 	// assert that ETHDKG is at MPKSubmission phase
-	phase, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 
 	assert.Equal(t, uint8(state.MPKSubmission), phase)

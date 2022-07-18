@@ -73,5 +73,5 @@ type EthereumContracts interface {
 }
 
 type AllSmartContracts interface {
-	GetEthereumContracts() EthereumContracts
+	EthereumContracts() EthereumContracts
 }

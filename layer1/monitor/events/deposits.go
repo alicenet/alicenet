@@ -18,7 +18,7 @@ func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContract
 
 	logger.Info("ProcessDepositReceived() ...")
 
-	event, err := contracts.GetEthereumContracts().BToken().ParseDepositReceived(log)
+	event, err := contracts.EthereumContracts().BToken().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}

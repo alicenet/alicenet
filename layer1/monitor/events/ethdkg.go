@@ -24,7 +24,7 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
 	logEntry.Info("processing registration")
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseRegistrationOpened(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(log)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func ProcessAddressRegistered(eth layer1.Client, contracts layer1.AllSmartContra
 	logEntry := logger.WithField("eventProcessor", "ProcessAddressRegistered")
 	logEntry.Info("processing address registered")
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseAddressRegistered(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseAddressRegistered(log)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 		return nil
 	}
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseRegistrationComplete(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationComplete(log)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func ProcessShareDistribution(eth layer1.Client, contracts layer1.AllSmartContra
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistribution")
 	logEntry.Info("processing share distribution")
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseSharesDistributed(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseSharesDistributed(log)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 		return nil
 	}
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseShareDistributionComplete(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseShareDistributionComplete(log)
 	if err != nil {
 		return err
 	}
@@ -339,7 +339,7 @@ func ProcessKeyShareSubmitted(eth layer1.Client, contracts layer1.AllSmartContra
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmitted")
 	logEntry.Info("processing key share submission")
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseKeyShareSubmitted(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseKeyShareSubmitted(log)
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, contracts layer1.AllSm
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmissionComplete")
 	logEntry.Info("processing key share submission complete")
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseKeyShareSubmissionComplete(log)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 	logEntry := logger.WithField("eventProcessor", "ProcessMPKSet")
 	logEntry.Info("processing master public key set")
 
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseMPKSet(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseMPKSet(log)
 	if err != nil {
 		return err
 	}
@@ -507,7 +507,7 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessGPKJSubmissionComplete")
 	logEntry.Info("processing gpkj submission complete")
-	event, err := contracts.GetEthereumContracts().Ethdkg().ParseGPKJSubmissionComplete(log)
+	event, err := contracts.EthereumContracts().Ethdkg().ParseGPKJSubmissionComplete(log)
 	if err != nil {
 		return err
 	}

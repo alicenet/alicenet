@@ -53,7 +53,7 @@ func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])

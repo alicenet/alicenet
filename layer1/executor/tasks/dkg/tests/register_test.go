@@ -28,7 +28,7 @@ func TestRegisterTask_Group_1_Task(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := fixture.Contracts.GetEthereumContracts()
+	c := fixture.Contracts.EthereumContracts()
 
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -167,7 +167,7 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(dkgStatesDbs[idx])
@@ -400,7 +400,7 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := fixture.Contracts.GetEthereumContracts()
+	c := fixture.Contracts.EthereumContracts()
 	tests.MineFinalityDelayBlocks(eth)
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -482,7 +482,7 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := fixture.Contracts.GetEthereumContracts()
+	c := fixture.Contracts.EthereumContracts()
 
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)

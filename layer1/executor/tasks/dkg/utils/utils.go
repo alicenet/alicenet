@@ -22,7 +22,7 @@ func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth layer1.Client, contract
 	var err error
 	var gpkjBig [4]*big.Int
 
-	ethdkg := contracts.GetEthereumContracts().Ethdkg()
+	ethdkg := contracts.EthereumContracts().Ethdkg()
 
 	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {

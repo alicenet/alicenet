@@ -53,7 +53,7 @@ func TestDisputeMissingGPKjTask_Group_1_FourUnsubmittedGPKj_DoWork_Success(t *te
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(m), int(badParticipants.Int64()))
 

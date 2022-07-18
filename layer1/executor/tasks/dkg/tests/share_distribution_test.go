@@ -52,7 +52,7 @@ func TestShareDistribution_Group_1_Bad1(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := suite.Eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
@@ -107,7 +107,7 @@ func TestShareDistribution_Group_1_Bad2(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := suite.Eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
@@ -165,7 +165,7 @@ func TestShareDistribution_Group_2_Bad4(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])

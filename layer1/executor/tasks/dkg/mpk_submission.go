@@ -137,7 +137,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", dkgState.MasterPublicKey)
-	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("submitting master public key failed: %v", err), true)
 	}
@@ -173,7 +173,7 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	mpkHash, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
+	mpkHash, err := t.GetContractsHandler().EthereumContracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to retrieve mpk from smart contracts: %v", err), true)
 	}

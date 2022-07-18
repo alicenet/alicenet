@@ -61,7 +61,7 @@ func (t *DisputeMissingShareDistributionTask) Execute(ctx context.Context) (*typ
 	}
 
 	logger.Warnf("accusing participants: %v of not distributing shares", accusableParticipants)
-	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
 	}

@@ -64,7 +64,7 @@ func (t *DisputeMissingRegistrationTask) Execute(ctx context.Context) (*types.Tr
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().AccuseParticipantNotRegistered(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing registration: %v", err), true)
 	}

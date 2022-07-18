@@ -18,6 +18,6 @@ func NewAllSmartContractsHandle(eth *ethereum.Client, contractFactoryAddress com
 	return &AllSmartContractsHandle{ethereumContracts: ethereum.NewContracts(eth, contractFactoryAddress)}
 }
 
-func (ch *AllSmartContractsHandle) GetEthereumContracts() layer1.EthereumContracts {
+func (ch *AllSmartContractsHandle) EthereumContracts() layer1.EthereumContracts {
 	return ch.ethereumContracts
 }

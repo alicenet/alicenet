@@ -55,7 +55,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 
@@ -105,7 +105,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 
@@ -137,7 +137,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWh
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(u), int(badParticipants.Uint64()))
 

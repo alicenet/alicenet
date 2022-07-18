@@ -61,7 +61,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		isMPKSet, err := fixture.Contracts.GetEthereumContracts().Ethdkg().IsMasterPublicKeySet(callOpts)
+		isMPKSet, err := fixture.Contracts.EthereumContracts().Ethdkg().IsMasterPublicKeySet(callOpts)
 		assert.Nil(t, err)
 		assert.True(t, isMPKSet)
 

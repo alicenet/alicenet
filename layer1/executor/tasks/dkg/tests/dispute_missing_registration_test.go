@@ -53,7 +53,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -99,7 +99,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -145,7 +145,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }

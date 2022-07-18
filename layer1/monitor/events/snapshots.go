@@ -15,7 +15,7 @@ func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts,
 
 	logger.Info("ProcessSnapshotTaken() ...")
 
-	c := contracts.GetEthereumContracts()
+	c := contracts.EthereumContracts()
 
 	event, err := c.Snapshots().ParseSnapshotTaken(log)
 	if err != nil {

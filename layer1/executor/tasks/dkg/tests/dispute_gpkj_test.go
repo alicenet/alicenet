@@ -59,7 +59,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 }
@@ -112,7 +112,7 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 
@@ -167,7 +167,7 @@ func TestGPKjDispute_FiveInvalid(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 

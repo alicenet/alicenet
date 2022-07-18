@@ -67,7 +67,7 @@ func LogStatus(logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmar
 		return
 	}
 
-	c := contracts.GetEthereumContracts()
+	c := contracts.EthereumContracts()
 	callOpts, err := eth.GetCallOpts(context.Background(), acct)
 	if err != nil {
 		logger.Warnf("Failed to get call options: %v", err)

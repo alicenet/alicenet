@@ -91,7 +91,7 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	// Register
 	logger.Infof("Registering  publicKey (%v) with ETHDKG", utils.FormatPublicKey(dkgState.TransportPublicKey))
 	logger.Debugf("registering on block %v with public key: %v", block, utils.FormatPublicKey(dkgState.TransportPublicKey))
-	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().Register(txnOpts, dkgState.TransportPublicKey)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().Register(txnOpts, dkgState.TransportPublicKey)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("registering failed: %v", err), true)
 	}
@@ -120,7 +120,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	status, err := state.CheckRegistration(t.GetContractsHandler().GetEthereumContracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)
+	status, err := state.CheckRegistration(t.GetContractsHandler().EthereumContracts().Ethdkg(), logger, callOpts, dkgState.Account.Address, dkgState.TransportPublicKey)
 	logger.Debugf("registration status: %v", status)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to check registration %v", err), true)

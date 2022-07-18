@@ -90,7 +90,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
 
@@ -185,7 +185,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
 
@@ -263,7 +263,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	// The -1 is because during the first run the validator will accuse all the participants but himself
 	// the second the rest of participants are not longer validators so they cannot accuse the first one

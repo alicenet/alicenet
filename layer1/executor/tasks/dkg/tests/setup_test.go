@@ -123,7 +123,7 @@ func SetETHDKGPhaseLength(length uint16, fixture *tests.ClientFixture, callOpts 
 		return nil, nil, err
 	}
 
-	txn, err := fixture.Contracts.GetEthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.GetEthereumContracts().EthdkgAddress(), big.NewInt(0), input)
+	txn, err := fixture.Contracts.EthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.EthereumContracts().EthdkgAddress(), big.NewInt(0), input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -150,7 +150,7 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 		return nil, nil, err
 	}
 
-	txn, err := fixture.Contracts.GetEthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.GetEthereumContracts().ValidatorPoolAddress(), big.NewInt(0), input)
+	txn, err := fixture.Contracts.EthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.EthereumContracts().ValidatorPoolAddress(), big.NewInt(0), input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -196,12 +196,12 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		validatorAddresses = append(validatorAddresses, acc.Address)
 	}
 
-	phase, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(state.RegistrationOpen), phase)
 
 	n := len(validatorAddresses)
-	valCount, err := fixture.Contracts.GetEthereumContracts().ValidatorPool().GetValidatorsCount(callOpts)
+	valCount, err := fixture.Contracts.EthereumContracts().ValidatorPool().GetValidatorsCount(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(n), valCount.Uint64())
 
@@ -316,7 +316,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, suite.Eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	phase, err := fixture.Contracts.GetEthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, phase, uint8(state.ShareDistribution))
 
@@ -709,7 +709,7 @@ func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite, con
 		callOpts, err := suite.Eth.GetCallOpts(context.Background(), dkgState.Account)
 		assert.Nil(t, err)
 
-		isValidator, err := contracts.GetEthereumContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
+		isValidator, err := contracts.EthereumContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
 		assert.Nil(t, err)
 		assert.Equal(t, false, isValidator)
 	}

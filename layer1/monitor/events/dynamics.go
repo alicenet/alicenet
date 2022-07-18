@@ -14,7 +14,7 @@ func ProcessValueUpdated(eth layer1.Client, contracts layer1.AllSmartContracts, 
 
 	logger.Info("ProcessValueUpdated() ...")
 
-	event, err := contracts.GetEthereumContracts().Governance().ParseValueUpdated(log)
+	event, err := contracts.EthereumContracts().Governance().ParseValueUpdated(log)
 	if err != nil {
 		return err
 	}

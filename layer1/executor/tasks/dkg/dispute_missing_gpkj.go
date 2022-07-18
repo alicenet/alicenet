@@ -62,7 +62,7 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 	}
 
 	logger.Warnf("accusing missing gpkj: %v", accusableParticipants)
-	txn, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().AccuseParticipantDidNotSubmitGPKJ(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().AccuseParticipantDidNotSubmitGPKJ(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing gpkj: %v", err), true)
 	}

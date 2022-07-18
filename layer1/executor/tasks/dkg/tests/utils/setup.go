@@ -276,7 +276,7 @@ func GetETHDKGRegistrationOpened(logs []*types.Log, eth layer1.Client, contracts
 	for _, log := range logs {
 		for _, topic := range log.Topics {
 			if topic.String() == eventInfo.ID.String() {
-				event, err = contracts.GetEthereumContracts().Ethdkg().ParseRegistrationOpened(*log)
+				event, err = contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(*log)
 				if err != nil {
 					continue
 				}

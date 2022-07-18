@@ -83,7 +83,7 @@ func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction
 	}
 
 	client := t.GetClient()
-	contracts := t.GetContractsHandler().GetEthereumContracts()
+	contracts := t.GetContractsHandler().EthereumContracts()
 	accountAddr := dkgState.Account.Address
 
 	// Setup
@@ -127,7 +127,7 @@ func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed getting call options: %v", err), true)
 	}
-	participantState, err := t.GetContractsHandler().GetEthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, dkgState.Account.Address)
+	participantState, err := t.GetContractsHandler().EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, dkgState.Account.Address)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("unable to GetParticipantInternalState(): %v", err), true)
 	}
