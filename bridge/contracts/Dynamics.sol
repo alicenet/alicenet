@@ -57,19 +57,36 @@ contract Dynamics is ImmutableSnapshots {
     event DeployedStorage(address contractAddr);
     event ValueChanged(uint256 epoch, ValueType valueType, int256 newValue);
 
-    enum ValueType {
-        DepositFee,
-        AtomicSwapFee,
-        DataStoreFee,
-        ValueStoreFee,
-        MinTxFee,
-        MaxProposalSize,
-        MessageTimeout,
-        ProposalStepTimeout,
-        PreVoteStepTimeout,
-        PreCommitStepTimeout,
-        MaxAmountOfBlocksWithoutSnapshots,
-        MinEpochsBetweenDynamicValuesUpdates
+    // enum ValueType {
+    //     DepositFee,
+    //     AtomicSwapFee,
+    //     DataStoreFee,
+    //     ValueStoreFee,
+    //     MinTxFee,
+    //     MaxProposalSize,
+    //     MessageTimeout,
+    //     ProposalStepTimeout,
+    //     PreVoteStepTimeout,
+    //     PreCommitStepTimeout,
+    //     MaxAmountOfBlocksWithoutSnapshots,
+    //     MinEpochsBetweenDynamicValuesUpdates
+    // }
+
+    struct ValueType {
+        // first slot
+        uint32 executionEpoch;
+        uint16 messageTimeout;
+        uint16 proposalStepTimeout;
+        uint16 preVoteStepTimeout;
+        uint16 preCommitStepTimeout;
+        uint16 MaxAmountOfBlocksWithoutSnapshots;
+        uint16 MinEpochsBetweenDynamicValuesUpdates;
+        uint128 minScaledTransactionFee;
+        // Second slot
+        uint64 depositFee;
+        uint64 atomicSwapFee;
+        uint64 dataStoreFee;
+        uint64 valueStoreFee;
     }
 
     struct ScheduledValue {
@@ -99,6 +116,28 @@ contract Dynamics is ImmutableSnapshots {
     Value public preCommitStepTimeout;
     Value public maxAmountOfBlocksWithoutSnapshots;
     Value public minEpochsBetweenDynamicValuesUpdates;
+
+    /*
+    unpacked:
+    0x
+    000000000000000000000000000000000000000000000000000000000000000b
+    000000000000000000000000000000000000000000000000000000000000000c
+    000000000000000000000000000000000000000000000000000000000000000d
+    000000000000000000000000000000000000000000000000000000000000000e
+    0000000000000000000000000000000000000000000000000000000000000015
+    0000000000000000000000000000000000000000000000000000000000000016
+    0000000000000000000000000000000000000000000000000000000000000003
+
+    packed:
+    0x
+    000000000000000b
+    000000000000000c
+    000000000000000d
+    000000000000000e
+    00000000000000000000000000000015
+    00000000000000000000000000000016
+    0000000000000000000000000000000000000000000000000000000000000003
+     */
 
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
