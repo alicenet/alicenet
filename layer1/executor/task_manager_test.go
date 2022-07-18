@@ -22,7 +22,7 @@ package executor
 // 	adminHandlers := mocks.NewMockAdminHandler()
 // 	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
 // 	requestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-// 	tasksScheduler, err := NewTaskInteractor(db, client, adminHandlers, requestChan, txWatcher)
+// 	tasksScheduler, err := NewTaskHandler(db, client, adminHandlers, requestChan, txWatcher)
 // 	assert.Nil(t, err)
 // 	t.Cleanup(func() {
 // 		txWatcher.Close()
@@ -140,7 +140,7 @@ package executor
 // 	scheduler.Close()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 1500*time.Millisecond)
 // 	client.GetFinalizedHeightFunc.SetDefaultReturn(10, nil)
-// 	scheduler, err = NewTaskInteractor(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
+// 	scheduler, err = NewTaskHandler(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
@@ -165,7 +165,7 @@ package executor
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
 
 // 	client.GetFinalizedHeightFunc.SetDefaultReturn(10, nil)
-// 	scheduler, err = NewTaskInteractor(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
+// 	scheduler, err = NewTaskHandler(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
@@ -196,7 +196,7 @@ package executor
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 1500*time.Millisecond)
 // 	client.GetFinalizedHeightFunc.SetDefaultReturn(100, nil)
 // 	// trick to set client mock parameters without having race conditions
-// 	scheduler, err = NewTaskInteractor(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
+// 	scheduler, err = NewTaskHandler(scheduler.database, client, scheduler.adminHandler, tasksChan, scheduler.txWatcher)
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
@@ -228,7 +228,7 @@ package executor
 // 	adminHandlers := mocks.NewMockAdminHandler()
 // 	txWatcher := transaction.NewWatcher(client, 12, db, false, constants.TxPollingTime)
 // 	tasksChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-// 	scheduler, err := NewTaskInteractor(db, client, adminHandlers, tasksChan, txWatcher)
+// 	scheduler, err := NewTaskHandler(db, client, adminHandlers, tasksChan, txWatcher)
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 
@@ -250,7 +250,7 @@ package executor
 // 	close(tasksChan)
 
 // 	tasksChan = make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-// 	scheduler, err = NewTaskInteractor(db, client, adminHandlers, tasksChan, txWatcher)
+// 	scheduler, err = NewTaskHandler(db, client, adminHandlers, tasksChan, txWatcher)
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 // 	assert.Nil(t, err)

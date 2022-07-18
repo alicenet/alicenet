@@ -283,7 +283,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
 	defer close(taskRequestChan)
 
-	tasksScheduler, err := executor.NewTaskInteractor(monDB, eth, consAdminHandlers, taskRequestChan, txWatcher)
+	tasksScheduler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, taskRequestChan, txWatcher)
 	if err != nil {
 		panic(err)
 	}

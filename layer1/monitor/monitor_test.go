@@ -67,7 +67,7 @@ func getMonitor(t *testing.T) (*monitor, *executor.TaskManager, chan tasks.TaskR
 	eth := mocks.NewMockClient()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
-	tasksScheduler, err := executor.NewTaskInteractor(monDB, eth, adminHandler, tasksReqChan, txWatcher)
+	tasksScheduler, err := executor.NewTaskHandler(monDB, eth, adminHandler, tasksReqChan, txWatcher)
 
 	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, mocks.NewMockContracts(), 2*time.Second, 100, tasksReqChan)
 	assert.Nil(t, err)

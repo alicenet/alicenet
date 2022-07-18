@@ -14,29 +14,24 @@ import (
 	"github.com/google/uuid"
 )
 
-type TaskInteractor interface {
-	ScheduleTask(ctx context.Context, task tasks.Task, id string) (*TaskSharedResponse, error)
-	KillTaskByType(ctx context.Context, task tasks.Task) error
-	KillTaskById(ctx context.Context, id string) error
-	Start()
-	Close()
-}
-
 // TaskAction is an enumeration indicating the actions that the scheduler
 // can do with a task during a request:
 type TaskAction int
 
 // The possible actions that the scheduler can do with a task during a request:
-// * Kill          - To kill/prune a task type immediately
-// * Schedule      - To schedule a new task
+// * KillByType          - To kill/prune a task by type immediately
+// * KillById            - To kill/prune a task by id immediately
+// * Schedule            - To schedule a new task
 const (
-	Kill TaskAction = iota
+	KillByType TaskAction = iota
+	KillById
 	Schedule
 )
 
 func (action TaskAction) String() string {
 	return [...]string{
-		"Kill",
+		"KillByType",
+		"KillById",
 		"Schedule",
 	}[action]
 }
@@ -89,16 +84,16 @@ type internalRequest struct {
 	response *TaskManagerResponseChannel
 }
 
-var _ TaskInteractor = &Interactor{}
+var _ tasks.TaskHandler = &Handler{}
 
-type Interactor struct {
+type Handler struct {
 	manager          *TaskManager
 	logger           *logrus.Entry
 	closeMainContext context.CancelFunc
 	requestChannel   chan internalRequest
 }
 
-func NewTaskInteractor(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, txWatcher *transaction.FrontWatcher) (TaskInteractor, error) {
+func NewTaskHandler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, txWatcher *transaction.FrontWatcher) (tasks.TaskHandler, error) {
 	// main context that will cancel all workers and go routines
 	mainCtx, cf := context.WithCancel(context.Background())
 
@@ -111,28 +106,28 @@ func NewTaskInteractor(database *db.Database, eth layer1.Client, adminHandler mo
 		return nil, err
 	}
 
-	interactor := &Interactor{
+	handler := &Handler{
 		manager:          taskManager,
 		closeMainContext: cf,
 		requestChannel:   requestChan,
 	}
 
-	return interactor, nil
+	return handler, nil
 }
 
-func (i *Interactor) Start() {
-	i.logger.Info("Starting task interactor")
+func (i *Handler) Start() {
+	i.logger.Info("Starting task handler")
 	i.manager.start()
 }
 
-func (i *Interactor) Close() {
-	i.logger.Warn("Closing task interactor")
+func (i *Handler) Close() {
+	i.logger.Warn("Closing task handler")
 	close(i.requestChannel)
 	i.closeMainContext()
 }
 
 // ScheduleTask sends the task to the backend
-func (i *Interactor) ScheduleTask(ctx context.Context, task tasks.Task, id string) (*TaskSharedResponse, error) {
+func (i *Handler) ScheduleTask(ctx context.Context, task tasks.Task, id string) (*TaskSharedResponse, error) {
 	// In case the id field is not specified, create it
 	if id == "" {
 		id = uuid.New().String()
@@ -145,17 +140,25 @@ func (i *Interactor) ScheduleTask(ctx context.Context, task tasks.Task, id strin
 	return req.response.listen(ctx)
 }
 
-func (i *Interactor) KillTaskByType(ctx context.Context, taskType tasks.Task) error {
-	req := internalRequest{task: taskType, action: Kill, response: NewResponseChannel()}
-	return i.waitForRequestProcessing(ctx, req)
+func (i *Handler) KillTaskByType(ctx context.Context, taskType tasks.Task) (*TaskSharedResponse, error) {
+	req := internalRequest{task: taskType, action: KillByType, response: NewResponseChannel()}
+	err := i.waitForRequestProcessing(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return req.response.listen(ctx)
 }
 
-func (i *Interactor) KillTaskById(ctx context.Context, id string) error {
-	req := internalRequest{id: id, action: Kill, response: NewResponseChannel()}
-	return i.waitForRequestProcessing(ctx, req)
+func (i *Handler) KillTaskById(ctx context.Context, id string) (*TaskSharedResponse, error) {
+	req := internalRequest{id: id, action: KillById, response: NewResponseChannel()}
+	err := i.waitForRequestProcessing(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return req.response.listen(ctx)
 }
 
-func (i *Interactor) waitForRequestProcessing(ctx context.Context, req internalRequest) error {
+func (i *Handler) waitForRequestProcessing(ctx context.Context, req internalRequest) error {
 	// wait for request to be accepted
 	select {
 	case i.requestChannel <- req:

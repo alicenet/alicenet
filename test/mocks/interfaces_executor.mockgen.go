@@ -133,7 +133,7 @@ func NewMockTask() *MockTask {
 			},
 		},
 		InitializeFunc: &TaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) (r0 error) {
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) (r0 error) {
 				return
 			},
 		},
@@ -220,7 +220,7 @@ func NewStrictMockTask() *MockTask {
 			},
 		},
 		InitializeFunc: &TaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error {
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error {
 				panic("unexpected invocation of MockTask.Initialize")
 			},
 		},
@@ -1480,15 +1480,15 @@ func (c TaskGetSubscribeOptionsFuncCall) Results() []interface{} {
 // TaskInitializeFunc describes the behavior when the Initialize method of
 // the parent MockTask instance is invoked.
 type TaskInitializeFunc struct {
-	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error
-	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error
+	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error
+	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error
 	history     []TaskInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 layer1.Client, v5 string, v6 string, v7 tasks.TaskResponseChan) error {
+func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 layer1.Client, v5 string, v6 string, v7 tasks.InternalTaskResponseChan) error {
 	r0 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6, v7)
 	m.InitializeFunc.appendCall(TaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, v7, r0})
 	return r0
@@ -1496,7 +1496,7 @@ func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.
 
 // SetDefaultHook sets function that is called when the Initialize method of
 // the parent MockTask instance is invoked and the hook queue is empty.
-func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error) {
+func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error) {
 	f.defaultHook = hook
 }
 
@@ -1504,7 +1504,7 @@ func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.C
 // Initialize method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error) {
+func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1513,19 +1513,19 @@ func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelF
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *TaskInitializeFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error {
+	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *TaskInitializeFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error {
+	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error {
 		return r0
 	})
 }
 
-func (f *TaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.TaskResponseChan) error {
+func (f *TaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, string, string, tasks.InternalTaskResponseChan) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1581,7 +1581,7 @@ type TaskInitializeFuncCall struct {
 	Arg6 string
 	// Arg7 is the value of the 8th argument passed to this method
 	// invocation.
-	Arg7 tasks.TaskResponseChan
+	Arg7 tasks.InternalTaskResponseChan
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error

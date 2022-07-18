@@ -30,7 +30,9 @@ var (
 	ErrWrongParams                    = errors.New("wrong start/end height for the task")
 	ErrTaskExpired                    = errors.New("the task is already expired")
 	ErrTaskNotAllowMultipleExecutions = errors.New("a task of the same type is already scheduled and allowed multiple execution for this type is false")
-	ErrTaskIsNil                      = errors.New("the task we're trying to schedule is nil")
+	ErrTaskIsNil                      = errors.New("the task in the request is nil")
+	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
+	ErrTaskIdEmpty                    = errors.New("the task id is empty")
 )
 
 // InternalTaskState is an enumeration indicating the possible states of a task
@@ -60,9 +62,9 @@ type BaseRequest struct {
 
 type TaskRequestInfo struct {
 	BaseRequest
-	Task tasks.Task
-	*TaskSharedResponse
-	killedAt uint64
+	Task         tasks.Task
+	TaskResponse *TaskSharedResponse
+	killedAt     uint64
 }
 
 type taskRequestInner struct {
@@ -107,6 +109,8 @@ func (r *TaskSharedResponse) writeResponse(err error) {
 		close(r.doneChan)
 	}
 }
+
+var _ tasks.TaskResponse = &TaskSharedResponse{}
 
 type TaskManager struct {
 	Schedule       map[string]TaskRequestInfo     `json:"schedule"`
@@ -171,7 +175,7 @@ func (tr *taskResponseChan) Add(taskResponse InternalTaskResponse) {
 	}
 }
 
-var _ internalTaskResponseChan = &taskResponseChan{}
+var _ tasks.InternalTaskResponseChan = &taskResponseChan{}
 
 type innerSequentialSchedule struct {
 	Schedule map[string]*taskRequestInner
@@ -225,27 +229,21 @@ func (tm *TaskManager) eventLoop() {
 		case taskRequest := <-tm.requestChan:
 			response := &TaskManagerResponse{Err: nil}
 			switch taskRequest.action {
-			case Kill:
-				if taskRequest.task != nil {
-					taskName, _ := marshaller.GetNameType(taskRequest.task)
-					tm.logger.Tracef("received request to kill all tasks type: %v", taskName)
-					err := tm.killTaskByName(tm.mainCtx, taskName)
-					if err != nil {
-						tm.logger.WithError(err).Errorf("Failed to killTaskByName %v", taskName)
-						response = &TaskManagerResponse{Err: err}
-					}
-				} else {
-					tm.logger.Tracef("received request to kill task with ID: %v", taskRequest.id)
-					// todo: check if Id is empty
-					err := tm.remove(taskRequest.id)
-					if err != nil {
-						tm.logger.WithError(err).Errorf("Failed to killTaskById %v", taskRequest.id)
-						response = &TaskManagerResponse{Err: err}
-					}
+			case KillByType:
+				err := tm.killTaskByType(tm.mainCtx, taskRequest.task)
+				if err != nil {
+					tm.logger.WithError(err).Errorf("Failed to killTaskByType %v", taskRequest.task)
+					response.Err = err
+				}
+			case KillById:
+				err := tm.killTaskById(tm.mainCtx, taskRequest.id)
+				if err != nil {
+					tm.logger.WithError(err).Errorf("Failed to killTaskById %v", taskRequest.id)
+					response.Err = err
 				}
 			case Schedule:
 				tm.logger.Trace("received request for a task")
-				err := tm.schedule(tm.mainCtx, taskRequest.task, taskRequest.id)
+				err, sharedResponse := tm.schedule(tm.mainCtx, taskRequest.task, taskRequest.id)
 				if err != nil {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
@@ -253,8 +251,10 @@ func (tm *TaskManager) eventLoop() {
 						tm.logger.WithError(err).Debugf("Failed to schedule task request %d", tm.LastHeightSeen)
 					} else {
 						tm.logger.WithError(err).Errorf("Failed to schedule task request %d", tm.LastHeightSeen)
-						response = &TaskManagerResponse{Err: err}
+						response.Err = err
 					}
+				} else {
+					response.SharedResponse = sharedResponse
 				}
 			}
 			taskRequest.response.sendResponse(response)
@@ -308,41 +308,60 @@ func (tm *TaskManager) eventLoop() {
 	}
 }
 
-func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string) error {
+func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string) (error, *TaskSharedResponse) {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return ctx.Err(), nil
 	default:
 		if task == nil {
-			return ErrTaskIsNil
+			return ErrTaskIsNil, nil
+		}
+
+		if id == "" {
+			return ErrTaskIdEmpty, nil
+		}
+
+		taskName, _, present := tm.marshaller.GetNameType(task)
+		if !present {
+			return ErrTaskTypeNotInRegistry, nil
 		}
 
 		start := task.GetStart()
 		end := task.GetEnd()
 
 		if start != 0 && end != 0 && start >= end {
-			return ErrWrongParams
+			return ErrWrongParams, nil
 		}
 
 		if end != 0 && end <= tm.LastHeightSeen {
-			return ErrTaskExpired
+			return ErrTaskExpired, nil
 		}
 
-		if _, present := tm.Schedule[id]; present {
-			// todo: return the sharedTaskResponse here
-			return nil
+		if scheduledTask, exists := tm.Schedule[id]; exists {
+			return nil, scheduledTask.TaskResponse
 		}
 
-		taskName, _ := marshaller.GetNameType(task)
-		if len(tm.findTasksByName(taskName)) > 0 && !task.GetAllowMultiExecution() {
-			return ErrTaskNotAllowMultipleExecutions
+		if !task.GetAllowMultiExecution() && len(tm.findTasksByName(taskName)) > 0 {
+			return ErrTaskNotAllowMultipleExecutions, nil
 		}
 
-		taskReq := TaskRequestInfo{BaseRequest: BaseRequest{Id: id, Name: taskName, Start: start, End: end}, Task: task}
+		taskResp := newTaskResponse()
+		taskReq := TaskRequestInfo{
+			BaseRequest: BaseRequest{
+				Id:            id,
+				Name:          taskName,
+				Start:         start,
+				End:           end,
+				InternalState: NotStarted,
+			},
+			Task:         task,
+			TaskResponse: taskResp,
+		}
 		tm.Schedule[id] = taskReq
 		GetTaskLoggerComplete(taskReq).Debug("Received task request")
+
+		return nil, taskResp
 	}
-	return nil
 }
 
 func (tm *TaskManager) processTaskResponse(ctx context.Context, taskResponse InternalTaskResponse) error {
@@ -396,13 +415,36 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []TaskRequestInfo) 
 	return nil
 }
 
-func (tm *TaskManager) killTaskByName(ctx context.Context, taskName string) error {
+func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		tm.logger.Debugf("Looking for killing tasks by name %s", taskName)
+		if task == nil {
+			return ErrTaskIsNil
+		}
+
+		taskName, _, present := tm.marshaller.GetNameType(task)
+		if !present {
+			return ErrTaskTypeNotInRegistry
+		}
+
+		tm.logger.Tracef("received request to kill all tasks type: %v", taskName)
 		return tm.killTasks(ctx, tm.findTasksByName(taskName))
+	}
+}
+
+func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		if id == "" {
+			return ErrTaskIdEmpty
+		}
+
+		tm.logger.Tracef("received request to kill task with id: %s", id)
+		return tm.remove(id)
 	}
 }
 
@@ -437,7 +479,6 @@ func (tm *TaskManager) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 	toStart := make([]TaskRequestInfo, 0)
 	expired := make([]TaskRequestInfo, 0)
 	unresponsive := make([]TaskRequestInfo, 0)
-	multiExecutionCheck := make(map[string]bool)
 
 	for _, taskRequest := range tm.Schedule {
 		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskSchedulerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {

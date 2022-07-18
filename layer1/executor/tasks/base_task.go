@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"errors"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"sync"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -26,7 +27,7 @@ type BaseTask struct {
 	database            *db.Database                  `json:"-"`
 	logger              *logrus.Entry                 `json:"-"`
 	client              layer1.Client                 `json:"-"`
-	taskResponseChan    TaskResponseChan              `json:"-"`
+	taskResponseChan    InternalTaskResponseChan      `json:"-"`
 }
 
 func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
@@ -43,7 +44,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 }
 
 // Initialize default implementation for the ITask interface
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan TaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan InternalTaskResponseChan) error {
 	bt.Lock()
 	defer bt.Unlock()
 	if bt.isInitialized {
@@ -160,6 +161,6 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
+		bt.taskResponseChan.Add(executor.InternalTaskResponse{Id: bt.Id, Err: err})
 	}
 }
