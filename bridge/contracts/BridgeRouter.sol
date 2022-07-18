@@ -57,7 +57,10 @@ contract BridgeRouter is
     ) public onlyBToken returns (uint256 btokenFeeAmount) {
         //get the fee to deposit a token into the bridge
         btokenFeeAmount = 10;
-        require(maxTokens >= btokenFeeAmount, "BridgeRouter: ERROR insufficient funds");
+        require(
+            maxTokens >= btokenFeeAmount,
+            string(abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_INSUFFICIENT_FUNDS))
+        );
         // use abi decode to extract the information out of data
         DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
         //encode the salt with the information from
@@ -126,7 +129,7 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice getLocalERCImplementationSalt calculates salt for a BridgePool implementation contract based on tokenType and version
+     * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
      * @param version_ version of the implementation
      * @return calculated calculated salt
@@ -151,7 +154,7 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, version_ and chainID
+     * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC contract of BridgePool
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
      * @param version_ version of the implementation
@@ -197,6 +200,9 @@ contract BridgeRouter is
         return contractAddr;
     }
 
+    /**
+     * @notice routes to implementation
+     */
     fallback() external {
         address implementation_ = _implementation;
         assembly {

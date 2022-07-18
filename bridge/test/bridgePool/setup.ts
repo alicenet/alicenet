@@ -116,7 +116,7 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
 }
 export const valueOrId = 100; // value if ERC20 , tokenId otherwise
 export const maxEth = 1;
-export const maxTokens = 11; // has to be > bTokenFee (10)
+export const maxTokens = 11; // has to be > bTokenFee => 10
 export const valueSent = ethers.utils.parseEther("1.0");
 
 export const tokenTypes = [

@@ -177,6 +177,19 @@ tokenTypes.forEach(function (run) {
         );
       });
 
+      it("Should not make a deposit without enough funds for fees", async () => {
+        const reason = ethers.utils.parseBytes32String(
+          await fixture.bridgeRouterErrorCodesContract.BRIDGEROUTER_INSUFFICIENT_FUNDS()
+        );
+        await expect(
+          fixture.bToken
+            .connect(user)
+            .payAndDeposit(maxEth, maxTokens - 2, encodedDepositCallData, {
+              value: valueSent,
+            })
+        ).to.be.revertedWith(reason);
+      });
+
       it("Should not make a withdraw for amount specified on informed burned UTXO with wrong root", async () => {
         const wrongStateRoot =
           "0x0000000000000000000000000000000000000000000000000000000000000000";

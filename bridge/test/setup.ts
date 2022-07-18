@@ -239,7 +239,7 @@ export const deployStaticWithFactory = async (
 
   let tx;
   if (
-    contractName.indexOf("BridgePool") == -1 // TODO gus: Add a proper management of BridgePool initializers
+    contractName.indexOf("BridgePool") == -1 // TODO gus: Add a better way to avoid BridgePool initializers
   ) {
     let initCallDataBin;
     try {
