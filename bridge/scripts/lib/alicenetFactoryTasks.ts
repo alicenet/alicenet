@@ -258,6 +258,7 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
             fullyQualifiedName,
             factoryAddress,
             artifacts,
+            taskArgs.inputFolder,
             taskArgs.outputFolder
           );
           proxyData = await hre.run("fullMultiCallDeployProxy", deployArgs);

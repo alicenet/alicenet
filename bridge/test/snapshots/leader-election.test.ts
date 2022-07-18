@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Snapshots } from "../../typechain-types";
+import { Snapshots } from "../../typechain-types/contracts/Snapshots";
 import { getFixture } from "../setup";
 
 const numValidators = 10;

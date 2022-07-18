@@ -404,62 +404,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         return contractAddr;
     }
 
-    /*
-
-just so you know how - remember convo about changing the template deploy code to store on the template msg.sender.... then in the constructor do a
-assembly {
-    if and(iszero(iszero(eq(caller(),sload(<some slot>)))), iszero(iszero(eq(shr(192, calldataload(0x00)), <some funcSig>)))){
-        selfdestruct(msg.sender)
-    }
-}
-11:24
-probably jacked up parentheses but you get idea can also optimize bool logic using demorgan to factor out iszero(iszero(
-
-6080604052348015600f57600080fd5b5060405160e338038060e38339818101604052810190602d9190606f565b80600081905550506097565b600080fd5b6000819050919050565b604f81603e565b8114605957600080fd5b50565b6000815190506069816048565b92915050565b60006020828403121560825760816039565b5b6000608e84828501605c565b91505092915050565b603f8060a46000396000f3fe6080604052600080fdfea2646970667358221220c853db60f6bf8b73569f1863f9d5f398164fcb8ec4b1e5ff73a361d680e1e29c64736f6c634300080b0033
-
-0x6080604052348015600f57600080fd5b5060405160e338038060e38339818101604052810190602d9190606f565b80600081905550506097565b600080fd5b6000819050919050565b604f81603e565b8114605957600080fd5b50565b6000815190506069816048565b92915050565b60006020828403121560825760816039565b5b6000608e84828501605c565b91505092915050565b603f8060a46000396000f3fe6080604052600080fdfea2646970667358221220c853db60f6bf8b73569f1863f9d5f398164fcb8ec4b1e5ff73a361d680e1e29c64736f6c634300080b0033000000000000000000000000000000000000000000000000000000000000000e
-
-63cfc7200760003560dc1c1473ffffffffffffffffffffffffffffffffffffffff33141615602a5733ff5bfe
-PC OPCODE OPNAME            STACK
-
-//JUMPCODE                          610000565B
-
-00 61 jumpdestination push2                     endofcontract
-03 56 jump
-04 5B jumpdest
-//BYTECODE
-05 5B jumpdest                                  //selfdestruct logic   5B63cfc720073d356102241c1473ffffffffffffffffffffffffffffffffffffffff33141615586007015733ff5b6080604052600556
-//function signature for selfdestruct(address)
-06 63 PUSH4 cfc72007
-0b 3D RETURNDATASIZE                   0 | cfc72007
-0c 35 CALLDATALOAD                     CALLDATA | cfc72007
-0d 61 PUSH2 0224                    0244 | CALLDATA | cfc72007
-10 1c SHR                              RIGHTALIGNEDCALLDATA | cfc72007
-14 EQ                               FSIGBOOL
-73 PUSH20                           ffffffffffffffffffffffffffffffffffffffff | FSIGBOOL
-ffffffffffffffffffffffffffffffffffffffff
-33 CALLER                           CALLER | ffffffffffffffffffffffffffffffffffffffff | FSIGBOOL
-14 EQ                               CBOOL | SIGBOOL
-16 AND
-15 ISZERO                           SDBOOL
-58 PC                               HOMEBOOL
-60 PUSH1
-07                                  PC | HOMEBOOL
-01 ADD                              07 | PC | HOMEBOOL
-57 JUMPI                            PC + 7 | HOMEBOOL
-33 CALLER
-ff SELFDESTRUCT                     CALLER
-5b JUMPDEST
-60
-80
-60                           80
-40
-52 MSTORE                    40 | 80
-60
-05                           02
-56 jump
-*/
-
     /**
      * @dev _initializeContract allows the owner/delegator to initialize contracts deployed via factory
      * @param contract_ address of the contract that will be initialized
