@@ -12,7 +12,7 @@ contract MockSigmoid is Sigmoid {
     }
 
     function safeAbsSub(uint256 a, uint256 b) public pure returns (uint256) {
-        return Sigmoid._max(a, b) - Sigmoid._min(a, b);
+        return Sigmoid._safeAbsSub(a, b);
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

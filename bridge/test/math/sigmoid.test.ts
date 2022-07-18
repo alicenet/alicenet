@@ -118,4 +118,90 @@ describe("Sigmoid unit tests", async () => {
       expect(retSqrt).to.be.equal(trueSqrt);
     });
   });
+
+  describe("safeAbsSub Tests", async () => {
+    it("safeAbsSub Test 0", async function () {
+      const a = 0;
+      const b = 0;
+      const trueValue = 0;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 1", async function () {
+      const a = 255;
+      const b = 0;
+      const trueValue = a;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 2", async function () {
+      const a = 0;
+      const b = 255;
+      const trueValue = b;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 3", async function () {
+      const a = 2 ** 31 - 1;
+      const b = 2 ** 16 + 1;
+      const trueValue = a - b;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 4", async function () {
+      const a = 2 ** 16 + 1;
+      const b = 2 ** 31 - 1;
+      const trueValue = b - a;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+  });
+
+  describe("max Tests", async () => {
+    it("max Test 0", async function () {
+      const a = 0;
+      const b = 0;
+      const trueValue = 0;
+      const retValue = await sigmoid.max(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("max Test 1", async function () {
+      const a = 255;
+      const b = 0;
+      const trueValue = a;
+      const retValue = await sigmoid.max(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("max Test 2", async function () {
+      const a = 0;
+      const b = 255;
+      const trueValue = b;
+      const retValue = await sigmoid.max(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+  });
+
+  describe("min Tests", async () => {
+    it("min Test 0", async function () {
+      const a = 0;
+      const b = 0;
+      const trueValue = 0;
+      const retValue = await sigmoid.min(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("min Test 1", async function () {
+      const a = 255;
+      const b = 0;
+      const trueValue = b;
+      const retValue = await sigmoid.min(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("min Test 2", async function () {
+      const a = 0;
+      const b = 255;
+      const trueValue = a;
+      const retValue = await sigmoid.min(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+  });
 });
