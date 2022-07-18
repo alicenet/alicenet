@@ -9,12 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk
@@ -126,7 +127,22 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 
 	// submit if I'm a leader for this task
 	client := t.GetClient()
-	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
+	isLeading, err := utils.AmILeading(
+		client,
+		ctx,
+		logger,
+		int(t.GetStart()),
+		t.StartBlockHash.Bytes(),
+		dkgState.NumberOfValidators,
+		dkgState.Index-1,
+		constants.ETHDKGDesperationFactor,
+		constants.ETHDKGDesperationDelay,
+	)
+	if err != nil {
+		return nil, tasks.NewTaskErr("error getting eth height for leader election", true)
+	}
+
+	if !isLeading {
 		return nil, tasks.NewTaskErr("not leading MPK submission yet", true)
 	}
 

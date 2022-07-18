@@ -181,21 +181,28 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 
 // AddSnapshot stores a snapshot to the database
 func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
-	ah.logger.Debugf("inside adminHandler.AddSnapshot")
+	logger := ah.logger.WithFields(
+		logrus.Fields{
+			"method":                 "AddSnapshot",
+			"snapshotHeight":         bh.BClaims.Height,
+			"safeToProceedConsensus": safeToProceedConsensus,
+		},
+	)
 	mutex, ok := ah.getLock()
 	if !ok {
 		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
+	logger.Info("Saving a received snapshot into the database")
 	err := ah.database.Update(func(txn *badger.Txn) error {
 		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
+		logger.Debug("Checking if is safe to proceed")
 		if !safeToProceed {
-			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", !safeToProceedConsensus, bh.BClaims.Height+1, safeToProceedConsensus)
 			// set that it's safe to proceed to the next block
 			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, safeToProceedConsensus); err != nil {
 				utils.DebugTrace(ah.logger, err)
@@ -215,7 +222,7 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 		utils.DebugTrace(ah.logger, err)
 		return err
 	}
-	ah.logger.Debugf("successfully saved state on adminHandler.AddSnapshot")
+	logger.Debug("successfully saved snapshot")
 	return nil
 }
 
@@ -264,14 +271,15 @@ func (ah *Handlers) SetSynchronized(v bool) {
 
 // RegisterSnapshotCallback allows a callback to be registered that will be called on snapshot blocks being
 // added to the local db.
-func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error) {
+func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader, numOfValidators int, validatorIndex int) error) {
 	wrapper := func(v []byte) error {
 		bh := &objs.BlockHeader{}
 		err := bh.UnmarshalBinary(v)
 		if err != nil {
 			return err
 		}
-		isValidator := false
+		validatorIndex := -1
+		numOfValidators := 0
 		var syncToBH, maxBHSeen *objs.BlockHeader
 		err = ah.database.View(func(txn *badger.Txn) error {
 			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height)
@@ -285,7 +293,10 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 			for i := 0; i < len(vs.Validators); i++ {
 				val := vs.Validators[i]
 				if bytes.Equal(val.VAddr, os.VAddr) {
-					isValidator = true
+					// the validator`s index will be used on the snapshots smart contract to decide
+					// if a validator was elected or not to do the snapshot.
+					validatorIndex = i
+					numOfValidators = len(vs.Validators)
 					break
 				}
 			}
@@ -296,14 +307,14 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 		if err != nil {
 			return err
 		}
-		if !isValidator {
+		if validatorIndex > -1 {
 			return nil
 		}
 		if maxBHSeen.BClaims.Height-syncToBH.BClaims.Height >= constants.EpochLength {
 			return nil
 		}
 		if bh.BClaims.Height%constants.EpochLength == 0 {
-			return fn(bh)
+			return fn(bh, numOfValidators, validatorIndex)
 		}
 		return nil
 	}
