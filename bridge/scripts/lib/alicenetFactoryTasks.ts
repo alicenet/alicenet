@@ -1027,7 +1027,7 @@ task(
       logicName: taskArgs.contractName,
       logicAddress: taskArgs.logicAddress,
       salt,
-      proxyAddress: proxyAddress,
+      proxyAddress,
       gas: receipt.gasUsed.toNumber(),
       receipt,
       initCallData,

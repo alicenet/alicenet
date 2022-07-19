@@ -25,7 +25,7 @@ contract("SnapshotRingBuffer 0state", async () => {
   let snapshots: Snapshots;
   describe("Snapshot upgrade integration", async () => {
     beforeEach(async () => {
-      //deploys the new snapshot contract with buffer and zero state
+      // deploys the new snapshot contract with buffer and zero state
       fixture = await getFixture(true, false);
       await completeETHDKGRound(validatorsSnapshotsG1, {
         ethdkg: fixture.ethdkg,
@@ -89,26 +89,26 @@ contract("SnapshotRingBuffer 0state", async () => {
       epochs = (await snapshotsG1.getEpoch()).toNumber();
       const lastSnapshot = await snapshotsG1.getLatestSnapshot();
       expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
-      //schedule maintenace
+      // schedule maintenace
       await factoryCallAnyFixture(
         fixture,
         "validatorPool",
         "scheduleMaintenance"
       );
 
-      //unregister validators
+      // unregister validators
       await factoryCallAnyFixture(
         fixture,
         "validatorPool",
         "unregisterValidators",
         [validators]
       );
-      //register the new validators
+      // register the new validators
       const newValidators = await createValidators(
         fixture,
         validatorsSnapshotsG2
       );
-      const newStakingTokenIds = await stakeValidators(fixture, newValidators);
+      await stakeValidators(fixture, newValidators);
       await completeETHDKGRound(
         validatorsSnapshotsG2,
         {
@@ -195,7 +195,7 @@ contract("SnapshotRingBuffer 0state", async () => {
       epochs = (await snapshotsG1.getEpoch()).toNumber();
       const lastSnapshot = await snapshotsG1.getLatestSnapshot();
       expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
-      expect(snapshots.getSnapshot(epochs - 6)).to.be.revertedWith("410");
+      await expect(snapshots.getSnapshot(epochs - 6)).to.be.revertedWith("410");
     });
   });
 });
