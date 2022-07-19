@@ -81,7 +81,7 @@ func (t *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 // YOU NEED ANOTHER CONTEXT (E.G WithTimeout) CREATE THE CONTEXT FROM THE CTX
 // PASSED TO THIS FUNCTION. ALWAYS MAKE SURE THAT THERE'S NO POSSIBILITY OF
 // INFINITE LOOP THAT DOESN'T CHECK THE CTX IN HERE.
-func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+func (t *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 
 	// If this function needs to read/write state and share with the other tasks use
 	// the db. Check the `Prepare` documentation above for more information.
@@ -137,7 +137,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 // CONTEXT (E.G WithTimeout) CREATE THE CONTEXT FROM THE CTX PASSED TO THIS
 // FUNCTION. ALWAYS MAKE SURE THAT THERE'S NO POSSIBILITY OF INFINITE LOOP THAT
 // DOESN'T CHECK THE CTX IN HERE.
-func (s *SimpleExampleTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+func (t *SimpleExampleTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 
 	// Check here if the action was performed successfully or if we should execute
 	// at all (the requirement is already fulfilled, e.g someone already sent the
