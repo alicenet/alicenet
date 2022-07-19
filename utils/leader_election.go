@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/alicenet/alicenet/layer1"
@@ -16,22 +17,22 @@ func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry,
 	}
 
 	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
-	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash, logger)
+	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":          currentHeight,
-		"start block":            start,
+		"startBlock":             start,
 		"desperationDelay":       desperationDelay,
 		"blocksSinceDesperation": blocksSinceDesperation,
 		"amILeading":             amILeading,
-		"randomHash":             randHash,
+		"randomHash":             fmt.Sprintf("0x%x", randHash),
 	}).Info("Checking if I'm leading this action")
 
 	return amILeading, nil
 }
 
 // LeaderElection runs the leader election algorithm to check if an index is a leader or not.
-func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, desperationFactor int, seedHash []byte, logger *logrus.Entry) bool {
+func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, desperationFactor int, seedHash []byte) bool {
 	var numValidatorsAllowed int = 1
 	for i := int(blocksSinceDesperation); i > 0; {
 		i -= desperationFactor / numValidatorsAllowed

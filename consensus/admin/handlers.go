@@ -307,7 +307,7 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader, numOf
 		if err != nil {
 			return err
 		}
-		if validatorIndex > -1 {
+		if validatorIndex == -1 {
 			return nil
 		}
 		if maxBHSeen.BClaims.Height-syncToBH.BClaims.Height >= constants.EpochLength {
