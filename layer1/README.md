@@ -12,7 +12,7 @@ The package is mainly composed of 3 services:
 
 The main way to interact with the layer 1 blockchains is via **Tasks**. So, if you have a service that needs to send a transaction to the layer 1 blockchains or need to check data from time to time in a smart contract create a new task.
 
-The new task should be a new file in its own folder inside the **tasks folder**. Check the [example task](./executor/tasks/examples/simple_task.go) to get more information on how to create a new task. Once the task file is created, its type need to be registered into the `GetTaskRegistry()` function in the task [scheduler file](./executor/task_scheduler.go). Once all these requirements all fulfilled, use the task scheduler to schedule the task when needed.
+The new task should be a new file in its own folder inside the **tasks folder** (layer1/executor/tasks). Check the [example task](./executor/tasks/examples/simple_task.go) to get more information on how to create a new task. Once the task file is created, its type need to be registered into the `GetTaskRegistry()` function in the task [scheduler file](./executor/task_scheduler.go). Once all these requirements all fulfilled, use the task scheduler to schedule the task when needed.
 
 ## Registering new layer 1 events
 
