@@ -1,0 +1,141 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "SnapshotsErrorCodes",
+  "sourceName": "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_CALLER_NOT_ETHDKG_PARTICIPANT",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_CONSENSUS_RUNNING",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_INCORRECT_BLOCK_HEIGHT",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_INCORRECT_CHAIN_ID",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_MIGRATION_NOT_ALLOWED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_ONLY_VALIDATORS_ALLOWED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_SIGNATURE_VERIFICATION_FAILED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SNAPSHOT_WRONG_MASTER_PUBLIC_KEY",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x61029b61003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100c85760003560e01c806383d995fa116100805780638d17de64116100655780638d17de64146101f05780639854bdc514610217578063adcb3a441461023e57600080fd5b806383d995fa146101a257806385c9dba1146101c957600080fd5b80633f772c6f116100b15780633f772c6f1461012d5780634a1ec2ee146101545780634f2adaee1461017b57600080fd5b80630c24555d146100cd5780631d449ed114610106575b600080fd5b6100f47f343036000000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6100f47f343035000000000000000000000000000000000000000000000000000000000081565b6100f47f343037000000000000000000000000000000000000000000000000000000000081565b6100f47f343032000000000000000000000000000000000000000000000000000000000081565b6100f47f343038000000000000000000000000000000000000000000000000000000000081565b6100f47f343030000000000000000000000000000000000000000000000000000000000081565b6100f47f343034000000000000000000000000000000000000000000000000000000000081565b6100f47f343031000000000000000000000000000000000000000000000000000000000081565b6100f47f343039000000000000000000000000000000000000000000000000000000000081565b6100f47f34303300000000000000000000000000000000000000000000000000000000008156fea26469706673582212208e05014477c9cc8699e53db43d80a1995216df16691c12000b54187751e2813864736f6c634300080d0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106100c85760003560e01c806383d995fa116100805780638d17de64116100655780638d17de64146101f05780639854bdc514610217578063adcb3a441461023e57600080fd5b806383d995fa146101a257806385c9dba1146101c957600080fd5b80633f772c6f116100b15780633f772c6f1461012d5780634a1ec2ee146101545780634f2adaee1461017b57600080fd5b80630c24555d146100cd5780631d449ed114610106575b600080fd5b6100f47f343036000000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6100f47f343035000000000000000000000000000000000000000000000000000000000081565b6100f47f343037000000000000000000000000000000000000000000000000000000000081565b6100f47f343032000000000000000000000000000000000000000000000000000000000081565b6100f47f343038000000000000000000000000000000000000000000000000000000000081565b6100f47f343030000000000000000000000000000000000000000000000000000000000081565b6100f47f343034000000000000000000000000000000000000000000000000000000000081565b6100f47f343031000000000000000000000000000000000000000000000000000000000081565b6100f47f343039000000000000000000000000000000000000000000000000000000000081565b6100f47f34303300000000000000000000000000000000000000000000000000000000008156fea26469706673582212208e05014477c9cc8699e53db43d80a1995216df16691c12000b54187751e2813864736f6c634300080d0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

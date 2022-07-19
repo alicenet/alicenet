@@ -1,0 +1,219 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "BaseParserLibraryErrorCodes",
+  "sourceName": "contracts/libraries/errorCodes/BaseParserLibraryErrorCodes.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BE_UINT16_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BE_UINT16_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BE_UINT256_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BE_UINT256_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BOOL_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BOOL_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BYTES32_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BYTES32_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BYTES_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_BYTES_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_LE_UINT16_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_LE_UINT16_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_LE_UINT256_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_LE_UINT256_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_OFFSET_OUT_OF_BOUNDS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASEPARSERLIB_OFFSET_PARAMETER_OVERFLOW",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6103c761003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061010a5760003560e01c806375808b08116100a1578063c14891f111610070578063c14891f1146102f5578063c15a227e1461031c578063c5fcd91f14610343578063fd6badbc1461036a57600080fd5b806375808b0814610259578063ad7ff35714610280578063b8dad107146102a7578063ba4e75e0146102ce57600080fd5b80632e5b5c05116100dd5780632e5b5c05146101bd578063357d3033146101e457806365815a771461020b5780636c0ed1791461023257600080fd5b806303f550521461010f5780630b70604714610148578063142d2e951461016f5780631f2ae55714610196575b600080fd5b6101367f313031340000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6101367f313031350000000000000000000000000000000000000000000000000000000081565b6101367f313030300000000000000000000000000000000000000000000000000000000081565b6101367f313031320000000000000000000000000000000000000000000000000000000081565b6101367f313030340000000000000000000000000000000000000000000000000000000081565b6101367f313030310000000000000000000000000000000000000000000000000000000081565b6101367f313030380000000000000000000000000000000000000000000000000000000081565b6101367f313030330000000000000000000000000000000000000000000000000000000081565b6101367f313031300000000000000000000000000000000000000000000000000000000081565b6101367f313030350000000000000000000000000000000000000000000000000000000081565b6101367f313030360000000000000000000000000000000000000000000000000000000081565b6101367f313031330000000000000000000000000000000000000000000000000000000081565b6101367f313030370000000000000000000000000000000000000000000000000000000081565b6101367f313030320000000000000000000000000000000000000000000000000000000081565b6101367f313031310000000000000000000000000000000000000000000000000000000081565b6101367f31303039000000000000000000000000000000000000000000000000000000008156fea2646970667358221220a670f824398c654653adcc12a84f88d59217e3dcec353256761003373dfb488964736f6c634300080d0033",
+  "deployedBytecode": "0x730000000000000000000000000000000000000000301460806040526004361061010a5760003560e01c806375808b08116100a1578063c14891f111610070578063c14891f1146102f5578063c15a227e1461031c578063c5fcd91f14610343578063fd6badbc1461036a57600080fd5b806375808b0814610259578063ad7ff35714610280578063b8dad107146102a7578063ba4e75e0146102ce57600080fd5b80632e5b5c05116100dd5780632e5b5c05146101bd578063357d3033146101e457806365815a771461020b5780636c0ed1791461023257600080fd5b806303f550521461010f5780630b70604714610148578063142d2e951461016f5780631f2ae55714610196575b600080fd5b6101367f313031340000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6101367f313031350000000000000000000000000000000000000000000000000000000081565b6101367f313030300000000000000000000000000000000000000000000000000000000081565b6101367f313031320000000000000000000000000000000000000000000000000000000081565b6101367f313030340000000000000000000000000000000000000000000000000000000081565b6101367f313030310000000000000000000000000000000000000000000000000000000081565b6101367f313030380000000000000000000000000000000000000000000000000000000081565b6101367f313030330000000000000000000000000000000000000000000000000000000081565b6101367f313031300000000000000000000000000000000000000000000000000000000081565b6101367f313030350000000000000000000000000000000000000000000000000000000081565b6101367f313030360000000000000000000000000000000000000000000000000000000081565b6101367f313031330000000000000000000000000000000000000000000000000000000081565b6101367f313030370000000000000000000000000000000000000000000000000000000081565b6101367f313030320000000000000000000000000000000000000000000000000000000081565b6101367f313031310000000000000000000000000000000000000000000000000000000081565b6101367f31303039000000000000000000000000000000000000000000000000000000008156fea2646970667358221220a670f824398c654653adcc12a84f88d59217e3dcec353256761003373dfb488964736f6c634300080d0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,0 +1,271 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "CryptoLibrary",
+  "sourceName": "contracts/libraries/math/CryptoLibrary.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "CURVE_B",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "FIELD_MODULUS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "G1_X",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "G1_Y",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "GROUP_ORDER",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H1_X",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H1_Y",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H2_X",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H2_XI",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H2_Y",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "H2_YI",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "HASH_CONST_1",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "HASH_CONST_2",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "HASH_CONST_3",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "HASH_CONST_4",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "P_MINUS1",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "P_MINUS1_OVER2",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "P_MINUS2",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "P_PLUS1_OVER4",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "TWO_256_MOD_P",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x61044361003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106101765760003560e01c8063af35ddc0116100d7578063cfd4819b1161008b578063e143434e11610070578063e143434e146103b7578063e6e24213146103de578063fd3a1bbd146103e657600080fd5b8063cfd4819b14610369578063d2dccd7b1461039057600080fd5b8063bd7b5c1f116100bc578063bd7b5c1f146102fc578063ca43351a14610323578063cee542791461034a57600080fd5b8063af35ddc0146102cd578063bcaf2ab8146102d557600080fd5b80633c64a3501161012e5780638e692fa1116101135780638e692fa114610258578063a0c45db91461027f578063a4111ff9146102a657600080fd5b80633c64a350146102125780634f76a98e1461023157600080fd5b80631547e3881161015f5780631547e3881461019d5780631a47f188146101c45780632d695bc8146101eb57600080fd5b806303f96c841461017b5780630f34f6c014610195575b600080fd5b610183600181565b60405190815260200160405180910390f35b610183600481565b6101837f2042def740cbc01bd03583cf0100e593ba56470b9af68708d2c05d649053538581565b6101837f1b4af7018d896f006d7e5c23d05903b5d2698da94674e546e51f77b6df70ffac81565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4681565b6101837759e26bcea0d48bacd4f263f1acdb5c4f5763473177fffffe81565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4781565b6101837f30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000000181565b6101837f183227397098d014dc2822db40c0ac2ecbc0b548b438e5469e10460b6c3e7ea381565b6101837f1d9befcd05a5323e6da4d435f3b617cdb3af83285c2df711ef39c01571827f9d81565b610183600281565b6101837f198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c281565b6101837f0c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f5281565b6101837f1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed81565b61018377b3c4d79d41a91759a9e4c7e359b6b89eaec68e62effffffd81565b6101837f062a0ad5cf656709286b38ae4fb927fc901c5f9cf9623bfd0b6d22d30f95a1f381565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4581565b6101837f0e0a77c19a07df2f666ea36f7879462c0a78eb28f5c70b3dd35d438dc58f0d9d81565b610183600381565b6101837f275dc4a288d1afb3cbb1ac09187524c7db36395df7be3b99e673b13a075a65ec8156fea26469706673582212207d5b51dce1eece494d00a8562ae71bda0e3efc159a79b9bb369293e1345c231664736f6c634300080d0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106101765760003560e01c8063af35ddc0116100d7578063cfd4819b1161008b578063e143434e11610070578063e143434e146103b7578063e6e24213146103de578063fd3a1bbd146103e657600080fd5b8063cfd4819b14610369578063d2dccd7b1461039057600080fd5b8063bd7b5c1f116100bc578063bd7b5c1f146102fc578063ca43351a14610323578063cee542791461034a57600080fd5b8063af35ddc0146102cd578063bcaf2ab8146102d557600080fd5b80633c64a3501161012e5780638e692fa1116101135780638e692fa114610258578063a0c45db91461027f578063a4111ff9146102a657600080fd5b80633c64a350146102125780634f76a98e1461023157600080fd5b80631547e3881161015f5780631547e3881461019d5780631a47f188146101c45780632d695bc8146101eb57600080fd5b806303f96c841461017b5780630f34f6c014610195575b600080fd5b610183600181565b60405190815260200160405180910390f35b610183600481565b6101837f2042def740cbc01bd03583cf0100e593ba56470b9af68708d2c05d649053538581565b6101837f1b4af7018d896f006d7e5c23d05903b5d2698da94674e546e51f77b6df70ffac81565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4681565b6101837759e26bcea0d48bacd4f263f1acdb5c4f5763473177fffffe81565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4781565b6101837f30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000000181565b6101837f183227397098d014dc2822db40c0ac2ecbc0b548b438e5469e10460b6c3e7ea381565b6101837f1d9befcd05a5323e6da4d435f3b617cdb3af83285c2df711ef39c01571827f9d81565b610183600281565b6101837f198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c281565b6101837f0c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f5281565b6101837f1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed81565b61018377b3c4d79d41a91759a9e4c7e359b6b89eaec68e62effffffd81565b6101837f062a0ad5cf656709286b38ae4fb927fc901c5f9cf9623bfd0b6d22d30f95a1f381565b6101837f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4581565b6101837f0e0a77c19a07df2f666ea36f7879462c0a78eb28f5c70b3dd35d438dc58f0d9d81565b610183600381565b6101837f275dc4a288d1afb3cbb1ac09187524c7db36395df7be3b99e673b13a075a65ec8156fea26469706673582212207d5b51dce1eece494d00a8562ae71bda0e3efc159a79b9bb369293e1345c231664736f6c634300080d0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

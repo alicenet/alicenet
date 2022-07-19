@@ -1,0 +1,128 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "StakingNFTErrorCodes",
+  "sourceName": "contracts/libraries/errorCodes/StakingNFTErrorCodes.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "STAKENFT_BALANCE_LESS_THAN_RESERVE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_CALLER_NOT_TOKEN_OWNER",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_FREE_AFTER_TIME_NOT_REACHED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_INVALID_TOKEN_ID",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_LOCK_DURATION_GREATER_THAN_GOVERNANCE_LOCK",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_LOCK_DURATION_GREATER_THAN_MINT_LOCK",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_LOCK_DURATION_WITHDRAW_TIME_NOT_REACHED",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_MINT_AMOUNT_EXCEEDS_MAX_SUPPLY",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STAKENFT_SLUSH_TOO_LARGE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x61025961003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100ad5760003560e01c806382142da4116100805780639d83ebd6116100655780639d83ebd6146101ae578063c7f172b9146101d5578063e0f38c22146101fc57600080fd5b806382142da414610160578063823be2201461018757600080fd5b80630983f86a146100b25780631ad4410e146100eb5780633af82a871461011257806354711d1e14610139575b600080fd5b6100d97f363036000000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6100d97f363031000000000000000000000000000000000000000000000000000000000081565b6100d97f363032000000000000000000000000000000000000000000000000000000000081565b6100d97f363030000000000000000000000000000000000000000000000000000000000081565b6100d97f363033000000000000000000000000000000000000000000000000000000000081565b6100d97f363034000000000000000000000000000000000000000000000000000000000081565b6100d97f363035000000000000000000000000000000000000000000000000000000000081565b6100d97f363038000000000000000000000000000000000000000000000000000000000081565b6100d97f36303700000000000000000000000000000000000000000000000000000000008156fea2646970667358221220b2e8d8154829ad238415498ef209c489a8a4f5c0e2cef382441ad1efa2ec90aa64736f6c634300080d0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106100ad5760003560e01c806382142da4116100805780639d83ebd6116100655780639d83ebd6146101ae578063c7f172b9146101d5578063e0f38c22146101fc57600080fd5b806382142da414610160578063823be2201461018757600080fd5b80630983f86a146100b25780631ad4410e146100eb5780633af82a871461011257806354711d1e14610139575b600080fd5b6100d97f363036000000000000000000000000000000000000000000000000000000000081565b60405190815260200160405180910390f35b6100d97f363031000000000000000000000000000000000000000000000000000000000081565b6100d97f363032000000000000000000000000000000000000000000000000000000000081565b6100d97f363030000000000000000000000000000000000000000000000000000000000081565b6100d97f363033000000000000000000000000000000000000000000000000000000000081565b6100d97f363034000000000000000000000000000000000000000000000000000000000081565b6100d97f363035000000000000000000000000000000000000000000000000000000000081565b6100d97f363038000000000000000000000000000000000000000000000000000000000081565b6100d97f36303700000000000000000000000000000000000000000000000000000000008156fea2646970667358221220b2e8d8154829ad238415498ef209c489a8a4f5c0e2cef382441ad1efa2ec90aa64736f6c634300080d0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
