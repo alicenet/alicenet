@@ -8,11 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// SnapshotTask pushes a snapshot to Ethereum
+// SimpleExampleTask executes a simple example task
 type SimpleExampleTask struct {
 	// All tasks should start by being composed by the BaseTask
 	*tasks.BaseTask
-	// everything from here onwards are fields that are exclusive for this task. If
+	// everything from here onwards are fields that are unique for this task. If
 	// a field is exposed it will be serialized, persisted and restored during
 	// eventual crashes.
 	Foo uint64
@@ -34,7 +34,7 @@ func NewSimpleExampleTask(start uint64, end uint64) *SimpleExampleTask {
 }
 
 // Prepare prepares for work to be done by the task. Put in here any preparation
-// logic to execute the task action. E.g preparing an snapshot, computing ethdkg
+// logic to execute the task action. E.g preparing a snapshot, computing ethdkg
 // data to send to smart contracts. This function should be simple. ALWAYS USE
 // THE CTX THAT IT'S PASSED TO THIS FUNCTION. IN CASE YOU NEED ANOTHER CONTEXT
 // (E.G WithTimeout) CREATE THE CONTEXT FROM THE CTX PASSED TO THIS FUNCTION.
@@ -96,7 +96,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 	*/
 
 	// The `Execute` method may or may not call a layer1 smart contract. In case it
-	// needs to call an smart contract a transaction should be returned. E.g
+	// needs to call a smart contract a transaction should be returned. E.g
 
 	/*
 
@@ -107,9 +107,9 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 			return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 		}
 		logger.Info("trying to call smart contract in the example")
-		txn, err := ethereum.GetContracts().DummyContract().SetFoo(txnOpts, exampleState.Foo)
+		txn, err := t.GetContractsHandler().EthereumContracts().DummyContract().SetFoo(txnOpts, exampleState.Foo)
 		if err != nil {
-			return nil, tasks.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
+			return nil, tasks.NewTaskErr(fmt.Sprintf("failed to set foo: %v", err), true)
 		}
 		return txn, nil
 
@@ -121,7 +121,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 	// `layer1/executor/tasks/dkg/dispute_gpkj.go` for more details.
 
 	// Simulating cool stuff
-	<-time.After(10 * time.Second)
+	<-time.After(2 * time.Second)
 	return nil, nil
 }
 
@@ -131,7 +131,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 // data was committed to a layer 1 smart contract state). This function will be
 // used to check if the execute operation succeeded in addition to the receipt
 // of the txn created by the Execute method (in case an execution happened).
-// This function should return true in case we should execute or false it the
+// This function should return true in case we should execute or false if the
 // completion requirements were fulfilled and there's no need to execute. ALWAYS
 // USE THE CTX THAT IT'S PASSED TO THIS FUNCTION. IN CASE YOU NEED ANOTHER
 // CONTEXT (E.G WithTimeout) CREATE THE CONTEXT FROM THE CTX PASSED TO THIS
@@ -157,7 +157,7 @@ func (s *SimpleExampleTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 			return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 		}
 
-		foo, err := ethereum.GetContracts().DummyContract().GetFoo(callOpts)
+		foo, err := t.GetContractsHandler().EthereumContracts().DummyContract().GetFoo(callOpts)
 		if err != nil {
 			return false, tasks.NewTaskErr(fmt.Sprintf("error getting foo in the example task: %v", err), true)
 		}
