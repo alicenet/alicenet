@@ -5,5 +5,4 @@ runs:
   steps:
     - uses: ./.github/actions/geth-eth-cache
     - uses: ./.github/actions/golang-cache
-    - uses: ./.github/actions/npm-cache
 
