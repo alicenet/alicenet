@@ -84,6 +84,8 @@ contract BToken is
         _setSplitsInternal(332, 332, 332, 4);
     }
 
+    /// @dev
+    ///
     function payAndDeposit(
         uint256 maxEth,
         uint256 maxTokens,
@@ -95,9 +97,9 @@ contract BToken is
             maxTokens,
             data
         );
-        //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
+        //if the message has value (eth payment) require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
-            uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenFee);
+            uint256 ethFee = _bTokensToEthMint(_poolBalance, totalSupply(), bTokenFee);
             require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
@@ -522,6 +524,15 @@ contract BToken is
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY))
         );
         return _min(poolBalance_, _fp(totalSupply_) - _fp(totalSupply_ - numBTK_));
+    }
+
+    // Internal function that calculates the number of eth required to store (mint) ERC tokens in our chain
+    function _btokensToEthMint(uint256 totalSupply_, uint256 numBTK_)
+        internal
+        pure
+        returns (uint256 numEth)
+    {
+        return _fp(totalSupply_ + numBTK_) - _fp(totalSupply_);
     }
 
     function _newDeposit(

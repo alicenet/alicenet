@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -72,7 +71,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 		return nil, tasks.NewTaskErr("not leading Completion yet", true)
 	}
 
-	c := ethereum.GetContracts()
+	c := t.GetContractsHandler().EthereumContracts()
 	txnOpts, err := client.GetTransactionOpts(ctx, dkgState.Account)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
@@ -94,7 +93,7 @@ func (t *CompletionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskEr
 	logger.Debug("should execute task")
 
 	eth := t.GetClient()
-	c := ethereum.GetContracts()
+	c := t.GetContractsHandler().EthereumContracts()
 
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {

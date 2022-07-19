@@ -75,6 +75,7 @@ type TasksScheduler struct {
 	mainCtx          context.Context                `json:"-"`
 	mainCtxCf        context.CancelFunc             `json:"-"`
 	eth              layer1.Client                  `json:"-"`
+	contracts        layer1.AllSmartContracts       `json:"-"`
 	database         *db.Database                   `json:"-"`
 	adminHandler     monitorInterfaces.AdminHandler `json:"-"`
 	marshaller       *marshaller.TypeRegistry       `json:"-"`
@@ -153,7 +154,7 @@ func GetTaskRegistry() *marshaller.TypeRegistry {
 	return tr
 }
 
-func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.TaskRequest, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
+func NewTasksScheduler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.TaskRequest, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
 	tr := GetTaskRegistry()
 
 	// main context that will cancel all workers and go routine
@@ -165,6 +166,7 @@ func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler mo
 		mainCtxCf:        cf,
 		database:         database,
 		eth:              eth,
+		contracts:        contracts,
 		adminHandler:     adminHandler,
 		marshaller:       tr,
 		cancelChan:       make(chan bool, 1),
@@ -363,7 +365,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			GetTaskLoggerComplete(task).Info("task is about to start")
 
-			go s.tasksManager.ManageTask(ctx, task.Task, task.Name, task.Id, s.database, logEntry, s.eth, s.taskResponseChan)
+			go s.tasksManager.ManageTask(ctx, task.Task, task.Name, task.Id, s.database, logEntry, s.eth, s.contracts, s.taskResponseChan)
 
 			task.InternalState = Running
 			s.Schedule[task.Id] = task

@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 
 import "./DeterministicAddress.sol";
 import {ImmutableAuthErrorCodes} from "contracts/libraries/errorCodes/ImmutableAuthErrorCodes.sol";
-import "hardhat/console.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
