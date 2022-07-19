@@ -148,6 +148,7 @@ jobs:
       - uses: ./.github/actions/alicenet-config
       - run: make setup
       - run: go build ./...
+      - run: cd bridge && npm run compile
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
