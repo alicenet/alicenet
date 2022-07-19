@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -75,18 +76,12 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		return tasks.NewTaskErr(fmt.Sprintf("failed to determine desperation delay: %v", err), true)
 	}
 
-	// TODO: ask Hunter panic?
-	randHash, err := snapshotState.BlockHeader.BClaims.BlockHash()
-	if err != nil {
-		return tasks.NewTaskErr("failed to compute randHash", false)
-	}
-
 	snapshotState.RawBClaims = rawBClaims
 	snapshotState.RawSigGroup = snapshotState.BlockHeader.SigGroup
 	snapshotState.LastSnapshotHeight = int(height.Int64())
 	snapshotState.DesperationDelay = int(desperationDelay.Int64())
 	snapshotState.DesperationFactor = int(desperationFactor.Int64())
-	snapshotState.RandomSeedHash = randHash
+	snapshotState.RandomSeedHash = crypto.Keccak256(snapshotState.BlockHeader.SigGroup)
 
 	err = state.SaveSnapshotState(t.GetDB(), snapshotState)
 	if err != nil {

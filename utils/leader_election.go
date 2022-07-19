@@ -9,14 +9,14 @@ import (
 )
 
 // AmILeading checks if the current node is a leader for an action
-func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numOfValidators int, validatorIndex int, desperationFactor int, desperationDelay int) (bool, error) {
+func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, randHash []byte, numOfValidators int, validatorIndex int, desperationFactor int, desperationDelay int) (bool, error) {
 	currentHeight, err := client.GetCurrentHeight(ctx)
 	if err != nil {
 		return false, err
 	}
 
 	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
-	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, startBlockHash, logger)
+	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash, logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":          currentHeight,
@@ -24,6 +24,7 @@ func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry,
 		"desperationDelay":       desperationDelay,
 		"blocksSinceDesperation": blocksSinceDesperation,
 		"amILeading":             amILeading,
+		"randomHash":             randHash,
 	}).Info("Checking if I'm leading this action")
 
 	return amILeading, nil

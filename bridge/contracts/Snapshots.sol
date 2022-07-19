@@ -86,7 +86,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
                     validatorIndex - 1,
                     blocksSinceDesperation,
-                    keccak256(bClaims_),
+                    keccak256(groupSignature_),
                     uint256(_snapshotDesperationFactor)
                 ),
                 "Snapshots: Validator not elected to do snapshot!"
@@ -277,7 +277,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 numValidators,
         uint256 myIdx,
         uint256 blocksSinceDesperation,
-        bytes32 blsig,
+        bytes32 randomSeed,
         uint256 desperationFactor
     ) public pure returns (bool) {
         return
@@ -285,7 +285,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 numValidators,
                 myIdx,
                 blocksSinceDesperation,
-                blsig,
+                randomSeed,
                 desperationFactor
             );
     }
@@ -294,7 +294,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 numValidators,
         uint256 myIdx,
         uint256 blocksSinceDesperation,
-        bytes32 blsig,
+        bytes32 randomSeed,
         uint256 desperationFactor
     ) internal pure returns (bool) {
         uint256 numValidatorsAllowed = 1;
@@ -305,7 +305,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             numValidatorsAllowed++;
         }
 
-        uint256 rand = uint256(blsig);
+        uint256 rand = uint256(randomSeed);
         uint256 start = (rand % numValidators);
         uint256 end = (start + numValidatorsAllowed) % numValidators;
 
