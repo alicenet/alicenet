@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -62,7 +61,7 @@ func (t *DisputeMissingShareDistributionTask) Execute(ctx context.Context) (*typ
 	}
 
 	logger.Warnf("accusing participants: %v of not distributing shares", accusableParticipants)
-	txn, err := ethereum.GetContracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().AccuseParticipantDidNotDistributeShares(txnOpts, accusableParticipants)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("error accusing missing key shares: %v", err), true)
 	}

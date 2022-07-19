@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
@@ -105,7 +104,7 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 	}
 
 	logger.Infof("submitting gpkj: %v", dkgState.Participants[dkgState.Account.Address].GPKj)
-	txn, err := ethereum.GetContracts().Ethdkg().SubmitGPKJ(txnOpts, dkgState.Participants[dkgState.Account.Address].GPKj)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().SubmitGPKJ(txnOpts, dkgState.Participants[dkgState.Account.Address].GPKj)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("submitting gpkj failed: %v", err), true)
 	}
@@ -135,7 +134,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
-	participantState, err := ethereum.GetContracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
+	participantState, err := t.GetContractsHandler().EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, defaultAddr.Address)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed getting participants state: %v", err), true)
 	}

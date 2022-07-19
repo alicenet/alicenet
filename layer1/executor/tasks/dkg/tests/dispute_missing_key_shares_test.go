@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 
@@ -27,7 +26,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
 
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingKeyshareTask", "task-id", nil)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingKeyshareTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = disputeMissingKeyshareTask.Prepare(ctx)
@@ -55,7 +54,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(m), badParticipants.Int64())
 }
@@ -72,7 +71,7 @@ func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "disputeMissingKeyshareTask", "task-id", nil)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeMissingKeyshareTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = disputeMissingKeyshareTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -84,7 +83,7 @@ func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(m), badParticipants.Int64())
 }
