@@ -208,6 +208,8 @@ func (bt *BaseTask) Close() {
 
 // Finish executes the clean up logic once a task finishes.
 func (bt *BaseTask) Finish(err error) {
+	bt.Lock()
+	defer bt.Unlock()
 	if err != nil {
 		if bt.wasKilled {
 			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")

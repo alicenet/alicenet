@@ -4,17 +4,22 @@ package monitor
 
 import (
 	"encoding/json"
-	"math/big"
-	"testing"
-	"time"
-
+	"errors"
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	ethdkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
+	"testing"
+	"time"
 
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 
@@ -62,15 +67,33 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
 	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
-	contracts := mocks.NewMockAllSmartContracts()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
 
-	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, tasksReqChan)
+	ethDkgMock := mocks.NewMockIETHDKG()
+	event := &bindings.ETHDKGRegistrationOpened{
+		StartBlock:         big.NewInt(10),
+		NumberValidators:   big.NewInt(4),
+		Nonce:              big.NewInt(1),
+		PhaseLength:        big.NewInt(40),
+		ConfirmationLength: big.NewInt(10),
+		Raw:                types.Log{},
+	}
+	ethDkgMock.ParseRegistrationOpenedFunc.SetDefaultReturn(event, nil)
+
+	ethereumContracts := mocks.NewMockEthereumContracts()
+	ethereumContracts.EthdkgFunc.SetDefaultReturn(ethDkgMock)
+	ethereumContracts.GetAllAddressesFunc.SetDefaultReturn([]common.Address{})
+
+	contracts := mocks.NewMockAllSmartContracts()
+	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
+
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
+	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, []common.Address{}, 2*time.Second, 100, tasksReqChan)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
@@ -91,9 +114,7 @@ func TestMonitorPersist(t *testing.T) {
 	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	contracts := mocks.NewMockAllSmartContracts()
-
-	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
+	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockAllSmartContracts(), []common.Address{}, 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
 	err = newMon.State.LoadState(mon.db)
@@ -107,35 +128,92 @@ func TestMonitorPersist(t *testing.T) {
 func TestProcessEvents(t *testing.T) {
 	mon, tasksScheduler, tasksReqChan, eth := getMonitor(t)
 
-	account := accounts.Account{Address: common.Address{1, 2, 3, 4}}
+	err := tasksScheduler.Start()
+	assert.Nil(t, err)
+
+	addr := common.Address{}
+	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
+	account := accounts.Account{
+		Address: addr,
+		URL: accounts.URL{
+			Scheme: "http",
+			Path:   "",
+		},
+	}
 	mon.State.PotentialValidators[account.Address] = objects.PotentialValidator{
 		Account: account.Address,
 	}
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
-	eth.GetFinalizedHeightFunc.SetDefaultReturn(100, nil)
+	eth.EndpointInSyncFunc.PushReturn(false, 0, errors.New("network failure"))
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
 
-	logHash := common.BytesToHash([]byte("RegistrationOpened"))
+	ethDKGEvents := events.GetETHDKGEvents()
 	logs := []types.Log{
-		{Topics: []common.Hash{logHash}},
+		{Topics: []common.Hash{ethDKGEvents["RegistrationOpened"].ID}},
 	}
 
-	eth.GetEventsFunc.SetDefaultReturn(logs, nil)
-
-	defer close(tasksReqChan)
-	err := tasksScheduler.Start()
-	assert.Nil(t, err)
-	defer tasksScheduler.Close()
+	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
+	eth.GetEventsFunc.PushReturn(logs, nil)
 
 	err = mon.Start()
 	assert.Nil(t, err)
-	defer mon.Close()
 
-	<-time.After(100 * time.Millisecond)
+	<-time.After(5000 * time.Millisecond)
 
-	assert.Equal(t, 2, len(tasksScheduler.Schedule))
-
-	dkgState, err := state.GetDkgState(mon.db)
+	dkgState, err := ethdkgState.GetDkgState(mon.db)
 	assert.Nil(t, err)
 	assert.NotNil(t, dkgState)
+	assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
+
+	mon.Close()
+	tasksScheduler.Close()
+
+	<-time.After(15 * time.Millisecond)
+	close(tasksReqChan)
+}
+
+func TestPersistSnapshot(t *testing.T) {
+	mon, tasksScheduler, tasksReqChan, eth := getMonitor(t)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
+
+	err := tasksScheduler.Start()
+	assert.Nil(t, err)
+
+	addr := common.Address{}
+	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
+	account := accounts.Account{
+		Address: addr,
+		URL: accounts.URL{
+			Scheme: "http",
+			Path:   "",
+		},
+	}
+	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
+
+	height := 10
+	bh := &objs.BlockHeader{
+		BClaims: &objs.BClaims{
+			ChainID:    1,
+			Height:     uint32(height),
+			TxCount:    0,
+			PrevBlock:  make([]byte, constants.HashLen),
+			TxRoot:     crypto.Hasher([]byte{}),
+			StateRoot:  make([]byte, constants.HashLen),
+			HeaderRoot: make([]byte, constants.HashLen),
+		},
+		TxHshLst: [][]byte{},
+		SigGroup: make([]byte, 192),
+	}
+	err = PersistSnapshot(eth, bh, tasksReqChan, mon.db)
+
+	state, err := snapshotState.GetSnapshotState(mon.db)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(height), state.BlockHeader.BClaims.Height)
+
+	mon.Close()
+	tasksScheduler.Close()
+
+	<-time.After(15 * time.Millisecond)
+	close(tasksReqChan)
 }

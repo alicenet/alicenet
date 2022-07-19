@@ -35,8 +35,8 @@ func NewSubscribeOptions(enableAutoRetry bool, maxStaleBlocks uint64) *Subscribe
 	return &SubscribeOptions{EnableAutoRetry: enableAutoRetry, MaxStaleBlocks: maxStaleBlocks}
 }
 
-// Struct that has the data necessary by the Transaction FrontWatcher service. The
-// transaction watcher service is responsible for check, retrieve and cache
+// FrontWatcher is a struct that has the data necessary by the Transaction FrontWatcher service.
+// The transaction watcher service is responsible for check, retrieve and cache
 // transaction receipts.
 type FrontWatcher struct {
 	backend          *WatcherBackend         // backend service responsible for check, retrieving and caching the receipts
@@ -47,7 +47,7 @@ type FrontWatcher struct {
 
 var _ Watcher = &FrontWatcher{}
 
-// Creates a new transaction watcher struct
+// NewWatcher creates a new transaction watcher struct
 func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.Database, statusDisplay bool, txPollingTime time.Duration) *FrontWatcher {
 	requestChannel := make(chan SubscribeRequest, 100)
 	// main context that will cancel all workers and go routine
@@ -116,13 +116,13 @@ func (w *FrontWatcher) Subscribe(ctx context.Context, txn *types.Transaction, op
 	return req.Listen(ctx)
 }
 
-// function that wait for a transaction receipt. This is blocking function that
+// Wait is a function that wait for a transaction receipt. This is blocking function that
 // will wait for a receipt to be received
 func (w *FrontWatcher) Wait(ctx context.Context, receiptResponse ReceiptResponse) (*types.Receipt, error) {
 	return receiptResponse.GetReceiptBlocking(ctx)
 }
 
-// Queue a transaction and wait for its receipt
+// SubscribeAndWait queues a transaction and wait for its receipt
 func (w *FrontWatcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (*types.Receipt, error) {
 	receiptResponse, err := w.Subscribe(ctx, txn, options)
 	if err != nil {
