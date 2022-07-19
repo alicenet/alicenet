@@ -3,7 +3,7 @@ module github.com/alicenet/alicenet
 go 1.18
 
 require (
-	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom-schema.1
+	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.6.0
 	github.com/derision-test/go-mockgen v1.3.3
 	github.com/dgraph-io/badger/v2 v2.2007.4
@@ -29,7 +29,7 @@ require (
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
 	golang.org/x/tools v0.1.11
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad
-	google.golang.org/grpc v1.47.0
+	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.0
 )
 

@@ -20,4 +20,6 @@ library ImmutableAuthErrorCodes {
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS = "2014"; // "onlyETHDKGAccusations"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKGPHASES = "2015"; // "onlyETHDKGPhases"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKG = "2016"; // "onlyETHDKG"
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_INVALIDTXCONSUMPTIONACCUSATION = "2017"; // "onlyInvalidTxConsumptionAccusation"
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_MULTIPLEPROPOSALACCUSATION = "2018"; // "onlyMultipleProposalAccusation"
 }

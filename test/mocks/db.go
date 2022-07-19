@@ -11,7 +11,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-func NewMockRawDb() *badger.DB {
+func NewTestRawDB() *badger.DB {
 	logging.GetLogger(constants.LoggerBadger).SetOutput(ioutil.Discard)
 	db, err := utils.OpenBadger(context.Background().Done(), "", true)
 	if err != nil {
@@ -20,8 +20,8 @@ func NewMockRawDb() *badger.DB {
 	return db
 }
 
-func NewMockDb() *db.Database {
+func NewTestDB() *db.Database {
 	db := &db.Database{}
-	db.Init(NewMockRawDb())
+	db.Init(NewTestRawDB())
 	return db
 }
