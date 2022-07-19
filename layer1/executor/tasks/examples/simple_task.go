@@ -12,7 +12,7 @@ import (
 type SimpleExampleTask struct {
 	// All tasks should start by being composed by the BaseTask
 	*tasks.BaseTask
-	// everything from here onwards are fields that are unique for this task. If
+	// everything from here onwards are fields that are unique to this task. If
 	// a field is exposed it will be serialized, persisted and restored during
 	// eventual crashes.
 	Foo uint64
@@ -40,7 +40,7 @@ func NewSimpleExampleTask(start uint64, end uint64) *SimpleExampleTask {
 // (E.G WithTimeout) CREATE THE CONTEXT FROM THE CTX PASSED TO THIS FUNCTION.
 // ALWAYS MAKE SURE THAT THERE'S NO POSSIBILITY OF INFINITE LOOP THAT DOESN'T
 // CHECK THE CTX IN HERE.
-func (s *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
+func (t *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	// if you function needs to persist state, or share/carry over state with other
 	// tasks, use the database that is shared with the tasks objects (monitor
 	// database). The initial state can be created here, or externally, a new 2
@@ -53,7 +53,7 @@ func (s *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		// Get GetExampleState is an auxiliary function to retrieve the state from db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` for more information.
 
-		exampleState, err := state.GetExampleState(s.GetDB())
+		exampleState, err := state.GetExampleState(t.GetDB())
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -65,7 +65,7 @@ func (s *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		// SaveExampleState is an auxiliary function to save the state in the db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` task for more examples.
 
-		err = state.SaveExampleState(s.GetDB(), exampleState)
+		err = state.SaveExampleState(t.GetDB(), exampleState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -86,9 +86,10 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 	// If this function needs to read/write state and share with the other tasks use
 	// the db. Check the `Prepare` documentation above for more information.
 
+	// client := t.GetClient()
 	/*
 
-		exampleState, err := state.GetExampleState(s.GetDB())
+		exampleState, err := state.GetExampleState(t.GetDB())
 		if err != nil {
 			return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 		}
@@ -106,7 +107,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 			// failed to retrieve tx fee data from the ethereum node
 			return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 		}
-		logger.Info("trying to call smart contract in the example")
+		t.GetLogger().Info("trying to call smart contract in the example")
 		txn, err := t.GetContractsHandler().EthereumContracts().DummyContract().SetFoo(txnOpts, exampleState.Foo)
 		if err != nil {
 			return nil, tasks.NewTaskErr(fmt.Sprintf("failed to set foo: %v", err), true)
@@ -126,7 +127,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 }
 
 // ShouldExecute checks if it makes sense to execute the task. This function
-// should contains the logic to see if the actions were already performed (by
+// should contain the logic to see if the actions were already performed (by
 // someone else or by this node) or if the execute function succeeded (e.g the
 // data was committed to a layer 1 smart contract state). This function will be
 // used to check if the execute operation succeeded in addition to the receipt
@@ -148,11 +149,11 @@ func (s *SimpleExampleTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 		client := t.GetClient()
 
 		// The GetCallOpts will retrieve the information in layer 1 smart contracts with
-		// a delay of FINALITY_BLOCKS. I.e, the information will be there after `X`
-		// blocks has passed after the transaction was executed. We do this, to avoid
-		// chain re-orgs.
+		// a delay of FINALITY_BLOCKS, i.e., the information will be
+		// retrieved at current block height minus FINALITY_BLOCKS
+		// in order to become more resilient to chain re-orgs.
 
-		callOpts, err := client.GetCallOpts(ctx, s.GetClient().GetDefaultAccount())
+		callOpts, err := client.GetCallOpts(ctx, t.GetClient().GetDefaultAccount())
 		if err != nil {
 			return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 		}
