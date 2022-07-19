@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
+import { assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, showState } from "./setup";
@@ -18,9 +19,10 @@ describe("Testing BToken Settings", async () => {
   });
 
   it("Should fail to set split not being an admin", async () => {
-    await expect(
-      fixture.bToken.connect(user).setSplits(300, 300, 300, 100)
-    ).to.be.revertedWith("1700");
+    await assertErrorMessage(
+      fixture.bToken.connect(user).setSplits(300, 300, 300, 100),
+      `SenderNotAdmin("${user.address}")`
+    );
   });
 
   it("Should fail to set splits greater than one unit", async () => {
