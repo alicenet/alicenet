@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { MockMerkleProofLibrary } from "../../typechain-types";
+import { assertErrorMessage } from "../chai-helpers";
 import { deployLibrary } from "./setup";
 
 const ZERO_BYTES32 =
@@ -308,9 +309,8 @@ describe("Testing Merkle Proof Library", async () => {
       const proofValue = VALID_PROOF_VALUE;
       const height = INVALID_HEIGHT_ABOVE_RANGE_MAX;
 
-      await expect(
-        MerkleProofLibrary.computeLeafHash(key, proofValue, height)
-      ).to.be.revertedWith(
+      await assertErrorMessage(
+        MerkleProofLibrary.computeLeafHash(key, proofValue, height),
         "MerkleProofLibrary: Invalid proofHeight, should be [0, 256]"
       );
     });
@@ -360,7 +360,7 @@ describe("Testing Merkle Proof Library", async () => {
       const bitset = VALID_BITSET;
       const height = INVALID_HEIGHT_ABOVE_RANGE_MAX;
 
-      await expect(
+      await assertErrorMessage(
         MerkleProofLibrary.checkProof(
           auditPath,
           root,
@@ -368,8 +368,7 @@ describe("Testing Merkle Proof Library", async () => {
           key,
           bitset,
           height
-        )
-      ).to.be.revertedWith(
+        ),
         "MerkleProofLibrary: proofHeight should be in the range [0, 256]"
       );
     });
