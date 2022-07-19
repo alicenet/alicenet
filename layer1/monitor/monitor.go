@@ -373,8 +373,6 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 	snapshotState := &state.SnapshotState{
 		Account:     eth.GetDefaultAccount(),
 		BlockHeader: bh,
-		RawBClaims:  make([]byte, 0),
-		RawSigGroup: make([]byte, 0),
 	}
 
 	err := state.SaveSnapshotState(monDB, snapshotState)
