@@ -31,7 +31,7 @@ let bridgePool: any;
 let depositCallData: any;
 let encodedDepositCallData: string;
 
-const bTokenFeeInETH = 10;
+const bTokenFeeInETH = 1000;
 
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 const merkleProof =
@@ -52,7 +52,7 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
   ],
   [burnedUTXO]
 );
-const ethFee = 1;
+const ethFee = 2;
 const refund = valueSent.sub(ethFee);
 const chainId = 1337;
 
@@ -123,7 +123,7 @@ tokenTypes.forEach(function (run) {
         showState("Initial", await getState(fixture, bridgePool));
       });
 
-      it("Should make a deposit with parameters", async () => {
+      it("Should make a deposit", async () => {
         expectedState = await getState(fixture, bridgePool);
         const erc = run.it as keyof typeof expectedState.Balances;
         expectedState.Balances[erc].user -= BigNumber.from(
@@ -190,7 +190,7 @@ tokenTypes.forEach(function (run) {
         await expect(
           fixture.bToken
             .connect(user)
-            .payAndDeposit(maxEth, maxTokens - 2, encodedDepositCallData, {
+            .payAndDeposit(maxEth, maxTokens - 100, encodedDepositCallData, {
               value: valueSent,
             })
         ).to.be.revertedWith(reason);

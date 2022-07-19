@@ -15,4 +15,5 @@ library BTokenErrorCodes {
     bytes32 public constant BTOKEN_MINIMUM_BURN_NOT_MET = "309"; //"BToken: Couldn't burn the minEth amount"
     bytes32 public constant BTOKEN_SPLIT_VALUE_SUM_ERROR = "310"; //"BToken: All the split values must sum to _PERCENTAGE_SCALE!"
     bytes32 public constant BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY = "311"; //"BToken: The number of tokens to be burned is greater than the Total Supply!"
+    bytes32 public constant BTOKEN_ERC_MINT_INSUFFICIENT_ETH = "312"; //"BToken: could not mint ERC deposit given the ether sent!"
 }

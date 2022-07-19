@@ -99,8 +99,11 @@ contract BToken is
         );
         //if the message has value (eth payment) require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
-            uint256 ethFee = _bTokensToEthMint(_poolBalance, totalSupply(), bTokenFee);
-            require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
+            uint256 ethFee = _bTokensToEthMint(totalSupply(), bTokenFee);
+            require(
+                maxEth <= ethFee && msg.value >= ethFee,
+                string(abi.encodePacked(BTokenErrorCodes.BTOKEN_ERC_MINT_INSUFFICIENT_ETH))
+            );
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
                 payable(msg.sender).transfer(refund);
@@ -526,10 +529,10 @@ contract BToken is
         return _min(poolBalance_, _fp(totalSupply_) - _fp(totalSupply_ - numBTK_));
     }
 
-    // Internal function that calculates the number of eth required to store (mint) ERC tokens in our chain
-    function _btokensToEthMint(uint256 totalSupply_, uint256 numBTK_)
+    // Internal function that calculates the number of eth required to deposit (mint) ERC tokens in our chain
+    function _bTokensToEthMint(uint256 totalSupply_, uint256 numBTK_)
         internal
-        pure
+        view
         returns (uint256 numEth)
     {
         return _fp(totalSupply_ + numBTK_) - _fp(totalSupply_);

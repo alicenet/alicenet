@@ -191,7 +191,7 @@ contract BridgeRouter is
         bytes memory data
     ) public onlyBToken returns (uint256 btokenFeeAmount) {
         //get the fee to deposit a token into the bridge
-        btokenFeeAmount = 10; // TODO: gus get proper value for bToken fee
+        btokenFeeAmount = 1000; // TODO: @gus get proper value for bToken fee
         require(
             maxTokens >= btokenFeeAmount,
             string(abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_INSUFFICIENT_FUNDS))

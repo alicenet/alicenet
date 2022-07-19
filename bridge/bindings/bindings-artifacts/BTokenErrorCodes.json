@@ -53,6 +53,19 @@
   },
   {
     "inputs": [],
+    "name": "BTOKEN_ERC_MINT_INSUFFICIENT_ETH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "BTOKEN_INVALID_BALANCE",
     "outputs": [
       {
