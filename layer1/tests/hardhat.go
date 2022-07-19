@@ -137,12 +137,14 @@ func SetCommandStdOut(cmd *exec.Cmd) {
 func executeCommand(dir, command string, args ...string) ([]byte, error) {
 	logger := logging.GetLogger("test")
 	cmdArgs := strings.Split(strings.Join(args, " "), " ")
+	var errb bytes.Buffer
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = dir
+	cmd.Stderr = &errb
 	output, err := cmd.Output()
 	if err != nil {
-		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, string(output))
+		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, errb.String())
 		return output, err
 	}
 	logger.Tracef("Command Executed: %v %s in dir: %v. \n%s\n", command, cmdArgs, dir, string(output))
