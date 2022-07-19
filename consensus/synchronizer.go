@@ -524,7 +524,6 @@ func (s *Synchronizer) setupLoops() {
 
 	accusationManagerLoopConfig := newLoopConfig().
 		withName("AccusationManagerLoop").
-		//withInitialDelay(9*constants.MsgTimeout).
 		withFn(s.accusationMan.Poll).
 		withFreq(100 * time.Millisecond).
 		withDelayOnConditionFailure(100 * time.Millisecond).

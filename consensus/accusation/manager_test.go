@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/blockchain/objects"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
@@ -224,7 +224,10 @@ func TestManagerPollCache(t *testing.T) {
 
 // accuseAllRoundStates is a detector function that accuses all round states because it's a test
 func accuseAllRoundStates(rs *objs.RoundState) (objs.Accusation, bool) {
-	acc := &objs.BaseAccusation{}
+	acc := &objs.BaseAccusation{
+		UUID:  uuid.New(),
+		State: objs.Created,
+	}
 	return acc, true
 }
 
@@ -236,7 +239,7 @@ func TestManagerAccusable(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
 	// attach accuseAllRoundStates to the manager processing pipeline
-	testProxy.manager.processingPipeline = append(testProxy.manager.processingPipeline, accuseAllRoundStates)
+	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
 
 	// start workers
 	testProxy.manager.StartWorkers()
@@ -307,7 +310,7 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
 	// attach accuseAllRoundStates to the manager processing pipeline
-	testProxy.manager.processingPipeline = append(testProxy.manager.processingPipeline, accuseAllRoundStates)
+	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
 
 	// create accusation
 	accusation := &objs.BaseAccusation{
@@ -347,7 +350,7 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
 	// attach accuseAllRoundStates to the manager processing pipeline
-	testProxy.manager.processingPipeline = append(testProxy.manager.processingPipeline, accuseAllRoundStates)
+	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
 
 	// create a Persisted accusation and store in DB
 	accusation := &objs.BaseAccusation{

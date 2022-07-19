@@ -9,14 +9,16 @@ import (
 type AccusationState uint8
 
 const (
+	// This means the accusation is not yet initalized and thus not valid.
+	Unset AccusationState = iota
 	// Created means the accusation has been identified but not yet persisted in any way.
-	Created AccusationState = 0
+	Created AccusationState = iota
 	// Persisted means the accusation has been identified and persisted in the consensus DB before being processed
-	Persisted AccusationState = 1
+	Persisted AccusationState = iota
 	// ScheduledForExecution means the accusation is persisted in consesus DB and scheduled for execution, or executing, on the task manager. An accusation should only be scheduled for execution when in the Persisted state
-	ScheduledForExecution AccusationState = 2
+	ScheduledForExecution AccusationState = iota
 	// Completed means the accusation has been executed and no action is needed. An accusation should only be completed when in the ScheduledForExecution state
-	Completed AccusationState = 3
+	Completed AccusationState = iota
 )
 
 type Accusation interface {

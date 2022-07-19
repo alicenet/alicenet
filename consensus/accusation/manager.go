@@ -47,7 +47,7 @@ func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 // workers can process it, offloading the synchronizer loop.
 type Manager struct {
 	sync.Mutex                                    // this is currently being used by workers when interacting with rsCache
-	processingPipeline              []detector    // the pipeline of detector functions
+	detectionPipeline               []detector    // the pipeline of detector functions
 	database                        *db.Database  // the database to store detected accusations
 	sstore                          *lstate.Store // the state store to get round states from
 	logger                          *logrus.Logger
@@ -62,45 +62,22 @@ type Manager struct {
 
 // NewManager creates a new *Manager
 func NewManager(database *db.Database, sstore *lstate.Store, logger *logrus.Logger) *Manager {
-	detectorLogics := make([]detector, 0)
-	detectorLogics = append(detectorLogics, detectMultipleProposal)
-	detectorLogics = append(detectorLogics, detectDoubleSpend)
-
-	workQ := make(chan *lstate.RoundStates, 1)
-	accusationQ := make(chan objs.Accusation, 1)
-	closeChan := make(chan struct{}, 1)
+	detectors := make([]detector, 0)
 
 	m := &Manager{}
-	err := m.Init(database, sstore, logger, detectorLogics, workQ, accusationQ, closeChan)
-	if err != nil {
-		panic(fmt.Errorf("failed to initialize Accusation.Manager: %v", err))
-	}
-
-	return m
-}
-
-func (m *Manager) Init(
-	database *db.Database,
-	sstore *lstate.Store,
-	logger *logrus.Logger,
-	detectorLogics []detector,
-	workQ chan *lstate.RoundStates,
-	accusationQ chan objs.Accusation,
-	closeChan chan struct{}) error {
-
-	m.processingPipeline = detectorLogics
+	m.detectionPipeline = detectors
 	m.database = database
 	m.logger = logger
 	m.sstore = sstore
 	m.rsCache = make(map[string]*rsCacheStruct)
-	m.workQ = workQ
-	m.accusationQ = accusationQ
-	m.closeChan = closeChan
+	m.workQ = make(chan *lstate.RoundStates, 1)
+	m.accusationQ = make(chan objs.Accusation, 1)
+	m.closeChan = make(chan struct{}, 1)
 	m.unpersistedCreatedAccusations = make([]objs.Accusation, 0)
 	m.unpersistedScheduledAccusations = make([]objs.Accusation, 0)
 	m.wg = &sync.WaitGroup{}
 
-	return nil
+	return m
 }
 
 // StartWorkers starts the workers that process the work queue
@@ -357,7 +334,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 
 // findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
 func (m *Manager) findAccusation(rs *objs.RoundState) {
-	for _, detector := range m.processingPipeline {
+	for _, detector := range m.detectionPipeline {
 		accusation, found := detector(rs)
 		if found {
 			m.accusationQ <- accusation
