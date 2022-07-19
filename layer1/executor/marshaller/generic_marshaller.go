@@ -34,7 +34,7 @@ func (registry *TypeRegistry) RegisterInstanceType(t interface{}) {
 		registry.b = make(map[string]reflect.Type)
 	})
 
-	name, tipe := GetNameType(t)
+	name, tipe, _ := registry.GetNameType(t)
 
 	registry.a[tipe] = name
 	registry.b[name] = tipe

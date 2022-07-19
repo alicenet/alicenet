@@ -371,10 +371,13 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, taskResponse Int
 	default:
 		logger := tm.logger
 		task, present := tm.Schedule[taskResponse.Id]
-		if present {
-			logger = GetTaskLoggerComplete(task)
+		if !present {
+			tm.logger.Warnf("received an internal response for non existing task with id %s", taskResponse.Id)
+			return nil
 		}
-		// todo: send task response here
+
+		task.TaskResponse.writeResponse(taskResponse.Err)
+		logger = GetTaskLoggerComplete(task)
 		if taskResponse.Err != nil {
 			if !errors.Is(taskResponse.Err, context.Canceled) {
 				logger.Errorf("Task executed with error: %v", taskResponse.Err)
@@ -600,7 +603,10 @@ func (tm *TaskManager) loadState() error {
 			task.InternalState = NotStarted
 			tm.Schedule[task.Id] = task
 		} else if task.InternalState == Killed {
-			tm.remove(task.Id)
+			err := tm.remove(task.Id)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
