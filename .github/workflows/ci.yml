@@ -1,144 +1,164 @@
 name: Alicenet CI
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    workflow_dispatch:
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+
+env:
+    NODE_VERSION: 16.x
+    DKG_TESTS_PATH: github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.ref }}
+    cancel-in-progress: true
 
 defaults:
-  run:
-    shell: bash
+    run:
+        shell: bash
 
 jobs:
-  node-unit-tests:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        include:
-          - test-group: "[0-9a-dA-D]"
-          - test-group: "[eE]"
-            sub-filter-exclude: "ethdkg/phases"
-          - test-group: "ethdkg"
-            sub-filter-include: "phases"
-            sub-filter-exclude: "accusations"
-          - test-group: "ethdkg"
-            sub-filter-include: "phases/accusations"
-          - test-group: "[f-qF-Q]"
-          - test-group: "[r-sR-S]"
-          - test-group: "[t-zT-Z]"
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
-          cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
-      - run: npm run clean
-      - run: npm run compile
-      - uses: ./.github/actions/solidity-tests
-        with:
-          test-group: ${{ matrix.test-group }}
-          sub-filter-include: ${{ matrix.sub-filter-include }}
-          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
+    solidity-build:
+        runs-on: ubuntu-20.04
+        timeout-minutes: 10
+        defaults:
+            run:
+                working-directory: ./bridge
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/node-cache
 
-  node-lint:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
-          cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
-      - run: npm run clean
-      - run: npm run compile
-      - run: npm run typechain
-      - run: npm run lint-solidity
-      - run: npm run lint
+    solidity-unit-tests:
+        runs-on: ubuntu-20.04
+        timeout-minutes: 15
+        strategy:
+            matrix:
+                include:
+                    - test-group: "[0-9a-dA-D]"
+                    - test-group: "[eE]"
+                      sub-filter-exclude: "ethdkg/phases"
+                    - test-group: "ethdkg"
+                      sub-filter-include: "phases"
+                      sub-filter-exclude: "accusations"
+                    - test-group: "ethdkg"
+                      sub-filter-include: "phases/accusations"
+                    - test-group: "[f-qF-Q]"
+                    - test-group: "[r-sR-S]"
+                    - test-group: "[t-zT-Z]"
+        needs: solidity-build
+        defaults:
+            run:
+                working-directory: ./bridge
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/node-cache
+            - uses: ./.github/actions/solidity-tests
+              with:
+                  test-group: ${{ matrix.test-group }}
+                  sub-filter-include: ${{ matrix.sub-filter-include }}
+                  sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  go-lint:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: golangci/golangci-lint-action@v3
+    solidity-linter:
+        runs-on: ubuntu-20.04
+        timeout-minutes: 10
+        needs: solidity-build
+        defaults:
+            run:
+                working-directory: ./bridge
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/node-cache
+            - run: npm run lint-solidity
 
-  go-unit-tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-20.04 ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: go build ./...
-      - name: Set up gotestfmt
-        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      - name: Run unit tests
-        timeout-minutes: 20
-        run: |
-          set -euo pipefail
-          go test -race -json -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.out
-          verbose: true
+    typescript-linter:
+        runs-on: ubuntu-20.04
+        timeout-minutes: 10
+        needs: solidity-build
+        defaults:
+            run:
+                working-directory: ./bridge
+                shell: bash
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/node-cache
+            - run: npm run clean && npm run compile && npm run typechain
+            - run: npm run lint
 
-  go-integration-tests:
-    runs-on: ${{ matrix.os }}
-    needs: go-unit-tests
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-20.04 ]
-        test-cmd: [
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_2,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_3,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_2,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_3,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_2,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestKeyShareSubmission,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_2,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeShareDistributionTask_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingShareDistributionTask_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingRegistrationTask_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingKeySharesTask,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
-          # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
-          github.com/alicenet/alicenet/layer1/ethereum/tests,
-          github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state
-        ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - name: Set up gotestfmt
-        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      - name: Run tests ${{ matrix.test-cmd }}
-        timeout-minutes: 45
-        run: |
-          set -euo pipefail
-          ./scripts/main.sh init 5
-          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+    golang-linter:
+        runs-on: ubuntu-20.04
+        timeout-minutes: 10
+        continue-on-error: true
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/alicenet-config
+            - uses: golangci/golangci-lint-action@v3
+
+    golang-unit-tests:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ ubuntu-20.04 ]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/alicenet-config
+            - run: go build ./...
+            - name: Set up gotestfmt
+              run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+            - name: Run unit tests
+              timeout-minutes: 20
+              run: |
+                  set -euo pipefail
+                  go test -json -timeout=20m -covermode=atomic -coverprofile=coverage.out `go list ./... | grep -v 
+$DKG_TESTS_PATH` 2>&1 | tee /tmp/gotest.log | gotestfmt
+            - uses: codecov/codecov-action@v3
+              with:
+                  files: ./coverage.out
+                  verbose: true
+
+    golang-dkg-tests:
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ ubuntu-20.04 ]
+                test-groups: [
+                   TestShareDistribution_Group_1,
+                   TestShareDistribution_Group_2,
+                   TestShareDistribution_Group_3,
+                   TestRegisterTask_Group_1,
+                   TestRegisterTask_Group_2,
+                   TestRegisterTask_Group_3,
+                   TestMPKSubmission_Group_1,
+                   TestMPKSubmission_Group_2,
+                   TestKeyShareSubmission,
+                   TestGPKjSubmission_Group_1,
+                   TestGPKjSubmission_Group_2,
+                   TestDisputeShareDistributionTask_Group_1,
+                   TestDisputeShareDistributionTask_Group_2,
+                   TestDisputeMissingShareDistributionTask_Group_1,
+                   TestDisputeMissingShareDistributionTask_Group_2,
+                   TestDisputeMissingRegistrationTask_Group_1,
+                   TestDisputeMissingRegistrationTask_Group_2,
+                   TestDisputeMissingKeySharesTask,
+                   TestDisputeMissingGPKjTask_Group_1,
+                   TestDisputeMissingGPKjTask_Group_2,
+                   TestGPKjDispute,
+                   TestCompletion_Group_1,
+                   TestCompletion_Group_2,
+                   TestCompletion_Group_3,
+                ]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/actions/alicenet-config
+            - run: go build ./...
+            - name: Set up gotestfmt
+              run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+            - name: Run tests ${{ matrix.test-groups }}
+              timeout-minutes: 20
+              run: |
+                  go test -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee 
+/tmp/gotest.log | gotestfmt
+
