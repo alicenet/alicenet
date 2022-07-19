@@ -18,6 +18,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -223,7 +224,12 @@ func TestManagerPollCache(t *testing.T) {
 
 // accuseAllRoundStates is a detector function that accuses all round states because it's a test
 func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool) {
-	id := []byte("01234567890123456789012345678901")
+	uuid := uuid.New()
+	id, err := uuid.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+
 	acc := &objs.BaseAccusation{
 		State: objs.Created,
 	}
