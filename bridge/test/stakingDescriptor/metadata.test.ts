@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { StakingDescriptorMock } from "../../typechain-types/StakingDescriptorMock";
+import { StakingDescriptorMock } from "../../typechain-types/test/contract-mocks/metadata/StakingDescriptorMock";
 import { expect } from "../chai-setup";
 
 describe("stakingDescriptor: Tests stakingDescriptor methods", async () => {
