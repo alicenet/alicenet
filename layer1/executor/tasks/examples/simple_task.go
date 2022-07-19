@@ -24,13 +24,13 @@ var _ tasks.Task = &SimpleExampleTask{}
 
 // OPTIONAL: Auxiliary function to create this task
 func NewSimpleExampleTask(start uint64, end uint64) *SimpleExampleTask {
-	snapshotTask := &SimpleExampleTask{
+	exampleTask := &SimpleExampleTask{
 		// Parameters to start the base task. Check the tasks parameters to see the
 		// description of each field.
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 		Foo:      0,
 	}
-	return snapshotTask
+	return exampleTask
 }
 
 // Prepare prepares for work to be done by the task. Put in here any preparation
@@ -86,7 +86,6 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 	// If this function needs to read/write state and share with the other tasks use
 	// the db. Check the `Prepare` documentation above for more information.
 
-	// client := t.GetClient()
 	/*
 
 		exampleState, err := state.GetExampleState(t.GetDB())
@@ -100,7 +99,7 @@ func (s *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 	// needs to call a smart contract a transaction should be returned. E.g
 
 	/*
-
+		client := t.GetClient()
 		txnOpts, err := client.GetTransactionOpts(ctx, exampleState.Account)
 		if err != nil {
 			// if it failed here, it means that we are not willing to pay the tx costs based on config or we
