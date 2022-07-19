@@ -10,6 +10,7 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
@@ -55,17 +56,17 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         require(
             IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
         );
         require(
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            string(abi.encodePacked(SNAPSHOT_CONSENSUS_RUNNING))
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
         //get the last snapshot
         Snapshot memory lastSnapshot = getLatestSnapshot();
         require(
             block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
-            string(abi.encodePacked(SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
         Epoch storage epochReg = _epochReg();
         uint32 epoch = _epoch._value + 1;
@@ -107,7 +108,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             require(
                 keccak256(abi.encodePacked(masterPublicKey)) ==
                     IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                string(abi.encodePacked(SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
             );
 
             require(
@@ -116,7 +117,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     signature,
                     masterPublicKey
                 ),
-                string(abi.encodePacked(SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
             );
         }
 
@@ -125,12 +126,12 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         );
         require(
             epoch * _epochLength == blockClaims.height,
-            string(abi.encodePacked(SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
         );
 
         require(
             blockClaims.chainId == _chainId,
-            string(abi.encodePacked(SNAPSHOT_INCORRECT_CHAIN_ID))
+            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
         );
 
         bool isSafeToProceedConsensus = true;
@@ -164,10 +165,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         Epoch storage epochReg = _epochReg();
         {
-            require(epochReg.isZero(), string(abi.encodePacked(SNAPSHOT_MIGRATION_NOT_ALLOWED)));
+            require(
+                epochReg.isZero(),
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
+            );
             require(
                 groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
-                string(abi.encodePacked(SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
             );
         }
 
@@ -178,7 +182,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             );
             require(
                 blockClaims.height % _epochLength == 0,
-                string(abi.encodePacked(SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
+                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
             );
             epoch = getEpochFromHeight(blockClaims.height);
             _setSnapshot(Snapshot(block.number, blockClaims));
@@ -262,13 +266,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
 
-        require(ok, string(abi.encodePacked(SNAPSHOT_NOT_IN_BUFFER)));
+        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
         return data;
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
         (bool ok, Snapshot memory data) = _getLatestSnapshot();
-        require(ok, string(abi.encodePacked(SNAPSHOT_NOT_IN_BUFFER)));
+        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
         return data;
     }
 
