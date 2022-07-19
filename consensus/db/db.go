@@ -13,7 +13,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -1892,14 +1891,10 @@ func (db *Database) GetPendingHdrLeafKeysIter(txn *badger.Txn) *PendingHdrLeafIt
 
 // accusations
 
-func (db *Database) makeAccusationKey(uuid uuid.UUID) ([]byte, error) {
-	uuidBinary, err := uuid.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
+func (db *Database) makeAccusationKey(id [32]byte) ([]byte, error) {
 	key := &objs.AccusationKey{
 		Prefix: dbprefix.PrefixAccusation(),
-		UUID:   uuidBinary,
+		ID:     id,
 	}
 	return key.MarshalBinary()
 }
@@ -1912,7 +1907,7 @@ func (db *Database) makeAccusationIterKey() ([]byte, error) {
 }
 
 func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
-	key, err := db.makeAccusationKey(a.GetUUID())
+	key, err := db.makeAccusationKey(a.GetID())
 	if err != nil {
 		return err
 	}
@@ -1924,8 +1919,8 @@ func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
 	return nil
 }
 
-func (db *Database) GetAccusation(txn *badger.Txn, uuid uuid.UUID) (objs.Accusation, error) {
-	key, err := db.makeAccusationKey(uuid)
+func (db *Database) GetAccusation(txn *badger.Txn, id [32]byte) (objs.Accusation, error) {
+	key, err := db.makeAccusationKey(id)
 	if err != nil {
 		return nil, err
 	}
@@ -1937,8 +1932,8 @@ func (db *Database) GetAccusation(txn *badger.Txn, uuid uuid.UUID) (objs.Accusat
 	return result, nil
 }
 
-func (db *Database) DeleteAccusation(txn *badger.Txn, uuid uuid.UUID) error {
-	prefix, err := db.makeAccusationKey(uuid)
+func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
+	prefix, err := db.makeAccusationKey(id)
 	if err != nil {
 		return err
 	}

@@ -11,12 +11,11 @@ import (
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detector = func(rs *objs.RoundState) (objs.Accusation, bool)
+type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
@@ -147,7 +146,6 @@ func (m *Manager) Poll() error {
 		return nil
 	case acc := <-m.accusationQ:
 		// an accusation has been formed and it needs to be sent to the smart contracts
-		acc.SetUUID(uuid.New())
 		m.logger.Debugf("Got an accusation from a worker: %#v", acc)
 		m.unpersistedCreatedAccusations = append(m.unpersistedCreatedAccusations, acc)
 	default:
@@ -296,7 +294,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 			// 	"vAddr":                   valAddress,
 			// }).Debug("AccusationManager: processing roundState")
 
-			m.findAccusation(rs)
+			m.findAccusation(rs, lrs)
 
 			// update rsCache
 			rsCacheEntry.height = rs.RCert.RClaims.Height
@@ -333,9 +331,9 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 }
 
 // findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
-func (m *Manager) findAccusation(rs *objs.RoundState) {
+func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	for _, detector := range m.detectionPipeline {
-		accusation, found := detector(rs)
+		accusation, found := detector(rs, lrs)
 		if found {
 			m.accusationQ <- accusation
 			break
