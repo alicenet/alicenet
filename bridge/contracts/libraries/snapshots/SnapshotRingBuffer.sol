@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "hardhat/console.sol";
+
 struct Epoch {
     uint32 _value;
 }
