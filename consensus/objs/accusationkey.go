@@ -11,7 +11,7 @@ import (
 // AccusationKey stores DB metadata about an accusation
 type AccusationKey struct {
 	Prefix []byte
-	UUID   []byte
+	ID     [32]byte
 }
 
 // MarshalBinary takes the AccusationKey object and returns
@@ -23,11 +23,11 @@ func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 
 	key := []byte{}
 	Prefix := utils.CopySlice(a.Prefix)
-	uuid := make([]byte, hex.EncodedLen(len(a.UUID)))
-	_ = hex.Encode(uuid, a.UUID)
+	id := make([]byte, hex.EncodedLen(len(a.ID)))
+	_ = hex.Encode(id, a.ID[:])
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
-	key = append(key, uuid...)
+	key = append(key, id...)
 
 	return key, nil
 }
@@ -43,12 +43,12 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrCorrupt
 	}
 	a.Prefix = splitData[0]
-	UUID := make([]byte, hex.DecodedLen(len(splitData[1])))
-	_, err := hex.Decode(UUID, splitData[1])
+	id := make([]byte, hex.DecodedLen(len(splitData[1])))
+	_, err := hex.Decode(id, splitData[1])
 	if err != nil {
 		return err
 	}
-	a.UUID = UUID
+	copy(a.ID[:], id)
 
 	return nil
 }

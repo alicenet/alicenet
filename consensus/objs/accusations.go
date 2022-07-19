@@ -2,8 +2,6 @@ package objs
 
 import (
 	"errors"
-
-	"github.com/google/uuid"
 )
 
 type AccusationState uint8
@@ -23,8 +21,8 @@ const (
 
 type Accusation interface {
 	SubmitToSmartContracts() error
-	GetUUID() uuid.UUID
-	SetUUID(uuid uuid.UUID)
+	GetID() [32]byte
+	SetID(id [32]byte)
 	GetPersistenceTimestamp() uint64
 	SetPersistenceTimestamp(timestamp uint64)
 	GetState() AccusationState
@@ -34,7 +32,7 @@ type Accusation interface {
 var ErrNotImpl = errors.New("not implemented")
 
 type BaseAccusation struct {
-	UUID                 uuid.UUID
+	ID                   [32]byte
 	PersistenceTimestamp uint64
 	State                AccusationState
 }
@@ -43,12 +41,12 @@ func (a *BaseAccusation) SubmitToSmartContracts() error {
 	return ErrNotImpl
 }
 
-func (a *BaseAccusation) GetUUID() uuid.UUID {
-	return a.UUID
+func (a *BaseAccusation) GetID() [32]byte {
+	return a.ID
 }
 
-func (a *BaseAccusation) SetUUID(uuid uuid.UUID) {
-	a.UUID = uuid
+func (a *BaseAccusation) SetID(id [32]byte) {
+	a.ID = id
 }
 
 func (a *BaseAccusation) GetPersistenceTimestamp() uint64 {
