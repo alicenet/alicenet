@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/utils"
@@ -141,7 +140,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 	logger.Info("trying to commit snapshot")
-	txn, err := ethereum.GetContracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
+	txn, err := t.GetContractsHandler().EthereumContracts().Snapshots().Snapshot(txnOpts, snapshotState.RawSigGroup, snapshotState.RawBClaims)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to send snapshot: %v", err), true)
 	}
@@ -172,7 +171,7 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	height, err := ethereum.GetContracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
+	height, err := t.GetContractsHandler().EthereumContracts().Snapshots().GetAliceNetHeightFromLatestSnapshot(opts)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to determine height: %v", err), true)
 	}

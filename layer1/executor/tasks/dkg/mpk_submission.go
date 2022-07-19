@@ -12,7 +12,6 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/utils"
@@ -154,7 +153,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 
 	// Submit MPK
 	logger.Infof("submitting master public key:%v", dkgState.MasterPublicKey)
-	txn, err := ethereum.GetContracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().SubmitMasterPublicKey(txnOpts, dkgState.MasterPublicKey)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf("submitting master public key failed: %v", err), true)
 	}
@@ -190,7 +189,7 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	mpkHash, err := ethereum.GetContracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
+	mpkHash, err := t.GetContractsHandler().EthereumContracts().Ethdkg().GetMasterPublicKeyHash(callOpts)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to retrieve mpk from smart contracts: %v", err), true)
 	}

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/tests"
@@ -33,7 +32,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 
 		mpkSubmissionTask := suite.MpkSubmissionTasks[idx]
-		err := mpkSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MpkSubmissionTasks", "tak-id", nil)
+		err := mpkSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MpkSubmissionTasks", "tak-id", nil)
 		assert.Nil(t, err)
 		err = mpkSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -74,7 +73,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		isMPKSet, err := ethereum.GetContracts().Ethdkg().IsMasterPublicKeySet(callOpts)
+		isMPKSet, err := fixture.Contracts.EthereumContracts().Ethdkg().IsMasterPublicKeySet(callOpts)
 		assert.Nil(t, err)
 		assert.True(t, isMPKSet)
 
@@ -113,7 +112,7 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
 	task := suite.MpkSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -135,7 +134,7 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -159,7 +158,7 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	assert.Nil(t, err)
 
 	task := suite.MpkSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(ctx)
@@ -179,7 +178,7 @@ func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
 		assert.Nil(t, err)
 
 		task := suite.MpkSubmissionTasks[idx]
-		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", "task-id", nil)
+		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)

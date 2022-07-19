@@ -7,8 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 )
@@ -98,7 +96,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
 		dkgState.Participants[defaultAddr.Address].KeyShareG2s,
 	)
-	txn, err := ethereum.GetContracts().Ethdkg().SubmitKeyShare(txnOpts,
+	txn, err := t.GetContractsHandler().EthereumContracts().Ethdkg().SubmitKeyShare(txnOpts,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1s,
 		dkgState.Participants[defaultAddr.Address].KeyShareG1CorrectnessProofs,
 		dkgState.Participants[defaultAddr.Address].KeyShareG2s)
@@ -126,7 +124,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *task
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := t.GetContractsHandler().EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("error getting ETHDKGPhase: %v", err), true)
 	}
@@ -138,7 +136,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *task
 	}
 
 	// Check the key share submission status
-	status, err := state.CheckKeyShare(ctx, ethereum.GetContracts().Ethdkg(), logger, callOpts, defaultAccount.Address, dkgState.Participants[defaultAccount.Address].KeyShareG1s)
+	status, err := state.CheckKeyShare(ctx, t.GetContractsHandler().EthereumContracts().Ethdkg(), logger, callOpts, defaultAccount.Address, dkgState.Participants[defaultAccount.Address].KeyShareG1s)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf("error checkingKeyShare: %v", err), true)
 	}
