@@ -60,17 +60,17 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
 
-	height, err := ethereum.GetContracts().Snapshots().GetCommittedHeightFromLatestSnapshot(opts)
+	height, err := t.GetContractsHandler().EthereumContracts().Snapshots().GetCommittedHeightFromLatestSnapshot(opts)
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf("failed to determine committed height: %v", err), true)
 	}
 
-	desperationFactor, err := ethereum.GetContracts().Snapshots().GetSnapshotDesperationFactor(opts)
+	desperationFactor, err := t.GetContractsHandler().EthereumContracts().Snapshots().GetSnapshotDesperationFactor(opts)
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf("failed to determine desperation factor: %v", err), true)
 	}
 
-	desperationDelay, err := ethereum.GetContracts().Snapshots().GetSnapshotDesperationDelay(opts)
+	desperationDelay, err := t.GetContractsHandler().EthereumContracts().Snapshots().GetSnapshotDesperationDelay(opts)
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf("failed to determine desperation delay: %v", err), true)
 	}
