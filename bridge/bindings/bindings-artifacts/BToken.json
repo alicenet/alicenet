@@ -5,6 +5,17 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "SenderNotAdmin",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {

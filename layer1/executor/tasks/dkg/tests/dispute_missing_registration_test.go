@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 
@@ -24,7 +23,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -54,7 +53,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -70,7 +69,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -100,7 +99,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
@@ -116,7 +115,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -146,7 +145,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }

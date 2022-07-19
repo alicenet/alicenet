@@ -10,7 +10,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,11 +18,11 @@ import (
 )
 
 // RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
-func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth layer1.Client, addr common.Address) ([4]*big.Int, error) {
+func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth layer1.Client, contracts layer1.AllSmartContracts, addr common.Address) ([4]*big.Int, error) {
 	var err error
 	var gpkjBig [4]*big.Int
 
-	ethdkg := ethereum.GetContracts().Ethdkg()
+	ethdkg := contracts.EthereumContracts().Ethdkg()
 
 	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {
