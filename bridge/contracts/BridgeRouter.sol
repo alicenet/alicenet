@@ -5,8 +5,10 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "hardhat/console.sol";
 
-/// @custom:salt Fees
+/// @custom:salt BridgeRouter
 /// @custom:deploy-type deployUpgradeable
 contract BridgeRouter is
     Initializable,
@@ -36,56 +38,30 @@ contract BridgeRouter is
     event BridgePoolCreated(address contractAddr);
     address private _implementation;
     uint256 nonce;
+    bool private publicPoolDeploymentEnabled = false;
+
+    modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
+        require(
+            msg.sender == _factoryAddress() || publicPoolDeploymentEnabled == true,
+            string(
+                abi.encodePacked(
+                    BridgeRouterErrorCodes.BRIDGEROUTER_POOL_DEPLOYMENT_TEMPORALLY_DISABLED
+                )
+            )
+        );
+        _;
+    }
 
     constructor(uint256 networkId_) ImmutableFactory(msg.sender) {
         _networkId = networkId_;
     }
 
     /**
-     * @dev this function can only be called by the btoken contract, when called this function will
-     * calculate the target pool address with the information in call data.
-     * The fee will be passed in as a parameter by the user and btoken verify the deposit happened before
-     * forwarding the call to this function.
-     * @param msgSender the original sender of the value
-     * @param maxTokens number of bTokens willing to pay for the deposit
-     * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version
-     */
-    function routeDeposit(
-        address msgSender,
-        uint256 maxTokens,
-        bytes memory data
-    ) public onlyBToken returns (uint256 btokenFeeAmount) {
-        //get the fee to deposit a token into the bridge
-        btokenFeeAmount = 10;
-        require(
-            maxTokens >= btokenFeeAmount,
-            string(abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_INSUFFICIENT_FUNDS))
-        );
-        // use abi decode to extract the information out of data
-        DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
-        //encode the salt with the information from
-        bytes32 poolSalt = getBridgePoolSalt(
-            depositCallData.ERCContract,
-            depositCallData.tokenType,
-            depositCallData.chainID,
-            depositCallData.poolVersion
-        );
-        // calculate the address of the pool
-        address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
-
-        //call the pool to initiate deposit
-        IBridgePool(poolAddress).deposit(msgSender, depositCallData.number);
-
-        emit DepositedERCToken(
-            nonce,
-            depositCallData.ERCContract,
-            msg.sender,
-            depositCallData.tokenType,
-            depositCallData.number,
-            _networkId
-        );
-        nonce++;
-        return btokenFeeAmount;
+     * @dev enables or disables public pool deployment
+     **/
+    function togglePublicPoolDeployment() public onlyFactory {
+        if (publicPoolDeploymentEnabled == true) publicPoolDeploymentEnabled = false;
+        else publicPoolDeploymentEnabled = true;
     }
 
     /**
@@ -93,13 +69,13 @@ contract BridgeRouter is
      * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by correspondent salt.
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
      * @param ercContract_ address of ERC20 source token contract
-     * @param implementationVersion_ address of the desired version of implementation
+     * @param implementationVersion_ version of BridgePool implementation to use
      */
     function deployNewLocalPool(
         uint8 tokenType_,
         address ercContract_,
         uint16 implementationVersion_
-    ) public {
+    ) public onlyFactoryOrPublicPoolDeploymentEnabled {
         bytes32 bridgePoolSalt = getBridgePoolSalt(
             ercContract_,
             tokenType_,
@@ -179,7 +155,7 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice deploys a thin proxy to the implementation identified by salt
+     * @notice creates a BridgePool contract with specific salt and bytecode returned by this contract fallback
      * @param salt_ salt of the implementation contract
      * @return contractAddr the address of the BridgePool
      */
@@ -201,7 +177,54 @@ contract BridgeRouter is
     }
 
     /**
-     * @notice routes to implementation
+     * @dev this function can only be called by the btoken contract, when called this function will
+     * calculate the target pool address with the information in call data.
+     * The fee will be passed in as a parameter by the user and btoken verify the deposit happened before
+     * forwarding the call to this function.
+     * @param msgSender the original sender of the value
+     * @param maxTokens max number of bTokens willing to pay for the deposit
+     * @param data contains information needed to perform deposit, ERCCONTRACTADDRESS, ChainID, Version
+     */
+    function routeDeposit(
+        address msgSender,
+        uint256 maxTokens,
+        bytes memory data
+    ) public onlyBToken returns (uint256 btokenFeeAmount) {
+        //get the fee to deposit a token into the bridge
+        btokenFeeAmount = 10;
+        require(
+            maxTokens >= btokenFeeAmount,
+            string(abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_INSUFFICIENT_FUNDS))
+        );
+        // use abi decode to extract the information out of data
+        DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
+        //encode the salt with the information from
+        bytes32 poolSalt = getBridgePoolSalt(
+            depositCallData.ERCContract,
+            depositCallData.tokenType,
+            depositCallData.chainID,
+            depositCallData.poolVersion
+        );
+        // calculate the address of the pool
+        address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
+
+        //call the pool to initiate deposit
+        IBridgePool(poolAddress).deposit(msgSender, depositCallData.number);
+
+        emit DepositedERCToken(
+            nonce,
+            depositCallData.ERCContract,
+            msg.sender,
+            depositCallData.tokenType,
+            depositCallData.number,
+            _networkId
+        );
+        nonce++;
+        return btokenFeeAmount;
+    }
+
+    /**
+     * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
      */
     fallback() external {
         address implementation_ = _implementation;

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/BToken.sol";
 import {BridgePoolErrorCodes} from "contracts/libraries/errorCodes/BridgePoolErrorCodes.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
-import "contracts/libraries/MerkleProofLibrary.sol";
+import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
@@ -85,10 +85,7 @@ contract LocalERC20BridgePoolV1 is
                 )
             )
         );
-        require(
-            merkleProof.checkProof(bClaims.stateRoot, merkleProof.computeLeafHash()),
-            string(abi.encodePacked(BridgePoolErrorCodes.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN))
-        );
+        merkleProof.verifyInclusion(bClaims.stateRoot);
 
         IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
     }

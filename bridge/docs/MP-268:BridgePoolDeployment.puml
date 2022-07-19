@@ -1,0 +1,21 @@
+@startuml
+title Bridge Pool Deployment
+Actor User #LightBlue
+Participant LocalERCImplementationV1 #LightGreen
+Participant BridgeRouter #Orange
+Participant Btoken #LightGoldenRodYellow
+Participant DepositNotifier #LightSalmon
+User -> BridgeRouter : deployNewLocalPool(ercAddress,tokenType,implVersion)
+BridgeRouter -> BridgeRouter : _deployStaticPool(getBPProxySalt(ercAddress,tokenType,implVersion))
+BridgeRouter -> BridgeRouter : getImplementationAddr(getBPImplSal())
+BridgeRouter -> BridgePool ** : create2 (bpProxySalt)
+BridgePool -> BridgeRouter : fallback (getByteCode())
+BridgeRouter -> BridgePool : Minimal Proxy bytecode (route to implementation)
+User -> Btoken : payAndDeposit
+Btoken -> BridgeRouter : routeDeposit
+BridgeRouter -> BridgePool : deposit
+BridgePool -> LocalERCImplementationV1 : deposit
+User -> BridgePool : withdraw
+BridgePool -> LocalERCImplementationV1 : withdraw
+LocalERCImplementationV1 -> DepositNotifier : doEmit
+@enduml

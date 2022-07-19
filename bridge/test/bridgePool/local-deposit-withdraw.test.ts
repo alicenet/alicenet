@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
+  factoryCallAnyFixture,
   Fixture,
   getContractAddressFromEventLog,
   getFixture,
@@ -64,6 +65,12 @@ tokenTypes.forEach(function (run) {
         fixture = await getFixture(true, true, false);
         const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
         // Deploy a new pool
+        await factoryCallAnyFixture(
+          fixture,
+          "bridgeRouter",
+          "togglePublicPoolDeployment",
+          []
+        );
         const deployNewPoolTransaction =
           await fixture.bridgeRouter.deployNewLocalPool(
             run.options.poolType,
@@ -166,12 +173,11 @@ tokenTypes.forEach(function (run) {
         const wrongMerkleProof =
           "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         expectedState = await getState(fixture, bridgePool);
-        const reason = ethers.utils.parseBytes32String(
-          await fixture.bridgePoolErrorCodesContract.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN()
-        );
         await expect(
           bridgePool.connect(user).withdraw(wrongMerkleProof, encodedBurnedUTXO)
-        ).to.be.revertedWith(reason);
+        ).to.be.revertedWith(
+          "MerkleProofLibrary: Invalid Inclusion Merkle proof!"
+        );
         expect(await getState(fixture, bridgePool)).to.be.deep.equal(
           expectedState
         );
@@ -200,12 +206,11 @@ tokenTypes.forEach(function (run) {
           encodedMockBlockClaims
         );
         expectedState = await getState(fixture, bridgePool);
-        const reason = ethers.utils.parseBytes32String(
-          await fixture.bridgePoolErrorCodesContract.BRIDGEPOOL_COULD_NOT_VERIFY_PROOF_OF_BURN()
-        );
         await expect(
           bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO)
-        ).to.be.revertedWith(reason);
+        ).to.be.revertedWith(
+          "MerkleProofLibrary: The proof doesn't match the root of the trie!"
+        );
         expect(await getState(fixture, bridgePool)).to.be.deep.equal(
           expectedState
         );
