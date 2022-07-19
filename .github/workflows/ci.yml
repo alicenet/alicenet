@@ -111,10 +111,10 @@ jobs:
         run: |
           set -euo pipefail
           go test -json -timeout=20m -covermode=atomic -coverprofile=coverage.out `go list ./... | grep -v $DKG_TESTS_PATH` 2>&1 | tee /tmp/gotest.log | gotestfmt
-    - uses: codecov/codecov-action@v3
-      with:
-        files: ./coverage.out
-        verbose: true
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          verbose: true
 
   golang-dkg-tests:
     runs-on: ${{ matrix.os }}
@@ -150,14 +150,13 @@ jobs:
             TestCompletion_Group_3,
           ]
     steps:
-        - uses: actions/checkout@v3
-        - uses: ./.github/actions/alicenet-config
-        - run: go build ./...
-        - name: Set up gotestfmt
-          run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-        - name: Run tests ${{ matrix.test-groups }}
-          timeout-minutes: 20
-          run: |
-            go test -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee
-      /tmp/gotest.log | gotestfmt
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - run: go build ./...
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Run tests ${{ matrix.test-groups }}
+        timeout-minutes: 20
+        run: |
+            go test -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
 
