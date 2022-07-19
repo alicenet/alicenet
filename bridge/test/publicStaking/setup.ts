@@ -327,6 +327,22 @@ export const mintPositionCheckAndUpdateState = async (
   stakingState: StakingState,
   errorMessage: string
 ) => {
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    // Update token accum
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+  }
   const [tokenID, expectedPosition] = await mintPosition(
     stakingContract,
     users[userIdx],
@@ -361,22 +377,18 @@ export const depositTokensCheckAndUpdateState = async (
     await stakingContract.getAccumulatorScaleFactor()
   ).toBigInt();
   await stakingContract.depositToken(42, amountDeposited);
-  const scaledAmount =
-    amountDeposited * scaleFactor +
-    stakingState.BaseStaking.AccumulatorToken.Slush;
+  const scaledAmount = amountDeposited * scaleFactor;
   const roundedAmount = scaledAmount / stakingState.BaseStaking.TotalShares;
   stakingState.BaseStaking.TokenBalance += amountDeposited;
   stakingState.BaseStaking.ReserveTokens += amountDeposited;
-  let accumulatorValue =
-    stakingState.BaseStaking.AccumulatorToken.Accumulator + roundedAmount;
-  const overflowValue = 2n ** 168n - 1n;
-  // simulating accumulator overflow which happens at 2n ** 168 -1
-  if (accumulatorValue >= 2n ** 168n - 1n) {
+  let accumulatorValue = stakingState.BaseStaking.AccumulatorToken.Accumulator;
+  const overflowValue = 2n ** 168n;
+  // simulating accumulator overflow which happens at 2n ** 168
+  if (accumulatorValue >= overflowValue) {
     accumulatorValue = accumulatorValue - overflowValue;
   }
   stakingState.BaseStaking.AccumulatorToken.Accumulator = accumulatorValue;
-  stakingState.BaseStaking.AccumulatorToken.Slush =
-    scaledAmount - roundedAmount * stakingState.BaseStaking.TotalShares;
+  stakingState.BaseStaking.AccumulatorToken.Slush += scaledAmount;
   expect(
     await getCurrentState(stakingContract, tokenContract, users, tokensID)
   ).to.be.deep.equals(stakingState, errorMessage);
@@ -397,22 +409,17 @@ export const depositEthCheckAndUpdateState = async (
   await stakingContract.depositEth(42, {
     value: amountDeposited,
   });
-  const scaledAmount =
-    amountDeposited * scaleFactor +
-    stakingState.BaseStaking.AccumulatorEth.Slush;
-  const roundedAmount = scaledAmount / stakingState.BaseStaking.TotalShares;
+  const scaledAmount = amountDeposited * scaleFactor;
   stakingState.BaseStaking.EthBalance += amountDeposited;
   stakingState.BaseStaking.ReserveEth += amountDeposited;
-  let accumulatorValue =
-    stakingState.BaseStaking.AccumulatorEth.Accumulator + roundedAmount;
-  const overflowValue = 2n ** 168n - 1n;
-  // simulating accumulator overflow which happens at 2n ** 168 -1
-  if (accumulatorValue >= 2n ** 168n - 1n) {
+  let accumulatorValue = stakingState.BaseStaking.AccumulatorEth.Accumulator;
+  const overflowValue = 2n ** 168n;
+  // simulating accumulator overflow which happens at 2n ** 168
+  if (accumulatorValue >= overflowValue) {
     accumulatorValue = accumulatorValue - overflowValue;
   }
   stakingState.BaseStaking.AccumulatorEth.Accumulator = accumulatorValue;
-  stakingState.BaseStaking.AccumulatorEth.Slush =
-    scaledAmount - roundedAmount * stakingState.BaseStaking.TotalShares;
+  stakingState.BaseStaking.AccumulatorEth.Slush += scaledAmount;
   expect(
     await getCurrentState(stakingContract, tokenContract, users, tokensID)
   ).to.be.deep.equals(stakingState, errorMessage);
@@ -429,6 +436,22 @@ export const collectTokensCheckAndUpdateState = async (
   errorMessage: string,
   expectedSlush?: bigint
 ) => {
+  // TODO: perform slushSkim if there are staked positions
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update token accum
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+    if (
+      stakingState.BaseStaking.AccumulatorToken.Accumulator >= overflowValue
+    ) {
+      stakingState.BaseStaking.AccumulatorToken.Accumulator -= overflowValue;
+    }
+  }
   await estimateAndCollectTokens(
     stakingContract,
     tokensID[userIdx],
@@ -460,6 +483,20 @@ export const collectEthCheckAndUpdateState = async (
   expectedSlush?: bigint,
   expectedSlushToken?: bigint
 ) => {
+  // TODO: perform slushSkim if there are staked positions
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    if (stakingState.BaseStaking.AccumulatorEth.Accumulator >= overflowValue) {
+      stakingState.BaseStaking.AccumulatorEth.Accumulator -= overflowValue;
+    }
+  }
   await estimateAndCollectEth(
     stakingContract,
     tokensID[userIdx],
@@ -493,6 +530,22 @@ export const collectTokensToCheckAndUpdateState = async (
   errorMessage: string,
   expectedSlush?: bigint
 ) => {
+  // TODO: perform slushSkim if there are staked positions
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update token accum
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+    if (
+      stakingState.BaseStaking.AccumulatorToken.Accumulator >= overflowValue
+    ) {
+      stakingState.BaseStaking.AccumulatorToken.Accumulator -= overflowValue;
+    }
+  }
   await estimateAndCollectTokensTo(
     stakingContract,
     tokensID[userIdx],
@@ -527,6 +580,20 @@ export const collectEthToCheckAndUpdateState = async (
   expectedSlush?: bigint,
   expectedSlushToken?: bigint
 ) => {
+  // TODO: perform slushSkim if there are staked positions
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    if (stakingState.BaseStaking.AccumulatorEth.Accumulator >= overflowValue) {
+      stakingState.BaseStaking.AccumulatorEth.Accumulator -= overflowValue;
+    }
+  }
   await estimateAndCollectEthTo(
     stakingContract,
     tokensID[userIdx],
@@ -563,6 +630,32 @@ export const burnPositionCheckAndUpdateState = async (
   expectedSlushEth?: bigint,
   expectedSlushToken?: bigint
 ) => {
+  // TODO: perform slushSkim if there are staked positions
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    if (stakingState.BaseStaking.AccumulatorEth.Accumulator >= overflowValue) {
+      stakingState.BaseStaking.AccumulatorEth.Accumulator -= overflowValue;
+    }
+    // Update token accum
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+    if (
+      stakingState.BaseStaking.AccumulatorToken.Accumulator >= overflowValue
+    ) {
+      stakingState.BaseStaking.AccumulatorToken.Accumulator -= overflowValue;
+    }
+  }
   const [payoutEth, payoutToken] = await burnPosition(
     stakingContract,
     users[userIdx],

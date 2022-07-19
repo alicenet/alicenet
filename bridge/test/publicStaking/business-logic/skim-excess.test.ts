@@ -167,7 +167,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
         users,
         tokensID,
         expectedState,
-        "After deposit 1 Tokens" + i
+        "After deposit 1 Tokens " + i
       );
       await depositEthCheckAndUpdateState(
         stakingContract,
@@ -176,7 +176,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
         users,
         tokensID,
         expectedState,
-        "After deposit 1 Eth" + i
+        "After deposit 1 Eth " + i
       );
       const expectedCollectedAmount = [330n, 330n, 330n];
       for (let j = 0; j < numberUsers; j++) {
@@ -188,7 +188,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
           users,
           tokensID,
           expectedState,
-          "After collect 1" + j
+          "After collect 1 Token " + j
         );
 
         await collectEthCheckAndUpdateState(
@@ -199,7 +199,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
           users,
           tokensID,
           expectedState,
-          "After collect 1 Eth" + j
+          "After collect 1 Eth " + j
         );
       }
     }
