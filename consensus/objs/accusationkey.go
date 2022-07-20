@@ -39,7 +39,7 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 		panic("AccusationKey.UnmarshalBinary; accusation not initialized")
 	}
 	splitData := bytes.Split(data, []byte("|"))
-	if len(splitData) != 4 {
+	if len(splitData) != 2 {
 		return errorz.ErrCorrupt
 	}
 	a.Prefix = splitData[0]

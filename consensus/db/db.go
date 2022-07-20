@@ -1932,29 +1932,7 @@ func (db *Database) GetAccusation(txn *badger.Txn, id [32]byte) (objs.Accusation
 	return result, nil
 }
 
-func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
-	prefix, err := db.makeAccusationKey(id)
-	if err != nil {
-		return err
-	}
-	exist := true
-	_, err = utils.GetValue(txn, prefix)
-	if err != nil {
-		if err != badger.ErrKeyNotFound {
-			return err
-		}
-		exist = false
-	}
-	if exist {
-		if err := utils.DeleteValue(txn, prefix); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (db *Database) GetAccusations(txn *badger.Txn, filter *func(objs.Accusation) bool) ([]objs.Accusation, error) {
-	// keys := [][]byte{}
 	prefix, err := db.makeAccusationIterKey()
 	if err != nil {
 		return nil, err
