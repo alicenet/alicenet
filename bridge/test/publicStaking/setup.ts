@@ -378,7 +378,6 @@ export const depositTokensCheckAndUpdateState = async (
   ).toBigInt();
   await stakingContract.depositToken(42, amountDeposited);
   const scaledAmount = amountDeposited * scaleFactor;
-  const roundedAmount = scaledAmount / stakingState.BaseStaking.TotalShares;
   stakingState.BaseStaking.TokenBalance += amountDeposited;
   stakingState.BaseStaking.ReserveTokens += amountDeposited;
   let accumulatorValue = stakingState.BaseStaking.AccumulatorToken.Accumulator;
