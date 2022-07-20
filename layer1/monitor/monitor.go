@@ -37,20 +37,21 @@ type Monitor interface {
 
 type monitor struct {
 	sync.RWMutex
-	adminHandler   interfaces.AdminHandler
-	depositHandler interfaces.DepositHandler
-	eth            layer1.Client
-	contracts      layer1.Contracts
-	eventMap       *objects.EventMap
-	db             *db.Database
-	cdb            *db.Database
-	tickInterval   time.Duration
-	timeout        time.Duration
-	logger         *logrus.Entry
-	cancelChan     chan bool
-	statusChan     chan string
-	State          *objects.MonitorState
-	batchSize      uint64
+	adminHandler         interfaces.AdminHandler
+	depositHandler       interfaces.DepositHandler
+	eth                  layer1.Client
+	contracts            layer1.AllSmartContracts
+	eventFilterAddresses []common.Address
+	eventMap             *objects.EventMap
+	db                   *db.Database
+	cdb                  *db.Database
+	tickInterval         time.Duration
+	timeout              time.Duration
+	logger               *logrus.Entry
+	cancelChan           chan bool
+	statusChan           chan string
+	State                *objects.MonitorState
+	batchSize            uint64
 
 	//for communication with the TasksScheduler
 	taskRequestChan chan<- tasks.TaskRequest
@@ -62,7 +63,8 @@ func NewMonitor(cdb *db.Database,
 	adminHandler interfaces.AdminHandler,
 	depositHandler interfaces.DepositHandler,
 	eth layer1.Client,
-	contracts layer1.Contracts,
+	contracts layer1.AllSmartContracts,
+	eventFilterAddresses []common.Address,
 	tickInterval time.Duration,
 	batchSize uint64,
 	taskRequestChan chan<- tasks.TaskRequest,
@@ -87,21 +89,22 @@ func NewMonitor(cdb *db.Database,
 	})
 
 	return &monitor{
-		adminHandler:    adminHandler,
-		depositHandler:  depositHandler,
-		eth:             eth,
-		contracts:       contracts,
-		eventMap:        eventMap,
-		cdb:             cdb,
-		db:              monDB,
-		logger:          logger,
-		tickInterval:    tickInterval,
-		timeout:         constants.MonitorTimeout,
-		cancelChan:      make(chan bool, 1),
-		statusChan:      make(chan string, 1),
-		State:           State,
-		batchSize:       batchSize,
-		taskRequestChan: taskRequestChan,
+		adminHandler:         adminHandler,
+		depositHandler:       depositHandler,
+		eth:                  eth,
+		contracts:            contracts,
+		eventFilterAddresses: eventFilterAddresses,
+		eventMap:             eventMap,
+		cdb:                  cdb,
+		db:                   monDB,
+		logger:               logger,
+		tickInterval:         tickInterval,
+		timeout:              constants.MonitorTimeout,
+		cancelChan:           make(chan bool, 1),
+		statusChan:           make(chan string, 1),
+		State:                State,
+		batchSize:            batchSize,
+		taskRequestChan:      taskRequestChan,
 	}, nil
 
 }
@@ -191,7 +194,7 @@ func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 
 			oldMonitorState := mon.State.Clone()
 
-			if err := MonitorTick(ctx, cf, mon.eth, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, mon.contracts); err != nil {
+			if err := MonitorTick(ctx, cf, mon.eth, mon.contracts, mon.State, mon.logger, mon.eventMap, mon.adminHandler, mon.batchSize, mon.eventFilterAddresses); err != nil {
 				logger.Errorf("Failed MonitorTick(...): %v", err)
 			}
 
@@ -229,15 +232,15 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
-func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, contracts layer1.Contracts) error {
+func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, allContracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logger *logrus.Entry,
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address) error {
 
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
 		"EndpointInSync": monitorState.EndpointInSync,
 		"EthereumInSync": monitorState.EthereumInSync})
 
-	addresses := contracts.GetAllAddresses()
+	addresses := filterContracts
 
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
@@ -309,7 +312,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 		logs := logsList[i]
 
 		var forceExit bool
-		currentBlock, err = ProcessEvents(eth, monitorState, logs, logger, currentBlock, eventMap)
+		currentBlock, err = ProcessEvents(eth, allContracts, monitorState, logs, logger, currentBlock, eventMap)
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				return err
@@ -328,7 +331,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 	return nil
 }
 
-func ProcessEvents(eth layer1.Client, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
+func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
 	// Check all the logs for an event we want to process
@@ -341,7 +344,7 @@ func ProcessEvents(eth layer1.Client, monitorState *objects.MonitorState, logs [
 		if present {
 			logEntry = logEntry.WithField("Event", info.Name)
 			if info.Processor != nil {
-				err := info.Processor(eth, logEntry, monitorState, log)
+				err := info.Processor(eth, contracts, logEntry, monitorState, log)
 				if err != nil {
 					logEntry.Errorf("Failed processing event: %v", err)
 					return currentBlock - 1, err

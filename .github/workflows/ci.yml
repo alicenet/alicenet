@@ -3,9 +3,9 @@ name: Alicenet CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   NODE_VERSION: 16.x
@@ -44,8 +44,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
           cache-dependency-path: bridge/package-lock.json
       - run: npm ci
       - run: npm run clean
@@ -66,8 +66,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
           cache-dependency-path: bridge/package-lock.json
       - run: npm ci
       - run: npm run clean
@@ -88,7 +88,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04 ]
+        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
@@ -135,7 +135,7 @@ jobs:
             TestGPKjDispute,
             TestCompletion_Group_1,
             TestCompletion_Group_2,
-            TestCompletion_Group_3,
+            TestCompletion_Group_3
           ]
     steps:
       - uses: actions/checkout@v3

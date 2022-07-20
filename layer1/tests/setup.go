@@ -14,6 +14,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
@@ -165,6 +166,7 @@ func FundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus
 
 type ClientFixture struct {
 	Client         layer1.Client
+	Contracts      layer1.AllSmartContracts
 	Watcher        transaction.Watcher
 	MonitorDb      *db.Database
 	FactoryAddress string
@@ -208,6 +210,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 	}
 
 	factoryAddress := ""
+	var contracts layer1.AllSmartContracts
 	if deployContracts {
 		baseFilesDir := filepath.Join(GetProjectRootPath(), "scripts", "base-files")
 		factoryAddress, err = hardhat.DeployFactoryAndContracts(tempDir, baseFilesDir)
@@ -221,7 +224,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		for _, account := range eth.GetKnownAccounts() {
 			validatorsAddresses = append(validatorsAddresses, account.Address.Hex())
 		}
-		ethereum.NewContracts(eth, common.HexToAddress(factoryAddress))
+		contracts = handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(factoryAddress))
 		if registerValidators {
 			hardhat.RegisterValidators(factoryAddress, validatorsAddresses)
 		}
@@ -229,6 +232,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 
 	return &ClientFixture{
 		Client:         eth,
+		Contracts:      contracts,
 		Watcher:        watcher,
 		MonitorDb:      MonitorDb,
 		TempDir:        tempDir,
