@@ -169,7 +169,7 @@ func (mon *monitor) Start() error {
 	return nil
 }
 
-// eventLoop is a loop to process the events and chain changes
+// eventLoop to process the events and chain changes.
 func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
