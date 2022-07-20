@@ -100,13 +100,10 @@ contract MultipleProposalAccusation is
             "Accusations: the chainId is invalid for this chain!"
         );
 
-        // ensure both accounts are applicable to a currently locked validator - Note<may be done in different layer?>
-        require(
-            IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount0),
-            "Accusations: the signer of these proposals is not a valid validator!"
-        );
-
         _accusations[id] = true;
+
+        // major slash this validator. Note: this method already checks if the dishonestValidator (1st argument) is a validator.
+        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender);
 
         return signerAccount0;
     }
