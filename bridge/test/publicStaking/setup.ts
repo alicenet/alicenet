@@ -436,7 +436,6 @@ export const collectTokensCheckAndUpdateState = async (
   errorMessage: string,
   expectedSlush?: bigint
 ) => {
-  // TODO: perform slushSkim if there are staked positions
   if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
     const overflowValue = 2n ** 168n;
     // Update token accum
@@ -483,7 +482,6 @@ export const collectEthCheckAndUpdateState = async (
   expectedSlush?: bigint,
   expectedSlushToken?: bigint
 ) => {
-  // TODO: perform slushSkim if there are staked positions
   if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
     const overflowValue = 2n ** 168n;
     // Update eth accum
@@ -530,7 +528,6 @@ export const collectTokensToCheckAndUpdateState = async (
   errorMessage: string,
   expectedSlush?: bigint
 ) => {
-  // TODO: perform slushSkim if there are staked positions
   if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
     const overflowValue = 2n ** 168n;
     // Update token accum
@@ -580,7 +577,6 @@ export const collectEthToCheckAndUpdateState = async (
   expectedSlush?: bigint,
   expectedSlushToken?: bigint
 ) => {
-  // TODO: perform slushSkim if there are staked positions
   if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
     const overflowValue = 2n ** 168n;
     // Update eth accum
@@ -630,7 +626,6 @@ export const burnPositionCheckAndUpdateState = async (
   expectedSlushEth?: bigint,
   expectedSlushToken?: bigint
 ) => {
-  // TODO: perform slushSkim if there are staked positions
   if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
     const overflowValue = 2n ** 168n;
     // Update eth accum
