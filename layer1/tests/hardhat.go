@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -161,7 +162,11 @@ type Hardhat struct {
 }
 
 func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
-	return StartHardHatNode("127.0.0.1", "8545")
+	min := 1025
+	max := 65535
+	port := rand.Intn(max-min) + min
+
+	return StartHardHatNode("127.0.0.1", strconv.Itoa(port))
 }
 
 func StartHardHatNode(hostname string, port string) (*Hardhat, error) {

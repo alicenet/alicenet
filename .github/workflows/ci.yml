@@ -112,18 +112,18 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
         test-groups: [
-            TestShareDistribution,
-            TestRegisterTask,
-            TestMPKSubmission,
-            TestKeyShareSubmission,
-            TestGPKjSubmission,
-            TestDisputeShareDistributionTask,
-            TestDisputeMissingShareDistributionTask,
+#            TestShareDistribution,
+#            TestRegisterTask,
+#            TestMPKSubmission,
+#            TestKeyShareSubmission,
+#            TestGPKjSubmission,
+#            TestDisputeShareDistributionTask,
+#            TestDisputeMissingShareDistributionTask,
             TestDisputeMissingRegistrationTask,
-            TestDisputeMissingKeySharesTask,
-            TestDisputeMissingGPKjTask,
-            TestGPKjDispute,
-            TestCompletion,
+#            TestDisputeMissingKeySharesTask,
+#            TestDisputeMissingGPKjTask,
+#            TestGPKjDispute,
+#            TestCompletion,
           ]
     steps:
       - uses: actions/checkout@v3
