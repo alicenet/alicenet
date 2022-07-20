@@ -24,5 +24,4 @@ runs:
       shell: bash
       if: steps.cache-nodemodules.outputs.cache-hit != 'true'
       run: |
-        npm ci 
-        npm run compile 
+        npm ci  
