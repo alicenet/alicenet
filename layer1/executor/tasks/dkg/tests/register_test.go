@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
@@ -30,7 +29,7 @@ func TestRegisterTask_Task(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := ethereum.GetContracts()
+	c := fixture.Contracts.EthereumContracts()
 
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -62,7 +61,7 @@ func TestRegisterTask_Task(t *testing.T) {
 	fixture.Logger.Debugf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	fixture.Logger.Debugf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -89,7 +88,7 @@ func TestRegisterTask_Task(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
@@ -125,7 +124,7 @@ func TestRegisterTask_Good2(t *testing.T) {
 
 	fixture.Logger.Debugf("Updating phase length used %v gas vs %v", rcpt.GasUsed, txn.Gas())
 
-	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -157,7 +156,7 @@ func TestRegisterTask_Good2(t *testing.T) {
 		dkgStatesDbs[idx] = dkgDb
 		tasksVec[idx] = registrationTask
 
-		err = tasksVec[idx].Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+		err = tasksVec[idx].Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = tasksVec[idx].Prepare(ctx)
 		assert.Nil(t, err)
@@ -170,7 +169,7 @@ func TestRegisterTask_Good2(t *testing.T) {
 	for idx, acct := range accounts {
 		callOpts, err := eth.GetCallOpts(context.Background(), acct)
 		assert.Nil(t, err)
-		p, err := ethereum.GetContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
+		p, err := fixture.Contracts.EthereumContracts().Ethdkg().GetParticipantInternalState(callOpts, acct.Address)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(dkgStatesDbs[idx])
@@ -208,7 +207,7 @@ func TestRegisterTask_Bad1(t *testing.T) {
 	_, rcpt, err := InitializeETHDKG(fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -235,7 +234,7 @@ func TestRegisterTask_Bad1(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
@@ -269,7 +268,7 @@ func TestRegisterTask_Bad2(t *testing.T) {
 	_, rcpt, err := InitializeETHDKG(fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -296,7 +295,7 @@ func TestRegisterTask_Bad2(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
@@ -356,7 +355,7 @@ func TestRegisterTask_Bad5(t *testing.T) {
 	_, rcpt, err := InitializeETHDKG(fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -386,7 +385,7 @@ func TestRegisterTask_Bad5(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
@@ -408,7 +407,7 @@ func TestRegisterTask_ShouldRetryFalse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := ethereum.GetContracts()
+	c := fixture.Contracts.EthereumContracts()
 	tests.MineFinalityDelayBlocks(eth)
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -435,7 +434,7 @@ func TestRegisterTask_ShouldRetryFalse(t *testing.T) {
 	fixture.Logger.Debugf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	fixture.Logger.Debugf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -462,7 +461,7 @@ func TestRegisterTask_ShouldRetryFalse(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 	assert.Nil(t, err)
@@ -491,7 +490,7 @@ func TestRegisterTask_ShouldRetryTrue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := ethereum.GetContracts()
+	c := fixture.Contracts.EthereumContracts()
 
 	// Check status
 	callOpts, err := eth.GetCallOpts(ctx, acct)
@@ -522,7 +521,7 @@ func TestRegisterTask_ShouldRetryTrue(t *testing.T) {
 	fixture.Logger.Debugf("Kicking off EthDKG used %v gas", rcpt.GasUsed)
 	fixture.Logger.Debugf("registration opens:%v", rcpt.BlockNumber)
 
-	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	openEvent, err := utils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, openEvent)
 
@@ -549,7 +548,7 @@ func TestRegisterTask_ShouldRetryTrue(t *testing.T) {
 	dkgDb := GetDKGDb(t)
 	err = state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
-	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, "RegistrationTask", "task-id", nil)
+	err = registrationTask.Initialize(ctx, nil, dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
 

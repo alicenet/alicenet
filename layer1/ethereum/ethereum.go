@@ -699,13 +699,12 @@ func (eth *Client) CreateSecp256k1Signer() (*crypto.Secp256k1Signer, error) {
 ////////////////////////////////////////////////////////////////
 
 // Get the current validators
-func GetValidators(eth layer1.Client, logger *logrus.Logger, ctx context.Context) ([]common.Address, error) {
-	c := GetContracts()
+func GetValidators(eth layer1.Client, contracts layer1.EthereumContracts, logger *logrus.Logger, ctx context.Context) ([]common.Address, error) {
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
 		return nil, err
 	}
-	validatorAddresses, err := c.ValidatorPool().GetValidatorsAddresses(callOpts)
+	validatorAddresses, err := contracts.ValidatorPool().GetValidatorsAddresses(callOpts)
 	if err != nil {
 		logger.Warnf("Could not call contract:%v", err)
 		return nil, err

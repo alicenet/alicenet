@@ -3,7 +3,6 @@ package events
 import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
@@ -12,11 +11,11 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
 
-	c := ethereum.GetContracts()
+	c := contracts.EthereumContracts()
 
 	event, err := c.Snapshots().ParseSnapshotTaken(log)
 	if err != nil {

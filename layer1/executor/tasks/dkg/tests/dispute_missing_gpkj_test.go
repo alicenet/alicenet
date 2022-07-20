@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 
@@ -28,7 +27,7 @@ func TestDisputeMissingGPKjTask_FourUnsubmittedGPKj_DoWork_Success(t *testing.T)
 	for idx := 0; idx < n; idx++ {
 		disputeMissingGPKjTask := suite.DisputeMissingGPKjTasks[idx]
 
-		err := disputeMissingGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeMissingGPKjTask", "task-id", nil)
+		err := disputeMissingGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingGPKjTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = disputeMissingGPKjTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -55,9 +54,9 @@ func TestDisputeMissingGPKjTask_FourUnsubmittedGPKj_DoWork_Success(t *testing.T)
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(m), int(badParticipants.Int64()))
 
-	CheckBadValidators(t, m, suite)
+	CheckBadValidators(t, m, suite, fixture.Contracts)
 }
