@@ -112,6 +112,7 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
         test-groups: [
+            TestDisputeMissingRegistrationTask,
 #            TestShareDistribution,
 #            TestRegisterTask,
 #            TestMPKSubmission,
@@ -119,7 +120,6 @@ jobs:
 #            TestGPKjSubmission,
 #            TestDisputeShareDistributionTask,
 #            TestDisputeMissingShareDistributionTask,
-            TestDisputeMissingRegistrationTask
 #            TestDisputeMissingKeySharesTask,
 #            TestDisputeMissingGPKjTask,
 #            TestGPKjDispute,
