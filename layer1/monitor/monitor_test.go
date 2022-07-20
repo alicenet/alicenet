@@ -15,6 +15,7 @@ import (
 	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -165,12 +166,24 @@ func TestProcessEvents(t *testing.T) {
 	err = mon.Start()
 	assert.Nil(t, err)
 
-	<-time.After(4500 * time.Millisecond)
+	for {
+		select {
+		case <-time.After(4500 * time.Millisecond):
+			t.Fatal("didn't update dkg state in time")
+		default:
+		}
+		dkgState, err := ethdkgState.GetDkgState(mon.db)
+		if err != nil {
+			assert.Equal(t, badger.ErrKeyNotFound, err)
+		}
 
-	dkgState, err := ethdkgState.GetDkgState(mon.db)
-	assert.Nil(t, err)
-	assert.NotNil(t, dkgState)
-	assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
+		if dkgState != nil {
+			assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
+			break
+		}
+
+		<-time.After(100 * time.Millisecond)
+	}
 }
 
 func TestPersistSnapshot(t *testing.T) {
