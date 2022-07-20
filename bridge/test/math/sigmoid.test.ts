@@ -310,4 +310,44 @@ describe("Sigmoid unit tests", async () => {
       expect(retD1).to.be.equal(trueD1);
     });
   });
+
+  describe("P Function Tests", async () => {
+    it("P Test Eval P(0)", async function () {
+      // Confirm
+      //      P(0) == 0
+      const value = BigNumber.from(0);
+      const trueValue = BigNumber.from(0);
+      const retValue = await sigmoid.p(value);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("P Test Eval P(b)", async function () {
+      // Confirm
+      //      P(b) == a*sqrt(c+b^2) - sqrt(a**2 * c) + (a+d)*b
+      const trueA = await sigmoid.p_a();
+      const trueB = await sigmoid.p_b();
+      const trueC = await sigmoid.p_c();
+      const trueD = await sigmoid.p_d();
+      const trueS = await sigmoid.p_s();
+      const value = trueB;
+      const tmp1 = trueA.mul(trueS);
+      const tmp2P = trueA.mul(trueA.mul(trueC));
+      const tmp2 = await sigmoid.sqrt(tmp2P);
+      const tmp3 = trueB.mul(trueA.add(trueD));
+      const trueValue = tmp1.add(tmp3.sub(tmp2));
+      const retValue = await sigmoid.p(value);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("P Test Eval P(2b)", async function () {
+      // Confirm
+      //      P(2b) == 2b*(a+d)
+      const big2 = BigNumber.from(2);
+      const trueA = await sigmoid.p_a();
+      const trueB = await sigmoid.p_b();
+      const trueD = await sigmoid.p_d();
+      const value = trueB.add(trueB);
+      const trueValue = big2.mul(trueB.mul(trueA.add(trueD)));
+      const retValue = await sigmoid.p(value);
+      expect(retValue).to.be.equal(trueValue);
+    });
+  });
 });
