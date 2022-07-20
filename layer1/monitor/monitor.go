@@ -230,7 +230,7 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 	return rawData, nil
 }
 
-// UnmarshalJSON implements the function that is used internally to unmarshal the object after loading
+// UnmarshalJSON implements the json.Unmarshaler interface. It will only unmarshal the State field.
 func (m *monitor) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, m.State)
 	return err
