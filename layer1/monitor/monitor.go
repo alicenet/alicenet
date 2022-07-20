@@ -389,7 +389,7 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 }
 
 // TODO: Remove from request hot path use memory cache
-// logWork struct for persisting worker group across execution iterations
+// logWork for persisting worker group across execution iterations.
 type logWork struct {
 	isLast    bool
 	ctx       context.Context
