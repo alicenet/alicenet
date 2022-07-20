@@ -119,7 +119,7 @@ jobs:
 #            TestGPKjSubmission,
 #            TestDisputeShareDistributionTask,
 #            TestDisputeMissingShareDistributionTask,
-            TestDisputeMissingRegistrationTask,
+            TestDisputeMissingRegistrationTask
 #            TestDisputeMissingKeySharesTask,
 #            TestDisputeMissingGPKjTask,
 #            TestGPKjDispute,
