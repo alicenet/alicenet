@@ -1,0 +1,9 @@
+ignore:
+  - "proto/**"
+  - "cmd/**"
+  - "bridge/**"
+coverage:
+  status:
+    patch:
+      default:
+        target: 75%
