@@ -6,25 +6,20 @@ import (
 	"errors"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
-	"testing"
 	"time"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	once      sync.Once
-	contracts *Contracts
-)
+var _ layer1.EthereumContracts = &Contracts{}
 
 // Contracts contains bindings to smart contract system
 type Contracts struct {
-	isInitialized           bool
 	allAddresses            map[common.Address]bool
 	eth                     *Client
 	ethdkg                  bindings.IETHDKG
@@ -47,51 +42,39 @@ type Contracts struct {
 	governanceAddress       common.Address
 }
 
-func GetContracts() *Contracts {
-	if contracts == nil || !contracts.isInitialized {
-		panic("Ethereum smart contracts not initialized or not found")
-	}
-	return contracts
-}
-
 /// Set the contractFactoryAddress and looks up for all the contracts that we
 /// need that were deployed via the factory. It's only executed once. Other call
 /// to this functions are no-op.
-func NewContracts(eth *Client, contractFactoryAddress common.Address) {
-	once.Do(func() {
-		contracts = getNewContractInstance(eth, contractFactoryAddress)
-	})
-}
-
-func getNewContractInstance(eth *Client, contractFactoryAddress common.Address) *Contracts {
-	tempContracts := &Contracts{
+func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts {
+	newContracts := &Contracts{
 		allAddresses:           make(map[common.Address]bool),
 		eth:                    eth,
 		contractFactoryAddress: contractFactoryAddress,
 	}
-	err := tempContracts.lookupContracts()
+	err := newContracts.lookupContracts()
 	if err != nil {
 		panic(err)
 	}
-	tempContracts.isInitialized = true
-	return tempContracts
+	return newContracts
 }
 
 // LookupContracts uses the registry to lookup and create bindings for all required contracts
 func (c *Contracts) lookupContracts() error {
+
 	networkCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	eth := c.eth
+	logger := eth.logger
+	logger.Infof("Looking up smart contracts on Ethereum...")
 	for {
 		select {
 		case <-signals:
 			return errors.New("goodBye from lookup contracts")
 		case <-time.After(1 * time.Second):
 		}
-
-		eth := c.eth
-		logger := eth.logger
 
 		// Load the contractFactory first
 		contractFactory, err := bindings.NewAliceNetFactory(c.contractFactoryAddress, eth.internalClient)
@@ -292,12 +275,4 @@ func logAndEat(logger *logrus.Logger, err error) {
 	if err != nil {
 		logger.Error(err)
 	}
-}
-
-// Auxiliary function to clean the global variables that will allow the
-// deployment and bindings of multiple contracts during other unit tests running
-// in sequence. DON'T USE THIS FUNCTION OUTSIDE THE UNIT TESTS
-func CleanGlobalVariables(t *testing.T) {
-	contracts = nil
-	once = sync.Once{}
 }

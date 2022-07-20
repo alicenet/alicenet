@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Database, *taskResponseChan, *mocks.MockWatcher) {
+func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Database, *taskResponseChan, *mocks.MockWatcher, *mocks.MockAllSmartContracts) {
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.ExtractTransactionSenderFunc.SetDefaultReturn(common.Address{}, nil)
@@ -38,15 +38,17 @@ func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Databas
 	logger := logging.GetLogger("test")
 
 	txWatcher := mocks.NewMockWatcher()
+	contracts := mocks.NewMockAllSmartContracts()
+
 	taskManager, err := NewTaskManager(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 
 	taskRespChan := &taskResponseChan{trChan: make(chan tasks.TaskResponse, 100)}
-	return taskManager, client, db, taskRespChan, txWatcher
+	return taskManager, client, db, taskRespChan, txWatcher, contracts
 }
 
 func Test_TaskManager_HappyPath(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -76,7 +78,7 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
 
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -85,7 +87,7 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 }
 
 func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -117,7 +119,7 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
 
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledN(t, task.PrepareFunc, 2)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -126,7 +128,7 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 }
 
 func Test_TaskManager_UnrecoverableError(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -147,7 +149,7 @@ func Test_TaskManager_UnrecoverableError(t *testing.T) {
 
 	task.PrepareFunc.SetDefaultReturn(taskErr)
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -156,7 +158,7 @@ func Test_TaskManager_UnrecoverableError(t *testing.T) {
 }
 
 func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -188,7 +190,7 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 
 	mainCtx := context.Background()
 	manager.TxsBackup[task.GetId()] = txn
-	manager.ManageTask(mainCtx, task, "", taskId, db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", taskId, db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -196,7 +198,7 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 }
 
 func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -221,7 +223,7 @@ func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
 
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
@@ -230,7 +232,7 @@ func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
 }
 
 func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -271,7 +273,7 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 	task.ShouldExecuteFunc.PushReturn(false, nil)
 
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 3)
@@ -338,6 +340,8 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
+	contracts := mocks.NewMockAllSmartContracts()
+
 	task := mocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
@@ -352,12 +356,12 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
 
 	mainCtx := context.Background()
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	assert.Equalf(t, 1, len(manager.TxsBackup), "Expected one transaction (stale status)")
 	manager, err = NewTaskManager(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
-	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	manager.ManageTask(mainCtx, task, "", "123", db, manager.logger, client, contracts, taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
