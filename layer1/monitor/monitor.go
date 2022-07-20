@@ -336,7 +336,7 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 	return nil
 }
 
-// ProcessEvents processes the events returned from layer1 chain
+// ProcessEvents returned from layer1 chain.
 func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
