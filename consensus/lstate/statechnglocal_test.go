@@ -1,16 +1,19 @@
 package lstate
 
 import (
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPendingProposalStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -30,6 +33,8 @@ func TestStateChngLocal_doPendingProposalStep_Ok1(t *testing.T) {
 
 //Deadblock round
 func TestStateChngLocal_doPendingProposalStep_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -48,6 +53,8 @@ func TestStateChngLocal_doPendingProposalStep_Ok2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingProposalStep_Ok3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 2)
 	rs := createRoundState(t, os)
@@ -78,6 +85,8 @@ func TestStateChngLocal_doPendingProposalStep_Ok3(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingProposalStep_Ok4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 2)
 	rs := createRoundState(t, os)
@@ -109,6 +118,8 @@ func TestStateChngLocal_doPendingProposalStep_Ok4(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingProposalStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -127,6 +138,8 @@ func TestStateChngLocal_doPendingProposalStep_Error1(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPendingPreVoteStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -146,6 +159,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Ok1(t *testing.T) {
 
 //Deadblock round
 func TestStateChngLocal_doPendingPreVoteStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -165,6 +180,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Error1(t *testing.T) {
 
 //Deadblock round
 func TestStateChngLocal_doPendingPreVoteStep_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -189,6 +206,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Error2(t *testing.T) {
 
 //invalid proposal
 func TestStateChngLocal_doPendingPreVoteStep_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -211,6 +230,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Error3(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingPreVoteStep_Error4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -235,6 +256,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Error4(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingPreVoteStep_Error5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -261,6 +284,8 @@ func TestStateChngLocal_doPendingPreVoteStep_Error5(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPreVoteStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -279,6 +304,8 @@ func TestStateChngLocal_doPreVoteStep_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreVoteStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -314,6 +341,8 @@ func TestStateChngLocal_doPreVoteStep_Error1(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPreVoteNilStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -332,6 +361,8 @@ func TestStateChngLocal_doPreVoteNilStep_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreVoteNilStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -366,6 +397,8 @@ func TestStateChngLocal_doPreVoteNilStep_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreVoteNilStep_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -401,6 +434,8 @@ func TestStateChngLocal_doPreVoteNilStep_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreVoteNilStep_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -440,6 +475,8 @@ func TestStateChngLocal_doPreVoteNilStep_Error3(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPendingPreCommit_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -458,6 +495,8 @@ func TestStateChngLocal_doPendingPreCommit_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingPreCommit_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -492,6 +531,8 @@ func TestStateChngLocal_doPendingPreCommit_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingPreCommit_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -540,6 +581,8 @@ func TestStateChngLocal_doPendingPreCommit_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingPreCommit_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -575,6 +618,8 @@ func TestStateChngLocal_doPendingPreCommit_Error3(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPreCommitStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -593,6 +638,8 @@ func TestStateChngLocal_doPreCommitStep_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -627,6 +674,8 @@ func TestStateChngLocal_doPreCommitStep_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitStep_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -662,6 +711,8 @@ func TestStateChngLocal_doPreCommitStep_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitStep_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -716,6 +767,8 @@ func TestStateChngLocal_doPreCommitStep_Error3(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPreCommitNilStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -734,6 +787,8 @@ func TestStateChngLocal_doPreCommitNilStep_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitNilStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -768,6 +823,8 @@ func TestStateChngLocal_doPreCommitNilStep_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitNilStep_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -803,6 +860,8 @@ func TestStateChngLocal_doPreCommitNilStep_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitNilStep_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -856,6 +915,8 @@ func TestStateChngLocal_doPreCommitNilStep_Error3(t *testing.T) {
 }
 
 func TestStateChngLocal_doPreCommitNilStep_Error4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -891,6 +952,8 @@ func TestStateChngLocal_doPreCommitNilStep_Error4(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doPendingNext_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -909,6 +972,8 @@ func TestStateChngLocal_doPendingNext_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingNext_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -943,6 +1008,8 @@ func TestStateChngLocal_doPendingNext_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingNext_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -978,6 +1045,8 @@ func TestStateChngLocal_doPendingNext_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingNext_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1031,6 +1100,8 @@ func TestStateChngLocal_doPendingNext_Error3(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingNext_Error4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1065,6 +1136,8 @@ func TestStateChngLocal_doPendingNext_Error4(t *testing.T) {
 }
 
 func TestStateChngLocal_doPendingNext_Error5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1102,6 +1175,8 @@ func TestStateChngLocal_doPendingNext_Error5(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateChngLocal_doNextRoundStep_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1120,6 +1195,8 @@ func TestStateChngLocal_doNextRoundStep_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doNextRoundStep_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1154,6 +1231,8 @@ func TestStateChngLocal_doNextRoundStep_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doNextRoundStep_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1207,6 +1286,8 @@ func TestStateChngLocal_doNextRoundStep_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doNextRoundStep_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1248,6 +1329,8 @@ func TestStateChngLocal_doNextRoundStep_Error3(t *testing.T) {
 }
 
 func TestStateChngLocal_doRoundJump_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1301,6 +1384,8 @@ func TestStateChngLocal_doRoundJump_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doRoundJump_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1335,6 +1420,8 @@ func TestStateChngLocal_doRoundJump_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doRoundJump_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1370,6 +1457,8 @@ func TestStateChngLocal_doRoundJump_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1423,6 +1512,8 @@ func TestStateChngLocal_doCheckValidValue_Ok1(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1476,6 +1567,8 @@ func TestStateChngLocal_doCheckValidValue_Ok2(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1511,6 +1604,8 @@ func TestStateChngLocal_doCheckValidValue_Error1(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1564,6 +1659,8 @@ func TestStateChngLocal_doCheckValidValue_Error2(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1598,6 +1695,8 @@ func TestStateChngLocal_doCheckValidValue_Error3(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1633,6 +1732,8 @@ func TestStateChngLocal_doCheckValidValue_Error4(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1667,6 +1768,8 @@ func TestStateChngLocal_doCheckValidValue_Error5(t *testing.T) {
 }
 
 func TestStateChngLocal_doCheckValidValue_Error6(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1702,6 +1805,8 @@ func TestStateChngLocal_doCheckValidValue_Error6(t *testing.T) {
 }
 
 func TestStateChngLocal_doHeightJumpStep_False1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1734,6 +1839,8 @@ func TestStateChngLocal_doHeightJumpStep_False1(t *testing.T) {
 }
 
 func TestStateChngLocal_doHeightJumpStep_False2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -1765,6 +1872,8 @@ func TestStateChngLocal_doHeightJumpStep_False2(t *testing.T) {
 }
 
 func TestStateChngLocal_doHeightJumpStep_True3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)

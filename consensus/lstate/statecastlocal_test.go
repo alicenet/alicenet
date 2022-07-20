@@ -1,15 +1,18 @@
 package lstate
 
 import (
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
-	"testing"
 )
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castProposalFromValue_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -39,6 +42,8 @@ func TestStateCastLocal_castProposalFromValue_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castProposalFromValue_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -67,6 +72,8 @@ func TestStateCastLocal_castProposalFromValue_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castProposalFromValue_Error(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -99,6 +106,8 @@ func TestStateCastLocal_castProposalFromValue_Error(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castPreVoteWithLock_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -129,6 +138,8 @@ func TestStateCastLocal_castPreVoteWithLock_Ok1(t *testing.T) {
 
 //Same BClaims
 func TestStateCastLocal_castPreVoteWithLock_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -158,6 +169,8 @@ func TestStateCastLocal_castPreVoteWithLock_Ok2(t *testing.T) {
 
 //Diff BClaims
 func TestStateCastLocal_castPreVoteWithLock_Ok3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -189,6 +202,8 @@ func TestStateCastLocal_castPreVoteWithLock_Ok3(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castPreCommit_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -217,6 +232,8 @@ func TestStateCastLocal_castPreCommit_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castPreCommit_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -244,6 +261,8 @@ func TestStateCastLocal_castPreCommit_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castPreCommit_Error(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -273,6 +292,8 @@ func TestStateCastLocal_castPreCommit_Error(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castPreCommitNil_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -291,6 +312,8 @@ func TestStateCastLocal_castPreCommitNil_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castPreCommitNil_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -308,6 +331,8 @@ func TestStateCastLocal_castPreCommitNil_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castPreCommitNil_Error(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -327,6 +352,8 @@ func TestStateCastLocal_castPreCommitNil_Error(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castNextRound_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -345,6 +372,8 @@ func TestStateCastLocal_castNextRound_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextRound_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -368,6 +397,8 @@ func TestStateCastLocal_castNextRound_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextRound_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -386,6 +417,8 @@ func TestStateCastLocal_castNextRound_Error1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextRound_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -404,6 +437,8 @@ func TestStateCastLocal_castNextRound_Error2(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castNextRoundRCert_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -432,6 +467,8 @@ func TestStateCastLocal_castNextRoundRCert_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextRoundRCert_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -465,6 +502,8 @@ func TestStateCastLocal_castNextRoundRCert_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextRoundRCert_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -493,6 +532,8 @@ func TestStateCastLocal_castNextRoundRCert_Error1(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castNextHeightFromNextHeight_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -521,6 +562,8 @@ func TestStateCastLocal_castNextHeightFromNextHeight_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextHeightFromNextHeight_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -549,6 +592,8 @@ func TestStateCastLocal_castNextHeightFromNextHeight_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextHeightFromNextHeight_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -577,6 +622,8 @@ func TestStateCastLocal_castNextHeightFromNextHeight_Error1(t *testing.T) {
 
 //Not IsCurrentValidator
 func TestStateCastLocal_castNextHeightFromPreCommits_Ok1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -605,6 +652,8 @@ func TestStateCastLocal_castNextHeightFromPreCommits_Ok1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextHeightFromPreCommits_Ok2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -633,6 +682,8 @@ func TestStateCastLocal_castNextHeightFromPreCommits_Ok2(t *testing.T) {
 }
 
 func TestStateCastLocal_castNextHeightFromPreCommits_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -660,6 +711,8 @@ func TestStateCastLocal_castNextHeightFromPreCommits_Error1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNewCommittedBlockHeader_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -693,6 +746,8 @@ func TestStateCastLocal_castNewCommittedBlockHeader_Error1(t *testing.T) {
 }
 
 func TestStateCastLocal_castNewCommittedBlockFromProposalAndRCert_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -722,6 +777,8 @@ func TestStateCastLocal_castNewCommittedBlockFromProposalAndRCert_Ok(t *testing.
 }
 
 func TestStateCastLocal_castNewCommittedBlockFromProposalAndRCert_Error(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)

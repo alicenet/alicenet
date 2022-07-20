@@ -2,14 +2,17 @@ package lstate
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
-	"testing"
 )
 
 func TestLocalState_setMostRecentProposal_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -26,6 +29,8 @@ func TestLocalState_setMostRecentProposal_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentProposal_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -45,6 +50,8 @@ func TestLocalState_setMostRecentProposal_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreVote_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -71,6 +78,8 @@ func TestLocalState_setMostRecentPreVote_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreVote_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -98,6 +107,8 @@ func TestLocalState_setMostRecentPreVote_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreVote_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -122,6 +133,8 @@ func TestLocalState_setMostRecentPreVote_Ok(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreVoteNil_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -147,6 +160,8 @@ func TestLocalState_setMostRecentPreVoteNil_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreVoteNil_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -174,6 +189,8 @@ func TestLocalState_setMostRecentPreVoteNil_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommit_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -200,6 +217,8 @@ func TestLocalState_setMostRecentPreCommit_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommit_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -227,6 +246,8 @@ func TestLocalState_setMostRecentPreCommit_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommit_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -251,6 +272,8 @@ func TestLocalState_setMostRecentPreCommit_Ok(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommitNil_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -276,6 +299,8 @@ func TestLocalState_setMostRecentPreCommitNil_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommitNil_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -303,6 +328,8 @@ func TestLocalState_setMostRecentPreCommitNil_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentPreCommitNil_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -327,6 +354,8 @@ func TestLocalState_setMostRecentPreCommitNil_Ok(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextRound_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -352,6 +381,8 @@ func TestLocalState_setMostRecentNextRound_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextRound_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -379,6 +410,8 @@ func TestLocalState_setMostRecentNextRound_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextRound_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -403,6 +436,8 @@ func TestLocalState_setMostRecentNextRound_Ok(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextHeight_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -429,6 +464,8 @@ func TestLocalState_setMostRecentNextHeight_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextHeight_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -456,6 +493,8 @@ func TestLocalState_setMostRecentNextHeight_Error2(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentNextHeight_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -480,6 +519,8 @@ func TestLocalState_setMostRecentNextHeight_Ok(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentBlockHeaderFastSync_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -504,6 +545,8 @@ func TestLocalState_setMostRecentBlockHeaderFastSync_Error1(t *testing.T) {
 }
 
 func TestLocalState_setMostRecentBlockHeaderFastSync_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)

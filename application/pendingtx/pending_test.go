@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/mock"
 
@@ -295,6 +296,8 @@ func setup(t *testing.T) (*Handler, *mockTrie, func()) {
 }
 
 func TestAdd(t *testing.T) {
+	t.Parallel()
+
 	hndlr, _, cleanup := setup(t)
 	defer cleanup()
 	_, tx := makeTxInitial()
@@ -302,6 +305,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestAddErrors(t *testing.T) {
+	t.Parallel()
+
 	hndlr, _, cleanup := setup(t)
 	defer cleanup()
 	_, tx := makeTxInitial()
@@ -331,6 +336,8 @@ func TestAddErrors(t *testing.T) {
 }
 
 func TestDel(t *testing.T) {
+	t.Parallel()
+
 	hndlr, _, cleanup := setup(t)
 	defer cleanup()
 	_, tx := makeTxInitial()
@@ -339,6 +346,8 @@ func TestDel(t *testing.T) {
 }
 
 func TestDeleteMined(t *testing.T) {
+	t.Parallel()
+
 	hndlr, _, cleanup := setup(t)
 	defer cleanup()
 	vout, tx := makeTxInitial()
@@ -358,6 +367,8 @@ func TestDeleteMined(t *testing.T) {
 }
 
 func TestMissing(t *testing.T) {
+	t.Parallel()
+
 	hndlr, _, cleanup := setup(t)
 	defer cleanup()
 	_, tx := makeTxInitial()
@@ -367,6 +378,8 @@ func TestMissing(t *testing.T) {
 }
 
 func TestGetProposal(t *testing.T) {
+	t.Parallel()
+
 	hndlr, trie, cleanup := setup(t)
 	defer cleanup()
 	c1, tx1 := makeTxInitial()
@@ -412,23 +425,12 @@ func TestGetProposal(t *testing.T) {
 }
 
 func TestGetProposal_2Txs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -471,23 +473,12 @@ func TestGetProposal_2Txs(t *testing.T) {
 }
 
 func TestGetProposal_WithNonUniqueTxs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -529,23 +520,12 @@ func TestGetProposal_WithNonUniqueTxs(t *testing.T) {
 }
 
 func TestGetProposal_With1InvalidTx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,23 +574,12 @@ func TestGetProposal_With1InvalidTx(t *testing.T) {
 }
 
 func TestCheckIsValid_Valid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -655,23 +624,12 @@ func TestCheckIsValid_Valid(t *testing.T) {
 }
 
 func TestCheckIsValid_UTXOInvalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -716,23 +674,12 @@ func TestCheckIsValid_UTXOInvalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Missing_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -785,23 +732,12 @@ func TestCheckIsValid_Missing_Invalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Spent_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -850,23 +786,12 @@ func TestCheckIsValid_Spent_Invalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Error_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
+	db := environment.SetupBadgerDatabase(t)
+
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -911,9 +836,11 @@ func TestCheckIsValid_Error_Invalid(t *testing.T) {
 }
 
 func TestCheckConsumedDeposits(t *testing.T) {
+	t.Parallel()
+
 	hndlr, trie, cleanup := setup(t)
 	defer cleanup()
-	////////////////////////////////////////
+
 	signer := &crypto.Secp256k1Signer{}
 	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -947,6 +874,8 @@ func TestCheckConsumedDeposits(t *testing.T) {
 }
 
 func TestCheckGenerated(t *testing.T) {
+	t.Parallel()
+
 	hndlr, trie, cleanup := setup(t)
 	defer cleanup()
 	////////////////////////////////////////

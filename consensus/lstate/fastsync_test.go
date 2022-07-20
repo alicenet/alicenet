@@ -2,6 +2,8 @@ package lstate
 
 import (
 	"context"
+	"testing"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/appmock"
@@ -15,10 +17,11 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func TestSnapShotManager_startFastSync_Ok(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -40,6 +43,8 @@ func TestSnapShotManager_startFastSync_Ok(t *testing.T) {
 }
 
 func TestSnapShotManager_startFastSync_Error1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -62,6 +67,8 @@ func TestSnapShotManager_startFastSync_Error1(t *testing.T) {
 }
 
 func TestSnapShotManager_startFastSync_Error2(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, true, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -83,6 +90,8 @@ func TestSnapShotManager_startFastSync_Error2(t *testing.T) {
 }
 
 func TestSnapShotManager_Update_Error1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, true, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -105,6 +114,8 @@ func TestSnapShotManager_Update_Error1(t *testing.T) {
 }
 
 func TestSnapShotManager_Update_Error2(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -140,6 +151,8 @@ func TestSnapShotManager_Update_Error2(t *testing.T) {
 }
 
 func TestSnapShotManager_finalizeSync_Error1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -164,6 +177,8 @@ func TestSnapShotManager_finalizeSync_Error1(t *testing.T) {
 }
 
 func TestSnapShotManager_updateDls_Ok(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_ = ssm.database.Update(func(txn *badger.Txn) error {
@@ -175,6 +190,8 @@ func TestSnapShotManager_updateDls_Ok(t *testing.T) {
 }
 
 func TestSnapShotManager_findTailSyncHeight_Error1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_ = ssm.database.Update(func(txn *badger.Txn) error {
@@ -187,6 +204,8 @@ func TestSnapShotManager_findTailSyncHeight_Error1(t *testing.T) {
 }
 
 func TestSnapShotManager_findTailSyncHeight_Ok(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -215,6 +234,8 @@ func TestSnapShotManager_findTailSyncHeight_Ok(t *testing.T) {
 }
 
 func TestSnapShotManager_syncTailingBlockHeaders_Ok1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -255,6 +276,8 @@ func TestSnapShotManager_syncTailingBlockHeaders_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_syncTailingBlockHeaders_Ok2(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -293,6 +316,8 @@ func TestSnapShotManager_syncTailingBlockHeaders_Ok2(t *testing.T) {
 }
 
 func TestSnapShotManager_syncTailingBlockHeaders_Ok3(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -337,6 +362,8 @@ func TestSnapShotManager_syncTailingBlockHeaders_Ok3(t *testing.T) {
 }
 
 func TestSnapShotManager_syncTailingBlockHeaders_Error1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, false, nil)
 
 	_ = ssm.database.Update(func(txn *badger.Txn) error {
@@ -348,6 +375,8 @@ func TestSnapShotManager_syncTailingBlockHeaders_Error1(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Ok1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, true, nil)
 
 	nr := &nodeResponse{
@@ -370,7 +399,9 @@ func TestSnapShotManager_syncStateNodes_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error2(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: make([]byte, constants.HashLen), Value: make([]byte, constants.HashLen)}}
+	t.Parallel()
+
+	leafs := []trie.LeafNode{{Key: make([]byte, constants.HashLen), Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
@@ -393,7 +424,9 @@ func TestSnapShotManager_syncStateNodes_Error2(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error3(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: []byte{123}, Value: make([]byte, constants.HashLen)}}
+	t.Parallel()
+
+	leafs := []trie.LeafNode{{Key: []byte{123}, Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
@@ -416,7 +449,9 @@ func TestSnapShotManager_syncStateNodes_Error3(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error4(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: []byte{31}, Value: make([]byte, constants.HashLen)}}
+	t.Parallel()
+
+	leafs := []trie.LeafNode{{Key: []byte{31}, Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
@@ -439,6 +474,8 @@ func TestSnapShotManager_syncStateNodes_Error4(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateLeaves_Ok1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, true, nil)
 
 	nr := &stateResponse{
@@ -462,6 +499,8 @@ func TestSnapShotManager_syncStateLeaves_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_syncHdrLeaves_Ok1(t *testing.T) {
+	t.Parallel()
+
 	ssm := initSnapShotManager(t, true, nil)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -499,6 +538,8 @@ func TestSnapShotManager_syncHdrLeaves_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_downloadWithRetryStateNodeClosure_Ok1(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Shouldn't have raised error: %v", r)
@@ -525,6 +566,8 @@ func TestSnapShotManager_downloadWithRetryStateNodeClosure_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_downloadWithRetryStateNodeClosure_Ok2(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Shouldn't have raised error: %v", r)
@@ -551,6 +594,8 @@ func TestSnapShotManager_downloadWithRetryStateNodeClosure_Ok2(t *testing.T) {
 }
 
 func TestSnapShotManager_downloadWithRetryHdrLeafClosure_Ok1(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Shouldn't have raised error: %v", r)
@@ -629,6 +674,8 @@ func TestSnapShotManager_downloadWithRetryHdrLeafClosure_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_downloadWithRetryStateLeafClosure_Ok1(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Shouldn't have raised error: %v", r)
@@ -655,6 +702,8 @@ func TestSnapShotManager_downloadWithRetryStateLeafClosure_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_downloadWithRetryStateLeafClosure_Ok2(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Shouldn't have raised error: %v", r)

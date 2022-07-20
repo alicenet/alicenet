@@ -37,6 +37,8 @@ func (wm *wrappedMock) GetSnapShotHdrNode(context.Context, *pb.GetSnapShotHdrNod
 }
 
 func TestActive(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	P2PClientOne := NewMockP2PClient(ctrl)
@@ -64,7 +66,7 @@ func TestActive(t *testing.T) {
 	clientOne.EXPECT().NodeAddr().Return(randomNodeAddr)
 	clientOne.EXPECT().CloseChan()
 	activePeerStoreObj.add(clientOne)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	clientTwo.EXPECT().NodeAddr().Return(randomNodeAddr)
 	clientOne.EXPECT().CloseChan()
@@ -76,13 +78,13 @@ func TestActive(t *testing.T) {
 	if len(activePeerStoreObj.pid) != 1 {
 		t.Fatal("not one")
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	clientOne.EXPECT().NodeAddr().Return(randomNodeAddr)
 	clientOne.EXPECT().NodeAddr().Return(randomNodeAddr)
 	clientOne.EXPECT().NodeAddr().Return(randomNodeAddr)
 	close(P2PClientOneChannel)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
@@ -102,11 +104,11 @@ func TestActive(t *testing.T) {
 	clientTwo.EXPECT().CloseChan()
 	clientTwo.EXPECT().NodeAddr().Return(randomNodeAddr)
 	activePeerStoreObj.add(clientTwo)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	clientTwo.EXPECT().Close()
 	activePeerStoreObj.del(randomNodeAddr)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	activePeerStoreObj.RLock()
 	if len(activePeerStoreObj.store) != 0 {
@@ -125,14 +127,15 @@ func TestActive(t *testing.T) {
 	clientTwo.EXPECT().NodeAddr().Return(randomNodeAddr)
 	clientTwo.EXPECT().CloseChan()
 	activePeerStoreObj.add(clientTwo)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	clientTwo.EXPECT().Close()
 	activePeerStoreObj.close()
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 }
 
 func Test_activePeerStore_add(t *testing.T) {
+	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -175,10 +178,12 @@ func Test_activePeerStore_add(t *testing.T) {
 			assert.Equal(t, 1, ps.len())
 		})
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 }
 
 func Test_activePeerStore_close(t *testing.T) {
+	t.Parallel()
+
 	closeChan := make(chan struct{})
 	ps := &activePeerStore{
 		canClose:  true,
@@ -192,6 +197,8 @@ func Test_activePeerStore_close(t *testing.T) {
 }
 
 func Test_activePeerStore_contains(t *testing.T) {
+	t.Parallel()
+
 	randomNodeAddr, err := transport.RandomNodeAddr()
 	if err != nil {
 		t.Fatal(err)
@@ -238,6 +245,8 @@ func Test_activePeerStore_contains(t *testing.T) {
 }
 
 func Test_activePeerStore_del(t *testing.T) {
+	t.Parallel()
+
 	randomNodeAddr, err := transport.RandomNodeAddr()
 	if err != nil {
 		t.Fatal(err)
@@ -287,6 +296,8 @@ func Test_activePeerStore_del(t *testing.T) {
 }
 
 func Test_activePeerStore_getPeers(t *testing.T) {
+	t.Parallel()
+
 	randomNodeAddrFirst, _ := transport.RandomNodeAddr()
 	randomNodeAddrSecond, _ := transport.RandomNodeAddr()
 
@@ -344,6 +355,8 @@ func Test_activePeerStore_getPeers(t *testing.T) {
 }
 
 func Test_activePeerStore_random(t *testing.T) {
+	t.Parallel()
+
 	randomNodeAddrFirst, _ := transport.RandomNodeAddr()
 
 	type args struct {
@@ -409,6 +422,8 @@ func Test_activePeerStore_random(t *testing.T) {
 }
 
 func Test_activePeerStore_randomClient(t *testing.T) {
+	t.Parallel()
+
 	randomNodeAddrFirst, _ := transport.RandomNodeAddr()
 	randomNodeAddrSecond, _ := transport.RandomNodeAddr()
 

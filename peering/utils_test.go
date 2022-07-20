@@ -5,10 +5,14 @@ import (
 )
 
 func TestMakePid(t *testing.T) {
+	t.Parallel()
+
 	_ = makePid()
 }
 
 func TestRandomElement(t *testing.T) {
+	t.Parallel()
+
 	maxSize := 0
 	_, err := randomElement(maxSize)
 	if err == nil {
@@ -37,6 +41,8 @@ func TestRandomElement(t *testing.T) {
 }
 
 func Test_makePid(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		want uint64
@@ -56,6 +62,8 @@ func Test_makePid(t *testing.T) {
 }
 
 func Test_randomElement(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		maxSize int
 	}

@@ -19,6 +19,8 @@ import (
 )
 
 func TestStore_LoadLocalState_Ok(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -51,6 +53,8 @@ func TestStore_LoadLocalState_Ok(t *testing.T) {
 }
 
 func TestStore_LoadLocalState_Errors(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -86,6 +90,8 @@ func TestStore_LoadLocalState_Errors(t *testing.T) {
 }
 
 func TestStore_WriteState_Ok(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -103,6 +109,8 @@ func TestStore_WriteState_Ok(t *testing.T) {
 }
 
 func TestStore_WriteState_Errors(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -127,6 +135,8 @@ func TestStore_WriteState_Errors(t *testing.T) {
 }
 
 func TestStore_WriteState_ConflictLockedValue(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -153,6 +163,8 @@ func TestStore_WriteState_ConflictLockedValue(t *testing.T) {
 }
 
 func TestStore_WriteState_ConflictValidValue(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -179,6 +191,8 @@ func TestStore_WriteState_ConflictValidValue(t *testing.T) {
 }
 
 func TestStore_GetDropData_Ok_OS_Validator(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -216,6 +230,8 @@ func TestStore_GetDropData_Ok_OS_Validator(t *testing.T) {
 }
 
 func TestStore_GetDropData_Ok_OS_NotValidator(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -254,6 +270,8 @@ func TestStore_GetDropData_Ok_OS_NotValidator(t *testing.T) {
 
 //Proposal, PreVote, PreCommit, NextHeight
 func TestStore_GetGossipValues_Ok1(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -324,6 +342,8 @@ func TestStore_GetGossipValues_Ok1(t *testing.T) {
 
 //Proposal, PreVoteNil, PreCommitNil, NextRound
 func TestStore_GetGossipValues_Ok2(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -393,6 +413,8 @@ func TestStore_GetGossipValues_Ok2(t *testing.T) {
 }
 
 func TestStore_GetSyncToBH_Error(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 
 	_ = store.database.Update(func(txn *badger.Txn) error {
@@ -407,6 +429,8 @@ func TestStore_GetSyncToBH_Error(t *testing.T) {
 }
 
 func TestStore_GetMaxBH_Error(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 
 	_ = store.database.Update(func(txn *badger.Txn) error {
@@ -421,6 +445,8 @@ func TestStore_GetMaxBH_Error(t *testing.T) {
 }
 
 func TestStore_IsSync_Ok(t *testing.T) {
+	t.Parallel()
+
 	store := initStore(t)
 	os := createOwnState(t, 1)
 

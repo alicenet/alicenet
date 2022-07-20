@@ -3,18 +3,16 @@ package executor
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
-	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -48,6 +46,8 @@ func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Databas
 }
 
 func Test_TaskManager_HappyPath(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -87,6 +87,8 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 }
 
 func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -128,6 +130,8 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 }
 
 func Test_TaskManager_UnrecoverableError(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -158,6 +162,8 @@ func Test_TaskManager_UnrecoverableError(t *testing.T) {
 }
 
 func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -198,6 +204,8 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 }
 
 func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -232,6 +240,8 @@ func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
 }
 
 func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
+	t.Parallel()
+
 	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 	defer taskRespChan.close()
 
@@ -286,21 +296,9 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 }
 
 func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
-	dir, err := ioutil.TempDir("", "db-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	rawDB, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rawDB.Close()
+	t.Parallel()
+
+	rawDB := environment.SetupBadgerDatabase(t)
 
 	db := &db.Database{}
 	db.Init(rawDB)
