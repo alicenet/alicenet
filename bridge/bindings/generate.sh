@@ -13,6 +13,7 @@ abigen --abi bindings/bindings-artifacts/ETHDKG.json --pkg bindings --type ETHDK
 abigen --abi bindings/bindings-artifacts/ETHDKGErrorCodes.json --pkg bindings --type ETHDKGErrorCodes --out bindings/ETHDKGErrorCodes.go
 abigen --abi bindings/bindings-artifacts/Governance.json --pkg bindings --type Governance --out bindings/Governance.go
 abigen --abi bindings/bindings-artifacts/GovernanceErrorCodes.json --pkg bindings --type GovernanceErrorCodes --out bindings/GovernanceErrorCodes.go
+abigen --abi bindings/bindings-artifacts/MultipleProposalAccusation.json --pkg bindings --type MultipleProposalAccusation --out bindings/MultipleProposalAccusation.go
 abigen --abi bindings/bindings-artifacts/PublicStaking.json --pkg bindings --type PublicStaking --out bindings/PublicStaking.go
 abigen --abi bindings/bindings-artifacts/Snapshots.json --pkg bindings --type Snapshots --out bindings/Snapshots.go
 abigen --abi bindings/bindings-artifacts/SnapshotsErrorCodes.json --pkg bindings --type SnapshotsErrorCodes --out bindings/SnapshotsErrorCodes.go

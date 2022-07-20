@@ -62,6 +62,12 @@ type IGovernanceErrorCodes interface {
 	IGovernanceErrorCodesFilterer
 }
 
+type IMultipleProposalAccusation interface {
+	IMultipleProposalAccusationCaller
+	IMultipleProposalAccusationTransactor
+	IMultipleProposalAccusationFilterer
+}
+
 type IPublicStaking interface {
 	IPublicStakingCaller
 	IPublicStakingTransactor

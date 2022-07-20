@@ -1,0 +1,84 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "signature0_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "pClaims0_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature1_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "pClaims1_",
+        "type": "bytes"
+      }
+    ],
+    "name": "AccuseMultipleProposal",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_factory",
+        "type": "address"
+      }
+    ],
+    "name": "getMetamorphicContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id_",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isAccused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

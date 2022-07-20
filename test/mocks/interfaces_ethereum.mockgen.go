@@ -3963,6 +3963,14 @@ type MockEthereumContracts struct {
 	// GovernanceAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method GovernanceAddress.
 	GovernanceAddressFunc *EthereumContractsGovernanceAddressFunc
+	// MultipleProposalAccusationFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// MultipleProposalAccusation.
+	MultipleProposalAccusationFunc *EthereumContractsMultipleProposalAccusationFunc
+	// MultipleProposalAccusationAddressFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// MultipleProposalAccusationAddress.
+	MultipleProposalAccusationAddressFunc *EthereumContractsMultipleProposalAccusationAddressFunc
 	// PublicStakingFunc is an instance of a mock function object
 	// controlling the behavior of the method PublicStaking.
 	PublicStakingFunc *EthereumContractsPublicStakingFunc
@@ -4045,6 +4053,16 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		GovernanceAddressFunc: &EthereumContractsGovernanceAddressFunc{
+			defaultHook: func() (r0 common.Address) {
+				return
+			},
+		},
+		MultipleProposalAccusationFunc: &EthereumContractsMultipleProposalAccusationFunc{
+			defaultHook: func() (r0 bindings.IMultipleProposalAccusation) {
+				return
+			},
+		},
+		MultipleProposalAccusationAddressFunc: &EthereumContractsMultipleProposalAccusationAddressFunc{
 			defaultHook: func() (r0 common.Address) {
 				return
 			},
@@ -4152,6 +4170,16 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 				panic("unexpected invocation of MockEthereumContracts.GovernanceAddress")
 			},
 		},
+		MultipleProposalAccusationFunc: &EthereumContractsMultipleProposalAccusationFunc{
+			defaultHook: func() bindings.IMultipleProposalAccusation {
+				panic("unexpected invocation of MockEthereumContracts.MultipleProposalAccusation")
+			},
+		},
+		MultipleProposalAccusationAddressFunc: &EthereumContractsMultipleProposalAccusationAddressFunc{
+			defaultHook: func() common.Address {
+				panic("unexpected invocation of MockEthereumContracts.MultipleProposalAccusationAddress")
+			},
+		},
 		PublicStakingFunc: &EthereumContractsPublicStakingFunc{
 			defaultHook: func() bindings.IPublicStaking {
 				panic("unexpected invocation of MockEthereumContracts.PublicStaking")
@@ -4232,6 +4260,12 @@ func NewMockEthereumContractsFrom(i layer1.EthereumContracts) *MockEthereumContr
 		},
 		GovernanceAddressFunc: &EthereumContractsGovernanceAddressFunc{
 			defaultHook: i.GovernanceAddress,
+		},
+		MultipleProposalAccusationFunc: &EthereumContractsMultipleProposalAccusationFunc{
+			defaultHook: i.MultipleProposalAccusation,
+		},
+		MultipleProposalAccusationAddressFunc: &EthereumContractsMultipleProposalAccusationAddressFunc{
+			defaultHook: i.MultipleProposalAccusationAddress,
 		},
 		PublicStakingFunc: &EthereumContractsPublicStakingFunc{
 			defaultHook: i.PublicStaking,
@@ -5366,6 +5400,212 @@ func (c EthereumContractsGovernanceAddressFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c EthereumContractsGovernanceAddressFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// EthereumContractsMultipleProposalAccusationFunc describes the behavior
+// when the MultipleProposalAccusation method of the parent
+// MockEthereumContracts instance is invoked.
+type EthereumContractsMultipleProposalAccusationFunc struct {
+	defaultHook func() bindings.IMultipleProposalAccusation
+	hooks       []func() bindings.IMultipleProposalAccusation
+	history     []EthereumContractsMultipleProposalAccusationFuncCall
+	mutex       sync.Mutex
+}
+
+// MultipleProposalAccusation delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockEthereumContracts) MultipleProposalAccusation() bindings.IMultipleProposalAccusation {
+	r0 := m.MultipleProposalAccusationFunc.nextHook()()
+	m.MultipleProposalAccusationFunc.appendCall(EthereumContractsMultipleProposalAccusationFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the
+// MultipleProposalAccusation method of the parent MockEthereumContracts
+// instance is invoked and the hook queue is empty.
+func (f *EthereumContractsMultipleProposalAccusationFunc) SetDefaultHook(hook func() bindings.IMultipleProposalAccusation) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// MultipleProposalAccusation method of the parent MockEthereumContracts
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *EthereumContractsMultipleProposalAccusationFunc) PushHook(hook func() bindings.IMultipleProposalAccusation) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *EthereumContractsMultipleProposalAccusationFunc) SetDefaultReturn(r0 bindings.IMultipleProposalAccusation) {
+	f.SetDefaultHook(func() bindings.IMultipleProposalAccusation {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *EthereumContractsMultipleProposalAccusationFunc) PushReturn(r0 bindings.IMultipleProposalAccusation) {
+	f.PushHook(func() bindings.IMultipleProposalAccusation {
+		return r0
+	})
+}
+
+func (f *EthereumContractsMultipleProposalAccusationFunc) nextHook() func() bindings.IMultipleProposalAccusation {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *EthereumContractsMultipleProposalAccusationFunc) appendCall(r0 EthereumContractsMultipleProposalAccusationFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// EthereumContractsMultipleProposalAccusationFuncCall objects describing
+// the invocations of this function.
+func (f *EthereumContractsMultipleProposalAccusationFunc) History() []EthereumContractsMultipleProposalAccusationFuncCall {
+	f.mutex.Lock()
+	history := make([]EthereumContractsMultipleProposalAccusationFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// EthereumContractsMultipleProposalAccusationFuncCall is an object that
+// describes an invocation of method MultipleProposalAccusation on an
+// instance of MockEthereumContracts.
+type EthereumContractsMultipleProposalAccusationFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.IMultipleProposalAccusation
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c EthereumContractsMultipleProposalAccusationFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c EthereumContractsMultipleProposalAccusationFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// EthereumContractsMultipleProposalAccusationAddressFunc describes the
+// behavior when the MultipleProposalAccusationAddress method of the parent
+// MockEthereumContracts instance is invoked.
+type EthereumContractsMultipleProposalAccusationAddressFunc struct {
+	defaultHook func() common.Address
+	hooks       []func() common.Address
+	history     []EthereumContractsMultipleProposalAccusationAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// MultipleProposalAccusationAddress delegates to the next hook function in
+// the queue and stores the parameter and result values of this invocation.
+func (m *MockEthereumContracts) MultipleProposalAccusationAddress() common.Address {
+	r0 := m.MultipleProposalAccusationAddressFunc.nextHook()()
+	m.MultipleProposalAccusationAddressFunc.appendCall(EthereumContractsMultipleProposalAccusationAddressFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the
+// MultipleProposalAccusationAddress method of the parent
+// MockEthereumContracts instance is invoked and the hook queue is empty.
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) SetDefaultHook(hook func() common.Address) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// MultipleProposalAccusationAddress method of the parent
+// MockEthereumContracts instance invokes the hook at the front of the queue
+// and discards it. After the queue is empty, the default hook function is
+// invoked for any future action.
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) PushHook(hook func() common.Address) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) SetDefaultReturn(r0 common.Address) {
+	f.SetDefaultHook(func() common.Address {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) PushReturn(r0 common.Address) {
+	f.PushHook(func() common.Address {
+		return r0
+	})
+}
+
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) nextHook() func() common.Address {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) appendCall(r0 EthereumContractsMultipleProposalAccusationAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// EthereumContractsMultipleProposalAccusationAddressFuncCall objects
+// describing the invocations of this function.
+func (f *EthereumContractsMultipleProposalAccusationAddressFunc) History() []EthereumContractsMultipleProposalAccusationAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]EthereumContractsMultipleProposalAccusationAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// EthereumContractsMultipleProposalAccusationAddressFuncCall is an object
+// that describes an invocation of method MultipleProposalAccusationAddress
+// on an instance of MockEthereumContracts.
+type EthereumContractsMultipleProposalAccusationAddressFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c EthereumContractsMultipleProposalAccusationAddressFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c EthereumContractsMultipleProposalAccusationAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 

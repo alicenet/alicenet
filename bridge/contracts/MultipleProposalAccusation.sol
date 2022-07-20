@@ -27,20 +27,35 @@ contract MultipleProposalAccusation is
     {}
 
     /// @notice This function validates an accusation of multiple proposals.
-    /// @param _signature0 The signature of pclaims0
-    /// @param _pClaims0 The PClaims of the accusation
-    /// @param _signature1 The signature of pclaims1
-    /// @param _pClaims1 The PClaims of the accusation
+    /// @param signature0_ The signature of pclaims0
+    /// @param pClaims0_ The PClaims of the accusation
+    /// @param signature1_ The signature of pclaims1
+    /// @param pClaims1_ The PClaims of the accusation
     /// @return the address of the signer
     function AccuseMultipleProposal(
-        bytes calldata _signature0,
-        bytes calldata _pClaims0,
-        bytes calldata _signature1,
-        bytes calldata _pClaims1
-    ) public view returns (address) {
+        bytes calldata signature0_,
+        bytes calldata pClaims0_,
+        bytes calldata signature1_,
+        bytes calldata pClaims1_
+    ) public returns (address) {
+        // convert signatures to 32byte uints
+        uint256 sig0 = uint256(keccak256(signature0_));
+        uint256 sig1 = uint256(keccak256(signature1_));
+        bytes32 id;
+
+        // check sorting of signatures to generate ID
+        if (sig0 <= sig1) {
+            id = keccak256(abi.encode(signature0_, pClaims0_, signature1_, pClaims1_));
+        } else {
+            id = keccak256(abi.encode(signature1_, pClaims1_, signature0_, pClaims0_));
+        }
+
+        // check if thi accusation has already been submitted
+        require(!_accusations[id], "Accusations: the accusation has already been submitted!");
+
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
-        address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(_signature0, _pClaims0);
-        address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(_signature1, _pClaims1);
+        address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(signature0_, pClaims0_);
+        address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(signature1_, pClaims1_);
 
         require(
             signerAccount0 == signerAccount1,
@@ -49,15 +64,15 @@ contract MultipleProposalAccusation is
 
         // ensure the hashes of blob0/1 are different
         require(
-            keccak256(_pClaims0) != keccak256(_pClaims1),
+            keccak256(pClaims0_) != keccak256(pClaims1_),
             "Accusations: the PClaims are equal!"
         );
 
         PClaimsParserLibrary.PClaims memory pClaims0 = PClaimsParserLibrary.extractPClaims(
-            _pClaims0
+            pClaims0_
         );
         PClaimsParserLibrary.PClaims memory pClaims1 = PClaimsParserLibrary.extractPClaims(
-            _pClaims1
+            pClaims1_
         );
 
         // ensure the height of blob0/1 are equal using RCert sub object of PClaims
@@ -91,6 +106,12 @@ contract MultipleProposalAccusation is
             "Accusations: the signer of these proposals is not a valid validator!"
         );
 
+        _accusations[id] = true;
+
         return signerAccount0;
+    }
+
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
     }
 }

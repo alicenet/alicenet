@@ -15,6 +15,7 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
@@ -151,6 +152,7 @@ func GetTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
+	tr.RegisterInstanceType(&accusations.MultipleProposalAccusationTask{})
 	return tr
 }
 
