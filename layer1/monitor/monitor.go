@@ -114,7 +114,7 @@ func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
 
-// Close closes the event loop
+// Close the event loop.
 func (mon *monitor) Close() {
 	mon.cancelChan <- true
 }
