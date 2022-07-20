@@ -18,7 +18,7 @@ type AccusationKey struct {
 // the canonical byte slice
 func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 	if a == nil {
-		return nil, errorz.ErrInvalid{}.New("AccusationKey.MarshalBinary; accusation not initialized")
+		panic("AccusationKey.MarshalBinary; accusation not initialized")
 	}
 
 	key := []byte{}
@@ -36,7 +36,7 @@ func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 // AccusationKey object
 func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 	if a == nil {
-		return errorz.ErrInvalid{}.New("AccusationKey.UnmarshalBinary; accusation not initialized")
+		panic("AccusationKey.UnmarshalBinary; accusation not initialized")
 	}
 	splitData := bytes.Split(data, []byte("|"))
 	if len(splitData) != 4 {
@@ -57,7 +57,7 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 // the canonical byte slice without the UUID
 func (a *AccusationKey) MakeIterKey() ([]byte, error) {
 	if a == nil {
-		return nil, errorz.ErrInvalid{}.New("AccusationKey.MakeIterKey; accusation not initialized")
+		panic("AccusationKey.MakeIterKey; accusation not initialized")
 	}
 
 	key := []byte{}
