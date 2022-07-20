@@ -145,4 +145,4 @@ jobs:
       - name: Run tests ${{ matrix.test-groups }}
         timeout-minutes: 20
         run: |
-            go test -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+            go test -race -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
