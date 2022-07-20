@@ -140,19 +140,12 @@ jobs:
           ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-            node-version-file: 'bridge/.nvmrc'
-            cache: 'npm'
-            cache-dependency-path: bridge/package-lock.json
       - uses: ./.github/actions/alicenet-config
       - run: make setup
       - run: go build ./...
-      - run: cd bridge && npm run compile
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
         timeout-minutes: 20
         run: |
             go test -tags=integration -json -timeout=15m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
-
