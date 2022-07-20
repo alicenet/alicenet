@@ -2,27 +2,27 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os/user"
 	"path/filepath"
 
-	"flag"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	var path = flag.String("dbpath", "", "Path to validator state db.")
+	path := flag.String("dbpath", "", "Path to validator state db.")
 	flag.Parse()
 	ctx := context.Background()
 	nodeCtx, cf := context.WithCancel(ctx)
 	defer cf()
 	logger := logging.GetLogger("test")
 	stateDb := openBadger(nodeCtx, logger, *path, false)
-	//monitorDb := monitor.NewDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
+	// monitorDb := monitor.NewDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
 	prefixList := [][]byte{
 		[]byte("aa"),
 		[]byte("ab"),
@@ -93,7 +93,6 @@ func main() {
 			panic(err)
 		}
 	}
-
 }
 
 func openBadger(ctx context.Context, logger *logrus.Logger, directoryName string, inMemory bool) *badger.DB {

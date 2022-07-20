@@ -1,8 +1,9 @@
 package trie
 
 import (
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 func prefixNode() []byte {
@@ -28,7 +29,7 @@ func (db *cacheDB) getNodeDB(txn *badger.Txn, key []byte) ([]byte, error) {
 	return v, nil
 }
 
-func getNodeDB(txn *badger.Txn, prefix []byte, key []byte) ([]byte, error) {
+func getNodeDB(txn *badger.Txn, prefix, key []byte) ([]byte, error) {
 	nodekey := []byte{}
 	nodekey = append(nodekey, prefix...)
 	nodekey = append(nodekey, prefixNode()...)
@@ -53,7 +54,7 @@ func (db *cacheDB) setNodeDB(txn *badger.Txn, key, value []byte) error {
 	return nil
 }
 
-func setNodeDB(txn *badger.Txn, prefix []byte, key, value []byte) error {
+func setNodeDB(txn *badger.Txn, prefix, key, value []byte) error {
 	key = convNilToBytes(key)
 	value = convNilToBytes(value)
 	nodekey := []byte{}

@@ -119,12 +119,12 @@ func (f *funder) doSpam(privk string, numChildren int, nodeList []string, baseId
 	}
 	f.children = children
 	fmt.Printf("Funder setting up funding\n")
-	//numStuff := &uint256.Uint256{}
+	// numStuff := &uint256.Uint256{}
 	numStuff, err := new(uint256.Uint256).FromUint64(uint64(len(children)))
 	if err != nil {
 		panic(err)
 	}
-	//utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
+	// utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
 	utxos, value, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, numStuff)
 	if err != nil {
 		fmt.Printf("Funder error at blockingGetFunding: %v\n", err)
@@ -177,12 +177,12 @@ func (f *funder) init(privk string, numChildren int, nodeList []string, baseIdx 
 	}
 	f.children = children
 	fmt.Printf("Funder setting up funding\n")
-	//numStuff := &uint256.Uint256{}
+	// numStuff := &uint256.Uint256{}
 	numStuff, err := new(uint256.Uint256).FromUint64(uint64(len(children)))
 	if err != nil {
 		panic(err)
 	}
-	//utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
+	// utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
 	utxos, value, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, numStuff)
 	if err != nil {
 		fmt.Printf("Funder error at blockingGetFunding: %v\n", err)
@@ -287,8 +287,8 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	}
 	minTxFee := new(uint256.Uint256)
 	vsFee := new(uint256.Uint256)
-	//dsEpochFee := new(uint256.Uint256)
-	//asFee := new(uint256.Uint256)
+	// dsEpochFee := new(uint256.Uint256)
+	// asFee := new(uint256.Uint256)
 	err = minTxFee.UnmarshalString(feesString[0])
 	if err != nil {
 		panic(err)
@@ -297,8 +297,8 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	if err != nil {
 		panic(err)
 	}
-	//err = dsEpochFee.UnmarshalString(feesString[2])
-	//err = asFee.UnmarshalString(feesString[3])
+	// err = dsEpochFee.UnmarshalString(feesString[2])
+	// err = asFee.UnmarshalString(feesString[3])
 	tx := &aobjs.Tx{
 		Vin:  aobjs.Vin{},
 		Vout: aobjs.Vout{},
@@ -406,7 +406,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	return tx, nil
 }
 
-func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int) ([]*worker, error) {
+func (f *funder) setupChildren(ctx context.Context, numChildren, baseIdx int) ([]*worker, error) {
 	workers := []*worker{}
 	for i := 0; i < numChildren; i++ {
 		client, err := f.setupClient(ctx, baseIdx+i)
@@ -516,7 +516,7 @@ func (f *funder) setupDataStoreMode(privk string, nodeList []string) error {
 	return nil
 }
 
-func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
+func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg, ind string) (*aobjs.Tx, error) {
 	index := crypto.Hasher([]byte(ind))
 	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
 	if err != nil {
@@ -559,7 +559,7 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 			return nil, err
 		}
 		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		//valueOut += deposit
+		// valueOut += deposit
 		_, err = valueOut.Add(valueOut, deposit)
 		if err != nil {
 			return nil, err
@@ -618,7 +618,7 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 			panic(err)
 		}
 		tx.Vout = append(tx.Vout, newUTXO)
-		//valueOut += diff
+		// valueOut += diff
 		_, err = valueOut.Add(valueOut, diff)
 		if err != nil {
 			panic(err)
@@ -681,7 +681,7 @@ func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Sig
 	return tx, nil
 }
 
-func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
+func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg, ind string) (*aobjs.Tx, error) {
 	index := crypto.Hasher([]byte(ind))
 	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
 	if err != nil {
@@ -909,7 +909,7 @@ func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Si
 	return tx, nil
 }
 
-func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
+func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg, ind string) (*aobjs.Tx, error) {
 	index := crypto.Hasher([]byte(ind))
 	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
 	if err != nil {

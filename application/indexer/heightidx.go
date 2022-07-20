@@ -11,9 +11,10 @@ given height index get txHash
 */
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func NewHeightIdxIndex(p, pp prefixFunc) *HeightIdxIndex {
@@ -29,12 +30,12 @@ type HeightIdxIndexKey struct {
 	key []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (hiik *HeightIdxIndexKey) MarshalBinary() []byte {
 	return utils.CopySlice(hiik.key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (hiik *HeightIdxIndexKey) UnmarshalBinary(data []byte) {
 	hiik.key = utils.CopySlice(data)
 }
@@ -43,17 +44,17 @@ type HeightIdxIndexRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (hiirk *HeightIdxIndexRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(hiirk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (hiirk *HeightIdxIndexRefKey) UnmarshalBinary(data []byte) {
 	hiirk.refkey = utils.CopySlice(data)
 }
 
-func (hii *HeightIdxIndex) Add(txn *badger.Txn, txHash []byte, height uint32, idx uint32) error {
+func (hii *HeightIdxIndex) Add(txn *badger.Txn, txHash []byte, height, idx uint32) error {
 	hiiKey := hii.makeKey(txHash)
 	key := hiiKey.MarshalBinary()
 	hiiRefKey := hii.makeRefKey(height, idx)
@@ -96,7 +97,7 @@ func (hii *HeightIdxIndex) GetHeightIdx(txn *badger.Txn, txHash []byte) (uint32,
 	return hii.getHeightIdx(heightIdx)
 }
 
-func (hii *HeightIdxIndex) GetTxHashFromHeightIdx(txn *badger.Txn, height uint32, idx uint32) ([]byte, error) {
+func (hii *HeightIdxIndex) GetTxHashFromHeightIdx(txn *badger.Txn, height, idx uint32) ([]byte, error) {
 	hiiRefKey := hii.makeRefKey(height, idx)
 	refKey := hiiRefKey.MarshalBinary()
 	return utils.GetValue(txn, refKey)
@@ -111,7 +112,7 @@ func (hii *HeightIdxIndex) makeKey(txHash []byte) *HeightIdxIndexKey {
 	return hiiKey
 }
 
-func (hii *HeightIdxIndex) makeRefKey(height uint32, idx uint32) *HeightIdxIndexRefKey {
+func (hii *HeightIdxIndex) makeRefKey(height, idx uint32) *HeightIdxIndexRefKey {
 	heightIdx := hii.makeHeightIdx(height, idx)
 	refKey := make([]byte, 0, len(hii.prefixRef())+8)
 	refKey = append(refKey, hii.prefixRef()...)
@@ -121,7 +122,7 @@ func (hii *HeightIdxIndex) makeRefKey(height uint32, idx uint32) *HeightIdxIndex
 	return hiiRefKey
 }
 
-func (hii *HeightIdxIndex) makeHeightIdx(height uint32, idx uint32) []byte {
+func (hii *HeightIdxIndex) makeHeightIdx(height, idx uint32) []byte {
 	heightIdx := make([]byte, 0, 8)
 	heightBytes := utils.MarshalUint32(height)
 	heightIdx = append(heightIdx, heightBytes...)

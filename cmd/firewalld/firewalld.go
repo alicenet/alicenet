@@ -7,13 +7,14 @@ import (
 	"net"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
 	"github.com/alicenet/alicenet/cmd/firewalld/gcloud"
 	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 )
 
 type SubscriptionResult struct {
@@ -35,8 +36,8 @@ var ErrNoConn = fmt.Errorf("no conn")
 
 var Command = cobra.Command{
 	Use:   "firewalld",
-	Short: "Continously updates a given firewall in the background",
-	Long:  "Continously updates a given firewall using values received over IPC from main AliceNet process",
+	Short: "Continuously updates a given firewall in the background",
+	Long:  "Continuously updates a given firewall using values received over IPC from main AliceNet process",
 	Run:   FirewallDaemon,
 }
 

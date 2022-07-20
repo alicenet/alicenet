@@ -164,7 +164,6 @@ func TestSqrtGFP2(t *testing.T) {
 	if !gfp2ElemSqrtSquared.IsEqual(gfp2Elem) {
 		t.Fatal("Failed to compute gfp2 sqrt of", gfp2Elem.String())
 	}
-
 }
 
 func sqrtGFP2Int64(t *testing.T, k int64) {
@@ -192,7 +191,7 @@ func sqrtGFP2Int64(t *testing.T, k int64) {
 	}
 }
 
-// Test the sign0GFp2 function for determining sign of gfP2 (Real part)
+// Test the sign0GFp2 function for determining sign of gfP2 (Real part).
 func TestSign0GFp2Real(t *testing.T) {
 	gfpOne := newGFp(1)
 	gfp2One := &gfP2{}
@@ -237,7 +236,7 @@ func TestSign0GFp2Real(t *testing.T) {
 	}
 }
 
-// Test the sign0GFp2 function for determining sign of gfP2 (Imag part)
+// Test the sign0GFp2 function for determining sign of gfP2 (Imag part).
 func TestSign0GFp2Imag(t *testing.T) {
 	gfpOne := newGFp(1)
 	gfp2One := &gfP2{}

@@ -3,14 +3,13 @@ package objs
 import (
 	"bytes"
 
-	"github.com/alicenet/alicenet/errorz"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
 )
 
-// AtomicSwapOwner describes the necessary information for AtomicSwap object
+// AtomicSwapOwner describes the necessary information for AtomicSwap object.
 type AtomicSwapOwner struct {
 	SVA            SVA
 	HashLock       []byte
@@ -18,8 +17,8 @@ type AtomicSwapOwner struct {
 	PrimaryOwner   *AtomicSwapSubOwner
 }
 
-// New creates a new AtomicSwapOwner
-func (aso *AtomicSwapOwner) New(priOwnerAcct []byte, altOwnerAcct []byte, hashKey []byte) error {
+// New creates a new AtomicSwapOwner.
+func (aso *AtomicSwapOwner) New(priOwnerAcct, altOwnerAcct, hashKey []byte) error {
 	if aso == nil {
 		return errorz.ErrInvalid{}.New("aso.new; aso not initialized")
 	}
@@ -45,8 +44,8 @@ func (aso *AtomicSwapOwner) New(priOwnerAcct []byte, altOwnerAcct []byte, hashKe
 	return nil
 }
 
-// NewFromOwner creates a new AtomicSwapOwner from Owner objects
-func (aso *AtomicSwapOwner) NewFromOwner(priOwner *Owner, altOwner *Owner, hashKey []byte) error {
+// NewFromOwner creates a new AtomicSwapOwner from Owner objects.
+func (aso *AtomicSwapOwner) NewFromOwner(priOwner, altOwner *Owner, hashKey []byte) error {
 	if aso == nil {
 		return errorz.ErrInvalid{}.New("aso.newFromOwner; aso not initialized")
 	}
@@ -77,7 +76,7 @@ func (aso *AtomicSwapOwner) NewFromOwner(priOwner *Owner, altOwner *Owner, hashK
 }
 
 // MarshalBinary takes the AtomicSwapOwner object and returns the canonical
-// byte slice
+// byte slice.
 func (aso *AtomicSwapOwner) MarshalBinary() ([]byte, error) {
 	if err := aso.Validate(); err != nil {
 		return nil, err
@@ -99,7 +98,7 @@ func (aso *AtomicSwapOwner) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// AtomicSwapOwner object
+// AtomicSwapOwner object.
 func (aso *AtomicSwapOwner) UnmarshalBinary(o []byte) error {
 	if aso == nil {
 		return errorz.ErrInvalid{}.New("aso.unmarshalBinary; aso not initialized")
@@ -139,7 +138,7 @@ func (aso *AtomicSwapOwner) UnmarshalBinary(o []byte) error {
 	return nil
 }
 
-// PrimaryAccount returns the account byte slice of the PrimaryOwner
+// PrimaryAccount returns the account byte slice of the PrimaryOwner.
 func (aso *AtomicSwapOwner) PrimaryAccount() ([]byte, error) {
 	if aso == nil {
 		return nil, errorz.ErrInvalid{}.New("aso.primaryAccount; aso not initialized")
@@ -150,7 +149,7 @@ func (aso *AtomicSwapOwner) PrimaryAccount() ([]byte, error) {
 	return utils.CopySlice(aso.PrimaryOwner.Account), nil
 }
 
-// AlternateAccount returns the account byte slice of the AlternateOwner
+// AlternateAccount returns the account byte slice of the AlternateOwner.
 func (aso *AtomicSwapOwner) AlternateAccount() ([]byte, error) {
 	if aso == nil {
 		return nil, errorz.ErrInvalid{}.New("aso.alternateAccount; aso not initialized")
@@ -161,7 +160,7 @@ func (aso *AtomicSwapOwner) AlternateAccount() ([]byte, error) {
 	return utils.CopySlice(aso.AlternateOwner.Account), nil
 }
 
-// Validate validates the AtomicSwapOwner
+// Validate validates the AtomicSwapOwner.
 func (aso *AtomicSwapOwner) Validate() error {
 	if aso == nil {
 		return errorz.ErrInvalid{}.New("aso.validate; aso not initialized")
@@ -181,7 +180,7 @@ func (aso *AtomicSwapOwner) Validate() error {
 	return nil
 }
 
-// ValidateSignature validates the signature
+// ValidateSignature validates the signature.
 func (aso *AtomicSwapOwner) ValidateSignature(msg []byte, sig *AtomicSwapSignature, isExpired bool) error {
 	if err := aso.Validate(); err != nil {
 		return errorz.ErrInvalid{}.New("aso.validateSignature; invalid AtomicSwapOwner")
@@ -218,7 +217,7 @@ func (aso *AtomicSwapOwner) ValidateSignature(msg []byte, sig *AtomicSwapSignatu
 	}
 }
 
-// validateSVA validates the Signature Verification Algorithm
+// validateSVA validates the Signature Verification Algorithm.
 func (aso *AtomicSwapOwner) validateSVA() error {
 	if aso == nil {
 		return errorz.ErrInvalid{}.New("aso.validateSVA; aso not initialized")
@@ -288,7 +287,7 @@ type AtomicSwapSubOwner struct {
 }
 
 // NewFromOwner takes an Owner object and creates the corresponding
-// AtomicSwapSubOwner
+// AtomicSwapSubOwner.
 func (asso *AtomicSwapSubOwner) NewFromOwner(o *Owner) error {
 	if asso == nil {
 		return errorz.ErrInvalid{}.New("asso.newFromOwner; asso not initialized")
@@ -307,7 +306,7 @@ func (asso *AtomicSwapSubOwner) NewFromOwner(o *Owner) error {
 }
 
 // MarshalBinary takes the AtomicSwapSubOwner object and returns the canonical
-// byte slice
+// byte slice.
 func (asso *AtomicSwapSubOwner) MarshalBinary() ([]byte, error) {
 	if err := asso.Validate(); err != nil {
 		return nil, err
@@ -319,7 +318,7 @@ func (asso *AtomicSwapSubOwner) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// AtomicSwapSubOwner object
+// AtomicSwapSubOwner object.
 func (asso *AtomicSwapSubOwner) UnmarshalBinary(o []byte) ([]byte, error) {
 	owner := utils.CopySlice(o)
 	curveSpec, owner, err := extractCurveSpec(owner)
@@ -338,7 +337,7 @@ func (asso *AtomicSwapSubOwner) UnmarshalBinary(o []byte) ([]byte, error) {
 	return owner, nil
 }
 
-// ValidateSignature validates the signature of the AtomicSwapSignature object
+// ValidateSignature validates the signature of the AtomicSwapSignature object.
 func (asso *AtomicSwapSubOwner) ValidateSignature(msg []byte, sig *AtomicSwapSignature) error {
 	if err := asso.Validate(); err != nil {
 		return errorz.ErrInvalid{}.New("asso.validateSignature; invalid AtomicSwapSubOwner")
@@ -358,7 +357,7 @@ func (asso *AtomicSwapSubOwner) ValidateSignature(msg []byte, sig *AtomicSwapSig
 	return nil
 }
 
-// validateCurveSpec validates the curve specification for AtomicSwapSubOwner
+// validateCurveSpec validates the curve specification for AtomicSwapSubOwner.
 func (asso *AtomicSwapSubOwner) validateCurveSpec() error {
 	if asso.CurveSpec != constants.CurveSecp256k1 {
 		return errorz.ErrInvalid{}.New("asso.validateCurveSpec; invalid curveSpec")
@@ -366,7 +365,7 @@ func (asso *AtomicSwapSubOwner) validateCurveSpec() error {
 	return nil
 }
 
-// validateAccount validates the account for AtomicSwapSubOwner
+// validateAccount validates the account for AtomicSwapSubOwner.
 func (asso *AtomicSwapSubOwner) validateAccount() error {
 	if len(asso.Account) != constants.OwnerLen {
 		return errorz.ErrInvalid{}.New("asso.validateAccount; incorrect account length")
@@ -374,7 +373,7 @@ func (asso *AtomicSwapSubOwner) validateAccount() error {
 	return nil
 }
 
-// Validate validates the AtomicSwapSubOwner object
+// Validate validates the AtomicSwapSubOwner object.
 func (asso *AtomicSwapSubOwner) Validate() error {
 	if asso == nil {
 		return errorz.ErrInvalid{}.New("asso.validate; asso not initialized")

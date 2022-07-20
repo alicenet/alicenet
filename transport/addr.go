@@ -13,12 +13,12 @@ type addr struct {
 	address string
 }
 
-// Network ... See net.Addr docs
+// Network ... See net.Addr docs.
 func (ad *addr) Network() string {
 	return ad.network
 }
 
-// String ... See net.Addr docs
+// String ... See net.Addr docs.
 func (ad *addr) String() string {
 	return ad.address
 }

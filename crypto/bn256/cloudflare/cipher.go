@@ -12,7 +12,7 @@ import (
 // from Diffie-Hellman Key Exchange along with the index of the recipient
 // receiving the message as a one-time pad.
 // Including the receiver's index ensures it is only used once.
-func Encrypt(secretValue *big.Int, privK *big.Int, pubK *G1, participantIndex int) *big.Int {
+func Encrypt(secretValue, privK *big.Int, pubK *G1, participantIndex int) *big.Int {
 	sharedSecret := new(G1).ScalarMult(pubK, privK)
 	sharedSecretSlice := sharedSecret.Marshal()
 	sharedSecretSlice = sharedSecretSlice[:numBytes] // Only use x-coordinate
@@ -31,7 +31,7 @@ func Encrypt(secretValue *big.Int, privK *big.Int, pubK *G1, participantIndex in
 // from Diffie-Hellman Key Exchange along with the index of the recipient
 // receiving the message as a one-time pad.
 // Including the receiver's index ensures it is only used once.
-func Decrypt(encryptedValue *big.Int, privK *big.Int, pubK *G1, participantIndex int) *big.Int {
+func Decrypt(encryptedValue, privK *big.Int, pubK *G1, participantIndex int) *big.Int {
 	sharedSecret := new(G1).ScalarMult(pubK, privK)
 	sharedSecretSlice := sharedSecret.Marshal()
 	sharedSecretSlice = sharedSecretSlice[:numBytes] // Only use x-coordinate

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	mnutils "github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 var prefixList = [][]byte{
@@ -24,7 +25,7 @@ var prefixList = [][]byte{
 	[]byte("ao"),
 }
 
-// Command is the cobra.Command specifically for running as a node
+// Command is the cobra.Command specifically for running as a node.
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
@@ -70,7 +71,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func resetOvs(db *db.Database, txn *badger.Txn) {

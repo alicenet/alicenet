@@ -32,7 +32,6 @@ func RunCmd(c ...string) ([]byte, error) {
 		stderr, _ = ioutil.ReadAll(pipe)
 	}()
 	o, err := cmd.Output()
-
 	if err != nil {
 		return nil, fmt.Errorf("%v: %v", err, string(stderr))
 	}

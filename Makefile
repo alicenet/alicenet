@@ -25,6 +25,7 @@ lint:
 format:
 	buf format -w
 	go mod tidy
+	golangci-lint run -E gci,godot,gofumpt,misspell,whitespace --fix
 	cd bridge && npm run format
 
 .PHONY: generate

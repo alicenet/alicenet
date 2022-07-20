@@ -8,22 +8,23 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1"
 	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1"
 )
 
 // Internal struct used to send work requests to the workers that will retrieve
-// the receipts
+// the receipts.
 type MonitorWorkRequest struct {
 	txn    info   // Info object that contains the state that will be used to retrieve the receipt from the blockchain
 	height uint64 // Current height of the blockchain head
 }
 
-// Internal struct used by the workers to communicate the result from the receipt retrieval work
+// Internal struct used by the workers to communicate the result from the receipt retrieval work.
 type MonitorWorkResponse struct {
 	txnHash    common.Hash         // hash of transaction
 	retriedTxn *retriedTransaction // transaction info object from the analyzed transaction
@@ -31,7 +32,7 @@ type MonitorWorkResponse struct {
 	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
 }
 
-// Internal struct to keep track of retried transaction by the workers
+// Internal struct to keep track of retried transaction by the workers.
 type retriedTransaction struct {
 	txn *types.Transaction // new transaction after the retry attempt
 	err error              // error that happened during the transaction retry
@@ -51,8 +52,8 @@ type WorkerPool struct {
 	responseWorkChannel chan<- MonitorWorkResponse // Channel where the work response will be send
 }
 
-// Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, client layer1.Client, baseFee *big.Int, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+// Creates a new WorkerPool service.
+func NewWorkerPool(ctx context.Context, client layer1.Client, baseFee, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, client, baseFee, tipCap, logger, requestWorkChannel, responseWorkChannel}
 }
 
@@ -69,7 +70,7 @@ func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 // Unit of work. A worker is spawned as go routine. A worker check and retrieve
 // receipts for multiple transactions. The worker will be executing while
 // there's transactions to be checked or there's a timeout (set by
-// constants.TxWorkerTimeout)
+// constants.TxWorkerTimeout).
 func (w *WorkerPool) worker() {
 	ctx, cf := context.WithTimeout(w.ctx, constants.TxWorkerTimeout)
 	defer cf()
@@ -133,7 +134,7 @@ func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHa
 	}
 }
 
-// Internal function used by the workers to check/retrieve the receipts for a given transaction
+// Internal function used by the workers to check/retrieve the receipts for a given transaction.
 func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
 	blockTimeSpan := currentHeight - monitoredTx.MonitoringHeight

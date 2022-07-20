@@ -6,21 +6,22 @@ import (
 	dangerousRand "math/rand"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// SnapshotTask pushes a snapshot to Ethereum
+// SnapshotTask pushes a snapshot to Ethereum.
 type SnapshotTask struct {
 	*tasks.BaseTask
 	Height uint64
 }
 
-// asserting that SnapshotTask struct implements interface tasks.Task
+// asserting that SnapshotTask struct implements interface tasks.Task.
 var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(start uint64, end uint64, height uint64) *SnapshotTask {
+func NewSnapshotTask(start, end, height uint64) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 		Height:   height,
@@ -28,7 +29,7 @@ func NewSnapshotTask(start uint64, end uint64, height uint64) *SnapshotTask {
 	return snapshotTask
 }
 
-// Prepare prepares for work to be done in the SnapshotTask
+// Prepare prepares for work to be done in the SnapshotTask.
 func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()").WithField("AliceNetHeight", t.Height)
 	logger.Debugf("preparing task")
@@ -54,7 +55,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()").WithField("AliceNetHeight", t.Height)
 	logger.Debug("initiate execution")
@@ -92,7 +93,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("AliceNetHeight", t.Height)
 	logger.Debug("should execute task")

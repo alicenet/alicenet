@@ -4,6 +4,12 @@ run:
     - integration
     - flakes
 linters:
+  enable:
+    - gci
+    - godot
+    - gofumpt
+    - misspell
+    - whitespace
   # Disabling linters until we get them fixed up.
   disable:
     - errcheck
@@ -12,3 +18,13 @@ linters:
     - ineffassign
     - staticcheck
     - varcheck
+linters-settings:
+  gofumpt:
+    lang-version: "1.18"
+    module-path: github.com/alicenet/alicenet
+    extra-rules: true
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/alicenet)

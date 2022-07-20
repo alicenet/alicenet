@@ -12,6 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/spf13/viper"
+
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
 	"github.com/alicenet/alicenet/application/objs"
@@ -37,39 +40,41 @@ import (
 	"github.com/alicenet/alicenet/status"
 	"github.com/alicenet/alicenet/utils"
 	mnutils "github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/spf13/viper"
 )
 
-var timeout time.Duration = time.Second * 10
-var account []byte
-var signer *crypto.Secp256k1Signer
-var pubKey []byte
-var tx *objs.Tx
-var err error
-var srpc *Handlers
-var lrpc *Client
-var tx1, tx2, tx3 *pb.TransactionData
-var tx1Hash, tx2Hash, tx3Hash []byte
-var consumedTx1Hash, consumedTx2Hash, consumedTx3Hash []byte
-var utxoTx1IDs, utxoTx2IDs, utxoTx3IDs [][]byte
-var tx1Value, tx2Value, tx3Value uint64
-var tx1Signature, tx2Signature, tx3Signature []byte
+var (
+	timeout                                           time.Duration = time.Second * 10
+	account                                           []byte
+	signer                                            *crypto.Secp256k1Signer
+	pubKey                                            []byte
+	tx                                                *objs.Tx
+	err                                               error
+	srpc                                              *Handlers
+	lrpc                                              *Client
+	tx1, tx2, tx3                                     *pb.TransactionData
+	tx1Hash, tx2Hash, tx3Hash                         []byte
+	consumedTx1Hash, consumedTx2Hash, consumedTx3Hash []byte
+	utxoTx1IDs, utxoTx2IDs, utxoTx3IDs                [][]byte
+	tx1Value, tx2Value, tx3Value                      uint64
+	tx1Signature, tx2Signature, tx3Signature          []byte
+)
 
-// var stateDB *db.Database
+// var stateDB *db.Database.
 var ctx context.Context
-var app *application.Application
-var consGossipHandlers *gossip.Handlers
-var peerManager *peering.PeerManager
-var consGossipClient *gossip.Client
-var consDlManager *dman.DMan
-var localStateHandler *Handlers
-var consDB *db.Database
-var consSync *consensus.Synchronizer
-var storage *dynamics.Storage
+
+var (
+	app                *application.Application
+	consGossipHandlers *gossip.Handlers
+	peerManager        *peering.PeerManager
+	consGossipClient   *gossip.Client
+	consDlManager      *dman.DMan
+	localStateHandler  *Handlers
+	consDB             *db.Database
+	consSync           *consensus.Synchronizer
+	storage            *dynamics.Storage
+)
 
 func TestMain(m *testing.M) {
-
 	loadSettings("validator.toml")
 	signer, pubKey = getSignerData()
 	validatorNode()
@@ -144,7 +149,7 @@ func TestMain(m *testing.M) {
 	tx2, tx2Hash, tx2Signature = getTransactionRequest(consumedTx2Hash, mncrypto.GetAccount(pubKey), tx2Value)
 	tx3, tx3Hash, tx3Signature = getTransactionRequest(consumedTx3Hash, mncrypto.GetAccount(pubKey), tx3Value)
 
-	//Start tests after validator is running
+	// Start tests after validator is running
 	exitVal := m.Run()
 
 	os.Exit(exitVal)
@@ -173,7 +178,7 @@ func validatorNode() {
 	// Need to keep DBs open after this function
 	// defer rawConsensusDb.Close()
 
-	// Initialize transaction pool db: contains transcations that have not been mined (and thus are to be gossiped)
+	// Initialize transaction pool db: contains transactions that have not been mined (and thus are to be gossiped)
 	rawTxPoolDb := initDatabase(nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
 	// defer rawTxPoolDb.Close()
 
@@ -295,7 +300,7 @@ func validatorNode() {
 	   	defer func() { logger.Warning("Starting graceful unwind of core processes.") }() */
 }
 
-func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (tx_ *pb.TransactionData, TxHash []byte, TXSignature []byte) {
+func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pb.TransactionData, TxHash, TXSignature []byte) {
 	pubKey, _ := signer.Pubkey()
 	value_, _ := new(uint256.Uint256).FromUint64(1)
 	txin := &objs.TXIn{
@@ -333,7 +338,8 @@ func getTransactionRequest(ConsumedTxHash []byte, account []byte, val uint64) (t
 			Owner: &objs.ValueStoreOwner{
 				SVA:       objs.ValueStoreSVA,
 				CurveSpec: constants.CurveSecp256k1,
-				Account:   crypto.GetAccount(pubKey)},
+				Account:   crypto.GetAccount(pubKey),
+			},
 		},
 		TxHash: make([]byte, constants.HashLen),
 	}
@@ -404,7 +410,7 @@ func loadSettings(configFile string) {
 	if err != nil {
 		panic(err)
 	}
-	//StateDbPath is in configuration but StateDB on the file, hence fixing
+	// StateDbPath is in configuration but StateDB on the file, hence fixing
 	viper.Set("chain.StateDbPath", viper.GetString("chain.StateDB"))
 	viper.Set("chain.MonitorDbPath", viper.GetString("chain.MonitorDB"))
 	err = viper.Unmarshal(&config.Configuration)

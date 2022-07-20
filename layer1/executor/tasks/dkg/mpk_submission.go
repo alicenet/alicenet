@@ -16,18 +16,18 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 )
 
-// MPKSubmissionTask stores the data required to submit the mpk
+// MPKSubmissionTask stores the data required to submit the mpk.
 type MPKSubmissionTask struct {
 	*tasks.BaseTask
 	// variables that are unique only for this task
 	StartBlockHash common.Hash `json:"startBlockHash"`
 }
 
-// asserting that MPKSubmissionTask struct implements interface tasks.Task
+// asserting that MPKSubmissionTask struct implements interface tasks.Task.
 var _ tasks.Task = &MPKSubmissionTask{}
 
-// NewMPKSubmissionTask creates a new task
-func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
+// NewMPKSubmissionTask creates a new task.
+func NewMPKSubmissionTask(start, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
@@ -65,7 +65,7 @@ func (t *MPKSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		g1KeyShares := make([][2]*big.Int, dkgState.NumberOfValidators)
 		g2KeyShares := make([][4]*big.Int, dkgState.NumberOfValidators)
 
-		var participantsList = dkgState.GetSortedParticipants()
+		participantsList := dkgState.GetSortedParticipants()
 		for idx, participant := range participantsList {
 			// Bringing these in from state but could directly query contract
 			g1KeyShares[idx] = dkgState.Participants[participant.Address].KeyShareG1s
@@ -113,7 +113,7 @@ func (t *MPKSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -145,7 +145,7 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
@@ -196,11 +196,10 @@ func (t *MPKSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Tas
 }
 
 func isMasterPublicKeyEmpty(masterPublicKey [4]*big.Int) bool {
-	isNil :=
-		(masterPublicKey[0] == nil ||
-			masterPublicKey[1] == nil ||
-			masterPublicKey[2] == nil ||
-			masterPublicKey[3] == nil)
+	isNil := (masterPublicKey[0] == nil ||
+		masterPublicKey[1] == nil ||
+		masterPublicKey[2] == nil ||
+		masterPublicKey[3] == nil)
 
 	return isNil || (masterPublicKey[0].Cmp(big.NewInt(0)) == 0 &&
 		masterPublicKey[1].Cmp(big.NewInt(0)) == 0 &&

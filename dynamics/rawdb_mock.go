@@ -15,7 +15,7 @@ func (m *MockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
 	return value, nil
 }
 
-func (m *MockRawDB) SetValue(txn *badger.Txn, key []byte, value []byte) error {
+func (m *MockRawDB) SetValue(txn *badger.Txn, key, value []byte) error {
 	strKey := string(key)
 	strValue := string(value)
 	m.rawDB[strKey] = strValue

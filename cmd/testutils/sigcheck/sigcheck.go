@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alicenet/alicenet/crypto"
 	eth "github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func main() {

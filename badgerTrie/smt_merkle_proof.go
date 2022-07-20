@@ -8,8 +8,9 @@ package trie
 import (
 	"bytes"
 
-	"github.com/alicenet/alicenet/constants"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/constants"
 )
 
 // MerkleProof generates a Merkle proof of inclusion or non-inclusion
@@ -17,7 +18,7 @@ import (
 // returns the audit path, bool (key included), key, value, error
 // (key,value) can be 1- (nil, value), value of the included key, 2- the kv of a LeafNode
 // on the path of the non-included key, 3- (nil, nil) for a non-included key
-// with a DefaultLeaf on the path
+// with a DefaultLeaf on the path.
 func (s *SMT) MerkleProof(txn *badger.Txn, key []byte) ([][]byte, bool, []byte, []byte, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -29,19 +30,19 @@ func (s *SMT) MerkleProof(txn *badger.Txn, key []byte) ([][]byte, bool, []byte, 
 // returns the audit path, bool (key included), key, value, error
 // (key,value) can be 1- (nil, value), value of the included key, 2- the kv of a LeafNode
 // on the path of the non-included key, 3- (nil, nil) for a non-included key
-// with a DefaultLeaf on the path
+// with a DefaultLeaf on the path.
 func (s *SMT) MerkleProofR(txn *badger.Txn, key, root []byte) ([][]byte, bool, []byte, []byte, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.merkleProof(txn, root, key, nil, s.TrieHeight, 0)
 }
 
-// MerkleProofCompressedR returns a compressed merkle proof in the given trie
+// MerkleProofCompressedR returns a compressed merkle proof in the given trie.
 func (s *SMT) MerkleProofCompressedR(txn *badger.Txn, key, root []byte) ([]byte, [][]byte, int, bool, []byte, []byte, error) {
 	return s.merkleProofCompressed(txn, key, root)
 }
 
-// MerkleProofCompressed returns a compressed merkle proof
+// MerkleProofCompressed returns a compressed merkle proof.
 func (s *SMT) MerkleProofCompressed(txn *badger.Txn, key []byte) ([]byte, [][]byte, int, bool, []byte, []byte, error) {
 	return s.merkleProofCompressed(txn, key, s.Root)
 }
@@ -72,7 +73,7 @@ func (s *SMT) merkleProofCompressed(txn *badger.Txn, key, root []byte) ([]byte, 
 // returns the audit path, bool (key included), key, value, error
 // (key,value) can be 1- (nil, value), value of the included key, 2- the kv of a LeafNode
 // on the path of the non-included key, 3- (nil, nil) for a non-included key
-// with a DefaultLeaf on the path
+// with a DefaultLeaf on the path.
 func (s *SMT) merkleProof(txn *badger.Txn, root, key []byte, batch [][]byte, height, iBatch int) ([][]byte, bool, []byte, []byte, error) {
 	if len(root) == 0 {
 		// prove that an empty subtree is on the path of the key
@@ -103,7 +104,6 @@ func (s *SMT) merkleProof(txn *badger.Txn, root, key []byte, batch [][]byte, hei
 		} else {
 			return append(mp, DefaultLeaf), included, proofKey, proofValue, nil
 		}
-
 	}
 	mp, included, proofKey, proofValue, err := s.merkleProof(txn, lnode, key, batch, height-1, 2*iBatch+1)
 	if err != nil {
@@ -116,13 +116,13 @@ func (s *SMT) merkleProof(txn *badger.Txn, root, key []byte, batch [][]byte, hei
 	}
 }
 
-// VerifyInclusion verifies that key/value is included in the trie with latest root
+// VerifyInclusion verifies that key/value is included in the trie with latest root.
 func (s *SMT) VerifyInclusion(ap [][]byte, key, value []byte) bool {
 	leafHash := s.hash(key, value, []byte{byte(s.TrieHeight - len(ap))})
 	return bytes.Equal(s.Root, s.verifyInclusion(ap, 0, key, leafHash))
 }
 
-// verifyInclusion returns the merkle root by hashing the merkle proof items
+// verifyInclusion returns the merkle root by hashing the merkle proof items.
 func (s *SMT) verifyInclusion(ap [][]byte, keyIndex int, key, leafHash []byte) []byte {
 	if keyIndex == len(ap) {
 		return leafHash
@@ -134,7 +134,7 @@ func (s *SMT) verifyInclusion(ap [][]byte, keyIndex int, key, leafHash []byte) [
 }
 
 // VerifyNonInclusion verifies a proof of non inclusion,
-// Returns true if the non-inclusion is verified
+// Returns true if the non-inclusion is verified.
 func (s *SMT) VerifyNonInclusion(ap [][]byte, key, value, proofKey []byte) bool {
 	// Check if an empty subtree is on the key path
 	if len(proofKey) == 0 {
@@ -159,20 +159,20 @@ func (s *SMT) VerifyNonInclusion(ap [][]byte, key, value, proofKey []byte) bool 
 	return true
 }
 
-// VerifyInclusionCR verifies that key/value is included in the trie with latest root
-func (s *SMT) VerifyInclusionCR(root []byte, bitmap, key, value []byte, ap [][]byte, length int) bool {
+// VerifyInclusionCR verifies that key/value is included in the trie with latest root.
+func (s *SMT) VerifyInclusionCR(root, bitmap, key, value []byte, ap [][]byte, length int) bool {
 	leafHash := s.hash(key, value, []byte{byte(s.TrieHeight - length)})
 	// fmt.Printf("leafhash %x\n", leafHash)
 	return bytes.Equal(root, s.verifyInclusionC(bitmap, key, leafHash, ap, length, 0, 0))
 }
 
-// VerifyInclusionC verifies that key/value is included in the trie with latest root
+// VerifyInclusionC verifies that key/value is included in the trie with latest root.
 func (s *SMT) VerifyInclusionC(bitmap, key, value []byte, ap [][]byte, length int) bool {
 	leafHash := s.hash(key, value, []byte{byte(s.TrieHeight - length)})
 	return bytes.Equal(s.Root, s.verifyInclusionC(bitmap, key, leafHash, ap, length, 0, 0))
 }
 
-// verifyInclusionC returns the merkle root by hashing the merkle proof items
+// verifyInclusionC returns the merkle root by hashing the merkle proof items.
 func (s *SMT) verifyInclusionC(bitmap, key, leafHash []byte, ap [][]byte, length, keyIndex, apIndex int) []byte {
 	if keyIndex == length {
 		return leafHash
@@ -182,7 +182,6 @@ func (s *SMT) verifyInclusionC(bitmap, key, leafHash []byte, ap [][]byte, length
 			return s.hash(ap[len(ap)-apIndex-1], s.verifyInclusionC(bitmap, key, leafHash, ap, length, keyIndex+1, apIndex+1))
 		}
 		return s.hash(DefaultLeaf, s.verifyInclusionC(bitmap, key, leafHash, ap, length, keyIndex+1, apIndex))
-
 	}
 	if bitIsSet(bitmap, length-keyIndex-1) {
 		return s.hash(s.verifyInclusionC(bitmap, key, leafHash, ap, length, keyIndex+1, apIndex+1), ap[len(ap)-apIndex-1])
@@ -191,7 +190,7 @@ func (s *SMT) verifyInclusionC(bitmap, key, leafHash []byte, ap [][]byte, length
 }
 
 // VerifyNonInclusionC verifies a proof of non inclusion,
-// Returns true if the non-inclusion is verified
+// Returns true if the non-inclusion is verified.
 func (s *SMT) VerifyNonInclusionC(ap [][]byte, length int, bitmap, key, value, proofKey []byte) bool {
 	// Check if an empty subtree is on the key path
 	if len(proofKey) == 0 {

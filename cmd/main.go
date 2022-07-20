@@ -8,16 +8,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	"github.com/alicenet/alicenet/cmd/bootnode"
 	"github.com/alicenet/alicenet/cmd/firewalld"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/cmd/validator"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 type option struct {
@@ -27,7 +28,7 @@ type option struct {
 	value interface{}
 }
 
-// Runner wraps a cobra command's Run() and sets up loggers first
+// Runner wraps a cobra command's Run() and sets up loggers first.
 func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	logger := logging.GetLogger("main")
 	return func(a *cobra.Command, b []string) {
@@ -55,11 +56,10 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			}
 		}
 		commandRun(a, b)
-
 	}
 }
 
-func setLogger(name string, level string) {
+func setLogger(name, level string) {
 	lgr := logging.GetLogger(name)
 	switch level {
 	case "trace":
@@ -89,7 +89,8 @@ func main() {
 	rootCommand := cobra.Command{
 		Use:   "alicenet",
 		Short: "Short description of alicenet",
-		Long:  "This is a not so long description for alicenet"}
+		Long:  "This is a not so long description for alicenet",
+	}
 
 	// All the configuration options available. Used for command line and config file.
 	options := map[*cobra.Command][]*option{
@@ -158,19 +159,22 @@ func main() {
 		},
 
 		&utils.Command: {
-			{"utils.status", "", "", &config.Configuration.Utils.Status}},
+			{"utils.status", "", "", &config.Configuration.Utils.Status},
+		},
 
 		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
-			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
+			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize},
+		},
 
 		&firewalld.Command: {},
 
 		&validator.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
-			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
+			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
+		},
 	}
 
 	// Establish command hierarchy
@@ -184,7 +188,6 @@ func main() {
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
 	for c := range options {
-
 		cFlags := c.PersistentFlags() // just a convenience thing
 
 		if c.Run != nil {
@@ -198,7 +201,6 @@ func main() {
 
 		var defaultStringArray []string
 		for _, o := range options[c] {
-
 			typeOfPtr := reflect.TypeOf(o.value)
 			if typeOfPtr.Kind() != reflect.Ptr {
 				logger.Fatalf("Option value for %v should be supplied as a pointer.", o.name)
@@ -234,7 +236,6 @@ func main() {
 
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
-
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {

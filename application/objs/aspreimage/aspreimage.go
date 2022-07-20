@@ -2,6 +2,7 @@ package aspreimage
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
@@ -40,7 +41,7 @@ func Unmarshal(data []byte) (mdefs.ASPreImage, error) {
 	return obj, nil
 }
 
-// Validate will validate the ASPreImage object
+// Validate will validate the ASPreImage object.
 func Validate(v mdefs.ASPreImage) error {
 	if v.ChainID() < 1 {
 		return errorz.ErrInvalid{}.New("aspreimage capn obj is not valid: invalid ChainID")

@@ -9,7 +9,7 @@ import (
 // TODO: RACE ON READ OF MsgTimeout FROM SYNCHRONIZER.SETUPLOOPS AND FROM RAWSTORAGE.START
 
 // RawStorage is the struct which stores dynamic values;
-// these values may change from epoch to epoch
+// these values may change from epoch to epoch.
 type RawStorage struct {
 	MaxBytes                       uint32        `json:"maxBytes,omitempty"`
 	MaxProposalSize                uint32        `json:"maxProposalSize,omitempty"`
@@ -67,7 +67,7 @@ func (rs *RawStorage) Copy() (*RawStorage, error) {
 	return c, nil
 }
 
-// IsValid returns true if we can successfully make a copy
+// IsValid returns true if we can successfully make a copy.
 func (rs *RawStorage) IsValid() bool {
 	_, err := rs.Copy()
 	return err == nil
@@ -207,44 +207,44 @@ func (rs *RawStorage) standardParameters() {
 	rs.MinTxFee = new(big.Int).Set(minTxFee)
 }
 
-// GetMaxBytes returns the maximum allowed bytes
+// GetMaxBytes returns the maximum allowed bytes.
 func (rs *RawStorage) GetMaxBytes() uint32 {
 	return rs.MaxBytes
 }
 
-// SetMaxBytes sets the maximum allowed bytes
+// SetMaxBytes sets the maximum allowed bytes.
 func (rs *RawStorage) SetMaxBytes(value uint32) {
 	rs.MaxBytes = value
 	rs.MaxProposalSize = value
 }
 
-// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
+// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal.
 func (rs *RawStorage) GetMaxProposalSize() uint32 {
 	return rs.MaxProposalSize
 }
 
-// GetSrvrMsgTimeout returns the time before timeout of server message
+// GetSrvrMsgTimeout returns the time before timeout of server message.
 func (rs *RawStorage) GetSrvrMsgTimeout() time.Duration {
 	return rs.SrvrMsgTimeout
 }
 
-// GetMsgTimeout returns the timeout to receive a message
+// GetMsgTimeout returns the timeout to receive a message.
 func (rs *RawStorage) GetMsgTimeout() time.Duration {
 	return rs.MsgTimeout
 }
 
-// SetMsgTimeout sets the timeout to receive a message
+// SetMsgTimeout sets the timeout to receive a message.
 func (rs *RawStorage) SetMsgTimeout(value time.Duration) {
 	rs.MsgTimeout = value
 	rs.SrvrMsgTimeout = (3 * value) / 4
 }
 
-// GetProposalStepTimeout returns the proposal step timeout
+// GetProposalStepTimeout returns the proposal step timeout.
 func (rs *RawStorage) GetProposalStepTimeout() time.Duration {
 	return rs.ProposalStepTimeout
 }
 
-// SetProposalStepTimeout sets the proposal step timeout
+// SetProposalStepTimeout sets the proposal step timeout.
 func (rs *RawStorage) SetProposalStepTimeout(value time.Duration) {
 	rs.ProposalStepTimeout = value
 	sum := rs.ProposalStepTimeout + rs.PreVoteStepTimeout + rs.PreCommitStepTimeout
@@ -252,12 +252,12 @@ func (rs *RawStorage) SetProposalStepTimeout(value time.Duration) {
 	rs.DeadBlockRoundNextRoundTimeout = (5 * sum) / 2
 }
 
-// GetPreVoteStepTimeout returns the prevote step timeout
+// GetPreVoteStepTimeout returns the prevote step timeout.
 func (rs *RawStorage) GetPreVoteStepTimeout() time.Duration {
 	return rs.PreVoteStepTimeout
 }
 
-// SetPreVoteStepTimeout sets the prevote step timeout
+// SetPreVoteStepTimeout sets the prevote step timeout.
 func (rs *RawStorage) SetPreVoteStepTimeout(value time.Duration) {
 	rs.PreVoteStepTimeout = value
 	sum := rs.ProposalStepTimeout + rs.PreVoteStepTimeout + rs.PreCommitStepTimeout
@@ -265,12 +265,12 @@ func (rs *RawStorage) SetPreVoteStepTimeout(value time.Duration) {
 	rs.DeadBlockRoundNextRoundTimeout = (5 * sum) / 2
 }
 
-// GetPreCommitStepTimeout returns the precommit step timeout
+// GetPreCommitStepTimeout returns the precommit step timeout.
 func (rs *RawStorage) GetPreCommitStepTimeout() time.Duration {
 	return rs.PreCommitStepTimeout
 }
 
-// SetPreCommitStepTimeout sets the precommit step timeout
+// SetPreCommitStepTimeout sets the precommit step timeout.
 func (rs *RawStorage) SetPreCommitStepTimeout(value time.Duration) {
 	rs.PreCommitStepTimeout = value
 	sum := rs.ProposalStepTimeout + rs.PreVoteStepTimeout + rs.PreCommitStepTimeout
@@ -279,17 +279,17 @@ func (rs *RawStorage) SetPreCommitStepTimeout(value time.Duration) {
 }
 
 // GetDeadBlockRoundNextRoundTimeout returns the timeout required before
-// moving into the DeadBlockRound
+// moving into the DeadBlockRound.
 func (rs *RawStorage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 	return rs.DeadBlockRoundNextRoundTimeout
 }
 
-// GetDownloadTimeout returns the timeout for downloads
+// GetDownloadTimeout returns the timeout for downloads.
 func (rs *RawStorage) GetDownloadTimeout() time.Duration {
 	return rs.DownloadTimeout
 }
 
-// GetMinTxFee returns the minimun tx burned fee
+// GetMinTxFee returns the minimun tx burned fee.
 func (rs *RawStorage) GetMinTxFee() *big.Int {
 	if rs.MinTxFee == nil {
 		rs.MinTxFee = new(big.Int)
@@ -297,7 +297,7 @@ func (rs *RawStorage) GetMinTxFee() *big.Int {
 	return rs.MinTxFee
 }
 
-// SetMinTxFee sets the minimun tx burned fee
+// SetMinTxFee sets the minimun tx burned fee.
 func (rs *RawStorage) SetMinTxFee(value *big.Int) error {
 	if value == nil {
 		return ErrInvalidValue
@@ -312,17 +312,17 @@ func (rs *RawStorage) SetMinTxFee(value *big.Int) error {
 	return nil
 }
 
-// GetTxValidVersion returns the valid version of tx
+// GetTxValidVersion returns the valid version of tx.
 func (rs *RawStorage) GetTxValidVersion() uint32 {
 	return rs.TxValidVersion
 }
 
-// SetTxValidVersion sets the minimun tx burned fee
+// SetTxValidVersion sets the minimun tx burned fee.
 func (rs *RawStorage) SetTxValidVersion(value uint32) {
 	rs.TxValidVersion = value
 }
 
-// GetDataStoreEpochFee returns the minimun ValueStore burned fee
+// GetDataStoreEpochFee returns the minimun ValueStore burned fee.
 func (rs *RawStorage) GetDataStoreEpochFee() *big.Int {
 	if rs.DataStoreEpochFee == nil {
 		rs.DataStoreEpochFee = new(big.Int)
@@ -330,7 +330,7 @@ func (rs *RawStorage) GetDataStoreEpochFee() *big.Int {
 	return rs.DataStoreEpochFee
 }
 
-// SetDataStoreEpochFee sets the minimun ValueStore burned fee
+// SetDataStoreEpochFee sets the minimun ValueStore burned fee.
 func (rs *RawStorage) SetDataStoreEpochFee(value *big.Int) error {
 	if value == nil {
 		return ErrInvalidValue
@@ -345,7 +345,7 @@ func (rs *RawStorage) SetDataStoreEpochFee(value *big.Int) error {
 	return nil
 }
 
-// GetValueStoreFee returns the minimun ValueStore burned fee
+// GetValueStoreFee returns the minimun ValueStore burned fee.
 func (rs *RawStorage) GetValueStoreFee() *big.Int {
 	if rs.ValueStoreFee == nil {
 		rs.ValueStoreFee = new(big.Int)
@@ -353,7 +353,7 @@ func (rs *RawStorage) GetValueStoreFee() *big.Int {
 	return rs.ValueStoreFee
 }
 
-// SetValueStoreFee sets the minimun ValueStore burned fee
+// SetValueStoreFee sets the minimun ValueStore burned fee.
 func (rs *RawStorage) SetValueStoreFee(value *big.Int) error {
 	if value == nil {
 		return ErrInvalidValue
@@ -368,17 +368,17 @@ func (rs *RawStorage) SetValueStoreFee(value *big.Int) error {
 	return nil
 }
 
-// GetValueStoreValidVersion returns the valid version of ValueStore
+// GetValueStoreValidVersion returns the valid version of ValueStore.
 func (rs *RawStorage) GetValueStoreValidVersion() uint32 {
 	return rs.ValueStoreValidVersion
 }
 
-// SetValueStoreValidVersion sets the valid version of ValueStore
+// SetValueStoreValidVersion sets the valid version of ValueStore.
 func (rs *RawStorage) SetValueStoreValidVersion(value uint32) {
 	rs.ValueStoreValidVersion = value
 }
 
-// GetAtomicSwapFee returns the minimun AtomicSwap burned fee
+// GetAtomicSwapFee returns the minimun AtomicSwap burned fee.
 func (rs *RawStorage) GetAtomicSwapFee() *big.Int {
 	if rs.AtomicSwapFee == nil {
 		rs.AtomicSwapFee = new(big.Int)
@@ -386,7 +386,7 @@ func (rs *RawStorage) GetAtomicSwapFee() *big.Int {
 	return rs.AtomicSwapFee
 }
 
-// SetAtomicSwapFee sets the minimun AtomicSwap burned fee
+// SetAtomicSwapFee sets the minimun AtomicSwap burned fee.
 func (rs *RawStorage) SetAtomicSwapFee(value *big.Int) error {
 	if value == nil {
 		return ErrInvalidValue
@@ -401,22 +401,22 @@ func (rs *RawStorage) SetAtomicSwapFee(value *big.Int) error {
 	return nil
 }
 
-// GetAtomicSwapValidStopEpoch returns the valid version of AtomicSwap
+// GetAtomicSwapValidStopEpoch returns the valid version of AtomicSwap.
 func (rs *RawStorage) GetAtomicSwapValidStopEpoch() uint32 {
 	return rs.AtomicSwapValidStopEpoch
 }
 
-// SetAtomicSwapValidStopEpoch sets the valid version of AtomicSwap
+// SetAtomicSwapValidStopEpoch sets the valid version of AtomicSwap.
 func (rs *RawStorage) SetAtomicSwapValidStopEpoch(value uint32) {
 	rs.AtomicSwapValidStopEpoch = value
 }
 
-// GetDataStoreValidVersion returns the valid version of DataStore
+// GetDataStoreValidVersion returns the valid version of DataStore.
 func (rs *RawStorage) GetDataStoreValidVersion() uint32 {
 	return rs.DataStoreValidVersion
 }
 
-// SetDataStoreValidVersion sets the valid version of AtomicSwap
+// SetDataStoreValidVersion sets the valid version of AtomicSwap.
 func (rs *RawStorage) SetDataStoreValidVersion(value uint32) {
 	rs.DataStoreValidVersion = value
 }

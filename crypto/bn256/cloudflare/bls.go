@@ -5,7 +5,7 @@ import (
 )
 
 // Sign generates a signature based on the message, private key, and
-// Hash-to-G1 function
+// Hash-to-G1 function.
 func Sign(msg []byte, privK *big.Int, hashG1Func func(msg []byte) (*G1, error)) (*G1, error) {
 	sig := &G1{}
 	hash, err := hashG1Func(msg)
@@ -144,7 +144,7 @@ func AggregateSignatures(sigs []*G1, indices []int, threshold int) (*G1, error) 
 }
 
 // MarshalSignature takes in the sig and pubK and outputs byte slice of
-// pubK bytes followed by sig bytes
+// pubK bytes followed by sig bytes.
 func MarshalSignature(sig *G1, pubK *G2) ([]byte, error) {
 	ret := []byte{}
 	ret = append(ret, pubK.Marshal()...)
@@ -153,7 +153,7 @@ func MarshalSignature(sig *G1, pubK *G2) ([]byte, error) {
 }
 
 // UnmarshalSignature takes the marshalled signature and
-// converts it back to the sig and pubK
+// converts it back to the sig and pubK.
 func UnmarshalSignature(marshalledSig []byte) (*G2, *G1, error) {
 	if len(marshalledSig) != 6*numBytes {
 		return nil, nil, ErrInvalidSignatureLength
@@ -174,7 +174,7 @@ func UnmarshalSignature(marshalledSig []byte) (*G2, *G1, error) {
 }
 
 // SplitPubkeySig separates the signature and public key bytes
-// and returns them individually
+// and returns them individually.
 func SplitPubkeySig(sig []byte) ([]byte, []byte, error) {
 	if len(sig) != 6*numBytes {
 		return nil, nil, ErrInvalidSignatureLength
@@ -184,7 +184,7 @@ func SplitPubkeySig(sig []byte) ([]byte, []byte, error) {
 	return pubkBytes, sigBytes, nil
 }
 
-// PubkeyFromSig returns the public key bytes from a marshalled signature
+// PubkeyFromSig returns the public key bytes from a marshalled signature.
 func PubkeyFromSig(sig []byte) ([]byte, error) {
 	pubkb, _, err := SplitPubkeySig(sig)
 	if err != nil {
@@ -202,7 +202,7 @@ func PubkeyFromSig(sig []byte) ([]byte, error) {
 // cryptographic routines. marshalledSigs contains both the signature and the
 // corresponding public key, which enables us to call makeIndicesArray in
 // order to correctly perform AggregateSignatures.
-func AggregateMarshalledSignatures(marshalledSigs [][]byte, listOfPubKsMarsh [][]byte, threshold int) (*G1, error) {
+func AggregateMarshalledSignatures(marshalledSigs, listOfPubKsMarsh [][]byte, threshold int) (*G1, error) {
 	if len(marshalledSigs) <= threshold {
 		return nil, ErrBelowThreshold
 	}
@@ -237,7 +237,7 @@ func AggregateMarshalledSignatures(marshalledSigs [][]byte, listOfPubKsMarsh [][
 // index from orderedPubKs. Note that we add 1 to each index,
 // because the indexing starts at 1. This is required so that
 // shared secrets are shared and not given away.
-func makeIndicesArray(pubKs []*G2, orderedPubKs []*G2) ([]int, error) {
+func makeIndicesArray(pubKs, orderedPubKs []*G2) ([]int, error) {
 	indices := make([]int, len(pubKs))
 	for k := 0; k < len(pubKs); k++ {
 		foundInt := false

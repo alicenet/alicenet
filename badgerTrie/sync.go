@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/alicenet/alicenet/errorz"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/errorz"
 )
 
-func GetNodeDB(txn *badger.Txn, prefix []byte, key []byte) ([]byte, error) {
+func GetNodeDB(txn *badger.Txn, prefix, key []byte) ([]byte, error) {
 	key = convNilToBytes(key)
 	var node Hash
 	copy(node[:], key)
@@ -19,7 +20,7 @@ func GetNodeDB(txn *badger.Txn, prefix []byte, key []byte) ([]byte, error) {
 	return v, nil
 }
 
-func (s *SMT) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []LeafNode, error) {
+func (s *SMT) StoreSnapShotNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []LeafNode, error) {
 	pbatch, err := s.parseBatch(batch)
 	if err != nil {
 		return nil, 0, nil, err

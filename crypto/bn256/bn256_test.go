@@ -209,7 +209,6 @@ func TestG1ToBigArray(t *testing.T) {
 	if (g1ArbB[0].Cmp(g1ArbBTrue[0]) != 0) || (g1ArbB[1].Cmp(g1ArbBTrue[1]) != 0) {
 		t.Fatal("G1ToBigArray failed for g1Arb")
 	}
-
 }
 
 func TestG1ToBigArrayBad(t *testing.T) {
@@ -323,7 +322,6 @@ func TestBigIntArraySliceToG1(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error for invalid G1 point")
 	}
-
 }
 
 func TestG2ToBigArray(t *testing.T) {
@@ -574,5 +572,4 @@ func TestMarshalG1BigSliceBad(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
-
 }

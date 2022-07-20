@@ -3,9 +3,10 @@ package crypto
 import (
 	"crypto/ecdsa"
 
+	eth "github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
-	eth "github.com/ethereum/go-ethereum/crypto"
 )
 
 // Secp256k1Signer creates cryptographic signatures using the secp256k1 curve.
@@ -52,11 +53,10 @@ func (secps *Secp256k1Signer) Sign(msg []byte) ([]byte, error) {
 
 // Secp256k1Validator is a struct which allows for validation of cryptographic
 // signatures from Secp256k1Signer.
-type Secp256k1Validator struct {
-}
+type Secp256k1Validator struct{}
 
 // Validate will validate a Secp256k1Signer signature for msg.
-func (secpv *Secp256k1Validator) Validate(msg []byte, sig []byte) ([]byte, error) {
+func (secpv *Secp256k1Validator) Validate(msg, sig []byte) ([]byte, error) {
 	if len(sig) != constants.CurveSecp256k1SigLen {
 		return nil, ErrInvalidSignature
 	}
@@ -71,7 +71,7 @@ func (secpv *Secp256k1Validator) Validate(msg []byte, sig []byte) ([]byte, error
 
 // PubkeyFromSig returns the public key of the signer from the signature
 // and message.
-func (secpv *Secp256k1Validator) PubkeyFromSig(msg []byte, sig []byte) ([]byte, error) {
+func (secpv *Secp256k1Validator) PubkeyFromSig(msg, sig []byte) ([]byte, error) {
 	if len(sig) != constants.CurveSecp256k1SigLen {
 		return nil, ErrInvalidSignature
 	}

@@ -10,6 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
@@ -17,11 +23,6 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 type FuncSelector [4]byte
@@ -43,7 +44,7 @@ func (fs *FuncSelector) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(FuncSelectorT, input, fs[:])
 }
 
-// Internal struct to keep track of transactions that are being monitoring
+// Internal struct to keep track of transactions that are being monitoring.
 type info struct {
 	Txn               *types.Transaction `json:"txn"`               // Transaction object
 	FromAddress       common.Address     `json:"fromAddress"`       // address of the transaction signer
@@ -89,23 +90,23 @@ func newReplacedInfo(newTxn *types.Transaction, originalTxInfo info) info {
 	)
 }
 
-// Internal struct to keep track of transactions retries groups
+// Internal struct to keep track of transactions retries groups.
 type group struct {
 	InternalGroup   []common.Hash  `json:"internalGroup"` // slice where we keep track of all tx in a group
 	receiptResponse *SharedReceipt `json:"-"`             // struct used to send/share the receipt
 }
 
-// creates a new group
+// creates a new group.
 func newGroup() group {
 	return group{receiptResponse: newSharesReceipt()}
 }
 
-// add a new hash to the group
+// add a new hash to the group.
 func (g *group) add(txHash common.Hash) {
 	g.InternalGroup = append(g.InternalGroup, txHash)
 }
 
-// remove a hash from the group
+// remove a hash from the group.
 func (g *group) remove(txHash common.Hash) error {
 	index := -1
 	lastIndex := len(g.InternalGroup) - 1
@@ -129,12 +130,12 @@ func (g *group) remove(txHash common.Hash) error {
 	return nil
 }
 
-// check if a group is empty
+// check if a group is empty.
 func (g *group) isEmpty() bool {
 	return len(g.InternalGroup) == 0
 }
 
-// send a receipt inc ase this group has an unique tx or we have the receipt
+// send a receipt inc ase this group has an unique tx or we have the receipt.
 func (g *group) sendReceipt(logger *logrus.Entry, receipt *types.Receipt, err error) {
 	if g.isEmpty() {
 		logger.Trace("empty group, cannot send receipt")
@@ -163,10 +164,10 @@ func (g *group) sendReceipt(logger *logrus.Entry, receipt *types.Receipt, err er
 	}
 }
 
-// making sure that struct conforms the interface
+// making sure that struct conforms the interface.
 var _ ReceiptResponse = &SharedReceipt{}
 
-// Struct to send and share a receipt retrieved by the watcher
+// Struct to send and share a receipt retrieved by the watcher.
 type SharedReceipt struct {
 	doneChan chan struct{}
 	err      error          // response error that happened during processing
@@ -177,7 +178,7 @@ func newSharesReceipt() *SharedReceipt {
 	return &SharedReceipt{doneChan: make(chan struct{})}
 }
 
-// Function to check if a receipt is ready
+// Function to check if a receipt is ready.
 func (r *SharedReceipt) IsReady() bool {
 	select {
 	case <-r.doneChan:
@@ -211,13 +212,13 @@ func (r *SharedReceipt) writeReceipt(receipt *types.Receipt, err error) {
 	}
 }
 
-// Internal struct to keep track of the receipts
+// Internal struct to keep track of the receipts.
 type receipt struct {
 	Receipt           *types.Receipt `json:"receipt"` // receipt object
 	RetrievedAtHeight uint64         `json:"-"`       // block height where receipt was added to the cache
 }
 
-// Internal struct to keep track of what blocks we already checked during monitoring
+// Internal struct to keep track of what blocks we already checked during monitoring.
 type block struct {
 	Height uint64      `json:"height"` // block height
 	Hash   common.Hash `json:"hash"`   // block header hash
@@ -229,19 +230,19 @@ func (a *block) Equal(b *block) bool {
 	return bytes.Equal(a.Hash[:], b.Hash[:]) && a.Height == b.Height
 }
 
-// Type to do subscription request against the tx watcher system. SubscribeResponseChannel should be set
+// Type to do subscription request against the tx watcher system. SubscribeResponseChannel should be set.
 type SubscribeRequest struct {
 	txn              *types.Transaction        // the transaction that should watched
 	subscribeOptions *SubscribeOptions         // whether we should disable the auto retry of a transaction
 	responseChannel  *SubscribeResponseChannel // channel where we going to send the request response
 }
 
-// creates a new subscribe request
+// creates a new subscribe request.
 func NewSubscribeRequest(txn *types.Transaction, options *SubscribeOptions) SubscribeRequest {
 	return SubscribeRequest{txn: txn, responseChannel: NewResponseChannel(), subscribeOptions: options}
 }
 
-// blocking function to listen for the response of a subscribe request
+// blocking function to listen for the response of a subscribe request.
 func (a SubscribeRequest) Listen(ctx context.Context) (*SharedReceipt, error) {
 	select {
 	case subscribeResponse := <-a.responseChannel.channel:
@@ -251,7 +252,7 @@ func (a SubscribeRequest) Listen(ctx context.Context) (*SharedReceipt, error) {
 	}
 }
 
-// Type that it's going to be used to reply a subscription request
+// Type that it's going to be used to reply a subscription request.
 type SubscribeResponse struct {
 	Err      error          // errors that happened when processing the subscription request
 	Response *SharedReceipt // struct where the receipt from the tx monitoring will be send
@@ -270,7 +271,7 @@ func NewResponseChannel() *SubscribeResponseChannel {
 }
 
 // send a unique response and close the internal channel. Additional calls to
-// this function will be no-op
+// this function will be no-op.
 func (rc *SubscribeResponseChannel) sendResponse(response *SubscribeResponse) {
 	rc.writeOnce.Do(func() {
 		rc.channel <- response
@@ -278,7 +279,7 @@ func (rc *SubscribeResponseChannel) sendResponse(response *SubscribeResponse) {
 	})
 }
 
-// Profile to keep track of gas metrics in the overall system
+// Profile to keep track of gas metrics in the overall system.
 type Profile struct {
 	AverageGas   uint64 `json:"averageGas"`
 	MinimumGas   uint64 `json:"minimumGas"`
@@ -288,7 +289,7 @@ type Profile struct {
 	TotalSuccess uint64 `json:"totalSuccess"`
 }
 
-// Backend struct used to monitor Ethereum transactions and retrieve their receipts
+// Backend struct used to monitor Ethereum transactions and retrieve their receipts.
 type WatcherBackend struct {
 	mainCtx            context.Context          `json:"-"`             // main context for the background services
 	lastProcessedBlock *block                   `json:"-"`             // Last ethereum block that we checked for receipts
@@ -304,7 +305,7 @@ type WatcherBackend struct {
 	TxPollingTime      time.Duration            `json:"-"`             // time in seconds which will be polling for transactions receipts
 }
 
-// Creates a new watcher backend
+// Creates a new watcher backend.
 func newWatcherBackend(mainCtx context.Context, requestChannel <-chan SubscribeRequest, client layer1.Client, logger *logrus.Logger, database *db.Database, metricsDisplay bool, txPollingTime time.Duration) *WatcherBackend {
 	return &WatcherBackend{
 		mainCtx:            mainCtx,
@@ -373,9 +374,8 @@ func (wb *WatcherBackend) PersistState() error {
 	return nil
 }
 
-// Main loop where do all the backend actions
+// Main loop where do all the backend actions.
 func (wb *WatcherBackend) Loop() {
-
 	wb.logger.Info(strings.Repeat("-", 80))
 	wb.logger.Infof("Current Monitored Txns: %d", len(wb.MonitoredTxns))
 	for txnHash, info := range wb.MonitoredTxns {
@@ -422,7 +422,7 @@ func (wb *WatcherBackend) Loop() {
 	}
 }
 
-// extract the transactions from the request and queue them
+// extract the transactions from the request and queue them.
 func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 	if req.txn == nil {
 		return nil, &ErrInvalidMonitorRequest{"invalid request, missing txn object"}
@@ -476,7 +476,6 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 // collect the receipt for all transactions that we have queued. This function
 // only gets the receipts once per block.
 func (wb *WatcherBackend) collectReceipts() {
-
 	lenMonitoredTxns := len(wb.MonitoredTxns)
 
 	// If there's no tx to be monitored just return
@@ -622,7 +621,7 @@ func (wb *WatcherBackend) handleWorkerResponse(logEntry *logrus.Entry, workRespo
 	return txInfo, isFinished
 }
 
-// Function to remove expired receipts and to restart the height of state recovered receipts
+// Function to remove expired receipts and to restart the height of state recovered receipts.
 func (wb *WatcherBackend) cleanReceiptCache(height uint64) {
 	var expiredReceipts []common.Hash
 	for receiptTxnHash, receiptInfo := range wb.ReceiptCache {
@@ -639,7 +638,7 @@ func (wb *WatcherBackend) cleanReceiptCache(height uint64) {
 	}
 }
 
-// Write the receipt of response to a given transaction that has been processed
+// Write the receipt of response to a given transaction that has been processed.
 func (wb *WatcherBackend) dispatchFinishedTxs(finishedTxs map[common.Hash]MonitorWorkResponse) {
 	// Cleaning finished and failed transactions
 	for txnHash, workResponse := range finishedTxs {
@@ -671,7 +670,7 @@ func (wb *WatcherBackend) dispatchFinishedTxs(finishedTxs map[common.Hash]Monito
 	}
 }
 
-// Compute the gas profile for every transaction that returned a receipt
+// Compute the gas profile for every transaction that returned a receipt.
 func (wb *WatcherBackend) computeGasProfile(rcpt *types.Receipt, txnInfo info) Profile {
 	var profile Profile
 	if _, present := wb.Aggregates[*txnInfo.Selector]; present {
@@ -696,7 +695,7 @@ func (wb *WatcherBackend) computeGasProfile(rcpt *types.Receipt, txnInfo info) P
 }
 
 // Extract the selector for a layer1 smart contract call (the first 4 bytes in
-// the call data)
+// the call data).
 func ExtractSelector(data []byte) *FuncSelector {
 	selector := &FuncSelector{0, 0, 0, 0}
 	if len(data) >= 4 {

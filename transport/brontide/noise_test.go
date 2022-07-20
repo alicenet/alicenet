@@ -718,8 +718,8 @@ func testFlush(t *testing.T, test flushTest, b *Machine, w io.Writer) {
 // n bytes. The method asserts that the returned error matches expErr and that
 // the number of bytes written by Flush matches expN.
 func assertFlush(t *testing.T, b *Machine, w io.Writer, n int64, expN int,
-	expErr error) {
-
+	expErr error,
+) {
 	t.Helper()
 
 	if n >= 0 {

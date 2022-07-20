@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 )
 
 type ReceiptResponse interface {
@@ -47,7 +48,7 @@ type FrontWatcher struct {
 
 var _ Watcher = &FrontWatcher{}
 
-// Creates a new transaction watcher struct
+// Creates a new transaction watcher struct.
 func NewWatcher(client layer1.Client, txConfirmationBlocks uint64, database *db.Database, statusDisplay bool, txPollingTime time.Duration) *FrontWatcher {
 	requestChannel := make(chan SubscribeRequest, 100)
 	// main context that will cancel all workers and go routine
@@ -78,7 +79,7 @@ func WatcherFromNetwork(network layer1.Client, database *db.Database, statusDisp
 	return watcher
 }
 
-// Start the transaction watcher service
+// Start the transaction watcher service.
 func (f *FrontWatcher) Start() error {
 	err := f.backend.LoadState()
 	if err != nil {
@@ -92,7 +93,7 @@ func (f *FrontWatcher) Start() error {
 	return nil
 }
 
-// Close the transaction watcher service
+// Close the transaction watcher service.
 func (f *FrontWatcher) Close() {
 	f.logger.Warn("Closing transaction watcher")
 	close(f.requestChannel)
@@ -117,12 +118,12 @@ func (w *FrontWatcher) Subscribe(ctx context.Context, txn *types.Transaction, op
 }
 
 // function that wait for a transaction receipt. This is blocking function that
-// will wait for a receipt to be received
+// will wait for a receipt to be received.
 func (w *FrontWatcher) Wait(ctx context.Context, receiptResponse ReceiptResponse) (*types.Receipt, error) {
 	return receiptResponse.GetReceiptBlocking(ctx)
 }
 
-// Queue a transaction and wait for its receipt
+// Queue a transaction and wait for its receipt.
 func (w *FrontWatcher) SubscribeAndWait(ctx context.Context, txn *types.Transaction, options *SubscribeOptions) (*types.Receipt, error) {
 	receiptResponse, err := w.Subscribe(ctx, txn, options)
 	if err != nil {

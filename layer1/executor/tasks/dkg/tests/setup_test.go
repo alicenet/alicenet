@@ -11,6 +11,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -26,12 +33,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/assert"
 )
 
 var HardHat *tests.Hardhat
@@ -167,7 +168,6 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, unregisteredValidators int, phaseLength uint16) *TestSuite {
-
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -308,7 +308,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 	}
 }
 
-func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *TestSuite {
+func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx, badSharesIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -326,7 +326,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 	var receiptResponses []transaction.ReceiptResponse
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedSharesIdx {
 			if idx == undistIdx {
@@ -385,7 +385,6 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
@@ -569,7 +568,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	return suite
 }
 
-func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *TestSuite {
+func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx, badGPKjIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromMPKSubmissionPhase(t, fixture, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -578,7 +577,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedGPKjIdx {
 			if idx == undistIdx {
@@ -637,7 +636,6 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 

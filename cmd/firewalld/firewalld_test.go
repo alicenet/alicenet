@@ -9,10 +9,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 	"github.com/alicenet/alicenet/cmd/firewalld/mock"
 	"github.com/alicenet/alicenet/test/testutils"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 var logger, _ = test.NewNullLogger()
@@ -29,7 +30,6 @@ func newTestServer(address string) (getMsg func() []mock.Msg, write func([]byte)
 	var lis *net.UnixListener
 	var conn *net.UnixConn
 	go func() {
-
 		lis, err := net.ListenUnix("unix", &net.UnixAddr{Name: address, Net: "unix"})
 		if err != nil {
 			rcvAppend(mock.Msg{Bytes: nil, Err: err})

@@ -87,7 +87,7 @@ func TestGFpMul(t *testing.T) {
 //
 // Thus, the entry (64; 13) means 2^64 + 13 is a (probable) prime.
 
-// Test Montgomery encoding and decoding
+// Test Montgomery encoding and decoding.
 func TestEcDc(t *testing.T) {
 	var k int64
 	var start int64 = -10
@@ -111,7 +111,7 @@ func TestEcDc(t *testing.T) {
 	}
 }
 
-// Test encoding and decoding for int64
+// Test encoding and decoding for int64.
 func ecDcInt64(t *testing.T, g int64) {
 	gGFp := newGFp(g)
 	dec := newGFp(0)
@@ -132,7 +132,7 @@ func ecDcInt64(t *testing.T, g int64) {
 	}
 }
 
-func ecDcBig(t *testing.T, e uint, k uint) {
+func ecDcBig(t *testing.T, e, k uint) {
 	bigVal := makeSpecialBig(e, k)
 	bigValGFpDec := bigToDecodedGFp(bigVal)
 	gfpVal := makeDecodedSpecialGFp(e, k)
@@ -156,7 +156,7 @@ func ecDcBig(t *testing.T, e uint, k uint) {
 	}
 }
 
-func makeSpecialBig(e uint, k uint) *big.Int {
+func makeSpecialBig(e, k uint) *big.Int {
 	// Make big.Int 2^e + k
 	val := big.NewInt(0)
 	if e < 256 {
@@ -230,7 +230,7 @@ func makeDecodedSpecialGFp(e, k uint) *gfP {
 	return val
 }
 
-func makeSpecialGFp(e uint, k uint) *gfP {
+func makeSpecialGFp(e, k uint) *gfP {
 	v := makeDecodedSpecialGFp(e, k)
 	montEncode(v, v)
 	return v
@@ -264,12 +264,16 @@ func TestBigToGFp(t *testing.T) {
 	}
 
 	// Test outside int64 range
-	eArr := []uint{64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+	eArr := []uint{
+		64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
 		128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
-		192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203}
-	kArr := []uint{13, 131, 9, 3, 33, 29, 25, 11, 15, 29, 37, 33,
+		192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203,
+	}
+	kArr := []uint{
+		13, 131, 9, 3, 33, 29, 25, 11, 15, 29, 37, 33,
 		51, 17, 169, 39, 67, 27, 27, 33, 85, 155, 87, 155,
-		133, 65, 27, 35, 21, 107, 15, 101, 235, 351, 67, 15}
+		133, 65, 27, 35, 21, 107, 15, 101, 235, 351, 67, 15,
+	}
 	if len(eArr) != len(kArr) {
 		t.Fatal("eArr and kArr have different lengths")
 	}
@@ -290,7 +294,7 @@ func bigToGFpInt64(t *testing.T, g int64) {
 	}
 }
 
-func bigToGFpOutside(t *testing.T, e uint, k uint) {
+func bigToGFpOutside(t *testing.T, e, k uint) {
 	bigVal := makeSpecialBig(e, k)
 	bigValGFp := bigToGFp(bigVal)
 	gfpVal := makeSpecialGFp(e, k)
@@ -299,7 +303,7 @@ func bigToGFpOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test basic arithmetic (addition, subtraction, multiplication)
+// Test basic arithmetic (addition, subtraction, multiplication).
 func TestBasicArithmetic(t *testing.T) {
 	var i, j, h int64
 	var start int64 = -10
@@ -336,7 +340,7 @@ func TestBasicArithmetic(t *testing.T) {
 	}
 }
 
-func addInt64(t *testing.T, k int64, j int64, h int64) {
+func addInt64(t *testing.T, k, j, h int64) {
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -348,7 +352,7 @@ func addInt64(t *testing.T, k int64, j int64, h int64) {
 	}
 }
 
-func addOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+func addOutside(t *testing.T, e, k, f, ell uint) {
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Add(bigV1, bigV2)
@@ -363,7 +367,7 @@ func addOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
 	}
 }
 
-func subInt64(t *testing.T, k int64, j int64, h int64) {
+func subInt64(t *testing.T, k, j, h int64) {
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -375,7 +379,7 @@ func subInt64(t *testing.T, k int64, j int64, h int64) {
 	}
 }
 
-func subOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+func subOutside(t *testing.T, e, k, f, ell uint) {
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Sub(bigV1, bigV2)
@@ -390,7 +394,7 @@ func subOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
 	}
 }
 
-func multiplyInt64(t *testing.T, k int64, j int64, h int64) {
+func multiplyInt64(t *testing.T, k, j, h int64) {
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -402,7 +406,7 @@ func multiplyInt64(t *testing.T, k int64, j int64, h int64) {
 	}
 }
 
-func multiplyOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+func multiplyOutside(t *testing.T, e, k, f, ell uint) {
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Mul(bigV1, bigV2)
@@ -462,7 +466,7 @@ func invertInt64(t *testing.T, g int64) {
 	}
 }
 
-func invertOutside(t *testing.T, e uint, k uint) {
+func invertOutside(t *testing.T, e, k uint) {
 	gfpOne := newGFp(1)
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
@@ -475,7 +479,7 @@ func invertOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test the Legrendre symbol
+// Test the Legrendre symbol.
 func TestLegendreGFP(t *testing.T) {
 	var k int64
 	var start int64 = -10
@@ -511,7 +515,7 @@ func legendreGFPInt64(t *testing.T, g int64) {
 	}
 }
 
-func legendreGFPOutside(t *testing.T, e uint, k uint) {
+func legendreGFPOutside(t *testing.T, e, k uint) {
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
 	gfpLeg := gfpVal.Legendre()
@@ -558,7 +562,7 @@ func sqrtGFPInt64(t *testing.T, g int64) {
 	}
 }
 
-func sqrtGFPOutside(t *testing.T, e uint, k uint) {
+func sqrtGFPOutside(t *testing.T, e, k uint) {
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
 	if gfpVal.Legendre() != 1 {
@@ -614,7 +618,7 @@ func exponentiationInt64(t *testing.T, g int64) {
 	}
 }
 
-func exponentiationOutside(t *testing.T, e uint, k uint) {
+func exponentiationOutside(t *testing.T, e, k uint) {
 	var j uint
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
@@ -635,7 +639,7 @@ func exponentiationOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test the sign0 function for determining sign of gfP
+// Test the sign0 function for determining sign of gfP.
 func TestSign0(t *testing.T) {
 	gfpTwo := newGFp(2)
 	if sign0(gfpTwo) != 1 {

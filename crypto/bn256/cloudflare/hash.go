@@ -120,7 +120,7 @@ func safeSigningPoint(g *G1) bool {
 // distribution is ~1e-77. This is a *significant* improvement from s0 mod P.
 // For all practical purposes, there is no difference from a uniform
 // distribution.
-func hashToBase(msg []byte, dsp0 byte, dsp1 byte) *gfP {
+func hashToBase(msg []byte, dsp0, dsp1 byte) *gfP {
 	dsp0msg := append([]byte{dsp0}, msg...)
 	hashResult0 := HashFunc256(dsp0msg)
 	dsp1msg := append([]byte{dsp1}, msg...)

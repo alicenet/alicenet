@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 )
 
 func TestGetValidLoggers(t *testing.T) {
@@ -18,7 +19,6 @@ func TestGetValidLoggers(t *testing.T) {
 		logger := logging.GetLogger(constants.ValidLoggers[idx])
 		assert.NotNil(t, logger)
 	}
-
 }
 
 func TestGetInvalidLogger(t *testing.T) {

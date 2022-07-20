@@ -9,11 +9,11 @@ func createRulePrefix(instanceId string) string {
 	return "firewalld-" + instanceId
 }
 
-func createRuleName(rulePrefix string, ip string, port string) string {
+func createRuleName(rulePrefix, ip, port string) string {
 	return rulePrefix + "-" + strings.ReplaceAll(ip, ".", "-") + "--" + port
 }
 
-func splitRuleName(rulePrefix string, ruleName string) (string, error) {
+func splitRuleName(rulePrefix, ruleName string) (string, error) {
 	if !strings.HasPrefix(ruleName, rulePrefix) {
 		return "", fmt.Errorf("rule %v does not have prefix %v", ruleName, rulePrefix)
 	}

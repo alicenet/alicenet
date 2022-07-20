@@ -65,7 +65,7 @@ func (db *cacheDB) serializeBatch(batch [][]byte) []byte {
 
 func (db *cacheDB) snapShot(txn *badger.Txn, s *SMT, snapShotPrefix func() []byte) error {
 	nodeMap := make(map[Hash][]byte)
-	keep := func(k []byte, v []byte) error {
+	keep := func(k, v []byte) error {
 		var node Hash
 		copy(node[:], k)
 		nodeMap[node] = v

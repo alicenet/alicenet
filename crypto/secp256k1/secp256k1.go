@@ -6,8 +6,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 const (
@@ -18,25 +19,25 @@ const (
 	pubkeyCompressed byte = 0x02 // y_bit + x coord
 )
 
-// S256 returns set of parameters for secp256k1
+// S256 returns set of parameters for secp256k1.
 func S256() *secp256k1.BitCurve {
 	return secp256k1.S256()
 }
 
-// PrivateKey is the private key
+// PrivateKey is the private key.
 type PrivateKey ecdsa.PrivateKey
 
-// PubKey returns the public key corresponding to the private key
+// PubKey returns the public key corresponding to the private key.
 func (priv *PrivateKey) PubKey() *PublicKey {
 	return (*PublicKey)(&priv.PublicKey)
 }
 
-// Serialize returns the byte slice of the private key
+// Serialize returns the byte slice of the private key.
 func (priv *PrivateKey) Serialize() []byte {
 	return priv.D.Bytes()
 }
 
-// NewPrivateKey returns a new private key
+// NewPrivateKey returns a new private key.
 func NewPrivateKey(curve *secp256k1.BitCurve) (*PrivateKey, error) {
 	priv, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {
@@ -46,7 +47,7 @@ func NewPrivateKey(curve *secp256k1.BitCurve) (*PrivateKey, error) {
 }
 
 // PrivKeyFromBytes returns the PrivateKey and PublicKey
-// corresponding to privKey
+// corresponding to privKey.
 func PrivKeyFromBytes(curve *secp256k1.BitCurve, privKey []byte) (*PrivateKey, *PublicKey) {
 	x, y := curve.ScalarBaseMult(privKey)
 	d := new(big.Int).SetBytes(privKey)
@@ -62,10 +63,10 @@ func PrivKeyFromBytes(curve *secp256k1.BitCurve, privKey []byte) (*PrivateKey, *
 	return (*PrivateKey)(priv), (*PublicKey)(&priv.PublicKey)
 }
 
-// PublicKey is the public key
+// PublicKey is the public key.
 type PublicKey ecdsa.PublicKey
 
-// SerializeCompressed returns the compressed form of the public key
+// SerializeCompressed returns the compressed form of the public key.
 func (pub *PublicKey) SerializeCompressed() []byte {
 	pubkeyBytes := make([]byte, 0, pubkeyBytesLenCompressed)
 	if pub.X == nil || pub.Y == nil || !isOnCurve(S256(), pub.X, pub.Y) {
@@ -80,7 +81,7 @@ func (pub *PublicKey) SerializeCompressed() []byte {
 	return pubkeyBytes
 }
 
-// ParsePubKey parses a byte slice into a PublicKey
+// ParsePubKey parses a byte slice into a PublicKey.
 func ParsePubKey(pubkeyBytes []byte, curve *secp256k1.BitCurve) (*PublicKey, error) {
 	pub := &PublicKey{}
 	pub.Curve = curve
@@ -137,7 +138,7 @@ func decompressPoint(curve *secp256k1.BitCurve, x *big.Int, yBit bool) (*big.Int
 	return y, nil
 }
 
-func isOnCurve(curve *secp256k1.BitCurve, x *big.Int, y *big.Int) bool {
+func isOnCurve(curve *secp256k1.BitCurve, x, y *big.Int) bool {
 	if curve == nil || x == nil || y == nil {
 		return false
 	}

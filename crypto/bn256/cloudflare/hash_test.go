@@ -99,7 +99,7 @@ func TestHashToBase(t *testing.T) {
 	}
 }
 
-func hashTB(s string, byteI byte, byteJ byte) *gfP {
+func hashTB(s string, byteI, byteJ byte) *gfP {
 	msg := []byte(s)
 	gfpIJ := hashToBase(msg, byteI, byteJ)
 	return gfpIJ
@@ -129,7 +129,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpXMH0 := bigToGFp(bigXMH0)
 	bigYMH0, _ := new(big.Int).SetString("14279810437359713948805394484560530836827185547964297688885307207257460366524", 10)
 	gfpYMH0 := bigToGFp(bigYMH0)
-	var curveB2CMH0 = &curvePoint{
+	curveB2CMH0 := &curvePoint{
 		x: *gfpXMH0,
 		y: *gfpYMH0,
 		z: *gfpOne,
@@ -153,7 +153,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpXMH1 := bigToGFp(bigXMH1)
 	bigYMH1, _ := new(big.Int).SetString("5719584678241420409715569454643490978138012211976012834589451671952502577653", 10)
 	gfpYMH1 := bigToGFp(bigYMH1)
-	var curveB2CMH1 = &curvePoint{
+	curveB2CMH1 := &curvePoint{
 		x: *gfpXMH1,
 		y: *gfpYMH1,
 		z: *gfpOne,
@@ -177,7 +177,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpXCIG0 := bigToGFp(bigXCIG0)
 	bigYCIG0, _ := new(big.Int).SetString("4162649232132553873360343493589255511248712262515293172723466175905841701718", 10)
 	gfpYCIG0 := bigToGFp(bigYCIG0)
-	var curveB2CCIG0 = &curvePoint{
+	curveB2CCIG0 := &curvePoint{
 		x: *gfpXCIG0,
 		y: *gfpYCIG0,
 		z: *gfpOne,
@@ -201,7 +201,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpXCIG1 := bigToGFp(bigXCIG1)
 	bigYCIG1, _ := new(big.Int).SetString("15495526251907797603899699541291248642340770654202157240162347215649003669974", 10)
 	gfpYCIG1 := bigToGFp(bigYCIG1)
-	var curveB2CCIG1 = &curvePoint{
+	curveB2CCIG1 := &curvePoint{
 		x: *gfpXCIG1,
 		y: *gfpYCIG1,
 		z: *gfpOne,
@@ -225,7 +225,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpX1 := bigToGFp(bigX1)
 	bigY1, _ := new(big.Int).SetString("5462694088646531740394539448374228879154207235258544883567858895414770370417", 10)
 	gfpY1 := bigToGFp(bigY1)
-	var curveB2C1 = &curvePoint{
+	curveB2C1 := &curvePoint{
 		x: *gfpX1,
 		y: *gfpY1,
 		z: *gfpOne,
@@ -249,7 +249,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpX2 := bigToGFp(bigX2)
 	bigY2, _ := new(big.Int).SetString("4718603453640367770405249522358112449463417117041194427604452040985121683380", 10)
 	gfpY2 := bigToGFp(bigY2)
-	var curveB2C2 = &curvePoint{
+	curveB2C2 := &curvePoint{
 		x: *gfpX2,
 		y: *gfpY2,
 		z: *gfpOne,
@@ -273,7 +273,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpX5 := bigToGFp(bigX5)
 	bigY5, _ := new(big.Int).SetString("20402679892741878328321739372072872655278178337258501639575399541518545633396", 10)
 	gfpY5 := bigToGFp(bigY5)
-	var curveB2C5 = &curvePoint{
+	curveB2C5 := &curvePoint{
 		x: *gfpX5,
 		y: *gfpY5,
 		z: *gfpOne,
@@ -297,7 +297,7 @@ func TestBaseToG1(t *testing.T) {
 	gfpX13 := bigToGFp(bigX13)
 	bigY13, _ := new(big.Int).SetString("11440613308225403684438094471295479578982765485128228175924347487470986116356", 10)
 	gfpY13 := bigToGFp(bigY13)
-	var curveB2C13 = &curvePoint{
+	curveB2C13 := &curvePoint{
 		x: *gfpX13,
 		y: *gfpY13,
 		z: *gfpOne,
@@ -366,7 +366,7 @@ func TestHashToG1(t *testing.T) {
 	gfpXMH0 := bigToGFp(bigXMH0)
 	bigYMH0, _ := new(big.Int).SetString("14279810437359713948805394484560530836827185547964297688885307207257460366524", 10)
 	gfpYMH0 := bigToGFp(bigYMH0)
-	var curveB2CMH0 = &curvePoint{
+	curveB2CMH0 := &curvePoint{
 		x: *gfpXMH0,
 		y: *gfpYMH0,
 		z: *gfpOne,
@@ -377,13 +377,13 @@ func TestHashToG1(t *testing.T) {
 	gfpXMH1 := bigToGFp(bigXMH1)
 	bigYMH1, _ := new(big.Int).SetString("5719584678241420409715569454643490978138012211976012834589451671952502577653", 10)
 	gfpYMH1 := bigToGFp(bigYMH1)
-	var curveB2CMH1 = &curvePoint{
+	curveB2CMH1 := &curvePoint{
 		x: *gfpXMH1,
 		y: *gfpYMH1,
 		z: *gfpOne,
 		t: *gfpOne,
 	}
-	var curveH2CMH = &curvePoint{}
+	curveH2CMH := &curvePoint{}
 	curveH2CMH.Add(curveB2CMH0, curveB2CMH1)
 
 	if !curveH2CMH.IsEqual(h2cMH.p) {
@@ -402,7 +402,7 @@ func TestHashToG1(t *testing.T) {
 	gfpXCIG0 := bigToGFp(bigXCIG0)
 	bigYCIG0, _ := new(big.Int).SetString("4162649232132553873360343493589255511248712262515293172723466175905841701718", 10)
 	gfpYCIG0 := bigToGFp(bigYCIG0)
-	var curveB2CCIG0 = &curvePoint{
+	curveB2CCIG0 := &curvePoint{
 		x: *gfpXCIG0,
 		y: *gfpYCIG0,
 		z: *gfpOne,
@@ -413,13 +413,13 @@ func TestHashToG1(t *testing.T) {
 	gfpXCIG1 := bigToGFp(bigXCIG1)
 	bigYCIG1, _ := new(big.Int).SetString("15495526251907797603899699541291248642340770654202157240162347215649003669974", 10)
 	gfpYCIG1 := bigToGFp(bigYCIG1)
-	var curveB2CCIG1 = &curvePoint{
+	curveB2CCIG1 := &curvePoint{
 		x: *gfpXCIG1,
 		y: *gfpYCIG1,
 		z: *gfpOne,
 		t: *gfpOne,
 	}
-	var curveH2CCIG = &curvePoint{}
+	curveH2CCIG := &curvePoint{}
 	curveH2CCIG.Add(curveB2CCIG0, curveB2CCIG1)
 
 	if !curveH2CCIG.IsEqual(h2cCIG.p) {
@@ -589,7 +589,7 @@ func TestBaseToTwist(t *testing.T) {
 	gfp2YMH2 := &gfP2{}
 	gfp2YMH2.x.Set(gfpYIMH2)
 	gfp2YMH2.y.Set(gfpYMH2)
-	var twistB2TMH2 = &twistPoint{
+	twistB2TMH2 := &twistPoint{
 		x: *gfp2XMH2,
 		y: *gfp2YMH2,
 		z: *gfp2One,
@@ -625,7 +625,7 @@ func TestBaseToTwist(t *testing.T) {
 	gfp2YMH3 := &gfP2{}
 	gfp2YMH3.x.Set(gfpYIMH3)
 	gfp2YMH3.y.Set(gfpYMH3)
-	var twistB2TMH3 = &twistPoint{
+	twistB2TMH3 := &twistPoint{
 		x: *gfp2XMH3,
 		y: *gfp2YMH3,
 		z: *gfp2One,
@@ -661,7 +661,7 @@ func TestBaseToTwist(t *testing.T) {
 	gfp2YCIG2 := &gfP2{}
 	gfp2YCIG2.x.Set(gfpYICIG2)
 	gfp2YCIG2.y.Set(gfpYCIG2)
-	var twistB2TCIG2 = &twistPoint{
+	twistB2TCIG2 := &twistPoint{
 		x: *gfp2XCIG2,
 		y: *gfp2YCIG2,
 		z: *gfp2One,
@@ -697,7 +697,7 @@ func TestBaseToTwist(t *testing.T) {
 	gfp2YCIG3 := &gfP2{}
 	gfp2YCIG3.x.Set(gfpYICIG3)
 	gfp2YCIG3.y.Set(gfpYCIG3)
-	var twistB2TCIG3 = &twistPoint{
+	twistB2TCIG3 := &twistPoint{
 		x: *gfp2XCIG3,
 		y: *gfp2YCIG3,
 		z: *gfp2One,
@@ -746,7 +746,7 @@ func TestHashToG2(t *testing.T) {
 	gfp2YMH2 := &gfP2{}
 	gfp2YMH2.x.Set(gfpYIMH2)
 	gfp2YMH2.y.Set(gfpYMH2)
-	var twistB2TMH2 = &twistPoint{
+	twistB2TMH2 := &twistPoint{
 		x: *gfp2XMH2,
 		y: *gfp2YMH2,
 		z: *gfp2One,
@@ -767,7 +767,7 @@ func TestHashToG2(t *testing.T) {
 	gfp2YMH3 := &gfP2{}
 	gfp2YMH3.x.Set(gfpYIMH3)
 	gfp2YMH3.y.Set(gfpYMH3)
-	var twistB2TMH3 = &twistPoint{
+	twistB2TMH3 := &twistPoint{
 		x: *gfp2XMH3,
 		y: *gfp2YMH3,
 		z: *gfp2One,
@@ -802,7 +802,7 @@ func TestHashToG2(t *testing.T) {
 	gfp2YCIG2 := &gfP2{}
 	gfp2YCIG2.x.Set(gfpYICIG2)
 	gfp2YCIG2.y.Set(gfpYCIG2)
-	var twistB2TCIG2 = &twistPoint{
+	twistB2TCIG2 := &twistPoint{
 		x: *gfp2XCIG2,
 		y: *gfp2YCIG2,
 		z: *gfp2One,
@@ -823,7 +823,7 @@ func TestHashToG2(t *testing.T) {
 	gfp2YCIG3 := &gfP2{}
 	gfp2YCIG3.x.Set(gfpYICIG3)
 	gfp2YCIG3.y.Set(gfpYCIG3)
-	var twistB2TCIG3 = &twistPoint{
+	twistB2TCIG3 := &twistPoint{
 		x: *gfp2XCIG3,
 		y: *gfp2YCIG3,
 		z: *gfp2One,

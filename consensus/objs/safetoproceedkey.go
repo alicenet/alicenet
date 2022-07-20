@@ -14,7 +14,7 @@ type SafeToProceedKey struct {
 }
 
 // MarshalBinary takes the SafeToProceedKey object and returns
-// the canonical byte slice
+// the canonical byte slice.
 func (b *SafeToProceedKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("SafeToProceedKey.MarshalBinary; stpk not initialized")
@@ -33,7 +33,7 @@ func (b *SafeToProceedKey) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// SafeToProceedKey object
+// SafeToProceedKey object.
 func (b *SafeToProceedKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("SafeToProceedKey.UnmarshalBinary; stpk not initialized")

@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
-	"github.com/sirupsen/logrus"
 )
 
 var testWaitForClose = time.Second * 6
@@ -189,7 +190,6 @@ func TestMux(t *testing.T) {
 	wg.Add(1)
 	go closeWatch2(wg)
 	wg.Wait()
-
 }
 
 func TestMux2(t *testing.T) {
@@ -297,7 +297,6 @@ func TestMux2(t *testing.T) {
 	wg.Add(1)
 	go closeWatch2(wg)
 	wg.Wait()
-
 }
 
 func TestMux3(t *testing.T) {
@@ -405,5 +404,4 @@ func TestMux3(t *testing.T) {
 	wg.Add(1)
 	go closeWatch2(wg)
 	wg.Wait()
-
 }

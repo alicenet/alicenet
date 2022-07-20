@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
-
-	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 type DMan struct {
@@ -150,8 +150,8 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 // SyncOneBH syncs one blockheader and its transactions
 // the initialization of prevBH from SyncToBH implies SyncToBH must be updated to
 // the canonical bh before we begin unless we are syncing from a height gt the
-// canonical bh
-func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
+// canonical bh.
+func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH, maxBHSeen *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
 	targetHeight := syncToBH.BClaims.Height + 1
 
 	currentHeight := dm.downloadActor.ba.getHeight()

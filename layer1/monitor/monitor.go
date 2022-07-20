@@ -9,6 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -22,13 +27,9 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
-// Monitor describes required functionality to monitor Ethereum
+// Monitor describes required functionality to monitor Ethereum.
 type Monitor interface {
 	Start() error
 	Close()
@@ -53,11 +54,11 @@ type monitor struct {
 	State                *objects.MonitorState
 	batchSize            uint64
 
-	//for communication with the TasksScheduler
+	// for communication with the TasksScheduler
 	taskRequestChan chan<- tasks.TaskRequest
 }
 
-// NewMonitor creates a new Monitor
+// NewMonitor creates a new Monitor.
 func NewMonitor(cdb *db.Database,
 	monDB *db.Database,
 	adminHandler interfaces.AdminHandler,
@@ -69,7 +70,6 @@ func NewMonitor(cdb *db.Database,
 	batchSize uint64,
 	taskRequestChan chan<- tasks.TaskRequest,
 ) (*monitor, error) {
-
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
 		"Timeout":  constants.MonitorTimeout.String(),
@@ -106,7 +106,6 @@ func NewMonitor(cdb *db.Database,
 		batchSize:            batchSize,
 		taskRequestChan:      taskRequestChan,
 	}, nil
-
 }
 
 func (mon *monitor) GetStatus() <-chan string {
@@ -117,9 +116,8 @@ func (mon *monitor) Close() {
 	mon.cancelChan <- true
 }
 
-// Start starts the event loop
+// Start starts the event loop.
 func (mon *monitor) Start() error {
-
 	logger := mon.logger
 
 	// Load or create initial State
@@ -141,7 +139,8 @@ func (mon *monitor) Start() error {
 	if startingBlock > mon.State.HighestBlockProcessed {
 		logger.WithFields(logrus.Fields{
 			"StartingBlock":         startingBlock,
-			"HighestBlockProcessed": mon.State.HighestBlockProcessed}).
+			"HighestBlockProcessed": mon.State.HighestBlockProcessed,
+		}).
 			Info("Overriding highest block processed due to config")
 		mon.State.HighestBlockProcessed = startingBlock
 	}
@@ -149,7 +148,8 @@ func (mon *monitor) Start() error {
 	if startingBlock > mon.State.HighestBlockFinalized {
 		logger.WithFields(logrus.Fields{
 			"StartingBlock":         startingBlock,
-			"HighestBlockFinalized": mon.State.HighestBlockFinalized}).
+			"HighestBlockFinalized": mon.State.HighestBlockFinalized,
+		}).
 			Info("Overriding highest block finalized due to config")
 		mon.State.HighestBlockFinalized = startingBlock
 	}
@@ -168,7 +168,6 @@ func (mon *monitor) Start() error {
 }
 
 func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
-
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
@@ -218,7 +217,6 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 	m.State.RLock()
 	defer m.State.RUnlock()
 	rawData, err := json.Marshal(m.State)
-
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal state: %v", err)
 	}
@@ -231,14 +229,15 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 	return err
 }
 
-// MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
+// MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint.
 func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, allContracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address) error {
-
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address,
+) error {
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
 		"EndpointInSync": monitorState.EndpointInSync,
-		"EthereumInSync": monitorState.EthereumInSync})
+		"EthereumInSync": monitorState.EthereumInSync,
+	})
 
 	addresses := filterContracts
 
@@ -336,7 +335,6 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 
 	// Check all the logs for an event we want to process
 	for _, log := range logs {
-
 		eventID := log.Topics[0].String()
 		logEntry := logEntry.WithField("EventID", eventID)
 
@@ -358,7 +356,7 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 	return currentBlock, nil
 }
 
-// PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
+// PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate.
 func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
@@ -383,7 +381,7 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 }
 
 // TODO: Remove from request hot path use memory cache
-// persist worker group across execution iterations
+// persist worker group across execution iterations.
 type logWork struct {
 	isLast    bool
 	ctx       context.Context
@@ -459,7 +457,7 @@ func (es *eventSorter) worker() {
 	}
 }
 
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed, lastBlock uint64) ([][]types.Log, error) {
 	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {

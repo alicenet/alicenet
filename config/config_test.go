@@ -16,7 +16,8 @@ func TestParseGood(t *testing.T) {
 		{"Just a thing", "and another"},
 		{"yet another", "--age=2"},
 		{"--dangling"},
-		{}}
+		{},
+	}
 
 	for _, goodArgs := range goodArgs {
 		_, err := ParseCommandLine(goodArgs)
@@ -34,7 +35,8 @@ func TestAlternateForms(t *testing.T) {
 	argNames := [][]string{
 		{"--name", "me"},
 		{"--name=me"},
-		{"filler", "--name", "me"}}
+		{"filler", "--name", "me"},
+	}
 
 	for _, argName := range argNames {
 		flags, _ := ParseCommandLine(argName)
@@ -43,7 +45,6 @@ func TestAlternateForms(t *testing.T) {
 		assert.True(t, namePresent, "Name is a flag")
 		assert.Equal(t, "me", nameValue, "Name should be me")
 	}
-
 }
 
 func TestValueNotProvided(t *testing.T) {
@@ -92,7 +93,6 @@ func TestConfigFile(t *testing.T) {
 }
 
 func TestLoadSettingsMergePresent(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "config_test.toml"}
 
 	settings, _ := LoadSettings(commandLine)
@@ -107,7 +107,6 @@ func TestLoadSettingsMergePresent(t *testing.T) {
 }
 
 func TestLoadSettingsMergeFileMissing(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "bob.toml"}
 
 	_, err := LoadSettings(commandLine)
@@ -116,7 +115,6 @@ func TestLoadSettingsMergeFileMissing(t *testing.T) {
 }
 
 func TestLoadSettingsMergeFileNameMissing(t *testing.T) {
-
 	commandLine := []string{"--config.not_file_name", "config_test.toml"}
 
 	_, err := LoadSettings(commandLine)
@@ -125,7 +123,6 @@ func TestLoadSettingsMergeFileNameMissing(t *testing.T) {
 }
 
 func TestLoadSettingsMergeMissing(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "config_test.toml", "--config.sign", "Ox"}
 
 	settings, _ := LoadSettings(commandLine)
@@ -136,7 +133,6 @@ func TestLoadSettingsMergeMissing(t *testing.T) {
 }
 
 func TestLoadSettingsParseError(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "config_test.toml", "--config.sign==Ox"}
 
 	_, err := LoadSettings(commandLine)
@@ -145,7 +141,6 @@ func TestLoadSettingsParseError(t *testing.T) {
 }
 
 func TestLoadSettingsOverride(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "config_test.toml", "--config.sign", "Ox"}
 
 	settings, _ := LoadSettings(commandLine)
@@ -156,12 +151,12 @@ func TestLoadSettingsOverride(t *testing.T) {
 }
 
 func TestLoadFilterNamespaces(t *testing.T) {
-
 	commandLine := []string{
 		"--foo=bar",
 		"--favorite.cheese", "gouda",
 		"--config.filename", "config_test.toml",
-		"--config.sign", "Ox"}
+		"--config.sign", "Ox",
+	}
 
 	settings, _ := LoadSettings(commandLine)
 	settings = settings.FilterNamespaces("config")

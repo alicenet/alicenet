@@ -6,8 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 )
 
 type mockCmder struct {
@@ -45,7 +46,6 @@ func TestGetAllowedAddresses(t *testing.T) {
 	m := newMockCmder([]byte("firewalld-12345-12-23-34-45--5678\nfirewalld-12345-11-22-33-44--5555\n"), nil)
 	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	b, err := c.GetAllowedAddresses()
-
 	if err != nil {
 		t.Fatal("GetAllowedAddresses returned error ", err)
 	}
@@ -81,7 +81,6 @@ func TestGetAllowedAddressesEmpty(t *testing.T) {
 	m := newMockCmder([]byte(""), nil)
 	c := &Implementation{"firewalld-12345", m.RunCmd, logger}
 	_, err := c.GetAllowedAddresses()
-
 	if err != nil {
 		t.Fatal("Should not throw error", err)
 	}
@@ -95,7 +94,6 @@ func TestUpdateAllowedAddresses(t *testing.T) {
 		lib.NewAddresSet([]string{"11.22.33.44:5678", "22.33.44.55:6789"}),
 		lib.NewAddresSet([]string{"33.44.55.66:7890"}),
 	)
-
 	if err != nil {
 		t.Fatal("Should not throw error", err)
 	}
@@ -129,7 +127,6 @@ func TestUpdateAllowedAddressesEmpty(t *testing.T) {
 		lib.AddressSet{},
 		lib.AddressSet{},
 	)
-
 	if err != nil {
 		t.Fatal("Should not throw error", err)
 	}

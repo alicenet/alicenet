@@ -8,32 +8,30 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
-
+	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 )
 
 //
 func createSharedKey(addr common.Address) [4]*big.Int {
-
 	b := addr.Bytes()
 
 	return [4]*big.Int{
 		(&big.Int{}).SetBytes(b),
 		(&big.Int{}).SetBytes(b),
 		(&big.Int{}).SetBytes(b),
-		(&big.Int{}).SetBytes(b)}
+		(&big.Int{}).SetBytes(b),
+	}
 }
 
 func createValidator(addrHex string, idx uint8) objects.Validator {
@@ -46,18 +44,18 @@ func createValidator(addrHex string, idx uint8) objects.Validator {
 }
 
 func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
-
 	monitorState.ValidatorSets[EPOCH] = objects.ValidatorSet{
 		ValidatorCount:          4,
 		NotBeforeAliceNetHeight: 321,
-		GroupKey:                [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)}}
+		GroupKey:                [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)},
+	}
 
 	monitorState.Validators[EPOCH] = []objects.Validator{
 		createValidator("0x546F99F244b7B58B855330AE0E2BC1b30b41302F", 1),
 		createValidator("0x9AC1c9afBAec85278679fF75Ef109217f26b1417", 2),
 		createValidator("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac", 3),
-		createValidator("0x615695C4a4D6a60830e5fca4901FbA099DF26271", 4)}
-
+		createValidator("0x615695C4a4D6a60830e5fca4901FbA099DF26271", 4),
+	}
 }
 
 func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
@@ -79,7 +77,7 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 }
 
 //
-// Actual tests
+// Actual tests.
 //
 func TestMonitorPersist(t *testing.T) {
 	mon, _, tasksReqChan, eth := getMonitor(t)

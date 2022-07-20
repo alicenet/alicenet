@@ -12,6 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/cmd/testutils/layer1_tx_spammer/dummy_contract"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
@@ -22,12 +29,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -37,7 +38,7 @@ const (
 	maxExecutionBlocks uint64        = 8
 )
 
-func setupClient(endpoint string, keyStorePath string, passCodePath string, defaultAccount string, finalityDelay uint64) (layer1.Client, *ethclient.Client) {
+func setupClient(endpoint, keyStorePath, passCodePath, defaultAccount string, finalityDelay uint64) (layer1.Client, *ethclient.Client) {
 	eth, err := ethereum.NewClient(
 		endpoint,
 		keyStorePath,
@@ -60,7 +61,7 @@ func setupClient(endpoint string, keyStorePath string, passCodePath string, defa
 	return eth, internalClient
 }
 
-func parseKeyStoreAndPassCode(tempDir string, logger *logrus.Entry, keyStorePath string, passCodePath string, defaultAccountStr string) (string, string, string, bool) {
+func parseKeyStoreAndPassCode(tempDir string, logger *logrus.Entry, keyStorePath, passCodePath, defaultAccountStr string) (string, string, string, bool) {
 	var defaultAccount common.Address
 	if defaultAccountStr != "" {
 		defaultAccountBytes, err := hex.DecodeString(defaultAccountStr)

@@ -3,8 +3,9 @@ package gcloud
 import (
 	"strings"
 
-	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
 )
 
 type Implementation struct {
@@ -56,7 +57,7 @@ func (im *Implementation) GetAllowedAddresses() (lib.AddressSet, error) {
 	return allowed, nil
 }
 
-func (im *Implementation) UpdateAllowedAddresses(toAdd lib.AddressSet, toDelete lib.AddressSet) error {
+func (im *Implementation) UpdateAllowedAddresses(toAdd, toDelete lib.AddressSet) error {
 	count := 0
 	errs := make(chan error)
 	for a := range toAdd {

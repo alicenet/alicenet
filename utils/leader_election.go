@@ -3,11 +3,12 @@ package utils
 import (
 	"math/big"
 
-	"github.com/alicenet/alicenet/constants"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
 )
 
-func AmILeading(numValidators int, myIdx int, blocksSinceDesperation int, blockHash []byte, logger *logrus.Entry) bool {
+func AmILeading(numValidators, myIdx, blocksSinceDesperation int, blockHash []byte, logger *logrus.Entry) bool {
 	var numValidatorsAllowed int = 1
 	for i := int(blocksSinceDesperation); i > 0; {
 		i -= constants.ETHDKGDesperationFactor / numValidatorsAllowed

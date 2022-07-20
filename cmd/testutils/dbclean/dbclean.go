@@ -4,9 +4,10 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func main() {

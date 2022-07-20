@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -14,11 +16,9 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-
-	"github.com/stretchr/testify/assert"
 )
 
-// We complete everything correctly, happy path
+// We complete everything correctly, happy path.
 func TestCompletion_Group_1_AllGood(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)
@@ -88,11 +88,10 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 				assert.True(t, taskError.IsRecoverable())
 			}
 		}
-
 	}
 }
 
-// We complete everything correctly, but we do not complete in time
+// We complete everything correctly, but we do not complete in time.
 func TestCompletion_Group_1_Bad1(t *testing.T) {
 	n := 6
 	fixture := setupEthereum(t, n)

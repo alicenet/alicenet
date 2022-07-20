@@ -3,10 +3,11 @@ package interfaces
 import (
 	"math/big"
 
+	"github.com/dgraph-io/badger/v2"
+
 	aobjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
-	"github.com/dgraph-io/badger/v2"
 )
 
 type AdminHandler interface {

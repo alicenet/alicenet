@@ -4,7 +4,7 @@ import "github.com/sirupsen/logrus"
 
 type Implementation interface {
 	GetAllowedAddresses() (AddressSet, error)
-	UpdateAllowedAddresses(toAdd AddressSet, toDelete AddressSet) error
+	UpdateAllowedAddresses(toAdd, toDelete AddressSet) error
 }
 
 type ImplementationConstructor func(*logrus.Logger) (Implementation, error)
