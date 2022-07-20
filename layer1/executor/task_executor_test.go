@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTaskManager(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *taskResponseChan, *mocks.MockWatcher) {
+func getTaskManager(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.ExtractTransactionSenderFunc.SetDefaultReturn(common.Address{}, nil)
@@ -41,7 +41,7 @@ func getTaskManager(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Databas
 	taskManager, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 
-	taskRespChan := &taskResponseChan{trChan: make(chan tasks.TaskResponse, 100)}
+	taskRespChan := &executorResponseChan{erChan: make(chan tasks.TaskResponse, 100)}
 	return taskManager, client, db, taskRespChan, txWatcher
 }
 
@@ -321,7 +321,7 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	manager, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 
-	taskRespChan := &taskResponseChan{trChan: make(chan tasks.TaskResponse, 100)}
+	taskRespChan := &executorResponseChan{erChan: make(chan tasks.TaskResponse, 100)}
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{

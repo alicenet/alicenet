@@ -37,7 +37,7 @@ package executor
 // // function creates a copy of the scheduler to get the len without race
 // // conditions.
 // func getSchedulerLen(t *testing.T, scheduler *TaskManager) int {
-// 	newScheduler := &TaskManager{Schedule: make(map[string]TaskRequestInfo), marshaller: GetTaskRegistry(), database: scheduler.database}
+// 	newScheduler := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), marshaller: getTaskRegistry(), database: scheduler.database}
 // 	err := scheduler.persistState()
 // 	assert.Nil(t, err)
 // 	err = newScheduler.loadState()

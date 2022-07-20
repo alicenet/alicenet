@@ -33,9 +33,9 @@ type Task interface {
 }
 
 type TaskHandler interface {
-	ScheduleTask(ctx context.Context, task Task, id string) (*executor.TaskSharedResponse, error)
-	KillTaskByType(ctx context.Context, task Task) (*executor.TaskSharedResponse, error)
-	KillTaskById(ctx context.Context, id string) (*executor.TaskSharedResponse, error)
+	ScheduleTask(ctx context.Context, task Task, id string) (*executor.HandlerResponse, error)
+	KillTaskByType(ctx context.Context, task Task) (*executor.HandlerResponse, error)
+	KillTaskById(ctx context.Context, id string) (*executor.HandlerResponse, error)
 	Start()
 	Close()
 }
@@ -48,10 +48,10 @@ type TaskState interface {
 
 // InternalTaskResponseChan the interface requirements of a task response chan
 type InternalTaskResponseChan interface {
-	Add(executor.InternalTaskResponse)
+	Add(executor.ExecutorResponse)
 }
 
 type TaskResponse interface {
 	IsReady() bool
-	GetTaskResponseBlocking(ctx context.Context) error
+	GetResponseBlocking(ctx context.Context) error
 }

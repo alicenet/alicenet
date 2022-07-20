@@ -161,6 +161,6 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(executor.InternalTaskResponse{Id: bt.Id, Err: err})
+		bt.taskResponseChan.Add(executor.ExecutorResponse{Id: bt.Id, Err: err})
 	}
 }
