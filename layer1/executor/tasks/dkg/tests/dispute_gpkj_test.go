@@ -14,6 +14,7 @@ import (
 
 // We test to ensure that everything behaves correctly.
 func TestGPKjDispute_NoBadGPKj(t *testing.T) {
+	t.Parallel()
 	n := 6
 	b := []int{}
 	fixture := setupEthereum(t, n)
@@ -67,6 +68,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 
 // Here, we have two malicious gpkj submission.
 func TestGPKjDispute_TwoInvalid(t *testing.T) {
+	t.Parallel()
 	n := 6
 	b := []int{3, 4}
 	fixture := setupEthereum(t, n)
@@ -122,6 +124,7 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 
 // Here, we have two malicious gpkj submission.
 func TestGPKjDispute_FiveInvalid(t *testing.T) {
+	t.Parallel()
 	n := 6
 	b := []int{1, 2, 3, 4, 5}
 	fixture := setupEthereum(t, n)

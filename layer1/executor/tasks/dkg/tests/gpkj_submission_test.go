@@ -18,7 +18,8 @@ import (
 )
 
 //We test to ensure that everything behaves correctly.
-func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
+func TestGPKjSubmission_GoodAllValid(t *testing.T) {
+	t.Parallel()
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromMPKSubmissionPhase(t, fixture, 100)
@@ -68,7 +69,8 @@ func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	}
 }
 
-func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
+func TestGPKjSubmission_Bad1(t *testing.T) {
+	t.Parallel()
 	n := 6
 	fixture := setupEthereum(t, n)
 	suite := StartFromMPKSubmissionPhase(t, fixture, 100)
@@ -95,7 +97,8 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 // We begin by submitting invalid information.
 // Here, we submit nil for the state interface;
 // this should raise an error.
-func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
+func TestGPKjSubmission_Bad2(t *testing.T) {
+	t.Parallel()
 	task := dkg.NewGPKjSubmissionTask(1, 100, nil)
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
@@ -111,7 +114,8 @@ func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 // We test to ensure that everything behaves correctly.
 // Here, we should raise an error because we did not successfully complete
 // the key share submission phase.
-func TestGPKjSubmission_Group_1_Bad3(t *testing.T) {
+func TestGPKjSubmission_Bad3(t *testing.T) {
+	t.Parallel()
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromMPKSubmissionPhase(t, fixture, 100)
@@ -135,7 +139,8 @@ func TestGPKjSubmission_Group_1_Bad3(t *testing.T) {
 // One or more validators should submit invalid gpkj information;
 // that is, the gpkj public key and signature should not verify.
 // This should result in no submission.
-func TestGPKjSubmission_Group_2_Bad4(t *testing.T) {
+func TestGPKjSubmission_Bad4(t *testing.T) {
+	t.Parallel()
 	// Perform correct registration setup.
 
 	// Perform correct share submission

@@ -13,7 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccused(t *testing.T) {
+func TestDisputeMissingRegistrationTask_DoTaskSuccessOneParticipantAccused(t *testing.T) {
+	t.Parallel()
 	n := 4
 	d := 1
 	fixture := setupEthereum(t, n)
@@ -59,7 +60,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
 
-func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAccused(t *testing.T) {
+func TestDisputeMissingRegistrationTask_DoTaskSuccessThreeParticipantAccused(t *testing.T) {
+	t.Parallel()
 	n := 5
 	d := 3
 	fixture := setupEthereum(t, n)
@@ -105,7 +107,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 	assert.Equal(t, int64(d), badParticipants.Int64())
 }
 
-func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreBad(t *testing.T) {
+func TestDisputeMissingRegistrationTask_DoTaskSuccessAllParticipantsAreBad(t *testing.T) {
+	t.Parallel()
 	n := 5
 	d := 5
 	fixture := setupEthereum(t, n)

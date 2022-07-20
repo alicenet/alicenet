@@ -14,6 +14,7 @@ import (
 )
 
 func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
+	t.Parallel()
 	n := 5
 	m := 4
 	fixture := setupEthereum(t, n)
@@ -61,6 +62,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 }
 
 func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
+	t.Parallel()
 	n := 5
 	m := 0
 	fixture := setupEthereum(t, n)

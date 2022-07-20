@@ -13,7 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDisputeMissingGPKjTask_Group_1_FourUnsubmittedGPKj_DoWork_Success(t *testing.T) {
+func TestDisputeMissingGPKjTask_FourUnsubmittedGPKj_DoWork_Success(t *testing.T) {
+	t.Parallel()
 	n := 10
 	m := []int{3, 4, 7, 8}
 	fixture := setupEthereum(t, n)
