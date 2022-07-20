@@ -112,30 +112,30 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
         test-groups: [
-            TestShareDistribution_Group_1,
-            TestShareDistribution_Group_2,
-            TestShareDistribution_Group_3,
-            TestRegisterTask_Group_1,
-            TestRegisterTask_Group_2,
-            TestRegisterTask_Group_3,
-            TestMPKSubmission_Group_1,
-            TestMPKSubmission_Group_2,
-            TestKeyShareSubmission,
-            TestGPKjSubmission_Group_1,
-            TestGPKjSubmission_Group_2,
-            TestDisputeShareDistributionTask_Group_1,
-            TestDisputeShareDistributionTask_Group_2,
-            TestDisputeMissingShareDistributionTask_Group_1,
-            TestDisputeMissingShareDistributionTask_Group_2,
-            TestDisputeMissingRegistrationTask_Group_1,
-            TestDisputeMissingRegistrationTask_Group_2,
-            TestDisputeMissingKeySharesTask,
-            TestDisputeMissingGPKjTask_Group_1,
-            TestDisputeMissingGPKjTask_Group_2,
-            TestGPKjDispute,
+#            TestShareDistribution_Group_1,
+#            TestShareDistribution_Group_2,
+#            TestShareDistribution_Group_3,
+#            TestRegisterTask_Group_1,
+#            TestRegisterTask_Group_2,
+#            TestRegisterTask_Group_3,
+#            TestMPKSubmission_Group_1,
+#            TestMPKSubmission_Group_2,
+#            TestKeyShareSubmission,
+#            TestGPKjSubmission_Group_1,
+#            TestGPKjSubmission_Group_2,
+#            TestDisputeShareDistributionTask_Group_1,
+#            TestDisputeShareDistributionTask_Group_2,
+#            TestDisputeMissingShareDistributionTask_Group_1,
+#            TestDisputeMissingShareDistributionTask_Group_2,
+#            TestDisputeMissingRegistrationTask_Group_1,
+#            TestDisputeMissingRegistrationTask_Group_2,
+#            TestDisputeMissingKeySharesTask,
+#            TestDisputeMissingGPKjTask_Group_1,
+#            TestDisputeMissingGPKjTask_Group_2,
+#            TestGPKjDispute,
             TestCompletion_Group_1,
-            TestCompletion_Group_2,
-            TestCompletion_Group_3,
+#            TestCompletion_Group_2,
+#            TestCompletion_Group_3,
           ]
     steps:
       - uses: actions/checkout@v3
@@ -143,6 +143,6 @@ jobs:
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
             go test -race -tags=integration -json -timeout=30m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt

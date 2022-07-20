@@ -20,6 +20,7 @@ import (
 
 // We complete everything correctly, happy path
 func TestCompletion_Group_1_AllGood(t *testing.T) {
+	t.Parallel()
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
@@ -94,6 +95,7 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 
 // We complete everything correctly, but we do not complete in time
 func TestCompletion_Group_1_Bad1(t *testing.T) {
+	t.Parallel()
 	n := 6
 	fixture := setupEthereum(t, n)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
@@ -120,6 +122,7 @@ func TestCompletion_Group_1_Bad1(t *testing.T) {
 }
 
 func TestCompletion_Group_1_Bad2(t *testing.T) {
+	t.Parallel()
 	task := dkg.NewCompletionTask(1, 100)
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
