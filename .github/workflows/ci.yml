@@ -92,7 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - run: go build ./...
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run unit tests
@@ -141,9 +140,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      - run: make setup
-      - run: cd bridge && npm run compile && cd -
-      - run: go build ./...
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
