@@ -1,4 +1,4 @@
-//go:build integration
+////go:build integration
 
 package monitor
 
@@ -65,7 +65,7 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 }
 
-func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
+func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient, accounts.Account) {
 	monDB := mocks.NewTestDB()
 	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
@@ -73,6 +73,15 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	eth := mocks.NewMockClient()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
+
+	account := accounts.Account{
+		Address: common.HexToAddress("546F99F244b7B58B855330AE0E2BC1b30b41302F"),
+		URL: accounts.URL{
+			Scheme: "http",
+			Path:   "",
+		},
+	}
+	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
 
 	ethDkgMock := mocks.NewMockIETHDKG()
 	event := &bindings.ETHDKGRegistrationOpened{
@@ -98,15 +107,22 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
 
-	return mon, tasksScheduler, tasksReqChan, eth
+	t.Cleanup(func() {
+		mon.Close()
+		tasksScheduler.Close()
+
+		<-time.After(15 * time.Millisecond)
+		close(tasksReqChan)
+	})
+
+	return mon, tasksScheduler, tasksReqChan, eth, account
 }
 
 //
 // Actual tests
 //
 func TestMonitorPersist(t *testing.T) {
-	mon, _, tasksReqChan, eth := getMonitor(t)
-	defer close(tasksReqChan)
+	mon, _, _, eth, _ := getMonitor(t)
 	raw, err := json.Marshal(mon)
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
@@ -126,27 +142,17 @@ func TestMonitorPersist(t *testing.T) {
 }
 
 func TestProcessEvents(t *testing.T) {
-	mon, tasksScheduler, tasksReqChan, eth := getMonitor(t)
+	mon, tasksScheduler, _, eth, defaultAcc := getMonitor(t)
 
 	err := tasksScheduler.Start()
 	assert.Nil(t, err)
 
-	addr := common.Address{}
-	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
-	account := accounts.Account{
-		Address: addr,
-		URL: accounts.URL{
-			Scheme: "http",
-			Path:   "",
-		},
-	}
-	mon.State.PotentialValidators[account.Address] = objects.PotentialValidator{
-		Account: account.Address,
+	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
+		Account: defaultAcc.Address,
 	}
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
 	eth.EndpointInSyncFunc.PushReturn(false, 0, errors.New("network failure"))
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
-	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
 
 	ethDKGEvents := events.GetETHDKGEvents()
 	logs := []types.Log{
@@ -159,37 +165,20 @@ func TestProcessEvents(t *testing.T) {
 	err = mon.Start()
 	assert.Nil(t, err)
 
-	<-time.After(5000 * time.Millisecond)
+	<-time.After(4500 * time.Millisecond)
 
 	dkgState, err := ethdkgState.GetDkgState(mon.db)
 	assert.Nil(t, err)
 	assert.NotNil(t, dkgState)
 	assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
-
-	mon.Close()
-	tasksScheduler.Close()
-
-	<-time.After(15 * time.Millisecond)
-	close(tasksReqChan)
 }
 
 func TestPersistSnapshot(t *testing.T) {
-	mon, tasksScheduler, tasksReqChan, eth := getMonitor(t)
+	mon, tasksScheduler, tasksReqChan, eth, _ := getMonitor(t)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
 	err := tasksScheduler.Start()
 	assert.Nil(t, err)
-
-	addr := common.Address{}
-	addr.SetBytes([]byte("546F99F244b7B58B855330AE0E2BC1b30b41302F"))
-	account := accounts.Account{
-		Address: addr,
-		URL: accounts.URL{
-			Scheme: "http",
-			Path:   "",
-		},
-	}
-	eth.GetDefaultAccountFunc.SetDefaultReturn(account)
 
 	height := 10
 	bh := &objs.BlockHeader{
@@ -210,10 +199,4 @@ func TestPersistSnapshot(t *testing.T) {
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)
 	assert.Equal(t, uint32(height), state.BlockHeader.BClaims.Height)
-
-	mon.Close()
-	tasksScheduler.Close()
-
-	<-time.After(15 * time.Millisecond)
-	close(tasksReqChan)
 }

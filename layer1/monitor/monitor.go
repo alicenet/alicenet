@@ -399,7 +399,7 @@ type logWork struct {
 	err       error
 }
 
-// eventSorter is an internal struct used to sort the keep track of processing events
+// eventSorter is used to sort and keep track of processing events
 type eventSorter struct {
 	*sync.Mutex
 	wg      *sync.WaitGroup
@@ -408,7 +408,7 @@ type eventSorter struct {
 	eth     layer1.Client
 }
 
-// Start is a function to spawn all the workers
+// Start all the workers
 func (es *eventSorter) Start(num uint64) {
 	for i := uint64(0); i < num; i++ {
 		es.wg.Add(1)
