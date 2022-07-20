@@ -1,7 +1,8 @@
 ignore:
-  - "proto/**"
-  - "cmd/**"
   - "bridge/**"
+  - "cmd/**"
+  - "proto/**"
+  - "**/*.mockgen.go"
 coverage:
   status:
     patch:
