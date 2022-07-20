@@ -109,7 +109,7 @@ func NewMonitor(cdb *db.Database,
 
 }
 
-// GetStatus retrieves the monitor status
+// GetStatus of the monitor.
 func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
