@@ -50,25 +50,34 @@ func NewKillTaskRequest(task Task) TaskRequest {
 
 type BaseTask struct {
 	sync.RWMutex
-	Name                string                        `json:"name"`
-	AllowMultiExecution bool                          `json:"allowMultiExecution"`
-	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
-	Id                  string                        `json:"id"`
-	Start               uint64                        `json:"start"`
-	End                 uint64                        `json:"end"`
-	isInitialized       bool                          `json:"-"`
-	wasKilled           bool                          `json:"-"`
-	ctx                 context.Context               `json:"-"`
-	cancelFunc          context.CancelFunc            `json:"-"`
-	database            *db.Database                  `json:"-"`
-	logger              *logrus.Entry                 `json:"-"`
-	client              layer1.Client                 `json:"-"`
-	contracts           layer1.AllSmartContracts      `json:"-"`
-	taskResponseChan    TaskResponseChan              `json:"-"`
+	// Task name/type
+	Name string `json:"name"`
+	// If this task can be executed in parallel with other tasks of the same type/name
+	AllowMultiExecution bool `json:"allowMultiExecution"`
+	// Subscription options (if the task should be retried, finality delay, etc)
+	SubscribeOptions *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
+	// Unique Id of the task
+	Id string `json:"id"`
+	// Which block the task should be started. In case the start is 0 the task is
+	// started immediately.
+	Start uint64 `json:"start"`
+	// Which block the task should be ended. In case the end is 0 the task runs
+	// forever (until the task succeeds or it's killed, be careful when using this).
+	// Otherwise, the task will end at the specified block.
+	End              uint64                   `json:"end"`
+	isInitialized    bool                     `json:"-"`
+	wasKilled        bool                     `json:"-"`
+	ctx              context.Context          `json:"-"`
+	cancelFunc       context.CancelFunc       `json:"-"`
+	database         *db.Database             `json:"-"`
+	logger           *logrus.Entry            `json:"-"`
+	client           layer1.Client            `json:"-"`
+	contracts        layer1.AllSmartContracts `json:"-"`
+	taskResponseChan TaskResponseChan         `json:"-"`
 }
 
 // NewBaseTask creates a new Base task. BaseTask should be the base of any task.
-// This function is called outside the scheduler o create the object to be
+// This function is called outside the scheduler to create the object to be
 // scheduled.
 func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
 	ctx, cf := context.WithCancel(context.Background())
