@@ -1,32 +1,31 @@
 {
-    "name": "alicenet",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "args": {
-            // Update the VARIANT arg to pick a version of Go: 1, 1.16, 1.17
-            // Append -bullseye or -buster to pin to an OS version.
-            // Use -bullseye variants on local arm64/Apple Silicon.
-            "VARIANT": "1.18-bullseye",
-            "NODE_VERSION": "lts/gallium"
-        }
-    },
-    "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
-    "updateContentCommand": "make setup",
-    "customizations": {
-        "vscode": {
-            "settings": {
-                "go.toolsManagement.checkForUpdates": "local",
-                "go.useLanguageServer": true,
-                "go.gopath": "/go",
-                "go.goroot": "/usr/local/go"
-            },
-            "extensions": [
-                "golang.Go",
-                "ms-azuretools.vscode-docker",
-                "eg2.vscode-npm-script",
-                "markis.code-coverage"
-            ]
-        }
-    },
-    "remoteUser": "vscode"
+  "name": "alicenet",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      // Update the VARIANT arg to pick a version of Go: 1, 1.16, 1.17
+      // Append -bullseye or -buster to pin to an OS version.
+      // Use -bullseye variants on local arm64/Apple Silicon.
+      "VARIANT": "1.18-bullseye",
+      "NODE_VERSION": "lts/gallium"
+    }
+  },
+  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
+  "updateContentCommand": "make setup",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "go.gopath": "/go",
+        "go.goroot": "/usr/local/go"
+      },
+      "extensions": [
+        "golang.Go",
+        "ms-azuretools.vscode-docker",
+        "eg2.vscode-npm-script"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
 }
