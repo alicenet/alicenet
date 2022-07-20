@@ -217,7 +217,7 @@ func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 	}
 }
 
-// MarshalJSON implements the function that is used internally to marshal the object before saving
+// MarshalJSON implements the json.Marshaler interface. It will only marshal the State field.
 func (m *monitor) MarshalJSON() ([]byte, error) {
 	m.State.RLock()
 	defer m.State.RUnlock()
