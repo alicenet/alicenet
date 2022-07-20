@@ -25,6 +25,7 @@ lint:
 format:
 	buf format -w
 	go mod tidy
+	cd bridge && npm run format
 
 .PHONY: generate
 generate: generate-bridge generate-go

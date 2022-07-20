@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,6 @@ func setupEthereum(t *testing.T, n int, unlockAllAccounts bool) (*tests.ClientFi
 
 	t.Cleanup(func() {
 		fixture.Close()
-		ethereum.CleanGlobalVariables(t)
 	})
 
 	return fixture, eth, logger

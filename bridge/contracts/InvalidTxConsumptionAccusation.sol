@@ -4,15 +4,18 @@ pragma solidity ^0.8.11;
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/interfaces/IETHDKG.sol";
 import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/libraries/parsers/RCertParserLibrary.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/parsers/TXInPreImageParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/AccusationsLibrary.sol";
 
-contract Accusations is
+/// @custom:salt-type Accusation
+/// @custom:salt InvalidTxConsumptionAccusation
+/// @custom:deploy-type deployUpgradeable
+contract InvalidTxConsumptionAccusation is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
@@ -93,7 +96,7 @@ contract Accusations is
         );
 
         // Require that Proposal was signed by active validator.
-        address signerAccount = recoverMadNetSigner(_pClaimsSig, _pClaims);
+        address signerAccount = AccusationsLibrary.recoverMadNetSigner(_pClaimsSig, _pClaims);
 
         require(
             IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount),
@@ -132,8 +135,10 @@ contract Accusations is
         } else {
             // Consuming a non existing UTXO
             require(
-                computeUTXOID(txInPreImage.consumedTxHash, txInPreImage.consumedTxIdx) ==
-                    proofAgainstStateRoot.key,
+                AccusationsLibrary.computeUTXOID(
+                    txInPreImage.consumedTxHash,
+                    txInPreImage.consumedTxIdx
+                ) == proofAgainstStateRoot.key,
                 "Accusations: The key of Merkle Proof should be equal to the UTXOID being spent!"
             );
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
@@ -141,124 +146,5 @@ contract Accusations is
 
         //todo burn the validator's tokens
         return signerAccount;
-    }
-
-    /// @notice This function validates an accusation of multiple proposals.
-    /// @param _signature0 The signature of pclaims0
-    /// @param _pClaims0 The PClaims of the accusation
-    /// @param _signature1 The signature of pclaims1
-    /// @param _pClaims1 The PClaims of the accusation
-    /// @return the address of the signer
-    function AccuseMultipleProposal(
-        bytes calldata _signature0,
-        bytes calldata _pClaims0,
-        bytes calldata _signature1,
-        bytes calldata _pClaims1
-    ) internal view returns (address) {
-        // ecrecover sig0/1 and ensure both are valid and accounts are equal
-        address signerAccount0 = recoverMadNetSigner(_signature0, _pClaims0);
-        address signerAccount1 = recoverMadNetSigner(_signature1, _pClaims1);
-
-        require(
-            signerAccount0 == signerAccount1,
-            "Accusations: the signers of the proposals should be the same"
-        );
-
-        // ensure the hashes of blob0/1 are different
-        require(
-            keccak256(_pClaims0) != keccak256(_pClaims1),
-            "Accusations: the PClaims are equal!"
-        );
-
-        PClaimsParserLibrary.PClaims memory pClaims0 = PClaimsParserLibrary.extractPClaims(
-            _pClaims0
-        );
-        PClaimsParserLibrary.PClaims memory pClaims1 = PClaimsParserLibrary.extractPClaims(
-            _pClaims1
-        );
-
-        // ensure the height of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.height == pClaims1.rCert.rClaims.height,
-            "Accusations: the block heights between the proposals are different!"
-        );
-
-        // ensure the round of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.round == pClaims1.rCert.rClaims.round,
-            "Accusations: the round between the proposals are different!"
-        );
-
-        // ensure the chainid of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.chainId == pClaims1.rCert.rClaims.chainId,
-            "Accusations: the chainId between the proposals are different!"
-        );
-
-        // ensure the chainid of blob0 is correct for this chain using RCert sub object of PClaims
-        uint256 chainId = ISnapshots(_snapshotsAddress()).getChainId();
-        require(
-            pClaims0.rCert.rClaims.chainId == chainId,
-            "Accusations: the chainId is invalid for this chain!"
-        );
-
-        // ensure both accounts are applicable to a currently locked validator - Note<may be done in different layer?>
-        require(
-            IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount0),
-            "Accusations: the signer of these proposals is not a valid validator!"
-        );
-
-        return signerAccount0;
-    }
-
-    /// @notice Recovers the signer of a message
-    /// @param signature The ECDSA signature
-    /// @param prefix The prefix of the message
-    /// @param message The message
-    /// @return the address of the signer
-    function recoverSigner(
-        bytes memory signature,
-        bytes memory prefix,
-        bytes memory message
-    ) internal pure returns (address) {
-        require(signature.length == 65, "Accusations: Signature should be 65 bytes");
-
-        bytes32 hashedMessage = keccak256(abi.encodePacked(prefix, message));
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        assembly {
-            r := mload(add(signature, 32))
-            s := mload(add(signature, 64))
-            v := byte(0, mload(add(signature, 96)))
-        }
-
-        v = (v < 27) ? (v + 27) : v;
-
-        require(v == 27 || v == 28, "Accusations: Signature uses invalid version");
-
-        return ecrecover(hashedMessage, v, r, s);
-    }
-
-    /// @notice Recovers the signer of a message in MadNet
-    /// @param signature The ECDSA signature
-    /// @param message The message
-    /// @return the address of the signer
-    function recoverMadNetSigner(bytes memory signature, bytes memory message)
-        internal
-        pure
-        returns (address)
-    {
-        return recoverSigner(signature, "Proposal", message);
-    }
-
-    /// @notice Computes the UTXOID
-    /// @param txHash the transaction hash
-    /// @param txIdx the transaction index
-    /// @return the UTXOID
-    function computeUTXOID(bytes32 txHash, uint32 txIdx) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(txHash, txIdx));
     }
 }

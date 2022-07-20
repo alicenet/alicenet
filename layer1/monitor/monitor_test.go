@@ -65,11 +65,12 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	adminHandler := mocks.NewMockAdminHandler()
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
+	contracts := mocks.NewMockAllSmartContracts()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, adminHandler, tasksReqChan, txWatcher)
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
 
-	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, mocks.NewMockContracts(), 2*time.Second, 100, tasksReqChan)
+	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, tasksReqChan)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
@@ -90,7 +91,9 @@ func TestMonitorPersist(t *testing.T) {
 	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockContracts(), 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
+	contracts := mocks.NewMockAllSmartContracts()
+
+	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
 	err = newMon.State.LoadState(mon.db)
