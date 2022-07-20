@@ -43,7 +43,7 @@ func TestCompletion_AllGood(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "disputeGPKjTask", "task-id", nil)
+			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", nil)
 			assert.Nil(t, err)
 			err = disputeGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -65,7 +65,7 @@ func TestCompletion_AllGood(t *testing.T) {
 	for idx := 0; idx < n; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
-		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "CompletionTask", "task-id", nil)
+		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
 		assert.Nil(t, err)
 		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -106,7 +106,7 @@ func TestCompletion_Bad1(t *testing.T) {
 	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
 	task := suite.CompletionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, "CompletionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -127,7 +127,7 @@ func TestCompletion_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())

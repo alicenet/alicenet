@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -61,7 +60,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 }
@@ -83,7 +82,7 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -115,11 +114,11 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 
-	CheckBadValidators(t, b, suite)
+	CheckBadValidators(t, b, suite, fixture.Contracts)
 }
 
 // Here, we have two malicious gpkj submission.
@@ -139,7 +138,7 @@ func TestGPKjDispute_FiveInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -171,9 +170,9 @@ func TestGPKjDispute_FiveInvalid(t *testing.T) {
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOpts)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Int64()))
 
-	CheckBadValidators(t, b, suite)
+	CheckBadValidators(t, b, suite, fixture.Contracts)
 }
