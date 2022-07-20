@@ -9,12 +9,12 @@ abstract contract Sigmoid {
     uint256 internal constant _P_D = 1;
 
     // Constants for P Inverse function
-    uint256 internal constant _P_INV_SQRT = 2524876234590519489452;
-    uint256 internal constant _P_INV_C_1 = 1;
-    uint256 internal constant _P_INV_C_2 = 2;
-    uint256 internal constant _P_INV_C_3 = 3;
-    uint256 internal constant _P_INV_D_0 = 0;
-    uint256 internal constant _P_INV_D_1 = 1;
+    uint256 internal constant _P_INV_S = 2524876234590519489452;
+    uint256 internal constant _P_INV_C_1 = _P_A * ((_P_A + _P_D)*_P_INV_S + _P_A*_P_B);
+    uint256 internal constant _P_INV_C_2 = _P_A + _P_D;
+    uint256 internal constant _P_INV_C_3 = _P_D * (2*_P_A + _P_D);
+    uint256 internal constant _P_INV_D_0 = ((_P_A + _P_D)*_P_INV_S + _P_A*_P_B)**2;
+    uint256 internal constant _P_INV_D_1 = 2 * (_P_A*_P_INV_S + (_P_A + _P_D)*_P_B);
 
     function _p(uint256 x) internal pure returns (uint256) {
         return

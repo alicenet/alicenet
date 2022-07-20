@@ -27,23 +27,43 @@ contract MockSigmoid is Sigmoid {
         return Sigmoid._sqrt(x);
     }
 
-    function p_a() public returns (uint256) {
+    function p_a() public pure returns (uint256) {
         return Sigmoid._P_A;
     }
 
-    function p_b() public returns (uint256) {
+    function p_b() public pure returns (uint256) {
         return Sigmoid._P_B;
     }
 
-    function p_c() public returns (uint256) {
+    function p_c() public pure returns (uint256) {
         return Sigmoid._P_C;
     }
 
-    function p_d() public returns (uint256) {
+    function p_d() public pure returns (uint256) {
         return Sigmoid._P_D;
     }
 
-    function p_inv_sqrt() public returns (uint256) {
-        return Sigmoid._P_INV_SQRT;
+    function p_inv_s() public pure returns (uint256) {
+        return Sigmoid._P_INV_S;
+    }
+
+    function p_inv_c1() public pure returns (uint256) {
+        return Sigmoid._P_INV_C_1;
+    }
+
+    function p_inv_c2() public pure returns (uint256) {
+        return Sigmoid._P_INV_C_2;
+    }
+
+    function p_inv_c3() public pure returns (uint256) {
+        return Sigmoid._P_INV_C_3;
+    }
+
+    function p_inv_d0() public pure returns (uint256) {
+        return Sigmoid._P_INV_D_0;
+    }
+
+    function p_inv_d1() public pure returns (uint256) {
+        return Sigmoid._P_INV_D_1;
     }
 }
